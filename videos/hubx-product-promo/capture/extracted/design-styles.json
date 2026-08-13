@@ -1,0 +1,190 @@
+{
+  "typography": [
+    {
+      "role": "label",
+      "fontFamily": "Inter",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "lineHeight": "14px",
+      "letterSpacing": "normal",
+      "color": "#14181F",
+      "sampleText": ""
+    },
+    {
+      "role": "link",
+      "fontFamily": "Inter",
+      "fontSize": "13px",
+      "fontWeight": "400",
+      "lineHeight": "19.5px",
+      "letterSpacing": "normal",
+      "color": "#838995",
+      "sampleText": "查看全部 →"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      4,
+      8,
+      12,
+      15,
+      16,
+      20,
+      24,
+      28
+    ],
+    "baseUnit": 4
+  },
+  "radius": [
+    "2px",
+    "12px",
+    "50%"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(20, 24, 31, 0.06) 0px 1px 2px 0px",
+      "count": 6
+    }
+  ],
+  "buttons": [
+    {
+      "label": "查看审批",
+      "background": "#165DFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "0px 15px",
+      "borderRadius": "2px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "28px"
+    },
+    {
+      "label": "稍后处理",
+      "background": "#F2F3F5",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#4E5969",
+      "padding": "0px 15px",
+      "borderRadius": "2px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "28px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#14181F",
+      "padding": "0px",
+      "borderRadius": "12px",
+      "border": "1px solid rgb(221, 223, 228)",
+      "boxShadow": "rgba(20, 24, 31, 0.06) 0px 1px 2px 0px",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "130.594px"
+    },
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#4E5969",
+      "padding": "20px",
+      "borderRadius": "0px",
+      "border": "0px solid rgb(221, 223, 228)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "128.594px"
+    },
+    {
+      "label": "card",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#14181F",
+      "padding": "0px",
+      "borderRadius": "2px",
+      "border": "1px solid rgb(229, 230, 235)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "708px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "#FFFFFF",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "#4E5969",
+    "padding": "0px 28px 0px 12px",
+    "borderRadius": "2px",
+    "border": "0px solid rgb(221, 223, 228)",
+    "boxShadow": "none",
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "height": "40px"
+  },
+  "chips": [
+    {
+      "label": "5",
+      "background": "transparent",
+      "color": "#14181F",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px solid rgb(221, 223, 228)",
+      "boxShadow": "none",
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "height": "20px"
+    },
+    {
+      "label": "5",
+      "background": "#F53F3F",
+      "color": "#FFFFFF",
+      "padding": "0px 6px",
+      "borderRadius": "20px",
+      "border": "0px solid rgb(221, 223, 228)",
+      "boxShadow": "rgb(255, 255, 255) 0px 0px 0px 2px",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "height": "20px"
+    },
+    {
+      "label": "高优先级",
+      "background": "#FFECE8",
+      "color": "#F53F3F",
+      "padding": "0px 8px",
+      "borderRadius": "2px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "height": "24px"
+    },
+    {
+      "label": "低优先级",
+      "background": "#E8F3FF",
+      "color": "#165DFF",
+      "padding": "0px 8px",
+      "borderRadius": "2px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "500",
+      "height": "24px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [],
+  "glass": []
+}

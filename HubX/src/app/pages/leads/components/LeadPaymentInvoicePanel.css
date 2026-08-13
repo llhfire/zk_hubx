@@ -1,0 +1,589 @@
+.lead-payment-panel {
+  min-width: 0;
+}
+
+.lead-payment-panel .arco-table-th,
+.lead-payment-panel .arco-table-td {
+  white-space: nowrap;
+}
+
+.lead-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  background: var(--color-bg-2);
+}
+
+.lead-payment-summary-item {
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.lead-payment-summary-item + .lead-payment-summary-item {
+  border-left: 1px solid var(--color-border-2);
+}
+
+.lead-payment-summary-label {
+  margin-bottom: 6px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-payment-summary-value {
+  overflow-wrap: anywhere;
+  color: var(--color-text-1);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.lead-payment-summary-value.is-paid {
+  color: rgb(var(--success-6));
+}
+
+.lead-payment-summary-value.is-pending {
+  color: rgb(var(--warning-6));
+}
+
+.lead-payment-summary-value.is-invoiced {
+  color: rgb(var(--arcoblue-6));
+}
+
+.lead-payment-period-name {
+  min-width: 0;
+}
+
+.lead-payment-period-title {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.lead-payment-period-condition,
+.lead-payment-cell-note {
+  margin-top: 3px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-payment-primary-amount {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.lead-payment-primary-amount.is-paid {
+  color: rgb(var(--success-6));
+}
+
+.lead-payment-primary-amount.is-invoiced {
+  color: rgb(var(--arcoblue-6));
+}
+
+.lead-payment-expanded {
+  padding: 12px;
+  background: var(--color-fill-1);
+}
+
+.lead-payment-detail-section {
+  overflow: hidden;
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  background: var(--color-bg-2);
+}
+
+.lead-payment-detail-section + .lead-payment-detail-section {
+  margin-top: 12px;
+}
+
+.lead-payment-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.lead-payment-detail-section.is-payment .lead-payment-detail-header {
+  border-left: 3px solid rgb(var(--success-6));
+  background: rgba(var(--success-1), 0.8);
+}
+
+.lead-payment-detail-section.is-invoice .lead-payment-detail-header {
+  border-left: 3px solid rgb(var(--arcoblue-6));
+  background: rgba(var(--arcoblue-1), 0.8);
+}
+
+.lead-payment-detail-heading,
+.lead-payment-detail-title-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.lead-payment-detail-heading {
+  gap: 10px;
+}
+
+.lead-payment-detail-heading > div {
+  min-width: 0;
+}
+
+.lead-payment-detail-icon {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.is-payment .lead-payment-detail-icon {
+  color: rgb(var(--success-6));
+  background: rgba(var(--success-2), 0.9);
+}
+
+.is-invoice .lead-payment-detail-icon {
+  color: rgb(var(--arcoblue-6));
+  background: rgba(var(--arcoblue-2), 0.9);
+}
+
+.lead-payment-detail-title-row {
+  gap: 8px;
+}
+
+.lead-payment-detail-title {
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lead-payment-detail-count {
+  padding: 0 6px;
+  border-radius: 3px;
+  color: var(--color-text-2);
+  background: var(--color-fill-3);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.lead-payment-detail-summary {
+  margin-top: 2px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: normal;
+}
+
+.lead-payment-detail-summary strong {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.lead-payment-detail-separator {
+  margin: 0 6px;
+}
+
+.lead-payment-detail-table .arco-table-th {
+  color: var(--color-text-2);
+  background: var(--color-fill-2);
+  font-weight: 600;
+}
+
+.lead-payment-record-amount {
+  font-weight: 600;
+}
+
+.lead-payment-record-amount.is-paid {
+  color: rgb(var(--success-6));
+}
+
+.lead-payment-record-amount.is-invoiced {
+  color: rgb(var(--arcoblue-6));
+}
+
+.lead-payment-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.lead-payment-modal-limit {
+  margin-top: 6px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.project-payment-period-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.project-payment-period-cell > strong {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.project-payment-period-cell > span {
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.project-payment-split-parent-row > td {
+  background: var(--color-fill-2);
+}
+
+.project-payment-split-child-row > td {
+  background: #f7f9fc;
+}
+
+.project-payment-period-cell.is-split-parent {
+  gap: 4px;
+}
+
+.project-payment-period-parent-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-payment-period-parent-statuses {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-payment-period-cell.is-split-child {
+  padding-left: 20px;
+}
+
+.project-payment-period-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.project-payment-period-cell.is-split-child .project-payment-period-statuses {
+  flex-wrap: nowrap;
+}
+
+.project-payment-status-tag {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.project-payment-status-tag:focus-visible {
+  outline: 2px solid rgba(var(--arcoblue-6), 0.35);
+  outline-offset: 2px;
+}
+
+.project-payment-status-tag:hover .arco-tag {
+  filter: brightness(0.96);
+}
+
+.project-payment-view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.project-payment-view-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-payment-view-grid > div.is-full {
+  grid-column: 1 / -1;
+}
+
+.project-payment-view-grid > div > span {
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.project-payment-view-grid > div > strong {
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.project-payment-modal-notice {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--color-text-2);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.project-payment-file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.project-payment-file-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.project-payment-empty-value {
+  color: var(--color-text-3);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.project-payment-split-item {
+  padding: 16px;
+  border: 1px dashed var(--color-border-3);
+  border-radius: 4px;
+}
+
+.project-payment-split-item + .project-payment-split-item {
+  margin-top: 12px;
+}
+
+.project-payment-split-item > strong {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.project-payment-split-add-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: 12px;
+  border: 1px dashed var(--color-border-3);
+  border-radius: 4px;
+}
+
+.project-payment-attachment-header,
+.project-payment-attachment-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-payment-attachment-header > strong,
+.project-payment-attachment-form > strong {
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.project-payment-attachment-table {
+  margin-top: 12px;
+}
+
+.project-payment-attachment-table .arco-table-th,
+.project-payment-attachment-table .arco-table-td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.project-payment-attachment-name {
+  display: inline-block;
+  min-width: 0;
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.project-payment-attachment-description {
+  display: inline-block;
+  color: var(--color-text-2);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.project-payment-attachment-empty {
+  margin-top: 12px;
+  padding: 24px 12px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: 6px;
+  color: var(--color-text-3);
+  font-size: 13px;
+  text-align: center;
+}
+
+.project-payment-attachment-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-2);
+}
+
+.project-period-detail{background:#f5f7fa}.project-period-detail-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 28px;background:linear-gradient(120deg,#0f477e,#1674af);color:#fff}.project-period-detail-hero>div:first-child{display:flex;flex-direction:column}.project-period-detail-hero span{font-size:12px;color:rgba(255,255,255,.72)}.project-period-detail-hero strong{margin:5px 0 3px;font-size:28px;line-height:1.2}.project-period-detail-hero small{color:rgba(255,255,255,.72)}.project-period-detail-status{display:flex;gap:8px}.project-period-detail-body{padding:20px 24px 24px}.project-period-detail-section{padding:18px 20px;border:1px solid #e1e6ed;border-radius:9px;background:#fff;box-shadow:0 3px 12px rgba(31,50,73,.04)}.project-period-detail-section+.project-period-detail-section{margin-top:14px}.project-period-detail-section-title{display:flex;align-items:center;gap:10px;margin-bottom:14px}.project-period-detail-section-title>span{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;background:#edf5ff;color:#1768ad;font-size:11px;font-weight:700}.project-period-detail-section-title>div{display:flex;flex-direction:column}.project-period-detail-section-title strong{font-size:14px}.project-period-detail-section-title small{margin-top:2px;color:var(--color-text-3);font-size:11px}.project-period-detail-condition{margin:0;padding:12px 14px;border-left:3px solid #68a3de;background:#f7faff;color:var(--color-text-2);line-height:1.7}.project-payment-record-card{display:grid;grid-template-columns:180px minmax(0,1fr);overflow:hidden;border:1px solid #dfe7f0;border-radius:8px}.project-payment-record-amount{display:flex;align-items:flex-start;justify-content:center;flex-direction:column;padding:20px;background:#f3faf6}.project-payment-record-amount span,.project-payment-record-meta span,.project-payment-record-files>span{color:var(--color-text-3);font-size:11px}.project-payment-record-amount strong{margin-top:6px;color:#15915d;font-size:22px}.project-payment-record-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:16px}.project-payment-record-meta>div{display:flex;min-width:0;flex-direction:column;gap:5px}.project-payment-record-meta strong{font-size:13px;overflow-wrap:anywhere}.project-payment-record-files{grid-column:1/-1;display:grid;grid-template-columns:100px minmax(0,1fr);align-items:start;padding:12px 16px;border-top:1px solid #edf0f4}.project-period-detail-empty{padding:24px;border:1px dashed #d6dde7;border-radius:7px;background:#fafbfc;color:var(--color-text-3);text-align:center}
+
+.project-period-detail-attachments{overflow:hidden;border:1px solid #e2e7ee;border-radius:8px}.project-period-detail-attachment{display:grid;grid-template-columns:minmax(220px,1fr) minmax(180px,.8fr);align-items:center;gap:16px;padding:13px 15px}.project-period-detail-attachment+.project-period-detail-attachment{border-top:1px solid #edf0f4}.project-period-detail-attachment>div:first-child{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 10px;min-width:0}.project-period-detail-attachment strong{font-size:13px}.project-period-detail-attachment small{grid-column:2;color:var(--color-text-3);line-height:18px}.project-period-detail-actions{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #edf0f4}
+.project-period-detail-amount-row{display:flex;align-items:center;gap:14px}.project-period-detail-status{display:flex;gap:7px}.project-period-detail-status>span{display:inline-flex;align-items:center;height:24px;padding:0 10px;border:1px solid transparent;border-radius:12px;font-size:12px;font-weight:600}.project-period-detail-status .is-paid{border-color:rgba(134,239,172,.55);background:rgba(220,252,231,.88);color:#087443}.project-period-detail-status .is-invoiced{border-color:rgba(147,197,253,.6);background:rgba(219,234,254,.9);color:#075ea8}.project-period-detail-status .is-invoicing{border-color:rgba(253,186,116,.65);background:rgba(255,237,213,.9);color:#a84b07}.project-period-detail-status .is-red-flushed{border-color:rgba(252,165,165,.6);background:rgba(254,226,226,.9);color:#b42318}.project-period-detail-status .is-muted{border-color:rgba(203,213,225,.7);background:rgba(241,245,249,.9);color:#475569}.project-period-detail-hero-actions{display:flex;align-items:center;gap:10px}.project-period-detail-hero-actions .arco-btn-primary{border-color:#168a55;background:#168a55;color:#fff;box-shadow:none}.project-period-detail-hero-actions .arco-btn-primary:hover{border-color:#20a56a;background:#20a56a;color:#fff}.project-period-detail-hero-actions .arco-btn-status-danger{border-color:#d92d20;background:#d92d20;color:#fff;box-shadow:none}.project-period-detail-hero-actions .arco-btn-status-danger:hover{border-color:#ef4034;background:#ef4034;color:#fff}
+.project-period-detail-hero-actions .arco-btn.project-period-split-button{border-color:#e47b12!important;background-color:#e47b12!important;color:#fff!important;box-shadow:none}.project-period-detail-hero-actions .arco-btn.project-period-split-button:hover{border-color:#f08c24!important;background-color:#f08c24!important;color:#fff!important}.project-period-detail-hero-actions .arco-btn.project-period-red-flush-button{border-color:#d92d20!important;background-color:#d92d20!important;color:#fff!important;box-shadow:none}.project-period-detail-hero-actions .arco-btn.project-period-red-flush-button:hover{border-color:#ef4034!important;background-color:#ef4034!important;color:#fff!important}
+
+@media (max-width: 980px) {
+  .lead-payment-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lead-payment-summary-item:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--color-border-2);
+  }
+
+  .lead-payment-summary-item:nth-child(4) {
+    border-top: 1px solid var(--color-border-2);
+  }
+}
+
+@media (max-width: 560px) {
+  .lead-payment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-payment-summary-item + .lead-payment-summary-item {
+    border-top: 1px solid var(--color-border-2);
+    border-left: 0;
+  }
+
+  .lead-payment-expanded {
+    padding: 8px;
+  }
+
+  .lead-payment-detail-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lead-payment-detail-header .arco-btn {
+    align-self: flex-end;
+  }
+
+  .project-payment-view-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .project-payment-attachment-header {
+    align-items: flex-start;
+  }
+  .project-period-detail-hero{align-items:flex-start;flex-direction:column}.project-period-detail-amount-row{align-items:flex-start;flex-direction:column;gap:8px}.project-period-detail-hero-actions{width:100%}.project-period-detail-hero-actions .arco-btn{flex:1}.project-payment-record-card{grid-template-columns:1fr}.project-payment-record-meta{grid-template-columns:1fr}.project-payment-record-files{grid-template-columns:1fr;gap:8px}.project-period-detail-attachment{grid-template-columns:1fr}.project-period-detail-actions{align-items:stretch;flex-direction:column}.project-period-detail-actions .arco-btn{width:100%}
+}
+.project-invoice-form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 16px;
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--color-border-2);
+  color: var(--color-text-1);
+}
+
+.project-invoice-form-section-title > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgb(var(--arcoblue-1));
+  color: rgb(var(--arcoblue-6));
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.project-invoice-form-section-title > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.project-invoice-form-section-title strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.project-invoice-form-section-title small {
+  color: var(--color-text-3);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.project-invoice-form-tip {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid rgb(var(--arcoblue-5));
+  background: rgb(var(--arcoblue-1));
+  color: var(--color-text-2);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.project-invoice-application-form .arco-form-item {
+  margin-bottom: 16px;
+}
+
+.project-invoice-application-form > .arco-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+.project-invoice-application-form > .arco-row > .arco-col {
+  width: auto;
+  max-width: none;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  flex: none;
+}
+
+.project-invoice-tax-amount .arco-input-number-disabled {
+  border-color: rgba(var(--arcoblue-6), 0.28);
+  background: rgba(var(--arcoblue-1), 0.55);
+}
+
+@media (max-width: 520px) {
+  .project-invoice-form-section-title {
+    align-items: flex-start;
+  }
+
+  .project-invoice-application-form > .arco-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

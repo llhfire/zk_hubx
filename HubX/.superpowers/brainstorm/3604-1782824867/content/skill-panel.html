@@ -1,0 +1,155 @@
+<h2>员工能力面板 — 设计方向</h2>
+<p class="subtitle">这是一个 RPG 风格的能力总览，包含等级、多维属性、技能树</p>
+
+<div class="section">
+  <h3>核心布局：角色卡片式</h3>
+</div>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">方案 A：横向仪表盘</div>
+    <div class="mockup-body" style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:8px;font-family:monospace;font-size:13px;min-height:380px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #2a2d3e">
+        <div>
+          <div style="font-size:18px;font-weight:bold;color:#60a5fa">张三</div>
+          <div style="color:#94a3b8;font-size:12px">前端开发 · 高级工程师 · Lv.7</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:24px;font-weight:bold;color:#f59e0b">7</div>
+          <div style="color:#94a3b8;font-size:11px">等级</div>
+        </div>
+      </div>
+      <!-- 经验条 -->
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+          <span>EXP 2840 / 4000</span><span>71%</span>
+        </div>
+        <div style="height:6px;background:#2a2d3e;border-radius:3px;overflow:hidden">
+          <div style="width:71%;height:100%;background:linear-gradient(90deg,#60a5fa,#a78bfa);border-radius:3px"></div>
+        </div>
+      </div>
+      <!-- 五维雷达 -->
+      <div style="display:flex;gap:16px;margin-bottom:16px">
+        <div style="flex:1;text-align:center">
+          <div style="font-size:20px;font-weight:bold;color:#60a5fa">82</div>
+          <div style="font-size:10px;color:#94a3b8">技术能力</div>
+          <div style="height:3px;background:#2a2d3e;margin-top:4px;border-radius:2px"><div style="width:82%;height:100%;background:#60a5fa;border-radius:2px"></div></div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:20px;font-weight:bold;color:#34d399">55</div>
+          <div style="font-size:10px;color:#94a3b8">业务能力</div>
+          <div style="height:3px;background:#2a2d3e;margin-top:4px;border-radius:2px"><div style="width:55%;height:100%;background:#34d399;border-radius:2px"></div></div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:20px;font-weight:bold;color:#f59e0b">30</div>
+          <div style="font-size:10px;color:#94a3b8">管理能力</div>
+          <div style="height:3px;background:#2a2d3e;margin-top:4px;border-radius:2px"><div style="width:30%;height:100%;background:#f59e0b;border-radius:2px"></div></div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:20px;font-weight:bold;color:#f472b6">78</div>
+          <div style="font-size:10px;color:#94a3b8">工具熟练</div>
+          <div style="height:3px;background:#2a2d3e;margin-top:4px;border-radius:2px"><div style="width:78%;height:100%;background:#f472b6;border-radius:2px"></div></div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:20px;font-weight:bold;color:#c084fc">25</div>
+          <div style="font-size:10px;color:#94a3b8">领域知识</div>
+          <div style="height:3px;background:#2a2d3e;margin-top:4px;border-radius:2px"><div style="width:25%;height:100%;background:#c084fc;border-radius:2px"></div></div>
+        </div>
+      </div>
+      <!-- 技能树 -->
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">技能树</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px;font-size:11px">React</span>
+        <span style="background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px;font-size:11px">TypeScript</span>
+        <span style="background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px;font-size:11px">Next.js</span>
+        <span style="background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px;font-size:11px">Tailwind</span>
+        <span style="background:#2a2d3e;color:#64748b;padding:2px 8px;border-radius:10px;font-size:11px">🔒 Docker</span>
+        <span style="background:#2a2d3e;color:#64748b;padding:2px 8px;border-radius:10px;font-size:11px">🔒 K8s</span>
+        <span style="background:#2a2d3e;color:#64748b;padding:2px 8px;border-radius:10px;font-size:11px">🔒 性能优化</span>
+      </div>
+      <!-- 项目历史 -->
+      <div style="font-size:11px;color:#94a3b8;margin-top:12px;margin-bottom:6px">最近项目</div>
+      <div style="font-size:11px;color:#cbd5e1">
+        <div>· 阿里企业管理系统 — 前端开发 120h</div>
+        <div>· 腾讯云平台 — 前端开发 85h</div>
+        <div>· 内部组件库 — 技术负责人 60h</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">方案 B：纵向详情页</div>
+    <div class="mockup-body" style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:8px;font-family:monospace;font-size:13px;min-height:380px">
+      <!-- 头像区 -->
+      <div style="display:flex;gap:16px;margin-bottom:20px;align-items:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold">张</div>
+        <div>
+          <div style="font-size:18px;font-weight:bold">张三</div>
+          <div style="color:#94a3b8;font-size:12px">前端开发 · 高级工程师</div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <span style="background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 8px;border-radius:8px;font-size:11px">Lv.7</span>
+            <span style="color:#94a3b8;font-size:11px">EXP 2840/4000</span>
+          </div>
+        </div>
+      </div>
+      <!-- 能力值列表 -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:bold;margin-bottom:8px;color:#e0e0e0">能力数值</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:60px;font-size:11px;color:#94a3b8">技术能力</span>
+            <div style="flex:1;height:16px;background:#2a2d3e;border-radius:8px;overflow:hidden"><div style="width:82%;height:100%;background:#60a5fa;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;font-weight:bold">82</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:60px;font-size:11px;color:#94a3b8">业务能力</span>
+            <div style="flex:1;height:16px;background:#2a2d3e;border-radius:8px;overflow:hidden"><div style="width:55%;height:100%;background:#34d399;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;font-weight:bold">55</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:60px;font-size:11px;color:#94a3b8">管理能力</span>
+            <div style="flex:1;height:16px;background:#2a2d3e;border-radius:8px;overflow:hidden"><div style="width:30%;height:100%;background:#f59e0b;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;font-weight:bold">30</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:60px;font-size:11px;color:#94a3b8">工具熟练</span>
+            <div style="flex:1;height:16px;background:#2a2d3e;border-radius:8px;overflow:hidden"><div style="width:78%;height:100%;background:#f472b6;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;font-weight:bold">78</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:60px;font-size:11px;color:#94a3b8">领域知识</span>
+            <div style="flex:1;height:16px;background:#2a2d3e;border-radius:8px;overflow:hidden"><div style="width:25%;height:100%;background:#c084fc;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;font-weight:bold">25</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- 技能树（竖向） -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:bold;margin-bottom:8px;color:#e0e0e0">技能树</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="color:#60a5fa">◆</span> React <span style="color:#34d399;font-size:10px">精通</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="color:#60a5fa">◆</span> TypeScript <span style="color:#60a5fa;font-size:10px">熟练</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="color:#60a5fa">◆</span> Next.js <span style="color:#60a5fa;font-size:10px">熟练</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 Docker</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:12px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 K8s</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="color:#64748b">◇</span> <span style="color:#64748b">🔒 性能优化</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>两种布局风格</h3>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>横向仪表盘</h3>
+      <p>信息密度高，一屏看全。适合快速浏览。等级+经验条+五维数值+技能标签+项目历史全部横向展开。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>纵向详情页</h3>
+      <p>层级清晰，适合深入查看。头像区+能力条+技能树纵向排列，有呼吸感。技能树可以展示层级依赖关系。</p>
+    </div>
+  </div>
+</div>

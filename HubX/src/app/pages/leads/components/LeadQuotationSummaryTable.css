@@ -1,0 +1,45 @@
+.lead-quotation-summary-table {
+  min-width: 0;
+}
+
+.lead-quotation-summary-table-title {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.lead-quotation-summary-table .arco-table {
+  font-size: 12px;
+}
+
+.lead-quotation-summary-table .arco-table-th,
+.lead-quotation-summary-table .arco-table-td {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.lead-quotation-summary-table-total-row .arco-table-td {
+  background: rgba(var(--arcoblue-1), 0.52);
+}
+
+.lead-quotation-summary-table .is-total {
+  color: rgb(var(--arcoblue-6));
+}
+
+.lead-quotation-summary-table-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-quotation-summary-table-meta strong {
+  color: var(--color-text-1);
+  font-weight: 500;
+}

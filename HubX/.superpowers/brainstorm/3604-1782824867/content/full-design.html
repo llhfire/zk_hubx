@@ -1,0 +1,329 @@
+<h2>员工能力建模 — 完整设计方案</h2>
+<p class="subtitle">RPG 风格角色成长系统 · 纵向详情页布局</p>
+
+<div class="section">
+  <h3>一、核心数据模型</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:13px;margin-bottom:20px">
+
+<div style="margin-bottom:16px">
+  <div style="font-size:14px;font-weight:bold;color:#60a5fa;margin-bottom:8px">📊 五维能力值（0-100）</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px">
+    <div>🔧 技术能力 — 编程/架构/调试</div>
+    <div>💼 业务能力 — 需求理解/客户沟通/方案</div>
+    <div>👥 管理能力 — 项目管控/团队协调</div>
+    <div>🛠️ 工具熟练 — Figma/JIRA/框架等</div>
+    <div>🌐 领域知识 — 行业经验（电商/金融等）</div>
+  </div>
+</div>
+
+<div style="margin-bottom:16px;padding-top:12px;border-top:1px solid #2a2d3e">
+  <div style="font-size:14px;font-weight:bold;color:#f59e0b;margin-bottom:8px">⚖️ 职位权重映射（示例）</div>
+  <div style="background:#2a2d3e;border-radius:8px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:0;font-size:10px;text-align:center;background:#363a4f;padding:6px 8px;font-weight:bold">
+      <div style="text-align:left">职位</div><div>技术</div><div>业务</div><div>管理</div><div>工具</div><div>领域</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:0;font-size:10px;text-align:center;padding:4px 8px;border-bottom:1px solid #2a2d3e">
+      <div style="text-align:left">前端开发</div><div style="color:#60a5fa">40%</div><div>15%</div><div>10%</div><div style="color:#f472b6">25%</div><div>10%</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:0;font-size:10px;text-align:center;padding:4px 8px;border-bottom:1px solid #2a2d3e">
+      <div style="text-align:left">项目经理</div><div>15%</div><div style="color:#34d399">30%</div><div style="color:#f59e0b">35%</div><div>10%</div><div>10%</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:0;font-size:10px;text-align:center;padding:4px 8px;border-bottom:1px solid #2a2d3e">
+      <div style="text-align:left">UI设计师</div><div>20%</div><div>15%</div><div>5%</div><div style="color:#f472b6">45%</div><div>15%</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr;gap:0;font-size:10px;text-align:center;padding:4px 8px">
+      <div style="text-align:left">投放运营</div><div>15%</div><div style="color:#34d399">30%</div><div>15%</div><div>20%</div><div style="color:#c084fc">20%</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom:16px;padding-top:12px;border-top:1px solid #2a2d3e">
+  <div style="font-size:14px;font-weight:bold;color:#34d399;margin-bottom:8px">📈 等级体系</div>
+  <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">每个职位有独立的等级阶梯，加权总分决定等级区间</div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:10px">
+    <span style="background:#2a2d3e;padding:4px 10px;border-radius:12px">L1 实习生</span>
+    <span style="color:#64748b">→</span>
+    <span style="background:#2a2d3e;padding:4px 10px;border-radius:12px">L2 初级</span>
+    <span style="color:#64748b">→</span>
+    <span style="background:#2a2d3e;padding:4px 10px;border-radius:12px">L3-4 中级</span>
+    <span style="color:#64748b">→</span>
+    <span style="background:#1e3a5f;padding:4px 10px;border-radius:12px;color:#60a5fa">L5-6 高级</span>
+    <span style="color:#64748b">→</span>
+    <span style="background:#1e3a5f;padding:4px 10px;border-radius:12px;color:#a78bfa">L7-8 专家</span>
+    <span style="color:#64748b">→</span>
+    <span style="background:#3b1f5e;padding:4px 10px;border-radius:12px;color:#c084fc">L9-10 架构/总监</span>
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+  <h3>二、经验获取机制</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:13px;margin-bottom:20px">
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:11px">
+
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#60a5fa;margin-bottom:8px">📋 日报驱动（日常）</div>
+  <div style="color:#94a3b8;line-height:1.6">
+    日报中「工作种类」映射到能力维度：<br>
+    · 开发编码 → 技术能力 +3<br>
+    · 需求沟通 → 业务能力 +2<br>
+    · 项目管理 → 管理能力 +2<br>
+    · 文档编写 → 业务能力 +1<br>
+    · 投放优化 → 领域知识 +3
+  </div>
+  <div style="color:#64748b;font-size:10px;margin-top:8px">每 8 小时 = 1 天经验</div>
+</div>
+
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#f59e0b;margin-bottom:8px">🏗️ 项目结算（阶段性）</div>
+  <div style="color:#94a3b8;line-height:1.6">
+    项目交付后按角色和参与度结算：<br>
+    · 技术负责人 → 技术+15 管理+10<br>
+    · 核心开发 → 技术+12 工具+5<br>
+    · 辅助开发 → 技术+6<br>
+    · 项目规模系数 ×1.0~×2.0
+  </div>
+  <div style="color:#64748b;font-size:10px;margin-top:8px">复杂项目加权</div>
+</div>
+
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#34d399;margin-bottom:8px">👨‍💼 主管评定（校准）</div>
+  <div style="color:#94a3b8;line-height:1.6">
+    每月/每季度主管对下属评定：<br>
+    · 超出预期 → 额外 +10~20<br>
+    · 符合预期 → 额外 +5~10<br>
+    · 需改进 → 无加成<br>
+    · 单项可分配，不强制平均
+  </div>
+  <div style="color:#64748b;font-size:10px;margin-top:8px">防止纯自动化偏差</div>
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+  <h3>三、晋级流程</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:13px;margin-bottom:20px">
+
+<div style="display:flex;align-items:center;gap:12px;font-size:11px;flex-wrap:wrap">
+  <div style="background:#2a2d3e;padding:10px 16px;border-radius:8px;text-align:center">
+    <div style="color:#94a3b8;margin-bottom:4px">① 数值达标</div>
+    <div style="color:#60a5fa;font-weight:bold">加权总分 ≥ 门槛</div>
+    <div style="color:#64748b;font-size:10px">系统自动检测</div>
+  </div>
+  <span style="color:#64748b;font-size:18px">→</span>
+  <div style="background:#2a2d3e;padding:10px 16px;border-radius:8px;text-align:center">
+    <div style="color:#94a3b8;margin-bottom:4px">② 解锁资格</div>
+    <div style="color:#f59e0b;font-weight:bold">晋级资格已解锁</div>
+    <div style="color:#64748b;font-size:10px">通知本人+主管</div>
+  </div>
+  <span style="color:#64748b;font-size:18px">→</span>
+  <div style="background:#2a2d3e;padding:10px 16px;border-radius:8px;text-align:center">
+    <div style="color:#94a3b8;margin-bottom:4px">③ 评审审批</div>
+    <div style="color:#34d399;font-weight:bold">评审委员会投票</div>
+    <div style="color:#64748b;font-size:10px">参考数值+项目表现</div>
+  </div>
+  <span style="color:#64748b;font-size:18px">→</span>
+  <div style="background:#1e3a5f;padding:10px 16px;border-radius:8px;text-align:center">
+    <div style="color:#94a3b8;margin-bottom:4px">④ 晋升</div>
+    <div style="color:#a78bfa;font-weight:bold">等级 +1</div>
+    <div style="color:#64748b;font-size:10px">记录晋级历史</div>
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+  <h3>四、员工能力详情页（完整布局）</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:20px">
+
+<div style="display:grid;grid-template-columns:320px 1fr;gap:24px">
+
+<!-- 左侧：角色信息 -->
+<div>
+  <!-- 头像区 -->
+  <div style="display:flex;gap:14px;margin-bottom:20px;align-items:center">
+    <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;flex-shrink:0">张</div>
+    <div>
+      <div style="font-size:16px;font-weight:bold">张三</div>
+      <div style="color:#94a3b8;font-size:11px">前端开发 · 高级工程师</div>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <span style="background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 8px;border-radius:8px;font-size:10px">Lv.7</span>
+        <span style="color:#94a3b8;font-size:10px">EXP 2840/4000</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 能力值列表 -->
+  <div style="margin-bottom:16px">
+    <div style="font-size:11px;font-weight:bold;margin-bottom:10px;color:#cbd5e1">📊 能力数值</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:56px;font-size:10px;color:#94a3b8">技术能力</span>
+        <div style="flex:1;height:14px;background:#2a2d3e;border-radius:7px;overflow:hidden"><div style="width:82%;height:100%;background:#60a5fa;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:bold">82</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:56px;font-size:10px;color:#94a3b8">业务能力</span>
+        <div style="flex:1;height:14px;background:#2a2d3e;border-radius:7px;overflow:hidden"><div style="width:55%;height:100%;background:#34d399;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:bold">55</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:56px;font-size:10px;color:#94a3b8">管理能力</span>
+        <div style="flex:1;height:14px;background:#2a2d3e;border-radius:7px;overflow:hidden"><div style="width:30%;height:100%;background:#f59e0b;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:bold">30</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:56px;font-size:10px;color:#94a3b8">工具熟练</span>
+        <div style="flex:1;height:14px;background:#2a2d3e;border-radius:7px;overflow:hidden"><div style="width:78%;height:100%;background:#f472b6;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:bold">78</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:56px;font-size:10px;color:#94a3b8">领域知识</span>
+        <div style="flex:1;height:14px;background:#2a2d3e;border-radius:7px;overflow:hidden"><div style="width:25%;height:100%;background:#c084fc;border-radius:7px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:bold">25</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 加权总分 -->
+  <div style="background:#2a2d3e;border-radius:8px;padding:12px;margin-bottom:16px">
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px">加权总分（前端权重）</div>
+    <div style="font-size:22px;font-weight:bold;color:#f59e0b">63.8 <span style="font-size:11px;color:#94a3b8">/ 100</span></div>
+    <div style="font-size:10px;color:#64748b;margin-top:2px">下一级 Lv.8 需要 ≥ 70</div>
+  </div>
+
+  <!-- 晋级历史 -->
+  <div style="font-size:10px">
+    <div style="font-weight:bold;color:#cbd5e1;margin-bottom:6px">📜 晋级历史</div>
+    <div style="color:#64748b;line-height:1.8">
+      <div>2026-03 · Lv.6 → Lv.7 · 评审通过</div>
+      <div>2025-09 · Lv.5 → Lv.6 · 评审通过</div>
+      <div>2025-03 · Lv.4 → Lv.5 · 自动晋升</div>
+    </div>
+  </div>
+</div>
+
+<!-- 右侧：技能树 + 项目 -->
+<div>
+  <!-- 技能树 -->
+  <div style="margin-bottom:20px">
+    <div style="font-size:13px;font-weight:bold;margin-bottom:12px;color:#cbd5e1">🌳 技能树</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:10px">
+
+      <!-- 前端技能线 -->
+      <div style="background:#2a2d3e;border-radius:8px;padding:12px">
+        <div style="font-weight:bold;color:#60a5fa;margin-bottom:8px">前端开发</div>
+        <div style="line-height:2">
+          <div><span style="color:#60a5fa">◆</span> React <span style="color:#34d399">精通</span></div>
+          <div style="margin-left:10px"><span style="color:#64748b">├</span> <span style="color:#60a5fa">◆</span> Next.js <span style="color:#60a5fa">熟练</span></div>
+          <div style="margin-left:20px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 性能优化</span> <span style="color:#64748b;font-size:9px">需技术≥85</span></div>
+          <div style="margin-left:10px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 React Native</span></div>
+          <div><span style="color:#60a5fa">◆</span> TypeScript <span style="color:#60a5fa">熟练</span></div>
+          <div><span style="color:#60a5fa">◆</span> Tailwind <span style="color:#60a5fa">熟练</span></div>
+        </div>
+      </div>
+
+      <!-- DevOps 线 -->
+      <div style="background:#2a2d3e;border-radius:8px;padding:12px">
+        <div style="font-weight:bold;color:#f472b6;margin-bottom:8px">DevOps</div>
+        <div style="line-height:2">
+          <div><span style="color:#60a5fa">◆</span> Git <span style="color:#34d399">精通</span></div>
+          <div style="margin-left:10px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 Docker</span> <span style="color:#64748b;font-size:9px">需项目实践</span></div>
+          <div style="margin-left:20px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 K8s</span></div>
+          <div><span style="color:#64748b">🔒 CI/CD</span> <span style="color:#64748b;font-size:9px">需项目实践</span></div>
+        </div>
+      </div>
+
+      <!-- 跨岗位技能 -->
+      <div style="background:#2a2d3e;border-radius:8px;padding:12px">
+        <div style="font-weight:bold;color:#34d399;margin-bottom:8px">项目管理 <span style="font-size:9px;color:#64748b">跨岗位</span></div>
+        <div style="line-height:2">
+          <div><span style="color:#60a5fa">◆</span> 需求分析 <span style="color:#60a5fa">熟练</span></div>
+          <div style="margin-left:10px"><span style="color:#64748b">└</span> <span style="color:#64748b">🔒 进度管控</span> <span style="color:#64748b;font-size:9px">需管理≥40</span></div>
+          <div><span style="color:#64748b">🔒 团队协调</span> <span style="color:#64748b;font-size:9px">需管理≥50</span></div>
+        </div>
+      </div>
+
+      <!-- 设计线 -->
+      <div style="background:#2a2d3e;border-radius:8px;padding:12px">
+        <div style="font-weight:bold;color:#c084fc;margin-bottom:8px">UI/UX <span style="font-size:9px;color:#64748b">跨岗位</span></div>
+        <div style="line-height:2">
+          <div><span style="color:#60a5fa">◆</span> Figma <span style="color:#60a5fa">熟练</span></div>
+          <div><span style="color:#64748b">🔒 设计系统</span></div>
+          <div><span style="color:#64748b">🔒 用户体验</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 项目历史 -->
+  <div>
+    <div style="font-size:13px;font-weight:bold;margin-bottom:8px;color:#cbd5e1">🏗️ 项目贡献</div>
+    <div style="background:#2a2d3e;border-radius:8px;overflow:hidden;font-size:10px">
+      <div style="display:grid;grid-template-columns:2fr 1fr 0.7fr 0.6fr;background:#363a4f;padding:6px 10px;font-weight:bold;color:#94a3b8">
+        <div>项目</div><div>角色</div><div>工时</div><div>经验</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 0.7fr 0.6fr;padding:5px 10px;border-bottom:1px solid #1e2130">
+        <div>阿里企业管理系统</div><div>前端开发</div><div>120h</div><div style="color:#34d399">+18</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 0.7fr 0.6fr;padding:5px 10px;border-bottom:1px solid #1e2130">
+        <div>腾讯云平台</div><div>前端开发</div><div>85h</div><div style="color:#34d399">+12</div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 0.7fr 0.6fr;padding:5px 10px">
+        <div>内部组件库</div><div>技术负责人</div><div>60h</div><div style="color:#34d399">+15</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<div class="section">
+  <h3>五、模块关联</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px">
+
+<div style="display:flex;flex-direction:column;gap:10px;font-size:11px">
+
+<div style="display:flex;align-items:center;gap:8px">
+  <span style="background:#1e3a5f;color:#60a5fa;padding:3px 10px;border-radius:6px;white-space:nowrap">员工管理</span>
+  <span style="color:#64748b">→</span>
+  <span style="color:#94a3b8">员工基础信息（职级/部门/入职日期）是能力建模的底座</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px">
+  <span style="background:#1e3a5f;color:#f59e0b;padding:3px 10px;border-radius:6px;white-space:nowrap">日报模块</span>
+  <span style="color:#64748b">→</span>
+  <span style="color:#94a3b8">「工作种类」映射能力维度 → 日常经验自动累积</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px">
+  <span style="background:#1e3a5f;color:#34d399;padding:3px 10px;border-radius:6px;white-space:nowrap">项目管理</span>
+  <span style="color:#64748b">→</span>
+  <span style="color:#94a3b8">项目结算时按角色+规模发放经验；参与项目触发技能解锁</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px">
+  <span style="background:#1e3a5f;color:#f472b6;padding:3px 10px;border-radius:6px;white-space:nowrap">项目成本核算</span>
+  <span style="color:#64748b">→</span>
+  <span style="color:#94a3b8">员工等级 → 职级标准时薪 → 人力成本自动计算</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px">
+  <span style="background:#1e3a5f;color:#c084fc;padding:3px 10px;border-radius:6px;white-space:nowrap">个人工作台</span>
+  <span style="color:#64748b">→</span>
+  <span style="color:#94a3b8">展示个人能力面板、等级进度、下一个解锁技能</span>
+</div>
+
+</div>
+
+</div>

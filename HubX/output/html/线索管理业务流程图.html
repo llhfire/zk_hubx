@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="HubX 线索管理业务流程图" />
+  <title>HubX - 线索管理业务流程图</title>
+  <style>
+    :root {
+      --navy: #172b4d;
+      --blue: #1769e0;
+      --blue-soft: #edf4ff;
+      --text: #172b4d;
+      --muted: #5e6c84;
+      --line: #d7dfea;
+      --surface: #ffffff;
+      --canvas: #f5f7fb;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--text); background: var(--canvas); font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .hero { padding: 42px max(28px, calc((100vw - 1280px) / 2)); color: #fff; background: var(--navy); }
+    .hero-inner { max-width: 1280px; margin: 0 auto; }
+    .brand { color: #b9d6ff; font-size: 18px; font-weight: 700; }
+    h1 { margin: 12px 0 8px; font-size: 31px; letter-spacing: 0; }
+    .hero p { margin: 0; color: #d8e7ff; font-size: 14px; }
+    .nav { position: sticky; top: 0; z-index: 3; display: flex; gap: 6px; padding: 10px max(28px, calc((100vw - 1280px) / 2)); overflow-x: auto; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+    .nav a { flex: 0 0 auto; padding: 8px 10px; color: var(--muted); font-size: 13px; text-decoration: none; border-radius: 4px; }
+    .nav a:hover { color: var(--blue); background: var(--blue-soft); }
+    main { max-width: 1280px; margin: 0 auto; padding: 26px 28px 48px; }
+    .intro { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.75; }
+    .status { display: inline-flex; align-items: center; gap: 8px; padding: 7px 10px; color: var(--muted); font-size: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+    .status::before { width: 7px; height: 7px; content: ""; background: var(--blue); border-radius: 50%; }
+    .status.is-ready { color: #0d7544; border-color: #bde7cd; background: #f1fbf5; }
+    .status.is-ready::before { background: #0d9d5a; }
+    .status.is-error { color: #bd3030; border-color: #f0c4c4; background: #fff5f5; }
+    .status.is-error::before { background: #d53f3f; }
+    .flow-card { margin-top: 24px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 5px 18px rgba(23,43,77,.05); scroll-margin-top: 70px; }
+    .flow-heading { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .flow-index { display: grid; place-items: center; width: 36px; height: 36px; color: #fff; font-size: 13px; font-weight: 700; background: var(--blue); border-radius: 50%; }
+    h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: 0; }
+    .flow-heading p { margin: 0; color: var(--muted); font-size: 13px; }
+    .diagram-scroll { min-height: 260px; padding: 26px; overflow: auto; background: #fbfcfe; border: 1px solid var(--line); border-radius: 6px; }
+    .mermaid { display: flex; justify-content: center; min-width: 860px; margin: 0; color: var(--text); background: transparent; }
+    .mermaid svg { max-width: none; height: auto; }
+    .diagram-scroll .nodeLabel, .diagram-scroll .edgeLabel { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif !important; }
+    footer { padding: 18px 28px 32px; color: var(--muted); font-size: 12px; text-align: center; }
+    @media (max-width: 640px) {
+      .hero { padding: 32px 20px; }
+      h1 { font-size: 26px; }
+      main { padding: 18px 14px 32px; }
+      .flow-card { padding: 14px; }
+      h2 { font-size: 17px; }
+      .nav { padding: 10px 14px; }
+      .diagram-scroll { padding: 16px; }
+      .mermaid { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="hero-inner"><div class="brand">HubX</div><h1>线索管理业务流程图</h1><p>基于原 Markdown 的 Mermaid 流程图直接渲染</p></div></header>
+  <nav class="nav" aria-label="流程图导航"><a href="#flow-1">1. 线索主业务流程</a>
+<a href="#flow-2">2. 报价记录与审批流程</a>
+<a href="#flow-3">3. 合同版本、归档与回款流程</a>
+<a href="#flow-4">4. 文件归集与资料 Tab 流程</a>
+<a href="#flow-5">5. 页面跳转流程</a></nav>
+  <main>
+    <p class="intro">本页直接使用原 Markdown 中的 Mermaid 流程定义渲染。流程分支、节点顺序和方向与 Markdown 保持一致；较宽的流程可在图内横向滚动查看。</p>
+    <div class="status" id="status" role="status">正在渲染流程图</div>
+    <section class="flow-card" id="flow-1">
+  <div class="flow-heading">
+    <span class="flow-index">01</span>
+    <div><h2>线索主业务流程</h2><p>与 Markdown 原图一致，可横向滚动查看完整分支。</p></div>
+  </div>
+  <div class="diagram-scroll">
+    <pre class="mermaid">flowchart TB
+    A[线索进入公海] --&gt; B{线索是否有效}
+    B -- 否 --&gt; Z[标记为垃圾线索]
+    B -- 是 --&gt; C[认领或分配]
+    C --&gt; D[进入我的线索]
+    D --&gt; E[补充基础信息并持续跟进]
+    E --&gt; F{是否需要报价}
+
+    F -- 是 --&gt; G[新增报价]
+    G --&gt; H[报价配置与汇总]
+    H --&gt; I[完善报价资料并保存报价记录]
+    I --&gt; J{技术评估文件和报价单是否齐全}
+    J -- 否 --&gt; K[上传缺失文件]
+    K --&gt; J
+    J -- 是 --&gt; L[提交总经理审批]
+    L --&gt; M{审批结果}
+    M -- 拒绝 --&gt; N[编辑报价并生成新报价版本]
+    N --&gt; H
+    M -- 通过 --&gt; O[可作为合同创建参考]
+
+    F -- 否 --&gt; P[创建合同]
+    O --&gt; P
+    P --&gt; Q[维护合同版本]
+    Q --&gt; R[提交总经理审批]
+    R --&gt; S{审批结果}
+    S -- 拒绝 --&gt; T[编辑合同并生成新合同版本]
+    T --&gt; Q
+    S -- 通过 --&gt; U[上传合同归档]
+    U --&gt; V[显示合同信息与回款发票]
+    V --&gt; W[登记回款与开票]
+    W --&gt; X[线索成交并进入项目详情]</pre>
+  </div>
+</section><section class="flow-card" id="flow-2">
+  <div class="flow-heading">
+    <span class="flow-index">02</span>
+    <div><h2>报价记录与审批流程</h2><p>与 Markdown 原图一致，可横向滚动查看完整分支。</p></div>
+  </div>
+  <div class="diagram-scroll">
+    <pre class="mermaid">flowchart LR
+    A[新增报价或编辑最新报价] --&gt; B[前端配置]
+    B --&gt; C[后端配置]
+    C --&gt; D[其他岗位]
+    D --&gt; E[出差驻场]
+    E --&gt; F[其他成本]
+    F --&gt; G[报价汇总]
+    G --&gt; H[完善报价资料]
+    H --&gt; I[保存报价记录]
+    I --&gt; J[生成报价汇总图片]
+
+    J --&gt; K{技术评估文件是否存在}
+    K -- 否 --&gt; K1[显示上传技术评估文件]
+    K1 --&gt; K
+    K -- 是 --&gt; L{报价单是否存在}
+    L -- 否 --&gt; L1[显示上传报价单]
+    L1 --&gt; L
+    L -- 是 --&gt; M[显示提交审批]
+    M --&gt; N[总经理审批中]
+    N --&gt; O{审批决定}
+    O -- 审批同意 --&gt; P[报价已审核]
+    O -- 审批拒绝 --&gt; Q[报价已驳回]
+    Q --&gt; R[基于最新报价编辑]
+    R --&gt; B</pre>
+  </div>
+</section><section class="flow-card" id="flow-3">
+  <div class="flow-heading">
+    <span class="flow-index">03</span>
+    <div><h2>合同版本、归档与回款流程</h2><p>与 Markdown 原图一致，可横向滚动查看完整分支。</p></div>
+  </div>
+  <div class="diagram-scroll">
+    <pre class="mermaid">flowchart TB
+    A{线索下是否已有合同} -- 否 --&gt; B[合同记录显示创建合同]
+    B --&gt; C[新建合同并带入线索信息]
+    A -- 是 --&gt; D[展示合同历史记录]
+    C --&gt; D
+
+    D --&gt; E[最新合同版本]
+    E --&gt; F{是否修改合同}
+    F -- 是 --&gt; G[编辑合同]
+    G --&gt; H[填写修改说明]
+    H --&gt; I[生成新的合同版本和附件]
+    I --&gt; E
+    F -- 否 --&gt; J[提交审批]
+    E --&gt; J
+
+    J --&gt; K[总经理审批中]
+    K --&gt; L{审批决定}
+    L -- 审批拒绝 --&gt; G
+    L -- 审批同意 --&gt; M[审批通过，形成终稿]
+    M --&gt; N[显示合同归档区域]
+    N --&gt; O[上传归档合同文件]
+    O --&gt; P[合同信息Tab可见]
+    P --&gt; Q[回款与发票Tab可见]
+
+    Q --&gt; R[生成或读取回款计划]
+    R --&gt; S{是否拆分期次}
+    S -- 是 --&gt; T[保留父期并新增多个子期]
+    T --&gt; U[维护子期回款和开票]
+    S -- 否 --&gt; U
+    U --&gt; V[登记回款记录]
+    U --&gt; W[登记开票记录]
+    V --&gt; X[自动计算回款状态]
+    W --&gt; Y[自动计算开票状态]</pre>
+  </div>
+</section><section class="flow-card" id="flow-4">
+  <div class="flow-heading">
+    <span class="flow-index">04</span>
+    <div><h2>文件归集与资料 Tab 流程</h2><p>与 Markdown 原图一致，可横向滚动查看完整分支。</p></div>
+  </div>
+  <div class="diagram-scroll">
+    <pre class="mermaid">flowchart LR
+    A[跟进附件] --&gt; H[关联到线索]
+    B[报价文件和报价汇总图片] --&gt; H
+    C[合同版本附件和归档文件] --&gt; H
+    D[回款凭证和发票文件] --&gt; H
+    E[出差和报销附件] --&gt; H
+    F[演示上传文件] --&gt; H
+    G[手工上传资料] --&gt; H
+
+    H --&gt; I[资料Tab统一文件库]
+    I --&gt; J{是否为同一文件}
+    J -- 是 --&gt; K[合并为一条资料记录]
+    J -- 否 --&gt; L[新增资料记录]
+    K --&gt; M[显示全部来源标签]
+    L --&gt; M
+    M --&gt; N[支持筛选、预览和下载]</pre>
+  </div>
+</section><section class="flow-card" id="flow-5">
+  <div class="flow-heading">
+    <span class="flow-index">05</span>
+    <div><h2>页面跳转流程</h2><p>与 Markdown 原图一致，可横向滚动查看完整分支。</p></div>
+  </div>
+  <div class="diagram-scroll">
+    <pre class="mermaid">flowchart LR
+    A[公海线索/我的线索/垃圾线索] --&gt; B[线索详情]
+    B --&gt; C[创建合同]
+    C --&gt; D[新建合同页]
+    D --&gt; E[编辑合同页]
+    E --&gt; F[合同预览与提交]
+    F --&gt; G[返回线索详情的合同记录Tab]
+
+    H[合同列表] --&gt; I[合同详情]
+    I --&gt; J[返回合同列表]
+
+    K[已成交线索] --&gt; L[项目详情]
+    L --&gt; M[项目的报价、合同记录、回款与发票]</pre>
+  </div>
+</section>
+  </main>
+  <footer>HubX - 线索管理业务流程图 - V1.0 - 2026-07-24</footer>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const status = document.getElementById('status');
+      try {
+        window.mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: 'base',
+          fontFamily: '-apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif',
+          flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: false },
+          themeVariables: {
+            primaryColor: '#edf4ff',
+            primaryBorderColor: '#1769e0',
+            primaryTextColor: '#172b4d',
+            lineColor: '#5e6c84',
+            secondaryColor: '#eaf8ef',
+            tertiaryColor: '#fff3e0',
+            edgeLabelBackground: '#ffffff',
+            fontSize: '15px'
+          }
+        });
+        await window.mermaid.run({ querySelector: '.mermaid' });
+        status.textContent = '流程图已渲染';
+        status.classList.add('is-ready');
+      } catch (error) {
+        status.textContent = '流程图渲染失败，请确认网络连接后刷新页面';
+        status.classList.add('is-error');
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

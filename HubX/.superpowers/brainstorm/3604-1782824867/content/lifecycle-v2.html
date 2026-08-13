@@ -1,0 +1,292 @@
+<h2>员工能力建模 v2 — 全生命周期 + 招聘量化</h2>
+<p class="subtitle">从面试到离职，三张画像贯穿员工全生命周期</p>
+
+<div class="section">
+  <h3>一、员工全生命周期 & 三张画像</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:20px">
+
+<!-- 生命周期流程图 -->
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:24px;font-size:10px;justify-content:center">
+  <div style="background:#3b1f5e;padding:10px 14px;border-radius:8px;text-align:center;border:2px solid #c084fc">
+    <div style="font-size:16px;margin-bottom:4px">📋</div>
+    <div style="font-weight:bold;color:#c084fc">面试画像</div>
+    <div style="color:#94a3b8;font-size:9px">招聘阶段</div>
+  </div>
+  <span style="color:#64748b;font-size:16px">→</span>
+  <div style="background:#1e3a5f;padding:10px 14px;border-radius:8px;text-align:center;border:2px solid #60a5fa">
+    <div style="font-size:16px;margin-bottom:4px">📝</div>
+    <div style="font-weight:bold;color:#60a5fa">入职画像</div>
+    <div style="color:#94a3b8;font-size:9px">入职时快照</div>
+  </div>
+  <span style="color:#64748b;font-size:16px">→</span>
+  <div style="background:#1e3a5f;padding:10px 14px;border-radius:8px;text-align:center;border:2px solid #34d399">
+    <div style="font-size:16px;margin-bottom:4px">📊</div>
+    <div style="font-weight:bold;color:#34d399">在职画像</div>
+    <div style="color:#94a3b8;font-size:9px">动态更新</div>
+  </div>
+  <span style="color:#64748b;font-size:16px">→</span>
+  <div style="background:#2a2d3e;padding:10px 14px;border-radius:8px;text-align:center">
+    <div style="font-size:16px;margin-bottom:4px">📦</div>
+    <div style="font-weight:bold;color:#94a3b8">离职画像</div>
+    <div style="color:#94a3b8;font-size:9px">最终存档</div>
+  </div>
+</div>
+
+<!-- 三张画像对比 -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:10px">
+
+<!-- 面试画像 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px;border-top:3px solid #c084fc">
+  <div style="font-weight:bold;color:#c084fc;margin-bottom:8px;font-size:12px">📋 面试画像</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="margin-bottom:6px;font-weight:bold;color:#cbd5e1">客观数据（量化）：</div>
+    <div>· 技术测试得分 <span style="color:#c084fc">78</span></div>
+    <div>· 沟通评分 <span style="color:#c084fc">65</span></div>
+    <div>· 项目经验评分 <span style="color:#c084fc">82</span></div>
+    <div>· 综合加权分 <span style="color:#c084fc;font-weight:bold">74.5</span></div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">主观印象（结构化）：</div>
+    <div>· 学习能力强 ⭐⭐⭐⭐</div>
+    <div>· 沟通表达 ⭐⭐⭐</div>
+    <div>· 团队协作 ⭐⭐⭐⭐</div>
+    <div>· 抗压能力 ⭐⭐⭐</div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">历史项目：</div>
+    <div>· 某电商平台 — 前端开发 1年</div>
+    <div>· 某SaaS工具 — 全栈开发 8个月</div>
+    <div style="margin-top:8px;color:#64748b">面试官：李四 · 2026-01-15</div>
+  </div>
+</div>
+
+<!-- 入职画像 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px;border-top:3px solid #60a5fa">
+  <div style="font-weight:bold;color:#60a5fa;margin-bottom:8px;font-size:12px">📝 入职画像</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="margin-bottom:6px;font-weight:bold;color:#cbd5e1">入职时能力快照：</div>
+    <div>· 技术能力 <span style="color:#60a5fa">45</span> <span style="color:#64748b">（初始值）</span></div>
+    <div>· 业务能力 <span style="color:#34d399">20</span></div>
+    <div>· 管理能力 <span style="color:#f59e0b">5</span></div>
+    <div>· 工具熟练 <span style="color:#f472b6">35</span></div>
+    <div>· 领域知识 <span style="color:#c084fc">15</span></div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">入职前履历：</div>
+    <div>· 某电商平台 — 前端开发 1年</div>
+    <div>· 某SaaS工具 — 全栈 8月</div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">初始等级：</div>
+    <div><span style="background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 8px;border-radius:8px">L2 初级工程师</span></div>
+    <div style="margin-top:8px;color:#64748b">入职日期：2026-02-01</div>
+  </div>
+</div>
+
+<!-- 在职画像 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px;border-top:3px solid #34d399">
+  <div style="font-weight:bold;color:#34d399;margin-bottom:8px;font-size:12px">📊 在职画像（动态）</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="margin-bottom:6px;font-weight:bold;color:#cbd5e1">当前能力值：</div>
+    <div>· 技术能力 <span style="color:#60a5fa">82</span> <span style="color:#34d399">↑37</span></div>
+    <div>· 业务能力 <span style="color:#34d399">55</span> <span style="color:#34d399">↑35</span></div>
+    <div>· 管理能力 <span style="color:#f59e0b">30</span> <span style="color:#34d399">↑25</span></div>
+    <div>· 工具熟练 <span style="color:#f472b6">78</span> <span style="color:#34d399">↑43</span></div>
+    <div>· 领域知识 <span style="color:#c084fc">25</span> <span style="color:#34d399">↑10</span></div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">在职项目：</div>
+    <div>· 阿里企业管理系统 120h</div>
+    <div>· 腾讯云平台 85h</div>
+    <div>· 内部组件库 60h</div>
+    <div style="margin-top:8px;margin-bottom:6px;font-weight:bold;color:#cbd5e1">当前等级：</div>
+    <div><span style="background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 8px;border-radius:8px">Lv.7 高级工程师</span></div>
+    <div style="margin-top:8px;color:#34d399">↑ 入职以来晋升 5 级</div>
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+  <h3>二、履历管理</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:20px">
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:11px">
+
+<!-- 入职前履历 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#c084fc;margin-bottom:10px">🏢 入职前履历（历史项目录入）</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;margin-bottom:6px">
+      <div style="font-weight:bold;color:#cbd5e1">某电商平台</div>
+      <div style="font-size:10px;color:#64748b">前端开发 · 2024.03 — 2025.02（11个月）</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:#60a5fa">React</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">TypeScript</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">Ant Design</span>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px">负责商品管理、订单系统前端开发</div>
+    </div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px">
+      <div style="font-weight:bold;color:#cbd5e1">某SaaS工具</div>
+      <div style="font-size:10px;color:#64748b">全栈开发 · 2023.06 — 2024.02（8个月）</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:#60a5fa">Vue</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">Node.js</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">PostgreSQL</span>
+      </div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:2px">独立完成数据仪表盘模块全栈开发</div>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:#64748b">
+      📌 入职前项目经验自动转化为初始能力值（技术45/工具35/领域15）
+    </div>
+  </div>
+</div>
+
+<!-- 在职履历 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#34d399;margin-bottom:10px">💼 在职履历（自动+手动）</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;margin-bottom:6px">
+      <div style="font-weight:bold;color:#cbd5e1">阿里企业管理系统</div>
+      <div style="font-size:10px;color:#64748b">前端开发 · 2026.03 — 2026.06 · 120h</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:#34d399">经验 +18</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">解锁 Docker</span>
+      </div>
+    </div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;margin-bottom:6px">
+      <div style="font-weight:bold;color:#cbd5e1">腾讯云平台</div>
+      <div style="font-size:10px;color:#64748b">前端开发 · 2026.02 — 2026.04 · 85h</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:#34d399">经验 +12</span>
+      </div>
+    </div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px">
+      <div style="font-weight:bold;color:#cbd5e1">内部组件库</div>
+      <div style="font-size:10px;color:#64748b">技术负责人 · 2025.10 — 2026.01 · 60h</div>
+      <div style="font-size:10px;margin-top:4px">
+        <span style="color:#34d399">经验 +15</span>
+        <span style="color:#64748b">·</span>
+        <span style="color:#60a5fa">解锁 组件设计</span>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:#64748b">
+      📌 在职项目由系统自动从项目管理模块同步，支持手动补充
+    </div>
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+  <h3>三、招聘量化模型</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:20px">
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:11px">
+
+<!-- 面试评分卡 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#c084fc;margin-bottom:10px">🎯 面试评分卡（标准化）</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="margin-bottom:8px;font-weight:bold;color:#cbd5e1">客观测试（自动评分）：</div>
+    <div>· 在线编程测试 <span style="color:#c084fc">78/100</span></div>
+    <div>· 算法逻辑题 <span style="color:#c084fc">65/100</span></div>
+    <div>· 项目设计题 <span style="color:#c084fc">82/100</span></div>
+    <div style="margin-top:8px;margin-bottom:8px;font-weight:bold;color:#cbd5e1">面试官评价（结构化评分）：</div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px">
+      <div>技术深度 <span style="color:#c084fc">7/10</span> <span style="color:#64748b">面试官：王五</span></div>
+      <div>沟通表达 <span style="color:#c084fc">6/10</span></div>
+      <div>项目经验 <span style="color:#c084fc">8/10</span></div>
+      <div>学习潜力 <span style="color:#c084fc">8/10</span></div>
+    </div>
+    <div style="margin-top:8px;margin-bottom:4px;font-weight:bold;color:#cbd5e1">主观→客观转化：</div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;font-size:10px">
+      <div>「学习能力强」→ 学习潜力 8/10</div>
+      <div>「沟通一般」→ 沟通表达 6/10</div>
+      <div>「经验丰富」→ 项目经验 8/10</div>
+    </div>
+  </div>
+</div>
+
+<!-- 面试画像生成 -->
+<div style="background:#2a2d3e;border-radius:8px;padding:14px">
+  <div style="font-weight:bold;color:#c084fc;margin-bottom:10px">📊 面试画像生成规则</div>
+  <div style="color:#94a3b8;line-height:1.8">
+    <div style="margin-bottom:8px;font-weight:bold;color:#cbd5e1">初始能力值映射：</div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;font-size:10px">
+      <div>面试编程测试 78 → 技术能力 <span style="color:#60a5fa">45</span></div>
+      <div>项目设计题 82 → 业务能力 <span style="color:#34d399">20</span></div>
+      <div>沟通评分 6/10 → 管理能力 <span style="color:#f59e0b">5</span></div>
+      <div>技术深度 7/10 → 工具熟练 <span style="color:#f472b6">35</span></div>
+      <div>历史项目经验 → 领域知识 <span style="color:#c084fc">15</span></div>
+    </div>
+    <div style="margin-top:8px;margin-bottom:4px;font-weight:bold;color:#cbd5e1">面试画像 = 入职画像初始值：</div>
+    <div style="background:#1a1d2e;border-radius:6px;padding:8px;font-size:10px">
+      <div>综合得分 <span style="color:#c084fc;font-weight:bold">74.5</span> · 建议定级 <span style="background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 8px;border-radius:8px">L2 初级</span></div>
+      <div style="margin-top:4px">
+        <span style="color:#34d399">匹配度 82%</span> · 前端开发岗位
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:#64748b">
+      📌 面试画像一经生成即存档，入职后自动转为入职画像
+    </div>
+  </div>
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+  <h3>四、画像版本管理</h3>
+</div>
+
+<div style="background:#1a1d2e;color:#e0e0e0;padding:24px;border-radius:12px;font-family:monospace;font-size:12px;margin-bottom:20px">
+
+<div style="display:flex;flex-direction:column;gap:8px;font-size:10px;color:#94a3b8">
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#2a2d3e;border-radius:6px">
+  <span style="background:#c084fc;color:white;padding:2px 8px;border-radius:10px;font-size:9px;white-space:nowrap">面试画像</span>
+  <span style="flex:1">2026-01-15 · 面试官李四 · 综合 74.5 · 建议 L2</span>
+  <span style="color:#64748b">已存档</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#2a2d3e;border-radius:6px">
+  <span style="background:#60a5fa;color:white;padding:2px 8px;border-radius:10px;font-size:9px;white-space:nowrap">入职画像</span>
+  <span style="flex:1">2026-02-01 · 初始 L2 · 技术45 业务20 管理5 工具35 领域15</span>
+  <span style="color:#64748b">已存档</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#2a2d3e;border-radius:6px">
+  <span style="background:#34d399;color:white;padding:2px 8px;border-radius:10px;font-size:9px;white-space:nowrap">在职画像</span>
+  <span style="flex:1">当前 · Lv.7 · 技术82 业务55 管理30 工具78 领域25 · 加权 63.8</span>
+  <span style="color:#34d399">动态</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#2a2d3e;border-radius:6px">
+  <span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:9px;white-space:nowrap">快照 v1</span>
+  <span style="flex:1">2026-03-01 · 入职满月 · 技术50 业务25 管理8 工具40 领域18</span>
+  <span style="color:#64748b">已存档</span>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#2a2d3e;border-radius:6px">
+  <span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:9px;white-space:nowrap">快照 v2</span>
+  <span style="flex:1">2026-06-01 · 半年回顾 · 技术72 业务45 管理20 工具65 领域22</span>
+  <span style="color:#64748b">已存档</span>
+</div>
+
+</div>
+
+<div style="margin-top:16px;font-size:10px;color:#64748b;text-align:center">
+  📌 每次晋级/每季度自动生成画像快照 · 支持手动创建快照 · 画像版本可对比查看成长轨迹
+</div>
+
+</div>
+
+</div>

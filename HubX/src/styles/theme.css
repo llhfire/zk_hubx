@@ -1,0 +1,424 @@
+/* ==========================================================================
+   HubX Design System — Refactoring UI Principles
+
+   Tactical design tokens for spacing, typography, color, and elevation.
+   Based on Refactoring UI by Adam Wathan & Steve Schoger.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Spacing Scale
+   Hand-picked, non-linear scale. No two values closer than ~25%.
+   Pattern: 4, 8, 12, 16, 24, 32, 48, 64, 96
+   -------------------------------------------------------------------------- */
+:root {
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Type Scale
+   Hand-picked, not ratio-based. No fractional pixels.
+   Sizes: 12, 14, 16, 18, 20, 24, 30, 36
+
+   Line-height is inversely proportional to font size:
+   - Body text (12-16): 1.5–1.6
+   - Medium (18-20): 1.4–1.5
+   - Headings (24-36): 1.2–1.3
+   -------------------------------------------------------------------------- */
+:root {
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+
+  --leading-xs: 1.6;      /* 12px text */
+  --leading-sm: 1.55;     /* 14px text */
+  --leading-base: 1.5;    /* 16px text */
+  --leading-lg: 1.45;     /* 18px text */
+  --leading-xl: 1.4;      /* 20px text */
+  --leading-2xl: 1.3;     /* 24px heading */
+  --leading-3xl: 1.25;    /* 30px heading */
+  --leading-4xl: 1.2;     /* 36px heading */
+
+  /* Font weights — UI needs 400 and 500+; avoid 300 and below for readability */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+/* --------------------------------------------------------------------------
+   3. Color Palette (HSL-based)
+
+   Grey: 10 cool-tinted shades (slightly blue to avoid "dead" greys).
+   Primary: Professional blue with hue-rotated shades.
+   Accent: Semantic colors with multiple shades per color.
+   -------------------------------------------------------------------------- */
+
+/* ---- Grey (cool blue tint) ---- */
+:root {
+  --grey-50:  hsl(220, 20%, 98%);
+  --grey-100: hsl(220, 15%, 94%);
+  --grey-200: hsl(220, 12%, 88%);
+  --grey-300: hsl(220, 10%, 78%);
+  --grey-400: hsl(220, 8%, 60%);
+  --grey-500: hsl(220, 8%, 45%);
+  --grey-600: hsl(220, 10%, 35%);
+  --grey-700: hsl(220, 12%, 25%);
+  --grey-800: hsl(220, 15%, 16%);
+  --grey-900: hsl(220, 20%, 10%);
+}
+
+/* ---- Brand Primary (Professional Blue) ----
+   Hue rotates cooler (toward blue) as it darkens,
+   warmer (toward cyan) as it lightens — mimics natural light. ---- */
+:root {
+  --brand-50:  hsl(210, 100%, 97%);
+  --brand-100: hsl(212, 95%, 92%);
+  --brand-200: hsl(214, 90%, 84%);
+  --brand-300: hsl(216, 85%, 72%);
+  --brand-400: hsl(218, 80%, 60%);
+  --brand-500: hsl(221, 83%, 53%);   /* Base */
+  --brand-600: hsl(224, 78%, 44%);
+  --brand-700: hsl(226, 72%, 35%);
+  --brand-800: hsl(228, 68%, 26%);
+  --brand-900: hsl(230, 65%, 18%);
+}
+
+/* ---- Semantic: Success (Green) ---- */
+:root {
+  --success-50:  hsl(140, 80%, 96%);
+  --success-100: hsl(142, 76%, 90%);
+  --success-200: hsl(142, 72%, 80%);
+  --success-300: hsl(142, 70%, 65%);
+  --success-400: hsl(142, 72%, 48%);
+  --success-500: hsl(142, 76%, 36%);  /* Base */
+  --success-600: hsl(142, 72%, 28%);
+  --success-700: hsl(142, 68%, 22%);
+  --success-800: hsl(142, 64%, 16%);
+  --success-900: hsl(142, 60%, 12%);
+}
+
+/* ---- Semantic: Warning (Amber/Orange) ---- */
+:root {
+  --warning-50:  hsl(40, 95%, 95%);
+  --warning-100: hsl(40, 90%, 88%);
+  --warning-200: hsl(38, 88%, 78%);
+  --warning-300: hsl(36, 86%, 64%);
+  --warning-400: hsl(34, 88%, 52%);
+  --warning-500: hsl(30, 90%, 44%);   /* Base — rotated toward orange for contrast */
+  --warning-600: hsl(28, 85%, 36%);
+  --warning-700: hsl(26, 80%, 28%);
+  --warning-800: hsl(24, 75%, 20%);
+  --warning-900: hsl(22, 70%, 14%);
+}
+
+/* ---- Semantic: Destructive (Red) ---- */
+:root {
+  --destructive-50:  hsl(0, 90%, 97%);
+  --destructive-100: hsl(0, 85%, 92%);
+  --destructive-200: hsl(0, 80%, 84%);
+  --destructive-300: hsl(0, 78%, 72%);
+  --destructive-400: hsl(0, 80%, 60%);
+  --destructive-500: hsl(0, 78%, 50%);  /* Base */
+  --destructive-600: hsl(0, 75%, 40%);
+  --destructive-700: hsl(0, 72%, 32%);
+  --destructive-800: hsl(0, 68%, 24%);
+  --destructive-900: hsl(0, 64%, 16%);
+}
+
+/* ---- Semantic: Info (Cyan) ---- */
+:root {
+  --info-50:  hsl(195, 90%, 96%);
+  --info-100: hsl(196, 88%, 90%);
+  --info-200: hsl(197, 86%, 82%);
+  --info-300: hsl(198, 84%, 68%);
+  --info-400: hsl(199, 86%, 56%);
+  --info-500: hsl(199, 84%, 46%);   /* Base */
+  --info-600: hsl(200, 80%, 38%);
+  --info-700: hsl(201, 76%, 30%);
+  --info-800: hsl(202, 72%, 22%);
+  --info-900: hsl(203, 68%, 16%);
+}
+
+/* --------------------------------------------------------------------------
+   4. Shadow / Elevation System
+   Emulates light from above. Two-part shadows:
+   - Ambient: large, soft, diffuse
+   - Occlusion: tight, dark, near the object
+   5 levels: xs (button), sm (dropdown), md (card hover), lg (modal), xl (drawer)
+   -------------------------------------------------------------------------- */
+:root {
+  --shadow-xs: 0 1px 2px 0 hsl(220 20% 10% / 0.06);
+  --shadow-sm: 0 1px 3px 0 hsl(220 20% 10% / 0.08),
+               0 1px 2px -1px hsl(220 20% 10% / 0.06);
+  --shadow-md: 0 4px 6px -1px hsl(220 20% 10% / 0.08),
+               0 2px 4px -2px hsl(220 20% 10% / 0.06);
+  --shadow-lg: 0 10px 15px -3px hsl(220 20% 10% / 0.08),
+               0 4px 6px -4px hsl(220 20% 10% / 0.06);
+  --shadow-xl: 0 20px 25px -5px hsl(220 20% 10% / 0.1),
+               0 8px 10px -6px hsl(220 20% 10% / 0.06);
+  --shadow-inner: inset 0 2px 4px 0 hsl(220 20% 10% / 0.05);
+}
+
+/* --------------------------------------------------------------------------
+   5. Radius Scale
+   -------------------------------------------------------------------------- */
+:root {
+  --radius: 0.625rem;         /* 10px — default */
+  --radius-xs: 0.25rem;       /* 4px */
+  --radius-sm: 0.375rem;      /* 6px */
+  --radius-md: 0.5rem;        /* 8px */
+  --radius-lg: 0.75rem;       /* 12px */
+  --radius-xl: 1rem;          /* 16px */
+}
+
+/* --------------------------------------------------------------------------
+   6. Semantic Token Mapping
+   Maps the design tokens to shadcn/ui-compatible variable names
+   and legacy Arco-compatible names.
+   -------------------------------------------------------------------------- */
+:root {
+  /* Surface & content */
+  --background: var(--grey-50);
+  --foreground: var(--grey-900);
+  --card: #ffffff;
+  --card-foreground: var(--grey-900);
+  --popover: #ffffff;
+  --popover-foreground: var(--grey-900);
+
+  /* Primary — maps brand blue */
+  --primary: hsl(221, 83%, 53%);
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: var(--grey-100);
+  --secondary-foreground: var(--grey-800);
+
+  /* Muted */
+  --muted: var(--grey-100);
+  --muted-foreground: var(--grey-500);
+
+  /* Accent */
+  --accent: var(--grey-100);
+  --accent-foreground: var(--grey-800);
+
+  /* Destructive */
+  --destructive: hsl(0, 78%, 50%);
+  --destructive-foreground: #ffffff;
+
+  /* Borders & inputs */
+  --border: hsl(220, 12%, 88%);
+  --input: transparent;
+  --input-background: var(--grey-50);
+  --switch-background: var(--grey-300);
+  --ring: hsl(221, 83%, 53%);
+
+  /* Font */
+  --font-size: 16px;
+  --font-weight-medium: var(--font-weight-medium);
+  --font-weight-normal: var(--font-weight-normal);
+
+  /* Charts */
+  --chart-1: hsl(221, 83%, 53%);
+  --chart-2: hsl(142, 76%, 36%);
+  --chart-3: hsl(30, 90%, 44%);
+  --chart-4: hsl(199, 84%, 46%);
+  --chart-5: hsl(280, 65%, 50%);
+
+  /* Sidebar — light */
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--grey-800);
+  --sidebar-primary: hsl(221, 83%, 53%);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--grey-100);
+  --sidebar-accent-foreground: var(--grey-800);
+  --sidebar-border: hsl(220, 12%, 88%);
+  --sidebar-ring: hsl(221, 83%, 53%);
+}
+
+/* --------------------------------------------------------------------------
+   7. Dark Mode
+   Inverts surface colors, adjusts shadow opacity, softens brand.
+   -------------------------------------------------------------------------- */
+.dark {
+  --background: var(--grey-900);
+  --foreground: var(--grey-100);
+  --card: var(--grey-800);
+  --card-foreground: var(--grey-100);
+  --popover: var(--grey-800);
+  --popover-foreground: var(--grey-100);
+
+  --primary: hsl(213, 85%, 65%);
+  --primary-foreground: var(--grey-900);
+
+  --secondary: hsl(220, 15%, 22%);
+  --secondary-foreground: var(--grey-100);
+
+  --muted: hsl(220, 15%, 22%);
+  --muted-foreground: var(--grey-400);
+
+  --accent: hsl(220, 15%, 22%);
+  --accent-foreground: var(--grey-100);
+
+  --destructive: hsl(0, 70%, 45%);
+  --destructive-foreground: var(--grey-100);
+
+  --border: hsl(220, 15%, 22%);
+  --input: hsl(220, 15%, 22%);
+  --input-background: hsl(220, 15%, 16%);
+  --switch-background: var(--grey-600);
+  --ring: hsl(213, 85%, 65%);
+
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+
+  --chart-1: hsl(213, 85%, 65%);
+  --chart-2: hsl(142, 60%, 50%);
+  --chart-3: hsl(34, 85%, 55%);
+  --chart-4: hsl(199, 80%, 55%);
+  --chart-5: hsl(280, 55%, 60%);
+
+  --sidebar: hsl(220, 20%, 10%);
+  --sidebar-foreground: var(--grey-100);
+  --sidebar-primary: hsl(213, 85%, 60%);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: hsl(220, 15%, 18%);
+  --sidebar-accent-foreground: var(--grey-100);
+  --sidebar-border: hsl(220, 15%, 18%);
+  --sidebar-ring: hsl(213, 85%, 60%);
+
+  /* Dark mode shadows — darker, more pronounced */
+  --shadow-xs: 0 1px 2px 0 hsl(220 20% 5% / 0.3);
+  --shadow-sm: 0 1px 3px 0 hsl(220 20% 5% / 0.35),
+               0 1px 2px -1px hsl(220 20% 5% / 0.3);
+  --shadow-md: 0 4px 6px -1px hsl(220 20% 5% / 0.35),
+               0 2px 4px -2px hsl(220 20% 5% / 0.3);
+  --shadow-lg: 0 10px 15px -3px hsl(220 20% 5% / 0.35),
+               0 4px 6px -4px hsl(220 20% 5% / 0.3);
+  --shadow-xl: 0 20px 25px -5px hsl(220 20% 5% / 0.4),
+               0 8px 10px -6px hsl(220 20% 5% / 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   8. Tailwind v4 @theme Mapping
+   Wire CSS variables into Tailwind's design token system.
+   -------------------------------------------------------------------------- */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* --------------------------------------------------------------------------
+   9. Base Typography
+   Heading line-heights are tighter than body text.
+   -------------------------------------------------------------------------- */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: var(--font-size);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-2xl);
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--leading-xl);
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-lg);
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-base);
+  }
+
+  label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-sm);
+  }
+
+  button {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--leading-sm);
+  }
+
+  input {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--leading-sm);
+  }
+}

@@ -1,0 +1,217 @@
+.lead-final-contract {
+  min-width: 0;
+}
+
+.lead-final-contract-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-2);
+  text-align: left;
+}
+
+.lead-final-contract-heading {
+  min-width: 0;
+}
+
+.lead-final-contract-header.is-project-layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.lead-final-contract-file-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: rgb(var(--arcoblue-6));
+  background: rgba(var(--arcoblue-1), 0.9);
+}
+
+.lead-final-contract-heading-content {
+  min-width: 0;
+}
+
+.lead-final-contract-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lead-final-contract-title-row h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-text-1);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.lead-final-contract-version {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-final-contract-project-amount {
+  flex: 0 0 auto;
+  color: rgb(var(--arcoblue-6));
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 30px;
+  white-space: nowrap;
+}
+
+.lead-final-contract-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  padding: 16px 0 8px;
+}
+
+.lead-final-contract-info-grid.is-project-layout {
+  gap: 12px 40px;
+}
+
+.lead-final-contract-info-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lead-final-contract-info-item {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.lead-final-contract-info-label {
+  color: var(--color-text-3);
+  white-space: nowrap;
+}
+
+.lead-final-contract-info-value {
+  min-width: 0;
+  color: var(--color-text-1);
+  overflow-wrap: anywhere;
+}
+
+.lead-final-contract-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  background: var(--color-fill-1);
+}
+
+.lead-final-contract-file-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lead-final-contract-file-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+
+.lead-final-contract-file-content {
+  min-width: 0;
+}
+
+.lead-final-contract-file-name {
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lead-final-contract-file-meta {
+  margin-top: 2px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-final-contract-file-actions {
+  flex: 0 0 auto;
+}
+
+.lead-final-contract-preview {
+  max-height: calc(100vh - 190px);
+  overflow: auto;
+  padding: 20px;
+  background: var(--color-fill-2);
+}
+
+.lead-final-contract-preview-document {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+  min-height: 480px;
+  margin: 0 auto;
+  padding: 32px 40px;
+  background: #fff;
+  color: #1d2129;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@media (max-width: 720px) {
+  .lead-final-contract-info-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lead-final-contract-file {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .lead-final-contract-header.is-project-layout {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .lead-final-contract-file-actions {
+    align-self: flex-end;
+  }
+
+  .lead-final-contract-preview {
+    padding: 8px;
+  }
+
+  .lead-final-contract-preview-document {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lead-final-contract-info-item {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .lead-final-contract-file-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}

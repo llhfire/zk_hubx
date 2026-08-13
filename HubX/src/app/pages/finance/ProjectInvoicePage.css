@@ -1,0 +1,5 @@
+.project-invoice-page { padding: 20px; }
+.project-invoice-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.project-invoice-page-header h5 { margin: 0 0 4px; }
+.project-invoice-upload-title { margin-bottom: 10px; font-weight: 600; color: var(--color-text-1); }
+@media (max-width: 640px) { .project-invoice-page-header { align-items: stretch; flex-direction: column; } }

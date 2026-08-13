@@ -1,0 +1,201 @@
+.job-work-config-page {
+  min-width: 0;
+}
+
+.job-work-config-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.job-work-config-tabs > .arco-tabs-header-nav {
+  margin-bottom: 16px;
+}
+
+.job-work-config-workspace {
+  display: grid;
+  grid-template-columns: 280px minmax(420px, 1fr);
+  min-height: 620px;
+  overflow: hidden;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+}
+
+.job-work-config-workspace-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.job-work-config-tree-panel {
+  min-width: 0;
+  border-right: 1px solid var(--color-border-2);
+}
+
+.job-work-config-column-header {
+  height: 52px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-2);
+  background: var(--color-fill-1);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-1);
+}
+
+.job-work-config-tree {
+  padding: 12px;
+}
+
+.job-work-config-editor {
+  min-width: 0;
+  padding: 20px;
+}
+
+.job-work-config-editor-header {
+  min-height: 40px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.job-work-config-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  max-width: 560px;
+}
+
+.job-work-config-nature-list {
+  margin-top: 20px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.job-work-config-nature-row {
+  min-height: 52px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.job-work-config-nature-row:last-child {
+  border-bottom: 0;
+}
+
+.job-work-config-nature-row:hover {
+  background: var(--color-fill-1);
+}
+
+.job-work-config-index {
+  color: var(--color-text-3);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.job-work-config-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.job-work-config-empty {
+  padding: 64px 16px;
+}
+
+.job-work-config-field {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.job-work-config-field-label {
+  color: var(--color-text-2);
+  font-weight: 500;
+  text-align: right;
+}
+
+.job-work-config-switch-row {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.job-work-config-field-start {
+  align-items: flex-start;
+}
+
+.job-work-config-field-start .job-work-config-field-label {
+  padding-top: 6px;
+}
+
+.job-work-config-routine-list {
+  margin-top: 20px;
+}
+
+.job-work-config-routine-remark {
+  margin-top: 4px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.job-work-config-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 0;
+}
+
+@media (max-width: 900px) {
+  .job-work-config-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .job-work-config-tree-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-2);
+  }
+}
+
+@media (max-width: 720px) {
+  .job-work-config-header,
+  .job-work-config-editor-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .job-work-config-editor {
+    padding: 16px;
+  }
+
+  .job-work-config-nature-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .job-work-config-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .job-work-config-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .job-work-config-field-label {
+    text-align: left;
+  }
+
+}

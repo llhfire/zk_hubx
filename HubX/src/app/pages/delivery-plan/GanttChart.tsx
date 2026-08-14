@@ -224,7 +224,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
           display: 'flex',
           alignItems: 'center',
           padding: '8px 12px',
-          borderBottom: '1px solid #e5e6eb',
+          borderBottom: '1px solid var(--grey-200)',
           flexShrink: 0,
         }}
       >
@@ -260,8 +260,8 @@ const GanttChart: React.FC<GanttChartProps> = ({
               top: 0,
               zIndex: 10,
               height: HEADER_HEIGHT,
-              background: '#fafbfc',
-              borderBottom: '1px solid #e5e6eb',
+              background: 'var(--grey-50)',
+              borderBottom: '1px solid var(--grey-200)',
               display: 'flex',
               alignItems: 'flex-end',
             }}
@@ -273,12 +273,12 @@ const GanttChart: React.FC<GanttChartProps> = ({
                   position: 'absolute',
                   left: col.offset,
                   width: col.width,
-                  fontSize: 11,
-                  color: col.weekend ? '#c9cdd4' : '#86909c',
+                  fontSize: 12,
+                  color: col.weekend ? 'var(--grey-300)' : 'var(--grey-400)',
                   textAlign: 'center',
                   paddingBottom: 6,
-                  borderRight: '1px solid #f0f0f0',
-                  background: col.weekend ? '#f7f8fa' : '#fafbfc',
+                  borderRight: '1px solid var(--grey-100)',
+                  background: col.weekend ? 'var(--grey-100)' : 'var(--grey-50)',
                   height: HEADER_HEIGHT,
                   display: 'flex',
                   alignItems: 'flex-end',
@@ -311,7 +311,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                     position: 'absolute',
                     top: -HEADER_HEIGHT + 4,
                     left: 4,
-                    fontSize: 10,
+                    fontSize: 12,
                     color: 'rgb(var(--red-6))',
                     whiteSpace: 'nowrap',
                     fontWeight: 600,
@@ -329,7 +329,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
               if (item.kind === 'phase') {
                 const barLeft = dateToOffset(item.startDate);
                 const barWidth = dateToWidth(item.startDate, item.dueDate);
-                const bgColor = PHASE_COLORS_LIGHT[item.phaseNo] || '#e8f3ff';
+                const bgColor = PHASE_COLORS_LIGHT[item.phaseNo] || 'var(--brand-50)';
 
                 return (
                   <div
@@ -340,8 +340,8 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       left: 0,
                       right: 0,
                       height: ROW_HEIGHT,
-                      background: '#f7f8fa',
-                      borderBottom: '1px solid #e5e6eb',
+                      background: 'var(--grey-100)',
+                      borderBottom: '1px solid var(--grey-200)',
                     }}
                   >
                     <div
@@ -358,7 +358,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         paddingLeft: 8,
                         fontSize: 12,
                         fontWeight: 600,
-                        color: '#4e5969',
+                        color: 'var(--grey-600)',
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
                         textOverflow: 'ellipsis',
@@ -375,7 +375,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                 const barLeft = dateToOffset(step.startDate);
                 const barWidth = dateToWidth(step.startDate, step.dueDate);
                 const overdue = isStepOverdue(step, todayStr);
-                const color = PHASE_COLORS[item.phaseNo] || '#165dff';
+                const color = PHASE_COLORS[item.phaseNo] || 'var(--primary)';
                 const isSkipped = step.status === 'skipped';
 
                 /* Bar style */
@@ -396,7 +396,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       right: 0,
                       height: ROW_HEIGHT,
                       background: '#fff',
-                      borderBottom: '1px solid #f0f0f0',
+                      borderBottom: '1px solid var(--grey-100)',
                     }}
                   >
                     <div
@@ -417,7 +417,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         alignItems: 'center',
                         paddingLeft: 6,
                         paddingRight: 4,
-                        fontSize: 11,
+                        fontSize: 12,
                         color: '#fff',
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
@@ -437,7 +437,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                             height: 14,
                             borderRadius: 2,
                             background: 'rgba(255,255,255,0.35)',
-                            fontSize: 9,
+                            fontSize: 12,
                             fontWeight: 700,
                             marginRight: 3,
                             flexShrink: 0,
@@ -456,7 +456,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         {step.stepName}
                       </span>
                       {overdue && (
-                        <span style={{ marginLeft: 'auto', flexShrink: 0, fontSize: 13 }}>
+                        <span style={{ marginLeft: 'auto', flexShrink: 0, fontSize: 14 }}>
                           ⚠
                         </span>
                       )}
@@ -469,7 +469,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
               if (item.kind === 'milestone') {
                 const milestone = item.milestone;
                 const diamondLeft = dateToOffset(milestone.date);
-                const diamondColor = milestone.completed ? '#f7ba1e' : '#c9cdd4';
+                const diamondColor = milestone.completed ? 'var(--warning-500)' : 'var(--grey-300)';
                 const diamondSize = 16;
 
                 return (
@@ -481,8 +481,8 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       left: 0,
                       right: 0,
                       height: ROW_HEIGHT,
-                      background: '#f0f7ff',
-                      borderBottom: '1px solid #e5e6eb',
+                      background: 'var(--brand-50)',
+                      borderBottom: '1px solid var(--grey-200)',
                     }}
                   >
                     <div
@@ -505,8 +505,8 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         height: ROW_HEIGHT,
                         display: 'flex',
                         alignItems: 'center',
-                        fontSize: 11,
-                        color: '#4e5969',
+                        fontSize: 12,
+                        color: 'var(--grey-600)',
                         whiteSpace: 'nowrap',
                       }}
                     >

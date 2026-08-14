@@ -10,7 +10,7 @@ export function ContractTextViewer({ contract }: Props) {
     try {
       return renderContractDocument(contract.current);
     } catch {
-      return `<p style="color:#94a3b8">合同模板渲染失败</p>`;
+      return `<p style="color:var(--grey-400)">合同模板渲染失败</p>`;
     }
   })();
 
@@ -22,7 +22,7 @@ export function ContractTextViewer({ contract }: Props) {
         borderRadius: 8,
         maxHeight: 'calc(100vh - 300px)',
         overflow: 'auto',
-        fontSize: 13,
+        fontSize: 14,
         lineHeight: 1.8,
       }}
       dangerouslySetInnerHTML={{ __html: html }}

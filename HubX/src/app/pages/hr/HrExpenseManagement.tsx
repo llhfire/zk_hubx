@@ -207,8 +207,8 @@ export function HrExpenseManagement() {
               onBlur={() => openAmountEffectModal(record)}
               style={{ width: '100%' }}
             />
-            {isPendingEffective && <div style={{ marginTop: 14, color: 'rgb(var(--orange-6))', fontSize: 13 }}>生效时间：{record.effectiveDate}</div>}
-            <div style={{ minHeight: 40, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border-2)', color: 'var(--color-text-3)', fontSize: 13, lineHeight: '20px' }}>
+            {isPendingEffective && <div style={{ marginTop: 14, color: 'rgb(var(--orange-6))', fontSize: 14 }}>生效时间：{record.effectiveDate}</div>}
+            <div style={{ minHeight: 40, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border-2)', color: 'var(--color-text-3)', fontSize: 14, lineHeight: '20px' }}>
               {record.remark || '暂无备注'}
             </div>
           </Card>;

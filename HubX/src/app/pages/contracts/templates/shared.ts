@@ -126,7 +126,7 @@ const A4_STYLE = `
   margin: 0 auto;
   padding: 48px 56px;
   background: #fff;
-  color: #1d2129;
+  color: var(--grey-900);
   font-size: 14px;
   line-height: 1.85;
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;

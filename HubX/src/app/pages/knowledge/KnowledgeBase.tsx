@@ -373,7 +373,6 @@ export function KnowledgeBase() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>知识库</Typography.Title>
           <Text type="secondary" style={{ display: 'block', marginTop: 7 }}>按组织沉淀和管理业务文档，权限以文档归属组织为边界。</Text>
         </div>
       </div>
@@ -499,7 +498,7 @@ export function KnowledgeBase() {
                     <Space>
                       <IconFile style={{ color: 'rgb(var(--primary-6))' }} />
                       <div>
-                        <div style={{ fontSize: 13 }}>{editingDoc.fileName}</div>
+                        <div style={{ fontSize: 14 }}>{editingDoc.fileName}</div>
                         <Text type="secondary" style={{ fontSize: 12 }}>{editingDoc.fileSize}</Text>
                       </div>
                     </Space>
@@ -509,7 +508,7 @@ export function KnowledgeBase() {
                   </div>
                 ) : null}
                 {originalAttachmentRemoved && fileList.length === 0 ? (
-                  <div style={{ padding: '8px 12px', borderRadius: 6, background: 'var(--color-danger-light-1)', color: 'rgb(var(--danger-6))', fontSize: 13 }}>
+                  <div style={{ padding: '8px 12px', borderRadius: 6, background: 'var(--color-danger-light-1)', color: 'rgb(var(--danger-6))', fontSize: 14 }}>
                     原附件已移除，请上传新文件后保存。
                   </div>
                 ) : null}

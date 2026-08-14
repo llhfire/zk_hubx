@@ -476,7 +476,7 @@ function ConfirmationPanel() {
                               padding: '6px 10px',
                               background: 'var(--color-fill-2)',
                               borderRadius: 4,
-                              fontSize: 13,
+                              fontSize: 14,
                             }}
                           >
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -687,7 +687,7 @@ export function ProjectDemoPanel() {
                             {demoIndex + 1}. {demo.name}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, marginBottom: 6, fontSize: 13 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, marginBottom: 6, fontSize: 14 }}>
                           <span style={{ flexShrink: 0, color: 'var(--color-text-3)' }}>演示网址：</span>
                           <a href={demo.url} target="_blank" rel="noreferrer" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {demo.url}
@@ -752,7 +752,7 @@ export function ProjectDemoPanel() {
                   ) : null}
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 13 }}>
+                  <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 14 }}>
                     名称 <span style={{ color: 'rgb(var(--red-6))' }}>*</span>
                   </div>
                   <Input
@@ -763,11 +763,11 @@ export function ProjectDemoPanel() {
                   />
                 </div>
                 <div>
-                  <div style={{ marginBottom: 10, color: 'var(--color-text-2)', fontSize: 13 }}>演示文件</div>
+                  <div style={{ marginBottom: 10, color: 'var(--color-text-2)', fontSize: 14 }}>演示文件</div>
                   <Grid.Row gutter={12}>
                     <Grid.Col span={8}>
                       <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--color-text-1)' }}>
+                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>
                           HTML 文件 <span style={{ color: 'rgb(var(--red-6))' }}>*</span>
                         </div>
                         <Upload
@@ -783,7 +783,7 @@ export function ProjectDemoPanel() {
                     </Grid.Col>
                     <Grid.Col span={8}>
                       <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--color-text-1)' }}>CSS 文件</div>
+                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>CSS 文件</div>
                         <Upload
                           autoUpload={false}
                           limit={1}
@@ -797,7 +797,7 @@ export function ProjectDemoPanel() {
                     </Grid.Col>
                     <Grid.Col span={8}>
                       <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--color-text-1)' }}>JS 文件</div>
+                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>JS 文件</div>
                         <Upload
                           autoUpload={false}
                           limit={1}
@@ -812,7 +812,7 @@ export function ProjectDemoPanel() {
                   </Grid.Row>
                   {draft.htmlFiles.length ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, minWidth: 0, color: 'rgb(var(--arcoblue-6))' }}>
-                      <span style={{ flexShrink: 0, color: 'var(--color-text-2)', fontSize: 13 }}>演示网址：</span>
+                      <span style={{ flexShrink: 0, color: 'var(--color-text-2)', fontSize: 14 }}>演示网址：</span>
                       <Button
                         type="text"
                         size="mini"
@@ -835,7 +835,7 @@ export function ProjectDemoPanel() {
             </Button>
           </div>
           <div>
-            <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 13 }}>说明</div>
+            <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 14 }}>说明</div>
             <Input.TextArea
               value={description}
               placeholder="请输入演示说明（可选）"
@@ -861,7 +861,7 @@ function ApprovalTimeline({ nodes }: { nodes: ApprovalNode[] }) {
             <div style={{ position: 'absolute', left: 0, width: 16, height: 16, borderRadius: '50%', border: '2px solid', borderColor: node.status === 'approved' ? 'rgb(var(--green-6))' : node.status === 'pending' ? 'rgb(var(--orange-6))' : 'rgb(var(--red-6))', background: node.status === 'approved' ? 'rgb(var(--green-6))' : node.status === 'pending' ? 'rgb(var(--orange-6))' : 'rgb(var(--red-6))' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Space size={8} wrap>
-                <strong style={{ fontSize: 13 }}>{node.step}</strong>
+                <strong style={{ fontSize: 14 }}>{node.step}</strong>
                 <Tag color={node.status === 'approved' ? 'green' : node.status === 'pending' ? 'orange' : 'red'} size="small">
                   {node.step === '发起申请' && node.status === 'approved' ? '已申请' : node.status === 'approved' ? '已通过' : node.status === 'pending' ? '待处理' : '已驳回'}
                 </Tag>
@@ -1700,7 +1700,7 @@ export function ProjectDetailWorkspace({
         <FormItem label="审批编号" required>
           <Input placeholder="请输入企业微信审批编号" value={approvalNo} onChange={setApprovalNo} />
         </FormItem>
-        <div style={{ color: 'var(--color-text-3)', fontSize: 13, lineHeight: '22px' }}>
+        <div style={{ color: 'var(--color-text-3)', fontSize: 14, lineHeight: '22px' }}>
           审批编号请在企业微信审批记录中获取。提交后系统会根据审批编号自动关联对应审批记录。
         </div>
       </Modal>

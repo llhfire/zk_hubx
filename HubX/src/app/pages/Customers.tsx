@@ -12,6 +12,7 @@ import {
   Space,
   Typography,
   Grid,
+  Tooltip,
 } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconEye, IconEdit } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
@@ -144,7 +145,7 @@ export function Customers() {
       dataIndex: 'industry',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 10% 45%)' }}>{text}</span>
+        <span style={{ color: 'var(--grey-500)' }}>{text}</span>
       ),
     },
     {
@@ -152,7 +153,7 @@ export function Customers() {
       dataIndex: 'scale',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 10% 45%)' }}>{text}</span>
+        <span style={{ color: 'var(--grey-500)' }}>{text}</span>
       ),
     },
     {
@@ -160,7 +161,7 @@ export function Customers() {
       dataIndex: 'contact',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 10% 35%)' }}>{text}</span>
+        <span style={{ color: 'var(--grey-600)' }}>{text}</span>
       ),
     },
     {
@@ -168,7 +169,7 @@ export function Customers() {
       dataIndex: 'phone',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 8% 55%)', fontSize: 13 }}>{text}</span>
+        <span style={{ color: 'var(--grey-400)', fontSize: 14 }}>{text}</span>
       ),
     },
     {
@@ -192,7 +193,7 @@ export function Customers() {
       dataIndex: 'contractCount',
       width: 100,
       render: (value: number) => (
-        <span style={{ fontWeight: 500, color: 'hsl(220 15% 25%)' }}>{value}</span>
+        <span style={{ fontWeight: 500, color: 'var(--grey-700)' }}>{value}</span>
       ),
     },
     {
@@ -200,7 +201,7 @@ export function Customers() {
       dataIndex: 'contractAmount',
       width: 120,
       render: (text: string) => (
-        <span style={{ fontWeight: 500, color: 'hsl(220 15% 25%)' }}>{text}</span>
+        <span style={{ fontWeight: 500, color: 'var(--grey-700)' }}>{text}</span>
       ),
     },
     {
@@ -208,7 +209,7 @@ export function Customers() {
       dataIndex: 'receivable',
       width: 100,
       render: (text: string) => (
-        <span style={{ color: 'hsl(30 90% 44%)', fontWeight: 500 }}>{text}</span>
+        <span style={{ color: 'var(--warning-500)', fontWeight: 500 }}>{text}</span>
       ),
     },
     {
@@ -216,23 +217,27 @@ export function Customers() {
       dataIndex: 'createTime',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 8% 55%)', fontSize: 13 }}>{text}</span>
+        <span style={{ color: 'var(--grey-400)', fontSize: 14 }}>{text}</span>
       ),
     },
     {
       title: '操作',
-      width: 150,
+      width: 100,
       fixed: 'right' as const,
       render: (_, record: any) => (
-        <Space size={0}>
-          <Button
-            key={`view-${record.key}`}
-            type="text"
-            icon={<IconEye />}
-            size="small"
-            onClick={() => navigate(`/customers/${record.key}`)}
-          />
-          <Button key={`edit-${record.key}`} type="text" icon={<IconEdit />} size="small" onClick={() => setVisible(true)} />
+        <Space size={4}>
+          <Tooltip content="查看">
+            <Button
+              key={`view-${record.key}`}
+              type="text"
+              icon={<IconEye />}
+              size="small"
+              onClick={() => navigate(`/customers/${record.key}`)}
+            />
+          </Tooltip>
+          <Tooltip content="编辑">
+            <Button key={`edit-${record.key}`} type="text" icon={<IconEdit />} size="small" onClick={() => setVisible(true)} />
+          </Tooltip>
         </Space>
       ),
     },
@@ -251,7 +256,7 @@ export function Customers() {
     <div>
       {/* Page label — subtle */}
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'hsl(220 8% 55%)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-400)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>
           客户管理
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>
@@ -263,7 +268,7 @@ export function Customers() {
         style={{
           borderRadius: 'var(--radius-lg)',
           boxShadow: 'var(--shadow-xs)',
-          border: '1px solid hsl(220 12% 88%)',
+          border: '1px solid var(--grey-200)',
         }}
       >
         {/* Search & Filter Bar */}

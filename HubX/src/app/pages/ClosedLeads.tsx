@@ -102,9 +102,12 @@ export function ClosedLeads() {
       dataIndex: 'name',
       width: 220,
       render: (name: string, record: any) => (
-        <Button type="text" size="small" onClick={() => navigate(`/projects/${record.key}`)}>
+        <a
+          onClick={() => navigate(`/projects/${record.key}`)}
+          style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}
+        >
           {name}
-        </Button>
+        </a>
       ),
     },
     { title: '客户名称', dataIndex: 'customer', width: 160 },
@@ -147,9 +150,6 @@ export function ClosedLeads() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4} style={{ margin: 0 }}>已成交线索</Title>
-      </div>
 
       <Grid.Row gutter={16} style={{ marginBottom: 16 }}>
         <Grid.Col span={6}>

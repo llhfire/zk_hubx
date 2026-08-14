@@ -57,16 +57,16 @@ export function BlockerDunningPanel({ contract }: Props) {
       {/* 卡点管理 */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 13 }}>卡点管理</span>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>卡点管理</span>
           <Button size="mini" type="primary" icon={<IconPlus />} onClick={() => setBlockerVisible(true)}>
             添加卡点
           </Button>
         </div>
         {activeBlockers.length === 0 && resolvedBlockers.length === 0 && (
-          <div style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', padding: 16 }}>暂无卡点</div>
+          <div style={{ color: 'var(--grey-400)', fontSize: 12, textAlign: 'center', padding: 16 }}>暂无卡点</div>
         )}
         {activeBlockers.map(b => (
-          <div key={b.id} style={{ background: '#fef2f2', borderRadius: 6, padding: 8, marginBottom: 6, fontSize: 12 }}>
+          <div key={b.id} style={{ background: 'var(--destructive-50)', borderRadius: 6, padding: 8, marginBottom: 6, fontSize: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <Tag color="red" size="small">{BLOCKER_TYPE_LABELS[b.type]}</Tag>
@@ -84,22 +84,22 @@ export function BlockerDunningPanel({ contract }: Props) {
                 解决
               </Button>
             </div>
-            <div style={{ color: '#94a3b8', marginTop: 4 }}>卡住金额：¥{(b.amountBlocked / 10000).toFixed(1)}万</div>
+            <div style={{ color: 'var(--grey-400)', marginTop: 4 }}>卡住金额：¥{(b.amountBlocked / 10000).toFixed(1)}万</div>
           </div>
         ))}
         {resolvedBlockers.length > 0 && (
-          <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--grey-400)' }}>
             已解决 {resolvedBlockers.length} 个卡点
           </div>
         )}
       </div>
 
-      <div style={{ borderTop: '1px solid #e5e7eb' }} />
+      <div style={{ borderTop: '1px solid var(--grey-200)' }} />
 
       {/* 催款记录 */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontWeight: 600, fontSize: 13 }}>催款记录</span>
+          <span style={{ fontWeight: 600, fontSize: 14 }}>催款记录</span>
           <Button size="mini" type="primary" icon={<IconPlus />} onClick={() => setDunningVisible(true)}>
             添加催款
           </Button>
@@ -111,13 +111,13 @@ export function BlockerDunningPanel({ contract }: Props) {
                 <div style={{ fontSize: 12 }}>
                   <span style={{ fontWeight: 600 }}>{d.method}</span> · 联系人：{d.contactPerson}
                 </div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>结果：{d.result}</div>
-                <div style={{ fontSize: 11, color: '#64748b' }}>下一步：{d.nextPlan}</div>
+                <div style={{ fontSize: 12, color: 'var(--grey-500)' }}>结果：{d.result}</div>
+                <div style={{ fontSize: 12, color: 'var(--grey-500)' }}>下一步：{d.nextPlan}</div>
               </TimelineItem>
             ))}
           </Timeline>
         ) : (
-          <div style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', padding: 16 }}>暂无催款记录</div>
+          <div style={{ color: 'var(--grey-400)', fontSize: 12, textAlign: 'center', padding: 16 }}>暂无催款记录</div>
         )}
       </div>
 

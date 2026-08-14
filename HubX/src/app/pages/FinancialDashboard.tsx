@@ -58,7 +58,7 @@ const trendData = [
   { month: '2026-05', 房租物业: 38000, 水电网络: 4200, 行政杂费: 1800, 设备维护: 0 },
 ];
 
-const PIE_COLORS = ['#165dff', '#0fc6c2', '#ff7d00', '#7816ff'];
+const PIE_COLORS = ['var(--primary)', '#0fc6c2', 'var(--warning-500)', '#7816ff'];
 
 const EXPENSE_TYPES = ['房租物业', '水电网络', '行政杂费', '设备维护', '其他'];
 const ALLOCATION_OPTIONS = ['公司级', '销售部', '技术部', '行政部', '财务部'];
@@ -73,10 +73,10 @@ function SummaryCard({ label, value, sub, color }: { label: string; value: strin
       border: '1px solid var(--color-border-2)',
       borderRadius: 8,
       background: '#fff',
-      borderTop: `3px solid ${color || '#165dff'}`,
+      borderTop: `3px solid ${color || 'var(--primary)'}`,
     }}>
       <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-1)' }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-1)' }}>{value}</div>
       {sub && <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{sub}</div>}
     </div>
   );
@@ -172,9 +172,9 @@ export function FinancialDashboard() {
         const ratio = cost / r.total;
         const isWarning = ratio >= 0.8;
         return (
-          <span style={{ color: isWarning ? '#ff7d00' : '#00b42a', fontWeight: 600 }}>
+          <span style={{ color: isWarning ? 'var(--warning-500)' : 'var(--success-500)', fontWeight: 600 }}>
             ¥{(profit / 10000).toFixed(0)}万
-            {isWarning && <span style={{ fontSize: 11, marginLeft: 4 }}>⚠</span>}
+            {isWarning && <span style={{ fontSize: 12, marginLeft: 4 }}>⚠</span>}
           </span>
         );
       },
@@ -224,7 +224,6 @@ export function FinancialDashboard() {
   return (
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <Title heading={4} style={{ margin: 0 }}>财务统计</Title>
       </div>
 
       <Tabs defaultActiveTab="contract" type="card-gutter">
@@ -232,9 +231,9 @@ export function FinancialDashboard() {
         <TabPane key="contract" title="合同统计">
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <SummaryCard label="合同总额" value={`¥${(totalContract / 10000).toFixed(0)}万`} color="#165dff" />
-            <SummaryCard label="到账金额" value={`¥${(totalReceived / 10000).toFixed(0)}万`} sub={`回款率 ${(totalReceived / totalContract * 100).toFixed(1)}%`} color="#00b42a" />
-            <SummaryCard label="待收款" value={`¥${(totalPending / 10000).toFixed(0)}万`} color="#ff7d00" />
+            <SummaryCard label="合同总额" value={`¥${(totalContract / 10000).toFixed(0)}万`} color="var(--primary)" />
+            <SummaryCard label="到账金额" value={`¥${(totalReceived / 10000).toFixed(0)}万`} sub={`回款率 ${(totalReceived / totalContract * 100).toFixed(1)}%`} color="var(--success-500)" />
+            <SummaryCard label="待收款" value={`¥${(totalPending / 10000).toFixed(0)}万`} color="var(--warning-500)" />
             <SummaryCard label="成本总额" value={`¥${(totalCost / 10000).toFixed(0)}万`} sub={`利润率 ${((totalContract - totalCost) / totalContract * 100).toFixed(1)}%`} color="#7816ff" />
           </div>
 
@@ -261,7 +260,7 @@ export function FinancialDashboard() {
                     <Table.Summary.Cell style={{ fontWeight: 600 }}>
                       ¥{(contractData.reduce((s, r) => s + r.costRD + r.costBiz + r.costOutsource + r.costOther, 0) / 10000).toFixed(0)}万
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell style={{ fontWeight: 600, color: '#00b42a' }}>
+                    <Table.Summary.Cell style={{ fontWeight: 600, color: 'var(--success-500)' }}>
                       ¥{((contractData.reduce((s, r) => s + r.total, 0) - contractData.reduce((s, r) => s + r.costRD + r.costBiz + r.costOutsource + r.costOther, 0)) / 10000).toFixed(0)}万
                     </Table.Summary.Cell>
                     <Table.Summary.Cell>
@@ -304,8 +303,8 @@ export function FinancialDashboard() {
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-2)" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v / 1000}k`} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v / 1000}k`} />
                   <RechartTooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
                   <Legend />
                   {['房租物业', '水电网络', '行政杂费', '设备维护'].map((key, i) => (

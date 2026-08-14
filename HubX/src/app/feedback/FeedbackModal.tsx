@@ -85,7 +85,7 @@ export function FeedbackModal({ visible, onCancel }: FeedbackModalProps) {
             tip="支持图片、PDF、Word、Excel、压缩包等文件，最多 5 个"
           >
             <div style={{ padding: '16px 0', textAlign: 'center' }}>
-              <IconUpload style={{ fontSize: 28, color: 'var(--color-text-3)' }} />
+              <IconUpload style={{ fontSize: 30, color: 'var(--color-text-3)' }} />
               <div style={{ marginTop: 6, color: 'var(--color-text-2)' }}>点击或拖拽文件到此处上传</div>
             </div>
           </Upload>

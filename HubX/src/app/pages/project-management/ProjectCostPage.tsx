@@ -26,7 +26,6 @@ export function ProjectCostPage() {
     <div className="project-cost-page">
       <div className="project-cost-page-header">
         <div>
-          <Title heading={4} style={{ margin: 0 }}>成本核算</Title>
           <Text type="secondary">按项目核算人工及其他开支，分析项目预计成本、实际成本与利润。</Text>
         </div>
         <Select

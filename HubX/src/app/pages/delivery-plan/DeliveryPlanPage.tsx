@@ -164,7 +164,7 @@ export default function DeliveryPlanPage() {
           gap: 16,
         }}
       >
-        <Text style={{ fontSize: 18, color: '#86909c' }}>项目不存在</Text>
+        <Text style={{ fontSize: 18, color: 'var(--grey-400)' }}>项目不存在</Text>
         <Button type="primary" onClick={() => navigate('/projects')}>
           返回项目列表
         </Button>
@@ -387,7 +387,7 @@ export default function DeliveryPlanPage() {
             display: 'flex',
             alignItems: 'center',
             padding: '12px 20px',
-            borderBottom: '1px solid #e5e6eb',
+            borderBottom: '1px solid var(--grey-200)',
             background: '#fff',
             flexShrink: 0,
           }}
@@ -413,10 +413,10 @@ export default function DeliveryPlanPage() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 16,
-            background: '#f7f8fa',
+            background: 'var(--grey-100)',
           }}
         >
-          <Text style={{ fontSize: 16, color: '#86909c' }}>暂无交付计划</Text>
+          <Text style={{ fontSize: 16, color: 'var(--grey-400)' }}>暂无交付计划</Text>
           <Button type="primary" onClick={() => setConfigModalVisible(true)}>
             生成交付计划
           </Button>
@@ -444,7 +444,7 @@ export default function DeliveryPlanPage() {
           display: 'flex',
           alignItems: 'center',
           padding: '12px 20px',
-          borderBottom: '1px solid #e5e6eb',
+          borderBottom: '1px solid var(--grey-200)',
           background: '#fff',
           flexShrink: 0,
           gap: 12,
@@ -542,11 +542,11 @@ export default function DeliveryPlanPage() {
             display: 'flex',
             alignItems: 'center',
             padding: '8px 20px',
-            borderTop: '1px solid #e5e6eb',
+            borderTop: '1px solid var(--grey-200)',
             background: '#fff',
             flexShrink: 0,
             gap: 24,
-            fontSize: 13,
+            fontSize: 14,
           }}
         >
           {/* Steps count */}

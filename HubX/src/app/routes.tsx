@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import { MainLayout } from "./components/MainLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { PublicLeads } from "./pages/PublicLeads";
@@ -24,7 +24,8 @@ import { SystemLog } from "./pages/SystemLog";
 import { SystemConfig } from "./pages/SystemConfig";
 import { DailyReportList } from "./pages/DailyReportList";
 import { DailyReportView } from "./pages/DailyReportView";
-import { QuotationList } from "./pages/QuotationList";
+import { QuotationCenter } from "./pages/quotation/QuotationCenter";
+import { QuotationWorkbench } from "./pages/quotation/QuotationWorkbench";
 import { BusinessTripList } from "./pages/BusinessTripList";
 import { ReimbursementList } from "./pages/ReimbursementList";
 import { PaymentInvoiceList } from "./pages/PaymentInvoiceList";
@@ -108,7 +109,12 @@ export const router = createBrowserRouter([
       { path: "dailyreport/view", Component: DailyReportView },
       { path: "dailyreport/projectlog", Component: ProjectLogView },
       { path: "dailyreport/job-work-config", Component: JobWorkConfigPage },
-      { path: "quotation", Component: QuotationList },
+      { path: "quotation", Component: QuotationCenter },
+      { path: "quotation/:quoteId", Component: QuotationWorkbench },
+      // 旧三路由收敛为统一工作台，保留兼容已发出的链接与线索页跳转
+      { path: "quotation/eval/:quoteId", loader: ({ params }) => redirect(`/quotation/${params.quoteId}`) },
+      { path: "quotation/quote/:quoteId", loader: ({ params }) => redirect(`/quotation/${params.quoteId}`) },
+      { path: "quotation/approval/:quoteId", loader: ({ params }) => redirect(`/quotation/${params.quoteId}`) },
       { path: "approvals", Component: ApprovalCenter },
       { path: "approvals/templates", Component: WorkflowTemplateList },
       { path: "approvals/business", Component: BusinessMappingList },

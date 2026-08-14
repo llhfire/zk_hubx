@@ -133,7 +133,7 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
           {ALL_WORK_KINDS.map(k => (
             <SelectOption key={k} value={k}>
               {WORK_KIND_LABELS[k]}
-              <Tag size="small" style={{ marginLeft: 8, fontSize: 10 }}>
+              <Tag size="small" style={{ marginLeft: 8, fontSize: 12 }}>
                 {WORK_KIND_ABILITY_MAP[k].dimension} +{WORK_KIND_ABILITY_MAP[k].xpPer8h}/8h
               </Tag>
             </SelectOption>

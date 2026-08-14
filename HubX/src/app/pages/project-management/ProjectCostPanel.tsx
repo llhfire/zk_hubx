@@ -67,11 +67,11 @@ const SAMPLE_COST_ITEMS: ProjectCostItem[] = [
   { id: 'sample-comprehensive-monitoring', category: '第三方费用', subcategory: '第三方软件', name: '日志监控服务订阅', amount: 1280, expenseDate: '2026-05-26', handler: '王五', status: '已核算', remark: '项目监控与告警服务', attachments: [] },
 ];
 const COST_COLORS: Record<DashboardCategory, string> = {
-  人工成本: '#2f66e9',
+  人工成本: 'var(--brand-500)',
   推广成本: '#7c3aed',
-  差旅成本: '#dd7400',
-  商务成本: '#0f9788',
-  第三方费用: '#64748b',
+  差旅成本: 'var(--warning-600)',
+  商务成本: 'var(--info-500)',
+  第三方费用: 'var(--grey-500)',
 };
 const RANKING_FILTERS: RankingFilter[] = ['岗位', '住宿费', '交通', '推广', '商务返点'];
 const WORK_NATURE_OPTIONS = ['需求分析', '原型设计', '系统设计', '功能开发', '接口开发', 'Bug修复', '联调测试', '部署发布', '项目管理', '客户沟通', '其他'];
@@ -96,8 +96,8 @@ function renderCostPieLabel({ cx, cy, midAngle, outerRadius, name, percent }: { 
     <text x={insideX} y={insideY} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}>
       {(percent * 100).toFixed(1)}%
     </text>
-    <polyline points={`${edgeX},${edgeY} ${bendX},${bendY} ${labelX},${bendY}`} fill="none" stroke="#94a3b8" strokeWidth="1" />
-    <text x={labelX + (rightSide ? 4 : -4)} y={bendY} fill="#475569" textAnchor={rightSide ? 'start' : 'end'} dominantBaseline="central" fontSize="12">
+    <polyline points={`${edgeX},${edgeY} ${bendX},${bendY} ${labelX},${bendY}`} fill="none" stroke="var(--grey-400)" strokeWidth="1" />
+    <text x={labelX + (rightSide ? 4 : -4)} y={bendY} fill="var(--grey-600)" textAnchor={rightSide ? 'start' : 'end'} dominantBaseline="central" fontSize="12">
       {name}
     </text>
   </g>;

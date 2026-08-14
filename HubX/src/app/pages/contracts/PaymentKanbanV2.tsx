@@ -345,7 +345,6 @@ export function PaymentKanbanV2() {
     <div style={{ paddingBottom: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
         <div>
-          <Title heading={4} style={{ margin: 0 }}>回款看板</Title>
           <Text type="secondary">按风险、时点和金额组织回款动作，优先处理最影响现金流的合同节点。</Text>
         </div>
         <Space>
@@ -508,8 +507,8 @@ function MetricCard({
 }) {
   return (
     <Card bordered={false} bodyStyle={{ padding: 16 }}>
-      <div style={{ color: 'var(--color-text-3)', fontSize: 13 }}>{title}</div>
-      <div style={{ marginTop: 8, fontSize: 26, fontWeight: 800, color }}>{value}</div>
+      <div style={{ color: 'var(--color-text-3)', fontSize: 14 }}>{title}</div>
+      <div style={{ marginTop: 8, fontSize: 24, fontWeight: 700, color }}>{value}</div>
       <div style={{ marginTop: 6, color: 'var(--color-text-2)' }}>{caption}</div>
     </Card>
   );

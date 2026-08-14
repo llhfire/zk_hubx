@@ -31,7 +31,7 @@ export default function PaymentKanban() {
     <div style={{ padding: 0 }}>
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>合同回款看板</h2>
-        <p style={{ margin: '4px 0 0', color: '#94a3b8', fontSize: 13 }}>
+        <p style={{ margin: '4px 0 0', color: 'var(--grey-400)', fontSize: 14 }}>
           拖拽合同卡片切换回款状态，点击卡片查看回款详情
         </p>
       </div>

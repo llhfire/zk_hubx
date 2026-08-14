@@ -185,7 +185,7 @@ export function ProjectLogView() {
       <Card style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报人</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报人</div>
             <Select
               style={{ width: 160 }}
               placeholder="请选择汇报人"
@@ -196,7 +196,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6 }}>部门</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>部门</div>
             <Select
               style={{ width: 180 }}
               placeholder="请选择部门"
@@ -207,7 +207,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6 }}>项目</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>项目</div>
             <Select
               style={{ width: 220 }}
               placeholder="请选择项目"
@@ -218,7 +218,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6 }}>工作性质</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>工作性质</div>
             <Select
               style={{ width: 180 }}
               placeholder="请选择工作性质"
@@ -229,7 +229,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报日期</div>
+            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报日期</div>
             <RangePicker
               style={{ width: 260 }}
               placeholder={['开始日期', '结束日期']}

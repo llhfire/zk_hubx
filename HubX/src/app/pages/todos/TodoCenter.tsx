@@ -14,9 +14,10 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
-import { IconClockCircle, IconSearch } from '@arco-design/web-react/icon';
+import { IconClockCircle, IconSearch, IconEye, IconCheck } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
 import { useTodos } from '@/app/todos/TodoContext';
 import type { TodoItem, TodoPriority, TodoStatus } from '@/app/todos/types';
@@ -146,13 +147,19 @@ export function TodoCenter() {
       fixed: 'right' as const,
       render: (_: unknown, record: TodoItem) => (
         <Space>
-          <Button type="text" size="small" onClick={() => setDetail(record)}>详情</Button>
+          <Tooltip content="详情">
+            <Button type="text" size="small" icon={<IconEye />} onClick={() => setDetail(record)} />
+          </Tooltip>
           {record.status === 'pending' || record.status === 'in_progress' ? (
             <>
-              <Button type="primary" size="mini" onClick={() => goProcess(record)}>{record.external ? '去企业微信处理' : '去处理'}</Button>
-              <Dropdown droplist={snoozeMenu(record)} position="br">
-                <Button type="text" size="small" icon={<IconClockCircle />}>延后</Button>
-              </Dropdown>
+              <Tooltip content={record.external ? '去企业微信处理' : '去处理'}>
+                <Button type="primary" size="mini" icon={<IconCheck />} onClick={() => goProcess(record)} />
+              </Tooltip>
+              <Tooltip content="延后">
+                <Dropdown droplist={snoozeMenu(record)} position="br">
+                  <Button type="text" size="small" icon={<IconClockCircle />} />
+                </Dropdown>
+              </Tooltip>
             </>
           ) : null}
         </Space>
@@ -167,7 +174,6 @@ export function TodoCenter() {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div>
-        <Typography.Title heading={5} style={{ margin: 0 }}>待办中心</Typography.Title>
         <Text type="secondary">待办由业务系统自动生成，完成状态以真实业务处理结果为准。</Text>
       </div>
 

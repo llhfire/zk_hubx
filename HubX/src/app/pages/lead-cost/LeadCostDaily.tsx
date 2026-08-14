@@ -59,8 +59,7 @@ export function LeadCostDaily() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>投放日报</Title>
+      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>新增日报</Button>
       </div>
 

@@ -11,6 +11,7 @@ import {
   Typography,
   Tabs,
   Tag,
+  Tooltip,
 } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconEye, IconDownload } from '@arco-design/web-react/icon';
 import { useContracts, countByStatus } from './contracts/ContractsContext';
@@ -65,17 +66,6 @@ export function Contracts() {
     return list;
   }, [projectContracts, filter, keyword]);
 
-  const handleViewProjectDetail = (contract: Contract) => {
-    const project = findLinkedProject(contract);
-
-    if (!project) {
-      Message.warning('该合同暂未关联项目');
-      return;
-    }
-
-    navigate(`/projects/${project.id}`);
-  };
-
   const columns = [
     {
       title: '合同编号',
@@ -91,7 +81,7 @@ export function Contracts() {
           style={{ color: 'var(--primary)', cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--color-fill-1)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          onClick={() => handleViewProjectDetail(c)}
+          onClick={() => navigate(`/contracts/${c.id}`)}
         >
           {c.current.contractName}
         </a>
@@ -158,17 +148,17 @@ export function Contracts() {
       fixed: 'right' as const,
       render: (_: unknown, c: Contract) => (
         <Space>
-          <Button
-            type="text"
-            icon={<IconEye />}
-            size="small"
-            onClick={() => handleViewProjectDetail(c)}
-          >
-            查看
-          </Button>
-          <Button type="text" icon={<IconDownload />} size="small">
-            下载
-          </Button>
+          <Tooltip content="查看">
+            <Button
+              type="text"
+              icon={<IconEye />}
+              size="small"
+              onClick={() => navigate(`/contracts/${c.id}`)}
+            />
+          </Tooltip>
+          <Tooltip content="下载">
+            <Button type="text" icon={<IconDownload />} size="small" />
+          </Tooltip>
         </Space>
       ),
     },
@@ -176,8 +166,7 @@ export function Contracts() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>合同管理</Title>
+      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>
           新建合同
         </Button>

@@ -12,9 +12,10 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
-import { IconSearch } from '@arco-design/web-react/icon';
+import { IconSearch, IconEye, IconCheck, IconArrowRight } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
 import { useApprovals } from '@/app/approvals/ApprovalContext';
 import type { ApprovalRecord, ApprovalStatus } from '@/app/approvals/types';
@@ -102,11 +103,13 @@ export function ApprovalCenter() {
       fixed: 'right' as const,
       render: (_: unknown, record: ApprovalRecord) => (
         <Space>
-          <Button type="text" size="small" onClick={() => setDetail(record)}>详情</Button>
+          <Tooltip content="详情">
+            <Button type="text" size="small" icon={<IconEye />} onClick={() => setDetail(record)} />
+          </Tooltip>
           {record.source === 'hubx' && record.status === 'approving' && record.currentApprover === '张三'
-            ? <Button type="primary" size="mini" onClick={() => setDetail(record)}>审批</Button>
+            ? <Tooltip content="审批"><Button type="primary" size="mini" icon={<IconCheck />} onClick={() => setDetail(record)} /></Tooltip>
             : record.route
-              ? <Button type="text" size="small" onClick={() => navigate(record.route!)}>查看业务</Button>
+              ? <Tooltip content="查看业务"><Button type="text" size="small" icon={<IconArrowRight />} onClick={() => navigate(record.route!)} /></Tooltip>
               : null}
         </Space>
       ),
@@ -116,7 +119,6 @@ export function ApprovalCenter() {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div>
-        <Typography.Title heading={5} style={{ margin: 0 }}>审批中心</Typography.Title>
         <Text type="secondary">集中处理 HubX 业务审批，并查看企业微信只读审批记录。</Text>
       </div>
       <Card bordered={false}>

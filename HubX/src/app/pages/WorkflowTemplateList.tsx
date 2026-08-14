@@ -167,7 +167,7 @@ export function WorkflowTemplateList() {
         <Switch size="small" checked={template.enabled} onChange={(value) => toggleTemplate(template, value)} />
       ),
     },
-    { title: '最后更新', dataIndex: 'updatedAt', width: 110 },
+    { title: '最后更新', dataIndex: 'updatedAt', width: 130 },
     {
       title: '操作',
       width: 120,
@@ -193,7 +193,6 @@ export function WorkflowTemplateList() {
     <div>
       <div className="flex items-start justify-between" style={{ marginBottom: 16 }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>审批模板</Typography.Title>
           <Text type="secondary">模板只定义审批节点和通过策略，具体审批人由业务审批配置决定。</Text>
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新建审批模板</Button>

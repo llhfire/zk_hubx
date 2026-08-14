@@ -126,7 +126,7 @@ export function DeliveryProgressCard({ projectId, onClick }: DeliveryProgressCar
                 flexShrink: 0,
               }}
             />
-            <Text style={{ fontSize: 11, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>
+            <Text style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>
               {p.phaseName}
             </Text>
           </div>

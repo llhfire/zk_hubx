@@ -50,10 +50,10 @@ export function Reports() {
   ];
 
   const leadSourceData = [
-    { name: '百度推广', value: 180, color: '#165dff' },
-    { name: '抖音', value: 125, color: '#00b42a' },
-    { name: '小红书', value: 95, color: '#ff7d00' },
-    { name: '微信推广', value: 78, color: '#f53f3f' },
+    { name: '百度推广', value: 180, color: 'var(--primary)' },
+    { name: '抖音', value: 125, color: 'var(--success-500)' },
+    { name: '小红书', value: 95, color: 'var(--warning-500)' },
+    { name: '微信推广', value: 78, color: 'var(--destructive-500)' },
     { name: '其他', value: 52, color: '#722ed1' },
   ];
 
@@ -68,7 +68,6 @@ export function Reports() {
   return (
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>数据报表</Title>
         <Select defaultValue="current-month" style={{ width: 180 }}>
           <Select.Option value="current-month">本月</Select.Option>
           <Select.Option value="last-month">上月</Select.Option>
@@ -86,7 +85,7 @@ export function Reports() {
                   title="总线索数"
                   value={450}
                   suffix={
-                    <span style={{ fontSize: 14, color: '#00b42a' }}>
+                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
                       <IconArrowRise />
                       12.5%
                     </span>
@@ -100,7 +99,7 @@ export function Reports() {
                   title="签约数"
                   value={42}
                   suffix={
-                    <span style={{ fontSize: 14, color: '#00b42a' }}>
+                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
                       <IconArrowRise />
                       18.2%
                     </span>
@@ -114,7 +113,7 @@ export function Reports() {
                   title="签约金额"
                   value="560万"
                   suffix={
-                    <span style={{ fontSize: 14, color: '#00b42a' }}>
+                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
                       <IconArrowRise />
                       15.7%
                     </span>
@@ -128,7 +127,7 @@ export function Reports() {
                   title="转化率"
                   value="9.3%"
                   suffix={
-                    <span style={{ fontSize: 14, color: '#00b42a' }}>
+                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
                       <IconArrowRise />
                       2.1%
                     </span>
@@ -148,7 +147,7 @@ export function Reports() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="count" fill="#165dff" name="数量" />
+                    <Bar dataKey="count" fill="var(--primary)" name="数量" />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
@@ -194,7 +193,7 @@ export function Reports() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="leads"
-                      stroke="#165dff"
+                      stroke="var(--primary)"
                       name="线索数"
                     />
                     <Line
@@ -202,7 +201,7 @@ export function Reports() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="contracts"
-                      stroke="#00b42a"
+                      stroke="var(--success-500)"
                       name="签约数"
                     />
                     <Line
@@ -210,7 +209,7 @@ export function Reports() {
                       yAxisId="right"
                       type="monotone"
                       dataKey="amount"
-                      stroke="#ff7d00"
+                      stroke="var(--warning-500)"
                       name="签约金额(万)"
                     />
                   </LineChart>
@@ -229,8 +228,8 @@ export function Reports() {
                 <YAxis dataKey="name" type="category" />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="leads" fill="#165dff" name="线索数" />
-                <Bar dataKey="contracts" fill="#00b42a" name="签约数" />
+                <Bar dataKey="leads" fill="var(--primary)" name="线索数" />
+                <Bar dataKey="contracts" fill="var(--success-500)" name="签约数" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -243,7 +242,7 @@ export function Reports() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="amount" fill="#ff7d00" name="签约金额(万)" />
+                <Bar dataKey="amount" fill="var(--warning-500)" name="签约金额(万)" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -258,9 +257,9 @@ export function Reports() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="contract" fill="#165dff" name="合同金额(万)" />
-                <Bar dataKey="cost" fill="#f53f3f" name="成本(万)" />
-                <Bar dataKey="profit" fill="#00b42a" name="利润(万)" />
+                <Bar dataKey="contract" fill="var(--primary)" name="合同金额(万)" />
+                <Bar dataKey="cost" fill="var(--destructive-500)" name="成本(万)" />
+                <Bar dataKey="profit" fill="var(--success-500)" name="利润(万)" />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -273,7 +272,7 @@ export function Reports() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="profitRate" fill="#00b42a" name="利润率(%)" />
+                <Bar dataKey="profitRate" fill="var(--success-500)" name="利润率(%)" />
               </BarChart>
             </ResponsiveContainer>
           </Card>

@@ -266,8 +266,7 @@ export function Projects() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>项目管理</Title>
+      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<IconPlus />} onClick={openCreateModal}>新建项目</Button>
       </div>
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Descriptions, Message, Modal, Space, Table, Tabs, Tag, Typography, Upload } from '@arco-design/web-react';
+import { Button, Card, Descriptions, Message, Modal, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
 import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import { IconCopy, IconEye, IconFile } from '@arco-design/web-react/icon';
 import { useProjectInvoices, type ProjectInvoiceApplication } from './ProjectInvoiceContext';
@@ -81,9 +81,9 @@ export function ProjectInvoicePage() {
     {
       title: '操作', width: 110, fixed: 'right' as const,
       render: (_: unknown, record: ProjectInvoiceApplication) => (
-        <Button type="text" size="small" icon={<IconEye />} onClick={() => openDetail(record)}>
-          {record.status === '开票中' ? '开票' : '详情'}
-        </Button>
+        <Tooltip content={record.status === '开票中' ? '开票' : '详情'}>
+          <Button type="text" size="small" icon={<IconEye />} onClick={() => openDetail(record)} />
+        </Tooltip>
       ),
     },
   ];

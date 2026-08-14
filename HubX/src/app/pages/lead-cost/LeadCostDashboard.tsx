@@ -62,7 +62,6 @@ export function LeadCostDashboard() {
 
   return (
     <div>
-      <Title heading={4} style={{ marginBottom: 24 }}>线索成本看板</Title>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>

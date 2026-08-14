@@ -279,7 +279,6 @@ export function JobWorkConfigPage() {
   return (
     <div className="job-work-config-page">
       <div className="job-work-config-header">
-        <Title heading={4} style={{ margin: 0 }}>日报配置</Title>
       </div>
 
       <Tabs defaultActiveTab="work-nature" className="job-work-config-tabs">

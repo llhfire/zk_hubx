@@ -101,7 +101,6 @@ export function SalaryPage() {
   return (
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4} style={{ margin: 0 }}>工资表</Title>
         <Space>
           <Select
             value={selectedMonth}

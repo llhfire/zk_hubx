@@ -54,14 +54,14 @@ const escapeHtml = (value: string) => value
 const sanitizeFileName = (value: string) => value.replace(/[\\/:*?"<>|]/g, '-');
 
 const wordDocumentStyles = `
-  body{font-family:SimSun,"Songti SC",serif;color:#1d2129;line-height:1.75}
-  .quotation-doc-cover{min-height:900px;padding-top:160px;text-align:center;border-bottom:2px solid #124b7d}
+  body{font-family:SimSun,"Songti SC",serif;color:var(--grey-900);line-height:1.75}
+  .quotation-doc-cover{min-height:900px;padding-top:160px;text-align:center;border-bottom:2px solid var(--brand-700)}
   .quotation-doc-logo{display:inline-flex;align-items:center;gap:12px;font-family:Arial,sans-serif;font-size:32px;font-weight:700}
-  .quotation-doc-logo>b{color:#1484bd;font-size:52px;font-style:italic}.quotation-doc-logo span{display:flex;flex-direction:column}.quotation-doc-logo small{font-size:12px;letter-spacing:2px}
-  .quotation-doc-cover h1{margin-top:110px;color:#124b7d;font-size:30px}.quotation-doc-cover-line{width:78%;margin:36px auto 80px;border-top:2px solid #124b7d}.quotation-doc-cover time{display:block;margin-top:80px;color:#c00;font-size:20px}
-  .quotation-doc-page{min-height:980px;padding-top:10px;page-break-before:always}header{padding-bottom:8px;border-bottom:2px solid #124b7d;color:#124b7d;font-weight:700}
-  h2{margin:42px 0 36px;color:#124b7d;text-align:center}h3{margin-top:34px;color:#124b7d}table{width:100%;margin:24px 0;border-collapse:collapse}th,td{padding:8px 10px;border:1px solid #333;text-align:left}th{background:#e8edf4}
-  .quotation-doc-details{font-size:12px}.quotation-doc-details thead th{background:#124b7d;color:#fff;text-align:center}.quotation-doc-total th,.quotation-doc-total td{background:#fff2cc;color:#c00;font-weight:700}.quotation-doc-signature{margin-top:100px;text-align:right}
+  .quotation-doc-logo>b{color:var(--info-500);font-size:52px;font-style:italic}.quotation-doc-logo span{display:flex;flex-direction:column}.quotation-doc-logo small{font-size:12px;letter-spacing:2px}
+  .quotation-doc-cover h1{margin-top:110px;color:var(--brand-700);font-size:30px}.quotation-doc-cover-line{width:78%;margin:36px auto 80px;border-top:2px solid var(--brand-700)}.quotation-doc-cover time{display:block;margin-top:80px;color:var(--destructive-500);font-size:20px}
+  .quotation-doc-page{min-height:980px;padding-top:10px;page-break-before:always}header{padding-bottom:8px;border-bottom:2px solid var(--brand-700);color:var(--brand-700);font-weight:700}
+  h2{margin:42px 0 36px;color:var(--brand-700);text-align:center}h3{margin-top:34px;color:var(--brand-700)}table{width:100%;margin:24px 0;border-collapse:collapse}th,td{padding:8px 10px;border:1px solid var(--grey-900);text-align:left}th{background:var(--grey-100)}
+  .quotation-doc-details{font-size:12px}.quotation-doc-details thead th{background:var(--brand-700);color:#fff;text-align:center}.quotation-doc-total th,.quotation-doc-total td{background:var(--warning-50);color:var(--destructive-500);font-weight:700}.quotation-doc-signature{margin-top:100px;text-align:right}
 `;
 
 function createQuotationDocumentHtml(data: QuotationDocumentData) {

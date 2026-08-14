@@ -21,6 +21,7 @@ import {
   Timeline,
   Descriptions,
   Divider,
+  Tooltip,
 } from '@arco-design/web-react';
 import {
   IconCalendar,
@@ -222,7 +223,7 @@ export function MeetingManagement() {
       {/* 主体 Tab */}
       <Card bordered={false}>
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="meetings" title={<span><IconCalendar style={{ fontSize: 16 }} /> 会议安排 <Badge count={summary.upcomingMeetings} style={{ background: 'var(--primary)' }} /></span>} />
+          <TabPane key="meetings" title={<span><IconCalendar style={{ fontSize: 16 }} /> 会议安排 <Badge count={summary.upcomingMeetings} color="arcoblue" /></span>} />
           <TabPane key="rooms" title={<span><IconLocation style={{ fontSize: 16 }} /> 会议室管理</span>} />
           <TabPane key="minutes" title={<span><IconEdit style={{ fontSize: 16 }} /> 会议记录</span>} />
         </Tabs>
@@ -244,7 +245,7 @@ export function MeetingManagement() {
                   { title: '会议室', dataIndex: 'roomName', width: 110 },
                   { title: '时间', dataIndex: 'startTime', width: 200, render: (_: unknown, row: Meeting) => `${row.startTime} ~ ${row.endTime.slice(11)}` },
                   { title: '组织人', dataIndex: 'organizer', width: 70 },
-                  { title: '参会人', dataIndex: 'attendees', width: 120, render: (a: string[]) => <Avatar.Group size={24} maxCount={4}>{a.map(u => <Avatar key={u} style={{ background: 'var(--primary)', fontSize: 11 }}>{u.slice(0, 1)}</Avatar>)}</Avatar.Group> },
+                  { title: '参会人', dataIndex: 'attendees', width: 120, render: (a: string[]) => <Avatar.Group size={24} maxCount={4}>{a.map(u => <Avatar key={u} style={{ background: 'var(--primary)', fontSize: 12 }}>{u.slice(0, 1)}</Avatar>)}</Avatar.Group> },
                   {
                     title: '状态', dataIndex: 'status', width: 70,
                     render: (s: string) => <Tag color={meetingStatusLabels[s]?.color || 'var(--muted-foreground)'}>{meetingStatusLabels[s]?.label || s}</Tag>,
@@ -253,9 +254,13 @@ export function MeetingManagement() {
                     title: '操作', width: 130,
                     render: (_: unknown, row: Meeting) => (
                       <Space>
-                        <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEditMeeting(row)}>编辑</Button>
+                        <Tooltip content="编辑">
+                          <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEditMeeting(row)} />
+                        </Tooltip>
                         {row.status === 'scheduled' && (
-                          <Button type="text" size="small" status="danger" icon={<IconCloseCircle />} onClick={() => handleCancelMeeting(row.id)}>取消</Button>
+                          <Tooltip content="取消">
+                            <Button type="text" size="small" status="danger" icon={<IconCloseCircle />} onClick={() => handleCancelMeeting(row.id)} />
+                          </Tooltip>
                         )}
                       </Space>
                     ),
@@ -290,7 +295,7 @@ export function MeetingManagement() {
                       }
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: 15 }}>{room.name}</span>
+                        <span style={{ fontWeight: 600, fontSize: 16 }}>{room.name}</span>
                         <Tag color={roomStatusLabels[room.status].color}>{roomStatusLabels[room.status].label}</Tag>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-2)', marginBottom: 8 }}>
@@ -324,16 +329,16 @@ export function MeetingManagement() {
 
                     {min.decisions.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <Typography.Text style={{ fontWeight: 600, fontSize: 13 }}>决议事项：</Typography.Text>
+                        <Typography.Text style={{ fontWeight: 600, fontSize: 14 }}>决议事项：</Typography.Text>
                         <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-                          {min.decisions.map((d, i) => <li key={i} style={{ fontSize: 13 }}>{d}</li>)}
+                          {min.decisions.map((d, i) => <li key={i} style={{ fontSize: 14 }}>{d}</li>)}
                         </ul>
                       </div>
                     )}
 
                     {min.actionItems.length > 0 && (
                       <div>
-                        <Typography.Text style={{ fontWeight: 600, fontSize: 13 }}>行动项：</Typography.Text>
+                        <Typography.Text style={{ fontWeight: 600, fontSize: 14 }}>行动项：</Typography.Text>
                         <Table
                           size="small"
                           columns={[

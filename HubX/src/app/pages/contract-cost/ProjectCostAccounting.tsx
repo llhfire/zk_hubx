@@ -195,15 +195,15 @@ export function ProjectCostAccounting() {
       width: 80,
       render: (s: string) => {
         const colors: Record<string, string> = {
-          进行中: '#165dff',
-          已完成: '#00b42a',
+          进行中: 'var(--primary)',
+          已完成: 'var(--success-500)',
           验收中: '#0fc6c2',
-          未开始: '#86909c',
-          延迟: '#f53f3f',
-          搁置: '#c9cdd4',
-          催款中: '#ff7d00',
+          未开始: 'var(--grey-400)',
+          延迟: 'var(--destructive-500)',
+          搁置: 'var(--grey-300)',
+          催款中: 'var(--warning-500)',
         };
-        return <Tag color={colors[s] || '#86909c'}>{s}</Tag>;
+        return <Tag color={colors[s] || 'var(--grey-400)'}>{s}</Tag>;
       },
     },
     {
@@ -248,7 +248,7 @@ export function ProjectCostAccounting() {
       dataIndex: 'totalCost',
       width: 100,
       render: (v: number) => (
-        <span style={{ fontWeight: 700, color: '#f53f3f' }}>{formatCurrency(v)}</span>
+        <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>{formatCurrency(v)}</span>
       ),
       sorter: (a: ProjectCostRow, b: ProjectCostRow) => a.totalCost - b.totalCost,
     },
@@ -257,7 +257,7 @@ export function ProjectCostAccounting() {
       dataIndex: 'profit',
       width: 100,
       render: (v: number) => (
-        <span style={{ fontWeight: 700, color: v >= 0 ? '#00b42a' : '#f53f3f' }}>
+        <span style={{ fontWeight: 700, color: v >= 0 ? 'var(--success-500)' : 'var(--destructive-500)' }}>
           {formatCurrency(v)}
         </span>
       ),
@@ -280,10 +280,10 @@ export function ProjectCostAccounting() {
           <Tag
             color={
               row.budgetAlert === 'danger'
-                ? '#f53f3f'
+                ? 'var(--destructive-500)'
                 : row.budgetAlert === 'warning'
-                  ? '#ff7d00'
-                  : '#00b42a'
+                  ? 'var(--warning-500)'
+                  : 'var(--success-500)'
             }
           >
             {v}%
@@ -325,8 +325,8 @@ export function ProjectCostAccounting() {
           <Card>
             <Statistic
               title="合同总额"
-              value={summary.contractAmount}
-              prefix={<IconFile style={{ color: '#165dff' }} />}
+              value={formatCurrency(summary.contractAmount)}
+              prefix={<IconFile style={{ color: 'var(--primary)' }} />}
             />
           </Card>
         </Col>
@@ -334,7 +334,7 @@ export function ProjectCostAccounting() {
           <Card>
             <Statistic
               title="已回款"
-              value={summary.receivedAmount}
+              value={formatCurrency(summary.receivedAmount)}
               prefix={<IconTrophy style={{ color: '#0fc6c2' }} />}
             />
           </Card>
@@ -343,8 +343,8 @@ export function ProjectCostAccounting() {
           <Card>
             <Statistic
               title="总成本"
-              value={summary.totalCost}
-              prefix={<IconExperiment style={{ color: '#f53f3f' }} />}
+              value={formatCurrency(summary.totalCost)}
+              prefix={<IconExperiment style={{ color: 'var(--destructive-500)' }} />}
             />
           </Card>
         </Col>
@@ -352,8 +352,8 @@ export function ProjectCostAccounting() {
           <Card>
             <Statistic
               title="总利润"
-              value={summary.profit}
-              prefix={<IconTrophy style={{ color: '#00b42a' }} />}
+              value={formatCurrency(summary.profit)}
+              prefix={<IconTrophy style={{ color: 'var(--success-500)' }} />}
             />
           </Card>
         </Col>
@@ -363,8 +363,8 @@ export function ProjectCostAccounting() {
               title="预警项目"
               value={summary.alertCount}
               suffix="个"
-              prefix={<IconExclamationCircle style={{ color: '#f53f3f' }} />}
-              valueStyle={{ color: summary.alertCount > 0 ? '#f53f3f' : '#00b42a' }}
+              prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />}
+              valueStyle={{ color: summary.alertCount > 0 ? 'var(--destructive-500)' : 'var(--success-500)' }}
             />
           </Card>
         </Col>
@@ -497,7 +497,7 @@ function ProjectIncomeExpenseDetail({
           {
             label: '总成本',
             value: (
-              <Text style={{ color: '#f53f3f', fontWeight: 600 }}>
+              <Text style={{ color: 'var(--destructive-500)', fontWeight: 600 }}>
                 {formatCurrency(row.totalCost)}
               </Text>
             ),
@@ -505,7 +505,7 @@ function ProjectIncomeExpenseDetail({
           {
             label: '利润 / 利润率',
             value: (
-              <Text style={{ color: row.profit >= 0 ? '#00b42a' : '#f53f3f', fontWeight: 600 }}>
+              <Text style={{ color: row.profit >= 0 ? 'var(--success-500)' : 'var(--destructive-500)', fontWeight: 600 }}>
                 {formatCurrency(row.profit)}（{row.profitMargin}%）
               </Text>
             ),
@@ -534,7 +534,7 @@ function ProjectIncomeExpenseDetail({
                 dataIndex: 'amount',
                 width: 120,
                 render: (v: number) => (
-                  <span style={{ color: '#00b42a', fontWeight: 600 }}>{formatCurrency(v)}</span>
+                  <span style={{ color: 'var(--success-500)', fontWeight: 600 }}>{formatCurrency(v)}</span>
                 ),
               },
               { title: '说明', dataIndex: 'remark' },
@@ -545,7 +545,7 @@ function ProjectIncomeExpenseDetail({
                   <span style={{ fontWeight: 600 }}>合计</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell>
-                  <span style={{ fontWeight: 700, color: '#00b42a' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--success-500)' }}>
                     {formatCurrency(
                       incomeLines.reduce((s, r) => s + r.amount, 0) || row.receivedAmount,
                     )}
@@ -579,7 +579,7 @@ function ProjectIncomeExpenseDetail({
                 dataIndex: 'amount',
                 width: 120,
                 render: (v: number) => (
-                  <span style={{ color: '#f53f3f', fontWeight: 600 }}>{formatCurrency(v)}</span>
+                  <span style={{ color: 'var(--destructive-500)', fontWeight: 600 }}>{formatCurrency(v)}</span>
                 ),
               },
               { title: '说明', dataIndex: 'remark' },
@@ -590,7 +590,7 @@ function ProjectIncomeExpenseDetail({
                   <span style={{ fontWeight: 600 }}>合计</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell>
-                  <span style={{ fontWeight: 700, color: '#f53f3f' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>
                     {formatCurrency(row.totalCost)}
                   </span>
                 </Table.Summary.Cell>
@@ -642,7 +642,7 @@ function RDCostDetailTable({ projectCostData }: { projectCostData: ProjectCostRo
               dataIndex: 'cost',
               width: 100,
               render: (v: number) => (
-                <span style={{ fontWeight: 600, color: '#f53f3f' }}>{formatCurrency(v)}</span>
+                <span style={{ fontWeight: 600, color: 'var(--destructive-500)' }}>{formatCurrency(v)}</span>
               ),
               sorter: (a: any, b: any) => a.cost - b.cost,
             },
@@ -664,7 +664,7 @@ function RDCostDetailTable({ projectCostData }: { projectCostData: ProjectCostRo
               </Table.Summary.Cell>
               <Table.Summary.Cell>—</Table.Summary.Cell>
               <Table.Summary.Cell>
-                <span style={{ fontWeight: 700, color: '#f53f3f' }}>{formatCurrency(totalCost)}</span>
+                <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>{formatCurrency(totalCost)}</span>
               </Table.Summary.Cell>
             </Table.Summary.Row>
           );

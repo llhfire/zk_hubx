@@ -18,9 +18,10 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
-import { IconRefresh, IconSafe, IconSync } from '@arco-design/web-react/icon';
+import { IconRefresh, IconSafe, IconSync, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { SyncDiff, SyncPolicy, WeComConfig } from '@/app/integrations/types';
 
@@ -103,7 +104,7 @@ export function WeComIntegration() {
       title: '操作',
       width: 100,
       render: (_: unknown, record: SyncDiff) => record.action === 'conflict'
-        ? <Button type="text" size="small" onClick={() => Message.info('正式接入时可选择匹配员工或创建新员工')}>处理冲突</Button>
+        ? <Tooltip content="处理冲突"><Button type="text" size="small" icon={<IconEdit />} onClick={() => Message.info('正式接入时可选择匹配员工或创建新员工')} /></Tooltip>
         : <Text type="secondary">自动处理</Text>,
     },
   ];
@@ -112,7 +113,6 @@ export function WeComIntegration() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>企业微信集成</Typography.Title>
           <Text type="secondary">统一维护员工通讯录同步、绑定状态和数据边界。</Text>
         </div>
         <Space>

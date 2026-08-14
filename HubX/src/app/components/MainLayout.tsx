@@ -17,6 +17,7 @@ import {
   IconMessage,
   IconUserGroup,
   IconCheckSquare,
+  IconQuote,
 } from '@arco-design/web-react/icon';
 import { DailyReportModal } from '../pages/daily-report/DailyReportModal';
 import { DailyReport } from '../pages/daily-report/types';
@@ -87,6 +88,7 @@ export function MainLayout() {
       ],
     },
     { key: '/customers', icon: <IconUser />, label: '客户管理' },
+    { key: '/quotation', icon: <IconQuote />, label: '报价管理' },
     {
       key: 'contracts',
       icon: <IconFile />,
@@ -143,7 +145,6 @@ export function MainLayout() {
         { key: '/finance/project-cost', label: '项目成本核算' },
         { key: '/finance/salary', label: '工资表' },
         { key: '/finance/project-invoices', label: '开票审核' },
-        { key: '/quotation', label: '报价管理' },
         { key: '/businesstrip', label: '出差申请' },
         { key: '/reimbursement', label: '报销申请' },
       ],
@@ -205,6 +206,9 @@ export function MainLayout() {
     if (path.startsWith('/customers/')) {
       return ['/customers'];
     }
+    if (path === '/quotation' || path.startsWith('/quotation/')) {
+      return ['/quotation'];
+    }
     if (path === '/contracts' || path.startsWith('/contracts/')) {
       return ['/contracts'];
     }
@@ -251,7 +255,6 @@ export function MainLayout() {
     }
     if (
       path.startsWith('/finance/') ||
-      path === '/quotation' ||
       path === '/businesstrip' ||
       path === '/reimbursement' ||
       path === '/paymentinvoice'
@@ -304,7 +307,7 @@ export function MainLayout() {
           bottom: 0,
           zIndex: 100,
           background: '#ffffff',
-          borderRight: '1px solid hsl(220 12% 88%)',
+          borderRight: '1px solid var(--grey-200)',
         }}
       >
         {/* Branding */}
@@ -322,7 +325,7 @@ export function MainLayout() {
             style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', flexShrink: 0 }}
           />
           {!collapsed && (
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'hsl(221 83% 53%)', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--brand-500)', whiteSpace: 'nowrap' }}>
               ZK HubX
             </span>
           )}
@@ -367,7 +370,7 @@ export function MainLayout() {
           style={{
             height: 56,
             background: '#ffffff',
-            borderBottom: '1px solid hsl(220 12% 88%)',
+            borderBottom: '1px solid var(--grey-200)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
@@ -382,7 +385,7 @@ export function MainLayout() {
             <Badge
               count={
                 showUnsubmittedBadge ? (
-                  <IconQuestionCircle style={{ color: 'hsl(0 78% 50%)', fontSize: 14 }} />
+                  <IconQuestionCircle style={{ color: 'var(--destructive-500)', fontSize: 14 }} />
                 ) : (
                   0
                 )
@@ -390,7 +393,7 @@ export function MainLayout() {
               style={{ display: 'flex' }}
             >
               <IconCalendar
-                style={{ fontSize: 18, cursor: 'pointer', color: 'hsl(220 10% 45%)' }}
+                style={{ fontSize: 18, cursor: 'pointer', color: 'var(--grey-500)' }}
                 onClick={handleDailyReportOpen}
               />
             </Badge>
@@ -401,10 +404,10 @@ export function MainLayout() {
             {/* User Dropdown */}
             <Dropdown droplist={dropList} position="br">
               <div className="flex items-center gap-2 cursor-pointer">
-                <Avatar size={28} style={{ backgroundColor: 'hsl(221 83% 53%)' }}>
+                <Avatar size={28} style={{ backgroundColor: 'var(--brand-500)' }}>
                   张
                 </Avatar>
-                <span style={{ fontSize: 13, color: 'hsl(220 15% 25%)' }}>张三</span>
+                <span style={{ fontSize: 14, color: 'var(--grey-700)' }}>张三</span>
               </div>
             </Dropdown>
           </div>

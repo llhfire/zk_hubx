@@ -166,7 +166,7 @@ export function MyLeads() {
       render: (name: string, record: any) => (
         <a
           onClick={() => navigate(`/leads/${record.key}`, { state: { from: 'my' } })}
-          style={{ color: 'rgb(var(--primary-6))' }}
+          style={{ color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
         >
           {name}
         </a>
@@ -177,9 +177,12 @@ export function MyLeads() {
       dataIndex: 'entity',
       width: 120,
       render: (entity: string) => (
-        <Button type="text" size="mini" onClick={() => handleOpenCompanyEntity(entity)}>
+        <a
+          onClick={() => handleOpenCompanyEntity(entity)}
+          style={{ color: 'var(--primary)', cursor: 'pointer' }}
+        >
           {entity}
-        </Button>
+        </a>
       ),
     },
     { title: '关联客户', dataIndex: 'customer', width: 150 },
@@ -204,7 +207,7 @@ export function MyLeads() {
         <Badge status={level === '高' ? 'error' : 'warning'} text={level} />
       ),
     },
-    { title: '下次跟进', dataIndex: 'nextFollow', width: 150 },
+    { title: '下次跟进', dataIndex: 'nextFollow', width: 130, render: (v: string) => v?.slice(5) },
     { title: '最后跟进', dataIndex: 'lastFollow', width: 100 },
     { title: '跟进次数', dataIndex: 'followCount', width: 100 },
     { title: '持有天数', dataIndex: 'daysHeld', width: 100 },
@@ -262,9 +265,6 @@ export function MyLeads() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>我的线索</Title>
-      </div>
 
       {leadReminderBanner ? (
         <Alert

@@ -138,9 +138,6 @@ export function TrashLeads() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>垃圾线索池</Title>
-      </div>
 
       <Card>
         <div className="flex gap-4" style={{ marginBottom: 16 }}>

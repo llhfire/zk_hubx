@@ -109,19 +109,19 @@ function SkillCard({ skill, empScore }: { skill: SkillNode; empScore: number }) 
       padding: '10px 14px',
       borderRadius: 8,
       border: `1px solid ${unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : 'var(--color-border)'}`,
-      borderLeft: `3px solid ${unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : '#c9cdd4'}`,
+      borderLeft: `3px solid ${unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : 'var(--grey-300)'}`,
       background: unlocked ? '#fff' : 'var(--color-fill-1)',
       opacity: unlocked ? 1 : 0.5,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontWeight: 600, fontSize: 13 }}>{skill.name}</span>
+        <span style={{ fontWeight: 600, fontSize: 14 }}>{skill.name}</span>
         {unlocked ? (
           <Tag color={ABILITY_DIMENSION_COLORS[skill.domain]} size="small">{mastery}</Tag>
         ) : (
           <Tag size="small">🔒 {skill.requiredScore}+</Tag>
         )}
       </div>
-      <div style={{ fontSize: 11, color: 'var(--color-text-3)' }}>{skill.description}</div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{skill.description}</div>
     </div>
   );
 }
@@ -170,9 +170,9 @@ export function EmployeeDetail() {
                   <Title heading={4} style={{ margin: 0 }}>{employee.name}</Title>
                   <Tag color={getLevelColor(employee.level)} style={{fontWeight: 600 }}>{employee.level}</Tag>
                   <Tag color={getStatusColor(employee.employmentStatus)}>{employee.employmentStatus}</Tag>
-                  {cap?.promotionEligible && <Tag color="#ff7d00">可晋级</Tag>}
+                  {cap?.promotionEligible && <Tag color="var(--warning-500)">可晋级</Tag>}
                 </div>
-                <div style={{ marginTop: 4, color: 'var(--color-text-2)', fontSize: 13 }}>
+                <div style={{ marginTop: 4, color: 'var(--color-text-2)', fontSize: 14 }}>
                   {employee.jobNumber} · {employee.department} · {employee.position}
                 </div>
               </div>
@@ -187,8 +187,8 @@ export function EmployeeDetail() {
         <Col span={4}><Card><Statistic title="入职天数" value={workDays} suffix="天" prefix={<IconCalendar style={{ color: 'rgb(var(--primary-6))' }} />} /></Card></Col>
         <Col span={4}><Card><Statistic title="标准时薪" value={employee.standardHourlyRate} prefix="¥" suffix="/h" valueStyle={{ color: 'rgb(var(--primary-6))' }} /></Card></Col>
         <Col span={4}><Card><Statistic title="最近评级" value={latestPerf ? latestPerf.rank : '—'} valueStyle={{ color: latestPerf ? getRankColor(latestPerf.rank) : undefined }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="加权总分" value={cap ? cap.weightedScore : '—'} suffix="分" prefix={<IconTrophy style={{ color: '#ff7d00' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="已解锁技能" value={cap ? cap.skills.filter(s => s.status === 'unlocked').length : '—'} suffix="个" prefix={<IconCheck style={{ color: '#00b42a' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title="加权总分" value={cap ? cap.weightedScore : '—'} suffix="分" prefix={<IconTrophy style={{ color: 'var(--warning-500)' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title="已解锁技能" value={cap ? cap.skills.filter(s => s.status === 'unlocked').length : '—'} suffix="个" prefix={<IconCheck style={{ color: 'var(--success-500)' }} />} /></Card></Col>
         <Col span={4}><Card><Statistic title="累计经验" value={cap ? cap.totalXP : '—'} suffix="XP" prefix={<IconExperiment style={{ color: '#7c3aed' }} />} /></Card></Col>
       </Row>
 
@@ -196,7 +196,7 @@ export function EmployeeDetail() {
       <Card bordered={false}>
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="profile" title="档案" />
-          <TabPane key="capability" title={<span><IconTrophy style={{ color: '#ff7d00' }} /> 能力</span>} />
+          <TabPane key="capability" title={<span><IconTrophy style={{ color: 'var(--warning-500)' }} /> 能力</span>} />
           <TabPane key="personality" title={<span><IconStar style={{ color: '#7c3aed' }} /> 性格测评</span>} />
           <TabPane key="attendance" title="考勤" />
           <TabPane key="performance" title="绩效" />
@@ -243,10 +243,10 @@ export function EmployeeDetail() {
                     {(Object.keys(cap.scores) as AbilityDimension[]).map(dim => (
                       <div key={dim} style={{ marginBottom: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontWeight: 600, fontSize: 13, color: ABILITY_DIMENSION_COLORS[dim] }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: ABILITY_DIMENSION_COLORS[dim] }}>
                             {ABILITY_DIMENSION_LABELS[dim]}
                           </span>
-                          <span style={{ fontWeight: 700, fontSize: 13 }}>{cap.scores[dim]}/100</span>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{cap.scores[dim]}/100</span>
                         </div>
                         <Progress percent={cap.scores[dim]} color={ABILITY_DIMENSION_COLORS[dim]} size="small" />
                       </div>
@@ -255,19 +255,19 @@ export function EmployeeDetail() {
                   <Card title="晋级评估" size="small" style={{ marginTop: 12 }} bodyStyle={{ padding: '16px 20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontWeight: 600 }}>当前加权总分</span>
-                      <span style={{ fontSize: 20, fontWeight: 700, color: cap.promotionEligible ? '#00b42a' : 'rgb(var(--primary-6))' }}>
+                      <span style={{ fontSize: 20, fontWeight: 700, color: cap.promotionEligible ? 'var(--success-500)' : 'rgb(var(--primary-6))' }}>
                         {cap.weightedScore}
                       </span>
                     </div>
                     <div style={{ marginBottom: 8 }}>
-                      <Progress percent={calcPromotionProgress(cap.weightedScore, employee.level)} color={cap.promotionEligible ? '#00b42a' : 'rgb(var(--primary-6))'} />
+                      <Progress percent={calcPromotionProgress(cap.weightedScore, employee.level)} color={cap.promotionEligible ? 'var(--success-500)' : 'rgb(var(--primary-6))'} />
                     </div>
                     {cap.promotionEligible ? (
-                      <Tag color="#00b42a" style={{fontSize: 13, padding: '4px 12px' }}>
+                      <Tag color="var(--success-500)" style={{fontSize: 14, padding: '4px 12px' }}>
                         <IconTrophy /> 已达标，具备晋升资格！
                       </Tag>
                     ) : (
-                      <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: 14 }}>
                         未达晋升门槛，继续积累经验即可晋级
                       </Typography.Text>
                     )}
@@ -288,7 +288,7 @@ export function EmployeeDetail() {
                         return (
                           <Col span={8} key={layer}>
                             <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <Tag color={layer === 1 ? '#00b42a' : layer === 2 ? '#165dff' : '#7c3aed'}>
+                              <Tag color={layer === 1 ? 'var(--success-500)' : layer === 2 ? 'var(--primary)' : '#7c3aed'}>
                                 {layer === 1 ? '基础' : layer === 2 ? '进阶' : '专家'}
                               </Tag>
                             </div>
@@ -316,7 +316,7 @@ export function EmployeeDetail() {
           )}
           {activeTab === 'personality' && !employee.personality && (
             <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-3)' }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🧩</div>
+              <div style={{ fontSize: 36, marginBottom: 16 }}>🧩</div>
               <Typography.Paragraph>该员工尚未完成性格测评</Typography.Paragraph>
               <Typography.Paragraph style={{ fontSize: 12 }}>完成 MBTI、大五人格、DISC 九型人格测评后，分析数据将自动显示在此处。</Typography.Paragraph>
             </div>
@@ -330,7 +330,7 @@ export function EmployeeDetail() {
                   { title: '类型', dataIndex: 'type', width: 70, render: (t: any) => <Tag>{t}</Tag> },
                   { title: '开始', dataIndex: 'startDate', width: 110 }, { title: '结束', dataIndex: 'endDate', width: 110 },
                   { title: '天数', dataIndex: 'days', width: 60 }, { title: '事由', dataIndex: 'reason' },
-                  { title: '状态', dataIndex: 'status', width: 80, render: (s: any) => <Tag color={s === '已批准' ? '#00b42a' : s === '待审批' ? '#ff7d00' : '#f53f3f'}>{s}</Tag> },
+                  { title: '状态', dataIndex: 'status', width: 80, render: (s: any) => <Tag color={s === '已批准' ? 'var(--success-500)' : s === '待审批' ? 'var(--warning-500)' : 'var(--destructive-500)'}>{s}</Tag> },
                   { title: '审批人', dataIndex: 'approvedBy', width: 80 },
                 ] as any}
                 data={empAttendance} rowKey="id" pagination={false}
@@ -391,7 +391,7 @@ function PersonalityView({ assessment, employeeName }: PersonalityViewProps) {
       {/* 顶部摘要 */}
       <Card bordered={false} style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.05), rgba(236,72,153,0.05))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ fontSize: 40 }}>🧩</div>
+          <div style={{ fontSize: 36 }}>🧩</div>
           <div>
             <Title heading={5} style={{ margin: 0 }}>{employeeName} · 性格测评报告</Title>
             <Typography.Text type="secondary">已完成 {testCount} 项测评：{[mbti && 'MBTI', bigFive && '大五人格', disc && 'DISC', enneagram && '九型人格'].filter(Boolean).join(' · ')}</Typography.Text>
@@ -431,7 +431,7 @@ function MBTICard({ mbti }: { mbti: MBTIPersonality }) {
           width: 100, height: 100, borderRadius: 16,
           background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: 2,
+          fontSize: 30, fontWeight: 700, color: '#fff', letterSpacing: 2,
         }}>
           {mbti.type}
         </div>
@@ -439,11 +439,11 @@ function MBTICard({ mbti }: { mbti: MBTIPersonality }) {
           <Title heading={4} style={{ margin: 0 }}>{info.nickname}</Title>
           <Typography.Text type="secondary">{info.summary}</Typography.Text>
           {mbti.description && (
-            <Typography.Paragraph style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-2)' }}>
+            <Typography.Paragraph style={{ marginTop: 8, fontSize: 14, color: 'var(--color-text-2)' }}>
               💡 {mbti.description}
             </Typography.Paragraph>
           )}
-          <Typography.Text type="secondary" style={{ fontSize: 11 }}>测试日期：{mbti.testDate}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>测试日期：{mbti.testDate}</Typography.Text>
         </div>
       </div>
 
@@ -456,15 +456,15 @@ function MBTICard({ mbti }: { mbti: MBTIPersonality }) {
             <Col span={6} key={d.dim}>
               <div style={{ textAlign: 'center', marginBottom: 8, fontWeight: 600 }}>{d.dim}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                <span style={{ color: isPos ? '#165dff' : 'var(--color-text-3)' }}>{d.pos}</span>
-                <span style={{ color: !isPos ? '#165dff' : 'var(--color-text-3)' }}>{d.neg}</span>
+                <span style={{ color: isPos ? 'var(--primary)' : 'var(--color-text-3)' }}>{d.pos}</span>
+                <span style={{ color: !isPos ? 'var(--primary)' : 'var(--color-text-3)' }}>{d.neg}</span>
               </div>
               <Progress
                 percent={pct}
-                color={isPos ? '#165dff' : '#a855f7'}
+                color={isPos ? 'var(--primary)' : '#a855f7'}
                 size="small"
               />
-              <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>
+              <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
                 {isPos ? d.pos : d.neg} {pct}%
               </div>
             </Col>
@@ -478,9 +478,9 @@ function MBTICard({ mbti }: { mbti: MBTIPersonality }) {
 function BigFiveCard({ bigFive }: { bigFive: BigFiveProfile }) {
   const traits = [
     { label: ' openness', cn: '开放性', value: bigFive.openness, color: '#7c3aed', desc: '好奇心、想象力、尝新' },
-    { label: 'conscientiousness', cn: '尽责性', value: bigFive.conscientiousness, color: '#00b42a', desc: '组织性、责任感、目标导向' },
-    { label: 'extraversion', cn: '外向性', value: bigFive.extraversion, color: '#ff7d00', desc: '社交性、精力充沛、乐观' },
-    { label: 'agreeableness', cn: '宜人性', value: bigFive.agreeableness, color: '#165dff', desc: '合作、信任、利他' },
+    { label: 'conscientiousness', cn: '尽责性', value: bigFive.conscientiousness, color: 'var(--success-500)', desc: '组织性、责任感、目标导向' },
+    { label: 'extraversion', cn: '外向性', value: bigFive.extraversion, color: 'var(--warning-500)', desc: '社交性、精力充沛、乐观' },
+    { label: 'agreeableness', cn: '宜人性', value: bigFive.agreeableness, color: 'var(--primary)', desc: '合作、信任、利他' },
     { label: 'neuroticism', cn: '情绪稳定性', value: 100 - bigFive.neuroticism, color: '#0fc6c2', desc: '情绪稳定（反向计分）' },
   ];
 
@@ -494,23 +494,23 @@ function BigFiveCard({ bigFive }: { bigFive: BigFiveProfile }) {
       {traits.map(t => (
         <div key={t.label} style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{t.cn} <span style={{ color: 'var(--color-text-3)', fontWeight: 400, fontSize: 11 }}>{t.desc}</span></span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: t.color }}>{t.value}</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{t.cn} <span style={{ color: 'var(--color-text-3)', fontWeight: 400, fontSize: 12 }}>{t.desc}</span></span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: t.color }}>{t.value}</span>
           </div>
           <Progress percent={t.value} color={t.color} size="small" />
         </div>
       ))}
-      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>测试日期：{bigFive.testDate}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>测试日期：{bigFive.testDate}</Typography.Text>
     </Card>
   );
 }
 
 function DISCCard({ disc }: { disc: DISCProfile }) {
   const all = [
-    { key: 'D', label: '指挥型', value: disc.dominance, color: '#f53f3f', icon: '🎯', desc: '结果导向、果断' },
-    { key: 'I', label: '影响型', value: disc.influence, color: '#ff7d00', icon: '🤝', desc: '乐观、说服力强' },
-    { key: 'S', label: '稳健型', value: disc.steadiness, color: '#00b42a', icon: '🤲', desc: '耐心、稳定、合作' },
-    { key: 'C', label: '服从型', value: disc.compliance, color: '#165dff', icon: '📐', desc: '精确、系统化' },
+    { key: 'D', label: '指挥型', value: disc.dominance, color: 'var(--destructive-500)', icon: '🎯', desc: '结果导向、果断' },
+    { key: 'I', label: '影响型', value: disc.influence, color: 'var(--warning-500)', icon: '🤝', desc: '乐观、说服力强' },
+    { key: 'S', label: '稳健型', value: disc.steadiness, color: 'var(--success-500)', icon: '🤲', desc: '耐心、稳定、合作' },
+    { key: 'C', label: '服从型', value: disc.compliance, color: 'var(--primary)', icon: '📐', desc: '精确、系统化' },
   ];
 
   return (
@@ -524,7 +524,7 @@ function DISCCard({ disc }: { disc: DISCProfile }) {
               background: item.key === disc.primaryStyle ? item.color : 'var(--color-fill-2)',
               color: item.key === disc.primaryStyle ? '#fff' : 'var(--color-text-3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 800,
+              fontSize: 18, fontWeight: 700,
             }}>
               {item.key}
             </div>
@@ -538,23 +538,23 @@ function DISCCard({ disc }: { disc: DISCProfile }) {
       {all.map(item => (
         <div key={item.key} style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>
               {item.icon} {item.label}
-              <span style={{ color: 'var(--color-text-3)', fontWeight: 400, fontSize: 11, marginLeft: 4 }}>{item.desc}</span>
+              <span style={{ color: 'var(--color-text-3)', fontWeight: 400, fontSize: 12, marginLeft: 4 }}>{item.desc}</span>
             </span>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>{item.value}%</span>
+            <span style={{ fontSize: 14, fontWeight: 700 }}>{item.value}%</span>
           </div>
           <Progress percent={item.value} color={item.color} size="small" />
         </div>
       ))}
-      <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>测试日期：{disc.testDate}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>测试日期：{disc.testDate}</Typography.Text>
     </Card>
   );
 }
 
 function EnneagramCard({ enneagram }: { enneagram: EnneagramProfile }) {
   const info = ENNEAGRAM_DESCRIPTIONS[enneagram.type];
-  const colors = ['#f53f3f', '#ff7d00', '#f7d038', '#00b42a', '#0fc6c2', '#165dff', '#7c3aed', '#eb2f96', '#86909c'];
+  const colors = ['var(--destructive-500)', 'var(--warning-500)', '#f7d038', 'var(--success-500)', '#0fc6c2', 'var(--primary)', '#7c3aed', '#eb2f96', 'var(--grey-400)'];
 
   return (
     <Card title={<span><span style={{ fontSize: 18 }}>🔢</span> 九型人格</span>}>
@@ -565,7 +565,7 @@ function EnneagramCard({ enneagram }: { enneagram: EnneagramProfile }) {
               width: 80, height: 80, borderRadius: '50%',
               background: `linear-gradient(135deg, ${colors[enneagram.type - 1]}, ${colors[enneagram.type - 1]}aa)`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 36, fontWeight: 800, color: '#fff', margin: '0 auto 8px',
+              fontSize: 36, fontWeight: 700, color: '#fff', margin: '0 auto 8px',
             }}>
               {enneagram.type}
             </div>
@@ -584,7 +584,7 @@ function EnneagramCard({ enneagram }: { enneagram: EnneagramProfile }) {
               >{t}号 · {ENNEAGRAM_DESCRIPTIONS[t].name}</Tag>
             ))}
           </div>
-          <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 12 }}>测试日期：{enneagram.testDate}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 12 }}>测试日期：{enneagram.testDate}</Typography.Text>
         </Col>
       </Row>
     </Card>

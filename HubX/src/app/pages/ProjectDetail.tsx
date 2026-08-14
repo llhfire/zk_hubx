@@ -84,7 +84,7 @@ function SummaryHighlightCard({
         </div>
         <div
           style={{
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 500,
             lineHeight: '18px',
             color: 'var(--color-text-1)',

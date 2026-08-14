@@ -20,7 +20,7 @@ const Col = Grid.Col;
 const cardStyle = {
   borderRadius: 'var(--radius-lg)',
   boxShadow: 'var(--shadow-xs)',
-  border: '1px solid hsl(220 12% 88%)',
+  border: '1px solid var(--grey-200)',
 };
 
 const priorityMeta = {
@@ -114,10 +114,10 @@ export function Dashboard() {
     <div>
       <div className="flex items-start justify-between" style={{ marginBottom: 20 }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0, color: 'hsl(220 20% 10%)' }}>
+          <Typography.Title heading={5} style={{ margin: 0, color: 'var(--grey-900)' }}>
             {greeting}，张三
           </Typography.Title>
-          <Typography.Text style={{ display: 'block', marginTop: 7, color: 'hsl(220 8% 50%)' }}>
+          <Typography.Text style={{ display: 'block', marginTop: 7, color: 'var(--grey-500)' }}>
             {dateLabel} · 今天有 {activeTodos.length} 项待处理
             {todoSummary.overdue > 0 && <span style={{ color: 'rgb(var(--red-6))' }}>，其中 {todoSummary.overdue} 项已逾期</span>}
           </Typography.Text>
@@ -134,11 +134,11 @@ export function Dashboard() {
             <Card style={cardStyle} bodyStyle={{ padding: '18px 20px' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <div style={{ fontSize: 13, color: 'hsl(220 8% 50%)' }}>{item.label}</div>
-                  <div style={{ fontSize: 28, lineHeight: 1.2, fontWeight: 700, margin: '6px 0 3px', color: 'hsl(220 20% 10%)' }}>
+                  <div style={{ fontSize: 14, color: 'var(--grey-500)' }}>{item.label}</div>
+                  <div style={{ fontSize: 30, lineHeight: 1.2, fontWeight: 700, margin: '6px 0 3px', color: 'var(--grey-900)' }}>
                     {item.value}
                   </div>
-                  <div style={{ fontSize: 12, color: 'hsl(220 8% 58%)' }}>{item.note}</div>
+                  <div style={{ fontSize: 12, color: 'var(--grey-400)' }}>{item.note}</div>
                 </div>
                 <div style={{
                   width: 42,
@@ -177,19 +177,19 @@ export function Dashboard() {
                   style={{
                     minHeight: 70,
                     padding: '12px 0',
-                    borderBottom: index === sortedTodos.length - 1 ? 'none' : '1px solid hsl(220 12% 92%)',
+                    borderBottom: index === sortedTodos.length - 1 ? 'none' : '1px solid var(--grey-100)',
                   }}
                 >
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="flex items-center gap-2" style={{ marginBottom: 7 }}>
                       <Tag size="small" color={priorityMeta[todo.priority].color}>{priorityMeta[todo.priority].label}</Tag>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: 'hsl(220 20% 14%)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {todo.title}
                       </span>
                     </div>
                     <Space size={12}>
-                      <span style={{ fontSize: 12, color: 'hsl(220 8% 52%)' }}>{todo.module}</span>
-                      <span style={{ fontSize: 12, color: overdue ? 'rgb(var(--red-6))' : 'hsl(220 8% 52%)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--grey-500)' }}>{todo.module}</span>
+                      <span style={{ fontSize: 12, color: overdue ? 'rgb(var(--red-6))' : 'var(--grey-500)' }}>
                         <IconClockCircle style={{ marginRight: 4 }} />{overdue ? '已逾期 · ' : ''}{formatDeadline(todo.deadline)}
                       </span>
                       {todo.status === 'in_progress' && <Badge status="processing" text="处理中" />}
@@ -220,7 +220,7 @@ export function Dashboard() {
                     onClick={() => item.action ? item.action() : navigate(item.route!)}
                   >
                     <Space direction="vertical" size={3}>
-                      <span style={{ color: 'rgb(var(--primary-6))', fontSize: 17 }}>{item.icon}</span>
+                      <span style={{ color: 'rgb(var(--primary-6))', fontSize: 18 }}>{item.icon}</span>
                       <span>{item.label}</span>
                     </Space>
                   </Button>
@@ -234,8 +234,8 @@ export function Dashboard() {
               ['本月签约客户', '28', '+18.2%'],
               ['进行中项目', '35', '+5.7%'],
             ].map(([label, value, trend], index) => (
-              <div key={label} className="flex items-center justify-between" style={{ padding: '11px 0', borderBottom: index === 2 ? 'none' : '1px solid hsl(220 12% 92%)' }}>
-                <span style={{ fontSize: 13, color: 'hsl(220 8% 46%)' }}>{label}</span>
+              <div key={label} className="flex items-center justify-between" style={{ padding: '11px 0', borderBottom: index === 2 ? 'none' : '1px solid var(--grey-100)' }}>
+                <span style={{ fontSize: 14, color: 'var(--grey-500)' }}>{label}</span>
                 <Space>
                   <strong style={{ fontSize: 16 }}>{value}</strong>
                   <span style={{ fontSize: 12, color: 'rgb(var(--green-6))' }}>{trend}</span>
@@ -255,10 +255,10 @@ export function Dashboard() {
             bodyStyle={{ padding: '0 20px' }}
           >
             {recentLeads.map((lead, index) => (
-              <div key={lead.name} className="flex items-center justify-between" style={{ padding: '14px 0', borderBottom: index === recentLeads.length - 1 ? 'none' : '1px solid hsl(220 12% 92%)' }}>
+              <div key={lead.name} className="flex items-center justify-between" style={{ padding: '14px 0', borderBottom: index === recentLeads.length - 1 ? 'none' : '1px solid var(--grey-100)' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 5 }}>{lead.name}</div>
-                  <span style={{ fontSize: 12, color: 'hsl(220 8% 52%)' }}>{lead.customer} · {lead.followTime}</span>
+                  <span style={{ fontSize: 12, color: 'var(--grey-500)' }}>{lead.customer} · {lead.followTime}</span>
                 </div>
                 <Space>
                   <Tag size="small" color={lead.level === '高' ? 'red' : 'orange'}>{lead.level}意向</Tag>
@@ -276,11 +276,11 @@ export function Dashboard() {
             bodyStyle={{ padding: '0 20px' }}
           >
             {projectProgress.map((project, index) => (
-              <div key={project.name} style={{ padding: '13px 0', borderBottom: index === projectProgress.length - 1 ? 'none' : '1px solid hsl(220 12% 92%)' }}>
+              <div key={project.name} style={{ padding: '13px 0', borderBottom: index === projectProgress.length - 1 ? 'none' : '1px solid var(--grey-100)' }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: 7 }}>
                   <div>
                     <span style={{ fontSize: 14, fontWeight: 500 }}>{project.name}</span>
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'hsl(220 8% 52%)' }}>{project.customer}</span>
+                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--grey-500)' }}>{project.customer}</span>
                   </div>
                   <Badge status={project.status === '正常' ? 'success' : 'warning'} text={project.status} />
                 </div>

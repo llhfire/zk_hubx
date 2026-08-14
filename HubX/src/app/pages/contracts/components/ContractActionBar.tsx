@@ -145,7 +145,7 @@ export function ContractActionBar({ contract }: Props) {
       break;
     case 'pending_return':
       buttons.push(
-        <span key="hint" style={{ color: 'var(--color-text-3)', fontSize: 13 }}>
+        <span key="hint" style={{ color: 'var(--color-text-3)', fontSize: 14 }}>
           请在下方「扫描件归档」Tab 上传客户回寄件
         </span>,
         <Button key="void" status="danger" onClick={() => setVoidModalVisible(true)}>
@@ -157,7 +157,7 @@ export function ContractActionBar({ contract }: Props) {
       break;
     case 'voided':
       buttons.push(
-        <span key="hint" style={{ color: 'var(--color-danger)', fontSize: 13 }}>
+        <span key="hint" style={{ color: 'var(--color-danger)', fontSize: 14 }}>
           合同已作废
         </span>,
       );

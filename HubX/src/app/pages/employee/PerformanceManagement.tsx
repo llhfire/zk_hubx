@@ -38,10 +38,10 @@ const { TextArea } = Input;
 
 const RANK_META: Record<PerformanceRank, { color: string; label: string }> = {
   'S': { color: '#7c3aed', label: '卓越' },
-  'A': { color: '#00b42a', label: '优秀' },
-  'B': { color: '#165dff', label: '良好' },
-  'C': { color: '#ff7d00', label: '合格' },
-  'D': { color: '#f53f3f', label: '待改进' },
+  'A': { color: 'var(--success-500)', label: '优秀' },
+  'B': { color: 'var(--primary)', label: '良好' },
+  'C': { color: 'var(--warning-500)', label: '合格' },
+  'D': { color: 'var(--destructive-500)', label: '待改进' },
 };
 
 export function PerformanceManagement() {
@@ -118,7 +118,7 @@ export function PerformanceManagement() {
   };
 
   const columns = [
-    { title: '被考核人', dataIndex: 'employeeName', width: 80 },
+    { title: '被考核人', dataIndex: 'employeeName', width: 100 },
     { title: '部门', dataIndex: 'department', width: 80 },
     {
       title: '周期',
@@ -126,7 +126,7 @@ export function PerformanceManagement() {
       width: 60,
       render: (p: string) => <Tag>{p}</Tag>,
     },
-    { title: '考核月份/季', dataIndex: 'periodLabel', width: 100 },
+    { title: '考核月份/季', dataIndex: 'periodLabel', width: 130 },
     {
       title: 'KPI分',
       dataIndex: 'kpiScore',
@@ -137,7 +137,7 @@ export function PerformanceManagement() {
     {
       title: '行为分',
       dataIndex: 'behaviorScore',
-      width: 70,
+      width: 90,
       render: (v: number) => <span style={{ fontWeight: 600 }}>{v}</span>,
     },
     {
@@ -145,7 +145,7 @@ export function PerformanceManagement() {
       dataIndex: 'totalScore',
       width: 80,
       render: (v: number) => (
-        <span style={{ fontWeight: 700, color: v >= 80 ? '#00b42a' : v >= 70 ? '#165dff' : '#ff7d00' }}>
+        <span style={{ fontWeight: 700, color: v >= 80 ? 'var(--success-500)' : v >= 70 ? 'var(--primary)' : 'var(--warning-500)' }}>
           {v}
         </span>
       ),
@@ -194,7 +194,7 @@ export function PerformanceManagement() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>平均 KPI 得分</span>}
               value={stats.avgKpi}
-              prefix={<IconStar style={{ color: '#ff7d00' }} />}
+              prefix={<IconStar style={{ color: 'var(--warning-500)' }} />}
               suffix="分"
             />
           </Card>

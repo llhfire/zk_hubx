@@ -313,7 +313,7 @@ export const ABILITY_DIMENSION_LABELS: Record<AbilityDimension, string> = {
 };
 
 export const ABILITY_DIMENSION_COLORS: Record<AbilityDimension, string> = {
-  tech: '#165dff', biz: '#00b42a', mgmt: '#ff7d00', tool: '#7c3aed', domain: '#eb2f96',
+  tech: 'var(--primary)', biz: 'var(--success-500)', mgmt: 'var(--warning-500)', tool: '#7c3aed', domain: '#eb2f96',
 };
 
 export const skillTreeDefinitions: SkillNode[] = [
@@ -392,7 +392,8 @@ export function calcWorkDays(hireDateStr: string): number {
 
 export function formatCurrency(n: number | undefined | null): string {
   if (n === undefined || n === null) return '¥0';
-  return `¥${n.toLocaleString()}`;
+  const rounded = Math.round(n * 100) / 100;
+  return `¥${rounded.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 export function getLevelColor(level: JobLevel): string {

@@ -9,6 +9,7 @@ import { ApprovalProvider } from './approvals/ApprovalContext';
 import { TodoProvider } from './todos/TodoContext';
 import { router } from './routes';
 import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
+import { QuotationProvider } from './pages/quotation/QuotationContext';
 
 function App() {
   return (
@@ -21,7 +22,9 @@ function App() {
                 <JobWorkConfigProvider>
                   <ContractsProvider>
                     <ProjectInvoiceProvider>
-                      <RouterProvider router={router} />
+                      <QuotationProvider>
+                        <RouterProvider router={router} />
+                      </QuotationProvider>
                     </ProjectInvoiceProvider>
                   </ContractsProvider>
                 </JobWorkConfigProvider>

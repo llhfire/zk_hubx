@@ -11,6 +11,7 @@ import {
   Tabs,
   Tag,
   Typography,
+  Tooltip,
 } from '@arco-design/web-react';
 import { IconPlus, IconSave, IconUserGroup } from '@arco-design/web-react/icon';
 import { useEmployee } from './EmployeeContext';
@@ -163,7 +164,7 @@ export function LevelRateSettings() {
           );
         }
         return (
-          <span style={{ fontWeight: 700, color: 'rgb(var(--primary-6))', fontSize: 15 }}>
+          <span style={{ fontWeight: 700, color: 'rgb(var(--primary-6))', fontSize: 16 }}>
             {formatCurrency(record.standardRate)}/h
           </span>
         );
@@ -176,9 +177,9 @@ export function LevelRateSettings() {
       render: (_: unknown, record: LevelRateConfig) => {
         if (editingKey === `${record.level}-${record.position}`) return null;
         return (
-          <Button type="text" size="small" icon={<IconSave />} onClick={() => handleEdit(record)}>
-            编辑时薪
-          </Button>
+          <Tooltip content="编辑时薪">
+            <Button type="text" size="small" icon={<IconSave />} onClick={() => handleEdit(record)} />
+          </Tooltip>
         );
       },
     },

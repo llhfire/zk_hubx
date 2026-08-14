@@ -82,7 +82,7 @@ function VersionEntry({
         {isApproved && <Tag color="green">已审批</Tag>}
         {isSelected && <Tag color="arcoblue">当前查看</Tag>}
       </div>
-      <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginTop: 4 }}>
+      <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginTop: 4 }}>
         {version.label}
       </div>
       <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>

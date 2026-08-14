@@ -224,7 +224,6 @@ export function BusinessMappingList() {
     <div>
       <div className="flex items-start justify-between" style={{ marginBottom: 16 }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>业务审批配置</Typography.Title>
           <Text type="secondary">新增 HubX 业务审批，绑定审批模板，并为每个节点配置审批人。</Text>
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增业务审批</Button>

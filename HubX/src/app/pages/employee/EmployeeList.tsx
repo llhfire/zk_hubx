@@ -549,7 +549,7 @@ export function EmployeeList() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>本月入职</span>}
               value={stats.thisMonthHire}
-              prefix={<IconUserGroup style={{ color: '#00b42a' }} />}
+              prefix={<IconUserGroup style={{ color: 'var(--success-500)' }} />}
               groupSeparator
             />
           </Card>
@@ -559,7 +559,7 @@ export function EmployeeList() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>本月离职</span>}
               value={stats.thisMonthLeave}
-              prefix={<IconUser style={{ color: '#f53f3f' }} />}
+              prefix={<IconUser style={{ color: 'var(--destructive-500)' }} />}
               groupSeparator
             />
           </Card>
@@ -569,7 +569,7 @@ export function EmployeeList() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>试用期人数</span>}
               value={stats.onTrial}
-              prefix={<IconCalendar style={{ color: '#ff7d00' }} />}
+              prefix={<IconCalendar style={{ color: 'var(--warning-500)' }} />}
               groupSeparator
             />
           </Card>

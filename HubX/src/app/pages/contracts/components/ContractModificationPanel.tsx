@@ -156,7 +156,7 @@ export function ContractModificationPanel({
                               padding: '6px 10px',
                               background: 'var(--color-fill-2)',
                               borderRadius: 4,
-                              fontSize: 13,
+                              fontSize: 14,
                             }}
                           >
                             <div style={{ flex: 1, minWidth: 0 }}>

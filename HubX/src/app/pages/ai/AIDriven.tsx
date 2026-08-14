@@ -177,8 +177,8 @@ export function AIDriven() {
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="tasks" title={<span><IconApps /> 智能任务拆解</span>} />
           <TabPane key="personnel" title={<span><IconUser /> 智能人员分配</span>} />
-          <TabPane key="milestones" title={<span><IconClockCircle /> 智能跟进提醒 <Badge count={summary.highRiskMilestones} style={{ background: 'var(--destructive-500)' }} /></span>} />
-          <TabPane key="meetings" title={<span><IconCalendar /> 智能会议安排 <Badge count={summary.suggestedMeetings} style={{ background: 'var(--warning-500)' }} /></span>} />
+          <TabPane key="milestones" title={<span><IconClockCircle /> 智能跟进提醒 <Badge count={summary.highRiskMilestones} color="red" /></span>} />
+          <TabPane key="meetings" title={<span><IconCalendar /> 智能会议安排 <Badge count={summary.suggestedMeetings} color="orange" /></span>} />
         </Tabs>
 
         <div style={{ paddingTop: 16 }}>
@@ -244,7 +244,7 @@ export function AIDriven() {
                       <Col span={8} key={c.name}>
                         <Card size="small" style={{ borderColor: c.matchScore >= 90 ? 'var(--success-500)' : 'var(--color-border)', borderWidth: c.matchScore >= 90 ? 2 : 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <Avatar size={32} style={{ background: 'var(--primary)' }}>{c.name.slice(0, 1)}</Avatar>
+                            <Avatar size={32} color="arcoblue">{c.name.slice(0, 1)}</Avatar>
                             <div>
                               <div style={{ fontWeight: 600 }}>{c.name}</div>
                               <Tag color={c.matchScore >= 90 ? 'var(--success-500)' : c.matchScore >= 70 ? 'var(--warning-500)' : 'var(--muted-foreground)'}  size="small">
@@ -333,9 +333,9 @@ export function AIDriven() {
                       </div>
                       <div style={{ fontSize: 12, marginBottom: 8 }}>
                         <Avatar.Group size={20} maxCount={5}>
-                          {meeting.attendees.map(a => <Avatar key={a} style={{ background: 'var(--primary)', fontSize: 10 }}>{a.slice(0, 1)}</Avatar>)}
+                          {meeting.attendees.map(a => <Avatar key={a} style={{ background: 'var(--primary)', fontSize: 12 }}>{a.slice(0, 1)}</Avatar>)}
                         </Avatar.Group>
-                        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 11 }}>{meeting.attendees.join('、')}</span>
+                        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 12 }}>{meeting.attendees.join('、')}</span>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 12 }}><IconFile style={{ marginRight: 4 }} /> {meeting.agenda}</div>
                       {meeting.status === 'suggested' && (

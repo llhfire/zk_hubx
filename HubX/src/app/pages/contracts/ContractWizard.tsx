@@ -71,7 +71,7 @@ function renderSubmitField(
           flex: '0 0 120px',
           textAlign: 'right',
           fontWeight: 600,
-          fontSize: 15,
+          fontSize: 16,
           lineHeight: '44px',
           color: 'var(--color-text-1)',
         }}

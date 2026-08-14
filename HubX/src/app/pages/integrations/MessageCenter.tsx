@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Input, Message, Modal, Select, Space, Table, Tag, Typography } from '@arco-design/web-react';
-import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
+import { Button, Card, Input, Message, Modal, Select, Space, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
+import { IconRefresh, IconSearch, IconDelete } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { DeliveryLog, MessageChannel } from '@/app/integrations/types';
 
@@ -89,14 +89,15 @@ export function MessageCenter() {
       width: 110,
       fixed: 'right' as const,
       render: (_: unknown, record: DeliveryLog) => (
-        <Button
-          type="text"
-          status="danger"
-          size="small"
-          onClick={() => confirmDelete([record.id])}
-        >
-          删除
-        </Button>
+        <Tooltip content="删除">
+          <Button
+            type="text"
+            status="danger"
+            size="small"
+            icon={<IconDelete />}
+            onClick={() => confirmDelete([record.id])}
+          />
+        </Tooltip>
       ),
     },
   ];
@@ -104,7 +105,6 @@ export function MessageCenter() {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div>
-        <Typography.Title heading={5} style={{ margin: 0 }}>消息中心</Typography.Title>
         <Text type="secondary">统一查看站内信、企业微信和阿里云短信的模拟投递结果。</Text>
       </div>
       <Card bordered={false}>

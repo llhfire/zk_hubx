@@ -20,10 +20,10 @@ const filters: Array<{ key: DateFilter; label: string }> = [
 ];
 
 const statusItems = [
-  { key: 'executing', label: '执行中', color: '#2563eb' },
-  { key: 'completed', label: '已完成', color: '#10b981' },
-  { key: 'paused', label: '已暂停', color: '#f59e0b' },
-  { key: 'ended', label: '已终止', color: '#ef4444' },
+  { key: 'executing', label: '执行中', color: 'var(--brand-600)' },
+  { key: 'completed', label: '已完成', color: 'var(--success-500)' },
+  { key: 'paused', label: '已暂停', color: 'var(--warning-500)' },
+  { key: 'ended', label: '已终止', color: 'var(--destructive-500)' },
 ];
 
 const stageItems = ['需求调研', 'UI / 原型设计', '开发中', '测试中', '待验收'];
@@ -79,7 +79,7 @@ function progressRow(label: string, value: number, max: number, color: string) {
         <span>{label}</span>
         <strong>{money(value)}</strong>
       </div>
-      <div style={{ height: 10, background: '#eef2f7', borderRadius: 999, overflow: 'hidden' }}>
+      <div style={{ height: 10, background: 'var(--grey-100)', borderRadius: 999, overflow: 'hidden' }}>
         <div style={{ width: `${width}%`, height: '100%', background: color, borderRadius: 999 }} />
       </div>
     </div>
@@ -88,7 +88,7 @@ function progressRow(label: string, value: number, max: number, color: string) {
 
 function donutGradient(items: Array<{ color: string; value: number }>) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
-  if (total <= 0) return '#eef2f7';
+  if (total <= 0) return 'var(--grey-100)';
   let start = 0;
   return `conic-gradient(${items.map(item => {
     const end = start + (item.value / total) * 360;
@@ -106,8 +106,8 @@ function barListRow(label: string, value: number, max: number) {
         <span>{label}</span>
         <strong>{value} 个</strong>
       </div>
-      <div style={{ height: 10, background: '#eef2f7', borderRadius: 999, overflow: 'hidden' }}>
-        <div style={{ width: `${width}%`, height: '100%', background: '#2563eb', borderRadius: 999 }} />
+      <div style={{ height: 10, background: 'var(--grey-100)', borderRadius: 999, overflow: 'hidden' }}>
+        <div style={{ width: `${width}%`, height: '100%', background: 'var(--brand-600)', borderRadius: 999 }} />
       </div>
     </div>
   );
@@ -171,7 +171,6 @@ export function ContractKanban() {
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <Space size={16}>
-          <Title heading={4} style={{ margin: 0 }}>合同看板</Title>
           <Space size={6}>
             {filters.map(filter => (
               <Button
@@ -194,31 +193,31 @@ export function ContractKanban() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
-        {metric('合同总额', money(data.total), `${data.summary.totalContracts} 份有效合同`, '#1d4ed8')}
-        {metric('已回款', money(data.received), `回款率 ${collectionRate}%`, '#059669')}
-        {metric('待回款', money(Math.max(0, data.total - data.received)), `未来 30 天 ${money(data.next30)}`, '#b45309')}
-        {metric('风险合同', `${data.summary.blockedCount} 个`, `卡点金额 ${money(data.summary.blockedAmount)}`, '#dc2626')}
+        {metric('合同总额', money(data.total), `${data.summary.totalContracts} 份有效合同`, 'var(--brand-700)')}
+        {metric('已回款', money(data.received), `回款率 ${collectionRate}%`, 'var(--success-600)')}
+        {metric('待回款', money(Math.max(0, data.total - data.received)), `未来 30 天 ${money(data.next30)}`, 'var(--warning-600)')}
+        {metric('风险合同', `${data.summary.blockedCount} 个`, `卡点金额 ${money(data.summary.blockedAmount)}`, 'var(--destructive-600)')}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <Card bordered={false} style={cardStyle()}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>月度新签合同金额趋势</div>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>月度新签合同金额趋势</div>
               <Text type="secondary">单位：万元</Text>
             </div>
-            <div style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: 999, background: '#dbeafe', color: '#2563eb', fontWeight: 700 }}>
+            <div style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: 999, background: 'var(--brand-100)', color: 'var(--brand-600)', fontWeight: 700 }}>
               {dateFilter === 'all' ? '近 6 个月' : filters.find(f => f.key === dateFilter)?.label}
             </div>
           </div>
-          <div style={{ height: 300, display: 'flex', alignItems: 'flex-end', gap: 28, borderBottom: '1px solid #e5e7eb', padding: '20px 0 0' }}>
+          <div style={{ height: 300, display: 'flex', alignItems: 'flex-end', gap: 28, borderBottom: '1px solid var(--grey-200)', padding: '20px 0 0' }}>
             {data.monthAmounts.map(item => {
               const height = Math.max(24, Math.round((item.value / maxMonthAmount) * 230));
               return (
                 <div key={item.label} style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontWeight: 700, marginBottom: 10 }}>{Math.round(item.value / 10000)}</div>
-                  <div style={{ height, maxWidth: 52, margin: '0 auto', borderRadius: '12px 12px 0 0', background: 'linear-gradient(180deg, #60a5fa, #2563eb)' }} />
-                  <div style={{ marginTop: 12, color: '#6b7280' }}>{item.label}</div>
+                  <div style={{ height, maxWidth: 52, margin: '0 auto', borderRadius: '12px 12px 0 0', background: 'linear-gradient(180deg, var(--brand-400), var(--brand-600))' }} />
+                  <div style={{ marginTop: 12, color: 'var(--grey-500)' }}>{item.label}</div>
                 </div>
               );
             })}
@@ -226,21 +225,21 @@ export function ContractKanban() {
         </Card>
 
         <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>本月回款完成情况</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>本月回款完成情况</div>
           <Text type="secondary">应收 / 实收 / 逾期</Text>
-          {progressRow('本月应收', data.monthDue, paymentMax, '#2563eb')}
-          {progressRow('本月实收', data.monthReceived, paymentMax, '#10b981')}
-          {progressRow('本月逾期', data.monthOverdue, paymentMax, '#ef4444')}
-          {progressRow('未来 30 天预计回款', data.next30, paymentMax, '#f59e0b')}
+          {progressRow('本月应收', data.monthDue, paymentMax, 'var(--brand-600)')}
+          {progressRow('本月实收', data.monthReceived, paymentMax, 'var(--success-500)')}
+          {progressRow('本月逾期', data.monthOverdue, paymentMax, 'var(--destructive-500)')}
+          {progressRow('未来 30 天预计回款', data.next30, paymentMax, 'var(--warning-500)')}
         </Card>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 18 }}>合同状态分布</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 18 }}>合同状态分布</div>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
             <div style={{ width: 170, height: 170, borderRadius: '50%', background: donutGradient(donutItems), position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 700 }}>
+              <div style={{ position: 'absolute', inset: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--grey-500)', fontWeight: 700 }}>
                 合同状态
               </div>
             </div>
@@ -256,7 +255,7 @@ export function ContractKanban() {
         </Card>
 
         <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>项目阶段分布</div>
+          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 24 }}>项目阶段分布</div>
           {stageItems.map(item => barListRow(item, data.stageCounts[item as keyof typeof data.stageCounts], stageMax))}
         </Card>
       </div>

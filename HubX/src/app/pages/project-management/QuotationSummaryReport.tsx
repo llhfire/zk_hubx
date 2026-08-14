@@ -175,28 +175,28 @@ function drawReportBlock(
   const blockHeight = 44 + blockRows.length * 44 + 42;
   context.fillStyle = '#ffffff';
   context.fillRect(40, y, width - 80, blockHeight);
-  context.strokeStyle = '#e5e6eb';
+  context.strokeStyle = 'var(--grey-200)';
   context.strokeRect(40, y, width - 80, blockHeight);
-  context.fillStyle = '#f7f8fa';
+  context.fillStyle = 'var(--grey-100)';
   context.fillRect(40, y, width - 80, 44);
-  drawText(context, title, 58, y + 28, '#1d2129', '600 18px PingFang SC, sans-serif');
+  drawText(context, title, 58, y + 28, 'var(--grey-900)', '600 18px PingFang SC, sans-serif');
 
   blockRows.forEach((row, index) => {
     const rowY = y + 44 + index * 44;
-    drawText(context, row.name, 58, rowY + 19, '#1d2129', '500 15px PingFang SC, sans-serif');
-    if (row.detail) drawText(context, row.detail, 58, rowY + 36, '#86909c', '13px PingFang SC, sans-serif');
+    drawText(context, row.name, 58, rowY + 19, 'var(--grey-900)', '500 15px PingFang SC, sans-serif');
+    if (row.detail) drawText(context, row.detail, 58, rowY + 36, 'var(--grey-400)', '13px PingFang SC, sans-serif');
     const amount = formatAmount(row.amount);
     context.textAlign = 'right';
-    drawText(context, amount, width - 58, rowY + 26, '#1d2129', '600 15px PingFang SC, sans-serif');
+    drawText(context, amount, width - 58, rowY + 26, 'var(--grey-900)', '600 15px PingFang SC, sans-serif');
     context.textAlign = 'left';
   });
 
   const totalY = y + 44 + blockRows.length * 44;
-  context.fillStyle = '#f7f8fa';
+  context.fillStyle = 'var(--grey-100)';
   context.fillRect(40, totalY, width - 80, 42);
-  drawText(context, title.replace('明细', '合计'), 58, totalY + 26, '#4e5969', '600 15px PingFang SC, sans-serif');
+  drawText(context, title.replace('明细', '合计'), 58, totalY + 26, 'var(--grey-600)', '600 15px PingFang SC, sans-serif');
   context.textAlign = 'right';
-  drawText(context, formatAmount(total), width - 58, totalY + 26, '#165dff', '600 16px PingFang SC, sans-serif');
+  drawText(context, formatAmount(total), width - 58, totalY + 26, 'var(--primary)', '600 16px PingFang SC, sans-serif');
   context.textAlign = 'left';
   return y + blockHeight + 18;
 }
@@ -213,10 +213,10 @@ export async function createQuotationSummaryImageUrl(config: ProjectQuotationCon
   const context = canvas.getContext('2d');
   if (!context) return undefined;
 
-  context.fillStyle = '#f2f3f5';
+  context.fillStyle = 'var(--grey-100)';
   context.fillRect(0, 0, width, height);
-  drawText(context, '报价汇总', 40, 50, '#1d2129', '600 28px PingFang SC, sans-serif');
-  drawText(context, '由报价系统自动生成', 40, 76, '#86909c', '14px PingFang SC, sans-serif');
+  drawText(context, '报价汇总', 40, 50, 'var(--grey-900)', '600 28px PingFang SC, sans-serif');
+  drawText(context, '由报价系统自动生成', 40, 76, 'var(--grey-400)', '14px PingFang SC, sans-serif');
 
   const metricLabels = ['总人天', '总人数', '预计工期', '项目总报价'];
   const metricValues = [`${report.totalPersonDays} 人天`, `${report.totalPeople} 人`, report.estimatedPeriod, formatAmount(report.totalAmount)];
@@ -224,8 +224,8 @@ export async function createQuotationSummaryImageUrl(config: ProjectQuotationCon
     const x = 40 + index * 260;
     context.fillStyle = '#ffffff';
     context.fillRect(x, 100, 240, 74);
-    drawText(context, label, x + 16, 126, '#86909c', '14px PingFang SC, sans-serif');
-    drawText(context, metricValues[index], x + 16, 156, index === 3 ? '#165dff' : '#1d2129', '600 20px PingFang SC, sans-serif');
+    drawText(context, label, x + 16, 126, 'var(--grey-400)', '14px PingFang SC, sans-serif');
+    drawText(context, metricValues[index], x + 16, 156, index === 3 ? 'var(--primary)' : 'var(--grey-900)', '600 20px PingFang SC, sans-serif');
   });
 
   let y = 194;
@@ -233,7 +233,7 @@ export async function createQuotationSummaryImageUrl(config: ProjectQuotationCon
   y = drawReportBlock(context, '出差驻场成本明细', report.travelRows, report.travelCost, y, width);
   y = drawReportBlock(context, '其他成本明细', report.otherRows, report.otherCost, y, width);
 
-  context.fillStyle = '#165dff';
+  context.fillStyle = 'var(--primary)';
   context.fillRect(40, y, width - 80, 92);
   drawText(context, '项目总报价', 62, y + 34, '#ffffff', '16px PingFang SC, sans-serif');
   drawText(context, formatAmount(report.totalAmount), 62, y + 66, '#ffffff', '600 30px PingFang SC, sans-serif');

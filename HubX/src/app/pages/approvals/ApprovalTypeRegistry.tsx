@@ -12,6 +12,7 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
 import { IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
@@ -83,16 +84,20 @@ export function ApprovalTypeRegistry() {
       fixed: 'right' as const,
       render: (_: unknown, record: ApprovalTypeDefinition) => (
         <Space>
-          <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEditor(record)}>编辑</Button>
-          <Popconfirm
-            title={record.usedCount > 0 ? '该类型已有审批记录，只能停用，不能删除。' : '确认删除该审批类型？'}
-            onOk={() => {
-              if (!deleteType(record.id)) Message.warning('已使用的审批类型只能停用');
-              else Message.success('审批类型已删除');
-            }}
-          >
-            <Button type="text" size="small" status="danger" icon={<IconDelete />} />
-          </Popconfirm>
+          <Tooltip content="编辑">
+            <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEditor(record)} />
+          </Tooltip>
+          <Tooltip content="删除">
+            <Popconfirm
+              title={record.usedCount > 0 ? '该类型已有审批记录，只能停用，不能删除。' : '确认删除该审批类型？'}
+              onOk={() => {
+                if (!deleteType(record.id)) Message.warning('已使用的审批类型只能停用');
+                else Message.success('审批类型已删除');
+              }}
+            >
+              <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
@@ -102,7 +107,6 @@ export function ApprovalTypeRegistry() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>审批类型管理</Typography.Title>
           <Text type="secondary">注册可接入 HubX 的业务审批类型，申请表单仍由对应业务模块提供。</Text>
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={() => openEditor()}>注册审批类型</Button>

@@ -76,7 +76,7 @@ export function BusinessTripList() {
     {
       title: '出差单号',
       dataIndex: 'tripNo',
-      width: 140,
+      width: 160,
     },
     {
       title: '线索名称',
@@ -317,7 +317,7 @@ export function BusinessTripList() {
                         style={{
                           marginBottom: index < selectedTrip.approvalFlow.length - 1 ? 12 : 0,
                           padding: '10px 12px',
-                          background: isCurrentNode ? '#fffbe6' : isRejectedNode ? '#ffece8' : 'var(--color-bg-2)',
+                          background: isCurrentNode ? 'var(--warning-50)' : isRejectedNode ? 'var(--destructive-50)' : 'var(--color-bg-2)',
                           borderRadius: 4,
                           border: isCurrentNode ? '2px solid rgb(var(--orange-6))' : isRejectedNode ? '1px solid rgb(var(--red-3))' : '1px solid var(--color-border-1)',
                         }}
@@ -340,7 +340,7 @@ export function BusinessTripList() {
                                 <Tag color="orange" size="small">当前环节</Tag>
                               )}
                             </div>
-                            <div style={{ fontSize: 13, color: 'var(--color-text-2)' }}>
+                            <div style={{ fontSize: 14, color: 'var(--color-text-2)' }}>
                               审批人：{node.approver}
                             </div>
                             {node.time && (
@@ -374,7 +374,7 @@ export function BusinessTripList() {
                             <div style={{ fontSize: 12, fontWeight: 600, color: 'rgb(var(--red-6))', marginBottom: 4 }}>
                               ⚠️ 驳回理由
                             </div>
-                            <div style={{ fontSize: 13, color: 'rgb(var(--red-7))' }}>
+                            <div style={{ fontSize: 14, color: 'rgb(var(--red-7))' }}>
                               {node.comment}
                             </div>
                           </div>
@@ -386,7 +386,7 @@ export function BusinessTripList() {
                             padding: '6px 10px',
                             background: 'var(--color-fill-2)',
                             borderRadius: 4,
-                            fontSize: 13,
+                            fontSize: 14,
                             color: 'var(--color-text-2)',
                           }}>
                             {node.comment}

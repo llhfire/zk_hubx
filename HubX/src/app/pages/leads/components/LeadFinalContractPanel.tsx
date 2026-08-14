@@ -51,9 +51,9 @@ function buildWordDocument(version: ContractVersion) {
   <meta charset="utf-8" />
   <title>${version.formData.contractName}</title>
   <style>
-    body { font-family: "Microsoft YaHei", "SimSun", sans-serif; line-height: 1.8; color: #1d2129; }
+    body { font-family: "Microsoft YaHei", "SimSun", sans-serif; line-height: 1.8; color: var(--grey-900); }
     table { border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid #d9d9d9; padding: 8px; }
+    td, th { border: 1px solid var(--grey-300); padding: 8px; }
     img { max-width: 100%; }
   </style>
 </head>

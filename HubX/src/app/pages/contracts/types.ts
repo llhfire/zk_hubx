@@ -200,6 +200,9 @@ export interface Contract {
   paymentBlockers?: PaymentBlocker[];
   dunningRecords?: DunningRecord[];
   paymentStatus?: PaymentStatus;
+
+  // 补充协议
+  supplementaryAgreements?: SupplementaryAgreement[];
 }
 
 // 报价单结构（与 LeadDetail.tsx:191-231 quotationHistory 对齐）
@@ -276,4 +279,44 @@ export interface WizardInput {
   quoteId?: string;
   projectId?: string;
   formData: ContractFormData;
+}
+
+// ---- 补充协议相关类型 ----
+
+export type SupplementaryAgreementStatus = 'draft' | 'approving' | 'approved' | 'archived' | 'voided';
+
+export const SUPPLEMENT_STATUS_LABELS: Record<SupplementaryAgreementStatus, string> = {
+  draft: '草稿',
+  approving: '审批中',
+  approved: '已通过',
+  archived: '已归档',
+  voided: '已作废',
+};
+
+export const SUPPLEMENT_STATUS_COLORS: Record<SupplementaryAgreementStatus, string> = {
+  draft: 'gray',
+  approving: 'orange',
+  approved: 'arcoblue',
+  archived: 'green',
+  voided: 'red',
+};
+
+// 补充协议：履约过程中因需求变更产生的协议，导致合同额增减、回款条件变化
+export interface SupplementaryAgreement {
+  id: string;
+  contractId: string;
+  name: string;
+  amountChange: number; // 正数=增额，负数=减额
+  signDate: string;
+  status: SupplementaryAgreementStatus;
+  approvalFlow: ApprovalNode[]; // 复用合同 5 步审批流
+  paymentPlans: PaymentPlanItem[]; // 独立分期回款计划
+  bodyFile?: { name: string; size: string }; // 正文文件
+  scanFiles: ScanFile[]; // 多扫描件
+  collectionRecords?: CollectionRecord[]; // 复用回款功能
+  paymentBlockers?: PaymentBlocker[];
+  dunningRecords?: DunningRecord[];
+  receivedAmount?: number;
+  createdAt: string;
+  createdBy: string;
 }

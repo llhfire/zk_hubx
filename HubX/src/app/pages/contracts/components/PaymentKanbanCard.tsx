@@ -5,19 +5,19 @@ import { computePaymentStatus, getReceivedAmount, getLatestDunning } from '../pa
 import { BLOCKER_TYPE_LABELS } from '../types';
 
 const STATUS_COLORS: Record<PaymentStatus, string> = {
-  normal: '#3b82f6',
-  upcoming: '#f59e0b',
-  overdue: '#ef4444',
-  blocked: '#dc2626',
-  settled: '#10b981',
+  normal: 'var(--brand-500)',
+  upcoming: 'var(--warning-500)',
+  overdue: 'var(--destructive-500)',
+  blocked: 'var(--destructive-600)',
+  settled: 'var(--success-500)',
 };
 
 const STATUS_BORDER_COLORS: Record<PaymentStatus, string> = {
-  normal: '#3b82f6',
-  upcoming: '#f59e0b',
-  overdue: '#ef4444',
-  blocked: '#dc2626',
-  settled: '#10b981',
+  normal: 'var(--brand-500)',
+  upcoming: 'var(--warning-500)',
+  overdue: 'var(--destructive-500)',
+  blocked: 'var(--destructive-600)',
+  settled: 'var(--success-500)',
 };
 
 interface Props {
@@ -50,10 +50,10 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
         cursor: 'pointer',
       }}
     >
-      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>
+      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
         {contract.contractNo}
       </div>
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 8 }}>
         {contract.current.customerName}
       </div>
 
@@ -64,16 +64,16 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
           size="small"
           showText={false}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginTop: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 2 }}>
           <span style={{ color: STATUS_COLORS[status], fontWeight: 600 }}>
             ¥{(received / 10000).toFixed(1)}万 / ¥{(total / 10000).toFixed(1)}万
           </span>
-          <span style={{ color: '#94a3b8' }}>{pct}%</span>
+          <span style={{ color: 'var(--grey-400)' }}>{pct}%</span>
         </div>
       </div>
 
       {pendingPlan && status !== 'settled' && (
-        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 6 }}>
           下期：¥{(pendingPlan.amount / 10000).toFixed(1)}万  {pendingPlan.expectedDate}
         </div>
       )}
@@ -81,7 +81,7 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       {activeBlockers.length > 0 && (
         <div style={{ marginBottom: 6 }}>
           {activeBlockers.map(b => (
-            <Tag key={b.id} color="red" style={{ fontSize: 10, marginBottom: 2 }}>
+            <Tag key={b.id} color="red" style={{ fontSize: 12, marginBottom: 2 }}>
               {BLOCKER_TYPE_LABELS[b.type]}
             </Tag>
           ))}
@@ -89,12 +89,12 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       )}
 
       {latestDunning && (
-        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: 'var(--grey-400)', marginBottom: 4 }}>
           上次催款：{latestDunning.date}  {latestDunning.method}
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--grey-500)' }}>
         <IconUser style={{ fontSize: 12 }} />
         {contract.createdBy}
       </div>

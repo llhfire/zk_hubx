@@ -249,8 +249,8 @@ export function SupplierManagement() {
             <Table
               columns={[
                 { title: '合同编号', dataIndex: 'contractNo', width: 130 },
-                { title: '供应商', dataIndex: 'supplierName', width: 140, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
-                { title: '项目', dataIndex: 'projectName', width: 140 },
+                { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
+                { title: '项目', dataIndex: 'projectName', width: 160 },
                 { title: '签订日期', dataIndex: 'signDate', width: 100 },
                 { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
                 {
@@ -273,8 +273,8 @@ export function SupplierManagement() {
           {activeTab === 'payments' && (
             <Table
               columns={[
-                { title: '供应商', dataIndex: 'supplierName', width: 140, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
-                { title: '项目', dataIndex: 'projectName', width: 140 },
+                { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
+                { title: '项目', dataIndex: 'projectName', width: 160 },
                 { title: '合同', dataIndex: 'contractNo', width: 120 },
                 { title: '期数', dataIndex: 'period', width: 50, render: (v: number) => `P${v}` },
                 { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },

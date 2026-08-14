@@ -336,7 +336,7 @@ export function ReimbursementList() {
                         style={{
                           marginBottom: index < selectedReimbursement.approvalFlow.length - 1 ? 12 : 0,
                           padding: '10px 12px',
-                          background: isCurrentNode ? '#fffbe6' : isRejectedNode ? '#ffece8' : 'var(--color-bg-2)',
+                          background: isCurrentNode ? 'var(--warning-50)' : isRejectedNode ? 'var(--destructive-50)' : 'var(--color-bg-2)',
                           borderRadius: 4,
                           border: isCurrentNode ? '2px solid rgb(var(--orange-6))' : isRejectedNode ? '1px solid rgb(var(--red-3))' : '1px solid var(--color-border-1)',
                         }}
@@ -359,7 +359,7 @@ export function ReimbursementList() {
                                 <Tag color="orange" size="small">当前环节</Tag>
                               )}
                             </div>
-                            <div style={{ fontSize: 13, color: 'var(--color-text-2)' }}>
+                            <div style={{ fontSize: 14, color: 'var(--color-text-2)' }}>
                               审批人：{node.approver}
                             </div>
                             {node.time && (
@@ -393,7 +393,7 @@ export function ReimbursementList() {
                             <div style={{ fontSize: 12, fontWeight: 600, color: 'rgb(var(--red-6))', marginBottom: 4 }}>
                               ⚠️ 驳回理由
                             </div>
-                            <div style={{ fontSize: 13, color: 'rgb(var(--red-7))' }}>
+                            <div style={{ fontSize: 14, color: 'rgb(var(--red-7))' }}>
                               {node.comment}
                             </div>
                           </div>
@@ -405,7 +405,7 @@ export function ReimbursementList() {
                             padding: '6px 10px',
                             background: 'var(--color-fill-2)',
                             borderRadius: 4,
-                            fontSize: 13,
+                            fontSize: 14,
                             color: 'var(--color-text-2)',
                           }}>
                             {node.comment}
@@ -468,7 +468,7 @@ export function ReimbursementList() {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>{file.name}</span>
+                            <span style={{ fontSize: 14, color: 'var(--color-text-2)' }}>{file.name}</span>
                             <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>({file.size})</span>
                           </div>
                           <Button

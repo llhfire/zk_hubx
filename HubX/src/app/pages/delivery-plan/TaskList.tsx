@@ -84,17 +84,17 @@ function StepDetailPanel({ step }: { step: SopStep }) {
     <div
       style={{
         padding: '10px 16px 10px 56px',
-        background: '#fafbfc',
-        borderTop: '1px solid #f0f0f0',
-        fontSize: 13,
-        color: '#86909c',
+        background: 'var(--grey-50)',
+        borderTop: '1px solid var(--grey-100)',
+        fontSize: 14,
+        color: 'var(--grey-400)',
       }}
     >
       {sections.map(
         (sec) =>
           sec.value && (
             <div key={sec.label} style={{ marginBottom: 4 }}>
-              <Text bold style={{ color: '#86909c', marginRight: 8, fontSize: 12 }}>
+              <Text bold style={{ color: 'var(--grey-400)', marginRight: 8, fontSize: 12 }}>
                 {sec.label}:
               </Text>
               <span>{sec.value}</span>
@@ -157,7 +157,7 @@ const TaskList: React.FC<TaskListProps> = ({
       style={{
         height: '100%',
         overflowY: 'auto',
-        borderRight: '1px solid #e5e6eb',
+        borderRight: '1px solid var(--grey-200)',
         background: '#fff',
       }}
     >
@@ -177,15 +177,15 @@ const TaskList: React.FC<TaskListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 padding: '10px 12px',
-                background: '#f7f8fa',
-                borderBottom: '1px solid #e5e6eb',
+                background: 'var(--grey-100)',
+                borderBottom: '1px solid var(--grey-200)',
                 cursor: 'pointer',
                 userSelect: 'none',
                 gap: 8,
               }}
             >
               {/* Collapse arrow */}
-              <span style={{ flexShrink: 0, width: 16, textAlign: 'center', color: '#86909c' }}>
+              <span style={{ flexShrink: 0, width: 16, textAlign: 'center', color: 'var(--grey-400)' }}>
                 {isPhaseExpanded ? <IconCaretDown /> : <IconCaretRight />}
               </span>
 
@@ -198,7 +198,7 @@ const TaskList: React.FC<TaskListProps> = ({
               <span style={{ flex: 1 }} />
 
               {/* Manager */}
-              <Text style={{ fontSize: 12, color: '#86909c', flexShrink: 0 }}>
+              <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
                 {phase.manager}
               </Text>
 
@@ -206,7 +206,7 @@ const TaskList: React.FC<TaskListProps> = ({
               <span style={{ flexShrink: 0 }}>{statusBadge(phase.status)}</span>
 
               {/* Progress */}
-              <Text style={{ fontSize: 12, color: '#86909c', flexShrink: 0 }}>
+              <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
                 {phaseProgress(phaseSteps)}
               </Text>
 
@@ -219,7 +219,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   e.stopPropagation();
                   onAddCustomStep(phase.id, phase.phaseNo);
                 }}
-                style={{ flexShrink: 0, color: '#86909c' }}
+                style={{ flexShrink: 0, color: 'var(--grey-400)' }}
               />
             </div>
 
@@ -240,7 +240,7 @@ const TaskList: React.FC<TaskListProps> = ({
                           alignItems: 'center',
                           padding: '8px 12px 8px 36px',
                           background: '#fff',
-                          borderBottom: '1px solid #f0f0f0',
+                          borderBottom: '1px solid var(--grey-100)',
                           cursor: 'pointer',
                           userSelect: 'none',
                           gap: 8,
@@ -248,7 +248,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         }}
                       >
                         {/* Step number + name */}
-                        <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden' }}>
                           <Text style={{ marginRight: 4 }}>{step.stepNo}</Text>
                           <Text>{step.stepName}</Text>
                           {step.isCustom && (
@@ -259,7 +259,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         </span>
 
                         {/* Assignee */}
-                        <Text style={{ fontSize: 12, color: '#86909c', flexShrink: 0 }}>
+                        <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
                           {step.assignee}
                         </Text>
 
@@ -275,7 +275,7 @@ const TaskList: React.FC<TaskListProps> = ({
                             e.stopPropagation();
                             onStepEdit(step);
                           }}
-                          style={{ flexShrink: 0, color: '#c9cdd4' }}
+                          style={{ flexShrink: 0, color: 'var(--grey-300)' }}
                         />
                       </div>
 
@@ -293,15 +293,15 @@ const TaskList: React.FC<TaskListProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       padding: '8px 12px 8px 36px',
-                      background: '#f0f7ff',
-                      borderBottom: '1px solid #e5e6eb',
+                      background: 'var(--brand-50)',
+                      borderBottom: '1px solid var(--grey-200)',
                       gap: 8,
-                      fontSize: 13,
+                      fontSize: 14,
                     }}
                   >
                     <span style={{ flexShrink: 0 }}>💎</span>
                     <Text style={{ flex: 1 }}>{milestone.name}</Text>
-                    <Text style={{ fontSize: 12, color: '#86909c', flexShrink: 0 }}>
+                    <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
                       {format(new Date(milestone.date), 'yyyy-MM-dd')}
                     </Text>
                     <span style={{ flexShrink: 0 }}>{milestone.completed ? '✅' : '⏳'}</span>

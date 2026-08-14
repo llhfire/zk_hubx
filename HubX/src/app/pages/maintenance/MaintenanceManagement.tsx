@@ -260,7 +260,7 @@ export function MaintenanceManagement() {
       <Card bordered={false}>
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="maintenance" title={<span><IconCalendar /> 维护期跟踪</span>} />
-          <TabPane key="tickets" title={<span><IconCustomerService /> 客户工单 <Badge count={summary.openTickets} style={{ background: 'rgb(var(--primary-6))' }} /></span>} />
+          <TabPane key="tickets" title={<span><IconCustomerService /> 客户工单 <Badge count={summary.openTickets} color="arcoblue" /></span>} />
           <TabPane key="renewal" title={<span><IconFile /> 续费合同</span>} />
           <TabPane key="costs" title={<span><IconFile /> 费用成本记录</span>} />
         </Tabs>

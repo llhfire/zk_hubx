@@ -46,8 +46,7 @@ export function LeadCostRecharge() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>充值记录</Title>
+      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>新增充值</Button>
       </div>
 

@@ -16,9 +16,10 @@ import {
   Table,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
-import { IconPlus, IconSend } from '@arco-design/web-react/icon';
+import { IconPlus, IconSend, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { MessageChannel, NotificationRule, SmsConfig } from '@/app/integrations/types';
 
@@ -92,8 +93,12 @@ export function NotificationSettings() {
       width: 150,
       render: (_: unknown, rule: NotificationRule) => (
         <Space>
-          <Button type="text" size="small" onClick={() => editRule(rule)}>编辑</Button>
-          <Button type="text" size="small" icon={<IconSend />} onClick={() => { simulateRule(rule); Message.success('已生成模拟投递记录'); }}>测试</Button>
+          <Tooltip content="编辑">
+            <Button type="text" size="small" icon={<IconEdit />} onClick={() => editRule(rule)} />
+          </Tooltip>
+          <Tooltip content="测试">
+            <Button type="text" size="small" icon={<IconSend />} onClick={() => { simulateRule(rule); Message.success('已生成模拟投递记录'); }} />
+          </Tooltip>
         </Space>
       ),
     },
@@ -102,7 +107,6 @@ export function NotificationSettings() {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div>
-        <Typography.Title heading={5} style={{ margin: 0 }}>消息提醒设置</Typography.Title>
         <Text type="secondary">员工参与的业务事件统一在这里配置接收人、通道和升级策略。</Text>
       </div>
       <Alert type="info" showIcon content="当前企业微信和阿里云短信均为模拟投递；站内信会真实写入当前浏览器的消息中心。" />

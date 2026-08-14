@@ -172,20 +172,21 @@ export function FullChainROI() {
                     {/* 单位 */}
                     <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{stage.unit}</div>
                     {/* 阶段名 */}
-                    <div style={{ fontSize: 13, fontWeight: 600, textAlign: 'center', marginBottom: 8 }}>{stage.stage}</div>
-                    {/* 转化率 */}
-                    {stage.conversionRate !== undefined && (
-                      <Tag color="blue" style={{}} size="small">
-                        转化率 {stage.conversionRate}%
-                      </Tag>
-                    )}
+                    <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'center', marginBottom: 8 }}>{stage.stage}</div>
+                    {/* 转化率（固定高度，保证进度条对齐） */}
+                    <div style={{ height: 24, display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                      {stage.conversionRate !== undefined && (
+                        <Tag color="blue" size="small">
+                          转化率 {stage.conversionRate}%
+                        </Tag>
+                      )}
+                    </div>
                     {/* 漏斗宽度可视化 */}
                     <div style={{
                       width: `${100 - idx * 10}%`,
                       height: 8,
                       borderRadius: 4,
                       background: `linear-gradient(90deg, oklch(from var(--primary) l c h / ${1 - idx * 0.12}), oklch(from var(--primary) l c h / ${0.7 - idx * 0.1}))`,
-                      marginTop: 8,
                     }} />
                   </div>
                 ))}

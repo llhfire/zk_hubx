@@ -235,7 +235,7 @@ export function LeadGovernance() {
                 {
                   title: '违规', dataIndex: 'violations', width: 60,
                   render: (_: unknown, row: SalesGovernance) => row.violations.length > 0
-                    ? <Badge count={row.violations.length} style={{ background: 'var(--destructive-500)' }} />
+                    ? <Badge count={row.violations.length} color="red" />
                     : <Tag color="green">无</Tag>,
                 },
               ] as any}

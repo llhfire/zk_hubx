@@ -5,6 +5,7 @@ import {
   Descriptions,
   Badge,
   Button,
+  Drawer,
   Timeline,
   Typography,
   Space,
@@ -35,27 +36,17 @@ import {
   formatDateTime,
   mapUploadFilesToAttachments,
 } from '@/app/pages/contracts/contractModification';
-import { getLeadDetailProfile, type LeadQuotationItem } from '@/app/pages/leads/leadDetailProfiles';
+import { getLeadDetailProfile } from '@/app/pages/leads/leadDetailProfiles';
 import { LeadPaymentInvoicePanel } from '@/app/pages/leads/components/LeadPaymentInvoicePanel';
 import { LeadFinalContractPanel } from '@/app/pages/leads/components/LeadFinalContractPanel';
-import { LeadQuotationHistoryPanel } from '@/app/pages/leads/components/LeadQuotationHistoryPanel';
 import { LeadFeatureListPanel, initialLeadBusinessEnds, type LeadBusinessEnd } from '@/app/pages/leads/components/LeadFeatureListPanel';
+import { useQuotation } from '@/app/pages/quotation/QuotationContext';
+import { Stage1FeatureList } from '@/app/pages/quotation/stages/Stage1FeatureList';
+import { QuotationWorkbench } from '@/app/pages/quotation/QuotationWorkbench';
+import { QUOTE_STATUS_LABELS, type FeatureModule } from '@/app/pages/quotation/types';
 import { LeadContractHistoryPanel } from '@/app/pages/leads/components/LeadContractHistoryPanel';
 import { LeadCustomerCommunicationPanel } from '@/app/pages/leads/components/LeadCustomerCommunicationPanel';
-import { calculateQuotationAmount, calculateQuotationAmountByFixed, calculateUpliftRate } from '@/app/pages/leads/quotationPricing';
-import {
-  QuotationDocumentPreviewModal,
-  type GeneratedQuotationDocument,
-  type QuotationDocumentData,
-} from '@/app/pages/leads/components/QuotationDocumentPreviewModal';
 import { ProjectDemoPanel } from '@/app/pages/project-management/ProjectDetailWorkspace';
-import { ProjectQuotationConfigurator } from '@/app/pages/project-management/ProjectQuotationConfigurator';
-import {
-  QuotationSummaryReport,
-  createQuotationSummaryImageUrl,
-  createQuotationSystemRecordFileName,
-} from '@/app/pages/project-management/QuotationSummaryReport';
-import type { ProjectQuotationConfig, ProjectQuotationSummary } from '@/app/pages/project-management/projectQuotationConfigModel';
 import {
   IconLeft,
   IconEdit,
@@ -180,15 +171,38 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const [customTagVisible, setCustomTagVisible] = useState(false);
   const [trashVisible, setTrashVisible] = useState(false);
   const [returnPublicVisible, setReturnPublicVisible] = useState(false);
-  const [quotationConfigVisible, setQuotationConfigVisible] = useState(false);
-  const [quotationModalVisible, setQuotationModalVisible] = useState(false);
-  const [quotationDocumentVisible, setQuotationDocumentVisible] = useState(false);
-  const [quotationDocumentData, setQuotationDocumentData] = useState<QuotationDocumentData | null>(null);
   const [leadFeatureList, setLeadFeatureList] = useState<LeadBusinessEnd[]>(initialLeadBusinessEnds);
-  const [quotationConfigSummary, setQuotationConfigSummary] = useState<ProjectQuotationSummary | null>(null);
-  const [quotationConfigDraft, setQuotationConfigDraft] = useState<ProjectQuotationConfig | null>(null);
-  const [editingQuotation, setEditingQuotation] = useState<LeadQuotationItem | null>(null);
-  const [projectQuotationHistory, setProjectQuotationHistory] = useState<LeadQuotationItem[]>(quotationHistory);
+  const { createQuote, quotes } = useQuotation();
+  const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
+  const [quotationDrawerQuoteId, setQuotationDrawerQuoteId] = useState<string | null>(null);
+
+  const handleStartEval = () => {
+    if (!leadFeatureList.some((end) => end.modules.some((m) => m.features.length > 0))) {
+      Message.warning('请先添加功能点，再发起工时评估');
+      return;
+    }
+    const featureModules: FeatureModule[] = leadFeatureList.flatMap((end, endIdx) =>
+      end.modules.map((mod, modIdx) => ({
+        id: `fm-${endIdx}-${modIdx}`,
+        name: mod.name,
+        sort: modIdx + 1,
+        subFeatures: mod.features.map((f, fIdx) => ({
+          id: `fs-${endIdx}-${modIdx}-${fIdx}`,
+          name: f.name,
+          description: f.description || '',
+          remark: '',
+        })),
+      })),
+    );
+    const quoteId = createQuote(id ?? '', featureModules, {
+      projectName: leadInfo.name,
+      customerName: leadInfo.customer,
+      customerContact: leadInfo.contact,
+      customerPhone: leadInfo.phone,
+    });
+    Message.success('已发起工时评估，流转至技术评估');
+    navigate(`/quotation/eval/${quoteId}`);
+  };
   const [approvalLinkType, setApprovalLinkType] = useState<'travel' | 'reimbursement' | null>(null);
   const [approvalNoInput, setApprovalNoInput] = useState('');
   const [demoModalVisible, setDemoModalVisible] = useState(false);
@@ -207,10 +221,6 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   }, [location.state]);
 
   useEffect(() => {
-    setProjectQuotationHistory(quotationHistory);
-  }, [quotationHistory]);
-
-  useEffect(() => {
     setPresalesGroupName(leadInfo.presalesGroupName || '');
   }, [leadInfo.presalesGroupName]);
 
@@ -226,7 +236,6 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const [bindCustomerForm] = Form.useForm();
   const [editLeadForm] = Form.useForm();
   const [customTagForm] = Form.useForm();
-  const [quotationForm] = Form.useForm();
   const [trashForm] = Form.useForm();
   const [demoForm] = Form.useForm();
   const [customerSearchKeyword, setCustomerSearchKeyword] = useState('');
@@ -539,209 +548,6 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
     });
   };
 
-  const closeQuotationModal = () => {
-    setQuotationModalVisible(false);
-    setQuotationConfigSummary(null);
-    setQuotationConfigDraft(null);
-    setEditingQuotation(null);
-    quotationForm.resetFields();
-  };
-
-  const closeQuotationDocument = () => {
-    setQuotationDocumentVisible(false);
-    setQuotationModalVisible(true);
-  };
-
-  const closeQuotationConfig = () => {
-    setQuotationConfigVisible(false);
-    setQuotationConfigSummary(null);
-    setQuotationConfigDraft(null);
-    setEditingQuotation(null);
-    quotationForm.resetFields();
-  };
-
-  const openQuotationConfig = () => {
-    setEditingQuotation(null);
-    setQuotationConfigSummary(null);
-    setQuotationConfigDraft(null);
-    quotationForm.resetFields();
-    setQuotationConfigVisible(true);
-  };
-
-  const openQuotationEditor = (quotation: LeadQuotationItem) => {
-    setEditingQuotation(quotation);
-    setQuotationConfigSummary(null);
-    setQuotationConfigDraft(quotation.quotationConfig ?? null);
-    quotationForm.resetFields();
-    setQuotationConfigVisible(true);
-  };
-
-  const continueQuotationConfig = (config: ProjectQuotationConfig, summary: ProjectQuotationSummary) => {
-    const upliftRate = editingQuotation?.upliftRate ?? 0;
-    const upliftType = editingQuotation?.upliftType ?? 'rate';
-    const upliftValue = upliftType === 'fixed' ? editingQuotation?.upliftAmount ?? 0 : upliftRate;
-    setQuotationConfigDraft(config);
-    setQuotationConfigSummary(summary);
-    quotationForm.resetFields();
-    quotationForm.setFieldsValue({
-      upliftType,
-      upliftValue,
-      upliftRate,
-      amount: calculateQuotationAmount(summary.totalAmount, upliftRate),
-      period: String(summary.estimatedDays || ''),
-      operator: editingQuotation?.operator || CURRENT_LOGIN_USER.name,
-      technicalEvaluator: editingQuotation?.technicalEvaluator?.split('、') ?? [],
-      description: editingQuotation?.description,
-    });
-    setQuotationConfigVisible(false);
-    setQuotationModalVisible(true);
-  };
-
-  const submitQuotation = () => {
-    quotationForm.validate().then(values => {
-      if (!quotationConfigDraft || !quotationConfigSummary) return;
-      setQuotationDocumentData({
-        projectName: leadInfo.name,
-        customerName: leadInfo.customer,
-        amount: Number(values.amount),
-        upliftRate: calculateUpliftRate(quotationConfigSummary.totalAmount, Number(values.amount)),
-        upliftType: values.upliftType,
-        upliftAmount: values.upliftType === 'fixed' ? Number(values.upliftValue) || 0 : undefined,
-        period: values.period?.trim() ? `${values.period.trim()}天` : '-',
-        operator: values.operator?.trim() || '-',
-        technicalEvaluator: values.technicalEvaluator.join('、'),
-        description: values.description?.trim() || '',
-        config: quotationConfigDraft,
-        summary: quotationConfigSummary,
-        featureList: leadFeatureList,
-      });
-      setQuotationModalVisible(false);
-      setQuotationDocumentVisible(true);
-    }).catch(() => {});
-  };
-
-  const submitQuotationDocument = async (document: GeneratedQuotationDocument) => {
-    const values = quotationDocumentData;
-    if (!values) return;
-      const configuredCost = quotationConfigSummary?.totalAmount;
-      const amount = values.amount;
-      const upliftRate = Number(values.upliftRate) || 0;
-      const quotationTimestamp = Date.now();
-      const quotationReportImageUrl = quotationConfigDraft && quotationConfigSummary
-        ? await createQuotationSummaryImageUrl(quotationConfigDraft, quotationConfigSummary)
-        : undefined;
-      const quotationReportImageName = quotationReportImageUrl
-        ? createQuotationSystemRecordFileName(leadInfo.name, quotationTimestamp)
-        : undefined;
-
-      setProjectQuotationHistory(current => [{
-        id: `lead-quotation-${quotationTimestamp}`,
-        name: `${leadInfo.name}报价单`,
-        status: '已报价',
-        period: values.period,
-        operator: values.operator,
-        entity: leadInfo.entity,
-        amount: amount.toLocaleString('zh-CN'),
-        upliftRate,
-        upliftType: values.upliftType,
-        upliftAmount: values.upliftType === 'fixed' ? Number(values.upliftValue) || 0 : undefined,
-        cost: configuredCost == null ? '-' : configuredCost.toLocaleString('zh-CN'),
-        profit: configuredCost == null ? '-' : (amount - configuredCost).toLocaleString('zh-CN'),
-        file: '-',
-        flowStatus: '未提交审批',
-        createTime: new Date().toLocaleString('zh-CN', { hour12: false }),
-        approvalFlow: [],
-        technicalEvaluator: values.technicalEvaluator,
-        quotationSystemFiles: [],
-        technicalEvaluationFiles: [],
-        quotationFiles: [document.name],
-        quotationFileUrls: { [document.name]: document.url },
-        quotationSummary: quotationConfigSummary ?? undefined,
-        quotationConfig: quotationConfigDraft ?? undefined,
-        quotationReportImageUrl,
-        quotationReportImageName,
-        description: values.description,
-      }, ...current]);
-      Message.success(editingQuotation ? '报价已更新为新版本' : '报价已新增');
-      setQuotationDocumentVisible(false);
-      setQuotationDocumentData(null);
-      closeQuotationModal();
-  };
-
-  const submitProjectQuotationApproval = (quotation: LeadQuotationItem) => {
-    const submitTime = new Date().toLocaleString('zh-CN', { hour12: false });
-    setProjectQuotationHistory(current => current.map(item => {
-      if (item.id !== quotation.id) return item;
-      const hasPendingApproval = item.approvalFlow.some(node => node.status === 'pending');
-      return {
-        ...item,
-        flowStatus: '审批中',
-        approvalFlow: hasPendingApproval ? item.approvalFlow : [
-          { step: '发起申请', approver: item.operator, status: 'approved', time: submitTime, comment: '' },
-          { step: '总经理审批', approver: '赵总 - 总经理', status: 'pending', time: '', comment: '' },
-        ],
-      };
-    }));
-    Message.success('报价已提交审批');
-  };
-
-  const handleProjectQuotationApprovalDecision = (
-    quotation: LeadQuotationItem,
-    decision: 'approve' | 'reject',
-    comment: string,
-  ) => {
-    const approvalTime = new Date().toLocaleString('zh-CN', { hour12: false });
-
-    setProjectQuotationHistory(current => current.map(item => {
-      if (item.id !== quotation.id) return item;
-      const pendingIndex = item.approvalFlow.findIndex(node => node.status === 'pending');
-      if (pendingIndex < 0) return item;
-      return {
-        ...item,
-        flowStatus: decision === 'reject' ? '已驳回' : '已审核',
-        approvalFlow: item.approvalFlow.map((node, index) => (
-          index === pendingIndex
-            ? { ...node, status: decision === 'approve' ? 'approved' : 'rejected', time: approvalTime, comment }
-            : node
-        )),
-      };
-    }));
-
-    Message.success(decision === 'reject'
-      ? '报价审批已拒绝'
-      : '总经理已审批通过，报价审批已完成');
-  };
-
-  const appendQuotationFiles = (
-    quotation: LeadQuotationItem,
-    field: 'quotationSystemFiles' | 'technicalEvaluationFiles' | 'quotationFiles',
-    files: UploadItem[],
-  ) => {
-    const names = files
-      .map(file => file.name || file.originFile?.name)
-      .filter((name): name is string => Boolean(name));
-    if (!names.length) return;
-
-    setProjectQuotationHistory(current => current.map(item => (
-      item.id === quotation.id
-        ? { ...item, [field]: Array.from(new Set([...(item[field] || []), ...names])) }
-        : item
-    )));
-    Message.success('附件已添加到报价记录');
-  };
-
-  const removeQuotationFile = (
-    quotation: LeadQuotationItem,
-    field: 'quotationSystemFiles' | 'technicalEvaluationFiles' | 'quotationFiles',
-    fileName: string,
-  ) => {
-    setProjectQuotationHistory(current => current.map(item => (
-      item.id === quotation.id
-        ? { ...item, [field]: (item[field] || []).filter(name => name !== fileName) }
-        : item
-    )));
-    Message.success(`已删除：${fileName}`);
-  };
 
   const handleEditProjectStyleContractVersion = (version: ContractVersion) => {
     const contract = relatedContracts[0];
@@ -1002,7 +808,6 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           >
             <TabPane key="follow" title="跟进" />
             <TabPane key="quotation" title="报价" />
-            <TabPane key="feature-list" title="功能清单" />
             <TabPane key="contract-records" title="合同记录" />
             <TabPane key="demo" title="演示" />
             <TabPane key="documents" title="资料" />
@@ -1109,27 +914,64 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
 
         {activeSideTab === 'quotation' && (
           <div className="lead-detail-side-content">
-            <LeadQuotationHistoryPanel
-              quotations={projectQuotationHistory}
-              projectLayout
-              showProjectEditAction
-              alwaysExpanded
-              hideQuotationUpload
-              approvalOverviewAtTop
-              onCreate={openQuotationConfig}
-              onEdit={openQuotationEditor}
-              onDelete={() => Message.info('删除报价单')}
-              onSubmitApproval={submitProjectQuotationApproval}
-              onApprovalDecision={handleProjectQuotationApprovalDecision}
-              onUploadFiles={appendQuotationFiles}
-              onRemoveFile={removeQuotationFile}
-            />
-          </div>
-        )}
-
-        {activeSideTab === 'feature-list' && (
-          <div className="lead-detail-side-content">
-            <LeadFeatureListPanel value={leadFeatureList} onChange={setLeadFeatureList} />
+            {(() => {
+              const leadQuotes = quotes.filter((q) => q.leadId === id);
+              const active = leadQuotes.filter((q) => q.status !== 'voided');
+              const voided = leadQuotes.filter((q) => q.status === 'voided');
+              return (
+                <Card
+                  bordered={false}
+                  extra={
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => {
+                      const newId = createQuote(id ?? '', [], {
+                        projectName: leadInfo.name,
+                        customerName: leadInfo.customer,
+                        customerContact: leadInfo.contact,
+                        customerPhone: leadInfo.phone,
+                      });
+                      setQuotationDrawerQuoteId(newId);
+                      setQuotationDrawerVisible(true);
+                    }}>新建报价</Button>
+                  }
+                >
+                  {leadQuotes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '32px 16px 48px', color: 'var(--color-text-3)' }}>
+                      暂无报价记录
+                    </div>
+                  ) : (
+                    <div>
+                      {active.map((q) => (
+                        <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <ArcoText bold>{q.basicInfo.projectName}</ArcoText>
+                            <Tag color="arcoblue" size="small">{q.version}</Tag>
+                            <Tag size="small" color={q.status === 'draft' ? 'gray' : undefined}>{QUOTE_STATUS_LABELS[q.status]}</Tag>
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{q.quoteNo}</div>
+                          <Button size="mini" type="primary" onClick={() => { setQuotationDrawerQuoteId(q.id); setQuotationDrawerVisible(true); }}>进入工作台</Button>
+                        </div>
+                      ))}
+                      {voided.length > 0 && (
+                        <>
+                          <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '4px 0 12px' }} />
+                          <ArcoText type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</ArcoText>
+                          {voided.map((q) => (
+                            <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 8, opacity: 0.5, background: 'var(--color-fill-1)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <ArcoText bold style={{ textDecoration: 'line-through' }}>{q.basicInfo.projectName}</ArcoText>
+                                <Tag color="arcoblue" size="small">{q.version}</Tag>
+                                <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{q.quoteNo}</div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              );
+            })()}
           </div>
         )}
 
@@ -1171,7 +1013,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                             {record.type}
                           </Tag>
                         </div>
-                        <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 6, wordBreak: 'break-all' }}>
+                        <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6, wordBreak: 'break-all' }}>
                           <span style={{ color: 'var(--color-text-3)' }}>网址：</span>
                           <a href={record.url} target="_blank" rel="noreferrer">
                             {record.url}
@@ -1220,7 +1062,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                       border: '1px solid var(--color-border-2)'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontWeight: 600, fontSize: 15 }}>目的地：{item.destination}</div>
+                        <div style={{ fontWeight: 600, fontSize: 16 }}>目的地：{item.destination}</div>
                         <Space size="small">
                           <Tag color={item.status === '已审批' ? 'green' : 'orange'} size="small">{item.status}</Tag>
                           <Button type="text" size="mini" icon={<IconDelete />} status="danger" onClick={() => Message.info('删除出差申请')} />
@@ -1252,7 +1094,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                           gridTemplateColumns: '1fr 1fr',
                           gap: '8px 16px',
                           marginBottom: 10,
-                          fontSize: 13,
+                          fontSize: 14,
                           color: 'var(--color-text-2)'
                         }}>
                           <div>
@@ -1320,7 +1162,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
 
                                   <div style={{ flex: 1 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-1)' }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>
                                         {node.step}
                                       </span>
                                       <Tag
@@ -1406,7 +1248,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                       border: '1px solid var(--color-border-2)'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontWeight: 600, fontSize: 15 }}>费用类型：{item.expenseType}</div>
+                        <div style={{ fontWeight: 600, fontSize: 16 }}>费用类型：{item.expenseType}</div>
                         <Space size="small">
                           <Tag color={item.status === '已报销' ? 'green' : 'orange'} size="small">{item.status}</Tag>
                           <Button type="text" size="mini" icon={<IconEdit />} onClick={() => Message.info('编辑报销申请')} />
@@ -1439,7 +1281,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                         gridTemplateColumns: '1fr 1fr',
                         gap: '8px 16px',
                         marginBottom: 10,
-                        fontSize: 13,
+                        fontSize: 14,
                         color: 'var(--color-text-2)'
                       }}>
                         <div>
@@ -1533,7 +1375,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
 
                                 <div style={{ flex: 1 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-1)' }}>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-1)' }}>
                                       {node.step}
                                     </span>
                                     <Tag
@@ -1971,139 +1813,6 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
         </Form>
       </Modal>
 
-      <>
-        <ProjectQuotationConfigurator
-          visible={quotationConfigVisible}
-          initialConfig={quotationConfigDraft}
-          onCancel={closeQuotationConfig}
-          onNext={continueQuotationConfig}
-        />
-
-        <Modal
-          title="完善报价资料"
-          visible={quotationModalVisible}
-          onOk={submitQuotation}
-          onCancel={closeQuotationModal}
-          okText="下一步，生成报价单"
-          maskClosable={false}
-          style={{ width: 980, maxWidth: 'calc(100vw - 32px)' }}
-        >
-          <Form form={quotationForm} layout="vertical">
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}>
-                <FormItem label="报价上浮" field="upliftType">
-                  <Radio.Group type="button" onChange={upliftType => {
-                    const originalAmount = quotationConfigSummary?.totalAmount ?? 0;
-                    const amount = Number(quotationForm.getFieldValue('amount')) || originalAmount;
-                    quotationForm.setFieldValue('upliftValue', upliftType === 'fixed' ? Math.round((amount - originalAmount) * 100) / 100 : calculateUpliftRate(originalAmount, amount));
-                  }}>
-                    <Radio value="rate">按比例上浮</Radio>
-                    <Radio value="fixed">按固定金额上浮</Radio>
-                  </Radio.Group>
-                </FormItem>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <FormItem noStyle shouldUpdate={(previous, current) => previous.upliftType !== current.upliftType}>
-                  {values => (
-                    <FormItem label={values.upliftType === 'fixed' ? '上浮金额' : '上浮比例'} field="upliftValue" rules={[{ required: true, message: '请输入上浮值' }]}>
-                      <InputNumber min={0} precision={2} prefix={values.upliftType === 'fixed' ? '¥' : undefined} suffix={values.upliftType === 'fixed' ? undefined : '%'} placeholder={values.upliftType === 'fixed' ? '请输入上浮金额' : '请输入上浮比例'} style={{ width: '100%' }} onChange={value => {
-                        const originalAmount = quotationConfigSummary?.totalAmount ?? 0;
-                        const upliftValue = Number(value) || 0;
-                        const amount = values.upliftType === 'fixed' ? calculateQuotationAmountByFixed(originalAmount, upliftValue) : calculateQuotationAmount(originalAmount, upliftValue);
-                        quotationForm.setFieldValue('amount', amount);
-                        quotationForm.setFieldValue('upliftRate', calculateUpliftRate(originalAmount, amount));
-                      }} />
-                    </FormItem>
-                  )}
-                </FormItem>
-              </Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}>
-                <FormItem label="原始报价金额">
-                  <InputNumber value={quotationConfigSummary?.totalAmount ?? 0} precision={2} prefix="¥" disabled style={{ width: '100%' }} />
-                </FormItem>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <FormItem label="上浮后金额" field="amount" rules={[{ required: true, message: '请输入上浮后金额' }]}>
-                  <InputNumber
-                    min={0}
-                    precision={2}
-                    prefix="¥"
-                    placeholder="根据上浮自动计算"
-                    style={{ width: '100%' }}
-                    onChange={value => {
-                      const originalAmount = quotationConfigSummary?.totalAmount ?? 0;
-                      const amount = Number(value) || 0;
-                      const upliftRate = calculateUpliftRate(originalAmount, amount);
-                      quotationForm.setFieldValue('upliftRate', upliftRate);
-                      quotationForm.setFieldValue('upliftValue', quotationForm.getFieldValue('upliftType') === 'fixed' ? Math.round((amount - originalAmount) * 100) / 100 : upliftRate);
-                    }}
-                  />
-                </FormItem>
-              </Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}>
-                <FormItem label="报价人" field="operator" rules={[{ required: true, message: '请选择报价人' }]}>
-                  <Select placeholder="请选择报价人" showSearch allowClear>
-                    {employees.map(employee => <Select.Option key={employee.id} value={employee.name}>{employee.name}</Select.Option>)}
-                  </Select>
-                </FormItem>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <FormItem label="技术评估人" field="technicalEvaluator" rules={[{ required: true, message: '请选择技术评估人' }]}>
-                  <Select placeholder="请选择技术评估人" mode="multiple" allowClear>
-                    {technicalEvaluators.map(person => <Select.Option key={person} value={person}>{person}</Select.Option>)}
-                  </Select>
-                </FormItem>
-              </Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}>
-                <FormItem
-                  label="预计周期"
-                  field="period"
-                  rules={[
-                    { required: true, message: '请输入预计周期' },
-                    { match: /^[1-9]\d*$/, message: '预计周期只能输入正整数' },
-                  ]}
-                >
-                  <Input
-                    inputMode="numeric"
-                    placeholder="请输入预计周期"
-                    maxLength={5}
-                    suffix={<span style={{ marginRight: 10 }}>天</span>}
-                    onChange={value => quotationForm.setFieldValue('period', value.replace(/\D/g, '').replace(/^0+/, ''))}
-                  />
-                </FormItem>
-              </Grid.Col>
-            </Grid.Row>
-            {quotationConfigSummary && quotationConfigDraft ? (
-              <FormItem noStyle shouldUpdate={(previous, current) => previous.amount !== current.amount || previous.upliftRate !== current.upliftRate}>
-                {values => (
-                  <QuotationSummaryReport
-                    config={quotationConfigDraft}
-                    summary={quotationConfigSummary}
-                    quotedAmount={Number(values.amount)}
-                    upliftRate={Number(values.upliftRate) || 0}
-                  />
-                )}
-              </FormItem>
-            ) : null}
-            <FormItem label="报价说明" field="description">
-              <Input.TextArea placeholder="请输入报价说明" maxLength={500} showWordLimit autoSize={{ minRows: 3, maxRows: 6 }} />
-            </FormItem>
-          </Form>
-        </Modal>
-      </>
-
-      <QuotationDocumentPreviewModal
-        visible={quotationDocumentVisible}
-        data={quotationDocumentData}
-        onCancel={closeQuotationDocument}
-        onSubmit={submitQuotationDocument}
-      />
 
       <Modal
         title={`新增${approvalLinkType === 'travel' ? '出差' : '报销'}审批关联`}
@@ -2121,7 +1830,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             onChange={setApprovalNoInput}
           />
         </FormItem>
-        <div style={{ color: 'var(--color-text-3)', fontSize: 13, lineHeight: '22px' }}>
+        <div style={{ color: 'var(--color-text-3)', fontSize: 14, lineHeight: '22px' }}>
           审批编号请在企业微信审批记录中获取。提交后系统会根据审批编号自动关联对应审批记录。
         </div>
       </Modal>
@@ -2181,6 +1890,19 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
         </Form>
       </Modal>
 
+      <Drawer
+        title="报价工作台"
+        visible={quotationDrawerVisible}
+        onCancel={() => setQuotationDrawerVisible(false)}
+        footer={null}
+        width="100%"
+        style={{ top: 0, bottom: 0 }}
+        bodyStyle={{ padding: 24 }}
+      >
+        {quotationDrawerQuoteId && (
+          <QuotationWorkbench embedded quoteId={quotationDrawerQuoteId} onClose={() => setQuotationDrawerVisible(false)} />
+        )}
+      </Drawer>
     </div>
   );
 }

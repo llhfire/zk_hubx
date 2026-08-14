@@ -131,11 +131,11 @@ export function ContractCostDetail() {
 
   // ─── 概览卡片数据 ────────────────────────────────────────
   const summaryCards = [
-    { label: '科研成本', value: rdTotal, color: '#165dff' },
+    { label: '科研成本', value: rdTotal, color: 'var(--primary)' },
     { label: '商务成本', value: bizTotal, color: '#0fc6c2' },
-    { label: '外包成本', value: outsourceTotal, color: '#ff7d00' },
+    { label: '外包成本', value: outsourceTotal, color: 'var(--warning-500)' },
     { label: '其他成本', value: otherTotal, color: '#7816ff' },
-    { label: '分摊运营成本', value: opTotal, color: '#f53f3f' },
+    { label: '分摊运营成本', value: opTotal, color: 'var(--destructive-500)' },
   ];
 
   // ─── 合计行渲染 ──────────────────────────────────────────
@@ -213,8 +213,8 @@ export function ContractCostDetail() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
         {summaryCards.map((card) => (
           <Card key={card.label} style={{ textAlign: 'center' }}>
-            <Text style={{ color: 'var(--color-text-3)', fontSize: 13 }}>{card.label}</Text>
-            <div style={{ fontSize: 22, fontWeight: 600, color: card.color, marginTop: 8 }}>
+            <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>{card.label}</Text>
+            <div style={{ fontSize: 24, fontWeight: 600, color: card.color, marginTop: 8 }}>
               ¥{fmt(card.value)}
             </div>
           </Card>
@@ -279,22 +279,22 @@ export function ContractCostDetail() {
               <Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>运营成本分摊计算</Title>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                 <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 13 }}>
+                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>
                     {CURRENT_MONTH} 运营总费用
                   </Text>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>¥{fmt(monthlyOpExpense)}</div>
                 </div>
                 <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 13 }}>在职员工数</Text>
+                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>在职员工数</Text>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>{ACTIVE_EMPLOYEE_COUNT} 人</div>
                 </div>
                 <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 13 }}>标准月工时</Text>
+                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>标准月工时</Text>
                   <div style={{ fontSize: 18, fontWeight: 600 }}>{STANDARD_MONTHLY_HOURS} h</div>
                 </div>
                 <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 13 }}>每小时运营成本</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: '#f53f3f' }}>
+                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>每小时运营成本</Text>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--destructive-500)' }}>
                     ¥{fmt(hourlyOpCost)}/h
                   </div>
                 </div>

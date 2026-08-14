@@ -162,7 +162,7 @@ export function PublicLeads() {
       dataIndex: 'id',
       width: 100,
       render: (text: string) => (
-        <span style={{ fontSize: 12, color: 'hsl(220 8% 55%)', fontFamily: 'monospace' }}>{text}</span>
+        <span style={{ fontSize: 14, color: 'var(--grey-400)', fontFamily: 'monospace' }}>{text}</span>
       ),
     },
     {
@@ -170,9 +170,12 @@ export function PublicLeads() {
       dataIndex: 'entity',
       width: 120,
       render: (entity: string) => (
-        <Button type="text" size="mini" onClick={() => handleOpenCompanyEntity(entity)}>
+        <a
+          onClick={() => handleOpenCompanyEntity(entity)}
+          style={{ color: 'var(--primary)', cursor: 'pointer' }}
+        >
           {entity}
-        </Button>
+        </a>
       ),
     },
     {
@@ -180,14 +183,12 @@ export function PublicLeads() {
       dataIndex: 'name',
       width: 200,
       render: (text: string, record: any) => (
-        <Button
-          type="text"
-          size="mini"
-          style={{ padding: 0, fontWeight: 500 }}
+        <a
           onClick={() => navigate(`/leads/${record.key}?from=public`, { state: { from: 'public' } })}
+          style={{ color: 'var(--primary)', cursor: 'pointer' }}
         >
           {text}
-        </Button>
+        </a>
       ),
     },
     {
@@ -201,7 +202,7 @@ export function PublicLeads() {
       dataIndex: 'keyword',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 10% 45%)' }}>{text}</span>
+        <span style={{ color: 'var(--grey-500)' }}>{text}</span>
       ),
     },
     {
@@ -209,7 +210,7 @@ export function PublicLeads() {
       dataIndex: 'contact',
       width: 100,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 10% 35%)' }}>{text}</span>
+        <span style={{ color: 'var(--grey-600)' }}>{text}</span>
       ),
     },
     {
@@ -217,7 +218,7 @@ export function PublicLeads() {
       dataIndex: 'phone',
       width: 120,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 8% 55%)', fontSize: 13 }}>{text}</span>
+        <span style={{ color: 'var(--grey-400)', fontSize: 14 }}>{text}</span>
       ),
     },
     {
@@ -240,7 +241,7 @@ export function PublicLeads() {
       render: (tags: string[]) => (
         <Space size={4}>
           {tags.map((tag, index) => (
-            <Tag key={index} color="arcoblue" style={{ fontSize: 12 }}>
+            <Tag key={index} color="arcoblue">
               {tag}
             </Tag>
           ))}
@@ -270,7 +271,7 @@ export function PublicLeads() {
       dataIndex: 'createTime',
       width: 160,
       render: (text: string) => (
-        <span style={{ color: 'hsl(220 8% 55%)', fontSize: 13 }}>{text}</span>
+        <span style={{ color: 'var(--grey-400)', fontSize: 14 }}>{text}</span>
       ),
     },
     {
@@ -302,7 +303,7 @@ export function PublicLeads() {
               type="text"
               icon={<IconDelete />}
               size="small"
-              style={{ color: 'hsl(0 60% 55%)' }}
+              style={{ color: 'var(--destructive-400)' }}
               onClick={() => setTrashVisible(true)}
             />
           </Tooltip>
@@ -366,7 +367,7 @@ export function PublicLeads() {
     <div>
       {/* Page label — subtle, not giant heading */}
       <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: 'hsl(220 8% 55%)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-400)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>
           公海线索池
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>
@@ -378,7 +379,7 @@ export function PublicLeads() {
         style={{
           borderRadius: 'var(--radius-lg)',
           boxShadow: 'var(--shadow-xs)',
-          border: '1px solid hsl(220 12% 88%)',
+          border: '1px solid var(--grey-200)',
         }}
       >
         {/* Search & Filter Bar */}

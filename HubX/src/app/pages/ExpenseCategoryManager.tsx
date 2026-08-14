@@ -172,7 +172,6 @@ export function ExpenseCategoryManager() {
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <div>
-          <Title heading={4} style={{ margin: 0 }}>费用分类管理</Title>
           <Text type="secondary">维护项目成本核算使用的一级分类和费用小项</Text>
         </div>
         <Button type="primary" icon={<IconPlus />} onClick={() => openCreate(1)}>新增一级分类</Button>
@@ -232,7 +231,7 @@ export function ExpenseCategoryManager() {
             </Space>
           )}
         >
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: 'var(--color-fill-2)', borderBottom: '1px solid var(--color-border-2)' }}>
                 {['分类名称', '编码', '状态', '操作'].map((h) => (

@@ -178,7 +178,7 @@ function ScanEntryCard({
             marginBottom: 4,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
             <span>📄 {f.fileName}</span>
             <span style={{ color: 'var(--color-text-3)' }}>{formatSize(f.fileSize)}</span>
           </div>

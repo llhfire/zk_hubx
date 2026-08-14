@@ -6,11 +6,11 @@ import { computePaymentStatus } from '../paymentUtils';
 import { PaymentKanbanCard } from './PaymentKanbanCard';
 
 const COLUMNS: { status: PaymentStatus; label: string; color: string; bg: string }[] = [
-  { status: 'normal', label: '正常回款', color: '#3b82f6', bg: '#eff6ff' },
-  { status: 'upcoming', label: '即将到期', color: '#f59e0b', bg: '#fffbeb' },
-  { status: 'overdue', label: '已逾期', color: '#ef4444', bg: '#fef2f2' },
-  { status: 'blocked', label: '卡点阻塞', color: '#dc2626', bg: '#fef2f2' },
-  { status: 'settled', label: '已结清', color: '#10b981', bg: '#f0fdf4' },
+  { status: 'normal', label: '正常回款', color: 'var(--brand-500)', bg: 'var(--brand-50)' },
+  { status: 'upcoming', label: '即将到期', color: 'var(--warning-500)', bg: 'var(--warning-50)' },
+  { status: 'overdue', label: '已逾期', color: 'var(--destructive-500)', bg: 'var(--destructive-50)' },
+  { status: 'blocked', label: '卡点阻塞', color: 'var(--destructive-600)', bg: 'var(--destructive-50)' },
+  { status: 'settled', label: '已结清', color: 'var(--success-500)', bg: 'var(--success-50)' },
 ];
 
 function DraggableCard({ contract, onClick }: { contract: Contract; onClick: (c: Contract) => void }) {
@@ -66,7 +66,7 @@ function KanbanColumn({
       <div
         style={{
           fontWeight: 600,
-          fontSize: 13,
+          fontSize: 14,
           color,
           marginBottom: 12,
           paddingBottom: 8,
@@ -81,7 +81,7 @@ function KanbanColumn({
           color: '#fff',
           borderRadius: 10,
           padding: '0 8px',
-          fontSize: 11,
+          fontSize: 12,
         }}>
           {contracts.length}
         </span>
@@ -91,7 +91,7 @@ function KanbanColumn({
           <DraggableCard key={c.id} contract={c} onClick={onCardClick} />
         ))}
         {contracts.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 12, padding: 24 }}>
+          <div style={{ textAlign: 'center', color: 'var(--grey-400)', fontSize: 12, padding: 24 }}>
             拖拽合同到此列
           </div>
         )}

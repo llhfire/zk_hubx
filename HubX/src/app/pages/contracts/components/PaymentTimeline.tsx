@@ -21,7 +21,7 @@ export function PaymentTimeline({ contract }: Props) {
     <Timeline>
       {/* 签约 */}
       <TimelineItem
-        dot={<IconCheckCircleFill style={{ color: '#3b82f6' }} />}
+        dot={<IconCheckCircleFill style={{ color: 'var(--brand-500)' }} />}
         label={contract.current.signDate}
       >
         签约 · ¥{(contract.current.totalAmount / 10000).toFixed(1)}万
@@ -45,11 +45,11 @@ export function PaymentTimeline({ contract }: Props) {
             key={plan.period}
             dot={
               isPaid ? (
-                <IconCheckCircleFill style={{ color: '#10b981' }} />
+                <IconCheckCircleFill style={{ color: 'var(--success-500)' }} />
               ) : isOverdue ? (
-                <IconExclamationCircleFill style={{ color: '#ef4444' }} />
+                <IconExclamationCircleFill style={{ color: 'var(--destructive-500)' }} />
               ) : (
-                <IconClockCircle style={{ color: '#f59e0b' }} />
+                <IconClockCircle style={{ color: 'var(--warning-500)' }} />
               )
             }
             label={plan.expectedDate}
@@ -57,17 +57,17 @@ export function PaymentTimeline({ contract }: Props) {
             {plan.period === 1 ? '一期' : plan.period === 2 ? '二期' : plan.period === 3 ? '三期' : `${plan.period}期`}
             付款 ¥{(plan.amount / 10000).toFixed(1)}万（{plan.percentage}%）
             {isPaid && planCols.length > 0 && (
-              <div style={{ color: '#10b981', fontSize: 11 }}>
+              <div style={{ color: 'var(--success-500)', fontSize: 12 }}>
                 ✅ 实际到账 ¥{(planReceived / 10000).toFixed(0)}万
               </div>
             )}
             {isOverdue && (
-              <div style={{ color: '#ef4444', fontSize: 11 }}>
+              <div style={{ color: 'var(--destructive-500)', fontSize: 12 }}>
                 ⚠️ 逾期 {Math.floor((Date.now() - new Date(plan.expectedDate).getTime()) / 86400000)} 天
               </div>
             )}
             {relatedBlockers.map(b => (
-              <div key={b.id} style={{ color: '#dc2626', fontSize: 10, marginTop: 2 }}>
+              <div key={b.id} style={{ color: 'var(--destructive-600)', fontSize: 12, marginTop: 2 }}>
                 🔴 {BLOCKER_TYPE_LABELS[b.type]}：{b.title}
               </div>
             ))}

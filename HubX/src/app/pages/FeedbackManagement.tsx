@@ -28,7 +28,6 @@ import {
 
 const Title = Typography.Title;
 const Paragraph = Typography.Paragraph;
-const DescriptionsItem = Descriptions.Item;
 
 function formatDateTime(value?: string): string {
   if (!value) return '-';
@@ -152,7 +151,7 @@ export function FeedbackManagement() {
             <IconMessage style={{ marginRight: 8 }} />
             意见反馈管理
           </Title>
-          <div style={{ color: 'var(--color-text-3)', fontSize: 13, marginTop: 4 }}>
+          <div style={{ color: 'var(--color-text-3)', fontSize: 14, marginTop: 4 }}>
             查看员工提交的使用问题和功能建议，并记录处理结果。
           </div>
         </div>
@@ -199,49 +198,55 @@ export function FeedbackManagement() {
       >
         {selectedFeedback && (
           <>
-            <Descriptions column={1} size="medium" labelStyle={{ width: 92 }}>
-              <DescriptionsItem label="反馈编号">{selectedFeedback.id}</DescriptionsItem>
-              <DescriptionsItem label="反馈类型">{feedbackTypeLabels[selectedFeedback.type]}</DescriptionsItem>
-              <DescriptionsItem label="当前页面">{selectedFeedback.pagePath}</DescriptionsItem>
-              <DescriptionsItem label="提交人">{selectedFeedback.reporterName}</DescriptionsItem>
-              <DescriptionsItem label="提交时间">{formatDateTime(selectedFeedback.createdAt)}</DescriptionsItem>
-              <DescriptionsItem label="联系方式">{selectedFeedback.contact || '-'}</DescriptionsItem>
-              <DescriptionsItem label="反馈内容">{selectedFeedback.content}</DescriptionsItem>
-              <DescriptionsItem label="反馈附件">
-                {(selectedFeedback.attachments || []).length ? (
-                  <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                    {(selectedFeedback.attachments || []).map((attachment) => (
-                      <div key={attachment.id} className="flex items-center gap-2">
-                        <IconFile style={{ color: 'var(--color-text-3)' }} />
-                        <span style={{ flex: 1 }}>{attachment.name}</span>
-                        <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
-                          {formatFeedbackAttachmentSize(attachment.size)}
-                        </span>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<IconDownload />}
-                          onClick={() => handleDownloadAttachment(attachment)}
-                        >
-                          下载
-                        </Button>
-                      </div>
-                    ))}
-                  </Space>
-                ) : '-'}
-              </DescriptionsItem>
-              {selectedFeedback.status === 'processed' && (
-                <>
-                  <DescriptionsItem label="处理人">{selectedFeedback.handlerName || '-'}</DescriptionsItem>
-                  <DescriptionsItem label="处理时间">{formatDateTime(selectedFeedback.handledAt)}</DescriptionsItem>
-                  <DescriptionsItem label="处理说明">{selectedFeedback.handleNote || '-'}</DescriptionsItem>
-                </>
-              )}
-            </Descriptions>
+            <Descriptions
+              column={1}
+              size="medium"
+              labelStyle={{ width: 92 }}
+              data={[
+                { label: '反馈编号', value: selectedFeedback.id },
+                { label: '反馈类型', value: feedbackTypeLabels[selectedFeedback.type] },
+                { label: '当前页面', value: selectedFeedback.pagePath },
+                { label: '提交人', value: selectedFeedback.reporterName },
+                { label: '提交时间', value: formatDateTime(selectedFeedback.createdAt) },
+                { label: '联系方式', value: selectedFeedback.contact || '-' },
+                { label: '反馈内容', value: selectedFeedback.content },
+                {
+                  label: '反馈附件',
+                  value: (selectedFeedback.attachments || []).length ? (
+                    <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                      {(selectedFeedback.attachments || []).map((attachment) => (
+                        <div key={attachment.id} className="flex items-center gap-2">
+                          <IconFile style={{ color: 'var(--color-text-3)' }} />
+                          <span style={{ flex: 1 }}>{attachment.name}</span>
+                          <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
+                            {formatFeedbackAttachmentSize(attachment.size)}
+                          </span>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<IconDownload />}
+                            onClick={() => handleDownloadAttachment(attachment)}
+                          >
+                            下载
+                          </Button>
+                        </div>
+                      ))}
+                    </Space>
+                  ) : '-',
+                },
+                ...(selectedFeedback.status === 'processed'
+                  ? [
+                      { label: '处理人', value: selectedFeedback.handlerName || '-' },
+                      { label: '处理时间', value: formatDateTime(selectedFeedback.handledAt) },
+                      { label: '处理说明', value: selectedFeedback.handleNote || '-' },
+                    ]
+                  : []),
+              ]}
+            />
 
             {selectedFeedback.status === 'pending' && (
               <div style={{ marginTop: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>处理说明（选填）</div>
+                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>处理说明（选填）</div>
                 <Input.TextArea
                   value={handleNote}
                   onChange={setHandleNote}

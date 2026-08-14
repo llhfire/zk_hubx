@@ -1530,7 +1530,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         onCancel={() => setDetailPeriodId(null)}
         footer={null}
         style={{ width: 860, maxWidth: 'calc(100vw - 32px)' }}
-        bodyStyle={{ padding: 0, background: '#f5f7fa' }}
+        bodyStyle={{ padding: 0, background: 'var(--grey-100)' }}
       >
         {detailPeriod && (() => {
           const application = findApplication(projectId, detailPeriod.id);

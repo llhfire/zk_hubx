@@ -59,8 +59,7 @@ export function LeadCostAnalysis() {
 
   return (
     <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Title heading={4}>渠道分析</Title>
+      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
         <Button icon={<IconDownload />} onClick={() => Message.info('第一版仅展示导出按钮，暂不实现真实导出')}>导出 Excel</Button>
       </div>
 
@@ -85,8 +84,8 @@ export function LeadCostAnalysis() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="消耗金额" fill="#165dff" />
-                  <Bar dataKey="有效线索" fill="#00b42a" />
+                  <Bar dataKey="消耗金额" fill="var(--primary)" />
+                  <Bar dataKey="有效线索" fill="var(--success-500)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -105,8 +104,8 @@ export function LeadCostAnalysis() {
                       key={item.platform}
                       name={item.platform}
                       dataKey={item.platform}
-                      stroke={['#165dff', '#00b42a', '#ff7d00', '#f53f3f'][index]}
-                      fill={['#165dff', '#00b42a', '#ff7d00', '#f53f3f'][index]}
+                      stroke={['var(--primary)', 'var(--success-500)', 'var(--warning-500)', 'var(--destructive-500)'][index]}
+                      fill={['var(--primary)', 'var(--success-500)', 'var(--warning-500)', 'var(--destructive-500)'][index]}
                       fillOpacity={0.15}
                     />
                   ))}

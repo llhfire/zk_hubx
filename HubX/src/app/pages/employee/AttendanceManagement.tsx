@@ -15,10 +15,12 @@ import {
   Radio,
   Message,
   Typography,
+  Tooltip,
 } from '@arco-design/web-react';
 import {
   IconPlus,
   IconCheck,
+  IconClose,
   IconCalendar,
   IconClockCircle,
   IconExclamationCircle,
@@ -38,25 +40,25 @@ const FormItem = Form.Item;
 const { MonthPicker } = DatePicker;
 
 const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
-  '年假': '#165dff',
-  '事假': '#ff7d00',
-  '病假': '#f53f3f',
+  '年假': 'var(--primary)',
+  '事假': 'var(--warning-500)',
+  '病假': 'var(--destructive-500)',
   '调休': '#0fc6c2',
   '婚宴': '#eb2f96',
   '产宴': '#eb2f96',
-  '丧宴': '#86909c',
-  '加班': '#00b42a',
+  '丧宴': 'var(--grey-400)',
+  '加班': 'var(--success-500)',
 };
 
 const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  '已批准': '#00b42a',
-  '待审批': '#ff7d00',
-  '已拒绝': '#f53f3f',
-  '已撤销': '#86909c',
+  '已批准': 'var(--success-500)',
+  '待审批': 'var(--warning-500)',
+  '已拒绝': 'var(--destructive-500)',
+  '已撤销': 'var(--grey-400)',
 };
 
 function getStatusColor(s: AttendanceStatus) {
-  return ATTENDANCE_STATUS_COLORS[s] || '#86909c';
+  return ATTENDANCE_STATUS_COLORS[s] || 'var(--grey-400)';
 }
 
 export function AttendanceManagement() {
@@ -137,8 +139,8 @@ export function AttendanceManagement() {
         <Tag color={LEAVE_TYPE_COLORS[t]}>{t}</Tag>
       ),
     },
-    { title: '开始日期', dataIndex: 'startDate', width: 110 },
-    { title: '结束日期', dataIndex: 'endDate', width: 110 },
+    { title: '开始日期', dataIndex: 'startDate', width: 130 },
+    { title: '结束日期', dataIndex: 'endDate', width: 130 },
     { title: '天数', dataIndex: 'days', width: 60, render: (d: number) => `${d}天` },
     { title: '事由', dataIndex: 'reason', ellipsis: true },
     {
@@ -156,12 +158,12 @@ export function AttendanceManagement() {
         if (record.status !== '待审批') return <span style={{ color: 'var(--color-text-3)' }}>—</span>;
         return (
           <Space>
-            <Button type="text" size="small" style={{ color: '#00b42a' }} onClick={() => handleApprove(record.id)}>
-              批准
-            </Button>
-            <Button type="text" size="small" status="danger" onClick={() => handleReject(record.id)}>
-              拒绝
-            </Button>
+            <Tooltip content="批准">
+              <Button type="text" size="small" icon={<IconCheck />} style={{ color: 'var(--success-500)' }} onClick={() => handleApprove(record.id)} />
+            </Tooltip>
+            <Tooltip content="拒绝">
+              <Button type="text" size="small" icon={<IconClose />} status="danger" onClick={() => handleReject(record.id)} />
+            </Tooltip>
           </Space>
         );
       },
@@ -177,7 +179,7 @@ export function AttendanceManagement() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>本月请假天数</span>}
               value={stats.totalLeaveDays}
-              prefix={<IconCalendar style={{ color: '#ff7d00' }} />}
+              prefix={<IconCalendar style={{ color: 'var(--warning-500)' }} />}
               suffix="天"
             />
           </Card>
@@ -187,7 +189,7 @@ export function AttendanceManagement() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>本月加班时长</span>}
               value={stats.totalOvertimeHours}
-              prefix={<IconClockCircle style={{ color: '#00b42a' }} />}
+              prefix={<IconClockCircle style={{ color: 'var(--success-500)' }} />}
               suffix="小时"
             />
           </Card>
@@ -197,7 +199,7 @@ export function AttendanceManagement() {
             <Statistic
               title={<span style={{ color: 'var(--color-text-2)' }}>待审批申请</span>}
               value={stats.pendingCount}
-              prefix={<IconExclamationCircle style={{ color: '#ff7d00' }} />}
+              prefix={<IconExclamationCircle style={{ color: 'var(--warning-500)' }} />}
               suffix="条"
             />
           </Card>

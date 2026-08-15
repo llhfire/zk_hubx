@@ -5,7 +5,8 @@ export type TodoSource =
   | 'daily_report'
   | 'project_task'
   | 'wecom_approval'
-  | 'customer_communication';
+  | 'customer_communication'
+  | 'quotation';
 
 export type TodoStatus = 'pending' | 'in_progress' | 'completed' | 'canceled';
 export type TodoPriority = 'high' | 'medium' | 'low';

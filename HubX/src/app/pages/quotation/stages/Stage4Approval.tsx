@@ -1,17 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
-  Button, Card, Collapse, Descriptions, Input, Message, Space, Table, Tag, Timeline, Typography,
+  Button, Card, Empty, Input, Message, Space, Table, Tag, Timeline, Typography,
 } from '@arco-design/web-react';
 import {
-  IconCheck, IconClose, IconStamp, IconSend, IconDownload, IconCheckCircle, IconCloseCircle,
+  IconCheck, IconClose, IconStamp, IconSend, IconDownload, IconCheckCircle, IconCloseCircle, IconApps,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
-import { computeAmountBreakdown } from '../quoteFlow';
-import {
-  QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, RISK_META,
-} from '../types';
-import type { Quote } from '../types';
+import { computeAmountBreakdown, sumEvalDaysByRole } from '../quoteFlow';
+import { PLATFORM_OPTIONS, QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, RISK_META } from '../types';
+import type { EvalRole } from '../types';
 
 const { Text, Title } = Typography;
 
@@ -41,6 +39,11 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
   const isStamper = currentRole === 'assistant';
   const isSales = currentRole === 'sales';
   const breakdown = useMemo(() => computeAmountBreakdown(quote), [quote]);
+  const roleTotals = useMemo(() => sumEvalDaysByRole(quote.evalSheet), [quote.evalSheet]);
+  const endpointConfigs = quote.endpointConfigs || [];
+  const featureList = quote.featureList;
+  const evalSheet = quote.evalSheet;
+  const travelOnsite = quote.travelOnsite;
 
   const handleApprove = () => {
     if (!auditor) return;
@@ -83,45 +86,158 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
   const auditColor = (s: string) => (s === 'APPROVED' ? 'green' : s === 'REJECTED' ? 'red' : 'gray');
   const auditLabel = (s: string) => (s === 'APPROVED' ? '已通过' : s === 'REJECTED' ? '已驳回' : '待审批');
 
+  // 计算总人天和总金额
+  const grandTotalDays = useMemo(() => {
+    if (!evalSheet) return 0;
+    return evalSheet.evaluationUnits.reduce((s, u) => s + u.totalDays, 0);
+  }, [evalSheet]);
+
+  // PDF 下载功能
+  const printRef = useRef<HTMLDivElement>(null);
+  const handleDownloadPDF = async () => {
+    if (!printRef.current) return;
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${quote.quoteNo}_报价单.pdf`);
+      Message.success('报价单已下载');
+    } catch {
+      Message.error('下载失败，请重试');
+    }
+  };
+
   return (
-    <Card title={<Title heading={6} style={{ margin: 0 }}>工作台四 · 管理层审批与盖章</Title>}>
+    <Card title={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Title heading={6} style={{ margin: 0 }}>工作台四 · 管理层审批与盖章</Title>
+        {(quote.status === 'stamped' || quote.status === 'sent' || quote.status === 'deal') && (
+          <Button size="small" icon={<IconDownload />} onClick={handleDownloadPDF}>下载报价单 PDF</Button>
+        )}
+      </div>
+    }>
+      {/* 报价单正文（用于 PDF 下载） */}
+      <div ref={printRef} style={{ background: 'white', padding: 8 }}>
+        {/* 报价单标题 */}
+        <div style={{ textAlign: 'center', padding: '12px 0', borderBottom: '2px solid var(--color-border-2)', marginBottom: 16 }}>
+          <Title heading={4} style={{ margin: 0, color: 'var(--color-text-1)' }}>软件项目报价单</Title>
+          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 6 }}>
+            {quote.quoteNo} · {quote.version}
+          </div>
+          {quote.status === 'stamped' && (
+            <div style={{ position: 'absolute', right: 24, top: 24, transform: 'rotate(-20deg)', border: '3px solid rgb(var(--red-6))', color: 'rgb(var(--red-6))', borderRadius: 6, padding: '4px 16px', fontSize: 18, fontWeight: 700, opacity: 0.7 }}>
+              中科集团公章
+            </div>
+          )}
+        </div>
+
       <Space style={{ marginBottom: 12 }}>
         <Text type="secondary">当前状态</Text>
         <Tag color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
         <Text type="secondary">总报价 <Text bold style={{ color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</Text></Text>
       </Space>
 
-      {/* 穿透式四层明细 */}
-      <Collapse defaultActiveKey={['summary']} style={{ marginBottom: 16 }}>
-        <Collapse.Item header="第一层 · 报价汇总" name="summary">
-          <Descriptions
-            column={2}
-            data={[
-              { label: '项目总报价', value: money(breakdown.grandTotal) },
-              { label: '总人天', value: `${breakdown.totalLaborDays.toFixed(1)} 人天` },
-              { label: '人力占比', value: `${(breakdown.ratios.labor * 100).toFixed(0)}%` },
-              { label: '差旅驻场占比', value: `${(breakdown.ratios.travelOnsite * 100).toFixed(0)}%` },
-              { label: '其他成本占比', value: `${(breakdown.ratios.other * 100).toFixed(0)}%` },
-              { label: '约定工期', value: `${quote.evalSheet?.manualWorkDays ?? 0} 工作日` },
-            ]}
-          />
-        </Collapse.Item>
+      {/* 功能清单与工时评估（从工作台三带入） */}
+      <Card size="small" title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <IconApps />
+            <span>功能清单与工时评估</span>
+          </div>
+          {evalSheet && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              总周期 <Text bold>{evalSheet.manualWorkDays || '-'}</Text> 工作日
+            </Text>
+          )}
+        </div>
+      } style={{ marginBottom: 16 }}>
+        {evalSheet && endpointConfigs.length > 0 ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: 'var(--color-fill-1)' }}>
+                  <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>端</th>
+                  <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>模块</th>
+                  <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>子功能</th>
+                  {evalSheet.activeRoles.map((r: EvalRole) => (
+                    <th key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 70, whiteSpace: 'nowrap' }}>{r.name}</th>
+                  ))}
+                  <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 60, whiteSpace: 'nowrap' }}>人天</th>
+                  <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>风险</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const unitMap = new Map<string, typeof evalSheet.evaluationUnits[0]>();
+                  evalSheet.evaluationUnits.forEach((u) => {
+                    u.boundSubFeatureIds.forEach((subId) => { unitMap.set(subId, u); });
+                  });
+                  const epRowSpans: Record<string, number> = {};
+                  const epFirstIdx: Record<string, number> = {};
+                  let idx = 0;
+                  featureList.forEach((m) => {
+                    const epId = m.endpointId || '';
+                    if (!(epId in epFirstIdx)) { epFirstIdx[epId] = idx; epRowSpans[epId] = 0; }
+                    epRowSpans[epId] += Math.max(m.subFeatures.length, 1);
+                    idx += Math.max(m.subFeatures.length, 1);
+                  });
+                  let rowIdx = 0;
+                  return featureList.flatMap((m) => {
+                    const ep = endpointConfigs.find((e) => e.id === m.endpointId);
+                    const isFirstOfEp = epFirstIdx[m.endpointId || ''] === rowIdx;
+                    const subs = m.subFeatures.length > 0 ? m.subFeatures : [{ id: 'empty', name: '（暂无子功能）', description: '' }];
+                    return subs.map((f, fIdx) => {
+                      rowIdx++;
+                      const unit = unitMap.get(f.id);
+                      const totalDays = unit?.totalDays ?? 0;
+                      return (
+                        <tr key={f.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+                          {isFirstOfEp && fIdx === 0 && (
+                            <td rowSpan={epRowSpans[m.endpointId || ''] || 1} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 600, borderRight: '1px solid var(--color-border-2)', fontSize: 12 }}>
+                              {ep?.name || '-'}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+                                {(ep?.platforms || []).map((pid) => (
+                                  <Tag key={pid} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>{PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid}</Tag>
+                                ))}
+                              </div>
+                            </td>
+                          )}
+                          {fIdx === 0 && (
+                            <td rowSpan={subs.length} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 500, borderRight: '1px solid var(--color-border-2)' }}>{m.name}</td>
+                          )}
+                          <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
+                          {evalSheet.activeRoles.map((r: EvalRole) => (
+                            <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: 'monospace' }}>
+                              {unit && (unit.manualWorkload[r.key] ?? 0) > 0 ? (unit.manualWorkload[r.key] ?? 0).toFixed(1) : '-'}
+                            </td>
+                          ))}
+                          <td style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: 'monospace', fontWeight: 500 }}>
+                            {totalDays > 0 ? totalDays.toFixed(1) : '-'}
+                          </td>
+                          <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>
+                            {unit && <Tag size="small" color={RISK_META[unit.riskLevel]?.color}>{RISK_META[unit.riskLevel]?.text}</Tag>}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  });
+                })()}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty description="暂无评估数据" />
+        )}
+      </Card>
 
-        <Collapse.Item header="第二层 · 技术人天与增项" name="labor">
-          <Text bold style={{ display: 'block', marginBottom: 8 }}>罗总核定技术工时</Text>
-          <Table
-            size="small"
-            rowKey="id"
-            pagination={false}
-            data={quote.evalSheet?.evaluationUnits ?? []}
-            columns={[
-              { title: '模块/切片', dataIndex: 'groupName', width: 140, render: (v: string, r: { moduleName: string }) => v ?? r.moduleName },
-              ...((quote.evalSheet?.activeRoles ?? []).map((r) => ({ title: r.name, dataIndex: r.key, width: 80, render: (v: number) => v ?? '-' }))),
-              { title: '小计', dataIndex: 'totalDays', width: 70, render: (v: number) => v?.toFixed(1) },
-              { title: '风险', dataIndex: 'riskLevel', width: 60, render: (l: keyof typeof RISK_META) => <Tag color={RISK_META[l].color} size="small">{RISK_META[l].text}</Tag> },
-            ]}
-          />
-          <Text bold style={{ display: 'block', margin: '12px 0 8px' }}>销售增项</Text>
+      {/* 销售增项岗位 */}
+      {quote.salesAddedRoles.length > 0 && (
+        <Card size="small" title="销售增项岗位" style={{ marginBottom: 16 }}>
           <Table
             size="small"
             rowKey="id"
@@ -136,39 +252,132 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
               { title: '事由', dataIndex: 'reason' },
             ]}
           />
-        </Collapse.Item>
+        </Card>
+      )}
 
-        <Collapse.Item header="第三层 · 功能需求清单" name="features">
-          {quote.featureList.map((m) => (
-            <div key={m.id} style={{ marginBottom: 12 }}>
-              <Text bold>{m.name}</Text>
-              {m.subFeatures.map((f) => (
-                <div key={f.id} style={{ padding: '6px 0 6px 12px', borderBottom: '1px dashed var(--color-border-2)' }}>
-                  <Text>{f.name}</Text>
-                  <div style={{ color: 'var(--color-text-3)', fontSize: 13, marginTop: 2 }}>{f.description}</div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </Collapse.Item>
+      {/* 出差与驻场 */}
+      <Card size="small" title="出差与驻场" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <Text bold>出差</Text>
+            {travelOnsite.enableTravel && travelOnsite.travelDetails.length > 0 ? (
+              <Table size="small" rowKey="location" pagination={false} data={travelOnsite.travelDetails}
+                columns={[
+                  { title: '地点', dataIndex: 'location', width: 80 },
+                  { title: '人数', dataIndex: 'headcount', width: 50 },
+                  { title: '天数', dataIndex: 'days', width: 50 },
+                ]}
+              />
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>未开启</Text>
+            )}
+            {travelOnsite.enableTravel && <Text type="secondary" style={{ fontSize: 12 }}>差旅合计：{money(travelOnsite.travelSubtotal)}</Text>}
+          </div>
+          <div>
+            <Text bold>驻场</Text>
+            {travelOnsite.enableOnsite && travelOnsite.onsiteDetails.length > 0 ? (
+              <Table size="small" rowKey="location" pagination={false} data={travelOnsite.onsiteDetails}
+                columns={[
+                  { title: '地点', dataIndex: 'location', width: 80 },
+                  { title: '人数', dataIndex: 'headcount', width: 50 },
+                  { title: '天数', dataIndex: 'days', width: 50 },
+                ]}
+              />
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>未开启</Text>
+            )}
+            {travelOnsite.enableOnsite && <Text type="secondary" style={{ fontSize: 12 }}>驻场合计：{money(travelOnsite.onsiteSubtotal)}</Text>}
+          </div>
+        </div>
+      </Card>
 
-        <Collapse.Item header="第四层 · 商务与外部成本" name="cost">
-          <Table
-            size="small"
-            rowKey="id"
-            pagination={false}
-            data={quote.otherCosts}
+      {/* 其他成本 */}
+      {quote.otherCosts.length > 0 && (
+        <Card size="small" title="其他成本" style={{ marginBottom: 16 }}>
+          <Table size="small" rowKey="id" pagination={false} data={quote.otherCosts}
             columns={[
-              { title: '成本项', dataIndex: 'name', width: 200 },
+              { title: '费用项', dataIndex: 'name', width: 200 },
               { title: '金额', dataIndex: 'amount', width: 120, render: (v: number) => money(v) },
               { title: '说明', dataIndex: 'note', render: (v: string) => v || '-' },
             ]}
           />
-          <div style={{ marginTop: 8 }}>
-            <Text type="secondary">出差：{quote.travelOnsite.enableTravel ? money(quote.travelOnsite.travelSubtotal) : '未开启'} · 驻场：{quote.travelOnsite.enableOnsite ? money(quote.travelOnsite.onsiteSubtotal) : '未开启'}</Text>
+          <div style={{ marginTop: 8, textAlign: 'right' }}>
+            <Text>其他合计：</Text>
+            <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(quote.otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
           </div>
-        </Collapse.Item>
-      </Collapse>
+        </Card>
+      )}
+
+      {/* 报价汇总 */}
+      <Card size="small" title="报价汇总" style={{ marginBottom: 16 }}>
+        {/* 项目综述 */}
+        <div style={{ marginBottom: 16 }}>
+          <Text bold style={{ display: 'block', marginBottom: 8 }}>项目综述</Text>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>项目名称</Text>
+              <div style={{ fontWeight: 600, marginTop: 4 }}>{quote.basicInfo.projectName || '-'}</div>
+            </div>
+            <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>项目工期</Text>
+              <div style={{ fontWeight: 600, marginTop: 4 }}>{evalSheet?.manualWorkDays || '-'} 工作日</div>
+            </div>
+            <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>开发人天</Text>
+              <div style={{ fontWeight: 600, marginTop: 4 }}>{grandTotalDays.toFixed(1)} 人天</div>
+            </div>
+            <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--color-primary-6), #4F46E5)', borderRadius: 8, color: 'white' }}>
+              <Text type="secondary" style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>项目总价</Text>
+              <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: 'monospace' }}>{money(breakdown.grandTotal)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 费用明细 */}
+        <Text bold style={{ display: 'block', marginBottom: 8 }}>费用明细</Text>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: 'var(--color-fill-1)' }}>
+              <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>费用项</th>
+              <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
+              <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+              <td style={{ padding: '8px 12px', fontWeight: 500 }}>技术人力成本</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.techLaborCost)}</td>
+              <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{evalSheet?.activeRoles.length || 0} 个岗位 × {breakdown.techDays.toFixed(1)} 人天</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+              <td style={{ padding: '8px 12px', fontWeight: 500 }}>销售增项成本</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.addedCost)}</td>
+              <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{quote.salesAddedRoles.length > 0 ? quote.salesAddedRoles.map((r) => r.roleName || '未命名').join('、') : '无增项'}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+              <td style={{ padding: '8px 12px', fontWeight: 500 }}>差旅费用</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.travelSubtotal)}</td>
+              <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableTravel ? `${travelOnsite.travelDetails.length} 个出差地点` : '未开启'}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+              <td style={{ padding: '8px 12px', fontWeight: 500 }}>驻场费用</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.onsiteSubtotal)}</td>
+              <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableOnsite ? `${travelOnsite.onsiteDetails.length} 个驻场地点` : '未开启'}</td>
+            </tr>
+            <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+              <td style={{ padding: '8px 12px', fontWeight: 500 }}>其他成本</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.otherCostSubtotal)}</td>
+              <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{quote.otherCosts.length > 0 ? quote.otherCosts.map((c) => c.name || '未命名').join('、') : '无其他费用'}</td>
+            </tr>
+            <tr style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
+              <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }}>合计</td>
+              <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: 'monospace', fontSize: 16, color: 'var(--color-danger-6)' }}>{money(breakdown.grandTotal)}</td>
+              <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }} />
+            </tr>
+          </tbody>
+        </table>
+      </Card>
+      </div>
 
       {/* 三人并行会签 */}
       <Text bold style={{ display: 'block', marginBottom: 8 }}>三人并行会签</Text>
@@ -197,7 +406,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
         {quote.stampNode.stampTime && <Text type="secondary" style={{ fontSize: 12 }}>{quote.stampNode.stampTime}</Text>}
       </Space>
 
-      {/* 操作区：按当前角色与状态动态出按钮 */}
+      {/* 操作区 */}
       {!readonly && isAuditor && quote.status === 'auditing' && (
         <Space>
           <Button type="primary" icon={<IconCheck />} onClick={handleApprove}>同意并通过</Button>
@@ -255,7 +464,6 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
 }
 
 function calcExpiry(sentAt: string, days: number): string {
-  // sentAt 形如 '2026-08-14 16:10'
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(sentAt);
   if (!m) return '-';
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + days);

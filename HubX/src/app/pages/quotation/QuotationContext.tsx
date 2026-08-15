@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type PropsWithChildren } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import type {
   EvalSheet,
   FeatureModule,
@@ -13,15 +13,19 @@ import { initialQuotes } from './mockData';
 import { buildDefaultFeatureList } from './defaultFeatures';
 import {
   buildInitialUnits,
+  buildQuoteTodos,
   nextVersion,
   resetAuditNodes,
   resolveAuditOutcome,
 } from './quoteFlow';
+import type { TodoItem } from '@/app/todos/types';
 
 interface QuotationContextValue {
   quotes: Quote[];
   currentRole: QuoteRole;
   setCurrentRole: (role: QuoteRole) => void;
+  /** 当前角色待处理的报价待办（派生，非持久化） */
+  myQuoteTodos: TodoItem[];
   getQuoteById: (id: string) => Quote | undefined;
   updateQuote: (id: string, updater: (q: Quote) => Quote) => void;
 
@@ -80,9 +84,42 @@ function makeEvent(action: QuoteAction, role: QuoteRole, note?: string): QuoteTi
   };
 }
 
+const STORAGE_KEY = 'hubx-quotation-v1';
+
+interface QuotationStore {
+  quotes: Quote[];
+  currentRole: QuoteRole;
+}
+
+function loadStore(): QuotationStore {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<QuotationStore>;
+      if (Array.isArray(parsed.quotes) && parsed.currentRole) {
+        return { quotes: parsed.quotes, currentRole: parsed.currentRole };
+      }
+    }
+  } catch {
+    // ignore，回退到种子数据
+  }
+  return { quotes: initialQuotes, currentRole: 'sales' };
+}
+
 export function QuotationProvider({ children }: PropsWithChildren) {
-  const [quotes, setQuotes] = useState<Quote[]>(initialQuotes);
-  const [currentRole, setCurrentRole] = useState<QuoteRole>('pm');
+  const [quotes, setQuotes] = useState<Quote[]>(() => loadStore().quotes);
+  const [currentRole, setCurrentRole] = useState<QuoteRole>(() => loadStore().currentRole);
+
+  // 报价数据与当前身份持久化，刷新后流程不丢
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ quotes, currentRole }));
+    } catch {
+      // ignore
+    }
+  }, [quotes, currentRole]);
+
+  const myQuoteTodos = useMemo(() => buildQuoteTodos(quotes, currentRole), [quotes, currentRole]);
 
   const getQuoteById = useCallback((id: string) => quotes.find((q) => q.id === id), [quotes]);
 
@@ -142,6 +179,10 @@ export function QuotationProvider({ children }: PropsWithChildren) {
           quoteValidityDays: basicInfo.quoteValidityDays ?? 30,
         },
         featureList: featureList.length > 0 ? featureList : buildDefaultFeatureList(),
+        endpointConfigs: [
+          { id: 'ep-1', name: '用户端', platforms: ['wechat'] },
+          { id: 'ep-2', name: '管理后台', platforms: ['pcweb'] },
+        ],
         salesAddedRoles: [],
         frontendConfig: { platforms: [] },
         backendConfig: { services: [], language: '' },
@@ -150,7 +191,7 @@ export function QuotationProvider({ children }: PropsWithChildren) {
         auditNodes: buildInitialAuditNodes(),
         stampNode: { stamperName: '黄海', status: 'LOCKED' },
         timeline: [makeEvent('create', 'pm')],
-        ccSalesNames: ['李销售'],
+        ccSalesNames: ['张三'],
         createdAt: nowStr,
         updatedAt: nowStr,
       };
@@ -323,6 +364,7 @@ export function QuotationProvider({ children }: PropsWithChildren) {
     quotes,
     currentRole,
     setCurrentRole,
+    myQuoteTodos,
     getQuoteById,
     updateQuote,
     createQuote,
@@ -342,7 +384,7 @@ export function QuotationProvider({ children }: PropsWithChildren) {
     markVoided,
     createNewVersion,
   }), [
-    quotes, currentRole, getQuoteById, updateQuote, createQuote,
+    quotes, currentRole, myQuoteTodos, getQuoteById, updateQuote, createQuote,
     saveFeatureList, setDeadline, submitFeatureList,
     saveEvalSheet, submitEval, assignToSales,
     returnToTech, submitForAudit, withdrawAudit,

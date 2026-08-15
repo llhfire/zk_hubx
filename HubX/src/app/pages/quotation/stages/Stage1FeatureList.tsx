@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
-  Button, Card, Dropdown, Empty, Input, Menu, Message, Popover, Space, Table, Typography,
+  Button, Card, Checkbox, Dropdown, Empty, Input, Menu, Message, Popover, Space, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import {
-  IconPlusCircle, IconMinusCircle, IconImport, IconSend, IconDown, IconApps,
+  IconPlusCircle, IconMinusCircle, IconImport, IconSend, IconDown, IconApps, IconDelete,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { validateFeatureList } from '../quoteFlow';
-import type { FeatureModule, FeatureSubFeature, Quote } from '../types';
+import { PLATFORM_OPTIONS } from '../types';
+import type { EndpointConfig, FeatureModule, FeatureSubFeature, Quote } from '../types';
 
 const { Text, Title } = Typography;
 
@@ -22,12 +23,14 @@ function uid(prefix: string): string {
 }
 
 export function Stage1FeatureList({ quote, readonly }: StageProps) {
-  const { saveFeatureList, submitFeatureList, setDeadline } = useQuotation();
+  const { saveFeatureList, submitFeatureList, setDeadline, updateQuote } = useQuotation();
   const [localList, setLocalList] = useState<FeatureModule[]>(quote.featureList);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [editingEndpoint, setEditingEndpoint] = useState<string | null>(null);
 
   // 编辑态以本地为准，只读态以 quote 为准
   const featureList = readonly ? quote.featureList : localList;
+  const endpointConfigs = quote.endpointConfigs || [];
   // 底部浮动栏计数：一级模块数与二级子功能总数
   const subCount = useMemo(() => featureList.reduce((n, m) => n + m.subFeatures.length, 0), [featureList]);
 
@@ -36,12 +39,68 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
     saveFeatureList(quote.id, next);
   };
 
-  const addModule = (afterModuleId?: string) => {
+  // ─── 端配置函数 ─────────────────────────────────────────
+
+  const addEndpoint = () => {
+    const newEpId = uid('ep');
+    const newEp: EndpointConfig = { id: newEpId, name: '新端', platforms: [] };
+    updateQuote(quote.id, (q) => ({
+      ...q,
+      endpointConfigs: [...q.endpointConfigs, newEp],
+    }));
+    // 同时在清单末尾新增一个属于该端的空模块
+    const newModule: FeatureModule = {
+      id: uid('m'),
+      name: '',
+      sort: featureList.length + 1,
+      endpointId: newEpId,
+      subFeatures: [{ id: uid('fs'), name: '', description: '' }],
+    };
+    persist([...featureList, newModule]);
+    // 焦点移到端名称输入框
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('input');
+      for (const input of inputs) {
+        if (input.value === '新端') { input.focus(); input.select(); break; }
+      }
+    }, 100);
+  };
+
+  const updateEndpoint = (epId: string, patch: Partial<EndpointConfig>) => {
+    updateQuote(quote.id, (q) => ({
+      ...q,
+      endpointConfigs: q.endpointConfigs.map((ep) => (ep.id === epId ? { ...ep, ...patch } : ep)),
+    }));
+  };
+
+  const removeEndpoint = (epId: string) => {
+    updateQuote(quote.id, (q) => ({
+      ...q,
+      endpointConfigs: q.endpointConfigs.filter((ep) => ep.id !== epId),
+      featureList: q.featureList.map((m) => (m.endpointId === epId ? { ...m, endpointId: '' } : m)),
+    }));
+  };
+
+  const toggleEndpointPlatform = (epId: string, platformId: string) => {
+    updateQuote(quote.id, (q) => ({
+      ...q,
+      endpointConfigs: q.endpointConfigs.map((ep) => {
+        if (ep.id !== epId) return ep;
+        const platforms = ep.platforms.includes(platformId)
+          ? ep.platforms.filter((p) => p !== platformId)
+          : [...ep.platforms, platformId];
+        return { ...ep, platforms };
+      }),
+    }));
+  };
+
+  const addModule = (afterModuleId?: string, endpointId?: string) => {
     const moduleId = uid('m');
     const newModule = {
       id: moduleId,
       name: '',
       sort: 0,
+      endpointId: endpointId || endpointConfigs[0]?.id || '',
       subFeatures: [{ id: uid('fs'), name: '', description: '' }],
     };
     let next: FeatureModule[];
@@ -58,12 +117,27 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
     // 重新计算 sort
     next = next.map((m, i) => ({ ...m, sort: i + 1 }));
     persist(next);
+    // 焦点移到新模块的名称输入框
+    setTimeout(() => {
+      const rows = document.querySelectorAll('tr');
+      const lastRow = rows[rows.length - 1];
+      if (lastRow) {
+        const input = lastRow.querySelector('input[type="text"], input:not([type])') as HTMLInputElement;
+        if (input) { input.focus(); input.select(); }
+      }
+    }, 100);
+  };
+
+  const updateModuleEndpoint = (moduleId: string, endpointId: string) => {
+    const next = featureList.map((m) => (m.id === moduleId ? { ...m, endpointId } : m));
+    persist(next);
   };
 
   const addSubFeature = (moduleId: string, afterSubId?: string) => {
+    const newSubId = uid('fs');
     const next = featureList.map((m) => {
       if (m.id !== moduleId) return m;
-      const newSub = { id: uid('fs'), name: '', description: '' };
+      const newSub = { id: newSubId, name: '', description: '' };
       if (afterSubId) {
         const idx = m.subFeatures.findIndex((f) => f.id === afterSubId);
         if (idx >= 0) {
@@ -73,6 +147,11 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
       return { ...m, subFeatures: [...m.subFeatures, newSub] };
     });
     persist(next);
+    // 焦点移到新子功能的描述输入框
+    setTimeout(() => {
+      const el = document.getElementById(`desc-${newSubId}`);
+      if (el) el.focus();
+    }, 100);
   };
 
   const updateField = <K extends keyof FeatureSubFeature>(
@@ -131,8 +210,28 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
       render: (_: unknown, record: { seq: number }) => <Text type="secondary">{record.seq}</Text>,
     },
     {
+      title: '端', dataIndex: 'endpointId', width: 130,
+      render: (epId: string, record: Record<string, unknown>) => {
+        const ep = endpointConfigs.find((e) => e.id === epId);
+        if (!ep) return <Text type="secondary">-</Text>;
+        const platformNames = (ep.platforms || []).map((pid: string) => PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid);
+        const isEndpointStart = record._isEndpointStart as boolean;
+        if (!isEndpointStart) return null;
+        return (
+          <div style={{ borderRight: '1px solid var(--color-border-2)', paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>{ep.name}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {platformNames.map((name: string) => (
+                <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content' }}>{name}</Tag>
+              ))}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       title: '一级模块', dataIndex: 'moduleName', width: 200,
-      render: (name: string, record: { moduleId: string }) => (
+      render: (name: string, record: { moduleId: string; endpointId: string }) => (
         <div className="module-name-cell" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
           {readonly ? (
             <Text bold style={{ whiteSpace: 'nowrap' }}>{name}</Text>
@@ -237,14 +336,24 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
 
   // 把树展平成行，便于 Table 渲染并保留模块归属
   let seqCounter = 0;
+  // 记录每个端的模块数量，用于计算占位高度
+  const epModuleCounts: Record<string, number> = {};
+  const epFirstModId: Record<string, string> = {};
+  for (const m of featureList) {
+    const epId = m.endpointId || '';
+    epModuleCounts[epId] = (epModuleCounts[epId] || 0) + 1;
+    if (!epFirstModId[epId]) epFirstModId[epId] = m.id;
+  }
+
   const rows = featureList.flatMap((m) => {
+    const isFirstOfEndpoint = epFirstModId[m.endpointId] === m.id;
     if (m.subFeatures.length === 0) {
       seqCounter += 1;
-      return [{ moduleId: m.id, moduleName: m.name, id: 'empty', name: '（暂无子功能）', description: '', remark: '', empty: true, seq: seqCounter }];
+      return [{ moduleId: m.id, moduleName: m.name, endpointId: m.endpointId, _isEndpointStart: isFirstOfEndpoint, id: 'empty', name: '（暂无子功能）', description: '', remark: '', empty: true, seq: seqCounter }];
     }
-    return m.subFeatures.map((f) => {
+    return m.subFeatures.map((f, fIdx) => {
       seqCounter += 1;
-      return { moduleId: m.id, moduleName: m.name, ...f, seq: seqCounter };
+      return { moduleId: m.id, moduleName: m.name, endpointId: m.endpointId, _isEndpointStart: isFirstOfEndpoint && fIdx === 0, ...f, seq: seqCounter };
     });
   });
 
@@ -260,21 +369,51 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
         )
       }
     >
+      {/* 端配置区域已移至表格端列中 */}
+
       {!readonly && (
         <Space style={{ marginBottom: 12 }}>
-          <Button type="primary" icon={<IconPlusCircle />} onClick={addModule}>新增一级模块</Button>
+          <Button icon={<IconPlusCircle />} onClick={addEndpoint}>新增端</Button>
           <Dropdown
+            trigger="click"
             droplist={
-              <Menu
-                onClickMenuItem={(key: string) => addSubFeature(key)}
-                style={{ maxHeight: 240, overflow: 'auto' }}
-              >
-                {featureList.length === 0 ? (
-                  <Menu.Item key="__empty" disabled>暂无一级模块，请先新增</Menu.Item>
+              <Menu onClickMenuItem={(key: string) => addModule(undefined, key)}>
+                {endpointConfigs.length === 0 ? (
+                  <Menu.Item key="__empty" disabled>请先新增端</Menu.Item>
                 ) : (
-                  featureList.map((m) => (
-                    <Menu.Item key={m.id} icon={<IconPlusCircle />}>{m.name}</Menu.Item>
+                  endpointConfigs.map((ep) => (
+                    <Menu.Item key={ep.id}>{ep.name}</Menu.Item>
                   ))
+                )}
+              </Menu>
+            }
+            disabled={endpointConfigs.length === 0}
+          >
+            <Button icon={<IconPlusCircle />}>新增一级模块 <IconDown style={{ fontSize: 12 }} /></Button>
+          </Dropdown>
+          <Dropdown
+            trigger="click"
+            droplist={
+              <Menu style={{ maxHeight: 300, overflow: 'auto' }}>
+                {endpointConfigs.length === 0 ? (
+                  <Menu.Item key="__empty" disabled>请先新增端和模块</Menu.Item>
+                ) : (
+                  endpointConfigs.map((ep) => {
+                    const epModules = featureList.filter((m) => m.endpointId === ep.id);
+                    return (
+                      <Menu.SubMenu key={ep.id} title={ep.name}>
+                        {epModules.length === 0 ? (
+                          <Menu.Item key="__empty_mod" disabled>暂无模块</Menu.Item>
+                        ) : (
+                          epModules.map((m) => (
+                            <Menu.Item key={m.id} onClick={() => addSubFeature(m.id)}>
+                              {m.name || '未命名模块'}
+                            </Menu.Item>
+                          ))
+                        )}
+                      </Menu.SubMenu>
+                    );
+                  })
                 )}
               </Menu>
             }
@@ -289,13 +428,177 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
       {rows.length === 0 || (rows.length === 1 && rows[0].empty) ? (
         <Empty description="暂无功能清单，请新增模块" />
       ) : (
-        <Table
-          columns={columns}
-          data={rows}
-          rowKey={(row: { id: string }) => row.id}
-          pagination={false}
-          scroll={{ x: 1000 }}
-        />
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: 'var(--color-fill-1)' }}>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 56 }}>序号</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 130 }}>端</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 200 }}>一级模块</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 250 }}>二级子功能</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>功能描述与交互规则</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 160 }}>备注</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100 }}>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                // 计算每个端的行数（用于 rowspan）
+                const epRowSpans: Record<string, number> = {};
+                const epFirstRowIdx: Record<string, number> = {};
+                let idx = 0;
+                for (const row of rows) {
+                  const epId = row.endpointId || '';
+                  if (!(epId in epFirstRowIdx)) {
+                    epFirstRowIdx[epId] = idx;
+                    epRowSpans[epId] = 0;
+                  }
+                  epRowSpans[epId]++;
+                  idx++;
+                }
+
+                return rows.map((row, rowIdx) => {
+                  const epId = row.endpointId || '';
+                  const isFirstOfEp = epFirstRowIdx[epId] === rowIdx;
+                  const rowspan = isFirstOfEp ? epRowSpans[epId] : 0;
+                  const ep = endpointConfigs.find((e) => e.id === epId);
+                  const platformNames = ep ? (ep.platforms || []).map((pid: string) => PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid) : [];
+
+                  return (
+                    <tr key={row.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+                      <td style={{ padding: '10px 12px', borderRight: '1px solid var(--color-border-2)' }}>
+                        <Text type="secondary">{row.seq}</Text>
+                      </td>
+                      {isFirstOfEp && (
+                        <td rowSpan={rowspan} style={{ padding: '10px 12px', verticalAlign: 'top', borderRight: '1px solid var(--color-border-2)' }}>
+                          {readonly ? (
+                            <div style={{ fontWeight: 600, marginBottom: 4 }}>{ep?.name || '未分配'}</div>
+                          ) : (
+                            <Input
+                              size="small"
+                              value={ep?.name || ''}
+                              onChange={(v) => ep && updateEndpoint(ep.id, { name: v })}
+                              style={{ fontWeight: 600, marginBottom: 4 }}
+                            />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            {platformNames.map((name: string) => (
+                              <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content' }}>{name}</Tag>
+                            ))}
+                          </div>
+                          {!readonly && (
+                            <Popover
+                              trigger="click"
+                              position="bottom"
+                              content={
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 200 }}>
+                                  {PLATFORM_OPTIONS.map((p) => (
+                                    <Tag
+                                      key={p.id}
+                                      size="small"
+                                      color={ep?.platforms.includes(p.id) ? 'arcoblue' : undefined}
+                                      style={{
+                                        cursor: 'pointer',
+                                        opacity: ep?.platforms.includes(p.id) ? 1 : 0.5,
+                                        border: ep?.platforms.includes(p.id) ? undefined : '1px solid var(--color-border-3)',
+                                        color: ep?.platforms.includes(p.id) ? undefined : 'var(--color-text-3)',
+                                      }}
+                                      onClick={() => ep && toggleEndpointPlatform(ep.id, p.id)}
+                                    >
+                                      {p.name}
+                                    </Tag>
+                                  ))}
+                                </div>
+                              }
+                            >
+                              <Button size="mini" type="text" icon={<IconPlusCircle />} style={{ marginTop: 4 }}>添加平台</Button>
+                            </Popover>
+                          )}
+                        </td>
+                      )}
+                      <td style={{ padding: '10px 12px', borderRight: '1px solid var(--color-border-2)' }}>
+                        <div className="module-name-cell" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {readonly ? (
+                            <Text bold style={{ whiteSpace: 'nowrap' }}>{row.moduleName}</Text>
+                          ) : (
+                            <Input size="small" value={row.moduleName} onChange={(v) => updateModuleName(row.moduleId, v)} style={{ fontWeight: 600, width: '100%' }} />
+                          )}
+                          {!readonly && (
+                            <Button
+                              type="text" size="mini" status="success" icon={<IconPlusCircle />}
+                              className="module-add-btn"
+                              onClick={() => addModule(row.moduleId)}
+                              title="在下方新增一级模块"
+                            />
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 12px', borderRight: '1px solid var(--color-border-2)' }}>
+                        <div className="sub-feature-cell" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {readonly ? (
+                            <Text>{row.name}</Text>
+                          ) : (
+                            <>
+                              <Input id={`sub-feature-${row.id}`} size="small" value={row.name} onChange={(v) => updateField(row.moduleId, row.id, 'name', v)} style={{ flex: 1 }} />
+                              <Button
+                                type="text" size="mini" status="success" icon={<IconPlusCircle />}
+                                className="sub-feature-add-btn"
+                                onClick={() => addSubFeature(row.moduleId, row.id)}
+                                title="在下方新增子功能"
+                              />
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 12px', borderRight: '1px solid var(--color-border-2)' }}>
+                        {readonly ? (
+                          <Text>{row.description || '-'}</Text>
+                        ) : (
+                          <Input.TextArea
+                            id={`desc-${row.id}`}
+                            autoSize={{ minRows: 1, maxRows: 3 }}
+                            size="small"
+                            value={row.description}
+                            onChange={(v) => updateField(row.moduleId, row.id, 'description', v)}
+                            placeholder="详细交互逻辑与范围边界"
+                          />
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px', borderRight: '1px solid var(--color-border-2)' }}>
+                        {readonly ? (
+                          <Text type="secondary">{row.remark || '-'}</Text>
+                        ) : (
+                          <Input size="small" value={row.remark ?? ''} onChange={(v) => updateField(row.moduleId, row.id, 'remark', v)} placeholder="选填" />
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>
+                        {!readonly && (
+                          row.empty ? (
+                            <Button type="text" size="small" status="danger" icon={<IconMinusCircle />} onClick={() => removeModule(row.moduleId)} />
+                          ) : pendingDeleteId === row.id ? (
+                            <Button size="mini" status="danger" onClick={() => { removeSubFeature(row.moduleId, row.id); setPendingDeleteId(null); }}>确认</Button>
+                          ) : (
+                            <Button type="text" size="small" status="danger" icon={<IconMinusCircle />} onClick={() => {
+                              const module = featureList.find((m) => m.id === row.moduleId);
+                              const hasMultipleSubs = module && module.subFeatures.length > 1;
+                              const currentSub = module?.subFeatures.find((f) => f.id === row.id);
+                              const isEmpty = !currentSub?.name && !currentSub?.description;
+                              if (isEmpty || !hasMultipleSubs) {
+                                removeSubFeature(row.moduleId, row.id);
+                              } else {
+                                setPendingDeleteId(row.id);
+                              }
+                            }} />
+                          )
+                        )}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <style>{`
@@ -362,6 +665,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
         >
           <Button style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
             <IconApps style={{ fontSize: 18 }} />
+            <span><Text bold>{endpointConfigs.length}</Text> 端</span>
             <span>模块 <Text bold>{featureList.length}</Text> 个</span>
             <span>功能 <Text bold>{subCount}</Text> 项</span>
           </Button>

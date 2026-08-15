@@ -15,7 +15,7 @@ export function buildDefaultFeatureList(): FeatureModule[] {
   seq = 0;
   return [
     {
-      id: id(), name: '用户端-首页展示', sort: 1,
+      id: id(), name: '首页展示', sort: 1, endpointId: 'ep-1',
       subFeatures: [
         { id: id(), name: '品牌 Banner 轮播', description: '顶部轮播图/视频，支持后台配置' },
         { id: id(), name: '快捷入口导航', description: '设置核心快捷入口，自定义图标链接' },
@@ -23,7 +23,7 @@ export function buildDefaultFeatureList(): FeatureModule[] {
       ],
     },
     {
-      id: id(), name: '用户端-产品中心', sort: 2,
+      id: id(), name: '产品中心', sort: 2, endpointId: 'ep-1',
       subFeatures: [
         { id: id(), name: '产品分类导航', description: '按产品类型多级分类' },
         { id: id(), name: '产品详情展示', description: '多SKU规格/参数/收藏/微信转发' },
@@ -31,7 +31,7 @@ export function buildDefaultFeatureList(): FeatureModule[] {
       ],
     },
     {
-      id: id(), name: '用户端-会员中心', sort: 3,
+      id: id(), name: '会员中心', sort: 3, endpointId: 'ep-1',
       subFeatures: [
         { id: id(), name: '注册/登录', description: '手机验证码+微信授权登录' },
         { id: id(), name: '会员等级与权益', description: '会员等级体系与权益配置' },
@@ -39,7 +39,7 @@ export function buildDefaultFeatureList(): FeatureModule[] {
       ],
     },
     {
-      id: id(), name: '用户端-订单交易', sort: 4,
+      id: id(), name: '订单交易', sort: 4, endpointId: 'ep-1',
       subFeatures: [
         { id: id(), name: '购物车', description: '商品加入购物车、数量修改、删除' },
         { id: id(), name: '订单创建与支付', description: '选择地址、确认订单、微信/支付宝支付' },
@@ -47,21 +47,21 @@ export function buildDefaultFeatureList(): FeatureModule[] {
       ],
     },
     {
-      id: id(), name: '管理后台-基础配置', sort: 5,
+      id: id(), name: '基础配置', sort: 5, endpointId: 'ep-2',
       subFeatures: [
         { id: id(), name: '用户管理', description: '用户列表、详情查看、封禁/解封操作' },
         { id: id(), name: '角色权限管理', description: '角色创建、菜单权限分配、数据权限配置' },
       ],
     },
     {
-      id: id(), name: '管理后台-内容管理', sort: 6,
+      id: id(), name: '内容管理', sort: 6, endpointId: 'ep-2',
       subFeatures: [
         { id: id(), name: 'Banner 管理', description: '轮播图增删改查、排序、上下线' },
         { id: id(), name: '资讯管理', description: '新闻/公告发布、编辑、上下线' },
       ],
     },
     {
-      id: id(), name: '管理后台-数据报表', sort: 7,
+      id: id(), name: '数据报表', sort: 7, endpointId: 'ep-2',
       subFeatures: [
         { id: id(), name: '用户统计看板', description: '注册量、活跃用户、留存率趋势图' },
         { id: id(), name: '订单统计看板', description: '订单量、GMV、客单价趋势图' },

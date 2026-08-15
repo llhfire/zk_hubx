@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Button, Card, Empty, Input, Select, Space, Table, Tag, Typography,
+  Button, Card, Checkbox, Empty, Input, Select, Space, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconRight, IconUser } from '@arco-design/web-react/icon';
 import { useQuotation } from './QuotationContext';
-import { RoleSwitcher } from './components/RoleSwitcher';
-import { computeAmountBreakdown, getPendingOwner } from './quoteFlow';
+import { computeAmountBreakdown, getPendingOwner, getPendingRoles } from './quoteFlow';
 import {
   QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, QUOTE_STAGE_NAMES,
 } from './types';
@@ -21,10 +20,11 @@ function money(n: number): string {
 
 export function QuotationCenter() {
   const navigate = useNavigate();
-  const { quotes } = useQuotation();
+  const { quotes, currentRole } = useQuotation();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | ''>('');
   const [stageFilter, setStageFilter] = useState<QuoteStage | ''>('');
+  const [mineOnly, setMineOnly] = useState(false);
 
   // 分组统计
   const stats = useMemo(() => {
@@ -35,6 +35,7 @@ export function QuotationCenter() {
 
   const filtered = useMemo(() => {
     return quotes.filter((q) => {
+      if (mineOnly && !getPendingRoles(q).includes(currentRole)) return false;
       if (statusFilter && q.status !== statusFilter) return false;
       if (stageFilter && deriveStage(q.status) !== stageFilter) return false;
       if (keyword) {
@@ -47,7 +48,7 @@ export function QuotationCenter() {
       }
       return true;
     });
-  }, [quotes, keyword, statusFilter, stageFilter]);
+  }, [quotes, keyword, statusFilter, stageFilter, mineOnly, currentRole]);
 
   const columns = [
     { title: '报价编号', dataIndex: 'quoteNo', width: 150, render: (v: string) => <Text bold>{v}</Text> },
@@ -102,10 +103,6 @@ export function QuotationCenter() {
         </div>
       </Card>
 
-      <Card style={{ marginBottom: 12 }}>
-        <RoleSwitcher />
-      </Card>
-
       <Card>
         <Space style={{ marginBottom: 12 }} wrap>
           <Input
@@ -132,6 +129,7 @@ export function QuotationCenter() {
             allowClear
             options={Object.entries(QUOTE_STATUS_LABELS).map(([k, v]) => ({ label: v, value: k }))}
           />
+          <Checkbox checked={mineOnly} onChange={setMineOnly}>仅看待我处理</Checkbox>
         </Space>
 
         {filtered.length === 0 ? (

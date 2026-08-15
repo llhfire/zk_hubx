@@ -4,6 +4,9 @@
 
 import {
   buildInitialAuditNodes,
+  QUOTE_ROLE_ACTORS,
+  QUOTE_STAGE_NAMES,
+  QUOTE_STATUS_LABELS,
   type AuditNode,
   type EvalSheet,
   type EvaluationUnit,
@@ -15,6 +18,7 @@ import {
   type SalesAddedRole,
   type TravelOnsiteConfig,
 } from './types';
+import type { TodoItem } from '@/app/todos/types';
 
 // ─── 阶段推导 ─────────────────────────────────────────────
 
@@ -67,11 +71,6 @@ export function getStageAccess(quote: Quote, role: QuoteRole, stage: QuoteStage)
   // 终态单据一律只读
   if (isTerminalStatus(quote.status)) return 'readonly';
 
-  // eval_completed 停在阶段 2，但此时责任人是 PM（核对转派），不是罗总
-  if (stage === 2 && quote.status === 'eval_completed') {
-    return role === 'pm' ? 'editable' : 'readonly';
-  }
-
   // 审批阶段进一步按 status 收敛：待盖章只有董助能动
   if (stage === 4) {
     if (quote.status === 'auditing') {
@@ -108,11 +107,11 @@ export function getPendingOwner(quote: Quote): string {
       return `${quote.basicInfo.techEvaluatorName}（技术评估）`;
     case 'eval_completed':
       // 评估完成后，销售可进行报价配置
-      return '李销售（报价配置）';
+      return '张三（报价配置）';
     case 'assigned_sales':
     case 'quote_summarized':
     case 'rejected':
-      return '李销售（报价配置）';
+      return '张三（报价配置）';
     case 'auditing': {
       const pending = quote.auditNodes.filter((n) => n.status === 'PENDING').map((n) => n.auditorName);
       return pending.length ? `${pending.join('、')}（待会签）` : '—';
@@ -120,12 +119,82 @@ export function getPendingOwner(quote: Quote): string {
     case 'pending_stamp':
       return `${quote.stampNode.stamperName}（待盖章）`;
     case 'stamped':
-      return '李销售（待发送客户）';
+      return '张三（待发送客户）';
     case 'sent':
-      return '李销售（待客户确认）';
+      return '张三（待客户确认）';
     default:
       return '—';
   }
+}
+
+/** 会签人 auditorId → 报价角色（与 buildInitialAuditNodes 的三人对齐） */
+const AUDITOR_ID_TO_ROLE: Record<string, QuoteRole> = {
+  huangyi: 'sales_manager',
+  luo: 'tech',
+  min: 'decision',
+};
+
+/**
+ * 当前状态等着哪些角色处理（与 getPendingOwner 同口径，但返回角色 key，供"待我处理"过滤/待办推导用）。
+ * 终态（deal / voided / pending_followup）返回空数组。
+ */
+export function getPendingRoles(quote: Quote): QuoteRole[] {
+  switch (quote.status) {
+    case 'draft':
+      return ['pm'];
+    case 'feature_confirmed':
+      return ['tech'];
+    case 'eval_completed':
+    case 'assigned_sales':
+    case 'quote_summarized':
+    case 'rejected':
+      return ['sales'];
+    case 'auditing':
+      return quote.auditNodes
+        .filter((n) => n.status === 'PENDING')
+        .map((n) => AUDITOR_ID_TO_ROLE[n.auditorId])
+        .filter((r): r is QuoteRole => Boolean(r));
+    case 'pending_stamp':
+      return ['assistant'];
+    case 'stamped':
+    case 'sent':
+      return ['sales'];
+    case 'deal':
+    case 'voided':
+    case 'pending_followup':
+      return [];
+    default:
+      return [];
+  }
+}
+
+/**
+ * 从报价状态派生"轮到我处理"的待办（纯函数，非持久化）。
+ * 只返回当前角色 pending 的报价，一条报价对应一条待办。
+ */
+export function buildQuoteTodos(quotes: Quote[], role: QuoteRole): TodoItem[] {
+  const todos: TodoItem[] = [];
+  for (const quote of quotes) {
+    if (isTerminalStatus(quote.status)) continue;
+    if (!getPendingRoles(quote).includes(role)) continue;
+    const stage = deriveStage(quote.status);
+    todos.push({
+      id: `quote-todo-${quote.id}`,
+      source: 'quotation',
+      sourceId: quote.id,
+      module: QUOTE_STAGE_NAMES[stage],
+      title: quote.basicInfo.projectName,
+      content: `报价 ${quote.quoteNo}，${QUOTE_STATUS_LABELS[quote.status]}，待 ${getPendingOwner(quote)} 处理`,
+      assigneeId: role,
+      assigneeName: QUOTE_ROLE_ACTORS[role],
+      status: 'pending',
+      priority: stage === 4 ? 'high' : 'medium',
+      createdAt: quote.updatedAt,
+      deadline: quote.deadline,
+      route: `/quotation/${quote.id}`,
+    });
+  }
+  return todos;
 }
 
 // ─── 金额汇总 ─────────────────────────────────────────────

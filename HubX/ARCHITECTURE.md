@@ -2,6 +2,7 @@
 
 > 本文是 `CLAUDE.md` 的深化版：定位与边界规则、代码功能拆解、模块关系全景。
 > 与 `CLAUDE.md`（命令/约定）和 `CONTEXT.md`（业务术语/模块全景）配合阅读。
+> 完整的功能与规则总览见 [`docs/SYSTEM-OVERVIEW.md`](docs/SYSTEM-OVERVIEW.md)。
 
 ## 一、产品定位
 

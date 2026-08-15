@@ -43,7 +43,8 @@ import { LeadFeatureListPanel, initialLeadBusinessEnds, type LeadBusinessEnd } f
 import { useQuotation } from '@/app/pages/quotation/QuotationContext';
 import { Stage1FeatureList } from '@/app/pages/quotation/stages/Stage1FeatureList';
 import { QuotationWorkbench } from '@/app/pages/quotation/QuotationWorkbench';
-import { QUOTE_STATUS_LABELS, type FeatureModule } from '@/app/pages/quotation/types';
+import { computeAmountBreakdown } from '@/app/pages/quotation/quoteFlow';
+import { QUOTE_STATUS_LABELS, type FeatureModule, type Quote } from '@/app/pages/quotation/types';
 import { LeadContractHistoryPanel } from '@/app/pages/leads/components/LeadContractHistoryPanel';
 import { LeadCustomerCommunicationPanel } from '@/app/pages/leads/components/LeadCustomerCommunicationPanel';
 import { ProjectDemoPanel } from '@/app/pages/project-management/ProjectDetailWorkspace';
@@ -186,6 +187,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
         id: `fm-${endIdx}-${modIdx}`,
         name: mod.name,
         sort: modIdx + 1,
+        endpointId: `ep-${endIdx + 1}`,
         subFeatures: mod.features.map((f, fIdx) => ({
           id: `fs-${endIdx}-${modIdx}-${fIdx}`,
           name: f.name,
@@ -941,19 +943,11 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                   ) : (
                     <div>
                       {active.map((q) => (
-                        <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <ArcoText bold>{q.basicInfo.projectName}</ArcoText>
-                            <Tag color="arcoblue" size="small">{q.version}</Tag>
-                            <Tag size="small" color={q.status === 'draft' ? 'gray' : undefined}>{QUOTE_STATUS_LABELS[q.status]}</Tag>
-                          </div>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{q.quoteNo}</div>
-                          <Button size="mini" type="primary" onClick={() => { setQuotationDrawerQuoteId(q.id); setQuotationDrawerVisible(true); }}>进入工作台</Button>
-                        </div>
+                        <QuoteCard key={q.id} quote={q} onOpen={() => { setQuotationDrawerQuoteId(q.id); setQuotationDrawerVisible(true); }} />
                       ))}
                       {voided.length > 0 && (
                         <>
-                          <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '4px 0 12px' }} />
+                          <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '12px 0' }} />
                           <ArcoText type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</ArcoText>
                           {voided.map((q) => (
                             <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 8, opacity: 0.5, background: 'var(--color-fill-1)' }}>
@@ -962,7 +956,11 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                                 <Tag color="arcoblue" size="small">{q.version}</Tag>
                                 <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
                               </div>
-                              <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{q.quoteNo}</div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{q.quoteNo}</div>
+                              {/* 作废原因 */}
+                              <div style={{ fontSize: 12, color: 'rgb(var(--red-6))', background: 'rgb(var(--red-1))', padding: '4px 8px', borderRadius: 4, marginTop: 4 }}>
+                                作废原因：{q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}
+                              </div>
                             </div>
                           ))}
                         </>
@@ -1903,6 +1901,36 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           <QuotationWorkbench embedded quoteId={quotationDrawerQuoteId} onClose={() => setQuotationDrawerVisible(false)} />
         )}
       </Drawer>
+    </div>
+  );
+}
+
+/** 报价卡片组件：显示简要信息 */
+function QuoteCard({ quote, onOpen }: { quote: Quote; onOpen: () => void }) {
+  const breakdown = computeAmountBreakdown(quote);
+  const evalSheet = quote.evalSheet;
+  const totalDays = evalSheet ? evalSheet.evaluationUnits.reduce((s: number, u: any) => s + u.totalDays, 0) : 0;
+  const epCount = (quote.endpointConfigs || []).length;
+  const modCount = (quote.featureList || []).length;
+  const subCount = (quote.featureList || []).reduce((s: number, m: any) => s + (m.subFeatures?.length || 0), 0);
+  const money = (n: number) => `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+
+  return (
+    <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <ArcoText bold>{quote.basicInfo.projectName}</ArcoText>
+        <Tag color="arcoblue" size="small">{quote.version}</Tag>
+        <Tag size="small" color={quote.status === 'draft' ? 'gray' : undefined}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{quote.quoteNo}</div>
+      {/* 简要信息 */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, fontSize: 12 }}>
+        {evalSheet && <span>工期 <strong>{evalSheet.manualWorkDays}</strong> 工作日</span>}
+        <span>人天 <strong>{totalDays.toFixed(1)}</strong></span>
+        <span>报价 <strong style={{ color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</strong></span>
+        <span>{epCount} 端 · {modCount} 模块 · {subCount} 功能</span>
+      </div>
+      <Button size="mini" type="primary" onClick={onOpen}>进入工作台</Button>
     </div>
   );
 }

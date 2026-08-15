@@ -6,6 +6,7 @@ import type { ReminderItem } from '../types';
 import { ReminderSnoozeMenu } from './ReminderSnoozeMenu';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import { useTodos } from '@/app/todos/TodoContext';
+import { useQuotation } from '@/app/pages/quotation/QuotationContext';
 
 const Text = Typography.Text;
 const Paragraph = Typography.Paragraph;
@@ -117,10 +118,12 @@ export function ReminderBellDropdownContent({
 export function ReminderBell({ onOpenDailyReport: _onOpenDailyReport }: ReminderBellProps) {
   const navigate = useNavigate();
   const { unreadMessages, markRead, markAllRead } = useIntegration();
-  const { activeTodos, activeCount, openTodo } = useTodos();
+  const { activeTodos, openTodo } = useTodos();
+  const { myQuoteTodos } = useQuotation();
   const [activeView, setActiveView] = useState<'todos' | 'messages'>('todos');
 
-  const totalCount = activeCount + unreadMessages.length;
+  const bellActiveTodos = [...myQuoteTodos, ...activeTodos];
+  const totalCount = bellActiveTodos.length + unreadMessages.length;
   const dropContent = (
     <Card style={dropdownShellStyle} bodyStyle={{ padding: 0 }}>
       <div style={{ ...dropdownHeaderStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -139,7 +142,7 @@ export function ReminderBell({ onOpenDailyReport: _onOpenDailyReport }: Reminder
           icon={<IconCheckSquare />}
           onClick={() => setActiveView('todos')}
         >
-          待办 {activeCount}
+          待办 {bellActiveTodos.length}
         </Button>
         <Button
           type={activeView === 'messages' ? 'primary' : 'secondary'}
@@ -152,9 +155,9 @@ export function ReminderBell({ onOpenDailyReport: _onOpenDailyReport }: Reminder
       </div>
       <div style={dropdownListStyle}>
         {activeView === 'todos' ? (
-          activeTodos.length === 0 ? <Empty description="暂无待办事项" /> : (
+          bellActiveTodos.length === 0 ? <Empty description="暂无待办事项" /> : (
             <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              {activeTodos.slice(0, 5).map((todo) => (
+              {bellActiveTodos.slice(0, 5).map((todo) => (
                 <Card key={todo.id} size="small" style={reminderItemCardStyle}>
                   <Space direction="vertical" size={6} style={{ width: '100%' }}>
                     <Space>

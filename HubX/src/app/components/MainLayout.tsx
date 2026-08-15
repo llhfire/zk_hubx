@@ -26,6 +26,9 @@ import { getDailyReportRuleForUser } from '../pages/daily-report/templateConfig'
 import { ReminderBell, hasDailyReportUnsubmittedReminder } from '../reminders/components/ReminderBell';
 import { useReminders } from '../reminders/ReminderContext';
 import { FeedbackModal } from '../feedback/FeedbackModal';
+import { useQuotation } from '../pages/quotation/QuotationContext';
+import { QUOTE_ROLES, QUOTE_ROLE_ACTORS } from '../pages/quotation/types';
+import type { QuoteRole } from '../pages/quotation/types';
 
 const Sider = Layout.Sider;
 const Header = Layout.Header;
@@ -44,6 +47,8 @@ export function MainLayout() {
   const [currentUserId] = useState('user-sales-zhangsan');
   const { dailyReports, reminders, submitDailyReport } = useReminders();
   const showUnsubmittedBadge = hasDailyReportUnsubmittedReminder(reminders);
+  const { currentRole, setCurrentRole } = useQuotation();
+  const currentActor = QUOTE_ROLE_ACTORS[currentRole];
 
   const handleDailyReportOpen = () => {
     setSelectedRole(getDailyReportRuleForUser(currentUserId).templateType);
@@ -267,27 +272,27 @@ export function MainLayout() {
   const handleUserMenuClick = (key: string) => {
     if (key === 'feedback') {
       setFeedbackVisible(true);
+      return;
     }
+    if (key === 'logout') {
+      return;
+    }
+    setCurrentRole(key as QuoteRole);
   };
 
   const dropList = (
-    <Menu onClickMenuItem={handleUserMenuClick}>
-      <MenuItem key="profile">
-        <IconUser style={{ marginRight: 8 }} />
-        个人中心
-      </MenuItem>
-      <MenuItem key="settings">
-        <IconSettings style={{ marginRight: 8 }} />
-        系统设置
-      </MenuItem>
+    <Menu onClickMenuItem={handleUserMenuClick} selectedKeys={[currentRole]}>
+      {QUOTE_ROLES.map((r) => (
+        <MenuItem key={r.key}>{r.name}</MenuItem>
+      ))}
       <MenuItem key="feedback">
         <IconMessage style={{ marginRight: 8 }} />
         意见反馈
       </MenuItem>
-      <Menu.Item key="logout">
+      <MenuItem key="logout">
         <IconPoweroff style={{ marginRight: 8 }} />
         退出登录
-      </Menu.Item>
+      </MenuItem>
     </Menu>
   );
 
@@ -401,13 +406,13 @@ export function MainLayout() {
             {/* Unified Todo & Message Bell */}
             <ReminderBell onOpenDailyReport={handleDailyReportOpen} />
 
-            {/* User Dropdown */}
+            {/* User Dropdown — 当前身份（模拟登录） */}
             <Dropdown droplist={dropList} position="br">
               <div className="flex items-center gap-2 cursor-pointer">
                 <Avatar size={28} style={{ backgroundColor: 'var(--brand-500)' }}>
-                  张
+                  {currentActor.slice(0, 1)}
                 </Avatar>
-                <span style={{ fontSize: 14, color: 'var(--grey-700)' }}>张三</span>
+                <span style={{ fontSize: 14, color: 'var(--grey-700)' }}>{currentActor}</span>
               </div>
             </Dropdown>
           </div>

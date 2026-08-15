@@ -20,6 +20,7 @@ import {
 import { IconClockCircle, IconSearch, IconEye, IconCheck } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
 import { useTodos } from '@/app/todos/TodoContext';
+import { useQuotation } from '@/app/pages/quotation/QuotationContext';
 import type { TodoItem, TodoPriority, TodoStatus } from '@/app/todos/types';
 
 const Text = Typography.Text;
@@ -58,20 +59,25 @@ type TodoView = 'active' | 'completed' | 'canceled' | 'all';
 export function TodoCenter() {
   const navigate = useNavigate();
   const { todos, activeTodos, openTodo, snoozeTodo } = useTodos();
+  const { myQuoteTodos } = useQuotation();
   const [view, setView] = useState<TodoView>('active');
   const [keyword, setKeyword] = useState('');
   const [module, setModule] = useState('');
   const [priority, setPriority] = useState('');
   const [detail, setDetail] = useState<TodoItem | null>(null);
 
+  // 报价待办为派生数据（非持久化），与持久化待办合并展示
+  const mergedTodos = useMemo(() => [...myQuoteTodos, ...todos], [myQuoteTodos, todos]);
+  const mergedActive = useMemo(() => [...myQuoteTodos, ...activeTodos], [myQuoteTodos, activeTodos]);
+
   const modules = useMemo(
-    () => [...new Set(todos.map((item) => item.module))].map((value) => ({ label: value, value })),
-    [todos],
+    () => [...new Set(mergedTodos.map((item) => item.module))].map((value) => ({ label: value, value })),
+    [mergedTodos],
   );
 
   const data = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
-    return todos.filter((item) => {
+    return mergedTodos.filter((item) => {
       if (view === 'active' && !(item.status === 'pending' || item.status === 'in_progress')) return false;
       if (view === 'completed' && item.status !== 'completed') return false;
       if (view === 'canceled' && item.status !== 'canceled') return false;
@@ -80,7 +86,7 @@ export function TodoCenter() {
       if (normalizedKeyword && ![item.title, item.content, item.sourceId].some((value) => value.toLowerCase().includes(normalizedKeyword))) return false;
       return true;
     });
-  }, [keyword, module, priority, todos, view]);
+  }, [keyword, module, priority, mergedTodos, view]);
 
   const goProcess = (item: TodoItem) => {
     openTodo(item.id);
@@ -167,9 +173,9 @@ export function TodoCenter() {
     },
   ];
 
-  const overdueCount = activeTodos.filter((item) => isOverdue(item)).length;
+  const overdueCount = mergedActive.filter((item) => isOverdue(item)).length;
   const today = new Date().toLocaleDateString('sv-SE');
-  const todayDeadlineCount = activeTodos.filter((item) => item.deadline?.startsWith(today)).length;
+  const todayDeadlineCount = mergedActive.filter((item) => item.deadline?.startsWith(today)).length;
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -179,8 +185,8 @@ export function TodoCenter() {
 
       <Card bordered={false} bodyStyle={{ padding: '16px 24px' }}>
         <Row gutter={24}>
-          <Col span={6}><Statistic title="全部待处理" value={activeTodos.length} suffix="项" /></Col>
-          <Col span={6}><Statistic title="高优先级" value={activeTodos.filter((item) => item.priority === 'high').length} suffix="项" /></Col>
+          <Col span={6}><Statistic title="全部待处理" value={mergedActive.length} suffix="项" /></Col>
+          <Col span={6}><Statistic title="高优先级" value={mergedActive.filter((item) => item.priority === 'high').length} suffix="项" /></Col>
           <Col span={6}><Statistic title="今日截止" value={todayDeadlineCount} suffix="项" /></Col>
           <Col span={6}><Statistic title="已逾期" value={overdueCount} suffix="项" valueStyle={{ color: overdueCount ? 'rgb(var(--red-6))' : undefined }} /></Col>
         </Row>
@@ -188,7 +194,7 @@ export function TodoCenter() {
 
       <Card bordered={false}>
         <Tabs activeTab={view} onChange={(value) => setView(value as TodoView)}>
-          <Tabs.TabPane key="active" title={`待处理（${activeTodos.length}）`} />
+          <Tabs.TabPane key="active" title={`待处理（${mergedActive.length}）`} />
           <Tabs.TabPane key="completed" title="已完成" />
           <Tabs.TabPane key="canceled" title="已取消" />
           <Tabs.TabPane key="all" title="全部" />

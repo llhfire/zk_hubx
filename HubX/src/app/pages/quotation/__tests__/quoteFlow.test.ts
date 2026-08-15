@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildInitialUnits,
+  buildQuoteTodos,
   canEditStage,
   computeAddedRoleSubtotal,
   computeAmountBreakdown,
@@ -9,6 +10,7 @@ import {
   computeUnitTotal,
   deriveStage,
   getPendingOwner,
+  getPendingRoles,
   getStageAccess,
   groupSubFeatures,
   nextVersion,
@@ -118,7 +120,7 @@ function buildQuote(overrides: Partial<Quote> = {}): Quote {
     auditNodes: buildInitialAuditNodes(),
     stampNode: { stamperName: '黄海', status: 'LOCKED' },
     timeline: [],
-    ccSalesNames: ['李销售'],
+    ccSalesNames: ['张三'],
     createdAt: '2026-08-14 10:00',
     updatedAt: '2026-08-14 10:00',
     ...overrides,
@@ -443,5 +445,45 @@ describe('版本与待办人', () => {
     for (const status of statuses) {
       expect(getPendingOwner(buildQuote({ status }))).not.toBe('—');
     }
+  });
+});
+
+describe('待办推导（getPendingRoles / buildQuoteTodos）', () => {
+  it('各状态对应正确的待处理角色', () => {
+    expect(getPendingRoles(buildQuote({ status: 'draft' }))).toEqual(['pm']);
+    expect(getPendingRoles(buildQuote({ status: 'feature_confirmed' }))).toEqual(['tech']);
+    expect(getPendingRoles(buildQuote({ status: 'eval_completed' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'assigned_sales' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'pending_stamp' }))).toEqual(['assistant']);
+    expect(getPendingRoles(buildQuote({ status: 'stamped' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'deal' }))).toEqual([]);
+    expect(getPendingRoles(buildQuote({ status: 'voided' }))).toEqual([]);
+  });
+
+  it('审批中只返回未表态的会签人', () => {
+    const quote = buildQuote({ status: 'auditing' });
+    quote.auditNodes[0] = { ...quote.auditNodes[0], status: 'APPROVED' }; // 黄奕已通过
+    expect(getPendingRoles(quote)).toEqual(['tech', 'decision']);
+  });
+
+  it('buildQuoteTodos 只生成当前角色待处理的报价待办', () => {
+    const quotes = [
+      buildQuote({ id: 'q-draft', status: 'draft' }),
+      buildQuote({ id: 'q-eval', status: 'feature_confirmed' }),
+      buildQuote({ id: 'q-sales', status: 'assigned_sales' }),
+    ];
+    const salesTodos = buildQuoteTodos(quotes, 'sales');
+    expect(salesTodos).toHaveLength(1);
+    expect(salesTodos[0].id).toBe('quote-todo-q-sales');
+    expect(salesTodos[0].source).toBe('quotation');
+    expect(salesTodos[0].route).toBe('/quotation/q-sales');
+
+    const techTodos = buildQuoteTodos(quotes, 'tech');
+    expect(techTodos.map((t) => t.id)).toEqual(['quote-todo-q-eval']);
+  });
+
+  it('终态报价不生成待办', () => {
+    const quotes = [buildQuote({ id: 'q-deal', status: 'deal' })];
+    expect(buildQuoteTodos(quotes, 'sales')).toEqual([]);
   });
 });

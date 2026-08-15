@@ -1,5 +1,7 @@
 # HubX 业务术语表
 
+> 完整的功能与规则总览见 [`docs/SYSTEM-OVERVIEW.md`](docs/SYSTEM-OVERVIEW.md)。
+
 ## 公司业务模式
 
 HubX 是一家**软件外包 + 自运营投放获客**的复合型公司。两条业务线实际上是同一条漏斗：

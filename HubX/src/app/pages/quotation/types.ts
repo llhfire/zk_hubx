@@ -57,7 +57,7 @@ export type QuoteRole = 'pm' | 'tech' | 'sales_manager' | 'decision' | 'assistan
 export const QUOTE_ROLES: { key: QuoteRole; name: string }[] = [
   { key: 'pm', name: '产品经理（张产品）' },
   { key: 'tech', name: '技术负责人（罗总）' },
-  { key: 'sales', name: '销售（李销售）' },
+  { key: 'sales', name: '销售（张三）' },
   { key: 'sales_manager', name: '销售部负责人（黄奕）' },
   { key: 'decision', name: '企业决策层（闵总）' },
   { key: 'assistant', name: '董助（黄海）' },
@@ -67,7 +67,7 @@ export const QUOTE_ROLES: { key: QuoteRole; name: string }[] = [
 export const QUOTE_ROLE_ACTORS: Record<QuoteRole, string> = {
   pm: '张产品',
   tech: '罗总',
-  sales: '李销售',
+  sales: '张三',
   sales_manager: '黄奕',
   decision: '闵总',
   assistant: '黄海',
@@ -144,6 +144,31 @@ export interface FeatureModule {
   name: string;          // 一级模块
   sort: number;
   subFeatures: FeatureSubFeature[];
+  endpointId: string;     // 关联的端ID
+}
+
+// ─── 端与平台配置 ─────────────────────────────────────────
+
+/** 平台选项 */
+export const PLATFORM_OPTIONS = [
+  { id: 'wechat', name: '微信小程序' },
+  { id: 'alipay', name: '支付宝小程序' },
+  { id: 'douyin', name: '抖音小程序' },
+  { id: 'ios', name: 'iOS APP' },
+  { id: 'android', name: 'Android APP' },
+  { id: 'harmony', name: '鸿蒙 APP' },
+  { id: 'h5', name: 'H5移动端' },
+  { id: 'pcweb', name: 'PC Web端' },
+  { id: 'desktop', name: '桌面应用' },
+  { id: 'ipad', name: 'iPad端' },
+  { id: 'androidpad', name: 'Android平板端' },
+];
+
+/** 端配置：一个端可适配多个平台 */
+export interface EndpointConfig {
+  id: string;
+  name: string;           // 端名称（如"用户端"、"管理后台"）
+  platforms: string[];    // 适配平台ID列表
 }
 
 // ─── 人天评估 ─────────────────────────────────────────────
@@ -289,8 +314,8 @@ export interface TravelOnsiteConfig {
   travelSubtotal: number;
   enableOnsite: boolean;
   onsiteSubtotal: number;
-  travelDetail?: TravelDetail;
-  onsiteDetail?: OnsiteDetail;
+  travelDetails: TravelDetail[];
+  onsiteDetails: OnsiteDetail[];
 }
 
 export interface CostItem {
@@ -402,6 +427,7 @@ export interface Quote {
   leadId: string;
   contractId?: string;
   basicInfo: QuoteBasicInfo;
+  endpointConfigs: EndpointConfig[];  // 端+平台配置
   featureList: FeatureModule[];
   evalSheet?: EvalSheet;
   salesAddedRoles: SalesAddedRole[];

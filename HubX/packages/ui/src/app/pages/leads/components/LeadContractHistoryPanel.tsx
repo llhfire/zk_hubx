@@ -383,9 +383,9 @@ export function LeadContractHistoryPanel({
 
   const handleArchive = () => {
     if (!contract?.approvedVersionNo) return;
-    archiveForm.validate().then(values => {
+    archiveForm.validate().then(async values => {
       const uploadList = Array.isArray(values.files) ? values.files as LocalUploadItem[] : [];
-      const entry = archiveFinalContract(
+      const entry = await archiveFinalContract(
         contract.id,
         mapUploadFilesToScans(uploadList),
         values.note?.trim(),

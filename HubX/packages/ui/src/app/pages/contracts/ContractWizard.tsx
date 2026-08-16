@@ -234,7 +234,7 @@ export function ContractWizard() {
     }));
   };
 
-  const finish = () => {
+  const finish = async () => {
     if (contractEditPrefill) {
       saveDraft(contractEditPrefill.contractId, formData);
       Message.success('合同信息已更新');
@@ -265,7 +265,7 @@ export function ContractWizard() {
       return;
     }
 
-    const created = createFromWizard({
+    const created = await createFromWizard({
       leadId: selectedLeadId ?? leadIdParam ?? undefined,
       quoteId: selectedQuoteId ?? undefined,
       projectId,

@@ -10,8 +10,14 @@ import { TodoProvider } from './todos/TodoContext';
 import { router } from './routes';
 import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
+import type { QuotationService } from '@/services/quotationService';
 
-function App() {
+interface AppProps {
+  /** 报价数据源：α版注入 mock，β版注入 http。缺省 mock。 */
+  quotationService?: QuotationService;
+}
+
+function App({ quotationService }: AppProps) {
   return (
     <IntegrationProvider>
       <ApprovalProvider>
@@ -22,7 +28,7 @@ function App() {
                 <JobWorkConfigProvider>
                   <ContractsProvider>
                     <ProjectInvoiceProvider>
-                      <QuotationProvider>
+                      <QuotationProvider service={quotationService}>
                         <RouterProvider router={router} />
                       </QuotationProvider>
                     </ProjectInvoiceProvider>

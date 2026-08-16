@@ -8,8 +8,8 @@
 **业务组件一律用 Arco Design**（`@arco-design/web-react`）。
 
 - 表单、表格、弹窗、菜单、布局、消息提示等统一用 Arco 组件；图标用 `@arco-design/web-react/icon`。
-- `src/app/components/ui/` 下的 shadcn/Radix 组件及其依赖已于 2026-08-13 清除（git tag `pre-cleanup-20260813` 可回滚）；不要重新引入 shadcn/Radix 或第三方 UI 库。
-- 需要 Arco 没有的通用组件时，优先用 Arco 组件组合实现，其次才在 `src/app/components/` 下自建（遵循 Arco 风格），不要引入新的第三方 UI 库。
+- `packages/ui/src/app/components/ui/` 下的 shadcn/Radix 组件及其依赖已于 2026-08-13 清除（git tag `pre-cleanup-20260813` 可回滚）；不要重新引入 shadcn/Radix 或第三方 UI 库。
+- 需要 Arco 没有的通用组件时，优先用 Arco 组件组合实现，其次才在 `packages/ui/src/app/components/` 下自建（遵循 Arco 风格），不要引入新的第三方 UI 库。
 
 ## 二、命名与文件组织
 
@@ -23,8 +23,8 @@
 | 类型 | 模块级 `types.ts` | `contracts/types.ts` |
 
 文件组织：
-- 页面按业务域放 `src/app/pages/<domain>/`；简单模块是「列表页/详情页」并列，复杂模块把页面、`components/`、`templates/`、`mockData`、`types`、`utils`、`__tests__` 放同一子目录。
-- 可复用子组件放本域 `components/`；跨域复用时再考虑提到 `src/app/components/`。
+- 页面按业务域放 `packages/ui/src/app/pages/<domain>/`；简单模块是「列表页/详情页」并列，复杂模块把页面、`components/`、`templates/`、`mockData`、`types`、`utils`、`__tests__` 放同一子目录。
+- 可复用子组件放本域 `components/`；跨域复用时再考虑提到 `packages/ui/src/app/components/`。
 
 ## 三、样式
 
@@ -32,7 +32,7 @@
 
 - 用 `className` 承载样式；`style={{...}}` 仅用于少量动态值（如计算出的尺寸/位置），避免大段内联样式。
 - 颜色、间距、字号优先用 Arco/主题的 CSS 变量（`var(--arcoblue-*)`、`var(--color-*)` 等），不写死具体色值。
-- 全局样式统一放 `src/styles/`（`index.css` 按 Arco → 字体 → Tailwind → 主题 → 全局 的顺序引入，勿改顺序）；模块级样式放同域的 `.css` 文件。
+- 全局样式统一放 `packages/ui/src/styles/`（`index.css` 按 Arco → 字体 → Tailwind → 主题 → 全局 的顺序引入，勿改顺序）；模块级样式放同域的 `.css` 文件。
 - 新写代码以 Arco 组件 + 主题变量为主，不引入新的 CSS-in-JS 或额外样式框架。
 
 ## 四、数据与状态

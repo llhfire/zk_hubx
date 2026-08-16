@@ -142,7 +142,7 @@ function figmaAssetResolver() {
     resolveId(id) {
       if (id.startsWith('figma:asset/')) {
         const filename = id.replace('figma:asset/', '')
-        return path.resolve(__dirname, 'src/assets', filename)
+        return path.resolve(__dirname, '../../packages/ui/src/assets', filename)
       }
     },
   }
@@ -161,8 +161,8 @@ export default defineConfig(({ mode }) => {
   ],
   resolve: {
     alias: {
-      // Alias @ to the src directory
-      '@': path.resolve(__dirname, './src'),
+      // Alias @ to the shared UI source (packages/ui/src)
+      '@': path.resolve(__dirname, '../../packages/ui/src'),
     },
   },
 
@@ -172,5 +172,10 @@ export default defineConfig(({ mode }) => {
   // Optimize dependencies
   optimizeDeps: {
     include: ['@arco-design/web-react', '@arco-design/web-react/icon'],
+  },
+
+  // 测试文件已迁至 packages/ui，vitest 需要跨 workspace 扫描
+  test: {
+    include: ['../../packages/ui/src/**/*.test.ts', '../../packages/ui/src/**/*.test.tsx'],
   },
 }})

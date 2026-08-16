@@ -35,7 +35,7 @@
 | 路由 | React Router 7（`createBrowserRouter`） |
 | 业务 UI | Arco Design（`@arco-design/web-react`，主力） |
 | 通用 UI | 已清除 shadcn/Radix，业务统一用 Arco（见 git tag `pre-cleanup-20260813`） |
-| 样式 | Tailwind v4 + CSS 变量主题（入口 `src/styles/index.css`） |
+| 样式 | Tailwind v4 + CSS 变量主题（入口 `packages/ui/src/styles/index.css`） |
 | 图表/拖拽/表单 | recharts / react-dnd / react-hook-form / react-quill |
 
 ---

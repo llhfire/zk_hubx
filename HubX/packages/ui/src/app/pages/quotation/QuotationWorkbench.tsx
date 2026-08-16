@@ -30,7 +30,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   const { quoteId: urlQuoteId } = useParams();
   const quoteId = propQuoteId ?? urlQuoteId;
   const navigate = useNavigate();
-  const { getQuoteById, currentRole, markVoided } = useQuotation();
+  const { getQuoteById, currentRole, markVoided, loading } = useQuotation();
   const handleBack = onClose ?? (() => navigate('/quotation'));
   const quote = quoteId ? getQuoteById(quoteId) : undefined;
   const [viewedStage, setViewedStage] = useState<QuoteStage | null>(null);
@@ -50,6 +50,10 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     Message.success('报价已作废');
     handleBack();
   };
+
+  if (loading) {
+    return <div style={{ padding: 48, textAlign: 'center', color: 'var(--color-text-3)' }}>报价单加载中…</div>;
+  }
 
   if (!quote) {
     return (

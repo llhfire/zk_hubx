@@ -177,7 +177,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
   const [quotationDrawerQuoteId, setQuotationDrawerQuoteId] = useState<string | null>(null);
 
-  const handleStartEval = () => {
+  const handleStartEval = async () => {
     if (!leadFeatureList.some((end) => end.modules.some((m) => m.features.length > 0))) {
       Message.warning('请先添加功能点，再发起工时评估');
       return;
@@ -196,7 +196,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
         })),
       })),
     );
-    const quoteId = createQuote(id ?? '', featureModules, {
+    const quoteId = await createQuote(id ?? '', featureModules, {
       projectName: leadInfo.name,
       customerName: leadInfo.customer,
       customerContact: leadInfo.contact,
@@ -924,8 +924,8 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                 <Card
                   bordered={false}
                   extra={
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => {
-                      const newId = createQuote(id ?? '', [], {
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={async () => {
+                      const newId = await createQuote(id ?? '', [], {
                         projectName: leadInfo.name,
                         customerName: leadInfo.customer,
                         customerContact: leadInfo.contact,

@@ -1,0 +1,34 @@
+{
+  "name": "@hubx/prototype",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "vitest run",
+    "test:reminders": "vitest run ../../packages/ui/src/app/reminders/__tests__/utils.test.ts"
+  },
+  "dependencies": {
+    "@arco-design/web-react": "^2.66.13",
+    "date-fns": "3.6.0",
+    "exceljs": "^4.4.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "quill": "2.0.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-dnd": "16.0.1",
+    "react-dnd-html5-backend": "16.0.1",
+    "react-quill": "2.0.0",
+    "react-router": "7.13.0",
+    "recharts": "2.15.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.12",
+    "@vitejs/plugin-react": "4.7.0",
+    "tailwindcss": "4.1.12",
+    "vite": "6.3.5",
+    "vitest": "^2.1.8"
+  }
+}

@@ -62,6 +62,30 @@ async function ensureSeed(db: D1Database) {
     .run();
 }
 
+// 报价状态机「合法迁移」表（与前端 quotationMutations 对齐，服务端校验用）。
+// 终态（deal / voided / pending_followup）不再迁移。
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  draft: ['feature_confirmed'],
+  feature_confirmed: ['eval_completed'],
+  eval_completed: ['assigned_sales', 'feature_confirmed'],
+  assigned_sales: ['feature_confirmed', 'auditing'],
+  quote_summarized: ['feature_confirmed'],
+  rejected: ['assigned_sales', 'auditing'],
+  auditing: ['assigned_sales', 'rejected', 'pending_stamp'],
+  pending_stamp: ['stamped'],
+  stamped: ['sent'],
+  sent: ['deal'],
+  deal: [],
+  pending_followup: [],
+  voided: [],
+};
+
+function isValidTransition(from: string, to: string): boolean {
+  if (from === to) return true; // 字段更新不改状态
+  if (to === 'voided') return true; // 任意非终态可作废
+  return (VALID_TRANSITIONS[from] ?? []).includes(to);
+}
+
 app.get('/', (c) => c.json({ ok: true, service: 'zkhubx-api' }));
 
 app.get('/api/quotes', async (c) => {
@@ -80,12 +104,31 @@ app.get('/api/quotes/:id', async (c) => {
 
 app.put('/api/quotes/:id', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json();
+  const body = (await c.req.json()) as { status?: string };
+
+  // 服务端校验状态迁移：读旧状态，比对新状态是否合法（防止"胖客户端"跳过步骤）
+  const old = await c.env.DB
+    .prepare('SELECT data FROM quotes WHERE id = ?')
+    .bind(id)
+    .first<{ data: string }>();
+  if (old) {
+    const oldStatus = (JSON.parse(old.data) as { status?: string }).status;
+    const newStatus = body.status;
+    if (oldStatus && newStatus && !isValidTransition(oldStatus, newStatus)) {
+      return c.json({ error: `非法状态迁移：${oldStatus} → ${newStatus}` }, 400);
+    }
+  }
+
   await c.env.DB
     .prepare('INSERT OR REPLACE INTO quotes (id, data, updated_at) VALUES (?, ?, ?)')
     .bind(id, JSON.stringify(body), new Date().toISOString())
     .run();
   return c.json({ ok: true, id });
+});
+
+app.delete('/api/quotes/:id', async (c) => {
+  await c.env.DB.prepare('DELETE FROM quotes WHERE id = ?').bind(c.req.param('id')).run();
+  return c.json({ ok: true });
 });
 
 export default app;

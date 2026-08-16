@@ -143,10 +143,7 @@ export function ContractDetail() {
         status: 'draft',
         approvalFlow: [
           { step: '发起申请', approver: contract.createdBy || '张三', status: 'approved', time: now.toISOString().slice(0, 16).replace('T', ' '), comment: '' },
-          { step: '商务审核', approver: '待定', status: 'pending', time: '', comment: '' },
-          { step: '财务审核', approver: '待定', status: 'pending', time: '', comment: '' },
-          { step: '法务审核', approver: '待定', status: 'pending', time: '', comment: '' },
-          { step: '总经理审批', approver: '待定', status: 'pending', time: '', comment: '' },
+          { step: '总经理审批', approver: '赵总 - 总经理', status: 'pending', time: '', comment: '' },
         ],
         paymentPlans: [],
         scanFiles: [],

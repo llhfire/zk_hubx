@@ -2,8 +2,7 @@ name = "zkhubx-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
-# 后续接 D1 时放开并填 database_id：
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "zkhubx"
-# database_id = "<your-d1-id>"
+[[d1_databases]]
+binding = "DB"
+database_name = "zkhubx-db"
+database_id = "ac02e216-2523-4a84-aa3e-f1eedbd53339"

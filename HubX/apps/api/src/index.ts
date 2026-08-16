@@ -1,17 +1,19 @@
-// ZK HubX β版后端（Cloudflare Workers + Hono）。
-// 目前是内存存储骨架：GET/PUT /api/quotes，与前端 QuotationService 的 list/upsert 一一对应。
-// 后续把 Map 换成 D1（SQLite）即可持久化。
+// ZK HubX β版后端（Cloudflare Workers + Hono + D1）。
+// 报价数据存 D1（SQLite），data 列存整条 Quote 的 JSON。与前端 QuotationService 的 list/upsert 对应。
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
-const app = new Hono();
+type Env = {
+  DB: D1Database;
+};
 
-// 本地联调：β前端(5174) → 后端(8787) 跨域，放开 CORS
+const app = new Hono<{ Bindings: Env }>();
+
+// 本地联调：β前端 → 后端 跨域，放开 CORS（生产可收紧为具体域名）
 app.use('*', cors());
 
-const store = new Map<string, unknown>();
-
+// 示例种子报价（懒写入，INSERT OR IGNORE 幂等）
 function seedQuote() {
   return {
     id: 'q-seed-1',
@@ -52,21 +54,37 @@ function seedQuote() {
     updatedAt: '2026-08-16 10:00',
   };
 }
-store.set('q-seed-1', seedQuote());
+
+async function ensureSeed(db: D1Database) {
+  await db
+    .prepare('INSERT OR IGNORE INTO quotes (id, data, updated_at) VALUES (?, ?, ?)')
+    .bind('q-seed-1', JSON.stringify(seedQuote()), new Date().toISOString())
+    .run();
+}
 
 app.get('/', (c) => c.json({ ok: true, service: 'zkhubx-api' }));
 
-app.get('/api/quotes', (c) => c.json({ quotes: [...store.values()] }));
+app.get('/api/quotes', async (c) => {
+  await ensureSeed(c.env.DB);
+  const { results } = await c.env.DB.prepare('SELECT data FROM quotes ORDER BY updated_at DESC').all<{ data: string }>();
+  return c.json({ quotes: results.map((r) => JSON.parse(r.data)) });
+});
 
-app.get('/api/quotes/:id', (c) => {
-  const quote = store.get(c.req.param('id'));
-  return quote ? c.json({ quote }) : c.json({ error: 'not found' }, 404);
+app.get('/api/quotes/:id', async (c) => {
+  const row = await c.env.DB
+    .prepare('SELECT data FROM quotes WHERE id = ?')
+    .bind(c.req.param('id'))
+    .first<{ data: string }>();
+  return row ? c.json({ quote: JSON.parse(row.data) }) : c.json({ error: 'not found' }, 404);
 });
 
 app.put('/api/quotes/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
-  store.set(id, body);
+  await c.env.DB
+    .prepare('INSERT OR REPLACE INTO quotes (id, data, updated_at) VALUES (?, ?, ?)')
+    .bind(id, JSON.stringify(body), new Date().toISOString())
+    .run();
   return c.json({ ok: true, id });
 });
 

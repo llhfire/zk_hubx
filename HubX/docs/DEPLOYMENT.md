@@ -37,7 +37,7 @@ https://zkhubx-api.<你的子域>.workers.dev
 
 **记下这个地址**，β前端要用它。验证：浏览器打开 `https://zkhubx-api.xxx.workers.dev/api/quotes`，应返回种子报价 JSON。
 
-> ⚠️ 当前后端是**内存存储**（无 D1），Workers 是无状态的，跨请求不持久；重启/多 isolate 后数据会回到种子。上线验证连通性够用，正式持久化待接 D1。
+> ✅ 后端已接 **D1（SQLite）**，数据持久化、重启不丢。首次部署前需初始化 D1：`npx wrangler d1 create zkhubx-db`（拿到 id 填入 wrangler.toml）+ `npx wrangler d1 execute zkhubx-db --file schema.sql --remote`。
 
 ## 2. 部署 β前端（Pages）
 

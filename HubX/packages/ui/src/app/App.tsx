@@ -11,13 +11,16 @@ import { router } from './routes';
 import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
 import type { QuotationService } from '@/services/quotationService';
+import type { ContractService } from '@/services/contractService';
 
 interface AppProps {
   /** 报价数据源：α版注入 mock，β版注入 http。缺省 mock。 */
   quotationService?: QuotationService;
+  /** 合同数据源：α版注入 mock，β版注入 http。缺省 mock。 */
+  contractService?: ContractService;
 }
 
-function App({ quotationService }: AppProps) {
+function App({ quotationService, contractService }: AppProps) {
   return (
     <IntegrationProvider>
       <ApprovalProvider>
@@ -26,7 +29,7 @@ function App({ quotationService }: AppProps) {
             <ReminderProvider>
               <EmployeeProvider>
                 <JobWorkConfigProvider>
-                  <ContractsProvider>
+                  <ContractsProvider service={contractService}>
                     <ProjectInvoiceProvider>
                       <QuotationProvider service={quotationService}>
                         <RouterProvider router={router} />

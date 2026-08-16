@@ -131,4 +131,27 @@ app.delete('/api/quotes/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// ── 合同（与报价同模式，存 D1 contracts 表）────────────────
+app.get('/api/contracts', async (c) => {
+  const { results } = await c.env.DB.prepare('SELECT data FROM contracts ORDER BY updated_at DESC').all<{ data: string }>();
+  return c.json({ contracts: results.map((r) => JSON.parse(r.data)) });
+});
+
+app.get('/api/contracts/:id', async (c) => {
+  const row = await c.env.DB.prepare('SELECT data FROM contracts WHERE id = ?').bind(c.req.param('id')).first<{ data: string }>();
+  return row ? c.json({ contract: JSON.parse(row.data) }) : c.json({ error: 'not found' }, 404);
+});
+
+app.put('/api/contracts/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
+  await c.env.DB.prepare('INSERT OR REPLACE INTO contracts (id, data, updated_at) VALUES (?, ?, ?)').bind(id, JSON.stringify(body), new Date().toISOString()).run();
+  return c.json({ ok: true, id });
+});
+
+app.delete('/api/contracts/:id', async (c) => {
+  await c.env.DB.prepare('DELETE FROM contracts WHERE id = ?').bind(c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
 export default app;

@@ -50,14 +50,15 @@ export function createHttpQuotationService(baseUrl: string): QuotationService { 
 
 **已完成：**
 - monorepo 落地（packages/ui + apps/prototype/web/api），α/β 两个前端都能 build。
-- 报价域**已打通前后端**：service 接口异步化、共享 mutation、http service、Workers 后端（内存 CRUD + CORS + 种子数据）、apps/web 注入 http。
-- 报价域其他改造：全局模拟身份（顶栏身份下拉，替代 RoleSwitcher）、待办三处落地（待办中心/铃铛/列表筛选）、销售身份统一为张三、状态机修复。
+- **报价域** http 全通 + 后端 D1 持久化 + 状态迁移校验 + DELETE 端点。
+- **合同域** http 全通 + 后端 D1（mock/http 共享 `contractMutations.ts`）。
+- **Cloudflare 部署**：β后端 Workers + β前端 Pages + α版 Pages（地址见 `DEPLOYMENT.md`）。
+- 报价域其他改造：全局模拟身份、待办三处落地、销售身份统一张三、状态机修复。
 
 **待办（下一阶段）：**
-1. β后端换 **D1（SQLite）** 持久化（当前是内存，重启丢）。
-2. 后端加**服务端校验/状态机**（当前是"胖客户端"：前端算好整对象 PUT，后端是哑存储）。
-3. 给**合同/线索/待办**等其余域也抽 service 接缝（目前只有报价域打通）。
-4. 部署到 Cloudflare（α版→Pages，β版→Pages + Workers）。
+1. 线索/待办等其余域抽 service 接缝（照合同/报价样板）。
+2. 合同域加服务端状态迁移校验（照报价域样板）。
+3. 绑自定义域名（`*.workers.dev`/`*.pages.dev` 国内直连被墙，需备案域名或换国内托管）。
 
 ## 四、本地运行
 

@@ -27,7 +27,7 @@ const DEFAULT_APPROVERS: Record<ApprovalNode['step'], string> = {
   总经理审批: '赵总 - 总经理',
 };
 
-export function createInitialApprovalFlow(mode: 'standard' | 'general-manager' = 'standard'): ApprovalNode[] {
+export function createInitialApprovalFlow(mode: 'standard' | 'general-manager' = 'general-manager'): ApprovalNode[] {
   const steps: ApprovalNode['step'][] = mode === 'general-manager'
     ? ['发起申请', '总经理审批']
     : ['发起申请', '商务审核', '财务审核', '法务审核'];
@@ -172,7 +172,7 @@ export function applySubmitLatestVersionForApproval(c: Contract, note = ''): Con
   return { ...c, status: 'approving', approvalFlow: flow, approvalRounds: [...approvalRounds, buildApprovalRound(c, latest.versionNo, flow, now)] };
 }
 
-export function applySubmitVersionForApproval(c: Contract, versionNo: string, note = '', approvalMode: 'standard' | 'general-manager' = 'standard'): Contract {
+export function applySubmitVersionForApproval(c: Contract, versionNo: string, note = '', approvalMode: 'standard' | 'general-manager' = 'general-manager'): Contract {
   if (c.status === 'voided' || versionNo === c.approvedVersionNo) return c;
   const version = c.versionHistory.find((v) => v.versionNo === versionNo);
   if (!version) return c;

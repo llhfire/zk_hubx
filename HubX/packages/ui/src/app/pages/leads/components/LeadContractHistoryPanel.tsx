@@ -180,7 +180,7 @@ export function LeadContractHistoryPanel({
   projectCompactVersionLayout = false,
   hideFinalArchiveUntilApproved = false,
   approvalOverviewAtTop = false,
-  approvalMode = 'standard',
+  approvalMode = 'general-manager',
   onEditVersion,
 }: LeadContractHistoryPanelProps) {
   const {

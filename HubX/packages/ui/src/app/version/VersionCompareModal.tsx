@@ -38,12 +38,37 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
 
   const columns = [
     {
+      title: '序号',
+      dataIndex: 'module',
+      width: 64,
+      align: 'center' as const,
+      render: (_: string, __: unknown, index: number) => <Text>{index + 1}</Text>,
+    },
+    {
       title: '功能模块',
       dataIndex: 'module',
       width: 150,
       render: (value: string) => <Text strong>{value}</Text>,
     },
     { title: '覆盖范围', dataIndex: 'scope' },
+    {
+      title: '计划（未实施）',
+      dataIndex: 'planned',
+      width: 260,
+      render: (planned: string[]) => planned.length
+        ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {planned.map(item => <Tag key={item} color="purple" size="small">{item}</Tag>)}
+          </div>
+        )
+        : <Text type="secondary">-</Text>,
+    },
+    {
+      title: 'α版（纯前端）',
+      dataIndex: 'alpha',
+      width: 180,
+      render: dataSourceTag,
+    },
     {
       title: 'UX 设计',
       dataIndex: 'module',
@@ -59,28 +84,10 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       ),
     },
     {
-      title: 'α版（纯前端）',
-      dataIndex: 'alpha',
-      width: 180,
-      render: dataSourceTag,
-    },
-    {
       title: 'β版（前后端）',
       dataIndex: 'beta',
       width: 180,
       render: dataSourceTag,
-    },
-    {
-      title: '计划（未实施）',
-      dataIndex: 'planned',
-      width: 260,
-      render: (planned: string[]) => planned.length
-        ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {planned.map(item => <Tag key={item} color="purple" size="small">{item}</Tag>)}
-          </div>
-        )
-        : <Text type="secondary">-</Text>,
     },
     { title: '说明', dataIndex: 'note', width: 240 },
   ];

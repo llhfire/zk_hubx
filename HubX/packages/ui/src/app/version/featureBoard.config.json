@@ -49,7 +49,7 @@
         "devStatus": "测试通过"
       },
       "note": "β版报价单落 D1，含状态迁移校验；已上线 http+D1",
-      "domain": "商机域"
+      "domain": "销售域"
     },
     {
       "module": "合同管理",
@@ -100,7 +100,7 @@
         "devStatus": "测试通过"
       },
       "note": "mock/http 共享 contractMutations，口径一致；已上线 http+D1",
-      "domain": "商机域"
+      "domain": "销售域"
     },
     {
       "module": "线索管理",
@@ -161,7 +161,7 @@
         "devStatus": "未开始"
       },
       "note": "service 接缝待抽",
-      "domain": "商机域"
+      "domain": "销售域"
     },
     {
       "module": "项目管理",
@@ -509,7 +509,7 @@
         "devStatus": "未开始"
       },
       "note": "service 接缝待抽",
-      "domain": "支撑域"
+      "domain": "跨域工具"
     }
   ]
 }

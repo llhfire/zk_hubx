@@ -41,18 +41,19 @@ export interface BetaState {
   devStatus: BetaDevStatus;
 }
 
-/** 领域：按业务价值链划分的业务域（7 域，见 ZK-HubX架构图.html） */
-export const DOMAINS = ['获客域', '商机域', '交付域', '资源域', '运维域', '财务域', '支撑域'] as const;
+/** 领域：按业务价值链划分的业务域（8 域，见 ZK-HubX架构图.html） */
+export const DOMAINS = ['获客域', '销售域', '交付域', '资源域', '运维域', '财务域', '支撑域', '跨域工具'] as const;
 export type Domain = (typeof DOMAINS)[number];
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
   '获客域': 'blue',
-  '商机域': 'orange',
+  '销售域': 'orange',
   '交付域': 'green',
   '资源域': 'purple',
   '运维域': 'cyan',
   '财务域': 'gold',
   '支撑域': 'gray',
+  '跨域工具': 'arcoblue',
 };
 
 export interface FeatureBoardModule {
@@ -86,14 +87,14 @@ function seedBetaState(source: ModuleDataSource): BetaState {
     : { productionOn: false, devStatus: '未开始' };
 }
 
-/** 模块→领域映射（对齐 ZK-HubX架构图.html 的 7 域划分） */
+/** 模块→领域映射（对齐 ZK-HubX架构图.html 的 8 域划分） */
 const MODULE_DOMAIN_MAP: Record<string, Domain> = {
-  '报价管理': '商机域',
-  '合同管理': '商机域',
   '线索管理': '获客域',
-  '客户管理': '商机域',
-  '项目管理': '交付域',
   '线索成本': '获客域',
+  '报价管理': '销售域',
+  '合同管理': '销售域',
+  '客户管理': '销售域',
+  '项目管理': '交付域',
   '日报': '交付域',
   '财务管理': '财务域',
   '审批管理': '支撑域',
@@ -101,7 +102,7 @@ const MODULE_DOMAIN_MAP: Record<string, Domain> = {
   '消息提醒': '支撑域',
   '员工与人资': '支撑域',
   '系统管理': '支撑域',
-  '其他模块': '支撑域',
+  '其他模块': '跨域工具',
 };
 
 /** 已有功能种子数据：基于代码库知识生成（原始需求/功能流程/功能说明） */

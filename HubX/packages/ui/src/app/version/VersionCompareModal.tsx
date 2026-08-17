@@ -1,4 +1,4 @@
-import { Modal, Table, Tag, Typography } from '@arco-design/web-react';
+import { Button, Modal, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
 import { useAppVersion } from './AppVersionContext';
 import {
   DATA_SOURCE_LABELS,
@@ -6,6 +6,9 @@ import {
   VERSION_DESCRIPTIONS,
   VERSION_LABELS,
   VERSION_MODULES,
+  VERSION_TAG_COLORS,
+  VERSION_URLS,
+  type AppVersion,
   type ModuleDataSource,
 } from './versionMatrix';
 
@@ -57,9 +60,33 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       bodyStyle={{ height: 'calc(100vh - 57px)', overflowY: 'auto', padding: '20px 32px 32px' }}
       wrapStyle={{ overflow: 'hidden' }}
     >
-      <div style={{ marginBottom: 12 }}>
-        <Tag color={version === 'beta' ? 'green' : 'arcoblue'}>当前版本：{VERSION_LABELS[version]}</Tag>
-        <Text type="secondary" style={{ marginLeft: 8 }}>{VERSION_DESCRIPTIONS[version]}</Text>
+      <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <Tag color={VERSION_TAG_COLORS[version]}>当前版本：{VERSION_LABELS[version]}</Tag>
+        <Text type="secondary">{VERSION_DESCRIPTIONS[version]}</Text>
+      </div>
+      {/* 线上地址与跳转入口 */}
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <Text style={{ fontSize: 12, color: 'var(--grey-500)' }}>线上地址</Text>
+        {(['alpha', 'beta'] as AppVersion[]).map(item => (
+          <span key={item} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Tag color={VERSION_TAG_COLORS[item]} size="small">
+              {VERSION_LABELS[item]}
+              {item === version ? ' · 当前' : ''}
+            </Tag>
+            <Text copyable style={{ fontSize: 12 }}>{VERSION_URLS[item]}</Text>
+            <Tooltip content="新窗口打开">
+              <Button
+                size="mini"
+                type="outline"
+                href={VERSION_URLS[item]}
+                target="_blank"
+                style={item === version ? { color: `var(${item === 'beta' ? '--green-6' : '--arcoblue-6'})`, borderColor: `var(${item === 'beta' ? '--green-6' : '--arcoblue-6'})` } : undefined}
+              >
+                跳转
+              </Button>
+            </Tooltip>
+          </span>
+        ))}
       </div>
       <Table
         rowKey="module"

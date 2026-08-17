@@ -41,8 +41,24 @@ export interface BetaState {
   devStatus: BetaDevStatus;
 }
 
+/** 领域：按业务价值链划分的业务域（7 域，见 ZK-HubX架构图.html） */
+export const DOMAINS = ['获客域', '商机域', '交付域', '资源域', '运维域', '财务域', '支撑域'] as const;
+export type Domain = (typeof DOMAINS)[number];
+
+export const DOMAIN_COLORS: Record<Domain, string> = {
+  '获客域': 'blue',
+  '商机域': 'orange',
+  '交付域': 'green',
+  '资源域': 'purple',
+  '运维域': 'cyan',
+  '财务域': 'gold',
+  '支撑域': 'gray',
+};
+
 export interface FeatureBoardModule {
   module: string;
+  /** 所属领域 */
+  domain: Domain;
   /** 模块简介（向后兼容，UI 不再显示） */
   scope: string;
   /** 已有功能列表（显示为可点击文字块矩阵） */
@@ -69,6 +85,24 @@ function seedBetaState(source: ModuleDataSource): BetaState {
     ? { productionOn: true, devStatus: '测试通过' }
     : { productionOn: false, devStatus: '未开始' };
 }
+
+/** 模块→领域映射（对齐 ZK-HubX架构图.html 的 7 域划分） */
+const MODULE_DOMAIN_MAP: Record<string, Domain> = {
+  '报价管理': '商机域',
+  '合同管理': '商机域',
+  '线索管理': '获客域',
+  '客户管理': '商机域',
+  '项目管理': '交付域',
+  '线索成本': '获客域',
+  '日报': '交付域',
+  '财务管理': '财务域',
+  '审批管理': '支撑域',
+  '待办中心': '支撑域',
+  '消息提醒': '支撑域',
+  '员工与人资': '支撑域',
+  '系统管理': '支撑域',
+  '其他模块': '支撑域',
+};
 
 /** 已有功能种子数据：基于代码库知识生成（原始需求/功能流程/功能说明） */
 const FEATURES_SEED: Record<string, ExistingFeature[]> = {
@@ -154,6 +188,7 @@ export function createSeedBoard(): FeatureBoard {
   return {
     modules: VERSION_MODULE_SEEDS.map(seed => ({
       module: seed.module,
+      domain: MODULE_DOMAIN_MAP[seed.module] ?? '支撑域',
       scope: seed.scope,
       features: FEATURES_SEED[seed.module] ?? [],
       planned: seed.planned.map(name => ({ name, status: '未开始' as const })),
@@ -199,8 +234,10 @@ export function normalizeFeatureBoard(value: unknown): FeatureBoard {
               description: typeof entry.description === 'string' ? entry.description : '',
             }))
         : (seed?.features ?? []);
+      const domain = DOMAINS.includes(item.domain as Domain) ? item.domain as Domain : (seed?.domain ?? '支撑域');
       return {
         module: item.module as string,
+        domain,
         scope: typeof item.scope === 'string' ? item.scope : (seed?.scope ?? ''),
         features,
         planned: Array.isArray(item.planned)
@@ -226,6 +263,7 @@ export function isValidFeatureBoard(value: unknown): boolean {
   if (!modules.length) return false;
   return modules.every(item =>
     typeof item?.module === 'string' && item.module.trim() !== ''
+    && DOMAINS.includes(item?.domain as Domain)
     && typeof item?.scope === 'string'
     && typeof item?.note === 'string'
     && Array.isArray(item?.planned)
@@ -340,13 +378,15 @@ export function setModuleNote(board: FeatureBoard, module: string, note: string)
   return mapModule(board, module, item => ({ ...item, note }));
 }
 
-export function addModule(board: FeatureBoard, module: string, scope = ''): FeatureBoard {
+export function addModule(board: FeatureBoard, module: string, scope = '', domain: Domain = '支撑域'): FeatureBoard {
   const trimmed = module.trim();
   if (!trimmed || board.modules.some(item => item.module === trimmed)) return board;
   return {
     modules: [...board.modules, {
       module: trimmed,
+      domain,
       scope,
+      features: [],
       planned: [],
       alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
       beta: { productionOn: false, devStatus: '未开始' },

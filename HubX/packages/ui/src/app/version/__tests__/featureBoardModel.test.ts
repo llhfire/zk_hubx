@@ -99,8 +99,9 @@ describe('featureBoardModel', () => {
     let board = setModuleNote(createSeedBoard(), '日报', '跨年时间轴已排期下周');
     expect(board.modules.find(item => item.module === '日报')?.note).toBe('跨年时间轴已排期下周');
 
-    board = addModule(board, 'AI 智能助手', '会话/知识检索');
+    board = addModule(board, 'AI 智能助手', '会话/知识检索', '支撑域');
     expect(board.modules.at(-1)?.module).toBe('AI 智能助手');
+    expect(board.modules.at(-1)?.domain).toBe('支撑域');
     expect(isValidFeatureBoard(board)).toBe(true);
     // 重名与空白模块名被忽略
     expect(addModule(board, 'AI 智能助手').modules.length).toBe(board.modules.length);

@@ -35,9 +35,11 @@ import {
   toggleProductionSwitch,
   ALPHA_CHECK_KEYS,
   BETA_DEV_STATUSES,
+  DOMAIN_COLORS,
   PLANNED_STATUSES,
   type AlphaCheckKey,
   type BetaDevStatus,
+  type Domain,
   type ExistingFeature,
   type FeatureBoard,
   type PlannedStatus,
@@ -135,6 +137,15 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       dataIndex: 'module',
       width: 130,
       render: (value: string) => <Text strong>{value}</Text>,
+    },
+    {
+      title: '领域',
+      key: 'domain',
+      dataIndex: 'domain',
+      width: 90,
+      render: (domain: Domain) => (
+        <Tag color={DOMAIN_COLORS[domain] ?? 'gray'} size="small">{domain}</Tag>
+      ),
     },
     {
       title: '已有功能',

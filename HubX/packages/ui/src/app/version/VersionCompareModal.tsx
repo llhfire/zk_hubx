@@ -51,6 +51,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   const columns = [
     {
       title: '序号',
+      key: 'index',
       dataIndex: 'module',
       width: 64,
       align: 'center' as const,
@@ -58,6 +59,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     },
     {
       title: '功能模块',
+      key: 'module',
       dataIndex: 'module',
       width: 150,
       render: (value: string) => <Text strong>{value}</Text>,
@@ -77,6 +79,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     },
     {
       title: 'α版',
+      key: 'alpha',
       dataIndex: 'module',
       width: 170,
       render: (module: string) => (
@@ -110,6 +113,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       visible={visible}
       onCancel={onCancel}
       footer={null}
+      alignCenter={false}
+      focusLock={false}
       className="version-compare-modal"
       style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0 }}
     >

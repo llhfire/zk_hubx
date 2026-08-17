@@ -1,12 +1,14 @@
 /* 全屏版本对比弹窗：Arco 2.x Modal 不支持 bodyStyle，
-   内容区（.arco-modal-content）需要用 CSS 约束高度并内部滚动 */
-.version-compare-modal {
+   内容区（.arco-modal-content）需要用 CSS 约束高度并内部滚动。
+   .arco-modal-wrapper-align-center .arco-modal 会以 inline-block 覆盖 display（优先级 0,2,0），
+   故这里同样用双类选择器抗衡，并已传 alignCenter={false} 双保险。 */
+.arco-modal-wrapper .version-compare-modal {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.version-compare-modal .arco-modal-content {
+.arco-modal-wrapper .version-compare-modal .arco-modal-content {
   flex: 1;
   min-height: 0;
   overflow-y: auto;

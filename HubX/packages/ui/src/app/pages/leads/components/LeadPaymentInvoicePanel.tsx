@@ -28,6 +28,7 @@ import {
 import {
   getPaymentPeriodMetrics,
   getPaymentPlanSummary,
+  getPeriodActionPermissions,
   type InvoiceRecord,
   type PaymentPeriod,
   type PaymentRecord,
@@ -1360,6 +1361,14 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
     };
   };
 
+  // P0② 统一状态权限矩阵：回款四态×开票状态×申请态×拆分角色 -> 拆分/回款/开票/冲红操作显隐的唯一判断源
+  const getPeriodPermissions = (period: PaymentPeriod) => getPeriodActionPermissions({
+    metrics: getPaymentPeriodMetrics(period),
+    isSplitParent: Boolean(period.isSplitParent),
+    isSplitChild: Boolean(period.parentPeriodId),
+    applicationStatus: findApplication(projectId, period.id)?.status,
+  });
+
   const periodColumns = [
     {
       title: '期次',
@@ -1473,14 +1482,12 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       width: 210,
       fixed: 'right' as const,
       render: (_: unknown, period: PaymentPeriod) => {
-        const hasPayment = period.payments.length > 0;
-        const invoiceApplication = findApplication(projectId, period.id);
-        const hasInvoice = period.invoices.length > 0 || invoiceApplication?.status === '已开票';
+        const permissions = getPeriodPermissions(period);
         return (
           <Space size={4}>
             <Button type="text" size="mini" onClick={() => setDetailPeriodId(period.id)}>详情</Button>
-            {!period.isSplitParent && !hasPayment && <Button type="text" size="mini" onClick={() => openPaymentEditor(period)}>回款</Button>}
-            {!period.isSplitParent && !hasInvoice && !invoiceApplication && <Button type="text" size="mini" onClick={() => openInvoiceEditor(period)}>开票</Button>}
+            {permissions.canRegisterPayment && <Button type="text" size="mini" onClick={() => openPaymentEditor(period)}>回款</Button>}
+            {permissions.canApplyInvoice && <Button type="text" size="mini" onClick={() => openInvoiceEditor(period)}>开票</Button>}
           </Space>
         );
       },
@@ -1534,13 +1541,13 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       >
         {detailPeriod && (() => {
           const application = findApplication(projectId, detailPeriod.id);
-          const issuedApplication = applications.find(item => item.projectId === projectId && item.periodId === detailPeriod.id && item.status === '已开票');
+          const detailPermissions = getPeriodPermissions(detailPeriod);
           const attachments = [...getProjectPeriodSystemAttachments(detailPeriod), ...(periodAttachments[detailPeriod.id] || [])];
           const payment = detailPeriod.payments[detailPeriod.payments.length - 1];
           return <div className="project-period-detail">
             <div className="project-period-detail-hero">
               <div className="project-period-detail-amount"><span>本期应回款</span><div className="project-period-detail-amount-row"><strong>{formatCurrency(detailPeriod.expectedAmount)}</strong><div className="project-period-detail-status"><span className={payment ? 'is-paid' : 'is-muted'}>{payment ? '已回款' : '未回款'}</span><span className={application?.status === '已开票' ? 'is-invoiced' : application?.status === '已冲红' ? 'is-red-flushed' : application?.status === '开票中' ? 'is-invoicing' : 'is-muted'}>{application?.status || (detailPeriod.invoices.length ? '已开票' : '未开票')}</span></div></div><small>预计回款日期：{detailPeriod.expectedDate || '-'}</small></div>
-              <div className="project-period-detail-hero-actions">{!detailPeriod.parentPeriodId && <Button className="project-period-split-button" onClick={() => openSplitModal(detailPeriod)}>拆分期次</Button>}{issuedApplication && <Button className="project-period-red-flush-button" onClick={() => { setRedFlushApplicationId(issuedApplication.id); setRedFlushReason(''); setRedFlushFiles([]); }}>冲红</Button>}</div>
+              <div className="project-period-detail-hero-actions">{detailPermissions.canSplit && <Button className="project-period-split-button" onClick={() => openSplitModal(detailPeriod)}>拆分期次</Button>}{detailPermissions.canRedFlush && application && <Button className="project-period-red-flush-button" onClick={() => { setRedFlushApplicationId(application.id); setRedFlushReason(''); setRedFlushFiles([]); }}>冲红</Button>}</div>
             </div>
             <div className="project-period-detail-body">
               <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>01</span><div><strong>回款条件</strong><small>本期触发回款的业务节点</small></div></div><p className="project-period-detail-condition">{detailPeriod.condition || '暂未填写回款条件'}</p></section>

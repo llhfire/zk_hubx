@@ -3,10 +3,23 @@ import type {
   BusinessCase,
   ContractRef,
   LeadProjectBanner,
+  PresalesContractRecord,
+  PresalesEvent,
+  PresalesFollowRecord,
+  PresalesQuoteRecord,
   UnconfirmedProject,
 } from './types';
 
-export type { BusinessCase, ContractRef, LeadProjectBanner, UnconfirmedProject } from './types';
+export type {
+  BusinessCase,
+  ContractRef,
+  LeadProjectBanner,
+  PresalesContractRecord,
+  PresalesEvent,
+  PresalesFollowRecord,
+  PresalesQuoteRecord,
+  UnconfirmedProject,
+} from './types';
 
 export function isActiveContract(contract: ContractRef): boolean {
   return contract.status !== 'voided';
@@ -91,4 +104,68 @@ export function leadProjectBanner(
   if (project.status === '未确认') return 'pending_confirm';
   if (project.status === '未开始' || project.status === '搁置') return 'assigned';
   return 'in_execution';
+}
+
+/** 时间统一按前 16 位（YYYY-MM-DD HH:mm）比较，容忍 mock 里带秒的格式 */
+function presalesTimeKey(time: string): string {
+  return (time || '').slice(0, 16);
+}
+
+/**
+ * 汇总售前历程时间线：线索创建 + 售前跟进 + 报价 + 合同，按时间倒序。
+ * 项目详情「售前历程」Tab 的数据口径（只读聚合，不提供删改）。
+ */
+export function buildPresalesTimeline(input: {
+  lead: { id: string; name?: string; createTime?: string; requirement?: string };
+  followUps: PresalesFollowRecord[];
+  quotes: PresalesQuoteRecord[];
+  contracts: PresalesContractRecord[];
+}): PresalesEvent[] {
+  const events: PresalesEvent[] = [];
+
+  if (input.lead.createTime) {
+    events.push({
+      id: 'presales-lead-' + input.lead.id,
+      time: input.lead.createTime,
+      type: 'lead',
+      title: '线索创建',
+      detail: input.lead.requirement || input.lead.name,
+      status: input.lead.name,
+    });
+  }
+
+  input.followUps.forEach((follow) => {
+    events.push({
+      id: 'presales-follow-' + follow.id,
+      time: follow.time,
+      type: 'follow',
+      title: '售前跟进 · ' + follow.method,
+      detail: follow.content,
+      status: follow.operator,
+    });
+  });
+
+  input.quotes.forEach((quote) => {
+    events.push({
+      id: 'presales-quote-' + quote.id,
+      time: quote.createTime,
+      type: 'quote',
+      title: quote.name,
+      detail: quote.amount ? '报价金额 ¥' + quote.amount : undefined,
+      status: quote.flowStatus || quote.status,
+    });
+  });
+
+  input.contracts.forEach((contract) => {
+    if (!contract.createTime) return;
+    events.push({
+      id: 'presales-contract-' + contract.id,
+      time: contract.createTime,
+      type: 'contract',
+      title: contract.contractNo ? '合同 ' + contract.contractNo : '合同创建',
+      status: contract.status,
+    });
+  });
+
+  return events.sort((left, right) => presalesTimeKey(right.time).localeCompare(presalesTimeKey(left.time)));
 }

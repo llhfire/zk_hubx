@@ -31,12 +31,12 @@ import {
   createProjectNo,
   employees,
   initialDailyReports,
-  initialProjects,
   projectPriorities,
   projectStatuses,
   roleEmployees,
   summarizeProgress,
 } from './project-management/mockData';
+import { useProjects } from './project-management/ProjectContext';
 import { getProjectBugSummary } from './project-management/projectQuality';
 import { confirmProject, filterProjectsForViewer } from '@/app/business-case';
 import { CURRENT_LOGIN_USER } from '@/app/currentUser';
@@ -93,7 +93,7 @@ function toDateString(value: any) {
 
 export function Projects() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { projects, addProject, updateProject: updateProjectInContext, removeProject: removeProjectInContext } = useProjects();
   const [keyword, setKeyword] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<string>();
   const [priorityFilter, setPriorityFilter] = useState<ProjectPriority>();
@@ -143,19 +143,13 @@ export function Projects() {
           project: confirmingProject,
           productManager: values.productManager,
         });
-        setProjects((current) =>
-          current.map((project) => (
-            project.id === confirmingProject.id
-              ? {
-                  ...project,
-                  status: next.status,
-                  productUsers: next.productUsers,
-                  owner: next.owner,
-                  latestProgress: `已指派产品经理 ${next.owner}，等待交付启动。`,
-                }
-              : project
-          )),
-        );
+        updateProjectInContext({
+          ...confirmingProject,
+          status: next.status,
+          productUsers: next.productUsers,
+          owner: next.owner,
+          latestProgress: `已指派产品经理 ${next.owner}，等待交付启动。`,
+        });
         setConfirmingProject(null);
         Message.success(`已确认并指派 ${values.productManager}`);
       } catch (error) {
@@ -206,12 +200,11 @@ export function Projects() {
         createdAt: editingProject?.createdAt ?? '2026-05-09 10:00',
       };
 
-      setProjects((current) => {
-        if (editingProject) {
-          return current.map((item) => (item.id === editingProject.id ? nextProject : item));
-        }
-        return [nextProject, ...current];
-      });
+      if (editingProject) {
+        updateProjectInContext(nextProject);
+      } else {
+        addProject(nextProject);
+      }
       setProjectModalVisible(false);
       projectForm.resetFields();
       Message.success(editingProject ? '项目已更新' : '项目已新建');
@@ -227,18 +220,12 @@ export function Projects() {
   const saveFollow = () => {
     followForm.validate().then((values) => {
       if (!followingProject) return;
-      setProjects((current) =>
-        current.map((project) =>
-          project.id === followingProject.id
-            ? {
-                ...project,
-                status: values.status,
-                progress: values.progress,
-                latestProgress: summarizeProgress(values.content),
-              }
-            : project
-        )
-      );
+      updateProjectInContext({
+        ...followingProject,
+        status: values.status,
+        progress: values.progress,
+        latestProgress: summarizeProgress(values.content),
+      });
       setFollowModalVisible(false);
       followForm.resetFields();
       Message.success('跟进记录已保存，项目状态已同步');
@@ -247,7 +234,7 @@ export function Projects() {
 
   const removeProject = (project: Project) => {
     const hasDailyReports = initialDailyReports.some((report) => report.projectId === project.id);
-    setProjects((current) => current.filter((item) => item.id !== project.id));
+    removeProjectInContext(project.id);
     Message.success(hasDailyReports ? '项目已删除，关联日报仅在原始日报模块保留' : '项目已删除');
   };
 

@@ -48,8 +48,9 @@ import { QUOTE_STATUS_LABELS, type FeatureModule, type Quote } from '@/app/pages
 import { LeadContractHistoryPanel } from '@/app/pages/leads/components/LeadContractHistoryPanel';
 import { LeadCustomerCommunicationPanel } from '@/app/pages/leads/components/LeadCustomerCommunicationPanel';
 import { ProjectDemoPanel } from '@/app/pages/project-management/ProjectDetailWorkspace';
+import { LeadProjectExecutionPanel } from '@/app/pages/leads/components/LeadProjectExecutionPanel';
 import { leadProjectBanner } from '@/app/business-case';
-import { initialProjects } from '@/app/pages/project-management/mockData';
+import { useProjects } from '@/app/pages/project-management/ProjectContext';
 import {
   IconLeft,
   IconEdit,
@@ -113,6 +114,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const { leadInfo, quotationHistory, useLiveContracts, demoContracts } = leadProfile;
   const { contracts: allContracts } = useContracts();
   const { employees } = useEmployee();
+  const { getProjectByLeadId } = useProjects();
   const useProjectStyleSideTabs = from === 'my' || from === 'public';
 
   const relatedContracts = useMemo<Contract[]>(() => {
@@ -133,12 +135,12 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const approvedContract = approvedContracts[0];
   const hasApprovedContract = Boolean(approvedContract);
 
-  const linkedProject = useMemo(() => {
-    const aliases = [id, leadReminderId, id ? `lead-${id}` : ''].filter(Boolean);
-    return initialProjects.find((project) => project.leadId && aliases.includes(project.leadId)) ?? null;
-  }, [id, leadReminderId]);
+  // 共享 ProjectContext：管理员确认指派后条幅状态即时同步
+  const linkedProject = getProjectByLeadId(id);
 
   const projectBanner = leadProjectBanner(linkedProject);
+  // 项目确认指派后（已指派/执行中），线索详情出现「项目执行」主 Tab
+  const hasConfirmedProject = Boolean(linkedProject) && projectBanner !== 'pending_confirm';
   const projectBannerText = {
     none: '',
     pending_confirm: '项目待管理员确认并指派产品经理',
@@ -247,7 +249,10 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
     if (!hasApprovedContract && ['contracts-history', 'payments-invoice'].includes(activeMainTab)) {
       setActiveMainTab('basic');
     }
-  }, [activeMainTab, hasApprovedContract]);
+    if (!hasConfirmedProject && activeMainTab === 'project-execution') {
+      setActiveMainTab('basic');
+    }
+  }, [activeMainTab, hasApprovedContract, hasConfirmedProject]);
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState(['APP', '小程序', '管理系统', '官网', '电商系统', 'CMS', 'OA系统']);
@@ -753,6 +758,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           <Tabs activeTab={activeMainTab} onChange={setActiveMainTab} headerPadding={false}>
             <TabPane key="basic" title="基础信息" />
             <TabPane key="customer-communication" title="客户沟通" />
+            {hasConfirmedProject ? <TabPane key="project-execution" title="项目执行" /> : null}
             {hasApprovedContract ? <TabPane key="contracts-history" title="合同信息" /> : null}
             {hasApprovedContract ? <TabPane key="payments-invoice" title="回款与发票" /> : null}
           </Tabs>
@@ -799,6 +805,10 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             defaultAssigneeId={employees.find((employee) => employee.name === leadInfo.owner)?.id}
           />
         )}
+
+        {hasConfirmedProject && activeMainTab === 'project-execution' && linkedProject ? (
+          <LeadProjectExecutionPanel project={linkedProject} />
+        ) : null}
 
         {hasApprovedContract && activeMainTab === 'contracts-history' && (
           <div className="lead-detail-main-content">

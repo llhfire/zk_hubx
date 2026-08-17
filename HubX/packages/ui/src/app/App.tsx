@@ -10,6 +10,7 @@ import { TodoProvider } from './todos/TodoContext';
 import { router } from './routes';
 import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
+import { ProjectProvider } from './pages/project-management/ProjectContext';
 import type { QuotationService } from '@/services/quotationService';
 import type { ContractService } from '@/services/contractService';
 import { AppVersionProvider } from './version/AppVersionContext';
@@ -35,11 +36,13 @@ function App({ quotationService, contractService, appVersion = 'alpha' }: AppPro
               <EmployeeProvider>
                 <JobWorkConfigProvider>
                   <ContractsProvider service={contractService}>
-                    <ProjectInvoiceProvider>
-                      <QuotationProvider service={quotationService}>
-                        <RouterProvider router={router} />
-                      </QuotationProvider>
-                    </ProjectInvoiceProvider>
+                    <ProjectProvider>
+                      <ProjectInvoiceProvider>
+                        <QuotationProvider service={quotationService}>
+                          <RouterProvider router={router} />
+                        </QuotationProvider>
+                      </ProjectInvoiceProvider>
+                    </ProjectProvider>
                   </ContractsProvider>
                 </JobWorkConfigProvider>
               </EmployeeProvider>

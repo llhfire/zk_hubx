@@ -35,6 +35,7 @@ import {
 } from './projectDetailSummary';
 import { initialDeliveryPlans } from './delivery-plan/mockData';
 import { useContracts } from './contracts/ContractsContext';
+import { useProjects } from './project-management/ProjectContext';
 import { ProjectDetailWorkspace } from './project-management/ProjectDetailWorkspace';
 
 const { Title, Text } = Typography;
@@ -145,7 +146,8 @@ export function ProjectDetail() {
   const { id = '1' } = useParams();
   const navigate = useNavigate();
   const { contracts, getById } = useContracts();
-  const [project, setProject] = useState(initialProjects.find((item) => item.id === id) ?? initialProjects[0]);
+  const { projects, getProjectById, updateProject: updateProjectInContext } = useProjects();
+  const project = getProjectById(id) ?? initialProjects[0];
   const [followUps, setFollowUps] = useState<ProjectFollowUp[]>(initialFollowUps);
   const [followModalVisible, setFollowModalVisible] = useState(false);
   const [followForm] = Form.useForm();
@@ -246,13 +248,13 @@ export function ProjectDetail() {
     () =>
       buildProjectSummaryCards({
         project,
-        allProjects: initialProjects,
+        allProjects: projects,
         deliveryPlan,
         memberHours,
         totalHours,
         today,
       }),
-    [deliveryPlan, memberHours, project, today, totalHours],
+    [deliveryPlan, memberHours, project, projects, today, totalHours],
   );
 
 
@@ -275,7 +277,7 @@ export function ProjectDetail() {
         createdAt: '2026-05-09 11:00',
       };
       setFollowUps([nextFollow, ...followUps]);
-      setProject({ ...project, status: values.status, progress: values.progress, latestProgress: summarizeProgress(values.content) });
+      updateProjectInContext({ ...project, status: values.status, progress: values.progress, latestProgress: summarizeProgress(values.content) });
       setFollowModalVisible(false);
       followForm.resetFields();
       Message.success('跟进记录已新增');
@@ -351,7 +353,7 @@ export function ProjectDetail() {
             },
           });
         }}
-        onUnlinkContract={() => setProject({ ...project, contractId: undefined })}
+        onUnlinkContract={() => updateProjectInContext({ ...project, contractId: undefined })}
         onOpenContract={(contractId) => navigate(`/contracts/${contractId}`, {
           state: {
             contractDetailReturn: {

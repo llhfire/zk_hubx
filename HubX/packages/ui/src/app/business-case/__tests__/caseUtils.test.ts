@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildPresalesTimeline,
   confirmProject,
   filterProjectsForViewer,
   isVisibleToProductManager,
@@ -177,5 +178,81 @@ describe('leadProjectBanner', () => {
 
   it('进行中及之后展示执行中', () => {
     expect(leadProjectBanner({ status: '进行中', productUsers: ['李四'] })).toBe('in_execution');
+  });
+});
+
+describe('buildPresalesTimeline', () => {
+  const baseInput = {
+    lead: {
+      id: 'lead-9',
+      name: '华信科技内部OA流程优化需求',
+      createTime: '2026-06-05 14:20:00',
+      requirement: '建设内部 OA 流程优化系统',
+    },
+    followUps: [
+      { id: 'f1', time: '2026-06-10 10:00', method: '电话', content: '确认需求范围', operator: '张三' },
+      { id: 'f2', time: '2026-06-06 09:30', method: '上门拜访', content: '现场调研', operator: '张三' },
+    ],
+    quotes: [
+      { id: 'q1', name: 'OA流程优化报价单V2', createTime: '2026-06-15 16:20', amount: '960,000', flowStatus: '已审核' },
+    ],
+    contracts: [
+      { id: 'c1', contractNo: 'ZKRY202606001', createTime: '2026-06-20 11:00', status: 'archived' },
+    ],
+  };
+
+  it('聚合线索/跟进/报价/合同四类事件并按时间倒序', () => {
+    const events = buildPresalesTimeline(baseInput);
+    expect(events.map((event) => event.type)).toEqual(['contract', 'quote', 'follow', 'follow', 'lead']);
+    const times = events.map((event) => event.time.slice(0, 16));
+    const sorted = [...times].sort((a, b) => b.localeCompare(a));
+    expect(times).toEqual(sorted);
+  });
+
+  it('报价事件带上金额与流程状态，跟进事件带跟进方式与操作人', () => {
+    const events = buildPresalesTimeline(baseInput);
+    const quote = events.find((event) => event.type === 'quote');
+    expect(quote?.detail).toBe('报价金额 ¥960,000');
+    expect(quote?.status).toBe('已审核');
+    const follow = events.find((event) => event.type === 'follow');
+    expect(follow?.title).toContain('电话');
+    expect(follow?.status).toBe('张三');
+  });
+
+  it('带秒与不带秒的时间混排也能正确比较', () => {
+    const events = buildPresalesTimeline({
+      ...baseInput,
+      lead: { ...baseInput.lead, createTime: '2026-06-20 11:00:30' },
+    });
+    expect(events[0].type).toBe('lead');
+  });
+
+  it('线索缺少创建时间时不产出线索事件，其余照常', () => {
+    const events = buildPresalesTimeline({
+      ...baseInput,
+      lead: { ...baseInput.lead, createTime: '' },
+    });
+    expect(events.some((event) => event.type === 'lead')).toBe(false);
+    expect(events).toHaveLength(4);
+  });
+
+  it('合同缺少创建时间则跳过', () => {
+    const events = buildPresalesTimeline({
+      ...baseInput,
+      contracts: [{ id: 'c2', contractNo: 'X', status: 'draft' }],
+    });
+    expect(events.some((event) => event.type === 'contract')).toBe(false);
+  });
+
+  it('空输入只有线索创建时间时也只返回线索事件', () => {
+    const events = buildPresalesTimeline({
+      lead: baseInput.lead,
+      followUps: [],
+      quotes: [],
+      contracts: [],
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe('lead');
+    expect(events[0].title).toBe('线索创建');
   });
 });

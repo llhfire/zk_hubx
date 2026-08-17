@@ -65,6 +65,7 @@ import type {
 } from './mockData';
 import { ProjectTaskPanel } from './ProjectTaskPanel';
 import { ProjectCostPanel } from './ProjectCostPanel';
+import { ProjectPresalesHistoryPanel } from './ProjectPresalesHistoryPanel';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
@@ -1625,6 +1626,9 @@ export function ProjectDetailWorkspace({
             <TabPane key="documents" title="资料"><DocumentUploadPanel /></TabPane>
             <TabPane key="travel" title="出差"><TravelPanel items={travelApplications} onAdd={() => setApprovalType('travel')} /></TabPane>
             <TabPane key="reimbursement" title="报销"><ReimbursementPanel items={reimbursementApplications} onAdd={() => setApprovalType('reimbursement')} /></TabPane>
+            <TabPane key="presales-history" title="售前历程">
+              <ProjectPresalesHistoryPanel leadId={projectLeadId} contract={contract} />
+            </TabPane>
           </Tabs>
         </div>
       </div>

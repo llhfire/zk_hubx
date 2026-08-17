@@ -109,9 +109,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       visible={visible}
       onCancel={onCancel}
       footer={null}
-      style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0, padding: 0 }}
-      bodyStyle={{ height: 'calc(100vh - 57px)', overflowY: 'auto', padding: '20px 32px 32px' }}
-      wrapStyle={{ overflow: 'hidden' }}
+      style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      bodyStyle={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 32px 32px', boxSizing: 'border-box' }}
     >
       <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <Tag color={VERSION_TAG_COLORS[version]}>当前版本：{VERSION_LABELS[version]}</Tag>
@@ -147,6 +146,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         pagination={false}
         columns={columns}
         data={VERSION_MODULES}
+        scroll={{ x: 1340 }}
       />
       <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12 }}>
         「Mock」为纯前端本地数据；「HTTP + D1」表示该域已接入 Cloudflare Workers 后端并持久化。详见 docs/ALPHA-BETA-ARCHITECTURE.md。

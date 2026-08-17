@@ -12,17 +12,22 @@ import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
 import type { QuotationService } from '@/services/quotationService';
 import type { ContractService } from '@/services/contractService';
+import { AppVersionProvider } from './version/AppVersionContext';
+import type { AppVersion } from './version/versionMatrix';
 
 interface AppProps {
   /** 报价数据源：α版注入 mock，β版注入 http。缺省 mock。 */
   quotationService?: QuotationService;
   /** 合同数据源：α版注入 mock，β版注入 http。缺省 mock。 */
   contractService?: ContractService;
+  /** 当前版本标识：α版=prototype（缺省），β版=web。控制侧边栏版本标识与功能对比弹窗。 */
+  appVersion?: AppVersion;
 }
 
-function App({ quotationService, contractService }: AppProps) {
+function App({ quotationService, contractService, appVersion = 'alpha' }: AppProps) {
   return (
-    <IntegrationProvider>
+    <AppVersionProvider version={appVersion}>
+      <IntegrationProvider>
       <ApprovalProvider>
         <TodoProvider>
           <FeedbackProvider>
@@ -43,6 +48,7 @@ function App({ quotationService, contractService }: AppProps) {
         </TodoProvider>
       </ApprovalProvider>
     </IntegrationProvider>
+    </AppVersionProvider>
   );
 }
 

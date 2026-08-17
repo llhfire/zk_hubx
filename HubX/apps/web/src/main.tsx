@@ -10,6 +10,7 @@
 
   createRoot(document.getElementById("root")!).render(
     <App
+      appVersion="beta"
       quotationService={createHttpQuotationService(apiBaseUrl)}
       contractService={createHttpContractService(apiBaseUrl)}
     />

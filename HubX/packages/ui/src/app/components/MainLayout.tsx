@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import logo from '@/assets/zk-hubx-logo.png';
-import { Layout, Menu, Avatar, Dropdown, Badge } from '@arco-design/web-react';
+import { Layout, Menu, Avatar, Dropdown, Badge, Tag } from '@arco-design/web-react';
 import {
   IconHome,
   IconCustomerService,
@@ -29,6 +29,9 @@ import { FeedbackModal } from '../feedback/FeedbackModal';
 import { useQuotation } from '../pages/quotation/QuotationContext';
 import { QUOTE_ROLES, QUOTE_ROLE_ACTORS } from '../pages/quotation/types';
 import type { QuoteRole } from '../pages/quotation/types';
+import { useAppVersion } from '../version/AppVersionContext';
+import { VERSION_LABELS, VERSION_TAG_COLORS } from '../version/versionMatrix';
+import { VersionCompareModal } from '../version/VersionCompareModal';
 
 const Sider = Layout.Sider;
 const Header = Layout.Header;
@@ -49,6 +52,8 @@ export function MainLayout() {
   const showUnsubmittedBadge = hasDailyReportUnsubmittedReminder(reminders);
   const { currentRole, setCurrentRole } = useQuotation();
   const currentActor = QUOTE_ROLE_ACTORS[currentRole];
+  const appVersion = useAppVersion();
+  const [versionCompareVisible, setVersionCompareVisible] = useState(false);
 
   const handleDailyReportOpen = () => {
     setSelectedRole(getDailyReportRuleForUser(currentUserId).templateType);
@@ -334,6 +339,15 @@ export function MainLayout() {
               ZK HubX
             </span>
           )}
+          <Tag
+            color={VERSION_TAG_COLORS[appVersion]}
+            size="small"
+            style={{ marginLeft: collapsed ? 0 : 4, cursor: 'pointer', flexShrink: 0 }}
+            onClick={() => setVersionCompareVisible(true)}
+            title="点击查看 α/β 版本功能清单对比"
+          >
+            {VERSION_LABELS[appVersion]}
+          </Tag>
         </div>
 
         {/* Navigation Menu */}
@@ -450,6 +464,11 @@ export function MainLayout() {
       <FeedbackModal
         visible={feedbackVisible}
         onCancel={() => setFeedbackVisible(false)}
+      />
+
+      <VersionCompareModal
+        visible={versionCompareVisible}
+        onCancel={() => setVersionCompareVisible(false)}
       />
     </Layout>
   );

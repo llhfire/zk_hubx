@@ -45,10 +45,10 @@ export const VERSION_DESCRIPTIONS: Record<AppVersion, string> = {
   beta: '前后端版（apps/web + apps/api）：已打通的域走 Cloudflare Workers + D1 持久化，其余仍为 mock。',
 };
 
-/** 线上部署地址（docs/DEPLOYMENT.md）。国内直连 *.pages.dev 被墙，需代理访问。 */
+/** 线上部署地址（已绑定自定义域名，见 docs/DEPLOYMENT.md）。 */
 export const VERSION_URLS: Record<AppVersion, string> = {
-  alpha: 'https://zkhubx-alpha.pages.dev',
-  beta: 'https://zkhubx-web.pages.dev',
+  alpha: 'https://alpha.zkhubx.com',
+  beta: 'https://beta.zkhubx.com',
 };
 
 export const VERSION_MODULES: VersionModuleStatus[] = [

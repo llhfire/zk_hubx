@@ -3,15 +3,15 @@
 > 三个部署目标：**β后端**（Workers）、**β前端**（Pages）、**α版**（Pages）。
 > 前置：一个 Cloudflare 账号，本机已 `npm install`。
 
-## 当前已部署实例（2026-08-16）
+## 当前已部署实例（2026-08-17）
 
 | 版本 | 地址 |
 |---|---|
 | β后端（Workers） | https://zkhubx-api.llhfire.workers.dev |
-| β前端（Pages） | https://zkhubx-web.pages.dev |
-| α版（Pages） | https://zkhubx-alpha.pages.dev |
+| β前端（Pages） | https://beta.zkhubx.com（原 https://zkhubx-web.pages.dev） |
+| α版（Pages） | https://alpha.zkhubx.com（原 https://zkhubx-alpha.pages.dev） |
 
-> ⚠️ **国内访问注意**：`*.workers.dev` / `*.pages.dev` 直连被墙（GFW），需走代理/VPN 才能访问；长期需绑自定义域名（已备案）或换国内托管。
+> 两个前端已绑定自定义域名 `alpha.zkhubx.com` / `beta.zkhubx.com`，国内可直连。β后端仍是 `*.workers.dev`（浏览器直连若被墙需代理，可考虑后端也绑自定义域名）。
 
 ## 0. 一次性登录
 

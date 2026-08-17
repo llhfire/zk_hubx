@@ -55,9 +55,9 @@ describe('versionMatrix', () => {
     expect(VERSION_DESCRIPTIONS.beta).toBeTruthy();
   });
 
-  it('online urls point to the deployed Cloudflare Pages sites', () => {
-    expect(VERSION_URLS.alpha).toBe('https://zkhubx-alpha.pages.dev');
-    expect(VERSION_URLS.beta).toBe('https://zkhubx-web.pages.dev');
+  it('online urls point to the custom domains', () => {
+    expect(VERSION_URLS.alpha).toBe('https://alpha.zkhubx.com');
+    expect(VERSION_URLS.beta).toBe('https://beta.zkhubx.com');
   });
 
   it('planned items are string lists and key P0/P1 pending work is tracked', () => {

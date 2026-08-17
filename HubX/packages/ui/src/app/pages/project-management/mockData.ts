@@ -1,5 +1,5 @@
 export type ProjectPriority = '高' | '中' | '低';
-export type ProjectStatus = '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
+export type ProjectStatus = '未确认' | '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
 export type BusinessLine = '外包' | '自研' | '自运营';
 
 export interface ProjectAttachment {
@@ -95,7 +95,7 @@ export interface ProjectMemberHours {
 }
 
 export const projectPriorities: ProjectPriority[] = ['高', '中', '低'];
-export const projectStatuses: ProjectStatus[] = ['未开始', '进行中', '已完成', '验收中', '搁置', '延迟', '催款中'];
+export const projectStatuses: ProjectStatus[] = ['未确认', '未开始', '进行中', '已完成', '验收中', '搁置', '延迟', '催款中'];
 export const businessLines: BusinessLine[] = ['外包', '自研', '自运营'];
 
 export const companyEntities = ['中科软艺', '软艺信息', '巴蜀文攻'];
@@ -196,6 +196,60 @@ export const initialProjects: Project[] = [
     ],
     leadId: 'lead-9',
     createdAt: '2026-06-10 10:10',
+  },
+  {
+    id: '4',
+    projectNo: 'PRJ202608004',
+    name: '星河数据合同洽谈（待确认）',
+    latestProgress: '线索已进入合同洽谈，等待管理员确认并指派产品经理。',
+    priority: '高',
+    entity: '中科软艺',
+    status: '未确认',
+    businessLine: '外包',
+    salesUsers: ['张三'],
+    owner: '',
+    assistants: [],
+    productUsers: [],
+    uiUsers: [],
+    frontendUsers: [],
+    backendUsers: [],
+    opsUsers: [],
+    testUsers: [],
+    legalUsers: [],
+    progress: 0,
+    startDate: '',
+    expectedEndDate: '',
+    remark: '由线索签约自动生成，尚未确认。',
+    attachments: [],
+    leadId: 'LS001',
+    createdAt: '2026-08-18 09:00',
+  },
+  {
+    id: '5',
+    projectNo: 'PRJ202608005',
+    name: '青橙零售报价已确认（未开工）',
+    latestProgress: '管理员已指派产品经理，等待主合同审批通过后启动交付。',
+    priority: '中',
+    entity: '中科软艺',
+    status: '未开始',
+    businessLine: '外包',
+    salesUsers: ['张三'],
+    owner: '李四',
+    assistants: [],
+    productUsers: ['李四'],
+    uiUsers: [],
+    frontendUsers: [],
+    backendUsers: [],
+    opsUsers: [],
+    testUsers: [],
+    legalUsers: [],
+    progress: 0,
+    startDate: '2026-08-20',
+    expectedEndDate: '2026-12-31',
+    remark: '已确认指派，交付未启动。',
+    attachments: [],
+    leadId: 'LS002',
+    createdAt: '2026-08-17 14:00',
   },
 ];
 

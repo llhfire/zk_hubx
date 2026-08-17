@@ -35,10 +35,11 @@ const { Text } = Typography;
 
 /* ---------- Status badge (same pattern as Projects.tsx) ---------- */
 
-type ProjectStatus = '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
+type ProjectStatus = '未确认' | '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
 
 function statusBadge(status: ProjectStatus) {
   const map: Record<ProjectStatus, 'default' | 'processing' | 'success' | 'warning' | 'error'> = {
+    未确认: 'warning',
     未开始: 'default',
     进行中: 'processing',
     已完成: 'success',

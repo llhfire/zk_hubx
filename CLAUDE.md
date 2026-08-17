@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 始终使用中文进行所有交流和回复。
 
+## 上下班仪式
+
+- **上班**：先读根目录 `下班交接.md` 恢复上下文，再开工。
+- **下班**（用户说「下班」即触发，不要再问要不要发）：
+  1. 覆盖写 `下班交接.md`（本次进度 / 当前状态 / 下次待办 / 踩坑）。
+  2. 当天有未提交改动则先提交到 `HubX/` 仓库（交接文档一并提交），避免线上和 git 再分叉。
+  3. **发布到 Cloudflare**，步骤见 `HubX/docs/DEPLOYMENT.md`「下班发布」：α 前端必发；β 前端必发（与 α 共用 `packages/ui`）；`apps/api` 有改动才发 Workers。
+  4. 用 `wrangler pages deployment list` 核对线上 Source SHA = 当前 HEAD，回报三个地址后结束。
+
 ## 仓库结构（先读这里）
 
 本仓库根目录是「项目工作区」，真正的应用代码在 `HubX/` 子目录，且 `HubX/` 是一个**独立的嵌套 git 仓库**（自带 `.git`，根仓库将 `HubX/` 视为未跟踪目录）。

@@ -38,6 +38,8 @@ import {
   summarizeProgress,
 } from './project-management/mockData';
 import { getProjectBugSummary } from './project-management/projectQuality';
+import { confirmProject, filterProjectsForViewer } from '@/app/business-case';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 
 const Title = Typography.Title;
 const FormItem = Form.Item;
@@ -67,6 +69,7 @@ type ProjectFormValues = {
 
 function statusBadge(status: ProjectStatus) {
   const map: Record<ProjectStatus, 'default' | 'processing' | 'success' | 'warning' | 'error'> = {
+    未确认: 'warning',
     未开始: 'default',
     进行中: 'processing',
     已完成: 'success',
@@ -101,16 +104,65 @@ export function Projects() {
   const [followingProject, setFollowingProject] = useState<Project | null>(null);
   const [projectForm] = Form.useForm<ProjectFormValues>();
   const [followForm] = Form.useForm();
+  const [confirmingProject, setConfirmingProject] = useState<Project | null>(null);
+  const [confirmForm] = Form.useForm<{ productManager: string }>();
+
+  const visibleProjects = useMemo(
+    () => filterProjectsForViewer(projects, {
+      isAdmin: CURRENT_LOGIN_USER.isAdmin,
+      viewerName: CURRENT_LOGIN_USER.name,
+    }),
+    [projects],
+  );
+
+  const pendingConfirmCount = useMemo(
+    () => projects.filter((project) => project.status === '未确认').length,
+    [projects],
+  );
 
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
+    return visibleProjects.filter((project) => {
       const keywordMatched = !keyword || project.name.includes(keyword);
       const ownerMatched = !ownerFilter || project.owner === ownerFilter;
       const priorityMatched = !priorityFilter || project.priority === priorityFilter;
       const statusMatched = !statusFilter || project.status === statusFilter;
       return keywordMatched && ownerMatched && priorityMatched && statusMatched;
     });
-  }, [keyword, ownerFilter, priorityFilter, projects, statusFilter]);
+  }, [keyword, ownerFilter, priorityFilter, visibleProjects, statusFilter]);
+
+  const openConfirmModal = (project: Project) => {
+    setConfirmingProject(project);
+    confirmForm.setFieldsValue({ productManager: roleEmployees.product[0] ?? '' });
+  };
+
+  const saveConfirm = () => {
+    if (!confirmingProject) return;
+    confirmForm.validate().then((values) => {
+      try {
+        const next = confirmProject({
+          project: confirmingProject,
+          productManager: values.productManager,
+        });
+        setProjects((current) =>
+          current.map((project) => (
+            project.id === confirmingProject.id
+              ? {
+                  ...project,
+                  status: next.status,
+                  productUsers: next.productUsers,
+                  owner: next.owner,
+                  latestProgress: `已指派产品经理 ${next.owner}，等待交付启动。`,
+                }
+              : project
+          )),
+        );
+        setConfirmingProject(null);
+        Message.success(`已确认并指派 ${values.productManager}`);
+      } catch (error) {
+        Message.error(error instanceof Error ? error.message : '确认失败');
+      }
+    });
+  };
 
   const openCreateModal = () => {
     setEditingProject(null);
@@ -242,6 +294,13 @@ export function Projects() {
       fixed: 'right' as const,
       render: (_: unknown, record: Project) => (
         <Space size={4}>
+          {record.status === '未确认' && CURRENT_LOGIN_USER.isAdmin ? (
+            <Tooltip content="确认并指派产品经理">
+              <Button type="text" size="small" status="warning" onClick={() => openConfirmModal(record)}>
+                确认
+              </Button>
+            </Tooltip>
+          ) : null}
           <Tooltip content="详情">
             <Button type="text" size="small" icon={<IconEye />} onClick={() => navigate(`/projects/${record.id}`)} />
           </Tooltip>
@@ -266,7 +325,14 @@ export function Projects() {
 
   return (
     <div>
-      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
+      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+        <Space>
+          {CURRENT_LOGIN_USER.isAdmin && pendingConfirmCount > 0 ? (
+            <Button type="outline" status="warning" onClick={() => setStatusFilter('未确认')}>
+              待确认 {pendingConfirmCount}
+            </Button>
+          ) : null}
+        </Space>
         <Button type="primary" icon={<IconPlus />} onClick={openCreateModal}>新建项目</Button>
       </div>
 
@@ -322,6 +388,26 @@ export function Projects() {
           </Grid.Row>
           <FormItem label="最新进展" field="latestProgress"><Input.TextArea rows={3} placeholder="请输入最新进展" /></FormItem>
           <FormItem label="备注" field="remark"><Input.TextArea rows={3} placeholder="请输入备注" /></FormItem>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="确认项目并指派产品经理"
+        visible={Boolean(confirmingProject)}
+        onOk={saveConfirm}
+        onCancel={() => setConfirmingProject(null)}
+        style={{ width: 480 }}
+        maskClosable={false}
+      >
+        <Form form={confirmForm} layout="vertical">
+          <FormItem label="项目">{confirmingProject?.name}</FormItem>
+          <FormItem label="产品经理" field="productManager" rules={[{ required: true, message: '请指定产品经理' }]}>
+            <Select placeholder="请选择产品经理">
+              {roleEmployees.product.map((item) => (
+                <Select.Option key={item} value={item}>{item}</Select.Option>
+              ))}
+            </Select>
+          </FormItem>
         </Form>
       </Modal>
 

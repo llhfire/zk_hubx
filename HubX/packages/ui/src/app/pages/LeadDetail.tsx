@@ -48,6 +48,8 @@ import { QUOTE_STATUS_LABELS, type FeatureModule, type Quote } from '@/app/pages
 import { LeadContractHistoryPanel } from '@/app/pages/leads/components/LeadContractHistoryPanel';
 import { LeadCustomerCommunicationPanel } from '@/app/pages/leads/components/LeadCustomerCommunicationPanel';
 import { ProjectDemoPanel } from '@/app/pages/project-management/ProjectDetailWorkspace';
+import { leadProjectBanner } from '@/app/business-case';
+import { initialProjects } from '@/app/pages/project-management/mockData';
 import {
   IconLeft,
   IconEdit,
@@ -130,6 +132,21 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   );
   const approvedContract = approvedContracts[0];
   const hasApprovedContract = Boolean(approvedContract);
+
+  const linkedProject = useMemo(() => {
+    const aliases = [id, leadReminderId, id ? `lead-${id}` : ''].filter(Boolean);
+    return initialProjects.find((project) => project.leadId && aliases.includes(project.leadId)) ?? null;
+  }, [id, leadReminderId]);
+
+  const projectBanner = leadProjectBanner(linkedProject);
+  const projectBannerText = {
+    none: '',
+    pending_confirm: '项目待管理员确认并指派产品经理',
+    assigned: linkedProject?.owner
+      ? `已指派产品经理 ${linkedProject.owner}，等待交付启动`
+      : '已指派产品经理，等待交付启动',
+    in_execution: `项目执行中${linkedProject?.latestProgress ? `：${linkedProject.latestProgress}` : ''}`,
+  }[projectBanner];
 
   const handleViewContractDetail = (contractId: string) => {
     navigate(`/contracts/${contractId}`, {
@@ -688,6 +705,26 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
         <div className="lead-detail-summary-title">
           【{displayLeadValue(leadInfo.name)}】
         </div>
+        {projectBanner !== 'none' && projectBannerText ? (
+          <Alert
+            style={{ margin: '12px 0 0' }}
+            type={projectBanner === 'pending_confirm' ? 'warning' : projectBanner === 'in_execution' ? 'info' : 'success'}
+            content={
+              <Space>
+                <span>{projectBannerText}</span>
+                {linkedProject ? (
+                  <Button
+                    type="text"
+                    size="mini"
+                    onClick={() => navigate(`/projects/${linkedProject.id}`)}
+                  >
+                    打开项目
+                  </Button>
+                ) : null}
+              </Space>
+            }
+          />
+        ) : null}
         <div className="lead-detail-summary-grid">
           {leadSummaryItems.map((item) => (
             <div

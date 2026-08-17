@@ -66,6 +66,32 @@ npx wrangler pages deploy apps/prototype/dist --project-name zkhubx-alpha
 
 α版纯前端（mock），无需 API 地址。部署完得到 `https://zkhubx-alpha.pages.dev`。
 
+## 下班发布（用户说「下班」即执行）
+
+在 `HubX/` 下执行。先提交当天改动，再构建部署，最后核对线上 Source SHA = 当前 `git rev-parse --short HEAD`。
+
+```bash
+# α 前端（必发）
+npm run build -w apps/prototype
+npx wrangler pages deploy apps/prototype/dist --project-name zkhubx-alpha
+
+# β 前端（必发，构建期内联 API）
+VITE_API_BASE_URL=https://zkhubx-api.llhfire.workers.dev npm run build -w apps/web
+npx wrangler pages deploy apps/web/dist --project-name zkhubx-web
+
+# β 后端（仅 apps/api 有改动时）
+# cd apps/api && npx wrangler deploy
+```
+
+核对：
+
+```bash
+npx wrangler pages deployment list --project-name zkhubx-alpha
+npx wrangler pages deployment list --project-name zkhubx-web
+```
+
+生产地址：`https://alpha.zkhubx.com` / `https://beta.zkhubx.com`。`*.pages.dev` 是同一套 Pages 项目。
+
 ## 常见问题
 
 - **SPA 深链接 404**：两个前端都已加 `public/_redirects`（`/* /index.html 200`），Pages 会自动读取。

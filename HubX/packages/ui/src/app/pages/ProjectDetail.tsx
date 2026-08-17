@@ -128,6 +128,7 @@ function SummaryHighlightCard({
 
 function statusBadge(status: ProjectStatus) {
   const map: Record<ProjectStatus, 'default' | 'processing' | 'success' | 'warning' | 'error'> = {
+    未确认: 'warning',
     未开始: 'default',
     进行中: 'processing',
     已完成: 'success',

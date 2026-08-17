@@ -48,6 +48,10 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 - 仓库虽有 `pnpm-workspace.yaml`，但 README 与现有脚本都以 `npm` 为准。
 - `react-router@7.13.0` 声明需要 Node `>=20.0.0`；在 Node 18 下 `npm install` 会出现 `EBADENGINE` 警告。当前 Node 18.17.0 下构建和测试能通过，但长期建议使用 Node 20+。
 
+## 下班发布
+
+用户说「下班」即发布到 Cloudflare，不要再问。α / β 前端每次都发；Workers 仅在 `apps/api` 有改动时发。命令与核对步骤见 `docs/DEPLOYMENT.md`「下班发布」。线上地址：`https://alpha.zkhubx.com` / `https://beta.zkhubx.com` / `https://zkhubx-api.llhfire.workers.dev`。
+
 ## 技术栈
 
 - React 18 + Vite 6

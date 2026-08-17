@@ -1,4 +1,5 @@
-import { Button, Modal, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
+import { useEffect, useState } from 'react';
+import { Button, Checkbox, Modal, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
 import { useAppVersion } from './AppVersionContext';
 import {
   DATA_SOURCE_LABELS,
@@ -8,6 +9,8 @@ import {
   VERSION_MODULES,
   VERSION_TAG_COLORS,
   VERSION_URLS,
+  loadUxDesignChecked,
+  toggleUxDesignChecked,
   type AppVersion,
   type ModuleDataSource,
 } from './versionMatrix';
@@ -26,6 +29,12 @@ function dataSourceTag(source: ModuleDataSource) {
 /** α/β 版本功能清单对比：点击侧边栏版本标识打开，全屏展示。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
+  // UX 设计打勾状态：localStorage 持久化，弹窗每次打开时重新读取
+  const [uxChecked, setUxChecked] = useState<string[]>(() => loadUxDesignChecked());
+
+  useEffect(() => {
+    if (visible) setUxChecked(loadUxDesignChecked());
+  }, [visible]);
 
   const columns = [
     {
@@ -36,18 +45,44 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     },
     { title: '覆盖范围', dataIndex: 'scope' },
     {
+      title: 'UX 设计',
+      dataIndex: 'module',
+      width: 90,
+      align: 'center' as const,
+      render: (module: string) => (
+        <Tooltip content="勾选表示该模块 UX 设计已完成，状态会保存在本地">
+          <Checkbox
+            checked={uxChecked.includes(module)}
+            onChange={checked => setUxChecked(toggleUxDesignChecked(module))}
+          />
+        </Tooltip>
+      ),
+    },
+    {
       title: 'α版（纯前端）',
       dataIndex: 'alpha',
-      width: 200,
+      width: 180,
       render: dataSourceTag,
     },
     {
       title: 'β版（前后端）',
       dataIndex: 'beta',
-      width: 200,
+      width: 180,
       render: dataSourceTag,
     },
-    { title: '说明', dataIndex: 'note', width: 280 },
+    {
+      title: '计划（未实施）',
+      dataIndex: 'planned',
+      width: 260,
+      render: (planned: string[]) => planned.length
+        ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {planned.map(item => <Tag key={item} color="purple" size="small">{item}</Tag>)}
+          </div>
+        )
+        : <Text type="secondary">-</Text>,
+    },
+    { title: '说明', dataIndex: 'note', width: 240 },
   ];
 
   return (

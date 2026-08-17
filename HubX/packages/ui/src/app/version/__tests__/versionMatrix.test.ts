@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DATA_SOURCE_LABELS,
   DATA_SOURCE_TAG_COLORS,
@@ -7,6 +7,8 @@ import {
   VERSION_MODULES,
   VERSION_TAG_COLORS,
   VERSION_URLS,
+  loadUxDesignChecked,
+  toggleUxDesignChecked,
   type ModuleDataSource,
 } from '../versionMatrix';
 
@@ -55,5 +57,34 @@ describe('versionMatrix', () => {
   it('online urls point to the deployed Cloudflare Pages sites', () => {
     expect(VERSION_URLS.alpha).toBe('https://zkhubx-alpha.pages.dev');
     expect(VERSION_URLS.beta).toBe('https://zkhubx-web.pages.dev');
+  });
+
+  it('planned items are string lists and key P0/P1 pending work is tracked', () => {
+    for (const item of VERSION_MODULES) {
+      expect(Array.isArray(item.planned)).toBe(true);
+      for (const planned of item.planned) {
+        expect(planned.trim()).not.toBe('');
+      }
+    }
+    const finance = VERSION_MODULES.find(item => item.module === '财务管理');
+    expect(finance?.planned).toContain('回款拆分/冲红权限矩阵');
+    expect(finance?.planned).toContain('全期次回款+开票视图');
+  });
+
+  it('ux design check state persists through localStorage', () => {
+    // vitest 默认 node 环境，无 localStorage，这里打桩模拟
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    });
+    expect(loadUxDesignChecked()).toEqual([]);
+    expect(toggleUxDesignChecked('报价管理')).toEqual(['报价管理']);
+    expect(loadUxDesignChecked()).toEqual(['报价管理']);
+    expect(toggleUxDesignChecked('合同管理')).toEqual(['报价管理', '合同管理']);
+    // 再点一次取消勾选
+    expect(toggleUxDesignChecked('报价管理')).toEqual(['合同管理']);
+    vi.unstubAllGlobals();
   });
 });

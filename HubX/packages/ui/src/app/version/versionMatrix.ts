@@ -14,6 +14,8 @@ export interface VersionModuleStatus {
   scope: string;
   alpha: ModuleDataSource;
   beta: ModuleDataSource;
+  /** 已计划但尚未实施的功能（来自工作清单 P0/P1 待办与报价遗留项） */
+  planned: string[];
   /** 差异说明 */
   note: string;
 }
@@ -50,18 +52,42 @@ export const VERSION_URLS: Record<AppVersion, string> = {
 };
 
 export const VERSION_MODULES: VersionModuleStatus[] = [
-  { module: '报价管理', scope: '报价工作台 / 报价中心（四阶段全流程）', alpha: 'mock', beta: 'http', note: 'β版报价单落 D1，含状态迁移校验' },
-  { module: '合同管理', scope: '合同列表 / 多版本 / 审批 / 归档', alpha: 'mock', beta: 'http', note: 'mock/http 共享 contractMutations，口径一致' },
-  { module: '线索管理', scope: '四池流转 / 线索详情 / 治理', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽（照合同域样板）' },
-  { module: '客户管理', scope: '客户列表 / 详情', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '项目管理', scope: '项目详情 / 任务 / 成本核算', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '线索成本', scope: '成本看板 / 投放日报 / 渠道分析', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '日报', scope: '日报列表 / 视图 / 项目视图 / 配置', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '财务管理', scope: '财务统计 / 项目成本 / 工资表 / 开票审核', alpha: 'mock', beta: 'mock', note: '开票申请存 localStorage，未落 D1' },
-  { module: '审批管理', scope: '审批中心 / 审批模板 / 业务审批配置', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '待办中心', scope: '待办列表 / 状态流转', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '消息提醒', scope: '提醒铃铛 / 日报催报', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '员工与人资', scope: '员工 / 考勤 / 绩效 / 费用管理', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '系统管理', scope: '组织 / 权限 / 字典 / 企微集成等', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
-  { module: '其他模块', scope: '工作台 / 数据报表 / 会议 / 知识库等', alpha: 'mock', beta: 'mock', note: 'service 接缝待抽' },
+  { module: '报价管理', scope: '报价工作台 / 报价中心（四阶段全流程）', alpha: 'mock', beta: 'http', planned: ['Excel 双向导入导出', '版本 Diff 对比', 'PDF 生成与电子签章', '代理/转交机制'], note: 'β版报价单落 D1，含状态迁移校验' },
+  { module: '合同管理', scope: '合同列表 / 多版本 / 审批 / 归档', alpha: 'mock', beta: 'http', planned: ['付款比例模板', '审批流程灰态展示', '审批通过后释放回款 Tab'], note: 'mock/http 共享 contractMutations，口径一致' },
+  { module: '线索管理', scope: '四池流转 / 线索详情 / 治理', alpha: 'mock', beta: 'mock', planned: ['线索自动分配'], note: 'service 接缝待抽（照合同域样板）' },
+  { module: '客户管理', scope: '客户列表 / 详情', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '项目管理', scope: '项目详情 / 任务 / 成本核算', alpha: 'mock', beta: 'mock', planned: ['合同/回款统一视图', '项目与线索同源上下文'], note: 'service 接缝待抽' },
+  { module: '线索成本', scope: '成本看板 / 投放日报 / 渠道分析', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '日报', scope: '日报列表 / 视图 / 项目视图 / 配置', alpha: 'mock', beta: 'mock', planned: ['跨月/跨年时间轴优化'], note: 'service 接缝待抽' },
+  { module: '财务管理', scope: '财务统计 / 项目成本 / 工资表 / 开票审核', alpha: 'mock', beta: 'mock', planned: ['回款拆分/冲红权限矩阵', '全期次回款+开票视图', '回款逾期判断'], note: '开票申请存 localStorage，未落 D1' },
+  { module: '审批管理', scope: '审批中心 / 审批模板 / 业务审批配置', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '待办中心', scope: '待办列表 / 状态流转', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '消息提醒', scope: '提醒铃铛 / 日报催报', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '员工与人资', scope: '员工 / 考勤 / 绩效 / 费用管理', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
+  { module: '系统管理', scope: '组织 / 权限 / 字典 / 企微集成等', alpha: 'mock', beta: 'mock', planned: ['企微集成深化（通讯录同步等）'], note: 'service 接缝待抽' },
+  { module: '其他模块', scope: '工作台 / 数据报表 / 会议 / 知识库等', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
 ];
+
+/** UX 设计打勾状态持久化（localStorage，按模块名记录） */
+const UX_DESIGN_STORAGE_KEY = 'hubx-ux-design-checked';
+
+export function loadUxDesignChecked(): string[] {
+  try {
+    const stored = localStorage.getItem(UX_DESIGN_STORAGE_KEY);
+    const parsed = stored ? JSON.parse(stored) : [];
+    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function toggleUxDesignChecked(module: string): string[] {
+  const current = loadUxDesignChecked();
+  const next = current.includes(module) ? current.filter(item => item !== module) : [...current, module];
+  try {
+    localStorage.setItem(UX_DESIGN_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // localStorage 不可用时仅返回内存态，不中断交互
+  }
+  return next;
+}

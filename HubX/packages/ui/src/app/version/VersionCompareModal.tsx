@@ -20,7 +20,7 @@ function dataSourceTag(source: ModuleDataSource) {
   return <Tag color={DATA_SOURCE_TAG_COLORS[source]} size="small">{DATA_SOURCE_LABELS[source]}</Tag>;
 }
 
-/** α/β 版本功能清单对比：点击侧边栏版本标识打开。 */
+/** α/β 版本功能清单对比：点击侧边栏版本标识打开，全屏展示。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
 
@@ -28,23 +28,23 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     {
       title: '功能模块',
       dataIndex: 'module',
-      width: 130,
+      width: 150,
       render: (value: string) => <Text strong>{value}</Text>,
     },
     { title: '覆盖范围', dataIndex: 'scope' },
     {
       title: 'α版（纯前端）',
       dataIndex: 'alpha',
-      width: 170,
+      width: 200,
       render: dataSourceTag,
     },
     {
       title: 'β版（前后端）',
       dataIndex: 'beta',
-      width: 170,
+      width: 200,
       render: dataSourceTag,
     },
-    { title: '说明', dataIndex: 'note', width: 220 },
+    { title: '说明', dataIndex: 'note', width: 280 },
   ];
 
   return (
@@ -53,7 +53,9 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       visible={visible}
       onCancel={onCancel}
       footer={null}
-      style={{ width: 960, maxWidth: 'calc(100vw - 32px)' }}
+      style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0, padding: 0 }}
+      bodyStyle={{ height: 'calc(100vh - 57px)', overflowY: 'auto', padding: '20px 32px 32px' }}
+      wrapStyle={{ overflow: 'hidden' }}
     >
       <div style={{ marginBottom: 12 }}>
         <Tag color={version === 'beta' ? 'green' : 'arcoblue'}>当前版本：{VERSION_LABELS[version]}</Tag>
@@ -61,13 +63,12 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       </div>
       <Table
         rowKey="module"
-        size="small"
+        size="default"
         pagination={false}
         columns={columns}
         data={VERSION_MODULES}
-        scroll={{ y: 420 }}
       />
-      <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+      <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12 }}>
         「Mock」为纯前端本地数据；「HTTP + D1」表示该域已接入 Cloudflare Workers 后端并持久化。详见 docs/ALPHA-BETA-ARCHITECTURE.md。
       </Text>
     </Modal>

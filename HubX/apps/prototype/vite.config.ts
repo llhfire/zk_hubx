@@ -2,10 +2,55 @@ import { defineConfig, loadEnv } from 'vite'
 import path from 'path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import fs from 'node:fs/promises'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 const execFileAsync = promisify(execFile)
+
+// α版功能清单勾选进度：GET/PUT 读写仓库内配置文档（packages/ui/.../alphaChecklist.config.json），
+// 勾选状态随 git 提交保存，进度不丢。仅 α版 dev server 提供；静态部署走 localStorage 回退。
+function alphaChecklistStore() {
+  const configFile = path.resolve(__dirname, '../../packages/ui/src/app/version/alphaChecklist.config.json')
+  return {
+    name: 'alpha-checklist-store',
+    configureServer(server: any) {
+      server.middlewares.use('/api/alpha-checklist', async (request: any, response: any) => {
+        response.setHeader('Content-Type', 'application/json; charset=utf-8')
+        try {
+          if (request.method === 'GET') {
+            let items: unknown = []
+            try {
+              items = JSON.parse(await fs.readFile(configFile, 'utf8'))
+            } catch {
+              items = []
+            }
+            response.end(JSON.stringify({ items: Array.isArray(items) ? items : [] }))
+            return
+          }
+          if (request.method === 'PUT') {
+            const chunks: Buffer[] = []
+            for await (const chunk of request) chunks.push(chunk as Buffer)
+            const items = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            if (!Array.isArray(items) || items.some(item => typeof item !== 'string')) {
+              response.statusCode = 400
+              response.end(JSON.stringify({ error: '勾选状态应为字符串数组' }))
+              return
+            }
+            await fs.writeFile(configFile, JSON.stringify(items, null, 2) + '\n')
+            response.end(JSON.stringify({ items }))
+            return
+          }
+          response.statusCode = 405
+          response.end(JSON.stringify({ error: '仅支持 GET/PUT' }))
+        } catch (error: any) {
+          response.statusCode = 500
+          response.end(JSON.stringify({ error: String(error?.message || error) }))
+        }
+      })
+    },
+  }
+}
 
 function toMessages(raw: string) {
   const parsed = JSON.parse(raw)
@@ -153,6 +198,7 @@ export default defineConfig(({ mode }) => {
   return {
   plugins: [
     figmaAssetResolver(),
+    alphaChecklistStore(),
     wxCliBridge({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com', model: env.DEEPSEEK_MODEL || 'deepseek-v4-pro' }),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

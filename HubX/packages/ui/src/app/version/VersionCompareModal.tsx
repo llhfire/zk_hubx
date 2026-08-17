@@ -11,6 +11,7 @@ import {
   VERSION_URLS,
   ALPHA_CHECKLIST_ITEMS,
   loadAlphaChecklist,
+  saveAlphaChecklist,
   toggleAlphaChecklist,
   type AlphaChecklistItem,
   type AppVersion,
@@ -31,12 +32,20 @@ function dataSourceTag(source: ModuleDataSource) {
 /** α/β 版本功能清单对比：点击侧边栏版本标识打开，全屏展示。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
-  // α版检查项打勾状态：localStorage 持久化，弹窗每次打开时重新读取
-  const [alphaChecked, setAlphaChecked] = useState<string[]>(() => loadAlphaChecklist());
+  // α版检查项：优先读写 dev server 的配置文档（alphaChecklist.config.json），无端点时回退 localStorage
+  const [alphaChecked, setAlphaChecked] = useState<string[]>([]);
 
   useEffect(() => {
-    if (visible) setAlphaChecked(loadAlphaChecklist());
+    if (visible) void loadAlphaChecklist().then(setAlphaChecked);
   }, [visible]);
+
+  const handleToggleAlpha = (module: string, item: AlphaChecklistItem) => {
+    setAlphaChecked(current => {
+      const next = toggleAlphaChecklist(current, module, item);
+      void saveAlphaChecklist(next);
+      return next;
+    });
+  };
 
   const columns = [
     {
@@ -66,17 +75,17 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         : <Text type="secondary">-</Text>,
     },
     {
-      title: 'α版（页面场景/功能流程/UX 优化）',
+      title: 'α版',
       dataIndex: 'module',
-      width: 200,
+      width: 170,
       render: (module: string) => (
-        <Tooltip content="逐项勾选 α 版完成情况，状态保存在本地">
+        <Tooltip content="逐项勾选 α 版完成情况（页面场景/功能流程/UX 优化），α版本地会保存到配置文档">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
             {ALPHA_CHECKLIST_ITEMS.map(item => (
               <Checkbox
                 key={item}
                 checked={alphaChecked.includes(`${module}::${item}`)}
-                onChange={() => setAlphaChecked(toggleAlphaChecklist(module, item as AlphaChecklistItem))}
+                onChange={() => handleToggleAlpha(module, item as AlphaChecklistItem)}
               >
                 <span style={{ fontSize: 12 }}>{item}</span>
               </Checkbox>

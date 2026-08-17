@@ -78,7 +78,15 @@ function alphaChecklistKey(module: string, item: AlphaChecklistItem) {
   return `${module}::${item}`;
 }
 
-export function loadAlphaChecklist(): string[] {
+/**
+ * α版检查项存储：
+ * - α版 dev server（apps/prototype 的 alpha-checklist-store 插件）提供 /api/alpha-checklist，
+ *   GET/PUT 直接读写仓库内配置文档 alphaChecklist.config.json，进度随 git 提交保存。
+ * - 无该端点的环境（静态部署的 pages.dev / apps/web）回退到 localStorage。
+ */
+const ALPHA_CHECKLIST_ENDPOINT = '/api/alpha-checklist';
+
+function readChecklistFromLocalStorage(): string[] {
   try {
     const stored = localStorage.getItem(ALPHA_CHECKLIST_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
@@ -88,14 +96,42 @@ export function loadAlphaChecklist(): string[] {
   }
 }
 
-export function toggleAlphaChecklist(module: string, item: AlphaChecklistItem): string[] {
-  const key = alphaChecklistKey(module, item);
-  const current = loadAlphaChecklist();
-  const next = current.includes(key) ? current.filter(entry => entry !== key) : [...current, key];
+function writeChecklistToLocalStorage(items: string[]) {
   try {
-    localStorage.setItem(ALPHA_CHECKLIST_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(ALPHA_CHECKLIST_STORAGE_KEY, JSON.stringify(items));
   } catch {
-    // localStorage 不可用时仅返回内存态，不中断交互
+    // localStorage 不可用时忽略，交互不中断
   }
-  return next;
+}
+
+export async function loadAlphaChecklist(): Promise<string[]> {
+  try {
+    const response = await fetch(ALPHA_CHECKLIST_ENDPOINT);
+    if (response.ok) {
+      const payload = await response.json() as { items?: unknown };
+      return Array.isArray(payload.items) ? payload.items.filter(item => typeof item === 'string') : [];
+    }
+  } catch {
+    // 端点不存在（非 α版 dev 环境），走 localStorage 回退
+  }
+  return readChecklistFromLocalStorage();
+}
+
+export async function saveAlphaChecklist(items: string[]): Promise<void> {
+  writeChecklistToLocalStorage(items);
+  try {
+    await fetch(ALPHA_CHECKLIST_ENDPOINT, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items),
+    });
+  } catch {
+    // 写不进配置文档时进度至少留在 localStorage
+  }
+}
+
+/** 纯函数：基于当前勾选状态计算下一状态，key 形如「模块::检查项」 */
+export function toggleAlphaChecklist(current: string[], module: string, item: AlphaChecklistItem): string[] {
+  const key = alphaChecklistKey(module, item);
+  return current.includes(key) ? current.filter(entry => entry !== key) : [...current, key];
 }

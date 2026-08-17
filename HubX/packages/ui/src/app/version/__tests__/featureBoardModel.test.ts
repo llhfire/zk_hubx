@@ -17,6 +17,7 @@ import {
   toggleProductionSwitch,
 } from '../featureBoardModel';
 import { VERSION_URLS, VERSION_MODULE_SEEDS } from '../versionMatrix';
+import type { ExistingFeature } from '../featureBoardModel';
 
 describe('featureBoardModel', () => {
   it('seed board reflects reality: http domains are production-on and tested, others untouched', () => {
@@ -41,6 +42,22 @@ describe('featureBoardModel', () => {
       expect(Object.values(item.alpha).every(Boolean)).toBe(false);
     }
     expect(isValidFeatureBoard(board)).toBe(true);
+  });
+
+  it('seed board has existing features for every module with name and description', () => {
+    const board = createSeedBoard();
+    for (const item of board.modules) {
+      expect(Array.isArray(item.features)).toBe(true);
+      // 每个模块至少有 1 个已有功能
+      expect(item.features.length).toBeGreaterThanOrEqual(1);
+      for (const f of item.features) {
+        expect(f.name.trim()).not.toBe('');
+        expect(f.description.trim()).not.toBe('');
+      }
+    }
+    // 报价管理有至少 3 个功能
+    const quotation = board.modules.find(item => item.module === '报价管理');
+    expect(quotation!.features.length).toBeGreaterThanOrEqual(3);
   });
 
   it('planned item pure functions: add/rename/remove/status are immutable and idempotent-safe', () => {

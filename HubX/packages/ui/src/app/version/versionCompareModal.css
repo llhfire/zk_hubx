@@ -62,3 +62,33 @@
   margin-top: 12px;
   flex-wrap: wrap;
 }
+
+/* ---- 已有功能列 ---- */
+.feature-board-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.feature-board-feature-chip {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.feature-board-feature-chip:hover {
+  background: var(--color-fill-2);
+}
+
+/* ---- 功能详情弹窗 ---- */
+.feature-board-detail-content {
+  line-height: 1.8;
+  color: var(--color-text-2);
+}
+
+.feature-board-detail-content p {
+  margin: 0 0 8px;
+}
+
+.feature-board-detail-content p:last-child {
+  margin-bottom: 0;
+}

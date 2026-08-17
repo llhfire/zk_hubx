@@ -38,6 +38,7 @@ import {
   PLANNED_STATUSES,
   type AlphaCheckKey,
   type BetaDevStatus,
+  type ExistingFeature,
   type FeatureBoard,
   type PlannedStatus,
 } from './featureBoardModel';
@@ -79,6 +80,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   const [renameEditing, setRenameEditing] = useState<{ module: string; name: string; value: string } | null>(null);
   // 新增计划项：模块名 -> 输入值
   const [addingItem, setAddingItem] = useState<{ module: string; value: string } | null>(null);
+  // 已有功能详情弹窗
+  const [featureDetail, setFeatureDetail] = useState<{ module: string; feature: ExistingFeature } | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -133,9 +136,28 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       width: 130,
       render: (value: string) => <Text strong>{value}</Text>,
     },
-    { title: '覆盖范围', key: 'scope', dataIndex: 'scope' },
     {
-      title: '功能列表',
+      title: '已有功能',
+      key: 'features',
+      width: 280,
+      render: (_: unknown, record: FeatureBoard['modules'][number]) => (
+        <div className="feature-board-features">
+          {record.features.length ? record.features.map(f => (
+            <Tooltip key={f.name} content="点击查看功能说明">
+              <Tag
+                size="small"
+                className="feature-board-feature-chip"
+                onClick={() => setFeatureDetail({ module: record.module, feature: f })}
+              >
+                {f.name}
+              </Tag>
+            </Tooltip>
+          )) : <Text type="secondary">-</Text>}
+        </div>
+      ),
+    },
+    {
+      title: '待设计功能',
       key: 'planned',
       width: 320,
       render: (_: unknown, record: FeatureBoard['modules'][number]) => (
@@ -309,6 +331,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   ];
 
   return (
+    <>
     <Modal
       title="功能看板（α/β 版本）"
       visible={visible}
@@ -372,5 +395,25 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         </Text>
       </div>
     </Modal>
+
+    {/* 已有功能详情弹窗 */}
+    <Modal
+      title={featureDetail ? `${featureDetail.module} - ${featureDetail.feature.name}` : '功能说明'}
+      visible={Boolean(featureDetail)}
+      onCancel={() => setFeatureDetail(null)}
+      footer={null}
+      style={{ width: 600, maxWidth: 'calc(100vw - 32px)' }}
+    >
+      {featureDetail && (
+        <div className="feature-board-detail">
+          <div className="feature-board-detail-content">
+            {featureDetail.feature.description.split('\n').map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
+    </>
   );
 }

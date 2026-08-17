@@ -49,12 +49,24 @@ import './versionCompareModal.css';
 const { Text } = Typography;
 
 /** 状态 -> Tag 颜色（计划项与β开发状态共用语义：越靠后越接近完成） */
-const PLANNED_STATUS_COLORS: Record<PlannedStatus, string> = {
-  '未开始': 'gray',
-  '已调研': 'orange',
-  '设计中': 'purple',
-  '已设计': 'arcoblue',
+/** 待设计功能状态→图标颜色（小圆点） */
+const PLANNED_STATUS_DOT_COLORS: Record<PlannedStatus, string> = {
+  '未开始': 'var(--color-text-4)',
+  '已调研': 'var(--color-orange-6)',
+  '设计中': 'var(--color-purple-6)',
+  '已设计': 'var(--color-green-6)',
 };
+
+function StatusDot({ status }: { status: PlannedStatus }) {
+  return (
+    <Tooltip content={status}>
+      <span
+        className="feature-board-status-dot"
+        style={{ background: PLANNED_STATUS_DOT_COLORS[status] }}
+      />
+    </Tooltip>
+  );
+}
 
 const BETA_DEV_STATUS_COLORS: Record<BetaDevStatus, string> = {
   '未开始': 'gray',
@@ -212,11 +224,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
                   update(setPlannedStatus(board, record.module, item.name, status as PlannedStatus));
                 })}
               >
-                <Tooltip content="点击修改状态（未开始/已调研/设计中/已设计）">
-                  <Tag color={PLANNED_STATUS_COLORS[item.status]} size="small" style={{ cursor: 'pointer' }}>
-                    {item.status}
-                  </Tag>
-                </Tooltip>
+                <StatusDot status={item.status} />
               </Dropdown>
               <Tooltip content="删除该功能条目">
                 <Button

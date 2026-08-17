@@ -37,6 +37,21 @@
   border-bottom: 1px dashed transparent;
 }
 
+/* 状态圆点：未开始(灰) 已调研(橙) 设计中(紫) 已设计(绿) */
+.feature-board-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.feature-board-status-dot:hover {
+  transform: scale(1.4);
+}
+
 .feature-board-planned-name:hover {
   border-bottom-color: var(--grey-400);
 }

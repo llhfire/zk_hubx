@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 上下班仪式
 
-- **上班**：先读根目录 `下班交接.md` 恢复上下文，再开工。
+- **上班**：
+  1. 先读根目录 `下班交接.md` 恢复上下文，核对 git 状态。
+  2. 启动本地 α 版开发服务器（`cd HubX && npm run dev`，即 apps/prototype，后台运行），确认可访问后再开工。
 - **下班**（用户说「下班」即触发，不要再问要不要发）：
   1. 覆盖写 `下班交接.md`（本次进度 / 当前状态 / 下次待办 / 踩坑）。
   2. 当天有未提交改动则先提交到 `HubX/` 仓库（交接文档一并提交），避免线上和 git 再分叉。

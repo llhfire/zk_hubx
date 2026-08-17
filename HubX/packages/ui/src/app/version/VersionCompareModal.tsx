@@ -17,6 +17,7 @@ import {
   type AppVersion,
   type ModuleDataSource,
 } from './versionMatrix';
+import './versionCompareModal.css';
 
 const { Text } = Typography;
 
@@ -109,8 +110,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       visible={visible}
       onCancel={onCancel}
       footer={null}
-      style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-      bodyStyle={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 32px 32px', boxSizing: 'border-box' }}
+      className="version-compare-modal"
+      style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0 }}
     >
       <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <Tag color={VERSION_TAG_COLORS[version]}>当前版本：{VERSION_LABELS[version]}</Tag>

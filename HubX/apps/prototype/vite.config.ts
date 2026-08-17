@@ -5,40 +5,42 @@ import { promisify } from 'node:util'
 import fs from 'node:fs/promises'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { isValidFeatureBoard } from '../../packages/ui/src/app/version/featureBoardModel'
 
 const execFileAsync = promisify(execFile)
 
-// α版功能清单勾选进度：GET/PUT 读写仓库内配置文档（packages/ui/.../alphaChecklist.config.json），
-// 勾选状态随 git 提交保存，进度不丢。仅 α版 dev server 提供；静态部署走 localStorage 回退。
-function alphaChecklistStore() {
-  const configFile = path.resolve(__dirname, '../../packages/ui/src/app/version/alphaChecklist.config.json')
+// 功能看板（Feature Board）：GET/PUT 读写仓库内配置文档（packages/ui/.../featureBoard.config.json）。
+// 该文档是用户与 Claude Code 共享的开发状态唯一事实源，随 git 提交保存进度（约定见 HubX/CLAUDE.md §功能看板）。
+// 仅 α版 dev server 提供此端点；静态部署走 localStorage 回退。
+function featureBoardStore() {
+  const configFile = path.resolve(__dirname, '../../packages/ui/src/app/version/featureBoard.config.json')
   return {
-    name: 'alpha-checklist-store',
+    name: 'feature-board-store',
     configureServer(server: any) {
-      server.middlewares.use('/api/alpha-checklist', async (request: any, response: any) => {
+      server.middlewares.use('/api/feature-board', async (request: any, response: any) => {
         response.setHeader('Content-Type', 'application/json; charset=utf-8')
         try {
           if (request.method === 'GET') {
-            let items: unknown = []
+            let board: unknown = null
             try {
-              items = JSON.parse(await fs.readFile(configFile, 'utf8'))
+              board = JSON.parse(await fs.readFile(configFile, 'utf8'))
             } catch {
-              items = []
+              board = null
             }
-            response.end(JSON.stringify({ items: Array.isArray(items) ? items : [] }))
+            response.end(JSON.stringify({ board }))
             return
           }
           if (request.method === 'PUT') {
             const chunks: Buffer[] = []
             for await (const chunk of request) chunks.push(chunk as Buffer)
-            const items = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-            if (!Array.isArray(items) || items.some(item => typeof item !== 'string')) {
+            const board = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            if (!isValidFeatureBoard(board)) {
               response.statusCode = 400
-              response.end(JSON.stringify({ error: '勾选状态应为字符串数组' }))
+              response.end(JSON.stringify({ error: '功能看板数据不符合 schema' }))
               return
             }
-            await fs.writeFile(configFile, JSON.stringify(items, null, 2) + '\n')
-            response.end(JSON.stringify({ items }))
+            await fs.writeFile(configFile, JSON.stringify(board, null, 2) + '\n')
+            response.end(JSON.stringify({ board }))
             return
           }
           response.statusCode = 405
@@ -198,7 +200,7 @@ export default defineConfig(({ mode }) => {
   return {
   plugins: [
     figmaAssetResolver(),
-    alphaChecklistStore(),
+    featureBoardStore(),
     wxCliBridge({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com', model: env.DEEPSEEK_MODEL || 'deepseek-v4-pro' }),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

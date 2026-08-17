@@ -120,3 +120,13 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 - `.env.example` 定义 DeepSeek 相关变量（`DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL`）；实际值放 `.env.local`（已被 gitignore，勿提交）。
 - `vite.config.ts` 内置开发服务器中间件 `wx-cli-bridge`：暴露 `/api/wechat/group-communication?groupName=...`，用 `wx` CLI 导出微信售前群聊天记录并调用 DeepSeek 做沟通总结；无 API Key 或调用失败时回退到 `buildSummary()` 的本地规则总结。该功能需要本机安装 `wx` CLI 并配置 `.env.local`。
+
+## 功能看板（Feature Board）-- Claude 行为约定
+
+唯一事实源：`packages/ui/src/app/version/featureBoard.config.json`（UI 侧点侧边栏版本标识打开，α版 dev server 经 `GET/PUT /api/feature-board` 读写该文件；术语见 `CONTEXT.md` §功能看板）。**每个会话结束前或状态变化时，Claude 直接编辑该文件维护状态并随 git 提交**：
+
+1. **新想法入板**：会话中出现新的功能模块想法时，写入对应模块的 `planned` 数组（新想法默认 `status: "未开始"`；属于全新领域就新增模块行），不要只留在对话里。
+2. **自主判断状态**：`planned[].status`（未开始/已调研/设计中/已设计）与 `alpha` 三项勾选（页面场景/功能流程/UX 优化）由 Claude 根据实际完成情况自主更新；用户在 UI 的手动勾选/取消优先于 Claude 判断（取消 = 用户要求继续或重做该项，下次处理时留意）。
+3. **开关不开不编码**：模块 `beta.productionOn` 是用户对β版开发的许可，**Claude 永不代开**；`productionOn: false` 的模块不得开始β版（前后端）编码。
+4. **随进度更新**：开关已开的模块，`beta.devStatus`（未开始/编码中/测试中/测试通过）随实际开发进度更新；`note` 备注写当前特殊说明与状态说明。
+- 编辑文件时保持 schema：`featureBoardModel.ts` 的 `isValidFeatureBoard` 是校验口径，写坏会被端点拒绝。

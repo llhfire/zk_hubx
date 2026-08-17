@@ -1,0 +1,281 @@
+{
+  "modules": [
+    {
+      "module": "报价管理",
+      "scope": "报价工作台 / 报价中心（四阶段全流程）",
+      "planned": [
+        {
+          "name": "Excel 双向导入导出",
+          "status": "未开始"
+        },
+        {
+          "name": "版本 Diff 对比",
+          "status": "未开始"
+        },
+        {
+          "name": "PDF 生成与电子签章",
+          "status": "未开始"
+        },
+        {
+          "name": "代理/转交机制",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": true,
+        "devStatus": "测试通过"
+      },
+      "note": "β版报价单落 D1，含状态迁移校验；已上线 http+D1"
+    },
+    {
+      "module": "合同管理",
+      "scope": "合同列表 / 多版本 / 审批 / 归档",
+      "planned": [
+        {
+          "name": "付款比例模板",
+          "status": "未开始"
+        },
+        {
+          "name": "审批流程灰态展示",
+          "status": "未开始"
+        },
+        {
+          "name": "审批通过后释放回款 Tab",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": true,
+        "devStatus": "测试通过"
+      },
+      "note": "mock/http 共享 contractMutations，口径一致；已上线 http+D1"
+    },
+    {
+      "module": "线索管理",
+      "scope": "四池流转 / 线索详情 / 治理",
+      "planned": [
+        {
+          "name": "线索自动分配",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽（照合同域样板）"
+    },
+    {
+      "module": "客户管理",
+      "scope": "客户列表 / 详情",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "项目管理",
+      "scope": "项目详情 / 任务 / 成本核算",
+      "planned": [
+        {
+          "name": "合同/回款统一视图",
+          "status": "未开始"
+        },
+        {
+          "name": "项目与线索同源上下文",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "线索成本",
+      "scope": "成本看板 / 投放日报 / 渠道分析",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "日报",
+      "scope": "日报列表 / 视图 / 项目视图 / 配置",
+      "planned": [
+        {
+          "name": "跨月/跨年时间轴优化",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "财务管理",
+      "scope": "财务统计 / 项目成本 / 工资表 / 开票审核",
+      "planned": [
+        {
+          "name": "回款拆分/冲红权限矩阵",
+          "status": "已调研"
+        },
+        {
+          "name": "全期次回款+开票视图",
+          "status": "未开始"
+        },
+        {
+          "name": "回款逾期判断",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "开票申请存 localStorage，未落 D1；回款拆分/冲红权限矩阵已设计（WIP 提交 c37acf7，待单测收尾）"
+    },
+    {
+      "module": "审批管理",
+      "scope": "审批中心 / 审批模板 / 业务审批配置",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "待办中心",
+      "scope": "待办列表 / 状态流转",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "消息提醒",
+      "scope": "提醒铃铛 / 日报催报",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "员工与人资",
+      "scope": "员工 / 考勤 / 绩效 / 费用管理",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "系统管理",
+      "scope": "组织 / 权限 / 字典 / 企微集成等",
+      "planned": [
+        {
+          "name": "企微集成深化（通讯录同步等）",
+          "status": "未开始"
+        }
+      ],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    },
+    {
+      "module": "其他模块",
+      "scope": "工作台 / 数据报表 / 会议 / 知识库等",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "service 接缝待抽"
+    }
+  ]
+}

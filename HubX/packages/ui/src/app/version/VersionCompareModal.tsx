@@ -1,97 +1,240 @@
 import { useEffect, useState } from 'react';
-import { Button, Checkbox, Modal, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  Input,
+  Modal,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from '@arco-design/web-react';
+import { IconDelete, IconPlus } from '@arco-design/web-react/icon';
 import { useAppVersion } from './AppVersionContext';
 import {
-  DATA_SOURCE_LABELS,
-  DATA_SOURCE_TAG_COLORS,
   VERSION_DESCRIPTIONS,
   VERSION_LABELS,
-  VERSION_MODULES,
   VERSION_TAG_COLORS,
   VERSION_URLS,
-  ALPHA_CHECKLIST_ITEMS,
-  loadAlphaChecklist,
-  saveAlphaChecklist,
-  toggleAlphaChecklist,
-  type AlphaChecklistItem,
   type AppVersion,
-  type ModuleDataSource,
 } from './versionMatrix';
+import {
+  addModule,
+  addPlannedItem,
+  loadFeatureBoard,
+  migrateAlphaChecklist,
+  removePlannedItem,
+  renamePlannedItem,
+  saveFeatureBoard,
+  setBetaDevStatus,
+  setModuleNote,
+  setPlannedStatus,
+  toggleAlphaCheck,
+  toggleProductionSwitch,
+  ALPHA_CHECK_KEYS,
+  BETA_DEV_STATUSES,
+  PLANNED_STATUSES,
+  type AlphaCheckKey,
+  type BetaDevStatus,
+  type FeatureBoard,
+  type PlannedStatus,
+} from './featureBoardModel';
 import './versionCompareModal.css';
 
 const { Text } = Typography;
+
+/** 状态 -> Tag 颜色（计划项与β开发状态共用语义：越靠后越接近完成） */
+const PLANNED_STATUS_COLORS: Record<PlannedStatus, string> = {
+  '未开始': 'gray',
+  '已调研': 'orange',
+  '设计中': 'purple',
+  '已设计': 'arcoblue',
+};
+
+const BETA_DEV_STATUS_COLORS: Record<BetaDevStatus, string> = {
+  '未开始': 'gray',
+  '编码中': 'orange',
+  '测试中': 'purple',
+  '测试通过': 'green',
+};
+
+/** 旧勾选存储 key（hubx-alpha-checklist-checked），首次打开时迁移到功能看板 */
+const LEGACY_ALPHA_STORAGE_KEY = 'hubx-alpha-checklist-checked';
 
 interface VersionCompareModalProps {
   visible: boolean;
   onCancel: () => void;
 }
 
-function dataSourceTag(source: ModuleDataSource) {
-  return <Tag color={DATA_SOURCE_TAG_COLORS[source]} size="small">{DATA_SOURCE_LABELS[source]}</Tag>;
-}
-
-/** α/β 版本功能清单对比：点击侧边栏版本标识打开，全屏展示。 */
+/** α/β 版本功能看板：点击侧边栏版本标识打开，全屏展示。
+ *  唯一事实源 featureBoard.config.json（dev 端点读写），术语见 HubX/CONTEXT.md §功能看板。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
-  // α版检查项：优先读写 dev server 的配置文档（alphaChecklist.config.json），无端点时回退 localStorage
-  const [alphaChecked, setAlphaChecked] = useState<string[]>([]);
+  const [board, setBoard] = useState<FeatureBoard>({ modules: [] });
+  // 备注列编辑态：模块名 -> 输入值
+  const [noteEditing, setNoteEditing] = useState<{ module: string; value: string } | null>(null);
+  // 计划项改名编辑态：模块名+原名 -> 输入值
+  const [renameEditing, setRenameEditing] = useState<{ module: string; name: string; value: string } | null>(null);
+  // 新增计划项：模块名 -> 输入值
+  const [addingItem, setAddingItem] = useState<{ module: string; value: string } | null>(null);
 
   useEffect(() => {
-    if (visible) void loadAlphaChecklist().then(setAlphaChecked);
+    if (!visible) return;
+    void loadFeatureBoard().then(loaded => {
+      // 一次性迁移：旧 alphaChecklist 勾选（localStorage 字符串数组）合并进看板
+      try {
+        const legacy = localStorage.getItem(LEGACY_ALPHA_STORAGE_KEY);
+        if (legacy) {
+          const checked = JSON.parse(legacy);
+          if (Array.isArray(checked) && checked.length) {
+            const migrated = migrateAlphaChecklist(loaded, checked);
+            setBoard(migrated);
+            void saveFeatureBoard(migrated);
+            localStorage.removeItem(LEGACY_ALPHA_STORAGE_KEY);
+            return;
+          }
+        }
+      } catch {
+        // 迁移失败按原样加载
+      }
+      setBoard(loaded);
+    });
   }, [visible]);
 
-  const handleToggleAlpha = (module: string, item: AlphaChecklistItem) => {
-    setAlphaChecked(current => {
-      const next = toggleAlphaChecklist(current, module, item);
-      void saveAlphaChecklist(next);
-      return next;
-    });
+  const update = (next: FeatureBoard) => {
+    setBoard(next);
+    void saveFeatureBoard(next);
   };
+
+  const statusMenu = (current: string, statuses: readonly string[], onSelect: (status: never) => void) => (
+    <>
+      {statuses.map(status => (
+        <Dropdown.Item key={status} disabled={status === current} onClick={() => onSelect(status as never)}>
+          {status}{status === current ? '（当前）' : ''}
+        </Dropdown.Item>
+      ))}
+    </>
+  );
 
   const columns = [
     {
       title: '序号',
       key: 'index',
-      dataIndex: 'module',
-      width: 64,
+      width: 56,
       align: 'center' as const,
-      render: (_: string, __: unknown, index: number) => <Text>{index + 1}</Text>,
+      render: (_: unknown, __: unknown, index: number) => <Text>{index + 1}</Text>,
     },
     {
       title: '功能模块',
       key: 'module',
       dataIndex: 'module',
-      width: 150,
+      width: 130,
       render: (value: string) => <Text strong>{value}</Text>,
     },
-    { title: '覆盖范围', dataIndex: 'scope' },
+    { title: '覆盖范围', key: 'scope', dataIndex: 'scope' },
     {
-      title: '计划（未实施）',
-      dataIndex: 'planned',
-      width: 260,
-      render: (planned: string[]) => planned.length
-        ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {planned.map(item => <Tag key={item} color="purple" size="small">{item}</Tag>)}
-          </div>
-        )
-        : <Text type="secondary">-</Text>,
+      title: '功能列表',
+      key: 'planned',
+      width: 320,
+      render: (_: unknown, record: FeatureBoard['modules'][number]) => (
+        <div className="feature-board-planned">
+          {record.planned.map(item => (
+            <div key={item.name} className="feature-board-planned-item">
+              {renameEditing?.module === record.module && renameEditing.name === item.name ? (
+                <Input
+                  size="mini"
+                  autoFocus
+                  value={renameEditing.value}
+                  onChange={value => setRenameEditing({ ...renameEditing, value })}
+                  onBlur={() => {
+                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value));
+                    setRenameEditing(null);
+                  }}
+                  onPressEnter={() => {
+                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value));
+                    setRenameEditing(null);
+                  }}
+                  style={{ width: 150 }}
+                />
+              ) : (
+                <Tooltip content="点击可重命名">
+                  <span
+                    className="feature-board-planned-name"
+                    onClick={() => setRenameEditing({ module: record.module, name: item.name, value: item.name })}
+                  >
+                    {item.name}
+                  </span>
+                </Tooltip>
+              )}
+              <Dropdown
+                trigger="click"
+                droplist={statusMenu(item.status, PLANNED_STATUSES, status => {
+                  update(setPlannedStatus(board, record.module, item.name, status as PlannedStatus));
+                })}
+              >
+                <Tooltip content="点击修改状态（未开始/已调研/设计中/已设计）">
+                  <Tag color={PLANNED_STATUS_COLORS[item.status]} size="small" style={{ cursor: 'pointer' }}>
+                    {item.status}
+                  </Tag>
+                </Tooltip>
+              </Dropdown>
+              <Tooltip content="删除该功能条目">
+                <Button
+                  type="text"
+                  size="mini"
+                  status="danger"
+                  icon={<IconDelete />}
+                  onClick={() => update(removePlannedItem(board, record.module, item.name))}
+                />
+              </Tooltip>
+            </div>
+          ))}
+          {addingItem?.module === record.module ? (
+            <Input
+              size="mini"
+              autoFocus
+              placeholder="功能名称，回车保存"
+              value={addingItem.value}
+              onChange={value => setAddingItem({ ...addingItem, value })}
+              onBlur={() => {
+                if (addingItem.value.trim()) update(addPlannedItem(board, record.module, addingItem.value));
+                setAddingItem(null);
+              }}
+              onPressEnter={() => {
+                update(addPlannedItem(board, record.module, addingItem.value));
+                setAddingItem(null);
+              }}
+              style={{ width: 180 }}
+            />
+          ) : (
+            <Button
+              type="text"
+              size="mini"
+              icon={<IconPlus />}
+              onClick={() => setAddingItem({ module: record.module, value: '' })}
+            >
+              新增功能
+            </Button>
+          )}
+        </div>
+      ),
     },
     {
       title: 'α版',
       key: 'alpha',
-      dataIndex: 'module',
-      width: 170,
-      render: (module: string) => (
-        <Tooltip content="逐项勾选 α 版完成情况（页面场景/功能流程/UX 优化），α版本地会保存到配置文档">
+      width: 150,
+      render: (_: unknown, record: FeatureBoard['modules'][number]) => (
+        <Tooltip content="勾选表示该项已完成；取消勾选表示需要继续或重新进行">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-            {ALPHA_CHECKLIST_ITEMS.map(item => (
+            {ALPHA_CHECK_KEYS.map(key => (
               <Checkbox
-                key={item}
-                checked={alphaChecked.includes(`${module}::${item}`)}
-                onChange={() => handleToggleAlpha(module, item as AlphaChecklistItem)}
+                key={key}
+                checked={record.alpha[key]}
+                onChange={() => update(toggleAlphaCheck(board, record.module, key as AlphaCheckKey))}
               >
-                <span style={{ fontSize: 12 }}>{item}</span>
+                <span style={{ fontSize: 12 }}>{key}</span>
               </Checkbox>
             ))}
           </div>
@@ -99,17 +242,75 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       ),
     },
     {
-      title: 'β版（前后端）',
-      dataIndex: 'beta',
-      width: 180,
-      render: dataSourceTag,
+      title: 'β版',
+      key: 'beta',
+      width: 170,
+      render: (_: unknown, record: FeatureBoard['modules'][number]) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Tooltip content="生产开关：打开后才进入β版开发；仅限手动操作">
+            <Switch
+              size="small"
+              checked={record.beta.productionOn}
+              onChange={() => update(toggleProductionSwitch(board, record.module))}
+            />
+          </Tooltip>
+          {record.beta.productionOn ? (
+            <Dropdown
+              trigger="click"
+              droplist={statusMenu(record.beta.devStatus, BETA_DEV_STATUSES, status => {
+                update(setBetaDevStatus(board, record.module, status as BetaDevStatus));
+              })}
+            >
+              <Tooltip content="点击修改开发状态（未开始/编码中/测试中/测试通过）">
+                <Tag color={BETA_DEV_STATUS_COLORS[record.beta.devStatus]} size="small" style={{ cursor: 'pointer' }}>
+                  {record.beta.devStatus}
+                </Tag>
+              </Tooltip>
+            </Dropdown>
+          ) : (
+            <Tooltip content="打开生产开关后进入β版开发">
+              <Tag color="gray" size="small">未启用</Tag>
+            </Tooltip>
+          )}
+        </div>
+      ),
     },
-    { title: '说明', dataIndex: 'note', width: 240 },
+    {
+      title: '备注',
+      key: 'note',
+      dataIndex: 'note',
+      width: 240,
+      render: (note: string, record: FeatureBoard['modules'][number]) => noteEditing?.module === record.module ? (
+        <Input
+          size="mini"
+          autoFocus
+          value={noteEditing.value}
+          onChange={value => setNoteEditing({ ...noteEditing, value })}
+          onBlur={() => {
+            update(setModuleNote(board, record.module, noteEditing.value));
+            setNoteEditing(null);
+          }}
+          onPressEnter={() => {
+            update(setModuleNote(board, record.module, noteEditing.value));
+            setNoteEditing(null);
+          }}
+        />
+      ) : (
+        <Tooltip content="点击编辑备注">
+          <span
+            className="feature-board-note"
+            onClick={() => setNoteEditing({ module: record.module, value: note })}
+          >
+            {note || <Text type="secondary">点击填写</Text>}
+          </span>
+        </Tooltip>
+      ),
+    },
   ];
 
   return (
     <Modal
-      title="版本功能清单对比"
+      title="功能看板（α/β 版本）"
       visible={visible}
       onCancel={onCancel}
       footer={null}
@@ -151,12 +352,25 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         size="default"
         pagination={false}
         columns={columns}
-        data={VERSION_MODULES}
-        scroll={{ x: 1340 }}
+        data={board.modules}
+        scroll={{ x: 1400 }}
       />
-      <Text type="secondary" style={{ display: 'block', marginTop: 12, fontSize: 12 }}>
-        「Mock」为纯前端本地数据；「HTTP + D1」表示该域已接入 Cloudflare Workers 后端并持久化。详见 docs/ALPHA-BETA-ARCHITECTURE.md。
-      </Text>
+      <div className="feature-board-footer">
+        <Button
+          type="text"
+          size="small"
+          icon={<IconPlus />}
+          onClick={() => {
+            const name = `新模块 ${board.modules.length + 1}`;
+            update(addModule(board, name));
+          }}
+        >
+          新增模块
+        </Button>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          事实源：featureBoard.config.json（本地 dev 自动保存）；生产开关仅手动开启；β开发状态在开关开启后可点选。
+        </Text>
+      </div>
     </Modal>
   );
 }

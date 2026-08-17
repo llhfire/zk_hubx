@@ -7,8 +7,8 @@ import {
   VERSION_MODULES,
   VERSION_TAG_COLORS,
   VERSION_URLS,
-  loadUxDesignChecked,
-  toggleUxDesignChecked,
+  loadAlphaChecklist,
+  toggleAlphaChecklist,
   type ModuleDataSource,
 } from '../versionMatrix';
 
@@ -71,7 +71,7 @@ describe('versionMatrix', () => {
     expect(finance?.planned).toContain('全期次回款+开票视图');
   });
 
-  it('ux design check state persists through localStorage', () => {
+  it('alpha checklist state persists through localStorage per module and item', () => {
     // vitest 默认 node 环境，无 localStorage，这里打桩模拟
     const store = new Map<string, string>();
     vi.stubGlobal('localStorage', {
@@ -79,12 +79,13 @@ describe('versionMatrix', () => {
       setItem: (key: string, value: string) => void store.set(key, value),
       removeItem: (key: string) => void store.delete(key),
     });
-    expect(loadUxDesignChecked()).toEqual([]);
-    expect(toggleUxDesignChecked('报价管理')).toEqual(['报价管理']);
-    expect(loadUxDesignChecked()).toEqual(['报价管理']);
-    expect(toggleUxDesignChecked('合同管理')).toEqual(['报价管理', '合同管理']);
+    expect(loadAlphaChecklist()).toEqual([]);
+    expect(toggleAlphaChecklist('报价管理', '页面场景')).toEqual(['报价管理::页面场景']);
+    expect(toggleAlphaChecklist('报价管理', 'UX 优化')).toEqual(['报价管理::页面场景', '报价管理::UX 优化']);
+    expect(loadAlphaChecklist()).toEqual(['报价管理::页面场景', '报价管理::UX 优化']);
+    expect(toggleAlphaChecklist('合同管理', '功能流程')).toEqual(['报价管理::页面场景', '报价管理::UX 优化', '合同管理::功能流程']);
     // 再点一次取消勾选
-    expect(toggleUxDesignChecked('报价管理')).toEqual(['合同管理']);
+    expect(toggleAlphaChecklist('报价管理', '页面场景')).toEqual(['报价管理::UX 优化', '合同管理::功能流程']);
     vi.unstubAllGlobals();
   });
 });

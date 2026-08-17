@@ -9,8 +9,10 @@ import {
   VERSION_MODULES,
   VERSION_TAG_COLORS,
   VERSION_URLS,
-  loadUxDesignChecked,
-  toggleUxDesignChecked,
+  ALPHA_CHECKLIST_ITEMS,
+  loadAlphaChecklist,
+  toggleAlphaChecklist,
+  type AlphaChecklistItem,
   type AppVersion,
   type ModuleDataSource,
 } from './versionMatrix';
@@ -29,11 +31,11 @@ function dataSourceTag(source: ModuleDataSource) {
 /** α/β 版本功能清单对比：点击侧边栏版本标识打开，全屏展示。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
-  // UX 设计打勾状态：localStorage 持久化，弹窗每次打开时重新读取
-  const [uxChecked, setUxChecked] = useState<string[]>(() => loadUxDesignChecked());
+  // α版检查项打勾状态：localStorage 持久化，弹窗每次打开时重新读取
+  const [alphaChecked, setAlphaChecked] = useState<string[]>(() => loadAlphaChecklist());
 
   useEffect(() => {
-    if (visible) setUxChecked(loadUxDesignChecked());
+    if (visible) setAlphaChecked(loadAlphaChecklist());
   }, [visible]);
 
   const columns = [
@@ -64,22 +66,22 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         : <Text type="secondary">-</Text>,
     },
     {
-      title: 'α版（纯前端）',
-      dataIndex: 'alpha',
-      width: 180,
-      render: dataSourceTag,
-    },
-    {
-      title: 'UX 设计',
+      title: 'α版（页面场景/功能流程/UX 优化）',
       dataIndex: 'module',
-      width: 90,
-      align: 'center' as const,
+      width: 200,
       render: (module: string) => (
-        <Tooltip content="勾选表示该模块 UX 设计已完成，状态会保存在本地">
-          <Checkbox
-            checked={uxChecked.includes(module)}
-            onChange={checked => setUxChecked(toggleUxDesignChecked(module))}
-          />
+        <Tooltip content="逐项勾选 α 版完成情况，状态保存在本地">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+            {ALPHA_CHECKLIST_ITEMS.map(item => (
+              <Checkbox
+                key={item}
+                checked={alphaChecked.includes(`${module}::${item}`)}
+                onChange={() => setAlphaChecked(toggleAlphaChecklist(module, item as AlphaChecklistItem))}
+              >
+                <span style={{ fontSize: 12 }}>{item}</span>
+              </Checkbox>
+            ))}
+          </div>
         </Tooltip>
       ),
     },

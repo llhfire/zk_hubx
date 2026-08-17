@@ -68,12 +68,19 @@ export const VERSION_MODULES: VersionModuleStatus[] = [
   { module: '其他模块', scope: '工作台 / 数据报表 / 会议 / 知识库等', alpha: 'mock', beta: 'mock', planned: [], note: 'service 接缝待抽' },
 ];
 
-/** UX 设计打勾状态持久化（localStorage，按模块名记录） */
-const UX_DESIGN_STORAGE_KEY = 'hubx-ux-design-checked';
+/** α版检查项：页面场景 / 功能流程 / UX 优化，逐项手动打勾，状态持久化在 localStorage */
+export const ALPHA_CHECKLIST_ITEMS = ['页面场景', '功能流程', 'UX 优化'] as const;
+export type AlphaChecklistItem = (typeof ALPHA_CHECKLIST_ITEMS)[number];
 
-export function loadUxDesignChecked(): string[] {
+const ALPHA_CHECKLIST_STORAGE_KEY = 'hubx-alpha-checklist-checked';
+
+function alphaChecklistKey(module: string, item: AlphaChecklistItem) {
+  return `${module}::${item}`;
+}
+
+export function loadAlphaChecklist(): string[] {
   try {
-    const stored = localStorage.getItem(UX_DESIGN_STORAGE_KEY);
+    const stored = localStorage.getItem(ALPHA_CHECKLIST_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : [];
     return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string') : [];
   } catch {
@@ -81,11 +88,12 @@ export function loadUxDesignChecked(): string[] {
   }
 }
 
-export function toggleUxDesignChecked(module: string): string[] {
-  const current = loadUxDesignChecked();
-  const next = current.includes(module) ? current.filter(item => item !== module) : [...current, module];
+export function toggleAlphaChecklist(module: string, item: AlphaChecklistItem): string[] {
+  const key = alphaChecklistKey(module, item);
+  const current = loadAlphaChecklist();
+  const next = current.includes(key) ? current.filter(entry => entry !== key) : [...current, key];
   try {
-    localStorage.setItem(UX_DESIGN_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(ALPHA_CHECKLIST_STORAGE_KEY, JSON.stringify(next));
   } catch {
     // localStorage 不可用时仅返回内存态，不中断交互
   }

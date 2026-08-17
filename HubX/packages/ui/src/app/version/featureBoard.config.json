@@ -1,11 +1,37 @@
 {
   "modules": [
     {
-      "module": "合同签约",
+      "module": "线索全流程",
       "domain": "销售域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "多渠道线索接入",
+          "description": "支持官网表单、推广落地页、电话咨询、渠道合作、售前群等多来源线索接入，自动记录来源标记。"
+        },
+        {
+          "name": "线索池管理",
+          "description": "公海线索池→我的线索→已成交→垃圾线索，四池流转；线索认领、分配、回收规则配置。"
+        },
+        {
+          "name": "线索详情",
+          "description": "线索基础信息（公司/联系人/来源/状态）、跟进记录时间线、演示记录、报价 Tab（内嵌报价工作台 Drawer）、合同关联、资料附件管理。"
+        },
+        {
+          "name": "线索跟进记录",
+          "description": "按时间线记录每次跟进（电话/拜访/微信），支持快捷回复模板，下次跟进提醒设置。"
+        },
+        {
+          "name": "线索治理",
+          "description": "重复线索合并（按公司名/联系人手机号去重）、线索状态批量操作、线索分配规则配置、数据质量评分。"
+        },
+        {
+          "name": "售前群沟通分析",
+          "description": "通过 wx CLI 导出企微售前群聊天记录，调用 DeepSeek 做沟通总结（需求/技术/风险/进度/协作维度）。"
+        }
+      ],
+      "note": "认领/分配/跟进/流转/生命周期/公海回收/需求记录/竞对/阶段推进",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -15,51 +41,48 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "客户与报价基础",
-      "domain": "销售域",
-      "isPlanned": false,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "报价与合规增强",
-      "domain": "销售域",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "报价工作台",
       "domain": "销售域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "Stage1 功能清单",
+          "description": "产品经理填写/导入功能清单，默认 18 项/7 模块；支持模块级 hover 新增子功能、Excel 导入导出、版本快照；提交后进入人天评估。"
+        },
+        {
+          "name": "Stage2 人天评估",
+          "description": "罗总评估各功能各岗位人天；支持方向键+Tab 连续填充相邻格子、按模块/子功能快捷批量按钮；切片组/整模块维度；技术备注、风险列；提交时校验所有岗位人天已填。"
+        },
+        {
+          "name": "Stage3 销售报价",
+          "description": "7 步向导：基本信息→前端配置→后端配置→其他岗位→出差驻场→其他成本→报价汇总与校验；系统校验∑分项=总人天、∑成本=总报价、付款比例=100%。"
+        },
+        {
+          "name": "Stage4 审批盖章",
+          "description": "三人并行会签（黄奕/罗总/闵总）→全员通过→待盖章→黄海盖章→已盖章→生成 PDF；任一驳回（意见必填）→退回销售→全员重审。"
+        },
+        {
+          "name": "报价状态机",
+          "description": "草稿→功能清单已确认→人天评估完成→已转派销售→报价已汇总→审批中→待盖章→已盖章→已发出（成交/重新报价/待跟进）；审批中可撤回→草稿；任意可作废→已作废。"
+        },
+        {
+          "name": "角色切换器",
+          "description": "6 角色模拟：产品经理（张产品）、技术负责人（罗总）、销售部负责人（黄奕）、企业决策层（闵总）、董助（黄海）、销售（李销售），各角色看到不同操作权限。"
+        },
+        {
+          "name": "报价单版本管理",
+          "description": "报价单关联线索→合同漏斗，支持版本历史（编辑自动生成新版本），作废功能，报价单列表按状态/创建人筛选。"
+        },
+        {
+          "name": "上浮比例配置",
+          "description": "报价金额区信息与操作顺序：原始金额→上浮信息→最终金额→操作入口，清晰阅读链路。"
+        }
+      ],
+      "note": "β版报价单落 D1，含状态迁移校验；已上线 http+D1",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -69,15 +92,32 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
-      "module": "线索全流程",
+      "module": "客户与报价基础",
       "domain": "销售域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "客户档案",
+          "description": "客户基础信息（公司名/行业/规模/来源），按行业/规模/来源筛选，客户关联线索与合同列表。"
+        },
+        {
+          "name": "联系人管理",
+          "description": "客户下多联系人，记录职位/电话/邮箱/微信，标记主联系人。"
+        },
+        {
+          "name": "关系视图",
+          "description": "客户→线索→报价→合同→项目的完整关系链路可视化。"
+        },
+        {
+          "name": "开票信息",
+          "description": "客户开票资料（公司名/纳税人识别号/地址/电话/开户行/账号），合同创建时自动带入。"
+        }
+      ],
+      "note": "客户档案/联系人/关系视图/开票信息",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -87,16 +127,72 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "合同签约",
+      "domain": "销售域",
+      "isPlanned": false,
+      "features": [
+        {
+          "name": "合同创建（带入线索）",
+          "description": "新建合同自动带入线索基础信息（公司名/联系人/项目描述），减少重复录入。"
+        },
+        {
+          "name": "合同多版本管理",
+          "description": "编辑合同自动生成新版本（v1.0→v2.0...），历史版本只读对比，当前版本可编辑。"
+        },
+        {
+          "name": "合同审批流",
+          "description": "总经理单节点审批（P0① 已收敛），意见留痕；审批通过→释放回款 Tab；灰态展示当前节点、下一节点及处理人。"
+        },
+        {
+          "name": "合同归档",
+          "description": "审批通过后上传归档合同文件（PDF/图片），支持多附件，归档后合同状态锁定。"
+        },
+        {
+          "name": "补充协议",
+          "description": "基于主合同创建补充协议，继承客户信息与审批流（总经理单节点），独立版本管理。"
+        },
+        {
+          "name": "合同列表",
+          "description": "合同集中管理入口，合同编号自动生成（ZK-C-YYYYMMDD-NNN），按状态/客户筛选。"
+        }
+      ],
+      "note": "mock/http 共享 contractMutations；已上线 http+D1",
+      "scope": "",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": ""
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "跟进助手",
       "domain": "销售域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "自动提醒（跟进到期/客户生日/合同续签）",
+          "status": "未开始"
+        },
+        {
+          "name": "跟进待办生成与分配",
+          "status": "未开始"
+        },
+        {
+          "name": "阶段推进智能建议（基于历史转化率）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -105,34 +201,37 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
-      "module": "交付支撑",
-      "domain": "交付域",
-      "isPlanned": false,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "交付过程",
-      "domain": "交付域",
+      "module": "报价与合规增强",
+      "domain": "销售域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "Excel 双向导入导出",
+          "status": "未开始"
+        },
+        {
+          "name": "版本 Diff 对比（两版报价单差异高亮）",
+          "status": "未开始"
+        },
+        {
+          "name": "代理/转交机制（请假/离职时转交报价单）",
+          "status": "未开始"
+        },
+        {
+          "name": "电子签章（PDF 盖章+防篡改）",
+          "status": "未开始"
+        },
+        {
+          "name": "合规档案（报价/合同合规检查清单）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -141,91 +240,36 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
-    },
-    {
-      "module": "工时加工",
-      "domain": "交付域",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
-    },
-    {
-      "module": "日报工时",
-      "domain": "交付域",
-      "isPlanned": false,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
       "module": "项目管理",
       "domain": "交付域",
       "isPlanned": false,
-      "scope": "项目详情 / 任务 / 成本核算",
       "features": [
         {
-          "name": "项目详情-基础信息",
-          "description": "项目名称、状态、负责人、时间，关联合同与回款，项目编号自动生成。"
+          "name": "项目基础信息",
+          "description": "项目名称、状态、负责人、起止时间，关联合同与回款，项目编号自动生成。"
         },
         {
           "name": "项目任务管理",
-          "description": "ProjectTaskPanel：任务拆分、分配、状态跟踪（待开始/处理中/已完成），按成员筛选。"
+          "description": "ProjectTaskPanel：任务拆分、分配、状态跟踪（待开始/处理中/已完成），按成员筛选，任务优先级。"
         },
         {
           "name": "项目成本核算",
-          "description": "ProjectCostPanel：人工+差旅+其他成本，利润率分析，成本明细可展开。"
-        }
-      ],
-      "planned": [
-        {
-          "name": "合同/回款统一视图",
-          "status": "未开始"
+          "description": "ProjectCostPanel：人工+差旅+其他成本明细，利润率分析，成本明细可展开。"
         },
         {
-          "name": "项目与线索同源上下文",
-          "status": "未开始"
+          "name": "合同回款视图",
+          "description": "项目详情页直接查看关联合同和回款状态（规划中）。"
+        },
+        {
+          "name": "项目与线索同源",
+          "description": "已成交线索→项目详情，上下文连续（规划中）。"
         }
       ],
-      "alpha": {
-        "页面场景": true,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "service 接缝待抽"
-    },
-    {
-      "module": "全期次视图",
-      "domain": "财务域",
-      "isPlanned": true,
+      "note": "service 接缝待抽",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -235,15 +279,184 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "日报工时",
+      "domain": "交付域",
+      "isPlanned": false,
+      "features": [
+        {
+          "name": "日报填写",
+          "description": "个人日报填写：选择项目/工作种类、填写工时、工作内容描述；工时×时薪自动计算成本（buildRDCostDetails）。"
+        },
+        {
+          "name": "日报列表",
+          "description": "日报汇总列表，按日期/成员/项目筛选，支持导出 Excel。"
+        },
+        {
+          "name": "日报视图",
+          "description": "个人日报查看与编辑，工作归属选择（项目/线索/内部），历史日报回溯。"
+        },
+        {
+          "name": "项目视图",
+          "description": "按项目维度查看团队日报汇总，项目工时统计，成员工时分布。"
+        },
+        {
+          "name": "日报配置",
+          "description": "JobWorkConfigContext：工作种类配置（开发/设计/测试/管理等）、时薪模板（按职级）、日报规则（按用户角色匹配模板）。"
+        },
+        {
+          "name": "角色模板",
+          "description": "RoleSelectModal：按角色（销售/行政/投放/开发）选择不同日报模板，各模板显示不同字段。"
+        },
+        {
+          "name": "跨月跨年日报",
+          "description": "日报时间轴支持跨月、跨年查看（规划优化中）。"
+        }
+      ],
+      "note": "工时×时薪成本计算",
+      "scope": "",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": "规划中"
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "交付支撑",
+      "domain": "交付域",
+      "isPlanned": false,
+      "features": [
+        {
+          "name": "会议管理",
+          "description": "MeetingManagement：会议记录创建、纪要编辑、参会人管理，按项目/日期筛选。"
+        },
+        {
+          "name": "知识库",
+          "description": "文档存储与检索，按模块分类（技术文档/产品文档/运营文档），支持全文搜索。"
+        },
+        {
+          "name": "合同交付跟进",
+          "description": "合同签订后的交付进度跟踪，里程碑节点管理。"
+        },
+        {
+          "name": "变更管理",
+          "description": "需求变更记录、影响评估、审批流程。"
+        },
+        {
+          "name": "演示上传",
+          "description": "线索详情中的演示记录上传与管理。"
+        }
+      ],
+      "note": "合同交付跟进/变更管理/进度跟踪/知识库/会议纪要",
+      "scope": "",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "工时加工",
+      "domain": "交付域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "工时审批（主管审批工时记录）",
+          "status": "未开始"
+        },
+        {
+          "name": "工时统计与分析（按项目/人员/部门）",
+          "status": "未开始"
+        },
+        {
+          "name": "加班工时计算与补偿",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "交付过程",
+      "domain": "交付域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "里程碑管理（关键节点定义与追踪）",
+          "status": "未开始"
+        },
+        {
+          "name": "验收流程（客户验收确认+签字）",
+          "status": "未开始"
+        },
+        {
+          "name": "需求变更管控（变更申请→影响评估→审批→执行）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "回款管理",
       "domain": "财务域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "期次拆分",
+          "description": "按付款比例模板或手动拆分回款期次（首期款/中期款/尾款），金额联动校验合计=合同总额。"
+        },
+        {
+          "name": "回款登记",
+          "description": "财务录入实际回款信息：金额、回款日期、回款方式（公对公/私对公/微信/支付宝/银行转账）、回款凭证附件、回款说明。"
+        },
+        {
+          "name": "状态自动计算",
+          "description": "getPaymentPeriodMetrics：回款四态（未回款/部分回款/已回款/已逾期）× 开票三态（未开票/部分开票/已开票）自动计算。"
+        },
+        {
+          "name": "回款权限矩阵",
+          "description": "P0②：getPeriodActionPermissions 统一状态机，回款四态×开票状态×申请态×拆分角色→拆分/回款/开票/冲红操作权限。"
+        },
+        {
+          "name": "逾期判断",
+          "description": "根据预计回款日期与当前日期对比，自动标记逾期状态（规划中）。"
+        }
+      ],
+      "note": "期次拆分/回款登记/状态自动计算/权限矩阵（WIP）",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -253,15 +466,32 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
       "module": "开票管理",
       "domain": "财务域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "开票申请",
+          "description": "项目提交开票申请：发票类别（增值税专用/普通）、税率、金额、客户开票信息（自动带入合同），财务审核处理。"
+        },
+        {
+          "name": "发票冲红",
+          "description": "对已开票记录执行冲红：填写冲红原因、上传冲红附件，生成新的待开票记录。"
+        },
+        {
+          "name": "开票审核工作台",
+          "description": "ProjectInvoicePage：财务处理开票申请列表，Tab 切换（全部/待开票/已开票/已冲红），上传发票附件完成开票。"
+        },
+        {
+          "name": "开票统计",
+          "description": "按项目/客户/时间段汇总开票金额，开票进度追踪。"
+        }
+      ],
+      "note": "开票申请/发票冲红/开票工作台",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -271,15 +501,32 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
       "module": "成本核算",
       "domain": "财务域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "按人员工时成本",
+          "description": "员工工时×时薪计算人工成本，按项目/部门汇总，支持按工作性质分组排序。"
+        },
+        {
+          "name": "差旅商务成本",
+          "description": "差旅报销、商务费用、第三方服务费用归集到项目成本。"
+        },
+        {
+          "name": "运营分摊",
+          "description": "公共运营成本按规则分摊到各项目。"
+        },
+        {
+          "name": "异常检测",
+          "description": "成本异常预警（超出预算/工时异常/费用异常）。"
+        }
+      ],
+      "note": "按人员工时成本/差旅商务第三方/运营分摊",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -289,15 +536,32 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
       "module": "财务视图",
       "domain": "财务域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "财务统计面板",
+          "description": "收入/支出/利润汇总，按月/季度趋势图表，关键财务指标卡片。"
+        },
+        {
+          "name": "项目成本报表",
+          "description": "项目维度成本明细（人工+差旅+其他），利润率分析，成本明细可展开。"
+        },
+        {
+          "name": "合同统计",
+          "description": "合同金额/回款/开票/待收汇总，按客户/时间段筛选。"
+        },
+        {
+          "name": "工资表",
+          "description": "员工工资计算，工时×时薪汇总，按月生成，支持导出。"
+        }
+      ],
+      "note": "财务审批/报表/合同统计/项目成本/回款开票报表",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -307,15 +571,67 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "全期次视图",
+      "domain": "财务域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "一屏查看项目全期次回款与开票状态",
+          "status": "未开始"
+        },
+        {
+          "name": "期次进度条+逾期预警",
+          "status": "未开始"
+        },
+        {
+          "name": "批量开票/批量回款操作",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": ""
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "多渠道线索接入",
       "domain": "获客域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "官网表单接入",
+          "description": "官网咨询表单自动转化为线索，记录来源渠道、咨询内容。"
+        },
+        {
+          "name": "推广落地页",
+          "description": "百度/小红书/抖音/淘宝等平台推广落地页线索追踪。"
+        },
+        {
+          "name": "电话咨询",
+          "description": "电话咨询记录转线索，自动关联来电号码与历史跟进。"
+        },
+        {
+          "name": "渠道合作",
+          "description": "合作伙伴渠道线索导入，渠道归属标记。"
+        },
+        {
+          "name": "售前群",
+          "description": "企微售前群线索识别与导入，群沟通记录分析。"
+        }
+      ],
+      "note": "官网表单/推广落地页/电话咨询/渠道合作/售前群",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -325,33 +641,32 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "渠道与投放",
-      "domain": "获客域",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "线索池与初筛",
       "domain": "获客域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "线索池管理",
+          "description": "公海线索池（未分配）、我的线索（已认领）、已成交池、垃圾池，四池统一视图。"
+        },
+        {
+          "name": "来源标记",
+          "description": "线索来源渠道标记（百度/小红书/抖音/淘宝/电话/渠道合作），来源统计分析。"
+        },
+        {
+          "name": "去重清洗",
+          "description": "按公司名/联系人手机号自动去重，重复线索合并保留最新跟进记录。"
+        },
+        {
+          "name": "清洗分级",
+          "description": "线索质量评分（公司规模/需求匹配度/跟进活跃度），自动分级（A/B/C/D）。"
+        }
+      ],
+      "note": "原始线索容纳/来源标记/去重/清洗分级",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -361,16 +676,37 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
-      "module": "人力增强",
-      "domain": "支撑域",
+      "module": "渠道与投放",
+      "domain": "获客域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "渠道台账（各渠道基础信息与合作状态）",
+          "status": "未开始"
+        },
+        {
+          "name": "投放预算管理（预算分配/执行/结余）",
+          "status": "未开始"
+        },
+        {
+          "name": "线索成本核算（按渠道计算单线索获取成本）",
+          "status": "未开始"
+        },
+        {
+          "name": "渠道 ROI 分析（各渠道投入产出对比）",
+          "status": "未开始"
+        },
+        {
+          "name": "市场活动归因（活动→线索→转化链路追踪）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -379,51 +715,40 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
-    },
-    {
-      "module": "人资行政",
-      "domain": "支撑域",
-      "isPlanned": false,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "工作台与审批",
-      "domain": "支撑域",
-      "isPlanned": false,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": ""
+      }
     },
     {
       "module": "组织与权限",
       "domain": "支撑域",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "组织架构",
+          "description": "公司/部门/岗位树形结构管理，支持多级部门嵌套。"
+        },
+        {
+          "name": "用户管理",
+          "description": "用户账号创建、启用/禁用、密码重置，关联组织架构。"
+        },
+        {
+          "name": "角色授权",
+          "description": "角色定义（管理员/销售/财务/项目经理等），角色关联菜单权限+操作权限。"
+        },
+        {
+          "name": "菜单路由",
+          "description": "前端菜单树配置，控制各角色可见菜单项。"
+        },
+        {
+          "name": "数据字典",
+          "description": "系统枚举值管理（回款方式/发票类型/线索来源/项目状态等），全局统一维护。"
+        },
+        {
+          "name": "逐人权限",
+          "description": "特殊场景下对单个用户授予额外权限或限制。"
+        }
+      ],
+      "note": "用户/部门/职位/角色授权/菜单路由/数据字典",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -433,16 +758,170 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "人资行政",
+      "domain": "支撑域",
+      "isPlanned": false,
+      "features": [
+        {
+          "name": "员工列表",
+          "description": "员工基础信息管理（姓名/部门/职位/入职日期/合同状态），支持搜索筛选。"
+        },
+        {
+          "name": "岗位管理",
+          "description": "岗位定义与职级体系（L1-L10），岗位关联时薪标准。"
+        },
+        {
+          "name": "工资管理",
+          "description": "员工工资计算（基本工资+绩效+补贴-扣款），按月生成工资表。"
+        },
+        {
+          "name": "调整记录",
+          "description": "员工调薪/调岗/晋升记录，历史可追溯。"
+        },
+        {
+          "name": "人资费用",
+          "description": "招聘费用、培训费用、福利费用等人力成本归集。"
+        },
+        {
+          "name": "考勤请假",
+          "description": "考勤记录（打卡/迟到/早退）、请假审批（事假/病假/年假）、加班统计。"
+        },
+        {
+          "name": "员工档案",
+          "description": "员工完整档案（基本信息/合同/考勤/薪资/绩效/培训记录）。"
+        }
+      ],
+      "note": "员工列表/岗位/工资/考勤请假/员工档案",
+      "scope": "",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": ""
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "工作台与审批",
+      "domain": "支撑域",
+      "isPlanned": false,
+      "features": [
+        {
+          "name": "工作台仪表盘",
+          "description": "首页关键指标概览（线索数/合同额/回款额/项目进度），快捷入口，待办提醒。"
+        },
+        {
+          "name": "个人工作台",
+          "description": "个人任务清单、能力面板、日程安排、近期跟进。"
+        },
+        {
+          "name": "审批中心",
+          "description": "统一审批入口：待办/已办/我发起的，审批意见填写，支持通过/驳回/转办。"
+        },
+        {
+          "name": "审批模板",
+          "description": "审批流程模板管理，配置审批节点与处理人（串行/并行/会签）。"
+        },
+        {
+          "name": "待办中心",
+          "description": "统一待办聚合（审批/日报催报/系统提醒/跟进提醒），支持完成/忽略/延期操作。"
+        },
+        {
+          "name": "消息提醒",
+          "description": "ReminderBell：顶栏提醒入口，未读消息计数 Badge；站内信+短信通知双通道。"
+        },
+        {
+          "name": "数据看板",
+          "description": "管理者数据看板：销售业绩/项目进度/财务概览/人效分析。"
+        }
+      ],
+      "note": "工作台/个人中心/消息提醒/待办/审批中心",
+      "scope": "",
+      "planned": [],
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "人力增强",
+      "domain": "支撑域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "薪酬管理（薪资结构/调薪记录/社保公积金）",
+          "status": "未开始"
+        },
+        {
+          "name": "员工成本核算（人力成本分摊到项目）",
+          "status": "未开始"
+        },
+        {
+          "name": "招聘管理（职位发布/简历筛选/面试安排）",
+          "status": "未开始"
+        },
+        {
+          "name": "培训管理（培训计划/执行/考核）",
+          "status": "未开始"
+        },
+        {
+          "name": "绩效管理（KPI 设定/评估/反馈）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "行政后勤",
       "domain": "支撑域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "固定资产登记与折旧",
+          "status": "未开始"
+        },
+        {
+          "name": "办公物品领用与库存",
+          "status": "未开始"
+        },
+        {
+          "name": "会议室预约与管理",
+          "status": "未开始"
+        },
+        {
+          "name": "行政流程（用章/用车/出差审批）",
+          "status": "未开始"
+        },
+        {
+          "name": "物资采购（供应商管理/采购申请/入库）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -451,15 +930,44 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "基础工具",
       "domain": "跨域工具",
       "isPlanned": false,
+      "features": [
+        {
+          "name": "企业微信集成",
+          "description": "WeComIntegration：通讯录同步（组织架构/人员）、消息推送（审批通知/日报催报）、群聊导出（wx CLI）。"
+        },
+        {
+          "name": "操作日志",
+          "description": "系统操作日志记录（谁/何时/做了什么/影响了哪些数据），支持按操作类型/用户/时间筛选。"
+        },
+        {
+          "name": "权限拦截",
+          "description": "路由级+接口级权限校验，未授权访问自动跳转无权限页面。"
+        },
+        {
+          "name": "工天配置",
+          "description": "工作日历配置（工作日/节假日/加班规则），影响日报和考勤计算。"
+        },
+        {
+          "name": "登录认证",
+          "description": "用户登录/登出，会话管理，自动续期。"
+        },
+        {
+          "name": "数据报表",
+          "description": "销售报表、业绩统计、渠道 ROI、全链路 ROI 图表展示。"
+        },
+        {
+          "name": "全链路 ROI",
+          "description": "广告消耗→线索数量/成本→客户转化率→合同金额→项目利润，按渠道拆分 ROI。"
+        }
+      ],
+      "note": "登录/操作日志/权限拦截/工天配置/企微集成",
       "scope": "",
-      "features": [],
       "planned": [],
       "alpha": {
         "页面场景": false,
@@ -469,34 +977,37 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": ""
-    },
-    {
-      "module": "开发者工具",
-      "domain": "跨域工具",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "管理者工具",
       "domain": "跨域工具",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "经营驾驶舱（核心指标实时监控）",
+          "status": "未开始"
+        },
+        {
+          "name": "全域报表（跨模块数据聚合分析）",
+          "status": "未开始"
+        },
+        {
+          "name": "组织健康度（人效/流失率/满意度）",
+          "status": "未开始"
+        },
+        {
+          "name": "审批总览（全公司审批效率统计）",
+          "status": "未开始"
+        },
+        {
+          "name": "经营预警（财务/项目/人力异常自动告警）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -505,16 +1016,25 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
-      "module": "到期预警与续费",
-      "domain": "资源域",
+      "module": "开发者工具",
+      "domain": "跨域工具",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "代码生成器（根据数据模型自动生成 CRUD 页面）",
+          "status": "未开始"
+        },
+        {
+          "name": "数据迁移工具（旧系统数据导入/格式转换）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -523,52 +1043,41 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
-    },
-    {
-      "module": "月度巡检",
-      "domain": "资源域",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
-    },
-    {
-      "module": "机密凭据库",
-      "domain": "资源域",
-      "isPlanned": true,
-      "scope": "",
-      "features": [],
-      "planned": [],
-      "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
-      },
-      "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "资源台账",
       "domain": "资源域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "SSL 证书管理（到期监控/自动续费）",
+          "status": "未开始"
+        },
+        {
+          "name": "域名管理（注册/续费/解析配置）",
+          "status": "未开始"
+        },
+        {
+          "name": "云资源管理（服务器/数据库/存储实例清单）",
+          "status": "未开始"
+        },
+        {
+          "name": "大模型 Token 管理（用量监控/预算控制）",
+          "status": "未开始"
+        },
+        {
+          "name": "第三方接口管理（API Key/调用量/费用）",
+          "status": "未开始"
+        },
+        {
+          "name": "应用商店（内部工具分发与版本管理）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -577,16 +1086,68 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "到期预警与续费",
+      "domain": "资源域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "到期前 30 天自动提醒（邮件+站内信）",
+          "status": "未开始"
+        },
+        {
+          "name": "续费流程（申请→审批→付款→更新台账）",
+          "status": "未开始"
+        },
+        {
+          "name": "额度监控（资源用量接近上限预警）",
+          "status": "未开始"
+        },
+        {
+          "name": "扩容管理（需求评估→审批→执行→记录）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": "规划中"
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "资质与上架档案",
       "domain": "资源域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "ICP 备案管理（备案号/到期/变更）",
+          "status": "未开始"
+        },
+        {
+          "name": "小程序备案（微信/支付宝小程序备案状态）",
+          "status": "未开始"
+        },
+        {
+          "name": "APP 上架管理（应用商店审核状态/版本更新）",
+          "status": "未开始"
+        },
+        {
+          "name": "软著登记（软件著作权申请与证书管理）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -595,16 +1156,37 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
-      "module": "售后与培训",
-      "domain": "运维域",
+      "module": "机密凭据库",
+      "domain": "资源域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "密钥管理（API Key/Secret 加密存储）",
+          "status": "未开始"
+        },
+        {
+          "name": "Token 管理（Access Token/Refresh Token）",
+          "status": "未开始"
+        },
+        {
+          "name": "证书管理（SSL/代码签名证书）",
+          "status": "未开始"
+        },
+        {
+          "name": "账号管理（第三方平台账号密码加密归档）",
+          "status": "未开始"
+        },
+        {
+          "name": "访问审计（谁在何时查看/使用了什么凭据）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中（最高密级）",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -613,16 +1195,29 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
-      "module": "版本迭代支持",
-      "domain": "运维域",
+      "module": "月度巡检",
+      "domain": "资源域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "资源巡检（自动检测各资源运行状态）",
+          "status": "未开始"
+        },
+        {
+          "name": "异常报告（巡检结果自动生成报告）",
+          "status": "未开始"
+        },
+        {
+          "name": "零关停保障（关键资源冗余配置检查）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -631,16 +1226,33 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     },
     {
       "module": "运维工单",
       "domain": "运维域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "故障上报（用户提交故障/问题工单）",
+          "status": "未开始"
+        },
+        {
+          "name": "处理流转（工单分配→处理→验证→关闭）",
+          "status": "未开始"
+        },
+        {
+          "name": "SLA 响应（按优先级定义响应时限）",
+          "status": "未开始"
+        },
+        {
+          "name": "工单记录（历史工单查询/统计分析）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -649,16 +1261,103 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "版本迭代支持",
+      "domain": "运维域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "迭代需求收集（产品/客户/内部需求池）",
+          "status": "未开始"
+        },
+        {
+          "name": "版本管理（版本号/发布日期/变更日志）",
+          "status": "未开始"
+        },
+        {
+          "name": "重新提审（版本回退后重新提交审核）",
+          "status": "未开始"
+        },
+        {
+          "name": "资源配置更新（版本更新后资源台账同步）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
       },
-      "note": "规划中"
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
+    },
+    {
+      "module": "售后与培训",
+      "domain": "运维域",
+      "isPlanned": true,
+      "features": [],
+      "planned": [
+        {
+          "name": "客户培训（产品使用培训计划与执行）",
+          "status": "未开始"
+        },
+        {
+          "name": "操作手册（产品操作手册在线查阅）",
+          "status": "未开始"
+        },
+        {
+          "name": "运维手册（系统运维标准操作流程）",
+          "status": "未开始"
+        },
+        {
+          "name": "满意度调研（客户满意度问卷+分析）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
+      "alpha": {
+        "页面场景": false,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      }
     },
     {
       "module": "项目复盘",
       "domain": "运维域",
       "isPlanned": true,
-      "scope": "",
       "features": [],
-      "planned": [],
+      "planned": [
+        {
+          "name": "交付复盘（项目结束后团队复盘会议记录）",
+          "status": "未开始"
+        },
+        {
+          "name": "知识沉淀（复盘结论转化为标准流程/模板）",
+          "status": "未开始"
+        },
+        {
+          "name": "功能复用库（已验证的功能模块/组件可复用清单）",
+          "status": "未开始"
+        },
+        {
+          "name": "避坑手册（项目中遇到的问题与解决方案汇总）",
+          "status": "未开始"
+        }
+      ],
+      "note": "规划中",
+      "scope": "",
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -667,8 +1366,7 @@
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
-      },
-      "note": "规划中"
+      }
     }
   ]
 }

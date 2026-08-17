@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import logo from '@/assets/zk-hubx-logo.png';
-import { Layout, Menu, Avatar, Dropdown, Badge, Tag } from '@arco-design/web-react';
+import { Layout, Menu, Avatar, Dropdown, Badge, Tag, Button, Tooltip } from '@arco-design/web-react';
 import {
   IconHome,
   IconCustomerService,
@@ -30,7 +30,7 @@ import { useQuotation } from '../pages/quotation/QuotationContext';
 import { QUOTE_ROLES, QUOTE_ROLE_ACTORS } from '../pages/quotation/types';
 import type { QuoteRole } from '../pages/quotation/types';
 import { useAppVersion } from '../version/AppVersionContext';
-import { VERSION_LABELS, VERSION_TAG_COLORS } from '../version/versionMatrix';
+import { VERSION_LABELS, VERSION_TAG_COLORS, VERSION_URLS, type AppVersion } from '../version/versionMatrix';
 import { VersionCompareModal } from '../version/VersionCompareModal';
 
 const Sider = Layout.Sider;
@@ -392,13 +392,31 @@ export function MainLayout() {
             borderBottom: '1px solid var(--grey-200)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             padding: '0 24px',
             position: 'sticky',
             top: 0,
             zIndex: 50,
           }}
         >
+          {/* 版本入口：α/β 线上地址跳转 */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: 12, color: 'var(--grey-500)' }}>版本入口</span>
+            {(['alpha', 'beta'] as AppVersion[]).map(item => (
+              <Tooltip key={item} content={`${VERSION_URLS[item]}${item === appVersion ? '（当前版本）' : ''} · 新窗口打开`}>
+                <Button
+                  size="mini"
+                  type="outline"
+                  href={VERSION_URLS[item]}
+                  target="_blank"
+                  style={item === appVersion ? { color: `var(${item === 'beta' ? '--green-6' : '--arcoblue-6'})`, borderColor: `var(${item === 'beta' ? '--green-6' : '--arcoblue-6'})` } : undefined}
+                >
+                  {VERSION_LABELS[item]}
+                  {item === appVersion ? ' · 当前' : ''}
+                </Button>
+              </Tooltip>
+            ))}
+          </div>
           <div className="flex items-center gap-3">
             {/* Daily Report */}
             <Badge

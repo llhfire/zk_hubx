@@ -6,6 +6,7 @@ import {
   VERSION_LABELS,
   VERSION_MODULES,
   VERSION_TAG_COLORS,
+  VERSION_URLS,
   type ModuleDataSource,
 } from '../versionMatrix';
 
@@ -49,5 +50,10 @@ describe('versionMatrix', () => {
     expect(VERSION_TAG_COLORS.beta).toBeTruthy();
     expect(VERSION_DESCRIPTIONS.alpha).toBeTruthy();
     expect(VERSION_DESCRIPTIONS.beta).toBeTruthy();
+  });
+
+  it('online urls point to the deployed Cloudflare Pages sites', () => {
+    expect(VERSION_URLS.alpha).toBe('https://zkhubx-alpha.pages.dev');
+    expect(VERSION_URLS.beta).toBe('https://zkhubx-web.pages.dev');
   });
 });

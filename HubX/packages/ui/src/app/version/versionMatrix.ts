@@ -43,6 +43,12 @@ export const VERSION_DESCRIPTIONS: Record<AppVersion, string> = {
   beta: '前后端版（apps/web + apps/api）：已打通的域走 Cloudflare Workers + D1 持久化，其余仍为 mock。',
 };
 
+/** 线上部署地址（docs/DEPLOYMENT.md）。国内直连 *.pages.dev 被墙，需代理访问。 */
+export const VERSION_URLS: Record<AppVersion, string> = {
+  alpha: 'https://zkhubx-alpha.pages.dev',
+  beta: 'https://zkhubx-web.pages.dev',
+};
+
 export const VERSION_MODULES: VersionModuleStatus[] = [
   { module: '报价管理', scope: '报价工作台 / 报价中心（四阶段全流程）', alpha: 'mock', beta: 'http', note: 'β版报价单落 D1，含状态迁移校验' },
   { module: '合同管理', scope: '合同列表 / 多版本 / 审批 / 归档', alpha: 'mock', beta: 'http', note: 'mock/http 共享 contractMutations，口径一致' },

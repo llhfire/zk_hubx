@@ -136,7 +136,12 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       key: 'module',
       dataIndex: 'module',
       width: 130,
-      render: (value: string) => <Text strong>{value}</Text>,
+      render: (value: string, record: FeatureBoard['modules'][number]) => (
+        <span>
+          <Text strong>{value}</Text>
+          {record.isPlanned && <span className="feature-board-planned-badge">规划</span>}
+        </span>
+      ),
     },
     {
       title: '领域',
@@ -388,6 +393,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
         columns={columns}
         data={board.modules}
         scroll={{ x: 1400 }}
+        rowClassName={(record: FeatureBoard['modules'][number]) => record.isPlanned ? 'is-planned-module' : ''}
       />
       <div className="feature-board-footer">
         <Button

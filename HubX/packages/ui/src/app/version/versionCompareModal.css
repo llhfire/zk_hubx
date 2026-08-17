@@ -63,6 +63,26 @@
   flex-wrap: wrap;
 }
 
+/* ---- 规划中模块行（虚线边框） ---- */
+.arco-table-tr.is-planned-module {
+  opacity: 0.75;
+}
+
+.arco-table-tr.is-planned-module .arco-table-td {
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.feature-board-planned-badge {
+  font-size: 10px;
+  color: var(--color-text-3);
+  background: var(--color-fill-1);
+  border: 1px dashed var(--color-border);
+  border-radius: 2px;
+  padding: 0 4px;
+  margin-left: 4px;
+  vertical-align: 1px;
+}
+
 /* ---- 已有功能列 ---- */
 .feature-board-features {
   display: flex;

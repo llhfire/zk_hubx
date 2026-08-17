@@ -5,8 +5,6 @@
 // - 文档缺失时用 versionMatrix.ts 的种子清单初始化。
 // Claude Code 行为约定见 HubX/CLAUDE.md §功能看板。
 
-import { VERSION_MODULE_SEEDS, type ModuleDataSource } from './versionMatrix';
-
 // ---------- 类型 ----------
 
 /** 功能条目状态：功能列表（要做的事）的推进阶段，由 Claude 自主判断维护 */
@@ -41,8 +39,8 @@ export interface BetaState {
   devStatus: BetaDevStatus;
 }
 
-/** 领域：按业务价值链划分的业务域（8 域，见 ZK-HubX架构图.html） */
-export const DOMAINS = ['获客域', '销售域', '交付域', '资源域', '运维域', '财务域', '支撑域', '跨域工具'] as const;
+/** 领域：按业务价值链划分的业务域（8 域，见 ZK-HubX架构图.html），按优先级排序 */
+export const DOMAINS = ['销售域', '交付域', '财务域', '获客域', '支撑域', '跨域工具', '资源域', '运维域'] as const;
 export type Domain = (typeof DOMAINS)[number];
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
@@ -60,6 +58,8 @@ export interface FeatureBoardModule {
   module: string;
   /** 所属领域 */
   domain: Domain;
+  /** 是否为规划中模块（虚线边框标识） */
+  isPlanned: boolean;
   /** 模块简介（向后兼容，UI 不再显示） */
   scope: string;
   /** 已有功能列表（显示为可点击文字块矩阵） */
@@ -78,124 +78,202 @@ export interface FeatureBoard {
 
 // ---------- 种子与初值（PLAN 决策 7：如实反映现状） ----------
 
-const HTTP_BETA_NOTE_SUFFIX = '；已上线 http+D1';
-
-/** 已通 http 的域：初始即开关开 + 测试通过 */
-function seedBetaState(source: ModuleDataSource): BetaState {
-  return source === 'http'
-    ? { productionOn: true, devStatus: '测试通过' }
-    : { productionOn: false, devStatus: '未开始' };
-}
-
 /** 模块→领域映射（对齐 ZK-HubX架构图.html 的 8 域划分） */
 const MODULE_DOMAIN_MAP: Record<string, Domain> = {
-  '线索管理': '获客域',
-  '线索成本': '获客域',
-  '报价管理': '销售域',
-  '合同管理': '销售域',
-  '客户管理': '销售域',
+  // 获客域
+  '多渠道线索接入': '获客域',
+  '线索池与初筛': '获客域',
+  '渠道与投放': '获客域',
+  // 销售域
+  '线索全流程': '销售域',
+  '报价工作台': '销售域',
+  '客户与报价基础': '销售域',
+  '合同签约': '销售域',
+  '跟进助手': '销售域',
+  '报价与合规增强': '销售域',
+  // 交付域
   '项目管理': '交付域',
-  '日报': '交付域',
-  '财务管理': '财务域',
-  '审批管理': '支撑域',
-  '待办中心': '支撑域',
-  '消息提醒': '支撑域',
-  '员工与人资': '支撑域',
-  '系统管理': '支撑域',
-  '其他模块': '跨域工具',
+  '日报工时': '交付域',
+  '交付支撑': '交付域',
+  '工时加工': '交付域',
+  '交付过程': '交付域',
+  // 资源域
+  '资源台账': '资源域',
+  '到期预警与续费': '资源域',
+  '资质与上架档案': '资源域',
+  '机密凭据库': '资源域',
+  '月度巡检': '资源域',
+  // 运维域
+  '运维工单': '运维域',
+  '版本迭代支持': '运维域',
+  '售后与培训': '运维域',
+  '项目复盘': '运维域',
+  // 财务域
+  '回款管理': '财务域',
+  '开票管理': '财务域',
+  '成本核算': '财务域',
+  '财务视图': '财务域',
+  '全期次视图': '财务域',
+  // 支撑域
+  '组织与权限': '支撑域',
+  '人资行政': '支撑域',
+  '工作台与审批': '支撑域',
+  '人力增强': '支撑域',
+  '行政后勤': '支撑域',
+  // 跨域工具
+  '基础工具': '跨域工具',
+  '管理者工具': '跨域工具',
+  '开发者工具': '跨域工具',
 };
 
 /** 已有功能种子数据：基于代码库知识生成（原始需求/功能流程/功能说明） */
 const FEATURES_SEED: Record<string, ExistingFeature[]> = {
-  '报价管理': [
+  // 销售域
+  '线索全流程': [
+    { name: '四池流转', description: '公海线索→我的线索→已成交/垃圾线索，线索状态自动流转（领取/分配/成交/回收），线索来源标记（百度/小红书/抖音等）。' },
+    { name: '线索详情', description: '线索基础信息、跟进记录、演示记录、报价 Tab（内嵌报价工作台 Drawer）、合同关联，资料附件管理。' },
+    { name: '线索治理', description: '线索数据质量治理，重复线索合并，线索状态批量操作，线索分配规则配置。' },
+  ],
+  '报价工作台': [
     { name: '报价工作台', description: '四阶段全流程（功能清单→人天评估→销售报价→审批盖章），角色切换器（6 角色 mock），Stage1 功能清单默认 18 项/7 模块，Stage2 人天评估支持方向键+Tab 连续填充、按模块/子功能快捷批量按钮，Stage3 销售报价 7 步向导，Stage4 审批盖章+PDF。' },
-    { name: '报价中心', description: '报价单列表管理，支持按状态/创建人筛选，报价单版本管理（编辑自动生成新版本），作废功能，报价单关联线索→合同漏斗。' },
     { name: '报价审批流', description: '三人并行会签（黄奕/罗总/闵总），全部通过→待盖章；任一驳回（意见必填）→退回销售→全员重审；黄海盖章→已盖章→生成 PDF。' },
     { name: '报价状态机', description: '草稿→功能清单已确认→人天评估完成→已转派销售→报价已汇总→审批中→待盖章→已盖章→已发出（成交/重新报价/待跟进）。审批中→驳回→退回→修改重提；审批中→撤回→草稿；任意→作废→已作废。' },
   ],
-  '合同管理': [
+  '客户与报价基础': [
+    { name: '客户列表', description: '客户基础信息管理，按行业/规模/来源筛选，客户关联线索与合同。' },
+    { name: '客户详情', description: '客户基本信息、关联线索列表、关联合同列表、联系人管理、沟通记录。' },
+  ],
+  '合同签约': [
     { name: '合同列表', description: '合同集中管理入口，支持按状态/客户筛选，合同编号自动生成（ZK-C-YYYYMMDD-NNN）。' },
     { name: '合同多版本', description: '编辑合同自动生成新版本（v1.0→v2.0...），历史版本只读对比，当前版本可编辑。' },
     { name: '合同审批流', description: '总经理单节点审批（P0① 已收敛），意见留痕，审批通过→释放回款 Tab，灰态展示下一节点与处理人。' },
     { name: '合同归档', description: '审批通过后上传归档合同文件（archiveFinalContract），支持 PDF/图片等附件。' },
     { name: '补充协议', description: '基于主合同创建补充协议，继承客户信息与审批流（总经理单节点），独立版本管理。' },
   ],
-  '线索管理': [
-    { name: '四池流转', description: '公海线索→我的线索→已成交/垃圾线索，线索状态自动流转（领取/分配/成交/回收），线索来源标记（百度/小红书/抖音等）。' },
-    { name: '线索详情', description: '线索基础信息、跟进记录、演示记录、报价 Tab（内嵌报价工作台 Drawer）、合同关联，资料附件管理。' },
-    { name: '线索治理', description: '线索数据质量治理，重复线索合并，线索状态批量操作，线索分配规则配置。' },
-  ],
-  '客户管理': [
-    { name: '客户列表', description: '客户基础信息管理，按行业/规模/来源筛选，客户关联线索与合同。' },
-    { name: '客户详情', description: '客户基本信息、关联线索列表、关联合同列表、联系人管理、沟通记录。' },
-  ],
+  // 交付域
   '项目管理': [
     { name: '项目详情-基础信息', description: '项目名称、状态、负责人、时间，关联合同与回款，项目编号自动生成。' },
     { name: '项目任务管理', description: 'ProjectTaskPanel：任务拆分、分配、状态跟踪（待开始/处理中/已完成），按成员筛选。' },
     { name: '项目成本核算', description: 'ProjectCostPanel：人工+差旅+其他成本，利润率分析，成本明细可展开。' },
   ],
-  '线索成本': [
-    { name: '成本看板', description: '广告投放总览，按渠道/日期汇总消耗、线索数、转化率，趋势图表。' },
-    { name: '投放日报', description: '每日投放数据录入与查看，按渠道拆分，消耗/线索/转化漏斗。' },
-    { name: '渠道分析', description: '各渠道 ROI 对比，百度/小红书/抖音/淘宝等平台数据横向对比。' },
-  ],
-  '日报': [
+  '日报工时': [
     { name: '日报列表', description: '日报汇总列表，按日期/成员/项目筛选，支持导出。' },
     { name: '日报视图', description: '个人日报填写与查看，工时×时薪计算（buildRDCostDetails），工作归属选择（项目/线索/内部）。' },
     { name: '项目视图', description: '按项目维度查看团队日报汇总，项目工时统计。' },
     { name: '日报配置', description: 'JobWorkConfigContext：工作种类配置、时薪模板、日报规则（按用户角色匹配模板）。' },
   ],
-  '财务管理': [
-    { name: '财务统计', description: '财务总览面板，收入/支出/利润汇总，按月/季度趋势。' },
-    { name: '项目成本核算', description: '项目维度成本明细，人工+差旅+其他，利润率分析。' },
-    { name: '工资表', description: '员工工资计算，工时×时薪汇总，按月生成。' },
-    { name: '开票审核', description: 'ProjectInvoicePage：财务处理项目开票申请，上传发票附件，开票状态流转（开票中→已开票/已冲红），冲红需填写原因+附件。' },
-    { name: '回款与发票', description: 'LeadPaymentInvoicePanel：期次拆分、回款登记（金额+日期+凭证）、开票申请（发票类别+税率+客户信息）、回款状态自动计算（getPaymentPeriodMetrics）。' },
-  ],
-  '审批管理': [
-    { name: '审批中心', description: '统一审批入口，待办/已办/我发起的，审批意见填写，支持通过/驳回。' },
-    { name: '审批模板', description: '审批流程模板管理，配置审批节点与处理人。' },
-    { name: '业务审批配置', description: '按业务类型（合同/报价/出差等）配置审批流，支持串行/并行/会签。' },
-  ],
-  '待办中心': [
-    { name: '待办列表', description: '统一待办聚合，来源包括审批、日报催报、系统提醒，支持完成/忽略操作。' },
-    { name: '状态流转', description: '待办状态机：待处理→处理中→已完成，与审批/日报等模块联动。' },
-  ],
-  '消息提醒': [
-    { name: '提醒铃铛', description: 'ReminderBell：顶栏提醒入口，未读消息计数 Badge，点击展开提醒列表。' },
-    { name: '日报催报', description: 'hasDailyReportUnsubmittedReminder：每日检测未提交日报，自动触发催报提醒。' },
-  ],
-  '员工与人资': [
-    { name: '员工列表', description: '员工基础信息管理，入离职/转正/合同状态。' },
-    { name: '考勤管理', description: '考勤记录、请假审批、加班统计。' },
-    { name: '绩效考核', description: '员工绩效评估，KPI 指标设定与评分。' },
-    { name: '费用管理', description: '费用报销审批，费用分类管理，预算控制。' },
-  ],
-  '系统管理': [
-    { name: '组织架构', description: '公司/部门/岗位树形结构管理。' },
-    { name: '用户权限', description: '角色权限配置，菜单权限+操作权限控制。' },
-    { name: '数据字典', description: '系统枚举值管理（回款方式、发票类型、线索来源等）。' },
-    { name: '企业微信集成', description: 'WeComIntegration：通讯录同步、消息推送、群聊导出（wx CLI）。' },
-  ],
-  '其他模块': [
-    { name: '工作台', description: '首页仪表盘，关键指标概览，快捷入口。' },
-    { name: '数据报表', description: '销售报表、业绩统计、图表展示。' },
+  '交付支撑': [
     { name: '会议管理', description: 'MeetingManagement：会议记录、纪要、参会人管理。' },
     { name: '知识库', description: '文档存储与检索，按模块分类。' },
+  ],
+  // 财务域
+  '回款管理': [
+    { name: '期次拆分', description: '回款期次自动拆分，金额联动，支持子期次拆分。' },
+    { name: '回款登记', description: '财务录入实际回款信息（金额/日期/凭证/说明）。' },
+    { name: '状态自动计算', description: 'getPaymentPeriodMetrics：回款四态（未回款/部分回款/已回款/已逾期）× 开票三态自动计算。' },
+  ],
+  '开票管理': [
+    { name: '开票申请', description: '项目提交开票申请（发票类别/税率/金额/客户信息），财务审核处理。' },
+    { name: '发票冲红', description: '对已开票记录执行冲红（填写原因+附件），生成新的待开票记录。' },
+    { name: '开票审核', description: 'ProjectInvoicePage：财务处理开票申请，上传发票附件，状态流转（开票中→已开票/已冲红）。' },
+  ],
+  '成本核算': [
+    { name: '按人员工时成本', description: '员工工时×时薪计算人工成本，按项目/部门汇总。' },
+    { name: '差旅商务成本', description: '差旅报销、商务费用、第三方服务费用归集。' },
+  ],
+  '财务视图': [
+    { name: '财务统计', description: '财务总览面板，收入/支出/利润汇总，按月/季度趋势。' },
+    { name: '项目成本报表', description: '项目维度成本明细，利润率分析。' },
+    { name: '工资表', description: '员工工资计算，工时×时薪汇总，按月生成。' },
+  ],
+  // 获客域
+  '多渠道线索接入': [
+    { name: '线索来源管理', description: '支持百度/小红书/抖音/淘宝等多渠道线索接入，来源标记与追踪。' },
+  ],
+  '线索池与初筛': [
+    { name: '线索池管理', description: '公海线索池、我的线索池、已成交池、垃圾池，四池流转。' },
+  ],
+  // 支撑域
+  '组织与权限': [
+    { name: '组织架构', description: '公司/部门/岗位树形结构管理。' },
+    { name: '用户权限', description: '角色权限配置，菜单权限+操作权限控制。' },
+    { name: '数据字典', description: '系统枚举值管理（回款方式/发票类型/线索来源等）。' },
+  ],
+  '人资行政': [
+    { name: '员工列表', description: '员工基础信息管理，入离职/转正/合同状态。' },
+    { name: '考勤管理', description: '考勤记录、请假审批、加班统计。' },
+    { name: '费用管理', description: '费用报销审批，费用分类管理，预算控制。' },
+  ],
+  '工作台与审批': [
+    { name: '工作台', description: '首页仪表盘，关键指标概览，快捷入口。' },
+    { name: '审批中心', description: '统一审批入口，待办/已办/我发起的，审批意见填写，支持通过/驳回。' },
+    { name: '待办中心', description: '统一待办聚合，来源包括审批/日报催报/系统提醒，支持完成/忽略操作。' },
+    { name: '消息提醒', description: 'ReminderBell：顶栏提醒入口，未读消息计数 Badge，点击展开提醒列表。' },
+  ],
+  // 跨域工具
+  '基础工具': [
+    { name: '企业微信集成', description: 'WeComIntegration：通讯录同步、消息推送、群聊导出（wx CLI）。' },
+    { name: '操作日志', description: '系统操作日志记录与查询。' },
+    { name: '数据报表', description: '销售报表、业绩统计、图表展示。' },
   ],
 };
 
 export function createSeedBoard(): FeatureBoard {
+  // 架构图全部 36 模块（17 现有 + 19 规划），按领域优先级排列
+  const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: ExistingFeature[]; planned?: string[]; note: string }> = [
+    // === 销售域（优先级 1）===
+    { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '认领/分配/跟进/流转/生命周期/公海回收/需求记录/竞对/阶段推进' },
+    { module: '报价工作台', domain: '销售域', isPlanned: false, features: FEATURES_SEED['报价工作台'] ?? [], note: 'β版报价单落 D1，含状态迁移校验；已上线 http+D1' },
+    { module: '客户与报价基础', domain: '销售域', isPlanned: false, features: FEATURES_SEED['客户与报价基础'] ?? [], note: '客户档案/联系人/关系视图/开票信息' },
+    { module: '合同签约', domain: '销售域', isPlanned: false, features: FEATURES_SEED['合同签约'] ?? [], note: 'mock/http 共享 contractMutations；已上线 http+D1' },
+    { module: '跟进助手', domain: '销售域', isPlanned: true, features: [], planned: ['自动提醒', '跟进待办', '阶段建议'], note: '规划中' },
+    { module: '报价与合规增强', domain: '销售域', isPlanned: true, features: [], planned: ['Excel 双向导入导出', '版本 Diff 对比', '代理/转交机制', '电子签章', '合规档案'], note: '规划中' },
+    // === 交付域（优先级 2）===
+    { module: '项目管理', domain: '交付域', isPlanned: false, features: FEATURES_SEED['项目管理'] ?? [], note: 'service 接缝待抽' },
+    { module: '日报工时', domain: '交付域', isPlanned: false, features: FEATURES_SEED['日报工时'] ?? [], note: '工时×时薪成本计算' },
+    { module: '交付支撑', domain: '交付域', isPlanned: false, features: FEATURES_SEED['交付支撑'] ?? [], note: '合同交付跟进/变更管理/进度跟踪/知识库/会议纪要' },
+    { module: '工时加工', domain: '交付域', isPlanned: true, features: [], planned: ['工时审批', '统计与分析', '加班工时'], note: '规划中' },
+    { module: '交付过程', domain: '交付域', isPlanned: true, features: [], planned: ['里程碑', '验收流程', '需求变更管控'], note: '规划中' },
+    // === 财务域（优先级 3）===
+    { module: '回款管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['回款管理'] ?? [], note: '期次拆分/回款登记/状态自动计算/权限矩阵（WIP）' },
+    { module: '开票管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['开票管理'] ?? [], note: '开票申请/发票冲红/开票工作台' },
+    { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊' },
+    { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
+    { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
+    // === 获客域（优先级 4）===
+    { module: '多渠道线索接入', domain: '获客域', isPlanned: false, features: FEATURES_SEED['多渠道线索接入'] ?? [], note: '官网表单/推广落地页/电话咨询/渠道合作/售前群' },
+    { module: '线索池与初筛', domain: '获客域', isPlanned: false, features: FEATURES_SEED['线索池与初筛'] ?? [], note: '原始线索容纳/来源标记/去重/清洗分级' },
+    { module: '渠道与投放', domain: '获客域', isPlanned: true, features: [], planned: ['渠道台账', '投放预算', '线索成本', '渠道 ROI', '市场活动归因'], note: '规划中' },
+    // === 支撑域（优先级 5）===
+    { module: '组织与权限', domain: '支撑域', isPlanned: false, features: FEATURES_SEED['组织与权限'] ?? [], note: '用户/部门/职位/角色授权/菜单路由/数据字典' },
+    { module: '人资行政', domain: '支撑域', isPlanned: false, features: FEATURES_SEED['人资行政'] ?? [], note: '员工列表/岗位/工资/考勤请假/员工档案' },
+    { module: '工作台与审批', domain: '支撑域', isPlanned: false, features: FEATURES_SEED['工作台与审批'] ?? [], note: '工作台/个人中心/消息提醒/待办/审批中心' },
+    { module: '人力增强', domain: '支撑域', isPlanned: true, features: [], planned: ['薪酬管理', '员工成本', '社保公积金', '招聘', '培训', '绩效'], note: '规划中' },
+    { module: '行政后勤', domain: '支撑域', isPlanned: true, features: [], planned: ['固定资产', '办公物品', '会议室', '行政流程', '物资采购'], note: '规划中' },
+    // === 跨域工具（优先级 6）===
+    { module: '基础工具', domain: '跨域工具', isPlanned: false, features: FEATURES_SEED['基础工具'] ?? [], note: '登录/操作日志/权限拦截/工天配置/企微集成' },
+    { module: '管理者工具', domain: '跨域工具', isPlanned: true, features: [], planned: ['经营驾驶舱', '全域报表', '组织健康度', '审批总览', '经营预警'], note: '规划中' },
+    { module: '开发者工具', domain: '跨域工具', isPlanned: true, features: [], planned: ['代码生成器', '数据迁移工具'], note: '规划中' },
+    // === 资源域（优先级 7）===
+    { module: '资源台账', domain: '资源域', isPlanned: true, features: [], planned: ['SSL 证书', '域名', '云资源', '大模型 Token', '第三方接口', '应用商店'], note: '规划中' },
+    { module: '到期预警与续费', domain: '资源域', isPlanned: true, features: [], planned: ['到期前 30 天提醒', '续费', '额度监控', '扩容'], note: '规划中' },
+    { module: '资质与上架档案', domain: '资源域', isPlanned: true, features: [], planned: ['ICP 备案', '小程序备案', 'APP 上架', '软著'], note: '规划中' },
+    { module: '机密凭据库', domain: '资源域', isPlanned: true, features: [], planned: ['密钥/Token/证书/账号加密归档'], note: '规划中（最高密级）' },
+    { module: '月度巡检', domain: '资源域', isPlanned: true, features: [], planned: ['资源巡检', '异常报告', '零关停保障'], note: '规划中' },
+    // === 运维域（优先级 8）===
+    { module: '运维工单', domain: '运维域', isPlanned: true, features: [], planned: ['故障上报', '处理流转', 'SLA 响应', '工单记录'], note: '规划中' },
+    { module: '版本迭代支持', domain: '运维域', isPlanned: true, features: [], planned: ['迭代需求', '版本管理', '重新提审', '资源配置更新'], note: '规划中' },
+    { module: '售后与培训', domain: '运维域', isPlanned: true, features: [], planned: ['客户培训', '操作手册', '运维手册', '满意度调研'], note: '规划中' },
+    { module: '项目复盘', domain: '运维域', isPlanned: true, features: [], planned: ['交付复盘', '知识沉淀', '功能复用库', '避坑手册'], note: '规划中' },
+  ];
+
   return {
-    modules: VERSION_MODULE_SEEDS.map(seed => ({
-      module: seed.module,
-      domain: MODULE_DOMAIN_MAP[seed.module] ?? '支撑域',
-      scope: seed.scope,
-      features: FEATURES_SEED[seed.module] ?? [],
-      planned: seed.planned.map(name => ({ name, status: '未开始' as const })),
+    modules: ALL_MODULES.map(item => ({
+      ...item,
+      scope: '',
+      planned: (item.planned ?? []).map(name => ({ name, status: '未开始' as const })),
       alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
-      beta: seedBetaState(seed.beta),
-      note: seed.beta === 'http' ? `${seed.note}${HTTP_BETA_NOTE_SUFFIX}` : seed.note,
+      beta: item.isPlanned ? { productionOn: false, devStatus: '未开始' as const } : { productionOn: false, devStatus: '未开始' as const },
     })),
   };
 }
@@ -236,9 +314,11 @@ export function normalizeFeatureBoard(value: unknown): FeatureBoard {
             }))
         : (seed?.features ?? []);
       const domain = DOMAINS.includes(item.domain as Domain) ? item.domain as Domain : (seed?.domain ?? '支撑域');
+      const isPlanned = item.isPlanned === true;
       return {
         module: item.module as string,
         domain,
+        isPlanned,
         scope: typeof item.scope === 'string' ? item.scope : (seed?.scope ?? ''),
         features,
         planned: Array.isArray(item.planned)
@@ -379,13 +459,14 @@ export function setModuleNote(board: FeatureBoard, module: string, note: string)
   return mapModule(board, module, item => ({ ...item, note }));
 }
 
-export function addModule(board: FeatureBoard, module: string, scope = '', domain: Domain = '支撑域'): FeatureBoard {
+export function addModule(board: FeatureBoard, module: string, scope = '', domain: Domain = '支撑域', isPlanned = false): FeatureBoard {
   const trimmed = module.trim();
   if (!trimmed || board.modules.some(item => item.module === trimmed)) return board;
   return {
     modules: [...board.modules, {
       module: trimmed,
       domain,
+      isPlanned,
       scope,
       features: [],
       planned: [],

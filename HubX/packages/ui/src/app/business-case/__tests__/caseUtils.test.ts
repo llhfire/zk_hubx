@@ -7,6 +7,7 @@ import {
   leadProjectBanner,
   shouldSpawnUnconfirmedProject,
   spawnUnconfirmedProject,
+  startDelivery,
 } from '../caseUtils';
 
 describe('shouldSpawnUnconfirmedProject', () => {
@@ -128,6 +129,48 @@ describe('confirmProject', () => {
         productManager: '王五',
       }),
     ).toThrow(/未确认/);
+  });
+});
+
+describe('startDelivery（阶段 3 交付启动）', () => {
+  it('未开始项目 + 新合同 -> 进行中并带上启动日期与合同关联', () => {
+    const patch = startDelivery({
+      project: { status: '未开始', contractId: null },
+      contractId: 'c9',
+      today: '2026-08-18',
+    });
+    expect(patch).not.toBeNull();
+    expect(patch?.status).toBe('进行中');
+    expect(patch?.startDate).toBe('2026-08-18');
+    expect(patch?.contractId).toBe('c9');
+    expect(patch?.latestProgress).toContain('交付已启动');
+  });
+
+  it('搁置项目也可被合同拉起', () => {
+    expect(
+      startDelivery({ project: { status: '搁置' }, contractId: 'c9', today: '2026-08-18' }),
+    ).not.toBeNull();
+  });
+
+  it('未确认项目不启动（先走管理员确认指派）', () => {
+    expect(
+      startDelivery({ project: { status: '未确认' }, contractId: 'c9', today: '2026-08-18' }),
+    ).toBeNull();
+  });
+
+  it('进行中/已完成项目不重复启动', () => {
+    expect(
+      startDelivery({ project: { status: '进行中' }, contractId: 'c9', today: '2026-08-18' }),
+    ).toBeNull();
+    expect(
+      startDelivery({ project: { status: '已完成' }, contractId: 'c9', today: '2026-08-18' }),
+    ).toBeNull();
+  });
+
+  it('项目已绑定其他合同时不启动', () => {
+    expect(
+      startDelivery({ project: { status: '未开始', contractId: 'c1' }, contractId: 'c9', today: '2026-08-18' }),
+    ).toBeNull();
   });
 });
 

@@ -38,19 +38,19 @@
         },
         {
           "name": "签约自动生成未确认项目",
-          "status": "已调研"
+          "status": "已设计"
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "与项目/合同是同一业务的销售视角；签约出未确认项目；阶段2 落地项目执行 Tab（共享 ProjectContext）"
+      "note": "与项目/合同是同一业务的销售视角；签约出未确认项目（阶段3 接线：主合同审批通过自动 spawn，不再依赖 mock 静态数据）；阶段2 落地项目执行 Tab（共享 ProjectContext）"
     },
     {
       "module": "报价工作台",
@@ -94,7 +94,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },
@@ -134,7 +134,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },
@@ -177,12 +177,16 @@
         {
           "name": "合同付款看板",
           "description": "PaymentKanban.tsx / PaymentKanbanV2.tsx：回款期次可视化看板。"
+        },
+        {
+          "name": "报价成交生成主合同",
+          "description": "原始需求：报价走完盖章发送后客户成交，应直接据此生成主合同，避免手工重复录入。功能流程：Stage4 成交态显示「生成主合同」-> 跳合同向导并自动预填（金额/付款条款按报价 summary 映射为期次、工期推导终止日期、质保写入正文）-> 创建成功回写 quote.contractId 并维护商机 quoteIds/contractId。功能说明：dealQuotePrefill.ts 纯函数映射；已生成后按钮变「查看主合同」。"
         }
       ],
       "planned": [
         {
           "name": "报价成交生成主合同",
-          "status": "未开始"
+          "status": "已设计"
         },
         {
           "name": "多份补充报价/补充合同列表",
@@ -194,15 +198,15 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "合同是同一业务的管理员视角；一主合同 + N 补充报价/补充合同"
+      "note": "合同是同一业务的管理员视角；一主合同 + N 补充报价/补充合同；阶段3 报价成交可一键生成主合同、审批通过触发交付启动"
     },
     {
       "module": "跟进助手",
@@ -303,12 +307,16 @@
         {
           "name": "项目售前历程",
           "description": "ProjectPresalesHistoryPanel：项目详情右侧新增「售前历程」Tab（只增不删），上半部分为售前交接包（线索名称/客户称呼/售前群/原型链接/初始需求等，随项目确认带入），下半部分用 buildPresalesTimeline 纯函数聚合线索创建、售前跟进、报价、合同为时间倒序时间线，全量只读。"
+        },
+        {
+          "name": "交付启动（合同批准自动拉起）",
+          "description": "原始需求：主合同审批通过后才允许项目开工，交付计划自动生成。功能流程：ApprovalDeliveryBridge 监听合同 approvedAt 首次写入 -> 无项目则 spawnUnconfirmedProject 生成未确认项目；未开始/搁置项目 startDelivery 转「进行中」+ 关联合同 + generateDeliveryPlan 生成 SOP 计划写入 deliveryPlanStore。功能说明：跨域联动桥组件（无 UI），对 mock 与 http 数据源同样生效；未确认项目仍走管理员确认指派流程。"
         }
       ],
       "planned": [
         {
           "name": "未确认项目与管理员指派产品经理",
-          "status": "已调研"
+          "status": "已设计"
         },
         {
           "name": "产品经理默认列表隐藏未确认/未指派",
@@ -320,15 +328,15 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "项目是同一业务的产品视角；签约先出未确认单，管理员指派后才可见；阶段2 新增售前历程 Tab"
+      "note": "项目是同一业务的产品视角；签约先出未确认单，管理员指派后才可见；阶段2 售前历程 Tab；阶段3 合同批准触发交付启动（未开始->进行中 + 自动生成 SOP 交付计划）"
     },
     {
       "module": "日报工时",
@@ -368,9 +376,9 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
+        "页面场景": true,
+        "功能流程": true,
+        "UX 优化": true
       },
       "beta": {
         "productionOn": false,
@@ -505,24 +513,28 @@
         {
           "name": "回款权限矩阵",
           "description": "getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。"
+        },
+        {
+          "name": "合同回款 Tab",
+          "description": "原始需求：合同详情能看每一期回款状态并直接登记回款。功能流程：computePlanStatusRows 把已回款按期次顺序分摊 -> 每期标记 已收/部分到账/逾期/即将到期/待收 -> 登记回款弹窗选择期次提交 addCollection 写回 ContractsContext 并重算已回款。功能说明：paymentUtils.ts 纯函数（含 7 天缓冲口径，与看板一致）；补充协议回款登记仍在「补充」Tab（页面局部数据）。"
         }
       ],
       "planned": [
         {
           "name": "逾期判断（预计回款日期对比，自动标记逾期）",
-          "status": "未开始"
+          "status": "已设计"
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "期次拆分/回款登记/状态自动计算/权限矩阵（WIP）"
+      "note": "期次拆分/回款登记/状态自动计算/权限矩阵（WIP）；阶段3 合同详情新增回款 Tab（期次状态+登记回款写回 ContractsContext）"
     },
     {
       "module": "开票管理",
@@ -586,7 +598,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },
@@ -716,7 +728,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },
@@ -799,8 +811,8 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
@@ -847,7 +859,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },
@@ -895,7 +907,7 @@
         }
       ],
       "alpha": {
-        "页面场景": false,
+        "页面场景": true,
         "功能流程": false,
         "UX 优化": false
       },

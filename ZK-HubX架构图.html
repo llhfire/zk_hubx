@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZK HubX 功能架构</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #fff;
+    padding: 40px 24px;
+  }
+  .title { text-align: center; font-size: 20px; font-weight: 600; color: #111; margin-bottom: 4px; }
+  .subtitle { text-align: center; font-size: 12px; color: #666; margin-bottom: 6px; }
+  .note { text-align: center; font-size: 11px; color: #999; margin-bottom: 24px; }
+  .arch { max-width: 1100px; margin: 0 auto; }
+  .top-bar { background: #222; color: #fff; text-align: center; padding: 12px; font-size: 14px; font-weight: 600; letter-spacing: 4px; }
+  .domains { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #ddd; border-top: none; }
+  .domain { border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; background: #fff; }
+  .domain:last-child { border-right: none; }
+  .domain-header { padding: 10px 12px; text-align: center; font-weight: 600; font-size: 13px; border-bottom: 1px solid #ddd; background: #f7f7f7; }
+  .domain-header .sub { font-size: 11px; font-weight: 400; color: #888; display: block; margin-top: 2px; }
+  .module { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .module:last-child { border-bottom: none; }
+  .module-name { font-size: 12px; font-weight: 600; color: #333; margin-bottom: 3px; }
+  .module-name .tag { display: inline-block; font-size: 10px; font-weight: 400; color: #fff; background: #666; border-radius: 2px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; }
+  .module-name .tag.plan { background: #ccc; color: #333; }
+  .module-items { font-size: 11px; color: #999; line-height: 1.8; }
+  .bottom-bar { margin-top: 10px; border: 1px solid #ddd; display: flex; flex-direction: column; align-items: stretch; padding: 0; }
+  .bottom-items { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px; }
+  .bottom-items span { color: #999; }
+  .stats { display: flex; justify-content: center; gap: 24px; margin-top: 24px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 700; color: #222; }
+  .stat .label { font-size: 11px; color: #999; margin-top: 2px; }
+  .legend { margin: 16px auto 0; max-width: 900px; display: flex; gap: 16px; justify-content: center; font-size: 11px; color: #888; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; }
+</style>
+</head>
+<body>
+
+<div class="title">ZK HubX 功能架构</div>
+<div class="subtitle">中科集团内部运营管理系统 · 按业务价值链规划 · 8 域 · 现有模块 17 + 新增规划 19 = 36 模块</div>
+<div class="note">基于需求底稿 + 交付 SOP 重构 · 现有 = 已实现 / 规划 = 有业务依据、待落地（区分当下与下一步）</div>
+
+<div class="arch">
+
+  <div class="top-bar">中科业务价值链：获客（拓客引流）→ 销售（跟进到签约）→ 交付 → 资源 → 运维 → 支撑（跨域工具行全系统）</div>
+
+  <div class="domains">
+
+    <!-- 获客域（拓客引流） -->
+    <div class="domain">
+      <div class="domain-header">获客域（拓客引流）<span class="sub">现有 2 + 规划 1 模块</span></div>
+      <div class="module">
+        <div class="module-name">多渠道线索接入</div>
+        <div class="module-items">官网表单 · 推广落地页 · 电话咨询 · 渠道合作 · 售前群</div>
+      </div>
+      <div class="module">
+        <div class="module-name">线索池与初筛</div>
+        <div class="module-items">原始线索容纳 · 来源标记 · 去重 · 清洗分级</div>
+      </div>
+      <div class="module">
+        <div class="module-name">渠道与投放规划<span class="tag plan">规划</span></div>
+        <div class="module-items">渠道台账 · 投放预算 · 线索成本 · 渠道ROI · 市场活动归因</div>
+      </div>
+    </div>
+
+    <!-- 线索域（跟进到签约） -->
+    <div class="domain">
+      <div class="domain-header">销售域（跟进→签约）<span class="sub">现有 4 + 规划 2 模块</span></div>
+      <div class="module">
+        <div class="module-name">线索全流程</div>
+        <div class="module-items">认领 · 分配 · 跟进记录 · 线索流转 · 生命周期 · 公海回收 · 需求记录 · 竞对 · 预计金额 · 阶段推进 · 线索资料</div>
+      </div>
+      <div class="module">
+        <div class="module-name">报价工作台</div>
+        <div class="module-items">功能清单 · 人天评估 · 7步报价 · 上浮比例 · 审批盖章 · PDF导出 · 成交生成主合同</div>
+      </div>
+      <div class="module">
+        <div class="module-name">客户与报价基础</div>
+        <div class="module-items">客户档案 · 联系人 · 关系视图 · 开票信息</div>
+      </div>
+      <div class="module">
+        <div class="module-name">合同签约</div>
+        <div class="module-items">合同创建 · 模板管理 · 版本管理 · 合同审批 · 合同归档 · 电子签约 · 审批通过触发交付启动</div>
+      </div>
+      <div class="module">
+        <div class="module-name">跟进助手规划<span class="tag plan">规划</span></div>
+        <div class="module-items">自动提醒 · 跟进待办 · 阶段建议</div>
+      </div>
+      <div class="module">
+        <div class="module-name">报价与合规增强规划<span class="tag plan">规划</span></div>
+        <div class="module-items">Excel双向 · 版本Diff · 代理转交 · 电子签章 · 合规档案</div>
+      </div>
+    </div>
+    <!-- 交付域 -->
+    <div class="domain">
+      <div class="domain-header">交付域（执行）<span class="sub">现有 3 + 规划 2 模块</span></div>
+      <div class="module">
+        <div class="module-name">项目管理</div>
+        <div class="module-items">项目档案 · 成员 · 关联线索 · 文档 · 跟进 · 任务 · 成本核算 · 合同回款视图 · 商机联动（合同批准自动拉起）</div>
+      </div>
+      <div class="module">
+        <div class="module-name">日报工时</div>
+        <div class="module-items">统一入口 · 各岗日报 · 日报配置 · 评论 · 快捷填充 · 工时×时薪成本</div>
+      </div>
+      <div class="module">
+        <div class="module-name">交付支撑</div>
+        <div class="module-items">合同交付跟进 · 变更管理 · 进度跟踪 · 知识库 · 会议纪要 · 演示上传 · SOP 交付计划自动生成</div>
+      </div>
+      <div class="module">
+        <div class="module-name">工时加工规划<span class="tag plan">规划</span></div>
+        <div class="module-items">工时审批 · 统计与分析 · 加班工时</div>
+      </div>
+      <div class="module">
+        <div class="module-name">交付过程规划<span class="tag plan">规划</span></div>
+        <div class="module-items">里程碑 · 验收流程 · 需求变更管控</div>
+      </div>
+    </div>
+
+    <!-- 资源域（新增·核心） -->
+    <div class="domain">
+      <div class="domain-header">资源域（新增）<span class="sub">规划 5 模块（新增）</span></div>
+      <div class="module">
+        <div class="module-name">资源台账<span class="tag plan">规划</span></div>
+        <div class="module-items">SSL证书 · 域名 · 云资源 · 大模型Token · 第三方接口 · 应用商店</div>
+      </div>
+      <div class="module">
+        <div class="module-name">到期预警与续费<span class="tag plan">规划</span></div>
+        <div class="module-items">到期前30天提醒 · 续费 · 额度监控 · 扩容</div>
+      </div>
+      <div class="module">
+        <div class="module-name">资质与上架档案<span class="tag plan">规划</span></div>
+        <div class="module-items">ICP备案 · 小程序备案 · APP上架 · 软著</div>
+      </div>
+      <div class="module">
+        <div class="module-name">机密凭据库<span class="tag plan">规划</span></div>
+        <div class="module-items">密钥 · Token · 证书 · 账号 加密归档（最高密级）</div>
+      </div>
+      <div class="module">
+        <div class="module-name">月度巡检<span class="tag plan">规划</span></div>
+        <div class="module-items">资源巡检 · 异常报告 · 零关停保障</div>
+      </div>
+    </div>
+
+    <!-- 运维域（新增） -->
+    <div class="domain">
+      <div class="domain-header">运维域（新增）<span class="sub">规划 4 模块（新增）</span></div>
+      <div class="module">
+        <div class="module-name">运维工单<span class="tag plan">规划</span></div>
+        <div class="module-items">故障上报 · 处理流转 · SLA响应 · 工单记录</div>
+      </div>
+      <div class="module">
+        <div class="module-name">版本迭代支持<span class="tag plan">规划</span></div>
+        <div class="module-items">迭代需求 · 版本管理 · 重新提审 · 资源配置更新</div>
+      </div>
+      <div class="module">
+        <div class="module-name">售后与培训<span class="tag plan">规划</span></div>
+        <div class="module-items">客户培训 · 操作手册 · 运维手册 · 满意度调研</div>
+      </div>
+      <div class="module">
+        <div class="module-name">项目复盘<span class="tag plan">规划</span></div>
+        <div class="module-items">交付复盘 · 知识沉淀 · 功能复用库 · 避坑手册</div>
+      </div>
+    </div>
+
+    <!-- 财务域 -->
+    <div class="domain">
+      <div class="domain-header">财务域<span class="sub">现有 4 + 规划 1 模块</span></div>
+      <div class="module">
+        <div class="module-name">回款管理</div>
+        <div class="module-items">期次拆分 · 实际回款 · 状态自动计算 · 权限矩阵 · 逾期判断 · 合同回款Tab</div>
+      </div>
+      <div class="module">
+        <div class="module-name">开票管理</div>
+        <div class="module-items">开票登记 · 发票冲红 · 开票工作台 · 开票统计</div>
+      </div>
+      <div class="module">
+        <div class="module-name">成本核算</div>
+        <div class="module-items">按人员工时成本 · 差旅/商务/第三方 · 运营分摊 · 异常检测</div>
+      </div>
+      <div class="module">
+        <div class="module-name">财务视图</div>
+        <div class="module-items">财务审批 · 财务报表 · 合同统计 · 项目成本 · 回款开票报表</div>
+      </div>
+      <div class="module">
+        <div class="module-name">全期次视图规划<span class="tag plan">规划</span></div>
+        <div class="module-items">一屏查看项目全期次回款与开票</div>
+      </div>
+    </div>
+
+    <!-- 支撑域（含人资行政） -->
+    <div class="domain">
+      <div class="domain-header">支撑域（人资行政）<span class="sub">现有 3 + 规划 2 模块</span></div>
+      <div class="module">
+        <div class="module-name">组织与权限</div>
+        <div class="module-items">用户 · 部门 · 职位 · 职位管理 · 角色授权 · 菜单路由 · 数据字典 · 逐人权限</div>
+      </div>
+      <div class="module">
+        <div class="module-name">人资行政</div>
+        <div class="module-items">员工列表 · 岗位 · 工资 · 调整记录 · 人资费用 · 考勤请假 · 员工档案</div>
+      </div>
+      <div class="module">
+        <div class="module-name">工作台与审批</div>
+        <div class="module-items">工作台 · 个人中心 · 站内信 · 短信通知 · 待办中心 · 数据看板 · 审批中心</div>
+      </div>
+      <div class="module">
+        <div class="module-name">人力增强规划<span class="tag plan">规划</span></div>
+        <div class="module-items">薪酬管理 · 员工成本 · 社保公积金 · 招聘 · 培训 · 绩效</div>
+      </div>
+      <div class="module">
+        <div class="module-name">行政后勤规划<span class="tag plan">规划</span></div>
+        <div class="module-items">固定资产 · 办公物品 · 会议室 · 行政流程 · 物资采购</div>
+      </div>
+    </div>
+
+    <!-- 跨域工具（基础能力 + 管理者 + 开发） -->
+    <div class="domain">
+      <div class="domain-header">跨域工具<span class="sub">现有 5 + 规划 2 模块</span></div>
+      <div class="module">
+        <div class="module-name">基础工具</div>
+        <div class="module-items">登录 · 操作日志 · 权限拦截 · 工天配置 · 企微集成</div>
+      </div>
+      <div class="module">
+        <div class="module-name">管理者工具<span class="tag plan">规划</span></div>
+        <div class="module-items">经营驾驶舱 · 全域报表 · 组织健康度 · 审批总览 · 经营预警</div>
+      </div>
+      <div class="module">
+        <div class="module-name">开发者工具规划<span class="tag plan">规划</span></div>
+        <div class="module-items">代码生成器 · 数据迁移工具</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-bar">
+    <div class="domain-header" style="border-bottom:1px solid #ddd;">
+      业务全景图例
+      <span class="sub" style="display:inline; margin-left:8px;">现有 = 已实现 · 规划 = 有业务依据、待落地</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <span><i style="background:#666;"></i> 现有（已实现 / 当前交付）</span>
+  <span><i style="background:#ccc;"></i> 规划（有业务依据、待落地）</span>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num">3</div><div class="label">获客域</div></div>
+  <div class="stat"><div class="num">6</div><div class="label">销售域</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">交付域</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">资源域</div></div>
+  <div class="stat"><div class="num">4</div><div class="label">运维域</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">财务域</div></div>
+  <div class="stat"><div class="num">5</div><div class="label">支撑域</div></div>
+  <div class="stat"><div class="num">3</div><div class="label">跨域工具</div></div>
+  <div class="stat"><div class="num">36</div><div class="label">模块合计（现17规19）</div></div>
+</div>
+
+</body>
+</html>

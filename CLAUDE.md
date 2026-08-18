@@ -13,9 +13,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   2. 启动本地 α 版开发服务器（`cd HubX && npm run dev`，即 apps/prototype，后台运行），确认可访问后再开工。
 - **下班**（用户说「下班」即触发，不要再问要不要发）：
   1. 覆盖写 `下班交接.md`（本次进度 / 当前状态 / 下次待办 / 踩坑）。
-  2. 当天有未提交改动则先提交到 `HubX/` 仓库（交接文档一并提交），避免线上和 git 再分叉。
-  3. **发布到 Cloudflare**，步骤见 `HubX/docs/DEPLOYMENT.md`「下班发布」：α 前端必发；β 前端必发（与 α 共用 `packages/ui`）；`apps/api` 有改动才发 Workers。
-  4. 用 `wrangler pages deployment list` 核对线上 Source SHA = 当前 HEAD，回报三个地址后结束。
+  2. **代码没动则跳过提交与发布**：`packages/ui/`、`apps/` 无任何改动（git status 确认）时，不提交、不发布 Cloudflare，交接文档留在工作区下次一并提交；仅根目录文档改动同理。
+  3. 有代码改动才做：提交到仓库（交接文档一并提交，避免线上和 git 分叉），并**发布到 Cloudflare**，步骤见 `HubX/docs/DEPLOYMENT.md`「下班发布」：α 前端必发；β 前端必发（与 α 共用 `packages/ui`）；`apps/api` 有改动才发 Workers；最后用 `wrangler pages deployment list` 核对线上 Source SHA = 当前 HEAD。
+
+## 状态指示文档联动规则
+
+本项目有三份指示状态的文档，做计划、写代码时必须按以下规则保持同步：
+
+1. **`ZK-HubX架构图.html`（根目录）**：整体项目的目标性文档。**每次做了计划（新功能规划、阶段计划等）就要更新这个文档**，保持与计划同步。
+2. **功能看板 `HubX/packages/ui/src/app/version/featureBoard.config.json`**：**做了计划或完成了某个模块的编码，就要更新看板里的对应细则**（planned 状态、`beta.devStatus`、`features[]` 描述等，详细行为约定见 `HubX/CLAUDE.md` §功能看板）。
+3. **看板新增板块（模块）或新增功能时**：在看板同步记录的同时，**也要更新到架构图文档里**，保证两份文档不脱节。
 
 ## 仓库结构（先读这里）
 

@@ -28,6 +28,9 @@ import {
   type CompanyEntityRecord,
 } from '../company-entity/companyEntityData';
 import { findLatestApprovedQuote } from './utils';
+import { applyDealQuotePrefill, type DealQuotePrefill } from './dealQuotePrefill';
+import { useQuotation } from '../quotation/QuotationContext';
+import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
 import type { ContractFormData, QuotationRecord } from './types';
 
 const Title = Typography.Title;
@@ -168,11 +171,17 @@ export function ContractWizard() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { createFromWizard, getNextContractNo, saveDraft } = useContracts();
+  const { updateQuote } = useQuotation();
+  const { getByLeadId: getCaseByLeadId, upsertCase } = useBusinessCases();
 
   const leadIdParam = searchParams.get('leadId');
   const quoteIdParam = searchParams.get('quoteId');
   const returnTo = searchParams.get('returnTo');
   const fromLead = searchParams.get('from');
+
+  // 阶段 3：报价成交后跳转过来携带的成交报价预填（真实报价域数据，优先于 mock 报价历史）
+  const dealQuotePrefill = (location.state as { dealQuotePrefill?: DealQuotePrefill } | null)
+    ?.dealQuotePrefill;
 
   const prefillState = (location.state as { leadContractPrefill?: LeadContractPrefillState } | null)
     ?.leadContractPrefill;
@@ -190,7 +199,7 @@ export function ContractWizard() {
     return findLeadContext(leadIdParam);
   }, [prefillState, leadIdParam]);
 
-  const selectedLeadId = contractEditPrefill?.leadId ?? leadIdParam ?? prefillState?.lead.id ?? null;
+  const selectedLeadId = contractEditPrefill?.leadId ?? leadIdParam ?? dealQuotePrefill?.leadId ?? prefillState?.lead.id ?? null;
   const lead = resolvedLead ?? findLeadContext(selectedLeadId);
 
   const initialQuote = useMemo<QuotationRecord | null>(() => {
@@ -205,10 +214,11 @@ export function ContractWizard() {
     return null;
   }, [contractEditPrefill?.quoteId, lead, quoteIdParam, prefillState?.quoteId]);
 
-  const selectedQuoteId = initialQuote?.id ?? null;
-  const [formData, setFormData] = useState<ContractFormData>(() =>
-    contractEditPrefill?.formData ?? initFormDataFromContext(lead, initialQuote),
-  );
+  const selectedQuoteId = dealQuotePrefill?.quoteId ?? initialQuote?.id ?? null;
+  const [formData, setFormData] = useState<ContractFormData>(() => {
+    const base = contractEditPrefill?.formData ?? initFormDataFromContext(lead, initialQuote);
+    return dealQuotePrefill && !contractEditPrefill ? applyDealQuotePrefill(base, dealQuotePrefill) : base;
+  });
   const previewContractNo = getNextContractNo(formData.signingEntity);
 
   const updateField = <K extends keyof ContractFormData>(key: K, value: ContractFormData[K]) => {
@@ -272,6 +282,32 @@ export function ContractWizard() {
       formData,
     });
     Message.success(`合同 ${created.contractNo} 已创建草稿`);
+
+    // 阶段 3：成交报价生成主合同后，回写报价关联 + 维护商机（quoteIds / contractId）
+    if (dealQuotePrefill?.quoteId) {
+      const dealQuoteId = dealQuotePrefill.quoteId;
+      await updateQuote(dealQuoteId, (q) => ({ ...q, contractId: created.id }));
+      const existingCase = getCaseByLeadId(dealQuotePrefill.leadId);
+      if (existingCase) {
+        upsertCase({
+          ...existingCase,
+          contractId: existingCase.contractId ?? created.id,
+          quoteIds: existingCase.quoteIds.includes(dealQuoteId)
+            ? existingCase.quoteIds
+            : [...existingCase.quoteIds, dealQuoteId],
+        });
+      } else {
+        upsertCase({
+          id: 'case-' + dealQuoteId,
+          leadId: dealQuotePrefill.leadId,
+          projectId: null,
+          contractId: created.id,
+          extraContractIds: [],
+          quoteIds: [dealQuoteId],
+        });
+      }
+      Message.success('已回写成交报价与商机关联');
+    }
 
     const returnLeadId = selectedLeadId ?? leadIdParam;
     if (returnTo === 'lead' && returnLeadId) {

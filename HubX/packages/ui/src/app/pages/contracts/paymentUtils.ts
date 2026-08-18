@@ -1,4 +1,4 @@
-import type { Contract, PaymentStatus, DunningRecord } from './types';
+import type { Contract, PaymentPlanItem, PaymentStatus, DunningRecord } from './types';
 
 const BUFFER_DAYS = 7;
 
@@ -65,6 +65,59 @@ export interface KanbanSummary {
   blockedAmount: number;
   upcomingMonthEstimate: number;
 }
+
+// ─── 期次回款状态（合同详情「回款」Tab 用） ──────────────────────
+
+export type PlanStatusKind = 'paid' | 'partial' | 'overdue' | 'upcoming' | 'pending';
+
+export interface PlanStatusRow {
+  plan: PaymentPlanItem;
+  /** 按期次顺序累计分摊后，该期已到账金额 */
+  allocated: number;
+  status: PlanStatusKind;
+}
+
+/**
+ * 把已回款金额按期次顺序分摊，推导每一期的回款状态：
+ * paid 已收足 / partial 部分到账 / overdue 逾期（超预计日期+缓冲仍未收足）/
+ * upcoming 即将到期（7 天内）/ pending 待收。
+ */
+export function computePlanStatusRows(c: Contract, now: Date = new Date()): PlanStatusRow[] {
+  const plans = c.current.paymentPlans ?? [];
+  const received = getReceivedAmount(c);
+  const bufferMs = BUFFER_DAYS * 24 * 60 * 60 * 1000;
+
+  let remaining = received;
+  return plans.map((plan) => {
+    const allocated = Math.max(0, Math.min(plan.amount, remaining));
+    remaining -= allocated;
+
+    let status: PlanStatusKind;
+    if (allocated >= plan.amount) {
+      status = 'paid';
+    } else {
+      const expected = new Date(plan.expectedDate);
+      if (Number.isNaN(expected.getTime())) {
+        status = allocated > 0 ? 'partial' : 'pending';
+      } else if (now.getTime() > expected.getTime() + bufferMs) {
+        status = 'overdue';
+      } else if (expected.getTime() - now.getTime() <= bufferMs) {
+        status = allocated > 0 ? 'partial' : 'upcoming';
+      } else {
+        status = allocated > 0 ? 'partial' : 'pending';
+      }
+    }
+    return { plan, allocated, status };
+  });
+}
+
+export const PLAN_STATUS_META: Record<PlanStatusKind, { label: string; color: string }> = {
+  paid: { label: '已收', color: 'green' },
+  partial: { label: '部分到账', color: 'orange' },
+  overdue: { label: '逾期', color: 'red' },
+  upcoming: { label: '即将到期', color: 'orange' },
+  pending: { label: '待收', color: 'gray' },
+};
 
 export function computeKanbanSummary(contracts: Contract[], now: Date = new Date()): KanbanSummary {
   const year = now.getFullYear();

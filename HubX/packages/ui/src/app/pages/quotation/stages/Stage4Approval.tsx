@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Button, Card, Empty, Input, Message, Space, Table, Tag, Timeline, Typography,
 } from '@arco-design/web-react';
@@ -10,6 +11,7 @@ import { StageProps } from './Stage1FeatureList';
 import { computeAmountBreakdown, sumEvalDaysByRole } from '../quoteFlow';
 import { PLATFORM_OPTIONS, QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, RISK_META } from '../types';
 import type { EvalRole } from '../types';
+import { buildDealQuotePrefill } from '../../contracts/dealQuotePrefill';
 
 const { Text, Title } = Typography;
 
@@ -29,6 +31,7 @@ const ROLE_TO_AUDITOR: Record<string, string | null> = {
 
 export function Stage4Approval({ quote, readonly }: StageProps) {
   const { currentRole, decideAudit, stampQuote, markSent, markDeal, markVoided } = useQuotation();
+  const navigate = useNavigate();
   const [rejectVisible, setRejectVisible] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [voidVisible, setVoidVisible] = useState(false);
@@ -72,7 +75,15 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
 
   const handleDeal = () => {
     markDeal(quote.id);
-    Message.success('已标记客户成交');
+    Message.success('已标记客户成交，可在下方生成主合同');
+  };
+
+  // 阶段 3：成交报价 -> 合同向导（携带真实报价预填，创建成功后由向导回写关联）
+  const handleGenerateContract = () => {
+    const query = '?leadId=' + encodeURIComponent(quote.leadId) + '&quoteId=' + encodeURIComponent(quote.id);
+    navigate('/contracts/new' + query, {
+      state: { dealQuotePrefill: buildDealQuotePrefill(quote) },
+    });
   };
 
   const handleVoid = () => {
@@ -446,7 +457,24 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       )}
 
       {(quote.status === 'deal' || quote.status === 'voided') && (
-        <AlertLike text={quote.status === 'deal' ? '该报价已成交，可据此创建合同。' : '该报价已作废，历史版本保留不可删除。'} />
+        quote.status === 'deal' ? (
+          <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
+            <Space>
+              <Text>该报价已成交。</Text>
+              {quote.contractId ? (
+                <Button type="primary" size="small" onClick={() => navigate('/contracts/' + quote.contractId)}>
+                  查看主合同
+                </Button>
+              ) : (
+                <Button type="primary" size="small" icon={<IconCheck />} onClick={handleGenerateContract}>
+                  生成主合同
+                </Button>
+              )}
+            </Space>
+          </div>
+        ) : (
+          <AlertLike text="该报价已作废，历史版本保留不可删除。" />
+        )
       )}
 
       {/* 驳回弹窗 */}

@@ -21,5 +21,8 @@ export {
   leadProjectBanner,
   shouldSpawnUnconfirmedProject,
   spawnUnconfirmedProject,
+  startDelivery,
 } from './caseUtils';
+export type { DeliveryStartPatch } from './caseUtils';
 export { initialBusinessCases } from './mockCases';
+export { BusinessCaseProvider, useBusinessCases } from './BusinessCaseContext';

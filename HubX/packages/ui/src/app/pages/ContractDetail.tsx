@@ -17,7 +17,7 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
+  Message,
   Upload,
 } from '@arco-design/web-react';
 import {
@@ -31,6 +31,7 @@ import {
 import { useContracts } from './contracts/ContractsContext';
 import { ContractStatusBadge } from './contracts/components/ContractStatusBadge';
 import { renderContractDocument } from './contracts/templates';
+import { computePlanStatusRows, PLAN_STATUS_META } from './contracts/paymentUtils';
 import {
   SUPPLEMENT_STATUS_LABELS,
   SUPPLEMENT_STATUS_COLORS,
@@ -89,7 +90,7 @@ export function ContractDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getById } = useContracts();
+  const { getById, addCollection } = useContracts();
 
   const returnTarget = (
     location.state as { contractDetailReturn?: { pathname: string; state?: unknown } } | null
@@ -186,6 +187,27 @@ export function ContractDetail() {
     });
   };
 
+  // 主合同回款登记（写回 ContractsContext，区别于补充协议的页面局部登记）
+  const [mainPaymentModalVisible, setMainPaymentModalVisible] = useState(false);
+  const [mainPaymentForm] = Form.useForm();
+
+  const handleRegisterMainPayment = () => {
+    mainPaymentForm.validate().then((values) => {
+      const periodValue = values.period === 'other' ? 'other' : Number(values.period) || undefined;
+      addCollection(contract.id, {
+        period: periodValue,
+        amount: Number(values.amount) || 0,
+        date: values.date || new Date().toISOString().slice(0, 10),
+        method: values.method || '银行转账',
+        note: values.note || '',
+      }).then(() => {
+        Message.success('回款登记成功，已更新合同回款数据');
+        setMainPaymentModalVisible(false);
+        mainPaymentForm.resetFields();
+      });
+    });
+  };
+
   // 文件上传（mock：记录文件名）
   const handleUploadBodyFile = (supId: string, fileName: string) => {
     setSupplements((current) => current.map((s) => (s.id === supId ? { ...s, bodyFile: { name: fileName, size: '-' } } : s)));
@@ -229,6 +251,9 @@ export function ContractDetail() {
   const receivedAmount = (contract.receivedAmount ?? 0) + supplementReceived;
   const receivableAmount = Math.max(0, totalAmount - receivedAmount);
   const collectionRate = totalAmount > 0 ? Math.round((receivedAmount / totalAmount) * 100) : 0;
+
+  // 期次回款状态（回款 Tab）：含主合同期次 + 已归档补充协议金额并入总额口径
+  const planStatusRows = computePlanStatusRows(contract);
 
   const paymentPlanColumns = [
     { title: '期数', dataIndex: 'period', width: 100, render: (_: unknown, record: { period: number; periodName?: string }) => record.periodName || `第${record.period}期` },
@@ -497,6 +522,44 @@ export function ContractDetail() {
                   ))}
                 </Timeline>
               </TabPane>
+              <TabPane key="payment" title="回款">
+                <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      已回款 {formatMoney(receivedAmount)} / 待回款 {formatMoney(receivableAmount)}
+                    </Text>
+                    <Button type="primary" size="mini" onClick={() => setMainPaymentModalVisible(true)}>
+                      登记回款
+                    </Button>
+                  </div>
+                  <Progress percent={collectionRate} size="small" />
+                  {planStatusRows.length === 0 ? (
+                    <Text type="secondary">暂无回款期次，可在合同编辑中配置付款计划。</Text>
+                  ) : (
+                    planStatusRows.map((row) => {
+                      const meta = PLAN_STATUS_META[row.status];
+                      const label = row.plan.periodName || `第${row.plan.period}期`;
+                      return (
+                        <div key={row.plan.period} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '8px 12px' }}>
+                          <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text bold style={{ fontSize: 13 }}>{label}</Text>
+                              <Tag color={meta.color} size="small">{meta.label}</Tag>
+                            </div>
+                            <Space size={8}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>预计 {row.plan.expectedDate || '-'}</Text>
+                              <Text style={{ fontSize: 12, fontWeight: 600 }}>{formatMoney(row.plan.amount)}</Text>
+                            </Space>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              已到账 {formatMoney(row.allocated)}（{row.plan.percentage?.toFixed(0) ?? '-'}%）
+                            </Text>
+                          </Space>
+                        </div>
+                      );
+                    })
+                  )}
+                </Space>
+              </TabPane>
               <TabPane key="version" title="版本">
                 <Timeline style={{ marginTop: 8 }}>
                   {[...versions].reverse().map((v) => (
@@ -603,9 +666,9 @@ export function ContractDetail() {
         </Form>
       </Modal>
 
-      {/* 回款登记弹窗 */}
+      {/* 回款登记弹窗（补充协议，页面局部数据） */}
       <Modal
-        title="登记回款"
+        title="登记回款（补充协议）"
         visible={paymentModalVisible}
         onCancel={() => setPaymentModalVisible(false)}
         onOk={handleRegisterPayment}
@@ -618,6 +681,44 @@ export function ContractDetail() {
           </Form.Item>
           <Form.Item label="回款日期" field="date">
             <Input placeholder="如：2026-06-20" />
+          </Form.Item>
+          <Form.Item label="回款方式" field="method">
+            <Input placeholder="如：银行转账" />
+          </Form.Item>
+          <Form.Item label="备注" field="note">
+            <Input placeholder="选填" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 主合同回款登记弹窗（写回 ContractsContext） */}
+      <Modal
+        title="登记回款（主合同）"
+        visible={mainPaymentModalVisible}
+        onCancel={() => setMainPaymentModalVisible(false)}
+        onOk={handleRegisterMainPayment}
+        maskClosable={false}
+        style={{ width: 420 }}
+      >
+        <Form form={mainPaymentForm} layout="vertical">
+          <Form.Item label="回款期次" field="period" initialValue={(() => {
+            const firstPending = planStatusRows.find((r) => r.status !== 'paid');
+            return firstPending ? String(firstPending.plan.period) : 'other';
+          })()}>
+            <Select placeholder="请选择回款期次">
+              {planStatusRows.map((row) => (
+                <Select.Option key={row.plan.period} value={String(row.plan.period)}>
+                  {row.plan.periodName || `第${row.plan.period}期`} · {formatMoney(row.plan.amount)}
+                </Select.Option>
+              ))}
+              <Select.Option value="other">其他/不分期</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="回款金额" field="amount" rules={[{ required: true, message: '请输入回款金额' }]}>
+            <Input placeholder="如：50000" />
+          </Form.Item>
+          <Form.Item label="回款日期" field="date">
+            <Input placeholder="如：2026-06-20（默认今天）" />
           </Form.Item>
           <Form.Item label="回款方式" field="method">
             <Input placeholder="如：银行转账" />

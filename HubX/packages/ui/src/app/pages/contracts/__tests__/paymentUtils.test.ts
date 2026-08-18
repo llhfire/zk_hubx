@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentStatus, computeKanbanSummary, getLatestDunning } from '../paymentUtils';
+import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, getLatestDunning } from '../paymentUtils';
 import type { Contract } from '../types';
 
 function makeContract(overrides: Partial<Contract> = {}): Contract {
@@ -125,5 +125,42 @@ describe('getLatestDunning', () => {
 
   it('returns null for empty array', () => {
     expect(getLatestDunning([])).toBeNull();
+  });
+});
+
+describe('computePlanStatusRows（阶段 3 回款 Tab）', () => {
+  it('已回款按期次顺序分摊：第一期收足、第二期未收且未到期为待收', () => {
+    const c = makeContract();
+    (c as unknown as { collectionRecords: Array<{ amount: number }> }).collectionRecords = [
+      { amount: 50000 },
+    ];
+    const rows = computePlanStatusRows(c, new Date('2026-04-01'));
+    expect(rows[0].status).toBe('paid');
+    expect(rows[0].allocated).toBe(50000);
+    expect(rows[1].status).toBe('pending');
+    expect(rows[1].allocated).toBe(0);
+  });
+
+  it('部分到账且超期 -> 逾期；7 天内到期 -> 即将到期', () => {
+    const c = makeContract();
+    (c as unknown as { collectionRecords: Array<{ amount: number }> }).collectionRecords = [
+      { amount: 10000 },
+    ];
+    // 第一期 2026-03-01，now=2026-03-05 距到期 7 天内：部分到账
+    const rowsSoon = computePlanStatusRows(c, new Date('2026-03-05'));
+    expect(rowsSoon[0].status).toBe('partial');
+    // now=2026-03-20 已超预计日期+缓冲：逾期
+    const rowsLate = computePlanStatusRows(c, new Date('2026-03-20'));
+    expect(rowsLate[0].status).toBe('overdue');
+  });
+
+  it('全部收足后每一期都是已收', () => {
+    const c = makeContract();
+    (c as unknown as { collectionRecords: Array<{ amount: number }> }).collectionRecords = [
+      { amount: 50000 },
+      { amount: 50000 },
+    ];
+    const rows = computePlanStatusRows(c, new Date('2026-07-01'));
+    expect(rows.every((r) => r.status === 'paid')).toBe(true);
   });
 });

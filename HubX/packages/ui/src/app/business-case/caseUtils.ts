@@ -81,6 +81,34 @@ export function confirmProject(input: {
   };
 }
 
+/** 「交付启动」对项目实体的补丁：状态进行中 + 关联合同 + 启动日期 */
+export interface DeliveryStartPatch {
+  status: '进行中';
+  startDate: string;
+  contractId: string;
+  latestProgress: string;
+}
+
+/**
+ * 阶段 3：主合同审批通过后的「交付启动」状态迁移。
+ * 仅对「未开始」（已确认指派、等待合同）或「搁置」的项目生效；
+ * 项目已绑定其他合同时不启动（避免一份合同拉起别人的项目）。
+ */
+export function startDelivery(input: {
+  project: { status: string; contractId?: string | null };
+  contractId: string;
+  today: string;
+}): DeliveryStartPatch | null {
+  if (input.project.status !== '未开始' && input.project.status !== '搁置') return null;
+  if (input.project.contractId && input.project.contractId !== input.contractId) return null;
+  return {
+    status: '进行中',
+    startDate: input.today,
+    contractId: input.contractId,
+    latestProgress: '主合同审批通过，交付已启动，SOP 交付计划已生成。',
+  };
+}
+
 export function isVisibleToProductManager(
   project: { status: string; productUsers: string[] },
   productManager: string,

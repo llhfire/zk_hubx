@@ -3,50 +3,41 @@
 // ─── 状态机 ───────────────────────────────────────────────
 
 export type QuoteStatus =
-  | 'draft'              // 草稿
-  | 'feature_confirmed'  // 功能清单已确认
-  | 'eval_completed'     // 人天评估完成
-  | 'assigned_sales'     // 已转派销售
-  | 'quote_summarized'   // 报价已汇总
-  | 'auditing'           // 审批中（三人并行会签）
-  | 'rejected'           // 驳回待修改
-  | 'pending_stamp'      // 待盖章
-  | 'stamped'            // 已盖章
-  | 'sent'               // 已发出
-  | 'deal'               // 成交
-  | 'pending_followup'   // 待跟进
-  | 'voided';            // 已作废
+  | 'draft'           // 草稿
+  | 'pending_eval'    // 待评估（原 feature_confirmed）
+  | 'pending_quote'   // 待报价（原 eval_completed / assigned_sales / quote_summarized 三态合一）
+  | 'auditing'        // 待审核（原展示词「审批中」）
+  | 'rejected'        // 已驳回（原展示词「驳回待修改」）
+  | 'pending_stamp'   // 待盖章
+  | 'stamped'         // 已盖章
+  | 'sent'            // 已发出（含原 pending_followup）
+  | 'confirmed'       // 已确认（原 deal，ADR 0066：已确认 ≠ 签约）
+  | 'voided';         // 已废止（原展示词「已作废」）
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   draft: '草稿',
-  feature_confirmed: '功能清单已确认',
-  eval_completed: '人天评估完成',
-  assigned_sales: '已转派销售',
-  quote_summarized: '报价已汇总',
-  auditing: '审批中',
-  rejected: '驳回待修改',
+  pending_eval: '待评估',
+  pending_quote: '待报价',
+  auditing: '待审核',
+  rejected: '已驳回',
   pending_stamp: '待盖章',
   stamped: '已盖章',
   sent: '已发出',
-  deal: '成交',
-  pending_followup: '待跟进',
-  voided: '已作废',
+  confirmed: '已确认',
+  voided: '已废止',
 };
 
 /** 列表页状态标签配色 */
 export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
   draft: 'gray',
-  feature_confirmed: 'blue',
-  eval_completed: 'cyan',
-  assigned_sales: 'arcoblue',
-  quote_summarized: 'arcoblue',
+  pending_eval: 'blue',
+  pending_quote: 'arcoblue',
   auditing: 'orange',
   rejected: 'red',
   pending_stamp: 'gold',
   stamped: 'green',
   sent: 'green',
-  deal: 'green',
-  pending_followup: 'orange',
+  confirmed: 'green',
   voided: 'gray',
 };
 
@@ -99,9 +90,12 @@ export type QuoteAction =
   | 'audit_reject'
   | 'stamp'
   | 'mark_sent'
-  | 'mark_deal'
+  | 'mark_confirmed'
   | 'mark_voided'
-  | 'new_version';
+  | 'new_version'
+  | 'withdraw_sent'
+  | 'return_to_stamp'
+  | 'return_to_edit_features';
 
 export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   create: '创建报价单',
@@ -115,9 +109,12 @@ export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   audit_reject: '驳回报价',
   stamp: '加盖公章',
   mark_sent: '发送客户',
-  mark_deal: '客户成交',
+  mark_confirmed: '确认成交',
   mark_voided: '作废报价',
   new_version: '创建新版本',
+  withdraw_sent: '撤回发出',
+  return_to_stamp: '退回盖章',
+  return_to_edit_features: '退回改清单',
 };
 
 export interface QuoteTimelineEvent {

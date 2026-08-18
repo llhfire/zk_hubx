@@ -18,6 +18,7 @@ import {
   buildNewQuote,
   generateQuoteId,
   generateQuoteNo,
+  migrateQuote,
   now,
 } from './quotationMutations';
 import type { EvalSheet, FeatureModule, Quote } from '@/app/pages/quotation/types';
@@ -49,7 +50,7 @@ export interface QuotationService {
   decideAudit(quoteId: string, auditorName: string, decision: 'approve' | 'reject', comment?: string): Promise<void>;
   stampQuote(quoteId: string): Promise<void>;
   markSent(quoteId: string): Promise<void>;
-  markDeal(quoteId: string): Promise<void>;
+  markConfirmed(quoteId: string): Promise<void>;
   markVoided(quoteId: string, reason: string): Promise<void>;
   createNewVersion(quoteId: string): Promise<string>;
 }
@@ -61,12 +62,12 @@ function loadQuotes(): Quote[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) return parsed.map(migrateQuote);
     }
   } catch {
     // ignore
   }
-  return initialQuotes;
+  return initialQuotes.map(migrateQuote);
 }
 
 export function createMockQuotationService(): QuotationService {
@@ -103,10 +104,10 @@ export function createMockQuotationService(): QuotationService {
     submitFeatureList: async (id) => mapOne(id, applySubmitFeatureList),
 
     saveEvalSheet: async (id, evalSheet) => mapOne(id, (q) => applyUpdate(q, (x) => ({ ...x, evalSheet }))),
-    submitEval: async (id) => mapOne(id, (q) => applyTransition(q, 'submit_eval', 'tech', 'eval_completed')),
-    assignToSales: async (id) => mapOne(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'assigned_sales')),
+    submitEval: async (id) => mapOne(id, (q) => applyTransition(q, 'submit_eval', 'tech', 'pending_quote')),
+    assignToSales: async (id) => mapOne(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote')),
 
-    returnToTech: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'feature_confirmed', reason)),
+    returnToTech: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason)),
     submitForAudit: async (id) =>
       mapOne(id, (q) =>
         applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
@@ -116,7 +117,7 @@ export function createMockQuotationService(): QuotationService {
       ),
     withdrawAudit: async (id, reason) =>
       mapOne(id, (q) =>
-        applyTransition(q, 'withdraw_audit', 'sales', 'assigned_sales', reason, () => ({
+        applyTransition(q, 'withdraw_audit', 'sales', 'pending_quote', reason, () => ({
           auditNodes: resetAuditNodes(),
         })),
       ),
@@ -131,7 +132,7 @@ export function createMockQuotationService(): QuotationService {
       ),
     markSent: async (id) =>
       mapOne(id, (q) => applyTransition(q, 'mark_sent', 'sales', 'sent', undefined, () => ({ sentAt: now() }))),
-    markDeal: async (id) => mapOne(id, (q) => applyTransition(q, 'mark_deal', 'sales', 'deal')),
+    markConfirmed: async (id) => mapOne(id, (q) => applyTransition(q, 'mark_confirmed', 'sales', 'confirmed')),
     markVoided: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'mark_voided', 'sales', 'voided', reason)),
     createNewVersion: async (id) => {
       const source = quotes.find((q) => q.id === id);
@@ -150,7 +151,7 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
   async function getList(): Promise<Quote[]> {
     const r = await fetch(api('/api/quotes'));
     const d = (await r.json()) as { quotes?: Quote[] };
-    return d.quotes ?? [];
+    return (d.quotes ?? []).map(migrateQuote);
   }
 
   async function getOne(id: string): Promise<Quote | undefined> {
@@ -191,10 +192,10 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
     submitFeatureList: async (id) => mutate(id, applySubmitFeatureList),
 
     saveEvalSheet: async (id, evalSheet) => mutate(id, (q) => applyUpdate(q, (x) => ({ ...x, evalSheet }))),
-    submitEval: async (id) => mutate(id, (q) => applyTransition(q, 'submit_eval', 'tech', 'eval_completed')),
-    assignToSales: async (id) => mutate(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'assigned_sales')),
+    submitEval: async (id) => mutate(id, (q) => applyTransition(q, 'submit_eval', 'tech', 'pending_quote')),
+    assignToSales: async (id) => mutate(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote')),
 
-    returnToTech: async (id, reason) => mutate(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'feature_confirmed', reason)),
+    returnToTech: async (id, reason) => mutate(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason)),
     submitForAudit: async (id) =>
       mutate(id, (q) =>
         applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
@@ -204,7 +205,7 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
       ),
     withdrawAudit: async (id, reason) =>
       mutate(id, (q) =>
-        applyTransition(q, 'withdraw_audit', 'sales', 'assigned_sales', reason, () => ({
+        applyTransition(q, 'withdraw_audit', 'sales', 'pending_quote', reason, () => ({
           auditNodes: resetAuditNodes(),
         })),
       ),
@@ -219,7 +220,7 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
       ),
     markSent: async (id) =>
       mutate(id, (q) => applyTransition(q, 'mark_sent', 'sales', 'sent', undefined, () => ({ sentAt: now() }))),
-    markDeal: async (id) => mutate(id, (q) => applyTransition(q, 'mark_deal', 'sales', 'deal')),
+    markConfirmed: async (id) => mutate(id, (q) => applyTransition(q, 'mark_confirmed', 'sales', 'confirmed')),
     markVoided: async (id, reason) => mutate(id, (q) => applyTransition(q, 'mark_voided', 'sales', 'voided', reason)),
     createNewVersion: async (id) => {
       const source = await getOne(id);

@@ -9,6 +9,7 @@ import type {
   PresalesQuoteRecord,
   UnconfirmedProject,
 } from './types';
+import type { Project } from '@/app/pages/project-management/mockData';
 
 export type {
   BusinessCase,
@@ -60,6 +61,57 @@ export function spawnUnconfirmedProject(input: {
       status: '未确认',
       productUsers: [],
     },
+  };
+}
+
+/**
+ * 签约开启时生成完整的未确认项目实体。
+ * 合同侧触发时 contract 可选传入（取客户名/签约主体）；
+ * 线索侧触发时无合同，从 lead 取客户名。
+ * 两条接线共用此函数，防止行为分叉。
+ */
+export function buildUnconfirmedProject(input: {
+  lead?: { name?: string; id: string };
+  contract?: { id: string; current: { customerName?: string; signingEntity?: string } };
+  projectId: string;
+  today: string;
+}): Project {
+  const customerName =
+    input.contract?.current?.customerName || input.lead?.name || '签约客户';
+  const entity = input.contract?.current?.signingEntity || '中科软艺';
+  const hasContract = !!input.contract;
+
+  return {
+    id: input.projectId,
+    projectNo: 'PRJ' + input.today.replace(/-/g, '') + String(input.projectId).slice(-3),
+    name: customerName + '项目（待确认）',
+    latestProgress: hasContract
+      ? '主合同已创建，等待管理员确认并指派产品经理。'
+      : '线索进入签约阶段，等待管理员确认并指派产品经理。',
+    priority: '中',
+    entity,
+    status: '未确认',
+    businessLine: '外包',
+    salesUsers: [],
+    owner: '',
+    assistants: [],
+    productUsers: [],
+    uiUsers: [],
+    frontendUsers: [],
+    backendUsers: [],
+    opsUsers: [],
+    testUsers: [],
+    legalUsers: [],
+    progress: 0,
+    startDate: '',
+    expectedEndDate: '',
+    remark: hasContract
+      ? '签约开启自动生成，尚未确认。'
+      : '签约开启自动生成，尚未确认。',
+    attachments: [],
+    leadId: input.lead?.id,
+    contractId: input.contract?.id,
+    createdAt: input.today + ' 00:00',
   };
 }
 

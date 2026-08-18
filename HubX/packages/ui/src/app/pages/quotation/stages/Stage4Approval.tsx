@@ -30,7 +30,7 @@ const ROLE_TO_AUDITOR: Record<string, string | null> = {
 };
 
 export function Stage4Approval({ quote, readonly }: StageProps) {
-  const { currentRole, decideAudit, stampQuote, markSent, markDeal, markVoided } = useQuotation();
+  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided } = useQuotation();
   const navigate = useNavigate();
   const [rejectVisible, setRejectVisible] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
@@ -73,9 +73,9 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
     Message.success('已登记发送客户，报价有效期自今日起算');
   };
 
-  const handleDeal = () => {
-    markDeal(quote.id);
-    Message.success('已标记客户成交，可在下方生成主合同');
+  const handleConfirmed = () => {
+    markConfirmed(quote.id);
+    Message.success('已确认成交，可在下方生成主合同');
   };
 
   // 阶段 3：成交报价 -> 合同向导（携带真实报价预填，创建成功后由向导回写关联）
@@ -127,7 +127,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
     <Card title={
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title heading={6} style={{ margin: 0 }}>工作台四 · 管理层审批与盖章</Title>
-        {(quote.status === 'stamped' || quote.status === 'sent' || quote.status === 'deal') && (
+        {(quote.status === 'stamped' || quote.status === 'sent' || quote.status === 'confirmed') && (
           <Button size="small" icon={<IconDownload />} onClick={handleDownloadPDF}>下载报价单 PDF</Button>
         )}
       </div>
@@ -445,7 +445,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
 
       {!readonly && isSales && quote.status === 'sent' && (
         <Space>
-          <Button type="primary" status="success" icon={<IconCheckCircle />} onClick={handleDeal}>客户已成交</Button>
+          <Button type="primary" status="success" icon={<IconCheckCircle />} onClick={handleConfirmed}>确认成交</Button>
           <Button status="danger" icon={<IconCloseCircle />} onClick={() => setVoidVisible(true)}>客户放弃，作废</Button>
         </Space>
       )}
@@ -456,11 +456,11 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
         </div>
       )}
 
-      {(quote.status === 'deal' || quote.status === 'voided') && (
-        quote.status === 'deal' ? (
+      {(quote.status === 'confirmed' || quote.status === 'voided') && (
+        quote.status === 'confirmed' ? (
           <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
             <Space>
-              <Text>该报价已成交。</Text>
+              <Text>该报价已确认。</Text>
               {quote.contractId ? (
                 <Button type="primary" size="small" onClick={() => navigate('/contracts/' + quote.contractId)}>
                   查看主合同

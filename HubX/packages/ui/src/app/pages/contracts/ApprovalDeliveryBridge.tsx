@@ -1,21 +1,24 @@
-// 阶段 3「合同批准 -> 交付启动」联动桥。
-// 为什么是桥组件：ContractsProvider 是 ProjectProvider / BusinessCaseProvider 的父级，
-// Context 层拿不到子级数据；所以在最内层挂一个无 UI 组件，监听 contracts 快照中
-// approvedAt 的「首次出现」，执行跨域副作用（商机维护 / 签约出未确认项目 / 交付启动）。
-// 该模式对 mock 与 http 数据源同样生效（谁调 approveStep 都会触发）。
+// 签约开启联动桥（原 ApprovalDeliveryBridge）。
+// 职责：监听 contracts 快照，产出两类事件——
+//   created（合同新建）→ spawn 未确认项目
+//   approved（批准）  → startDelivery + SOP 计划（仅对已有项目）
+// 两条接线共用 caseUtils 纯函数层，防止行为分叉。
+//
+// 阶段 3 原名 ApprovalDeliveryBridge，U1 改名 SigningOpenBridge。
+// 合同在全局 ContractsContext 里，快照 diff 可靠；
+// 线索侧不在桥内处理（跟进弹窗 onOk 显式调联动，见 LeadDetail）。
 
 import { useEffect, useRef } from 'react';
 import { Message } from '@arco-design/web-react';
 import { useContracts } from './ContractsContext';
 import { useProjects } from '../project-management/ProjectContext';
 import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
-import { spawnUnconfirmedProject, startDelivery } from '@/app/business-case';
-import type { UnconfirmedProject } from '@/app/business-case';
+import { buildUnconfirmedProject, spawnUnconfirmedProject, startDelivery } from '@/app/business-case';
+import { diffContractEvents } from './signingOpenEvents';
 import { generateDeliveryPlan } from '../delivery-plan/utils';
 import { saveDeliveryPlan } from '../delivery-plan/deliveryPlanStore';
 import { SOP_PHASES } from '../delivery-plan/constants';
 import type { DeliveryType } from '../delivery-plan/types';
-import type { Project } from '../project-management/mockData';
 import type { Contract } from './types';
 
 /** 自动生成 SOP 计划的默认交付类型；项目可在交付计划页重新配置 */
@@ -25,62 +28,76 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** 把 spawn 出的未确认项目补全成项目管理完整实体 */
-function toFullProject(spawned: UnconfirmedProject, contract: Contract, today: string): Project {
-  return {
-    id: spawned.id,
-    projectNo: 'PRJ' + today.replace(/-/g, '') + String(spawned.id).slice(-3),
-    name: (contract.current.customerName || '签约客户') + '项目（待确认）',
-    latestProgress: '主合同审批通过，等待管理员确认并指派产品经理。',
-    priority: '中',
-    entity: contract.current.signingEntity || '中科软艺',
-    status: '未确认',
-    businessLine: '外包',
-    salesUsers: [],
-    owner: '',
-    assistants: [],
-    productUsers: [],
-    uiUsers: [],
-    frontendUsers: [],
-    backendUsers: [],
-    opsUsers: [],
-    testUsers: [],
-    legalUsers: [],
-    progress: 0,
-    startDate: '',
-    expectedEndDate: '',
-    remark: '主合同审批通过自动生成，尚未确认。',
-    attachments: [],
-    leadId: spawned.leadId,
-    contractId: contract.id,
-    createdAt: today + ' 00:00',
-  };
-}
-
-export function ApprovalDeliveryBridge() {
+export function SigningOpenBridge() {
   const { contracts } = useContracts();
   const { getProjectByLeadId, updateProject, addProject } = useProjects();
   const { getByLeadId, upsertCase } = useBusinessCases();
 
-  // id -> approvedAt 的上一份快照；null 表示尚未做首帧快照（首帧只记录不触发，避免初始加载误判）
-  const approvedSnapshotRef = useRef<Record<string, string | undefined> | null>(null);
+  // id -> approvedAt 的上一份快照；null 表示尚未做首帧快照（首帧只记录不触发）
+  const snapshotRef = useRef<Record<string, string | undefined> | null>(null);
 
   useEffect(() => {
-    const snapshot = approvedSnapshotRef.current;
+    const prev = snapshotRef.current;
+    // 构建下一份快照
     const next: Record<string, string | undefined> = {};
     contracts.forEach((c) => {
       next[c.id] = c.approvedAt;
-      if (snapshot === null) return;
-      const before = snapshot[c.id];
-      if (c.approvedAt && !before && c.status !== 'voided') {
-        handleContractApproved(c);
-      }
     });
-    approvedSnapshotRef.current = next;
+    snapshotRef.current = next;
+
+    // 首帧只记录不触发
+    if (prev === null) return;
+
+    const events = diffContractEvents(prev, contracts);
+
+    // created 事件：合同新建 → spawn 未确认项目
+    for (const contract of events.created) {
+      handleContractCreated(contract);
+    }
+
+    // approved 事件：批准 → startDelivery（仅对已有项目）
+    for (const contract of events.approved) {
+      handleContractApproved(contract);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contracts]);
 
-  /** approvedAt 首次写入时的联动副作用（见文件头注释） */
+  /** 合同新建时的联动：spawn 未确认项目 */
+  function handleContractCreated(contract: Contract) {
+    const leadId = contract.leadId;
+    if (!leadId) return;
+
+    const today = todayStr();
+    const project = getProjectByLeadId(leadId);
+    if (project) {
+      // 已有项目不重复 spawn，只补全商机关联
+      const bizCase = getByLeadId(leadId);
+      if (bizCase) {
+        upsertCase({
+          ...bizCase,
+          projectId: bizCase.projectId ?? project.id,
+          contractId: bizCase.contractId ?? contract.id,
+        });
+      }
+      Message.success('合同 ' + contract.contractNo + ' 已创建：商机关联已更新');
+      return;
+    }
+
+    // 无项目 → spawn
+    const projectId = 'ap-' + contract.id;
+    const spawned = spawnUnconfirmedProject({ caseId: 'case-' + leadId, leadId, projectId });
+    const fullProject = buildUnconfirmedProject({
+      lead: { id: leadId },
+      contract: { id: contract.id, current: contract.current },
+      projectId,
+      today,
+    });
+    addProject(fullProject);
+    upsertCase({ ...spawned.case, contractId: contract.id });
+    Message.success('合同 ' + contract.contractNo + ' 已创建：已生成未确认项目，待管理员确认指派');
+  }
+
+  /** 合同批准时的联动：startDelivery + SOP 计划（仅对已有项目） */
   function handleContractApproved(contract: Contract) {
     const leadId = contract.leadId;
     if (!leadId) return;
@@ -88,56 +105,51 @@ export function ApprovalDeliveryBridge() {
     const today = todayStr();
     const project = getProjectByLeadId(leadId);
     const bizCase = getByLeadId(leadId);
-    const notices: string[] = [];
 
     if (!project) {
-      // 签约出未确认项目：接线 spawnUnconfirmedProject（此前只有单测调用）
-      const projectId = 'ap-' + contract.id;
-      const spawned = spawnUnconfirmedProject({ caseId: 'case-' + leadId, leadId, projectId });
-      addProject(toFullProject(spawned.project, contract, today));
-      upsertCase({ ...spawned.case, contractId: contract.id });
-      notices.push('已生成未确认项目，待管理员确认指派产品经理');
-    } else {
-      if (bizCase) {
-        upsertCase({
-          ...bizCase,
-          projectId: bizCase.projectId ?? project.id,
-          contractId: bizCase.contractId ?? contract.id,
-        });
-      } else {
-        upsertCase({
-          id: 'case-' + leadId,
-          leadId,
-          projectId: project.id,
-          contractId: contract.id,
-          extraContractIds: [],
-          quoteIds: [],
-        });
-      }
-
-      const patch = startDelivery({ project, contractId: contract.id, today });
-      if (patch) {
-        const startedProject = { ...project, ...patch };
-        updateProject(startedProject);
-        const plan = generateDeliveryPlan(
-          {
-            selectedPhases: SOP_PHASES.map((p) => p.phaseNo),
-            deliveryType: DEFAULT_DELIVERY_TYPE,
-            contractId: contract.id,
-          },
-          startedProject as unknown as Record<string, unknown>,
-          contract.current.signDate,
-        );
-        saveDeliveryPlan(plan);
-        notices.push('项目已进入进行中并生成 SOP 交付计划');
-      } else if (project.status === '未确认') {
-        notices.push('项目待管理员确认指派后启动交付');
-      } else {
-        notices.push('商机关联已更新');
-      }
+      // ADR 0067 严格执行：批准时无项目不兜底 spawn
+      Message.warning('合同 ' + contract.contractNo + ' 审批通过，但线索下无项目，请先创建项目');
+      return;
     }
 
-    Message.success('合同 ' + contract.contractNo + ' 审批通过：' + notices.join('；'));
+    // 补全商机关联
+    if (bizCase) {
+      upsertCase({
+        ...bizCase,
+        projectId: bizCase.projectId ?? project.id,
+        contractId: bizCase.contractId ?? contract.id,
+      });
+    } else {
+      upsertCase({
+        id: 'case-' + leadId,
+        leadId,
+        projectId: project.id,
+        contractId: contract.id,
+        extraContractIds: [],
+        quoteIds: [],
+      });
+    }
+
+    const patch = startDelivery({ project, contractId: contract.id, today });
+    if (patch) {
+      const startedProject = { ...project, ...patch };
+      updateProject(startedProject);
+      const plan = generateDeliveryPlan(
+        {
+          selectedPhases: SOP_PHASES.map((p) => p.phaseNo),
+          deliveryType: DEFAULT_DELIVERY_TYPE,
+          contractId: contract.id,
+        },
+        startedProject as unknown as Record<string, unknown>,
+        contract.current.signDate,
+      );
+      saveDeliveryPlan(plan);
+      Message.success('合同 ' + contract.contractNo + ' 审批通过：项目已进入进行中并生成 SOP 交付计划');
+    } else if (project.status === '未确认') {
+      Message.info('合同 ' + contract.contractNo + ' 审批通过：项目待管理员确认指派后启动交付');
+    } else {
+      Message.success('合同 ' + contract.contractNo + ' 审批通过：商机关联已更新');
+    }
   }
 
   return null;

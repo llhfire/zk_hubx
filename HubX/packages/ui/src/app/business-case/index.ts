@@ -13,6 +13,7 @@ export type {
 export { SIGNING_LEAD_STATUSES } from './types';
 export {
   buildPresalesTimeline,
+  buildUnconfirmedProject,
   confirmProject,
   filterProjectsForViewer,
   hasEnteredSigning,

@@ -51,6 +51,9 @@ import { ProjectDemoPanel } from '@/app/pages/project-management/ProjectDetailWo
 import { LeadProjectExecutionPanel } from '@/app/pages/leads/components/LeadProjectExecutionPanel';
 import { leadProjectBanner } from '@/app/business-case';
 import { useProjects } from '@/app/pages/project-management/ProjectContext';
+import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
+import { SIGNING_LEAD_STATUSES } from '@/app/business-case/types';
+import { spawnUnconfirmedProject, buildUnconfirmedProject } from '@/app/business-case/caseUtils';
 import {
   IconLeft,
   IconEdit,
@@ -114,7 +117,9 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const { leadInfo, quotationHistory, useLiveContracts, demoContracts } = leadProfile;
   const { contracts: allContracts } = useContracts();
   const { employees } = useEmployee();
-  const { getProjectByLeadId } = useProjects();
+  const { getProjectByLeadId, addProject } = useProjects();
+  const { getByLeadId, upsertCase } = useBusinessCases();
+  const [leadStatus, setLeadStatus] = useState(leadInfo.status);
   const useProjectStyleSideTabs = from === 'my' || from === 'public';
 
   const relatedContracts = useMemo<Contract[]>(() => {
@@ -422,8 +427,36 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
 
   const handleFollow = () => {
     form.validate().then((values) => {
-      console.log(values);
-      Message.success('跟进记录已保存');
+      const newStatus = values.status as string;
+      if (newStatus) {
+        setLeadStatus(newStatus);
+
+        // 签约开启联动：状态进入合同洽谈/已签单 且 无项目时 spawn
+        if (
+          (SIGNING_LEAD_STATUSES as readonly string[]).includes(newStatus) &&
+          !getProjectByLeadId(id)
+        ) {
+          const projectId = 'lead-spawn-' + id;
+          const spawned = spawnUnconfirmedProject({
+            caseId: 'case-' + id,
+            leadId: id,
+            projectId,
+          });
+          const today = new Date().toISOString().slice(0, 10);
+          const fullProject = buildUnconfirmedProject({
+            lead: { id, name: leadInfo.name },
+            projectId,
+            today,
+          });
+          addProject(fullProject);
+          upsertCase(spawned.case);
+          Message.success('跟进记录已保存：已生成未确认项目，待管理员确认指派');
+        } else {
+          Message.success('跟进记录已保存');
+        }
+      } else {
+        Message.success('跟进记录已保存');
+      }
       setFollowVisible(false);
       form.resetFields();
     });
@@ -621,7 +654,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const basicTabInfoItems = [
     { label: '对接主体', value: displayLeadValue(leadInfo.entity) },
     { label: '线索意向', value: displayLeadValue(leadInfo.intention) },
-    { label: '线索状态', value: displayLeadValue(leadInfo.status) },
+    { label: '线索状态', value: displayLeadValue(leadStatus) },
     { label: '客户类型', value: displayLeadValue(leadInfo.customerType) },
     { label: '客户预算', value: displayLeadValue(leadInfo.customerBudget) },
     { label: '客户主体', value: displayLeadValue(leadInfo.customer) },

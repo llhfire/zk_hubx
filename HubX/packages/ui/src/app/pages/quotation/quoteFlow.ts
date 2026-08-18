@@ -27,17 +27,13 @@ export function deriveStage(status: QuoteStatus): QuoteStage {
   switch (status) {
     case 'draft':
       return 1;
-    case 'feature_confirmed':
+    case 'pending_eval':
       return 2;
-    case 'eval_completed':
-      // 评估已完成，罗总提交后销售可进行报价配置
-      return 3;
-    case 'assigned_sales':
-    case 'quote_summarized':
+    case 'pending_quote':
     case 'rejected':
       return 3;
     default:
-      // auditing / pending_stamp / stamped / sent / deal / pending_followup / voided
+      // auditing / pending_stamp / stamped / sent / confirmed / voided
       return 4;
   }
 }
@@ -95,7 +91,7 @@ export function canEditStage(quote: Quote, role: QuoteRole, stage: QuoteStage): 
 
 /** 已结束的单据不再接受任何流转 */
 export function isTerminalStatus(status: QuoteStatus): boolean {
-  return status === 'deal' || status === 'voided';
+  return status === 'confirmed' || status === 'voided';
 }
 
 /** 当前状态下等着谁处理，列表页「当前待办人」列用 */
@@ -103,13 +99,9 @@ export function getPendingOwner(quote: Quote): string {
   switch (quote.status) {
     case 'draft':
       return `${quote.basicInfo.creatorName}（产品经理）`;
-    case 'feature_confirmed':
+    case 'pending_eval':
       return `${quote.basicInfo.techEvaluatorName}（技术评估）`;
-    case 'eval_completed':
-      // 评估完成后，销售可进行报价配置
-      return '张三（报价配置）';
-    case 'assigned_sales':
-    case 'quote_summarized':
+    case 'pending_quote':
     case 'rejected':
       return '张三（报价配置）';
     case 'auditing': {
@@ -136,17 +128,15 @@ const AUDITOR_ID_TO_ROLE: Record<string, QuoteRole> = {
 
 /**
  * 当前状态等着哪些角色处理（与 getPendingOwner 同口径，但返回角色 key，供"待我处理"过滤/待办推导用）。
- * 终态（deal / voided / pending_followup）返回空数组。
+ * 终态（confirmed / voided）返回空数组。
  */
 export function getPendingRoles(quote: Quote): QuoteRole[] {
   switch (quote.status) {
     case 'draft':
       return ['pm'];
-    case 'feature_confirmed':
+    case 'pending_eval':
       return ['tech'];
-    case 'eval_completed':
-    case 'assigned_sales':
-    case 'quote_summarized':
+    case 'pending_quote':
     case 'rejected':
       return ['sales'];
     case 'auditing':
@@ -159,9 +149,8 @@ export function getPendingRoles(quote: Quote): QuoteRole[] {
     case 'stamped':
     case 'sent':
       return ['sales'];
-    case 'deal':
+    case 'confirmed':
     case 'voided':
-    case 'pending_followup':
       return [];
     default:
       return [];
@@ -675,6 +664,19 @@ export function removeRoleFromUnits(units: EvaluationUnit[], roleKey: string, re
 }
 
 /** 评估单元在表格中的展示顺序：按模块 sort，再按粒度与绑定的首个子功能 */
+
+// ─── 过期判断 ──────────────────────────────────────────────
+
+/** 过期是 sent 上的派生标记，不改 status、不进终态 */
+export function isExpired(quote: Quote, today: string): boolean {
+  if (quote.status !== 'sent') return false;
+  if (!quote.sentAt) return false;
+  const validityDays = quote.basicInfo.quoteValidityDays ?? 30;
+  const sentDate = new Date(quote.sentAt.slice(0, 10));
+  const expiryDate = new Date(sentDate);
+  expiryDate.setDate(expiryDate.getDate() + validityDays);
+  return today >= expiryDate.toISOString().slice(0, 10);
+}
 export function sortUnitsByFeatureList(units: EvaluationUnit[], featureList: FeatureModule[]): EvaluationUnit[] {
   const moduleOrder = new Map(featureList.map((m, idx) => [m.id, idx]));
   const subOrder = new Map<string, number>();

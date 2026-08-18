@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPresalesTimeline,
+  buildUnconfirmedProject,
   confirmProject,
   filterProjectsForViewer,
   isVisibleToProductManager,
@@ -98,6 +99,54 @@ describe('spawnUnconfirmedProject', () => {
     expect(result.case.contractId).toBeNull();
     expect(result.case.extraContractIds).toEqual([]);
     expect(result.case.quoteIds).toEqual([]);
+  });
+});
+
+describe('buildUnconfirmedProject', () => {
+  it('有合同：客户名/签约主体/contractId 取自合同', () => {
+    const project = buildUnconfirmedProject({
+      lead: { id: 'lead-1', name: '华信科技' },
+      contract: { id: 'c-1', current: { customerName: '华信科技有限公司', signingEntity: '中科软艺' } },
+      projectId: 'proj-1',
+      today: '2026-08-18',
+    });
+
+    expect(project.status).toBe('未确认');
+    expect(project.name).toBe('华信科技有限公司项目（待确认）');
+    expect(project.entity).toBe('中科软艺');
+    expect(project.contractId).toBe('c-1');
+    expect(project.leadId).toBe('lead-1');
+    expect(project.id).toBe('proj-1');
+    expect(project.productUsers).toEqual([]);
+    expect(project.owner).toBe('');
+    expect(project.latestProgress).toContain('主合同已创建');
+  });
+
+  it('无合同：客户名取自线索入参，contractId 为空', () => {
+    const project = buildUnconfirmedProject({
+      lead: { id: 'lead-2', name: '远景信息' },
+      projectId: 'proj-2',
+      today: '2026-08-18',
+    });
+
+    expect(project.status).toBe('未确认');
+    expect(project.name).toBe('远景信息项目（待确认）');
+    expect(project.entity).toBe('中科软艺');
+    expect(project.contractId).toBeUndefined();
+    expect(project.leadId).toBe('lead-2');
+    expect(project.latestProgress).toContain('线索进入签约阶段');
+  });
+
+  it('projectId 回写：产出实体 id = 入参 projectId', () => {
+    const spawned = spawnUnconfirmedProject({ caseId: 'case-3', leadId: 'lead-3', projectId: 'proj-3' });
+    const project = buildUnconfirmedProject({
+      lead: { id: 'lead-3' },
+      projectId: spawned.project.id,
+      today: '2026-08-18',
+    });
+
+    expect(project.id).toBe('proj-3');
+    expect(project.id).toBe(spawned.project.id);
   });
 });
 

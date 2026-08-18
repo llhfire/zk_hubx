@@ -12,7 +12,7 @@ const DOT_COLOR: Partial<Record<QuoteTimelineEvent['action'], string>> = {
   withdraw_audit: 'rgb(var(--orange-6))',
   mark_voided: 'rgb(var(--red-6))',
   stamp: 'rgb(var(--green-6))',
-  mark_deal: 'rgb(var(--green-6))',
+  mark_confirmed: 'rgb(var(--green-6))',
 };
 
 /** 流转轨迹：按 timeline 倒序展示，最新在顶，便于一眼看到当前卡点 */

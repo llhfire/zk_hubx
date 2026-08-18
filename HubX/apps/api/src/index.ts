@@ -17,7 +17,7 @@ app.use('*', cors());
 function seedQuote() {
   return {
     id: 'q-seed-1',
-    quoteNo: 'ZK-20260816-001',
+    quoteNo: 'QT-2026-1',
     version: 'v1.0',
     status: 'draft',
     leadId: 'lead-1',
@@ -62,21 +62,18 @@ async function ensureSeed(db: D1Database) {
     .run();
 }
 
-// 报价状态机「合法迁移」表（与前端 quotationMutations 对齐，服务端校验用）。
-// 终态（deal / voided / pending_followup）不再迁移。
+// 报价状态机「合法迁移」表（与前端 quotationMutations TRANSITIONS 对齐，服务端校验用）。
+// 终态（confirmed / voided）不再迁移。
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  draft: ['feature_confirmed'],
-  feature_confirmed: ['eval_completed'],
-  eval_completed: ['assigned_sales', 'feature_confirmed'],
-  assigned_sales: ['feature_confirmed', 'auditing'],
-  quote_summarized: ['feature_confirmed'],
-  rejected: ['assigned_sales', 'auditing'],
-  auditing: ['assigned_sales', 'rejected', 'pending_stamp'],
+  draft: ['pending_eval'],
+  pending_eval: ['pending_quote'],
+  pending_quote: ['pending_eval', 'auditing'],
+  rejected: ['pending_quote', 'draft'],
+  auditing: ['pending_quote', 'rejected', 'pending_stamp'],
   pending_stamp: ['stamped'],
-  stamped: ['sent'],
-  sent: ['deal'],
-  deal: [],
-  pending_followup: [],
+  stamped: ['sent', 'pending_stamp'],
+  sent: ['confirmed', 'stamped'],
+  confirmed: [],
   voided: [],
 };
 
@@ -86,12 +83,28 @@ function isValidTransition(from: string, to: string): boolean {
   return (VALID_TRANSITIONS[from] ?? []).includes(to);
 }
 
+// 读时迁移：旧词表 → 新词表（与 packages/ui quotationMutations.migrateQuote 对齐）
+const API_STATUS_MAP: Record<string, string> = {
+  feature_confirmed: 'pending_eval',
+  eval_completed: 'pending_quote',
+  assigned_sales: 'pending_quote',
+  quote_summarized: 'pending_quote',
+  deal: 'confirmed',
+  pending_followup: 'sent',
+};
+
+function migrateQuoteApi(q: Record<string, unknown>): Record<string, unknown> {
+  const mapped = API_STATUS_MAP[q.status as string];
+  if (!mapped) return q;
+  return { ...q, status: mapped };
+}
+
 app.get('/', (c) => c.json({ ok: true, service: 'zkhubx-api' }));
 
 app.get('/api/quotes', async (c) => {
   await ensureSeed(c.env.DB);
   const { results } = await c.env.DB.prepare('SELECT data FROM quotes ORDER BY updated_at DESC').all<{ data: string }>();
-  return c.json({ quotes: results.map((r) => JSON.parse(r.data)) });
+  return c.json({ quotes: results.map((r) => migrateQuoteApi(JSON.parse(r.data))) });
 });
 
 app.get('/api/quotes/:id', async (c) => {
@@ -99,7 +112,7 @@ app.get('/api/quotes/:id', async (c) => {
     .prepare('SELECT data FROM quotes WHERE id = ?')
     .bind(c.req.param('id'))
     .first<{ data: string }>();
-  return row ? c.json({ quote: JSON.parse(row.data) }) : c.json({ error: 'not found' }, 404);
+  return row ? c.json({ quote: migrateQuoteApi(JSON.parse(row.data)) }) : c.json({ error: 'not found' }, 404);
 });
 
 app.put('/api/quotes/:id', async (c) => {

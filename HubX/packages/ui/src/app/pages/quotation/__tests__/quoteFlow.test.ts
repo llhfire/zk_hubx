@@ -84,7 +84,7 @@ function buildQuote(overrides: Partial<Quote> = {}): Quote {
     id: 'q1',
     quoteNo: 'ZK-20260814-001',
     version: 'v1.0',
-    status: 'assigned_sales',
+    status: 'pending_quote',
     leadId: 'lead-1',
     basicInfo: {
       projectName: '微官网项目',
@@ -130,16 +130,14 @@ function buildQuote(overrides: Partial<Quote> = {}): Quote {
 describe('deriveStage', () => {
   const cases: [QuoteStatus, number][] = [
     ['draft', 1],
-    ['feature_confirmed', 2],
-    ['eval_completed', 3],  // 评估完成后进入阶段3（报价配置）
-    ['assigned_sales', 3],
+    ['pending_eval', 2],
+    ['pending_quote', 3],
     ['rejected', 3],
-    ['quote_summarized', 3],
     ['auditing', 4],
     ['pending_stamp', 4],
     ['stamped', 4],
     ['sent', 4],
-    ['deal', 4],
+    ['confirmed', 4],
     ['voided', 4],
   ];
 
@@ -150,7 +148,7 @@ describe('deriveStage', () => {
 
 describe('阶段权限矩阵', () => {
   it('未到达的阶段锁定，已过阶段只读', () => {
-    const quote = buildQuote({ status: 'assigned_sales' });
+    const quote = buildQuote({ status: 'pending_quote' });
     expect(getStageAccess(quote, 'sales', 4)).toBe('locked');
     expect(getStageAccess(quote, 'sales', 1)).toBe('readonly');
     expect(getStageAccess(quote, 'sales', 2)).toBe('readonly');
@@ -158,14 +156,14 @@ describe('阶段权限矩阵', () => {
   });
 
   it('阶段责任角色之外的人只读', () => {
-    const quote = buildQuote({ status: 'feature_confirmed' });
+    const quote = buildQuote({ status: 'pending_eval' });
     expect(canEditStage(quote, 'tech', 2)).toBe(true);
     expect(canEditStage(quote, 'sales', 2)).toBe(false);
     expect(canEditStage(quote, 'pm', 2)).toBe(false);
   });
 
-  it('eval_completed 进入阶段 3，销售可进行报价配置', () => {
-    const quote = buildQuote({ status: 'eval_completed' });
+  it('pending_quote 进入阶段 3，销售可进行报价配置', () => {
+    const quote = buildQuote({ status: 'pending_quote' });
     expect(getStageAccess(quote, 'sales', 3)).toBe('editable');
     expect(getStageAccess(quote, 'tech', 3)).toBe('readonly');
   });
@@ -192,7 +190,7 @@ describe('阶段权限矩阵', () => {
   });
 
   it('终态单据任何角色都不可编辑', () => {
-    for (const status of ['deal', 'voided'] as QuoteStatus[]) {
+    for (const status of ['confirmed', 'voided'] as QuoteStatus[]) {
       const quote = buildQuote({ status });
       for (const role of ['pm', 'tech', 'sales', 'sales_manager', 'decision', 'assistant'] as const) {
         expect(canEditStage(quote, role, 4)).toBe(false);
@@ -441,7 +439,7 @@ describe('版本与待办人', () => {
   });
 
   it('各状态都有明确待办人', () => {
-    const statuses: QuoteStatus[] = ['draft', 'feature_confirmed', 'eval_completed', 'assigned_sales', 'pending_stamp', 'stamped'];
+    const statuses: QuoteStatus[] = ['draft', 'pending_eval', 'pending_quote', 'pending_stamp', 'stamped'];
     for (const status of statuses) {
       expect(getPendingOwner(buildQuote({ status }))).not.toBe('—');
     }
@@ -451,12 +449,13 @@ describe('版本与待办人', () => {
 describe('待办推导（getPendingRoles / buildQuoteTodos）', () => {
   it('各状态对应正确的待处理角色', () => {
     expect(getPendingRoles(buildQuote({ status: 'draft' }))).toEqual(['pm']);
-    expect(getPendingRoles(buildQuote({ status: 'feature_confirmed' }))).toEqual(['tech']);
-    expect(getPendingRoles(buildQuote({ status: 'eval_completed' }))).toEqual(['sales']);
-    expect(getPendingRoles(buildQuote({ status: 'assigned_sales' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'pending_eval' }))).toEqual(['tech']);
+    expect(getPendingRoles(buildQuote({ status: 'pending_quote' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'rejected' }))).toEqual(['sales']);
     expect(getPendingRoles(buildQuote({ status: 'pending_stamp' }))).toEqual(['assistant']);
     expect(getPendingRoles(buildQuote({ status: 'stamped' }))).toEqual(['sales']);
-    expect(getPendingRoles(buildQuote({ status: 'deal' }))).toEqual([]);
+    expect(getPendingRoles(buildQuote({ status: 'sent' }))).toEqual(['sales']);
+    expect(getPendingRoles(buildQuote({ status: 'confirmed' }))).toEqual([]);
     expect(getPendingRoles(buildQuote({ status: 'voided' }))).toEqual([]);
   });
 
@@ -469,8 +468,8 @@ describe('待办推导（getPendingRoles / buildQuoteTodos）', () => {
   it('buildQuoteTodos 只生成当前角色待处理的报价待办', () => {
     const quotes = [
       buildQuote({ id: 'q-draft', status: 'draft' }),
-      buildQuote({ id: 'q-eval', status: 'feature_confirmed' }),
-      buildQuote({ id: 'q-sales', status: 'assigned_sales' }),
+      buildQuote({ id: 'q-eval', status: 'pending_eval' }),
+      buildQuote({ id: 'q-sales', status: 'pending_quote' }),
     ];
     const salesTodos = buildQuoteTodos(quotes, 'sales');
     expect(salesTodos).toHaveLength(1);
@@ -483,7 +482,7 @@ describe('待办推导（getPendingRoles / buildQuoteTodos）', () => {
   });
 
   it('终态报价不生成待办', () => {
-    const quotes = [buildQuote({ id: 'q-deal', status: 'deal' })];
+    const quotes = [buildQuote({ id: 'q-confirmed', status: 'confirmed' })];
     expect(buildQuoteTodos(quotes, 'sales')).toEqual([]);
   });
 });

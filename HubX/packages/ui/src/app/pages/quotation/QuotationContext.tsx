@@ -41,7 +41,7 @@ interface QuotationContextValue {
   decideAudit: (quoteId: string, auditorName: string, decision: 'approve' | 'reject', comment?: string) => Promise<void>;
   stampQuote: (quoteId: string) => Promise<void>;
   markSent: (quoteId: string) => Promise<void>;
-  markDeal: (quoteId: string) => Promise<void>;
+  markConfirmed: (quoteId: string) => Promise<void>;
   markVoided: (quoteId: string, reason: string) => Promise<void>;
   createNewVersion: (quoteId: string) => Promise<string>;
 }
@@ -212,9 +212,9 @@ export function QuotationProvider({ children, service }: QuotationProviderProps)
     [svc, refresh],
   );
 
-  const markDeal = useCallback(
+  const markConfirmed = useCallback(
     async (quoteId: string) => {
-      await svc.markDeal(quoteId);
+      await svc.markConfirmed(quoteId);
       await refresh();
     },
     [svc, refresh],
@@ -258,7 +258,7 @@ export function QuotationProvider({ children, service }: QuotationProviderProps)
     decideAudit,
     stampQuote,
     markSent,
-    markDeal,
+    markConfirmed,
     markVoided,
     createNewVersion,
   }), [
@@ -266,7 +266,7 @@ export function QuotationProvider({ children, service }: QuotationProviderProps)
     saveFeatureList, setDeadline, submitFeatureList,
     saveEvalSheet, submitEval, assignToSales,
     returnToTech, submitForAudit, withdrawAudit,
-    decideAudit, stampQuote, markSent, markDeal, markVoided, createNewVersion,
+    decideAudit, stampQuote, markSent, markConfirmed, markVoided, createNewVersion,
   ]);
 
   return <QuotationContext.Provider value={value}>{children}</QuotationContext.Provider>;

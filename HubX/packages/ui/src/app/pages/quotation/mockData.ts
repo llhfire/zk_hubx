@@ -177,9 +177,9 @@ function buildTimeline(): QuoteTimelineEvent[] {
 function buildQuote(): Quote {
   return {
     id: 'q1',
-    quoteNo: 'ZK-20260814-001',
+    quoteNo: 'QT-2026-1',
     version: 'v1.0',
-    status: 'assigned_sales',
+    status: 'pending_quote',
     leadId: 'lead-1',
     basicInfo: {
       projectName: '和昇塑料制品-微官网项目',
@@ -253,7 +253,7 @@ function buildQuote(): Quote {
 function buildDraftQuote(): Quote {
   return {
     id: 'q2',
-    quoteNo: 'ZK-20260814-002',
+    quoteNo: 'QT-2026-2',
     version: 'v1.0',
     status: 'draft',
     leadId: 'lead-2',

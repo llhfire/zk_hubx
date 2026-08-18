@@ -118,7 +118,7 @@ export function applyDecideAudit(
 
 /** 提交功能清单时的评估表初始化（首次提交才建） */
 export function applySubmitFeatureList(quote: Quote): Quote {
-  const base = applyTransition(quote, 'submit_feature_list', 'pm', 'feature_confirmed');
+  const base = applyTransition(quote, 'submit_feature_list', 'pm', 'pending_eval');
   if (base.evalSheet) return base;
   const activeRoles = [
     { key: 'pm_days', name: '产品经理' },
@@ -189,7 +189,7 @@ export function applyNewVersion(source: Quote, newId: string): Quote {
     ...source,
     id: newId,
     version: nextVersion(source.version),
-    status: 'assigned_sales',
+    status: 'pending_quote',
     previousQuoteId: source.id,
     auditNodes: resetAuditNodes(),
     stampNode: { stamperName: '黄海', status: 'LOCKED' },
@@ -209,4 +209,80 @@ export function generateQuoteId(): string {
 export function generateQuoteNo(listLength: number): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   return `ZK-${date}-${String(listLength + 1).padStart(3, '0')}`;
+}
+
+// ─── 读时迁移（13 态 → 10 态）───────────────────────────────
+
+const STATUS_MAP: Record<string, QuoteStatus> = {
+  draft: 'draft',
+  feature_confirmed: 'pending_eval',
+  eval_completed: 'pending_quote',
+  assigned_sales: 'pending_quote',
+  quote_summarized: 'pending_quote',
+  auditing: 'auditing',
+  rejected: 'rejected',
+  pending_stamp: 'pending_stamp',
+  stamped: 'stamped',
+  sent: 'sent',
+  deal: 'confirmed',
+  pending_followup: 'sent',
+  voided: 'voided',
+};
+
+/**
+ * 读时迁移：旧词表 → 新词表。
+ * mock/HTTP/D1 三处读路径统一过这道函数再进 UI。
+ * 脏数据（未知 status）保留原值并 console 警告，不静默吞。
+ */
+export function migrateQuote(quote: Quote): Quote {
+  const mapped = STATUS_MAP[quote.status];
+  if (!mapped) {
+    console.warn(`[migrateQuote] 未知状态 "${quote.status}"，保留原值 (quote ${quote.id})`);
+    return quote;
+  }
+  if (mapped === quote.status) return quote;
+  return {
+    ...quote,
+    status: mapped,
+    timeline: quote.timeline.map((ev) =>
+      ev.action === 'mark_deal' ? { ...ev, action: 'mark_confirmed' as QuoteAction } : ev,
+    ),
+  };
+}
+
+// ─── 合法迁移表 ────────────────────────────────────────────
+
+export interface TransitionRule {
+  from: QuoteStatus[];
+  to: QuoteStatus;
+}
+
+/** 合法迁移表：action → { from[], to }。service 层先查表再 applyTransition。 */
+export const TRANSITIONS: Record<string, TransitionRule> = {
+  mark_confirmed: { from: ['sent'], to: 'confirmed' },
+  withdraw_sent: { from: ['sent'], to: 'stamped' },
+  return_to_stamp: { from: ['stamped'], to: 'pending_stamp' },
+  return_to_edit_features: { from: ['rejected'], to: 'draft' },
+  return_to_tech: { from: ['pending_quote'], to: 'pending_eval' },
+  withdraw_audit: { from: ['auditing'], to: 'pending_quote' },
+  mark_voided: { from: ['draft', 'pending_eval', 'pending_quote', 'auditing', 'rejected', 'pending_stamp', 'stamped', 'sent'], to: 'voided' },
+  new_version: { from: ['rejected', 'voided'], to: 'draft' },
+};
+
+export function canTransition(status: QuoteStatus, action: string): boolean {
+  const rule = TRANSITIONS[action];
+  if (!rule) return false;
+  return rule.from.includes(status);
+}
+
+/** QT-YYYY-序号：主/补共用当年序列，每年从 1 重新开始 */
+export function generateQuoteNoV2(existing: { quoteNo: string }[], year: number): string {
+  const prefix = `QT-${year}-`;
+  let max = 0;
+  for (const q of existing) {
+    if (!q.quoteNo.startsWith(prefix)) continue;
+    const n = parseInt(q.quoteNo.slice(prefix.length), 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return `${prefix}${max + 1}`;
 }

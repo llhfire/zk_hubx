@@ -12,7 +12,7 @@ import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
 import { ProjectProvider } from './pages/project-management/ProjectContext';
 import { BusinessCaseProvider } from './business-case/BusinessCaseContext';
-import { ApprovalDeliveryBridge } from './pages/contracts/ApprovalDeliveryBridge';
+import { SigningOpenBridge } from './pages/contracts/ApprovalDeliveryBridge';
 import type { QuotationService } from '@/services/quotationService';
 import type { ContractService } from '@/services/contractService';
 import { AppVersionProvider } from './version/AppVersionContext';
@@ -42,8 +42,8 @@ function App({ quotationService, contractService, appVersion = 'alpha' }: AppPro
                       <BusinessCaseProvider>
                       <ProjectInvoiceProvider>
                         <QuotationProvider service={quotationService}>
-                          {/* 合同批准 -> 交付启动 联动桥（无 UI，见 ApprovalDeliveryBridge 注释） */}
-                          <ApprovalDeliveryBridge />
+                          {/* 签约开启联动桥（无 UI，见 SigningOpenBridge 注释） */}
+                          <SigningOpenBridge />
                           <RouterProvider router={router} />
                         </QuotationProvider>
                       </ProjectInvoiceProvider>

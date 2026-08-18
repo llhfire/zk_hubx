@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="项目组" />
+  <meta name="description" content="围绕报价、合同审批、回款开票、成本核算及项目交接的阶段验收纪要" />
+  <title>HubX 项目会议纪要</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+:root {
+  color-scheme: light;
+  --navy: #10233f;
+  --ink: #25344d;
+  --muted: #66758c;
+  --line: #dfe6ef;
+  --surface: #ffffff;
+  --canvas: #f3f6fa;
+  --blue: #2864dc;
+  --blue-strong: #194fb5;
+  --blue-soft: #edf4ff;
+  --green: #13855c;
+  --green-soft: #eaf8f1;
+  --amber: #a66008;
+  --amber-soft: #fff7e7;
+  --red: #bd3d4b;
+  --red-soft: #fff0f2;
+  --shadow-lg: 0 24px 70px rgba(29, 48, 79, .12), 0 2px 8px rgba(29, 48, 79, .06);
+  --shadow-sm: 0 8px 24px rgba(29, 48, 79, .07), 0 1px 3px rgba(29, 48, 79, .05);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; background: var(--canvas); }
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 8% 2%, rgba(67, 122, 231, .12), transparent 28rem),
+    radial-gradient(circle at 92% 8%, rgba(73, 183, 157, .10), transparent 24rem),
+    var(--canvas);
+  font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#title-block-header { display: none; }
+.page-shell { width: min(1240px, calc(100% - 40px)); margin: 32px auto 80px; }
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 56px 64px 48px;
+  color: #fff;
+  background: linear-gradient(128deg, #102c58 0%, #174c9e 58%, #2473d7 100%);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 28px;
+  box-shadow: var(--shadow-lg);
+}
+.hero::before, .hero::after { content: ""; position: absolute; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; }
+.hero::before { width: 320px; height: 320px; top: -180px; right: -48px; }
+.hero::after { width: 190px; height: 190px; right: 120px; bottom: -142px; }
+.hero-kicker { position: relative; margin: 0 0 16px; color: #a9c9ff; font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+.hero h1 { position: relative; margin: 0; color: #fff; font-size: 42px; line-height: 1.14; letter-spacing: -.035em; }
+.hero-summary { position: relative; max-width: 750px; margin: 18px 0 0; color: rgba(255,255,255,.78); font-size: 16px; }
+.hero-metrics { position: relative; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.hero-metric { min-width: 150px; padding: 14px 18px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.14); border-radius: 14px; backdrop-filter: blur(8px); }
+.hero-metric strong { display: block; color: #fff; font-size: 20px; line-height: 1.25; }
+.hero-metric span { color: rgba(255,255,255,.65); font-size: 12px; }
+
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 24px; }
+.toc { position: sticky; top: 20px; padding: 18px 14px; background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); backdrop-filter: blur(12px); }
+.toc-title { margin: 2px 10px 10px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .1em; }
+.toc a { display: block; padding: 9px 10px; color: #526178; border-radius: 9px; font-size: 14px; text-decoration: none; transition: .18s ease; }
+.toc a:hover { color: var(--blue-strong); background: var(--blue-soft); transform: translateX(2px); }
+.content { min-width: 0; }
+.section-card { margin-bottom: 24px; padding: 32px 36px 38px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-sm); }
+
+h1.title { display: none; }
+h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 24px; color: var(--navy); font-size: 24px; line-height: 1.3; letter-spacing: -.015em; }
+h2::before { content: attr(data-index); display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; color: var(--blue-strong); background: var(--blue-soft); border-radius: 10px; font-size: 13px; font-weight: 800; }
+h3 { margin: 30px 0 14px; color: #294369; font-size: 18px; line-height: 1.4; }
+p { margin: 10px 0; }
+blockquote { margin: 0; padding: 18px 20px; color: #506078; background: #f7f9fc; border: 1px solid #e6ebf2; border-left: 4px solid var(--blue); border-radius: 12px; }
+blockquote p { margin: 0; }
+
+ol, ul { margin: 12px 0; padding-left: 0; list-style: none; counter-reset: item; }
+li { position: relative; margin: 10px 0; padding-left: 28px; }
+ul > li::before { content: ""; position: absolute; left: 5px; top: .72em; width: 7px; height: 7px; background: #79a0e8; border-radius: 50%; box-shadow: 0 0 0 4px var(--blue-soft); }
+ol > li { counter-increment: item; }
+ol > li::before { content: counter(item); position: absolute; left: 0; top: .17em; display: grid; place-items: center; width: 20px; height: 20px; color: var(--blue-strong); background: var(--blue-soft); border-radius: 6px; font-size: 11px; font-weight: 800; }
+.section-card:nth-of-type(2) > ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.section-card:nth-of-type(2) > ol > li { margin: 0; padding: 16px 16px 16px 44px; background: #f8faff; border: 1px solid #e5ecf8; border-radius: 12px; }
+.section-card:nth-of-type(2) > ol > li::before { left: 14px; top: 16px; }
+
+.table-wrap { margin: 18px 0 8px; overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+table { width: 100%; min-width: 650px; border-spacing: 0; border-collapse: collapse; font-size: 14px; }
+thead th { color: #344d70; background: #f1f5fa; font-size: 13px; font-weight: 700; white-space: nowrap; }
+th, td { padding: 13px 15px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: #f8fbff; }
+td:first-child { font-weight: 650; }
+.priority { display: inline-flex; min-width: 34px; justify-content: center; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+.priority.p0 { color: var(--red); background: var(--red-soft); }
+.priority.p1 { color: var(--amber); background: var(--amber-soft); }
+.priority.p2 { color: var(--green); background: var(--green-soft); }
+.permission-yes { color: var(--green); font-weight: 700; }
+.permission-no { color: var(--red); font-weight: 700; }
+code { padding: 3px 7px; color: var(--blue-strong); background: var(--blue-soft); border-radius: 6px; font-family: inherit; font-weight: 700; }
+hr { margin: 36px 0 20px; border: 0; border-top: 1px solid var(--line); }
+em { color: var(--muted); }
+.doc-footer { margin: 8px 8px 0; text-align: center; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 900px) {
+  .page-shell { width: min(100% - 24px, 760px); margin-top: 12px; }
+  .hero { padding: 40px 32px; border-radius: 20px; }
+  .hero h1 { font-size: 34px; }
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: static; display: flex; gap: 4px; overflow-x: auto; padding: 10px; }
+  .toc-title { display: none; }
+  .toc a { flex: 0 0 auto; white-space: nowrap; }
+  .section-card:nth-of-type(2) > ol { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .page-shell { width: 100%; margin: 0; }
+  .hero { padding: 32px 20px; border-radius: 0 0 22px 22px; }
+  .hero h1 { font-size: 30px; }
+  .hero-metric { min-width: calc(50% - 6px); flex: 1; }
+  .layout { margin: 14px 12px 40px; }
+  .section-card { padding: 24px 20px 28px; border-radius: 16px; }
+  h2 { font-size: 21px; }
+}
+
+@media print {
+  @page { margin: 15mm; }
+  html, body { background: #fff; }
+  .page-shell { width: 100%; margin: 0; }
+  .hero { padding: 24px 28px; color: var(--ink); background: #fff; border: 2px solid var(--navy); border-radius: 0; box-shadow: none; }
+  .hero h1 { color: var(--navy); font-size: 30px; }
+  .hero-kicker, .hero-summary, .hero-metric span { color: var(--muted); }
+  .hero-metrics { margin-top: 18px; }
+  .hero-metric { padding: 8px 12px; border: 1px solid var(--line); }
+  .hero-metric strong { color: var(--navy); }
+  .layout { display: block; margin-top: 18px; }
+  .toc { display: none; }
+  .section-card { margin: 0 0 16px; padding: 20px 0; border: 0; border-radius: 0; box-shadow: none; break-inside: auto; }
+  h2, h3 { break-after: avoid; }
+  table, blockquote { break-inside: avoid; }
+  .table-wrap { overflow: visible; }
+  table { min-width: 0; font-size: 11px; }
+  th, td { padding: 7px 8px; }
+}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">HubX 项目会议纪要</h1>
+<p class="author">项目组</p>
+</header>
+<h1 id="hubx-项目会议纪要">HubX 项目会议纪要</h1>
+<blockquote>
+<p>本纪要依据会议录音识别文本整理。原始文本存在少量同音错字，以下内容按业务上下文归纳；未在会上最终确认的内容单独列入“待确认事项”。</p>
+</blockquote>
+<h2 id="一会议概览">一、会议概览</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>会议主题</td>
+<td>HubX 原型阶段验收、功能调整确认及后续交接安排</td>
+</tr>
+<tr>
+<td>涉及模块</td>
+<td>报价、功能清单、报价审批、合同与回款计划、回款与开票、人工成本、员工及人资费用</td>
+</tr>
+<tr>
+<td>会议目标</td>
+<td>检查已完成原型，确认关键业务流程与页面交互，整理后续优化和交接事项</td>
+</tr>
+<tr>
+<td>整理依据</td>
+<td>最新会议录音识别文本</td>
+</tr>
+</tbody>
+</table>
+<h2 id="二核心结论">二、核心结论</h2>
+<ol type="1">
+<li>页面设计必须符合业务阅读顺序，先展示业务背景和原始数据，再展示调整项及最终结果；关键操作应靠近其作用对象。</li>
+<li>报价流程以“功能清单”为数据基础，工时、单价和小计进入详细报价清单，并自动形成报价单。</li>
+<li>报价单支持保存草稿和提交审批；技术评估资料应在技术评估环节产生，不在提交审批页面重复上传。</li>
+<li>合同付款比例继续采用模板化方案，模板需同时带出比例、期数、回款条件等信息，并支持将当前回款计划存为新模板。</li>
+<li>审批流程应在提交前即可查看，未提交节点可以灰态展示，让提交人明确当前环节及下一步处理人。</li>
+<li>回款、开票、拆分和冲红必须严格受业务状态控制，避免在已回款或未开票等不符合条件的记录上出现错误操作。</li>
+<li>人工成本按人员和按工作性质分别汇总；日报明细保留月份和日期范围筛选，并处理跨年展示与排序问题。</li>
+<li>原型、会议纪要及相关资料需按文件归档后统一交接，后续再安排线下业务流程讲解。</li>
+</ol>
+<h2 id="三议题与需求确认">三、议题与需求确认</h2>
+<h3 id="31-报价与功能清单">3.1 报价与功能清单</h3>
+<ul>
+<li>报价上浮信息应放在价格附近，形成“原始报价—上浮调整—最终报价”的清晰阅读顺序。</li>
+<li>上浮操作入口应靠近报价金额，便于理解调整原因及调整结果。</li>
+<li>功能清单是报价单生成的前置数据，需包含业务端、功能模块、功能点、功能说明和工时等信息。</li>
+<li>详细报价清单由功能清单自动带入，并结合单价计算小计及汇总金额。</li>
+<li>报价单的公司信息、版式和固定内容应严格采用既定模板，不能因文档导入改变整体风格。</li>
+<li>工时评估模板仍需进一步确定是否按前端、后端或其他工作性质拆分。</li>
+</ul>
+<h3 id="32-报价单与审批">3.2 报价单与审批</h3>
+<ul>
+<li>新增报价单支持两种保存方式：保存草稿、立即提交审批。</li>
+<li>草稿状态允许继续编辑，并重新进入功能清单、工时评估和报价生成流程。</li>
+<li>技术评估文件应由技术评估人在对应环节填写或上传，提交审批页面不再重复提供上传入口。</li>
+<li>审批中心详情以弹窗展示线索报价信息，审批人可以填写审批意见并执行通过或驳回。</li>
+<li>审批完成后仍应支持查看当时提交的报价详情和审批意见。</li>
+</ul>
+<h3 id="33-合同付款比例与回款计划">3.3 合同付款比例与回款计划</h3>
+<ul>
+<li>付款比例采用下拉模板，模板展示比例及描述，例如同为
+<code>3:3:3:1</code> 的模板可因回款条件不同而存在多条。</li>
+<li>选择模板后自动带出期数、各期比例和回款条件。</li>
+<li>编辑某一期回款计划时，可调整预计回款日期、日期类型及回款条件。</li>
+<li>后续期次默认继承第一期选择的日期类型，但允许用户继续编辑。</li>
+<li>“存为模板”时需展示当前付款比例和各期回款条件，并要求填写模板描述。</li>
+<li>保存后新模板应出现在付款比例下拉列表中，通过描述区分相同比例的不同方案。</li>
+</ul>
+<h3 id="34-合同审批流程展示">3.4 合同审批流程展示</h3>
+<ul>
+<li>提交审批前，页面也应展示完整审批流程。</li>
+<li>未提交时流程节点采用灰态或“未提交”状态，不应完全隐藏。</li>
+<li>提交人需要在提交前看清当前环节、下一步处理人及流程去向。</li>
+<li>可采用默认展开方式，把审批流程直接嵌入合同处理环节，保证前后逻辑连续。</li>
+</ul>
+<h3 id="35-回款开票拆分与冲红">3.5 回款、开票、拆分与冲红</h3>
+<p>操作权限按当前状态控制：</p>
+<table>
+<thead>
+<tr>
+<th>回款状态</th>
+<th>开票状态</th>
+<th>拆分</th>
+<th>冲红</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>未回款</td>
+<td>未开票</td>
+<td>可以</td>
+<td>不可以</td>
+<td>金额尚未实际回款，可调整期次</td>
+</tr>
+<tr>
+<td>未回款</td>
+<td>已开票</td>
+<td>可以</td>
+<td>可以</td>
+<td>可按实际回款安排拆分；已开票可发起冲红</td>
+</tr>
+<tr>
+<td>已回款</td>
+<td>未开票</td>
+<td>不可以</td>
+<td>不可以</td>
+<td>资金已到账，禁止再拆分；无发票不可冲红</td>
+</tr>
+<tr>
+<td>已回款</td>
+<td>已开票</td>
+<td>不可以</td>
+<td>可以</td>
+<td>已回款禁止拆分；已开票可按流程冲红</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>未开票记录可以提交开票申请，申请进入财务侧“开票审核”。</li>
+<li>财务查看开票详情时，需要看到该项目所有期次的回款状态及开票状态。</li>
+<li>发票附件应支持直接查看和下载。</li>
+<li>财务可在回款记录中直接执行回款操作，并录入实际回款信息。</li>
+<li>每一期需要同时展示预计回款时间和实际回款时间，为后续判断是否逾期提供依据。</li>
+<li>列表操作区应尽量紧凑，优先采用“图标 +
+文字/悬浮提示”，减少横向滚动。</li>
+</ul>
+<h3 id="36-人工成本与日报明细">3.6 人工成本与日报明细</h3>
+<ul>
+<li>人工成本分为“按人员”和“按工作性质”两个视图，并分别展示总工时、总成本。</li>
+<li>按工作性质视图中，同一员工可以有客户沟通、功能开发等多条不同性质记录。</li>
+<li>同一工作性质的数据应分组排列，并考虑按业务流程发生顺序排序。</li>
+<li>日报明细保留月份筛选，同时增加起止日期筛选。</li>
+<li>月份应显示完整年月，例如“2025 年 6
+月”，避免只显示月份造成歧义。</li>
+<li>对跨年度项目，建议增加年度时间轴或年份分组，例如从“2025 年 11
+月”连续展示到“2026 年 1 月”。</li>
+<li>默认优先展示最近发生的数据，同时提供正序、倒序或按流程顺序的排序能力。</li>
+</ul>
+<h3 id="37-员工与人资费用">3.7 员工与人资费用</h3>
+<ul>
+<li>员工列表的工资调整信息采用简洁展示，生效时间通过悬停查看。</li>
+<li>人资费用管理本次未提出新的结构性调整，现有展示方案暂时保留。</li>
+</ul>
+<h2 id="四待办事项">四、待办事项</h2>
+<table>
+<thead>
+<tr>
+<th>优先级</th>
+<th>待办事项</th>
+<th>建议负责人</th>
+<th>完成标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>调整报价金额区的信息与操作顺序</td>
+<td>产品/前端</td>
+<td>原始金额、上浮信息、最终金额和操作入口形成清晰阅读链路</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>打通功能清单到详细报价清单的数据生成</td>
+<td>产品/开发</td>
+<td>功能、工时、单价、小计及汇总可自动生成报价单</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>完善报价草稿、编辑、提交审批流程</td>
+<td>开发</td>
+<td>草稿可继续修改，提交后进入审批中心，审批结果可追溯</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>移除提交审批页重复的技术评估上传入口</td>
+<td>产品/前端</td>
+<td>技术资料只在技术评估环节产生和维护</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>审批流程在提交前灰态展示</td>
+<td>产品/前端</td>
+<td>提交人可提前看到当前节点、下一节点及处理人</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>落实拆分、冲红按钮的状态权限矩阵</td>
+<td>产品/开发/测试</td>
+<td>四种回款与开票组合均按本纪要规则显示和执行</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>财务开票详情展示所有期次回款与开票状态</td>
+<td>财务产品/开发</td>
+<td>财务可一屏查看项目全期次状态、发票附件并执行相关操作</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>完善付款比例模板保存与区分</td>
+<td>产品/开发</td>
+<td>相同比例可保存多模板，并通过描述和回款条件区分</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>增加回款计划的预计/实际时间和逾期判断</td>
+<td>产品/开发</td>
+<td>每期可明确判断是否逾期及逾期天数</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>优化列表操作区紧凑度</td>
+<td>UI/前端</td>
+<td>常用操作无需横向滚动，图标含明确悬浮说明</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>人工成本按工作性质分组及排序</td>
+<td>产品/前端</td>
+<td>同类数据集中，支持符合流程的排序方式</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>优化跨月、跨年日报时间轴</td>
+<td>产品/前端</td>
+<td>月份显示完整年月，跨年时层级清晰</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>整理全部原型、会议纪要和项目资料</td>
+<td>项目负责人</td>
+<td>按模块及文件类型归档，可供接手人员直接查阅</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>安排项目线下交接与业务流程讲解</td>
+<td>项目负责人/接手人</td>
+<td>完成主要业务链路、资料位置和遗留事项说明</td>
+</tr>
+</tbody>
+</table>
+<h2 id="五待确认事项">五、待确认事项</h2>
+<ol type="1">
+<li>工时评估模板最终按前端、后端、测试等岗位拆分，还是按客户沟通、功能开发等工作性质拆分。</li>
+<li>回款逾期信息优先展示在项目总览、回款详情，还是两个位置同时展示。</li>
+<li>人工成本“按工作性质”的默认排序采用流程正序、发生时间倒序，还是允许用户切换。</li>
+<li>报价单固定模板的最终视觉稿及公司信息字段需要由业务方确认。</li>
+<li>财务端直接登记回款时所需字段、凭证附件和审核规则仍需补充。</li>
+</ol>
+<h2 id="六风险与注意事项">六、风险与注意事项</h2>
+<ul>
+<li>录音识别中“报价单”等词存在同音误识别，实施前应以页面业务语义和正式需求文档为准。</li>
+<li>回款、开票、拆分、冲红相互关联，应形成统一状态机，避免各页面分别判断导致操作权限不一致。</li>
+<li>报价、合同和财务模块共享项目与版本数据，修改时需同步验证线索详情、项目详情、审批中心和财务菜单。</li>
+<li>会议提到后续仍会边开发边补充细节，本纪要中的“待确认事项”不应直接作为无条件开发结论。</li>
+<li>原型交接前需保证文档、代码版本、演示数据和会议结论之间一致。</li>
+</ul>
+<h2 id="七后续安排">七、后续安排</h2>
+<ol type="1">
+<li>先将本次会议确认项整理并同步到项目群，供参会人员校对。</li>
+<li>按 P0、P1 优先级更新原型和需求说明，并逐项完成验收。</li>
+<li>整理全部原型文件、会议纪要和相关资料，形成可交接目录。</li>
+<li>与接手人员进行一次线下流程讲解，重点说明报价、合同审批、回款开票和成本核算链路。</li>
+<li>对未确认事项另行组织专题讨论，确认后再进入开发。</li>
+</ol>
+<hr />
+<p><em>文档说明：本纪要由会议录音识别文本整理，用于项目讨论和任务跟踪；如与后续正式确认内容不一致，以最新书面结论为准。</em></p>
+<script>
+(() => {
+  const body = document.body;
+  const title = body.querySelector('h1:not(.title)');
+  const note = title?.nextElementSibling;
+  const headings = [...body.querySelectorAll('h2')];
+  const shell = document.createElement('div');
+  shell.className = 'page-shell';
+
+  const hero = document.createElement('header');
+  hero.className = 'hero';
+  hero.innerHTML = `
+    <p class="hero-kicker">HUBX · PROJECT REVIEW</p>
+    <h1>${title?.textContent || 'HubX 项目会议纪要'}</h1>
+    <p class="hero-summary">围绕报价、合同审批、回款开票、成本核算及项目交接的阶段验收纪要</p>
+    <div class="hero-metrics">
+      <div class="hero-metric"><strong>7</strong><span>业务议题</span></div>
+      <div class="hero-metric"><strong>14</strong><span>行动事项</span></div>
+      <div class="hero-metric"><strong>5</strong><span>待确认问题</span></div>
+      <div class="hero-metric"><strong>P0 / P1 / P2</strong><span>三级任务优先级</span></div>
+    </div>`;
+
+  const layout = document.createElement('div');
+  layout.className = 'layout';
+  const toc = document.createElement('nav');
+  toc.className = 'toc';
+  toc.setAttribute('aria-label', '会议纪要目录');
+  toc.innerHTML = '<p class="toc-title">CONTENTS</p>' + headings.map((heading) =>
+    `<a href="#${heading.id}">${heading.textContent}</a>`
+  ).join('');
+  const content = document.createElement('main');
+  content.className = 'content';
+
+  if (note?.tagName === 'BLOCKQUOTE') hero.appendChild(note);
+  headings.forEach((heading, index) => {
+    heading.dataset.index = String(index + 1).padStart(2, '0');
+    const section = document.createElement('section');
+    section.className = 'section-card';
+    heading.before(section);
+    section.appendChild(heading);
+    let node = section.nextSibling;
+    while (node && !(node.nodeType === 1 && node.tagName === 'H2')) {
+      const next = node.nextSibling;
+      section.appendChild(node);
+      node = next;
+    }
+    content.appendChild(section);
+  });
+
+  content.querySelectorAll('table').forEach((table) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    table.before(wrap);
+    wrap.appendChild(table);
+  });
+  content.querySelectorAll('td').forEach((cell) => {
+    const value = cell.textContent.trim();
+    if (/^P[0-2]$/.test(value)) cell.innerHTML = `<span class="priority ${value.toLowerCase()}">${value}</span>`;
+    if (value === '可以') cell.className = 'permission-yes';
+    if (value === '不可以') cell.className = 'permission-no';
+  });
+
+  const footerText = content.querySelector('hr + p');
+  if (footerText) footerText.className = 'doc-footer';
+  layout.append(toc, content);
+  shell.append(hero, layout);
+  body.appendChild(shell);
+  title?.remove();
+})();
+</script>
+</body>
+</html>

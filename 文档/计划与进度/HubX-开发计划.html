@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HubX 开发计划</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e7eaf0;
+      --surface: #ffffff;
+      --canvas: #f5f7fb;
+      --blue: #2563eb;
+      --blue-soft: #e8f0ff;
+      --green: #16845b;
+      --green-soft: #e5f7ef;
+      --amber: #b86b00;
+      --amber-soft: #fff3d9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.6;
+    }
+    .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 72px; }
+    .hero { display: flex; justify-content: space-between; gap: 32px; align-items: end; margin-bottom: 32px; }
+    .eyebrow { color: var(--blue); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 8px 0 10px; font-size: clamp(30px, 5vw, 48px); line-height: 1.12; letter-spacing: -.04em; }
+    .intro { max-width: 650px; margin: 0; color: var(--muted); font-size: 16px; }
+    .mark { width: 82px; height: 82px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid #cbd9fa; border-radius: 24px; color: var(--blue); background: var(--blue-soft); font-size: 24px; font-weight: 800; }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 36px; }
+    .metric { padding: 20px 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+    .metric strong { display: block; margin-top: 5px; font-size: 30px; line-height: 1; }
+    .metric span { color: var(--muted); font-size: 14px; }
+    .metric.done strong { color: var(--green); }
+    .metric.active strong { color: var(--blue); }
+    .metric.pending strong { color: var(--amber); }
+    .section { margin-top: 28px; }
+    .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .section-head h2 { margin: 0; font-size: 21px; letter-spacing: -.02em; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .section-head .bar { width: 5px; height: 24px; border-radius: 4px; background: var(--blue); }
+    .section.done .bar { background: var(--green); }
+    .section.pending .bar { background: var(--amber); }
+    .list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .item { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 68px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .item-name { font-size: 15px; font-weight: 600; }
+    .item-note { flex: 0 0 auto; padding: 4px 9px; border-radius: 999px; color: var(--green); background: var(--green-soft); font-size: 12px; font-weight: 700; }
+    .active .item-note { color: var(--blue); background: var(--blue-soft); }
+    .pending .item-note { color: var(--amber); background: var(--amber-soft); }
+    .note { margin-top: 32px; padding: 15px 18px; border-left: 3px solid #b8c9f5; border-radius: 8px; color: var(--muted); background: #eef3ff; font-size: 13px; }
+    footer { margin-top: 40px; color: #98a2b3; font-size: 12px; }
+    @media (max-width: 720px) {
+      .wrap { width: min(100% - 28px, 560px); padding-top: 32px; }
+      .hero { align-items: start; }
+      .mark { width: 64px; height: 64px; border-radius: 18px; font-size: 19px; }
+      .summary, .list { grid-template-columns: 1fr; }
+      .item { min-height: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">HubX · Product &amp; Engineering</div>
+        <h1>HubX 开发计划</h1>
+        <p class="intro">围绕线索、合同、项目与协同效率持续完善 HubX 业务闭环，以下为当前已规划内容及开发状态。</p>
+      </div>
+      <div class="mark" aria-hidden="true">HX</div>
+    </header>
+
+    <section class="summary" aria-label="计划概览">
+      <div class="metric done"><span>已规划已开发内容</span><strong>4</strong></div>
+      <div class="metric active"><span>已规划开发中内容</span><strong>5</strong></div>
+      <div class="metric pending"><span>已规划待安排内容</span><strong>8</strong></div>
+    </section>
+
+    <section class="section done">
+      <div class="section-head"><i class="bar"></i><div><h2>已规划已开发内容</h2><p>已完成或已达到阶段性完成度</p></div></div>
+      <div class="list">
+        <article class="item"><span class="item-name">线索详情页-资料管理</span><span class="item-note">已完成</span></article>
+        <article class="item"><span class="item-name">线索详情页-报价</span><span class="item-note">90%</span></article>
+        <article class="item"><span class="item-name">线索详情页-合同</span><span class="item-note">20%</span></article>
+        <article class="item"><span class="item-name">线索详情页-演示</span><span class="item-note">已完成</span></article>
+      </div>
+    </section>
+
+    <section class="section active">
+      <div class="section-head"><i class="bar"></i><div><h2>已规划开发中内容</h2><p>当前规划中，待持续推进</p></div></div>
+      <div class="list">
+        <article class="item"><span class="item-name">线索详情页-报价</span><span class="item-note">开发中</span></article>
+        <article class="item"><span class="item-name">线索详情页-合同</span><span class="item-note">开发中</span></article>
+        <article class="item"><span class="item-name">线索详情页-回款与发票</span><span class="item-note">开发中</span></article>
+        <article class="item"><span class="item-name">合同列表</span><span class="item-note">开发中</span></article>
+        <article class="item"><span class="item-name">项目详情页优化</span><span class="item-note">开发中</span></article>
+      </div>
+    </section>
+
+    <section class="section pending">
+      <div class="section-head"><i class="bar"></i><div><h2>已规划待安排内容</h2><p>已纳入规划，等待排期</p></div></div>
+      <div class="list">
+        <article class="item"><span class="item-name">线索自动分配</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">审批相关功能</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">项目详情页优化（任务管理、成本核算）</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">知识库管理</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">企微集成（通讯录同步、集成配置）</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">消息提醒</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">待办中心</span><span class="item-note">待安排</span></article>
+        <article class="item"><span class="item-name">工作台管理</span><span class="item-note">待安排</span></article>
+      </div>
+    </section>
+
+    <div class="note">说明：线索详情页-报价与线索详情页-合同同时出现在“已开发内容”和“开发中内容”中，原样保留当前规划中的阶段性进度与持续开发状态。</div>
+    <footer>HubX 开发计划 · 独立 HTML 文档，可直接在浏览器打开或分享</footer>
+  </main>
+</body>
+</html>

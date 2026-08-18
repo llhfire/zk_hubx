@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { architectureDiagramPlugin } from '../../scripts/architectureDiagramPlugin.js';
 
 function figmaAssetResolver() {
   return {
@@ -18,7 +19,7 @@ function figmaAssetResolver() {
 }
 
 export default defineConfig({
-  plugins: [figmaAssetResolver(), react(), tailwindcss()],
+  plugins: [figmaAssetResolver(), architectureDiagramPlugin(), react(), tailwindcss()],
   resolve: {
     alias: {
       // 指向共享 UI 源码，与 prototype 同一份

@@ -32,6 +32,7 @@ import type { QuoteRole } from '../pages/quotation/types';
 import { useAppVersion } from '../version/AppVersionContext';
 import { VERSION_LABELS, VERSION_TAG_COLORS } from '../version/versionMatrix';
 import { VersionCompareModal } from '../version/VersionCompareModal';
+import { ArchitectureDiagramModal } from '../architecture/ArchitectureDiagramModal';
 
 const Sider = Layout.Sider;
 const Header = Layout.Header;
@@ -54,6 +55,7 @@ export function MainLayout() {
   const currentActor = QUOTE_ROLE_ACTORS[currentRole];
   const appVersion = useAppVersion();
   const [versionCompareVisible, setVersionCompareVisible] = useState(false);
+  const [architectureVisible, setArchitectureVisible] = useState(false);
 
   const handleDailyReportOpen = () => {
     setSelectedRole(getDailyReportRuleForUser(currentUserId).templateType);
@@ -320,7 +322,7 @@ export function MainLayout() {
           borderRight: '1px solid var(--grey-200)',
         }}
       >
-        {/* Branding */}
+        {/* Branding：点产品名/Logo 打开架构图；版本标签仍打开功能看板 */}
         <div
           className="flex items-center gap-3 overflow-hidden"
           style={{
@@ -329,16 +331,32 @@ export function MainLayout() {
             paddingRight: collapsed ? 16 : 20,
           }}
         >
-          <img
-            src={logo}
-            alt="ZK HubX"
-            style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', flexShrink: 0 }}
-          />
-          {!collapsed && (
-            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--brand-500)', whiteSpace: 'nowrap' }}>
-              ZK HubX
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => setArchitectureVisible(true)}
+            title="查看功能架构图"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: 0,
+              border: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+              minWidth: 0,
+            }}
+          >
+            <img
+              src={logo}
+              alt="ZK HubX"
+              style={{ width: 32, height: 32, borderRadius: 'var(--radius-md)', flexShrink: 0 }}
+            />
+            {!collapsed && (
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--brand-500)', whiteSpace: 'nowrap' }}>
+                ZK HubX
+              </span>
+            )}
+          </button>
           <Tag
             color={VERSION_TAG_COLORS[appVersion]}
             size="small"
@@ -469,6 +487,10 @@ export function MainLayout() {
       <VersionCompareModal
         visible={versionCompareVisible}
         onCancel={() => setVersionCompareVisible(false)}
+      />
+      <ArchitectureDiagramModal
+        visible={architectureVisible}
+        onCancel={() => setArchitectureVisible(false)}
       />
     </Layout>
   );

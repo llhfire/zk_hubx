@@ -6,6 +6,7 @@ import fs from 'node:fs/promises'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { isValidFeatureBoard } from '../../packages/ui/src/app/version/featureBoardModel'
+import { architectureDiagramPlugin } from '../../scripts/architectureDiagramPlugin.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -200,6 +201,7 @@ export default defineConfig(({ mode }) => {
   return {
   plugins: [
     figmaAssetResolver(),
+    architectureDiagramPlugin(),
     featureBoardStore(),
     wxCliBridge({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com', model: env.DEEPSEEK_MODEL || 'deepseek-v4-pro' }),
     // The React and Tailwind plugins are both required for Make, even if

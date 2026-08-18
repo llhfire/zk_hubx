@@ -37,7 +37,15 @@
           "status": "已设计"
         },
         {
-          "name": "签约自动生成未确认项目",
+          "name": "签约开启时生成未确认项目",
+          "status": "已设计"
+        },
+        {
+          "name": "线索侧合同/回款入口（草稿即可引用）",
+          "status": "已设计"
+        },
+        {
+          "name": "管理员退回线索（未确认或未开始无合同）",
           "status": "已设计"
         }
       ],
@@ -50,7 +58,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "与项目/合同是同一业务的销售视角；签约出未确认项目（阶段3 接线：主合同审批通过自动 spawn，不再依赖 mock 静态数据）；阶段2 落地项目执行 Tab（共享 ProjectContext）"
+      "note": "三视角销售侧。立项改回签约开启 spawn（洽谈/已签单/主合同草稿），不再只挂 approvedAt。计划：计划/当前/unified-view-implementation.md"
     },
     {
       "module": "报价工作台",
@@ -60,37 +68,65 @@
       "features": [
         {
           "name": "Stage1 功能清单",
-          "description": "Stage1FeatureList.tsx：默认 18 项/7 模块，支持 hover 新增子功能、Excel 导入导出、版本快照。"
+          "description": "两级模块+子功能（数据流转可挂端/平台）。Excel 导入导出。提交评估前至少一行。文件流转按标准五列解析。"
         },
         {
           "name": "Stage2 人天评估",
-          "description": "Stage2EvalSheet.tsx：各岗位人天评估，方向键+Tab 连续填充，按模块/子功能快捷批量。"
+          "description": "数据流转：岗位人天、切片、WASD。文件流转：评估文件+评估工期+总人天。主报价完成评估人天须>0。"
         },
         {
           "name": "Stage3 销售报价",
-          "description": "Stage3QuoteWizard.tsx：7 步向导，系统校验∑分项=总人天、∑成本=总报价。"
+          "description": "增项、工期（工作日）、付款期次、含税总价。利润率是统计项不是输入。现网仍为 Stage3WebAutomation，将按 PRD 收口。"
         },
         {
           "name": "Stage4 审批盖章",
-          "description": "Stage4Approval.tsx：三人并行会签→待盖章→盖章→生成 PDF；驳回→退回→重审。"
+          "description": "目标：提交时拍审批配置快照，会签通过→待盖章→已盖章。现网仍写死三人会签。已确认后生成合同向导（阶段3已接）。"
         },
         {
           "name": "报价状态机",
-          "description": "quoteFlow.ts（53 单测）：草稿→已确认→评估完成→转派→汇总→审批中→盖章→发出；支持撤回/作废。"
+          "description": "现网 13 态。目标：草稿/待评估/待报价/待审核/已驳回/待盖章/已盖章/已发出/已确认/已废止；过期为已发出标记。见 ADR 0001–0065。"
         },
         {
           "name": "角色切换器",
-          "description": "RoleSwitcher：6 角色模拟（产品经理/技术负责人/销售部/决策层/董助/销售），各角色不同权限。"
+          "description": "RoleSwitcher：6 角色模拟。目标责任人改为本单评估人/销售（配置默认，可改指）。"
         },
         {
           "name": "报价中心",
-          "description": "QuotationCenter.tsx：报价单列表，按状态/创建人筛选，版本管理，作废功能。"
+          "description": "QuotationCenter：列表。目标按新状态筛+待我处理+过期标记，无已完成桶。"
         }
       ],
       "planned": [
         {
-          "name": "上浮比例配置（原始金额→上浮信息→最终金额）",
-          "status": "未开始"
+          "name": "状态机按 PRD 收口（已确认/已废止/过期标记）",
+          "status": "已设计"
+        },
+        {
+          "name": "数据流转与文件流转双来源",
+          "status": "已设计"
+        },
+        {
+          "name": "会签盖章读审批配置快照",
+          "status": "已设计"
+        },
+        {
+          "name": "客户报价单按中科标准件",
+          "status": "已设计"
+        },
+        {
+          "name": "文件流转在线文档+扫描件",
+          "status": "已设计"
+        },
+        {
+          "name": "利润率统计与岗位日成本配置",
+          "status": "已设计"
+        },
+        {
+          "name": "报价模板（增项/日成本/工期）",
+          "status": "已设计"
+        },
+        {
+          "name": "责任人/通知/列表/权限按配置",
+          "status": "已设计"
         }
       ],
       "alpha": {
@@ -102,7 +138,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "β版报价单落 D1，含状态迁移校验；已上线 http+D1"
+      "note": "PRD grill 已收束（CONTEXT + ADR 0001–0065）；实现计划 计划/当前/quote-flow-prd-implementation.md。α 功能流程未按新词表收口。β 已上线 http+D1，复合接口后置。"
     },
     {
       "module": "客户与报价基础",
@@ -167,8 +203,8 @@
           "description": "archiveFinalContract：审批通过后上传归档文件，支持多附件。"
         },
         {
-          "name": "补充协议",
-          "description": "基于主合同创建补充协议，继承客户信息与审批流，独立版本管理。"
+          "name": "补充协议（将废弃）",
+          "description": "现网：合同详情填变更金额。目标：废止该对象，改为补充报价→已确认→向导生成补充合同（ADR 0008）。"
         },
         {
           "name": "合同列表",
@@ -179,22 +215,26 @@
           "description": "PaymentKanban.tsx / PaymentKanbanV2.tsx：回款期次可视化看板。"
         },
         {
-          "name": "报价成交生成主合同",
-          "description": "原始需求：报价走完盖章发送后客户成交，应直接据此生成主合同，避免手工重复录入。功能流程：Stage4 成交态显示「生成主合同」-> 跳合同向导并自动预填（金额/付款条款按报价 summary 映射为期次、工期推导终止日期、质保写入正文）-> 创建成功回写 quote.contractId 并维护商机 quoteIds/contractId。功能说明：dealQuotePrefill.ts 纯函数映射；已生成后按钮变「查看主合同」。"
+          "name": "已确认生成主合同",
+          "description": "报价终态已确认（非成交/已签约）。Stage4 显示「生成主合同」→ 向导预填（含税总额/付款期次/工作日工期/质保/发票/主体）人工确认后创建，回写 quote.contractId。对应合同作废后可再生成；有未作废合同时不能废止该报价。"
         }
       ],
       "planned": [
         {
-          "name": "报价成交生成主合同",
+          "name": "已确认生成主合同（词表收口）",
           "status": "已设计"
         },
         {
           "name": "多份补充报价/补充合同列表",
-          "status": "未开始"
+          "status": "已设计"
         },
         {
           "name": "需求变更闭环（补充报价→补充合同）",
-          "status": "未开始"
+          "status": "已设计"
+        },
+        {
+          "name": "废弃补充协议对象",
+          "status": "已设计"
         }
       ],
       "alpha": {
@@ -206,7 +246,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "合同是同一业务的管理员视角；一主合同 + N 补充报价/补充合同；阶段3 报价成交可一键生成主合同、审批通过触发交付启动"
+      "note": "一主合同 + N 补充报价/补充合同。阶段3 已确认可生成主合同、批准触发交付。阶段4 废弃补充协议、补补充报价链。计划见 quote-flow-prd-implementation.md"
     },
     {
       "module": "跟进助手",
@@ -248,7 +288,7 @@
       "planned": [
         {
           "name": "Excel 双向导入导出",
-          "status": "未开始"
+          "status": "已调研"
         },
         {
           "name": "版本 Diff 对比",
@@ -310,7 +350,7 @@
         },
         {
           "name": "交付启动（合同批准自动拉起）",
-          "description": "原始需求：主合同审批通过后才允许项目开工，交付计划自动生成。功能流程：ApprovalDeliveryBridge 监听合同 approvedAt 首次写入 -> 无项目则 spawnUnconfirmedProject 生成未确认项目；未开始/搁置项目 startDelivery 转「进行中」+ 关联合同 + generateDeliveryPlan 生成 SOP 计划写入 deliveryPlanStore。功能说明：跨域联动桥组件（无 UI），对 mock 与 http 数据源同样生效；未确认项目仍走管理员确认指派流程。"
+          "description": "合同批准启动交付：未开始/搁置 → 进行中 + SOP 计划。未确认项目改在签约开启时 spawn，批准不再第一次立项。主合同作废则进行中改为搁置。"
         }
       ],
       "planned": [
@@ -325,6 +365,14 @@
         {
           "name": "售前历程交接包（跟进/会议/演示/资料只读）",
           "status": "已设计"
+        },
+        {
+          "name": "管理员退回线索 / 改指产品经理",
+          "status": "已设计"
+        },
+        {
+          "name": "主合同作废则进行中项目搁置",
+          "status": "已设计"
         }
       ],
       "alpha": {
@@ -336,7 +384,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "项目是同一业务的产品视角；签约先出未确认单，管理员指派后才可见；阶段2 售前历程 Tab；阶段3 合同批准触发交付启动（未开始->进行中 + 自动生成 SOP 交付计划）"
+      "note": "三视角产品侧。签约开启出未确认；批准只开工；作废主合同则搁置。计划：计划/当前/unified-view-implementation.md"
     },
     {
       "module": "日报工时",
@@ -894,12 +942,20 @@
         {
           "name": "消息提醒",
           "description": "ReminderContext.tsx + ReminderBell：顶栏提醒，未读计数，日报催报。"
+        },
+        {
+          "name": "侧栏打开架构图",
+          "description": "点击左侧「ZK HubX」产品名/Logo 弹窗打开 ZK-HubX架构图.html（仓库根目录唯一事实源，dev/build 由 architectureDiagramPlugin 提供）。"
         }
       ],
       "planned": [
         {
           "name": "审批模板（串行/并行/会签节点配置）",
-          "status": "未开始"
+          "status": "已调研"
+        },
+        {
+          "name": "报价审批与补充报价审批两条业务类型",
+          "status": "已设计"
         },
         {
           "name": "数据看板（管理者：销售业绩/项目进度/财务概览）",

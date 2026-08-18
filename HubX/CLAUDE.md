@@ -134,4 +134,5 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 3. **开关不开不编码**：模块 `beta.productionOn` 是用户对β版开发的许可，**Claude 永不代开**；`productionOn: false` 的模块不得开始β版（前后端）编码。
 4. **随进度更新**：开关已开的模块，`beta.devStatus`（未开始/编码中/测试中/测试通过）随实际开发进度更新；`note` 备注写当前特殊说明与状态说明。
 5. **已有功能描述**：`features[]` 是模块已有功能的结构化描述（`name` + `description`），点击看板中的功能名可查看详细说明；新功能上线或功能行为变更时，Claude 应同步更新对应 `description`（包含原始需求、功能流程、功能说明），新模块需补充 features 列表。
+6. **计划和需求分析必须四件套对齐**：实现计划、PRD、本看板、根目录 `ZK-HubX架构图.html`。只改看板不算做完计划。领域词看 `CONTEXT.md`，硬决策看 `docs/adr/`。
 - 编辑文件时保持 schema：`featureBoardModel.ts` 的 `isValidFeatureBoard` 是校验口径，写坏会被端点拒绝。

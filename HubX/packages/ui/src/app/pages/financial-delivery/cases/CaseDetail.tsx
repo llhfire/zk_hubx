@@ -31,29 +31,28 @@ import {
 } from 'recharts';
 import {
   mockCases,
-  mockFeatureLists,
-  mockFeatures,
-  mockQuotations,
-  mockQuotationFeatureItems,
-  mockQuotationServiceItems,
   mockCostItems,
-  mockCostTrends,
-  mockCostStructures,
-  mockForecastCostStructures,
   mockFinancialModels,
   mockPostMortems,
   quotationStatusMap,
   CaseStatus,
-  HealthStatus,
-  FeatureListStatus,
-  QuotationStatus,
   caseStatusMap,
-  healthStatusMap,
-  featureListStatusMap,
-  featureCategoryMap,
-  serviceCategoryMap,
 } from '../mockData';
 import type { FinancialModel } from '../mockData';
+import {
+  deriveTotalCost,
+  deriveEac,
+  deriveLifecycleMargin,
+  deriveCollectedMargin,
+  deriveWip,
+  deriveHealth,
+  deriveCostStructure,
+  deriveTrend,
+  canTransit,
+  suggestCollecting,
+} from '../calc';
+import { getContract, totalCollected, getPaymentPlans, getCollections } from '../contractSeam';
+import { getQuoteSummaries, getEvalSummaries, type EvalSummaryForDisplay } from '../quoteSeam';
 
 const { Text, Title } = Typography;
 const { Row, Col } = Grid;
@@ -145,21 +144,67 @@ export default function CaseDetail() {
   // 获取 Case 数据
   const caseData = useMemo(() => mockCases.find((item) => item.id === id), [id]);
 
-  // 获取功能清单数据
-  const featureLists = useMemo(() => mockFeatureLists.filter((item) => item.caseId === id), [id]);
+  // 派生指标（从 calc.ts 取数）
+  const metrics = useMemo(() => {
+    if (!caseData) return null;
+    const items = mockCostItems.filter(i => i.caseId === caseData.id);
+    const totalCost = deriveTotalCost(items);
+    const eac = deriveEac(items);
+    const contractAmount = caseData.contractId ? (getContract(caseData.contractId) as any)?.totalAmount ?? 0 : 0;
+    const revenue = caseData.contractId ? totalCollected(caseData.contractId) : 0;
+    const lifecycleMargin = deriveLifecycleMargin(contractAmount, eac);
+    const collectedMargin = deriveCollectedMargin(revenue, totalCost);
+    const wip = deriveWip(totalCost, revenue, '2026-07-01', '2026-08-19');
+    const health = deriveHealth(lifecycleMargin, (caseData.targetMargin ?? 30) / 100, eac, caseData.budgetCap ?? 0, wip.days);
+    const costStructure = deriveCostStructure(items);
+    return { totalCost, eac, contractAmount, revenue, lifecycleMargin, collectedMargin, wip, health, costStructure };
+  }, [caseData]);
 
-  // 获取报价单数据
-  const quotations = useMemo(() => mockQuotations.filter((item) => item.caseId === id), [id]);
+  // 获取工时评估数据（从报价域 seam 读取 evalSheet）
+  const evalSummaries = useMemo(() => getEvalSummaries(), []);
+
+  // 获取报价单数据（从报价域 seam 读取）
+  const quotations = useMemo(() => getQuoteSummaries(), []);
 
   // 获取成本项数据
   const costItems = useMemo(() => mockCostItems.filter((item) => item.caseId === id), [id]);
 
-  // 获取成本趋势数据
-  const costTrends = useMemo(() => mockCostTrends[id || ''] || [], [id]);
+  // 成本趋势（从 mockCostItems 派生按月累计）
+  const costTrends = useMemo(() => {
+    if (!caseData?.contractId) return [];
+    const plans = getPaymentPlans(caseData.contractId);
+    const colls = getCollections(caseData.contractId);
+    return deriveTrend(plans, colls, costItems);
+  }, [caseData, costItems]);
 
-  // 获取成本结构数据
-  const costStructure = useMemo(() => mockCostStructures[id || ''] || [], [id]);
-  const forecastCostStructure = useMemo(() => mockForecastCostStructures[id || ''] || [], [id]);
+  // 成本结构（从 deriveCostStructure 派生，转为图表格式）
+  const costStructureData = useMemo(() => {
+    if (!metrics) return { actual: [], forecast: [] };
+    const COLORS: Record<string, string> = {
+      labor: '#1e40af', commercial: '#3b82f6', operation: '#60a5fa',
+      third_party: '#93c5fd', hardware: '#bfdbfe',
+    };
+    const LABELS: Record<string, string> = {
+      labor: '人力成本', commercial: '商务成本', operation: '运营成本',
+      third_party: '第三方成本', hardware: '硬件设备',
+    };
+    const toChart = (entries: [string, { actual: number; forecast: number }][], key: 'actual' | 'forecast') => {
+      const total = entries.reduce((s, [, v]) => s + v[key], 0);
+      return entries
+        .filter(([, v]) => v[key] > 0)
+        .map(([cat, v]) => ({
+          category: LABELS[cat] ?? cat,
+          amount: v[key],
+          percentage: total > 0 ? Math.round((v[key] / total) * 1000) / 10 : 0,
+          color: COLORS[cat] ?? '#ccc',
+        }));
+    };
+    const entries = Object.entries(metrics.costStructure);
+    return {
+      actual: toChart(entries, 'actual'),
+      forecast: toChart(entries, 'forecast'),
+    };
+  }, [metrics]);
 
   // 获取事后总结数据
   const postMortem = useMemo(() => mockPostMortems.find((item) => item.caseId === id), [id]);
@@ -223,10 +268,10 @@ export default function CaseDetail() {
           data={[
             { label: '业务单编号', value: caseData.caseNo },
             { label: '状态', value: <Tag color={statusColorMap[caseStatusMap[caseData.status]?.color]}>{caseStatusMap[caseData.status]?.label}</Tag> },
-            { label: '健康状态', value: <Tag color={healthStatusMap[caseData.healthStatus]?.color}>{healthStatusMap[caseData.healthStatus]?.label}</Tag> },
+            { label: '健康状态', value: metrics ? <Tag color={metrics.health === 'green' ? 'green' : metrics.health === 'yellow' ? 'orange' : 'red'}>{metrics.health === 'green' ? '健康' : metrics.health === 'yellow' ? '预警' : '风险'}</Tag> : '-' },
             { label: '线索名称', value: caseData.leadName || '-' },
             { label: '项目名称', value: caseData.projectName || '-' },
-            { label: '合同金额', value: caseData.contractAmount ? `¥${caseData.contractAmount.toLocaleString()}` : '-' },
+            { label: '标的额', value: metrics?.contractAmount ? `¥${metrics.contractAmount.toLocaleString()}` : '-' },
             { label: '行业', value: caseData.industry || '-' },
             { label: '项目类型', value: caseData.projectType || '-' },
             { label: '技术栈', value: caseData.techStack?.join(', ') || '-' },
@@ -234,33 +279,27 @@ export default function CaseDetail() {
         />
       </Card>
 
-      {/* 财务指标 */}
+      {/* 财务指标（全周期口径，从 calc.ts 派生） */}
       <Card title="财务指标">
         <Row gutter={24}>
           <Col span={6}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">合同金额</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>¥{(caseData.contractAmount || 0).toLocaleString()}</div>
-            <Button type="text" size="small" onClick={() => openModelDetail(revenueModel)}>
-              <IconInfoCircle style={{ marginRight: 4 }} />收入模型说明
-            </Button>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">标的额</Text></div>
+            <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>¥{(metrics?.contractAmount ?? 0).toLocaleString()}</div>
           </Col>
           <Col span={6}>
             <div style={{ marginBottom: 4 }}><Text type="secondary">已发生成本</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f53f3f', marginBottom: 4 }}>¥{(caseData.totalCost || 0).toLocaleString()}</div>
-            <Button type="text" size="small" onClick={() => openModelDetail(costModel)}>
-              <IconInfoCircle style={{ marginRight: 4 }} />成本模型说明
-            </Button>
+            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f53f3f', marginBottom: 4 }}>¥{(metrics?.totalCost ?? 0).toLocaleString()}</div>
           </Col>
           <Col span={6}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">已确认收入</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#00b42a', marginBottom: 4 }}>¥{(caseData.totalRevenue || 0).toLocaleString()}</div>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">累计回款</Text></div>
+            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#00b42a', marginBottom: 4 }}>¥{(metrics?.revenue ?? 0).toLocaleString()}</div>
           </Col>
           <Col span={6}>
-            <div style={{ marginBottom: 4 }}><Text type="secondary">当前利润率</Text></div>
+            <div style={{ marginBottom: 4 }}><Text type="secondary">全周期利润率</Text></div>
             <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4,
-              color: (caseData.currentMargin || 0) >= 30 ? '#00b42a' :
-              (caseData.currentMargin || 0) >= 20 ? '#fa8c16' : '#f53f3f' }}>
-              {caseData.currentMargin || 0}%
+              color: (metrics?.lifecycleMargin ?? 0) >= 0.3 ? '#00b42a' :
+              (metrics?.lifecycleMargin ?? 0) >= 0.2 ? '#fa8c16' : '#f53f3f' }}>
+              {metrics?.lifecycleMargin !== null && metrics?.lifecycleMargin !== undefined ? `${(metrics.lifecycleMargin * 100).toFixed(1)}%` : '-'}
             </div>
           </Col>
         </Row>
@@ -271,32 +310,31 @@ export default function CaseDetail() {
           <Row gutter={16}>
             <Col span={6}>
               <Card size="small" style={{ height: '100%' }}>
-                <div style={{ marginBottom: 4 }}><Text type="secondary">预测总成本</Text></div>
-                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{(caseData.eac || 0).toLocaleString()}</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>完工估算 (EAC)</div>
+                <div style={{ marginBottom: 4 }}><Text type="secondary">EAC（完工估算）</Text></div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{(metrics?.eac ?? 0).toLocaleString()}</div>
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small" style={{ height: '100%' }}>
                 <div style={{ marginBottom: 4 }}><Text type="secondary">WIP 资金占用</Text></div>
-                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{(caseData.wipValue || 0).toLocaleString()}</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>{caseData.wipDays || 0} 天未验收</div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{(metrics?.wip.value ?? 0).toLocaleString()}</div>
+                <div style={{ fontSize: 12, color: '#86909c' }}>{metrics?.wip.days ?? 0} 天</div>
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small" style={{ height: '100%' }}>
                 <div style={{ marginBottom: 4 }}><Text type="secondary">预测净利润</Text></div>
-                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{((caseData.contractAmount || 0) - (caseData.eac || 0)).toLocaleString()}</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>合同金额 - EAC</div>
+                <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>¥{((metrics?.contractAmount ?? 0) - (metrics?.eac ?? 0)).toLocaleString()}</div>
+                <div style={{ fontSize: 12, color: '#86909c' }}>标的额 − EAC</div>
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small" style={{ height: '100%' }}>
-                <div style={{ marginBottom: 4 }}><Text type="secondary">预测利润率</Text></div>
+                <div style={{ marginBottom: 4 }}><Text type="secondary">全周期利润率</Text></div>
                 <div style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>
-                  {((1 - (caseData.eac || 0) / (caseData.contractAmount || 1)) * 100).toFixed(1)}%
+                  {metrics?.lifecycleMargin !== null && metrics?.lifecycleMargin !== undefined ? `${(metrics.lifecycleMargin * 100).toFixed(1)}%` : '-'}
                 </div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>目标: {caseData.targetMargin || 35}%</div>
+                <div style={{ fontSize: 12, color: '#86909c' }}>目标: {caseData.targetMargin ?? 30}%</div>
               </Card>
             </Col>
           </Row>
@@ -364,8 +402,8 @@ export default function CaseDetail() {
                 <div style={{ fontWeight: 500, color: '#165dff', marginBottom: 8 }}>利润率分析：</div>
                 <div style={{ color: '#165dff', lineHeight: 1.8 }}>
                   <div>• 目标利润率基线：<strong>{caseData.targetMargin || 30}%</strong>（合同签订时设定）</div>
-                  <div>• 当前实际利润率：<strong>{caseData.currentMargin || 30.5}%</strong>（{((caseData.currentMargin || 30.5) >= (caseData.targetMargin || 30)) ? '高于' : '低于'}目标 {(Math.abs((caseData.currentMargin || 30.5) - (caseData.targetMargin || 30))).toFixed(1)} 个百分点）</div>
-                  <div>• 结项预测利润率：<strong>{((1 - (caseData.eac || 116000) / (caseData.contractAmount || 185000)) * 100).toFixed(1)}%</strong></div>
+                  <div>• 全周期利润率：<strong>{metrics?.lifecycleMargin !== null && metrics?.lifecycleMargin !== undefined ? `${(metrics.lifecycleMargin * 100).toFixed(1)}%` : '-'}</strong>（{((metrics?.lifecycleMargin ?? 0) >= (caseData.targetMargin ?? 30) / 100) ? '高于' : '低于'}目标 {Math.abs(((metrics?.lifecycleMargin ?? 0) * 100) - (caseData.targetMargin ?? 30)).toFixed(1)} 个百分点）</div>
+                  <div>• 回款口径利润率（仅现金流）：<strong>{metrics?.collectedMargin !== null && metrics?.collectedMargin !== undefined ? `${(metrics.collectedMargin * 100).toFixed(1)}%` : '-'}</strong></div>
                   <div>• 利润率波动原因：主要受回款节奏影响，中期款后置导致收入确认延迟</div>
                 </div>
               </div>
@@ -375,7 +413,7 @@ export default function CaseDetail() {
       )}
 
       {/* 成本结构分析 + 成本构成明细 */}
-      {costStructure.length > 0 && (
+      {costStructureData.actual.length > 0 && (
         <Row gutter={16}>
           <Col span={12}>
             <Card title="成本结构" style={{ height: '100%' }}>
@@ -388,7 +426,7 @@ export default function CaseDetail() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={costStructureView === 'actual' ? costStructure : forecastCostStructure}
+                    data={costStructureView === 'actual' ? costStructureData.actual : costStructureData.forecast}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -396,7 +434,7 @@ export default function CaseDetail() {
                     outerRadius={100}
                     dataKey="amount"
                   >
-                    {(costStructureView === 'actual' ? costStructure : forecastCostStructure).map((entry, index) => (
+                    {(costStructureView === 'actual' ? costStructureData.actual : costStructureData.forecast).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -422,8 +460,8 @@ export default function CaseDetail() {
                 </div>
 
                 {/* 数据行 */}
-                {costStructure.map((item) => {
-                  const forecastItem = forecastCostStructure.find(f => f.category === item.category);
+                {costStructureData.actual.map((item) => {
+                  const forecastItem = costStructureData.forecast.find(f => f.category === item.category);
                   const variance = forecastItem ? forecastItem.amount - item.amount : 0;
                   return (
                     <div key={item.category} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -453,10 +491,10 @@ export default function CaseDetail() {
                     <span>合计</span>
                     <div style={{ display: 'flex', gap: 32 }}>
                       <span style={{ width: 96, textAlign: 'right' }}>
-                        ¥{costStructure.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
+                        ¥{costStructureData.actual.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
                       </span>
                       <span style={{ width: 96, textAlign: 'right', color: '#fa8c16' }}>
-                        ¥{forecastCostStructure.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
+                        ¥{costStructureData.forecast.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -465,8 +503,8 @@ export default function CaseDetail() {
                 {/* 差异说明 */}
                 <div style={{ background: '#f2f3ff', padding: 8, borderRadius: 4, fontSize: 12, marginTop: 12 }}>
                   <span style={{ color: '#165dff' }}>
-                    预测增加：¥{(forecastCostStructure.reduce((sum, item) => sum + item.amount, 0) - costStructure.reduce((sum, item) => sum + item.amount, 0)).toLocaleString()}
-                    （+{((forecastCostStructure.reduce((sum, item) => sum + item.amount, 0) - costStructure.reduce((sum, item) => sum + item.amount, 0)) / costStructure.reduce((sum, item) => sum + item.amount, 0) * 100).toFixed(1)}%）
+                    预测增加：¥{(costStructureData.forecast.reduce((sum, item) => sum + item.amount, 0) - costStructureData.actual.reduce((sum, item) => sum + item.amount, 0)).toLocaleString()}
+                    （+{((costStructureData.forecast.reduce((sum, item) => sum + item.amount, 0) - costStructureData.actual.reduce((sum, item) => sum + item.amount, 0)) / (costStructureData.actual.reduce((sum, item) => sum + item.amount, 0) || 1) * 100).toFixed(1)}%）
                   </span>
                 </div>
               </div>
@@ -516,84 +554,83 @@ export default function CaseDetail() {
     </div>
   );
 
-  // 渲染功能清单标签页
-  const renderFeatureListTab = () => {
-    const allFeatureLists = featureLists.filter(fl => fl.caseId === id);
+  // 渲染工时评估标签页（从报价域 evalSheet 读取）
+  const ROLE_LABELS: Record<string, string> = {
+    pm_days: '产品经理', ui_days: 'UI 设计', fe_days: '前端开发', be_days: '后端开发',
+    qa_days: '测试', arch_days: '架构', algo_days: '算法', embed_days: '嵌入式',
+    dba_days: 'DBA', ops_days: '运维',
+  };
 
+  const renderFeatureListTab = () => {
     return (
       <Card
-        title="工时评估"
+        title="工时评估（报价域 EvalSheet）"
         extra={
           <div>
-            <Text type="secondary" style={{ marginRight: 16 }}>共 {allFeatureLists.length} 份评估</Text>
-            <Button icon={<IconDownload />}>导出 Excel</Button>
+            <Text type="secondary" style={{ marginRight: 16 }}>共 {evalSummaries.length} 份评估</Text>
           </div>
         }
       >
-        {allFeatureLists.length > 0 ? (
+        {evalSummaries.length > 0 ? (
           <div>
-            {allFeatureLists.sort((a, b) => a.version - b.version).map((fl, index) => (
+            {evalSummaries.map((ev, index) => (
               <Card
-                key={fl.id}
+                key={ev.id}
                 size="small"
                 style={{
                   marginBottom: 12,
-                  background: index === allFeatureLists.length - 1 ? '#f2f3ff' : '#f7f8fa',
-                  border: index === allFeatureLists.length - 1 ? '1px solid #bedaff' : '1px solid #e5e6eb',
+                  background: index === evalSummaries.length - 1 ? '#f2f3ff' : '#f7f8fa',
+                  border: index === evalSummaries.length - 1 ? '1px solid #bedaff' : '1px solid #e5e6eb',
                 }}
               >
                 <div
                   style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}
-                  onClick={() => toggleFeatureListExpand(fl.id)}
+                  onClick={() => toggleFeatureListExpand(ev.id)}
                 >
                   <Space>
                     <Tag color={index === 0 ? 'gray' : 'blue'}>
-                      {index === 0 ? '原始评估' : `变更评估 #${index}`}
+                      {ev.quoteNo}
                     </Tag>
-                    <Text style={{ fontWeight: 500 }}>工时评估 v{fl.version}</Text>
-                    <Tag color={fl.status === FeatureListStatus.LOCKED ? 'green' : 'blue'}>
-                      {featureListStatusMap[fl.status]?.label}
-                    </Tag>
-                    <Text type="secondary">{fl.totalEstimatedDays}天 | ¥{fl.totalEstimatedCost.toLocaleString()}</Text>
+                    <Text style={{ fontWeight: 500 }}>{ev.projectName}</Text>
+                    <Text type="secondary">{ev.totalDays}天</Text>
                   </Space>
                   <Space>
-                    <Text type="secondary">{new Date(fl.createdAt).toLocaleDateString()}</Text>
-                    <span>{expandedFeatureLists.has(fl.id) ? '▼' : '▶'}</span>
+                    <Text type="secondary">{new Date(ev.createdAt).toLocaleDateString()}</Text>
+                    <span>{expandedFeatureLists.has(ev.id) ? '▼' : '▶'}</span>
                   </Space>
                 </div>
 
-                {expandedFeatureLists.has(fl.id) && (
+                {expandedFeatureLists.has(ev.id) && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e6eb' }}>
                     <Row gutter={16} style={{ marginBottom: 16 }}>
                       <Col span={6}>
                         <div><Text type="secondary">总人天</Text></div>
-                        <div style={{ fontSize: 18, fontWeight: 'bold' }}>{fl.totalEstimatedDays}天</div>
+                        <div style={{ fontSize: 18, fontWeight: 'bold' }}>{ev.totalDays}天</div>
                       </Col>
                       <Col span={6}>
-                        <div><Text type="secondary">估算成本</Text></div>
-                        <div style={{ fontSize: 18, fontWeight: 'bold' }}>¥{fl.totalEstimatedCost.toLocaleString()}</div>
-                      </Col>
-                      <Col span={6}>
-                        <div><Text type="secondary">评估人</Text></div>
-                        <div style={{ fontWeight: 500 }}>张三（主管）+ 李四（工程师）</div>
+                        <div><Text type="secondary">报价单号</Text></div>
+                        <div style={{ fontWeight: 500 }}>{ev.quoteNo}</div>
                       </Col>
                       <Col span={6}>
                         <div><Text type="secondary">状态</Text></div>
-                        <div style={{ fontWeight: 500 }}>{fl.status === FeatureListStatus.LOCKED ? '已确认' : '待确认'}</div>
+                        <div style={{ fontWeight: 500 }}>{ev.status}</div>
                       </Col>
                     </Row>
-                    {index > 0 && (
-                      <div style={{ marginBottom: 16, padding: 8, background: '#fff7e6', borderRadius: 4, fontSize: 12 }}>
-                        <Text type="secondary">变更说明：</Text>
-                        <Text style={{ color: '#fa8c16', fontWeight: 500 }}>
-                          工时 +{fl.totalEstimatedDays - (allFeatureLists[index - 1]?.totalEstimatedDays || 0)}天，
-                          成本 +¥{((fl.totalEstimatedCost || 0) - (allFeatureLists[index - 1]?.totalEstimatedCost || 0)).toLocaleString()}
-                        </Text>
-                      </div>
-                    )}
-                    <div style={{ textAlign: 'center', padding: 20, color: '#86909c' }}>
-                      功能点明细表格（待实现）
-                    </div>
+                    {/* 岗位人天明细 */}
+                    <Table
+                      size="small"
+                      rowKey="role"
+                      pagination={false}
+                      data={Object.entries(ev.evalDays).map(([key, days]) => ({
+                        role: key,
+                        label: ROLE_LABELS[key] ?? key,
+                        days,
+                      }))}
+                      columns={[
+                        { title: '岗位', dataIndex: 'label', width: 120 },
+                        { title: '人天', dataIndex: 'days', width: 80, render: (v: number) => `${v}天` },
+                      ]}
+                    />
                   </div>
                 )}
               </Card>
@@ -606,9 +643,9 @@ export default function CaseDetail() {
     );
   };
 
-  // 渲染报价单标签页
+  // 渲染报价单标签页（从报价域 seam 读取）
   const renderQuotationTab = () => {
-    const allQuotations = quotations.filter(q => q.caseId === id);
+    const allQuotations = quotations;
 
     return (
       <Card
@@ -640,7 +677,7 @@ export default function CaseDetail() {
                     <Tag color={index === 0 ? 'gray' : 'blue'}>
                       {index === 0 ? '原始报价' : `变更报价 #${index}`}
                     </Tag>
-                    <Text style={{ fontWeight: 500 }}>{quote.quotationNo}</Text>
+                    <Text style={{ fontWeight: 500 }}>{quote.quoteNo}</Text>
                     <Tag>{quotationStatusMap[quote.status as keyof typeof quotationStatusMap]?.label || quote.status}</Tag>
                     <Text type="secondary">¥{quote.totalAmount.toLocaleString()}</Text>
                   </Space>
@@ -866,7 +903,7 @@ export default function CaseDetail() {
         <TabPane key="overview" title="概览">
           {renderOverviewTab()}
         </TabPane>
-        <TabPane key="features" title={`工时评估 (${featureLists.length})`}>
+        <TabPane key="features" title={`工时评估 (${evalSummaries.length})`}>
           {renderFeatureListTab()}
         </TabPane>
         <TabPane key="quotation" title={`报价单 (${quotations.length})`}>

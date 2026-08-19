@@ -76,11 +76,6 @@ export type LoanType =
   | 'petty_cash' // 备用金
   | 'other';     // 其他
 
-// 补贴计算模式
-export type SubsidyCalcMode =
-  | 'calendar_day'    // 按自然日
-  | 'working_day';    // 按实际工作日
-
 // 宿舍费用类型
 export type DormitoryExpenseType =
   | 'rent'      // 租金
@@ -103,18 +98,6 @@ export type UrgencyLevel =
   | 'normal'      // 普通
   | 'urgent'      // 紧急
   | 'very_urgent'; // 非常紧急
-
-// 打卡类型
-export type PunchType =
-  | 'clock_in'  // 上班打卡
-  | 'clock_out' // 下班打卡
-  | 'overtime'; // 加班打卡
-
-// 打卡状态
-export type PunchStatus =
-  | 'normal'   // 正常
-  | 'abnormal' // 异常
-  | 'makeup';  // 补卡
 
 // 审批状态
 export type ApprovalStatus =
@@ -216,6 +199,8 @@ export interface Trip {
   customerName?: string;
   projectId?: string;
   projectName?: string;
+  leadId?: string;              // 线索关联（与 projectId 互斥必填）
+  leadName?: string;
   // 行程信息
   destinations: string[];   // 目的地列表
   startDate: string;        // 出发日期
@@ -327,14 +312,10 @@ export interface Loan {
 export interface TravelSubsidy {
   id: string;
   tripId: string;
-  calcMode: SubsidyCalcMode;
   cityLevel: CityLevel;
   standard: number;         // 补贴标准（元/天）
-  days: number;             // 补贴天数
+  days: number;             // 补贴天数（自然日−出发−返回）
   totalAmount: number;      // 补贴总额
-  // 工作日数据
-  workingDays?: number;     // 工作日
-  overtimeDays?: number;    // 加班工作日
   // 发放状态
   isPaid: boolean;
   paidDate?: string;
@@ -487,73 +468,6 @@ export interface DormitoryMaintenance {
   remark?: string;
 }
 
-// ==================== 打卡模块 ====================
-
-// 打卡记录
-export interface PunchRecord {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  punchTime: string;
-  punchType: PunchType;
-  punchMethod: 'gps' | 'wifi' | 'manual';
-  // 定位信息
-  longitude?: number;
-  latitude?: number;
-  address?: string;
-  accuracy?: number;
-  // 出差关联
-  isOnTrip: boolean;
-  tripId?: string;
-  tripNo?: string;
-  // 状态
-  status: PunchStatus;
-  abnormalReason?: string;
-  makeupReason?: string;
-  makeupProof?: Attachment[];
-}
-
-// 临时打卡区域
-export interface TemporaryZone {
-  id: string;
-  name: string;
-  longitude: number;
-  latitude: number;
-  radius: number;           // 有效范围（米）
-  startDate: string;
-  endDate: string;
-  tripId?: string;
-  tripNo?: string;
-  projectId?: string;
-  projectName?: string;
-}
-
-// 打卡规则
-export interface PunchRule {
-  id: string;
-  name: string;
-  // 工作时间
-  workStartTime: string;    // 如 "09:00"
-  workEndTime: string;      // 如 "18:00"
-  flexibleMinutes: number;  // 弹性时间（分钟）
-  // 打卡范围
-  companyLongitude: number;
-  companyLatitude: number;
-  companyRadius: number;    // 有效范围（米）
-  limitOnTrip: boolean;     // 出差时是否限制范围
-  temporaryZones?: TemporaryZone[];
-  // 加班规则
-  overtimeStartTime: string; // 如 "18:30"
-  overtimeMinUnit: number;   // 加班最小单位（小时）
-  overtimeNeedApproval: boolean;
-  // 异常规则
-  lateThresholdMinutes: number; // 迟到阈值（分钟）
-  absentHandling: 'auto_absent' | 'allow_makeup';
-  makeupDeadlineDays: number;   // 补卡时限（天）
-  // 状态
-  isActive: boolean;
-}
-
 // ==================== 费用标准 ====================
 
 // 标准明细
@@ -647,14 +561,3 @@ export interface DormitoryListParams {
   pageSize?: number;
 }
 
-// 打卡记录查询参数
-export interface PunchRecordListParams {
-  employeeId?: string;
-  startDate?: string;
-  endDate?: string;
-  punchType?: PunchType;
-  status?: PunchStatus;
-  tripId?: string;
-  page?: number;
-  pageSize?: number;
-}

@@ -8,7 +8,7 @@
 // ---------- 类型 ----------
 
 /** 功能条目状态：功能列表（要做的事）的推进阶段，由 Claude 自主判断维护 */
-export const PLANNED_STATUSES = ['未开始', '已调研', '设计中', '已设计'] as const;
+export const PLANNED_STATUSES = ['未开始', '已调研', '设计中', '已设计', 'α 已实现'] as const;
 export type PlannedStatus = (typeof PLANNED_STATUSES)[number];
 
 /** β版开发状态：生产开关打开后随开发推进，Claude 为主维护 */
@@ -342,9 +342,9 @@ export function createSeedBoard(): FeatureBoard {
     { module: '回款管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['回款管理'] ?? [], note: '期次拆分/回款登记/状态自动计算/权限矩阵（WIP）' },
     { module: '开票管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['开票管理'] ?? [], note: '开票申请/发票冲红/开票工作台' },
     { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊读池' },
-    { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: '替换 /hr/expenses。阶段 A 计划已展开，未写代码' },
-    { module: '精益交付', domain: '财务域', isPlanned: false, features: FEATURES_SEED['精益交付'] ?? [], note: '页面已移植。PRD-精益交付数据链路 + lean-delivery-dataline-dev-plan 已设计，待编码（ADR-0086~0088）' },
-    { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: '页面已移植（travel-api 接缝）。PRD-差旅管理 + travel-dev-plan 已设计，待编码（ADR-0089/0090）' },
+    { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: '阶段 A–E 全部完成。12 文件完整模块 + expenseService β 骨架 + 工天日历 + getHourlyOpCost 接池' },
+    { module: '精益交付', domain: '财务域', isPlanned: false, features: FEATURES_SEED['精益交付'] ?? [], note: 'L1–L4 全部完成。calc.ts 纯函数层 + quoteSeam/contractSeam 接真实数据 + Dashboard/CaseList/CaseDetail 全面改造' },
+    { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: 'T1–T4 全部完成。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock' },
     { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
     { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
     // === 获客域（优先级 4）===

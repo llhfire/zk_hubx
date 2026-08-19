@@ -34,84 +34,89 @@ interface RuleResult {
   suggestion?: string;
 }
 
-const CITY_TIERS: Record<string, 'first' | 'new_first' | 'second' | 'third'> = {
-  '北京': 'first',
-  '上海': 'first',
-  '广州': 'first',
-  '深圳': 'first',
-  '成都': 'new_first',
-  '杭州': 'new_first',
-  '重庆': 'new_first',
-  '武汉': 'new_first',
-  '苏州': 'new_first',
-  '西安': 'new_first',
-  '南京': 'new_first',
-  '天津': 'new_first',
-  '长沙': 'new_first',
-  '郑州': 'new_first',
-  '东莞': 'new_first',
-  '青岛': 'new_first',
-  '昆明': 'new_first',
-  '宁波': 'new_first',
-  '合肥': 'new_first',
-  '大连': 'new_first',
-  '福州': 'new_first',
-  '厦门': 'new_first',
-  '哈尔滨': 'new_first',
-  '济南': 'new_first',
-  '佛山': 'new_first',
-  '沈阳': 'new_first',
-  '无锡': 'new_first',
-  '贵阳': 'second',
-  '南宁': 'second',
-  '太原': 'second',
-  '石家庄': 'second',
-  '南昌': 'second',
-  '兰州': 'second',
-  '珠海': 'second',
-  '惠州': 'second',
-  '常州': 'second',
-  '温州': 'second',
-  '烟台': 'second',
-  '海口': 'second',
+import type { CityLevel } from '../types';
+
+const CITY_TIERS: Record<string, CityLevel> = {
+  '北京': 'first_tier',
+  '上海': 'first_tier',
+  '广州': 'first_tier',
+  '深圳': 'first_tier',
+  // 省会及杭州、成都 → second_tier（废除新一线）
+  '成都': 'second_tier',
+  '杭州': 'second_tier',
+  '重庆': 'second_tier',
+  '武汉': 'second_tier',
+  '苏州': 'second_tier',
+  '西安': 'second_tier',
+  '南京': 'second_tier',
+  '天津': 'second_tier',
+  '长沙': 'second_tier',
+  '郑州': 'second_tier',
+  '东莞': 'second_tier',
+  '青岛': 'second_tier',
+  '昆明': 'second_tier',
+  '宁波': 'second_tier',
+  '合肥': 'second_tier',
+  '大连': 'second_tier',
+  '福州': 'second_tier',
+  '厦门': 'second_tier',
+  '哈尔滨': 'second_tier',
+  '济南': 'second_tier',
+  '佛山': 'second_tier',
+  '沈阳': 'second_tier',
+  '无锡': 'second_tier',
+  '贵阳': 'second_tier',
+  '南宁': 'second_tier',
+  '太原': 'second_tier',
+  '石家庄': 'second_tier',
+  '南昌': 'second_tier',
+  '兰州': 'second_tier',
+  '珠海': 'second_tier',
+  '惠州': 'second_tier',
+  '常州': 'second_tier',
+  '温州': 'second_tier',
+  '烟台': 'second_tier',
+  '海口': 'second_tier',
 };
 
-function getCityTier(city: string): 'first' | 'new_first' | 'second' | 'third' {
-  return CITY_TIERS[city] || 'third';
+function getCityTier(city: string): CityLevel {
+  return CITY_TIERS[city] || 'other';
 }
 
 function getHotelLimit(city: string): number {
   const tier = getCityTier(city);
   switch (tier) {
-    case 'first':
-    case 'new_first':
-      return 220;
-    case 'second':
-      return 180;
-    case 'third':
-      return 150;
+    case 'first_tier':
+      return 500;
+    case 'second_tier':
+      return 350;
+    case 'third_tier':
+      return 280;
+    case 'other':
+      return 200;
   }
 }
 
 function getLocalTransportLimit(city: string): number {
   const tier = getCityTier(city);
   switch (tier) {
-    case 'first':
-    case 'new_first':
+    case 'first_tier':
+      return 80;
+    case 'second_tier':
       return 50;
-    case 'second':
+    case 'third_tier':
       return 40;
-    case 'third':
+    case 'other':
       return 30;
   }
 }
 
 function getCityTierLabel(tier: string): string {
   switch (tier) {
-    case 'first': return '一线';
-    case 'new_first': return '新一线';
-    case 'second': return '二线';
-    case 'third': return '三线及以下';
+    case 'first_tier': return '一线';
+    case 'second_tier': return '二线';
+    case 'third_tier': return '三线';
+    case 'other': return '其他';
     default: return '未知';
   }
 }

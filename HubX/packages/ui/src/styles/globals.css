@@ -1826,3 +1826,210 @@
   }
 
 }
+
+/* ==========================================================================
+   运营费用模块
+   ========================================================================== */
+
+/* KPI 卡片网格（DashboardTab / OverheadTab 共用） */
+.expense-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.expense-kpi-card .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.expense-kpi-label {
+  color: var(--color-text-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.expense-kpi-value {
+  color: var(--color-text-1);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-2xl);
+}
+
+.expense-kpi-hint {
+  color: var(--color-text-3);
+  font-size: var(--text-xs);
+}
+
+/* 趋势柱状图 */
+.expense-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  height: 200px;
+  padding: 0 var(--space-4);
+}
+
+.expense-bar-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.expense-bar-chart-bar {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(to top, var(--brand-500), var(--brand-300));
+  transition: height 0.3s ease;
+}
+
+.expense-bar-chart-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+}
+
+.expense-bar-chart-value {
+  font-size: var(--text-xs);
+  color: var(--color-text-2);
+}
+
+/* 公摊参数区 */
+.expense-overhead-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* ==========================================================================
+   精益交付模块
+   ========================================================================== */
+
+/* 仪表盘 KPI 卡片 */
+.lean-dashboard-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.lean-kpi-card .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lean-kpi-label {
+  color: var(--color-text-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.lean-kpi-value {
+  color: var(--color-text-1);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-2xl);
+}
+
+/* 气泡图容器 */
+.lean-bubble-chart {
+  position: relative;
+  height: 300px;
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.lean-bubble-axis-label {
+  position: absolute;
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+}
+
+.lean-bubble-axis-label.top-left {
+  top: var(--space-2);
+  left: var(--space-4);
+}
+
+.lean-bubble-axis-label.bottom-right {
+  bottom: var(--space-2);
+  right: var(--space-2);
+}
+
+.lean-bubble-legend {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 模拟器 */
+.lean-simulator-card .arco-card-body {
+  padding: var(--space-4);
+}
+
+/* CaseList 统计卡片 */
+.lean-case-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+/* 财务指标卡片（CaseDetail 概览） */
+.lean-detail-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.lean-detail-kpi-label {
+  color: var(--color-text-3);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-1);
+}
+
+.lean-detail-kpi-value {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-2xl);
+}
+
+/* EAC 预测指标 */
+.lean-eac-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .expense-kpi-grid,
+  .expense-overhead-summary,
+  .lean-dashboard-kpi,
+  .lean-case-stats,
+  .lean-detail-kpi-grid,
+  .lean-eac-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .expense-kpi-grid,
+  .expense-overhead-summary,
+  .lean-dashboard-kpi,
+  .lean-case-stats,
+  .lean-detail-kpi-grid,
+  .lean-eac-grid {
+    grid-template-columns: 1fr;
+  }
+}

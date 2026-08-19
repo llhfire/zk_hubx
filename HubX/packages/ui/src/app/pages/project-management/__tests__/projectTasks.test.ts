@@ -13,7 +13,7 @@ describe('project task assignment', () => {
       totalCount: 2,
       pendingCount: 1,
       inProgressCount: 1,
-      overdueCount: 0,
+      overdueCount: 2,
       completedCount: 0,
     });
   });

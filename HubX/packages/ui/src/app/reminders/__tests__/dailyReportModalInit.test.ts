@@ -30,8 +30,8 @@ describe('daily report modal initial frame', () => {
     const markup = renderSalesFirstFrame()
 
     expect(markup).toContain('工作归属')
-    expect(markup).toContain('售前线索')
-    expect(markup).toContain('选择售前线索')
+    expect(markup).toContain('软件售前')
+    expect(markup).toContain('请选择项目')
     expect(markup).toContain('工作性质')
   })
 

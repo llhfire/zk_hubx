@@ -278,15 +278,20 @@ export const mockMonthlyOpExpenses: Record<string, number> = {
   '2026-05': 55000,
 };
 
+/**
+ * 运营费用时薪 — 改为读运营费用模块公式
+ * 阶段 D：从 operating-expense/expenseCalc.hourlyOverheadRate 取数
+ * 保留 ACTIVE_EMPLOYEE_COUNT 常量供页面展示（不再用于计算）
+ */
 export const ACTIVE_EMPLOYEE_COUNT = 5;
 
-/**
- * 运营费用时薪 = 月运营费用 / 在职人数 / 标准月工时
- */
+import { overheadPool, capacityHours, hourlyOverheadRate } from '../operating-expense/expenseCalc';
+import { mockExpenseRecords, mockWorkdaysByMonth, mockEmployeesForOverhead } from '../operating-expense/mockData';
+
 export function getHourlyOpCost(month: string): number {
-  const expense = mockMonthlyOpExpenses[month] ?? 0;
-  if (expense === 0 || ACTIVE_EMPLOYEE_COUNT === 0) return 0;
-  return expense / ACTIVE_EMPLOYEE_COUNT / STANDARD_MONTHLY_HOURS;
+  const pool = overheadPool(mockExpenseRecords, month);
+  const hours = capacityHours(mockEmployeesForOverhead, month, mockWorkdaysByMonth);
+  return hourlyOverheadRate(pool, hours);
 }
 
 // ─── 研发成本明细 ────────────────────────────────────────────

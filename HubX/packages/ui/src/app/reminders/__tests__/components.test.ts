@@ -1,3 +1,10 @@
+// Mock react-quill to avoid 'document is not defined' in non-DOM test environment
+import { vi } from 'vitest'
+vi.mock('react-quill', () => ({ default: () => null }))
+vi.mock('@/app/pages/quotation/QuotationContext', () => ({
+  useQuotation: () => ({ currentRole: 'pm', setCurrentRole: () => {} }),
+  QuotationProvider: ({ children }: { children: any }) => children,
+}))
 import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -14,6 +21,9 @@ import { ReminderProvider } from '../ReminderContext'
 import { MyLeads, getLeadFollowupReminderBanner } from '@/app/pages/MyLeads'
 import { LeadDetail, normalizeLeadReminderId } from '@/app/pages/LeadDetail'
 import { ContractsProvider } from '@/app/pages/contracts/ContractsContext'
+import { EmployeeProvider } from '@/app/pages/employee'
+import { ProjectProvider } from '@/app/pages/project-management/ProjectContext'
+import { BusinessCaseProvider } from '@/app/business-case/BusinessCaseContext'
 
 function createReminder(overrides: Partial<ReminderItem> = {}): ReminderItem {
   return {
@@ -41,15 +51,27 @@ function renderInReminderRouter(path: string, element: ReturnType<typeof createE
         ContractsProvider,
         null,
         createElement(
-          MemoryRouter,
-          { initialEntries: [path] },
+          EmployeeProvider,
+          null,
           createElement(
-            Routes,
+            ProjectProvider,
             null,
-            createElement(Route, {
-              path: path === '/leads/my' ? '/leads/my' : '/leads/:id',
-              element,
-            }),
+            createElement(
+              BusinessCaseProvider,
+              null,
+              createElement(
+                MemoryRouter,
+                { initialEntries: [path] },
+                createElement(
+                  Routes,
+                  null,
+                  createElement(Route, {
+                    path: path === '/leads/my' ? '/leads/my' : '/leads/:id',
+                    element,
+                  }),
+                ),
+              ),
+            ),
           ),
         ),
       ),

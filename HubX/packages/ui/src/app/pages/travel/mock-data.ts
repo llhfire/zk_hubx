@@ -1,4 +1,4 @@
-import type { Trip, Reimbursement, Loan, DormitoryBuilding, PunchRecord, PunchRule, ExpenseStandard, TravelSubsidy } from './types'
+import type { Trip, Reimbursement, Loan, DormitoryBuilding, ExpenseStandard } from './types'
 
 export const mockTrips: Trip[] = [
   {
@@ -48,7 +48,7 @@ export const mockTrips: Trip[] = [
       },
     ],
     loans: [{ id: 'loan-1', loanNo: 'LN20260425001', applicantId: 'emp-001', applicantName: '张三', department: '销售部', tripId: '1', tripNo: 'BT20260425001', type: 'travel', amount: 3000, reason: '出差备用金', expectedPayDate: '2026-04-27', payMethod: 'bank', status: 'paid', createDate: '2026-04-25', updateDate: '2026-04-26', offsetAmount: 0, remainingAmount: 3000, approvalRecords: [{ id: 'a-1-1', step: '发起申请', approver: '张三', approverId: 'emp-001', status: 'approved', time: '2026-04-25 10:00', comment: '提交借款申请' }, { id: 'a-1-2', step: '部门主管审批', approver: '王经理', approverId: 'emp-002', status: 'approved', time: '2026-04-25 14:30', comment: '同意' }, { id: 'a-1-3', step: '财务审核', approver: '陈财务', approverId: 'emp-003', status: 'approved', time: '2026-04-26 09:00', comment: '已安排打款' }] }],
-    subsidy: { id: 'sub-1', tripId: '1', calcMode: 'calendar_day', cityLevel: 'first_tier', standard: 150, days: 7, totalAmount: 1050, workingDays: 5, overtimeDays: 0, isPaid: false },
+    subsidy: { id: 'sub-1', tripId: '1', cityLevel: 'first_tier', standard: 150, days: 5, totalAmount: 750, isPaid: false },
     approvalRecords: [{ id: 'at-1-1', step: '发起申请', approver: '张三', approverId: 'emp-001', status: 'approved', time: '2026-04-24 09:00', comment: '提交出差申请' }, { id: 'at-1-2', step: '部门主管审批', approver: '王经理', approverId: 'emp-002', status: 'approved', time: '2026-04-24 10:30', comment: '批准驻场' }, { id: 'at-1-3', step: '财务审核', approver: '陈财务', approverId: 'emp-003', status: 'approved', time: '2026-04-24 15:00', comment: '同意' }],
   },
   {
@@ -84,8 +84,42 @@ export const mockTrips: Trip[] = [
         totalExpense: 1120,
       },
     ],
-    subsidy: { id: 'sub-2', tripId: '2', calcMode: 'calendar_day', cityLevel: 'first_tier', standard: 150, days: 2, totalAmount: 300, workingDays: 2, overtimeDays: 0, isPaid: false },
+    subsidy: { id: 'sub-2', tripId: '2', cityLevel: 'first_tier', standard: 150, days: 0, totalAmount: 0, isPaid: false },
     approvalRecords: [{ id: 'at-2-1', step: '发起申请', approver: '李四', approverId: 'emp-004', status: 'approved', time: '2026-04-24 09:00', comment: '提交出差申请' }, { id: 'at-2-2', step: '部门主管审批', approver: '王经理', approverId: 'emp-002', status: 'approved', time: '2026-04-24 10:30', comment: '批准' }, { id: 'at-2-3', step: '财务审核', approver: '陈财务', approverId: 'emp-003', status: 'approved', time: '2026-04-24 15:00', comment: '同意' }],
+  },
+  // 售前差旅：挂线索 lead-1
+  {
+    id: '3', tripNo: 'BT20260510001', applicantId: 'emp-001', applicantName: '张三', department: '销售部',
+    customerId: 'cust-003', customerName: 'A公司',
+    leadId: 'lead-1', leadName: 'A公司CRM系统开发需求',
+    destinations: ['上海'], startDate: '2026-05-10', endDate: '2026-05-12', days: 3,
+    transportModes: ['high_speed_rail'], accommodationIntent: 'hotel', estimatedAccommodationDays: 2,
+    estimatedTransportCost: 1106, estimatedAccommodationCost: 440, estimatedMealCost: 120, estimatedOtherCost: 100, estimatedTotalCost: 1766,
+    needLoan: false, status: 'closed', purpose: 'A公司CRM需求初次拜访',
+    createDate: '2026-05-08', updateDate: '2026-05-13',
+    itinerarySegments: [
+      {
+        id: 'seg-3-1', tripId: '3', segmentOrder: 1, departure: '北京', destination: '上海',
+        departureDate: '2026-05-10', arrivalDate: '2026-05-10',
+        transportMode: 'high_speed_rail', transportDetail: 'G1 北京南→上海虹桥', transportCost: 553,
+        customerId: 'cust-003', customerName: 'A公司',
+        accommodation: { id: 'acc-3-1', itinerarySegmentId: 'seg-3-1', type: 'hotel', hotelName: '上海全季酒店', roomType: '标准间', pricePerNight: 220, nights: 2, totalAmount: 440 },
+        expenses: [
+          { id: 'exp-3-01', tripId: '3', itinerarySegmentId: 'seg-3-1', type: 'meal', amount: 80, date: '2026-05-10', remark: '午餐', isOverStandard: false },
+          { id: 'exp-3-02', tripId: '3', itinerarySegmentId: 'seg-3-1', type: 'local_transport', amount: 45, date: '2026-05-10', remark: '高铁站→酒店', isOverStandard: false },
+        ],
+        totalExpense: 440,
+      },
+      {
+        id: 'seg-3-2', tripId: '3', segmentOrder: 2, departure: '上海', destination: '北京',
+        departureDate: '2026-05-12', arrivalDate: '2026-05-12',
+        transportMode: 'high_speed_rail', transportDetail: 'G2 上海虹桥→北京南', transportCost: 553,
+        expenses: [],
+        totalExpense: 0,
+      },
+    ],
+    subsidy: { id: 'sub-3', tripId: '3', cityLevel: 'first_tier', standard: 150, days: 1, totalAmount: 150, isPaid: true, paidDate: '2026-05-25', paidWithSalary: '2026-05' },
+    approvalRecords: [],
   },
 ]
 
@@ -93,14 +127,14 @@ export const mockReimbursements: Reimbursement[] = [
   {
     id: 'reimb-1', reimbursementNo: 'BX20260505001', tripId: '1', tripNo: 'BT20260425001',
     applicantId: 'emp-001', applicantName: '张三', department: '销售部',
-    totalAmount: 3526, status: 'pending', createDate: '2026-05-05', updateDate: '2026-05-05',
+    // 餐费不进实报（T2 规则）：1106+1320+460=2886
+    totalAmount: 2886, status: 'pending', createDate: '2026-05-05', updateDate: '2026-05-05',
     items: [
-      { id: 'ri-1', type: 'transport', amount: 1106, description: '往返高铁' },
-      { id: 'ri-2', type: 'accommodation', amount: 1320, description: '杭州西溪谷美居酒店6晚' },
-      { id: 'ri-3', type: 'meal', amount: 640, description: '7天餐费' },
-      { id: 'ri-4', type: 'local_transport', amount: 460, description: '市内打车/地铁' },
+      { id: 'ri-1', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'transport', description: '往返高铁', amount: 1106, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
+      { id: 'ri-2', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'accommodation', description: '杭州西溪谷美居酒店6晚', amount: 1320, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
+      { id: 'ri-3', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'local_transport', description: '市内打车/地铁', amount: 460, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
     ],
-    offsetAmount: 3000, netAmount: 526,
+    offsetAmount: 0, netAmount: 2886,
     approvalRecords: [],
   },
 ]
@@ -109,16 +143,116 @@ export const mockLoans: Loan[] = [
   { id: 'loan-1', loanNo: 'LN20260425001', applicantId: 'emp-001', applicantName: '张三', department: '销售部', tripId: '1', tripNo: 'BT20260425001', type: 'travel', amount: 3000, reason: '出差备用金', expectedPayDate: '2026-04-27', payMethod: 'bank', status: 'paid', createDate: '2026-04-25', updateDate: '2026-04-26', offsetAmount: 0, remainingAmount: 3000, approvalRecords: [] },
 ]
 
-export const mockDormitories: DormitoryBuilding[] = []
+/** 宿舍 mock：1 栋 2 层 4 房 */
+export const mockDormitories: DormitoryBuilding[] = [
+  {
+    id: 'dorm-1', name: '中科人才公寓', companyId: 'company-1', companyName: '中科集团',
+    city: '北京', district: '海淀区', street: '中关村大街', community: '中科人才公寓', address: '北京市海淀区中关村大街1号',
+    landlordName: '张房东', landlordPhone: '13800000000',
+    leaseStartDate: '2025-01-01', leaseEndDate: '2027-12-31',
+    monthlyRent: 12000, deposit: 24000, paymentMethod: 'monthly',
+    waterAccountNo: 'W20250001', waterPayMethod: '银行代扣',
+    electricityAccountNo: 'E20250001', electricityPayMethod: '银行代扣',
+    internetAccountNo: 'I20250001', internetProvider: '中国电信', internetMonthlyFee: 200, internetPayMethod: '银行代扣',
+    status: 'active',
+    floors: [
+      {
+        id: 'dorm-1-f1', buildingId: 'dorm-1', floorNumber: 1, roomCount: 2,
+        rooms: [
+          { id: 'dorm-1-f1-r1', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomNumber: '101', roomType: 'double', bedCount: 2, facilities: ['空调', '热水器', 'WiFi'], status: 'occupied',
+            beds: [
+              { id: 'dorm-1-f1-r1-b1', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomId: 'dorm-1-f1-r1', bedNumber: '1', status: 'occupied', occupantId: '1', occupantName: '张三' },
+              { id: 'dorm-1-f1-r1-b2', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomId: 'dorm-1-f1-r1', bedNumber: '2', status: 'available' },
+            ] },
+          { id: 'dorm-1-f1-r2', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomNumber: '102', roomType: 'double', bedCount: 2, facilities: ['空调', '热水器', 'WiFi'], status: 'available',
+            beds: [
+              { id: 'dorm-1-f1-r2-b1', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomId: 'dorm-1-f1-r2', bedNumber: '1', status: 'available' },
+              { id: 'dorm-1-f1-r2-b2', buildingId: 'dorm-1', floorId: 'dorm-1-f1', roomId: 'dorm-1-f1-r2', bedNumber: '2', status: 'available' },
+            ] },
+        ],
+      },
+      {
+        id: 'dorm-1-f2', buildingId: 'dorm-1', floorNumber: 2, roomCount: 2,
+        rooms: [
+          { id: 'dorm-1-f2-r1', buildingId: 'dorm-1', floorId: 'dorm-1-f2', roomNumber: '201', roomType: 'single', bedCount: 1, facilities: ['空调', '热水器', 'WiFi'], status: 'occupied',
+            beds: [
+              { id: 'dorm-1-f2-r1-b1', buildingId: 'dorm-1', floorId: 'dorm-1-f2', roomId: 'dorm-1-f2-r1', bedNumber: '1', status: 'occupied', occupantId: '4', occupantName: '赵六' },
+            ] },
+          { id: 'dorm-1-f2-r2', buildingId: 'dorm-1', floorId: 'dorm-1-f2', roomNumber: '202', roomType: 'single', bedCount: 1, facilities: ['空调', '热水器', 'WiFi'], status: 'available',
+            beds: [
+              { id: 'dorm-1-f2-r2-b1', buildingId: 'dorm-1', floorId: 'dorm-1-f2', roomId: 'dorm-1-f2-r2', bedNumber: '1', status: 'available' },
+            ] },
+        ],
+      },
+    ],
+  },
+]
 
-export const mockPunchRecords: PunchRecord[] = []
-
-export const mockPunchRule: PunchRule = { id: 'rule-1', name: '默认打卡规则', type: 'location', workStartTime: '09:00', workEndTime: '18:00', lateMinutes: 30, earlyMinutes: 30, locations: [{ id: 'loc-1', name: '北京总部', address: '北京市海淀区中关村', radius: 500 }] }
-
+/** 费用标准 — 版本 std-2026，2026-01-01 生效 */
 export const mockExpenseStandards: ExpenseStandard[] = [
-  { id: 'std-1', city: '北京', cityLevel: 'first_tier', hotelStandard: 220, mealStandard: 40, localTransportStandard: 50 },
-  { id: 'std-2', city: '上海', cityLevel: 'first_tier', hotelStandard: 220, mealStandard: 40, localTransportStandard: 50 },
-  { id: 'std-3', city: '深圳', cityLevel: 'first_tier', hotelStandard: 220, mealStandard: 40, localTransportStandard: 50 },
-  { id: 'std-4', city: '杭州', cityLevel: 'new_first', hotelStandard: 220, mealStandard: 40, localTransportStandard: 50 },
-  { id: 'std-5', city: '成都', cityLevel: 'new_first', hotelStandard: 220, mealStandard: 40, localTransportStandard: 50 },
+  {
+    id: 'std-2026',
+    name: '2026年差旅费用标准',
+    effectiveDate: '2026-01-01',
+    status: 'active',
+    createDate: '2025-12-20',
+    updateDate: '2025-12-20',
+    details: [
+      // L1-L3 × 一线
+      {
+        id: 'std-2026-d1', standardId: 'std-2026',
+        levels: ['L1', 'L2', 'L3'], cityLevels: ['first_tier'],
+        highSpeedRailClass: 'first', bulletTrainClass: 'first', airplaneClass: 'economy',
+        selfDriveRate: 0, localTransportLimit: 80,
+        hotelLimit: 500, hotelRoomType: '标准间',
+        mealAllowance: 0, entertainmentMealLimit: 0,
+        communicationAllowance: 0, miscellaneousAllowance: 0,
+        subsidyCalcMode: 'calendar_day', subsidyAmount: 150,
+      },
+      // L4-L6 × 一线
+      {
+        id: 'std-2026-d2', standardId: 'std-2026',
+        levels: ['L4', 'L5', 'L6'], cityLevels: ['first_tier'],
+        highSpeedRailClass: 'second', bulletTrainClass: 'second', airplaneClass: 'economy',
+        selfDriveRate: 0, localTransportLimit: 60,
+        hotelLimit: 400, hotelRoomType: '标准间',
+        mealAllowance: 0, entertainmentMealLimit: 0,
+        communicationAllowance: 0, miscellaneousAllowance: 0,
+        subsidyCalcMode: 'calendar_day', subsidyAmount: 120,
+      },
+      // 二线（所有职级）
+      {
+        id: 'std-2026-d3', standardId: 'std-2026',
+        levels: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'], cityLevels: ['second_tier'],
+        highSpeedRailClass: 'second', bulletTrainClass: 'second', airplaneClass: 'economy',
+        selfDriveRate: 0, localTransportLimit: 50,
+        hotelLimit: 350, hotelRoomType: '标准间',
+        mealAllowance: 0, entertainmentMealLimit: 0,
+        communicationAllowance: 0, miscellaneousAllowance: 0,
+        subsidyCalcMode: 'calendar_day', subsidyAmount: 100,
+      },
+      // 三线
+      {
+        id: 'std-2026-d4', standardId: 'std-2026',
+        levels: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'], cityLevels: ['third_tier'],
+        highSpeedRailClass: 'second', bulletTrainClass: 'second', airplaneClass: 'economy',
+        selfDriveRate: 0, localTransportLimit: 40,
+        hotelLimit: 280, hotelRoomType: '标准间',
+        mealAllowance: 0, entertainmentMealLimit: 0,
+        communicationAllowance: 0, miscellaneousAllowance: 0,
+        subsidyCalcMode: 'calendar_day', subsidyAmount: 80,
+      },
+      // 其他
+      {
+        id: 'std-2026-d5', standardId: 'std-2026',
+        levels: ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'], cityLevels: ['other'],
+        highSpeedRailClass: 'second', bulletTrainClass: 'second', airplaneClass: 'economy',
+        selfDriveRate: 0, localTransportLimit: 30,
+        hotelLimit: 200, hotelRoomType: '标准间',
+        mealAllowance: 0, entertainmentMealLimit: 0,
+        communicationAllowance: 0, miscellaneousAllowance: 0,
+        subsidyCalcMode: 'calendar_day', subsidyAmount: 60,
+      },
+    ],
+  },
 ]

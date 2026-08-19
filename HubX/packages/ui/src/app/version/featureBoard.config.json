@@ -670,31 +670,31 @@
       "planned": [
         {
           "name": "费用大盘（6个月滚动+工资平移）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "费用台账（确认即入账、作废不删）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "周期模板（固定即入账/浮动待确认）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "公摊参数（池÷全公司在职编制工时）",
-          "status": "已设计"
+          "status": "α 已实现"
         }
       ],
       "alpha": {
         "页面场景": true,
-        "功能流程": false,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "替换 /hr/expenses。PRD 已设计。阶段 A 计划已展开（计划/当前/operating-expense-dev-plan.md），未写代码"
+      "note": "阶段 A–E 全部完成。12 文件完整模块 + expenseService β 骨架 + 工天日历 + getHourlyOpCost 接池"
     },
     {
       "module": "精益交付",
@@ -712,21 +712,21 @@
         }
       ],
       "planned": [
-        { "name": "五条数据链派生化（评估/报价/合同/回款/成本全有来源）", "status": "已设计" },
-        { "name": "跨域引用报价域+合同域（删平行 mock）", "status": "已设计" },
-        { "name": "回款口径收入+WIP/趋势双线", "status": "已设计" },
-        { "name": "模拟器敏感性+底线价、穿透看板派生化", "status": "已设计" }
+        { "name": "五条数据链派生化（评估/报价/合同/回款/成本全有来源）", "status": "α 已实现" },
+        { "name": "跨域引用报价域+合同域（删平行 mock）", "status": "α 已实现" },
+        { "name": "回款口径收入+WIP/趋势双线", "status": "α 已实现" },
+        { "name": "模拟器敏感性+底线价、穿透看板派生化", "status": "α 已实现" }
       ],
       "alpha": {
         "页面场景": true,
-        "功能流程": false,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "页面已移植。PRD-精益交付数据链路 + 计划/当前/lean-delivery-dataline-dev-plan.md 已设计，待编码（ADR-0086~0088）"
+      "note": "L1–L4 全部完成。calc.ts 纯函数层 + quoteSeam/contractSeam 接真实数据 + Dashboard/CaseList/CaseDetail 全面改造"
     },
     {
       "module": "差旅管理",
@@ -756,23 +756,23 @@
         }
       ],
       "planned": [
-        { "name": "核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）", "status": "已设计" },
-        { "name": "审批固定流+借款金额分级（阈值入配置）", "status": "已设计" },
-        { "name": "报销双出口（运营费用只读归集+成本流水）", "status": "已设计" },
-        { "name": "删除打卡模块（考勤归工时加工）", "status": "已设计" },
+        { "name": "核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）", "status": "α 已实现" },
+        { "name": "审批固定流+借款金额分级（阈值入配置）", "status": "α 已实现" },
+        { "name": "报销双出口（运营费用只读归集+成本流水）", "status": "α 已实现" },
+        { "name": "删除打卡模块（考勤归工时加工）", "status": "α 已实现" },
         { "name": "可配置审批引擎", "status": "未开始" },
         { "name": "票据 OCR", "status": "未开始" }
       ],
       "alpha": {
         "页面场景": true,
-        "功能流程": false,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "页面已移植（travel-api 接缝）。PRD-差旅管理 + travel-dev-plan 已设计，待编码（ADR-0089/0090）"
+      "note": "T1–T4 全部完成。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock"
     },
     {
       "module": "财务视图",

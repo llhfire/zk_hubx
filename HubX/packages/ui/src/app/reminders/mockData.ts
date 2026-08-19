@@ -183,7 +183,7 @@ export const mockReminderData: ReminderData = {
       title: '请假申请 - 5月25日',
       status: 'pending',
       createdAt: '2026-05-21T10:00:00.000Z',
-      route: '/businesstrip',
+      route: '/travel/trips',
     },
     {
       id: 'approval-result-1',
@@ -194,7 +194,7 @@ export const mockReminderData: ReminderData = {
       status: 'approved',
       createdAt: '2026-05-20T10:00:00.000Z',
       updatedAt: '2026-05-21T15:00:00.000Z',
-      route: '/reimbursement',
+      route: '/travel/reimbursements',
     },
   ],
 

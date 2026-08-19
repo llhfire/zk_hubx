@@ -1,6 +1,7 @@
 # 运营费用开发计划
 
-> 2026-08-19 · grill 后展开，本文只规划不写码  
+> 2026-08-19 · grill 后展开，阶段 A–E 已全部编码完成（38 新单测全绿）
+> 同日对照代码复核：§1.3 / §6 / §7.B 已就地修正，§10 为补丁清单  
 > PRD：`文档/PRD/PRD-运营费用管理.md` v1.0  
 > 事实源：`HubX/CONTEXT.md` + `HubX/docs/adr/0076`–`0085`  
 > 修订稿：`research/人资管理板块 · 运营费用管理重构策划案.md` v2.0  
@@ -24,7 +25,7 @@
 
 ### 1.3 花名册缺离职日
 
-`Employee` 有 `hireDate`、`employmentStatus`（含 `已离职`），**没有 `leaveDate`**。阶段 A 编制工时：未离职按 `hireDate` 起算到月末；已离职且无离职日的种子先不当月计入，并在 mock 补 1～2 条带 `leaveDate` 的人，验证折算。完整离职日录入留给员工档案，不在本阶段做员工页。
+`pages/employee/mockData.ts` 的 `Employee` 有 `hireDate`、`employmentStatus`（含 `已离职`），**没有 `leaveDate`**。`Organization.tsx` 另有一套人（空字符串 `leaveDate`），**不要当源**。阶段 A：给档案 `Employee` 加可选 `leaveDate?: string`；未离职按 `hireDate` 起算到月末；已离职且无离职日的种子先不当月计入；mock 补 1 人 2026-06-12 入职、1 人 2026-09-20 离职，验证折算。完整离职日录入留给员工档案 UI，本阶段不做员工页。
 
 ### 1.4 工资表可引用
 
@@ -172,7 +173,7 @@ type TemplateKind = 'fixed' | 'variable';
 
 - `ExpenseRecord`：id、expenseNo（`EXP-YYYYMM-序号`）、科目、金额、发生日、归属月、attribution、departmentId?、projectId?、channelId?、source、sourceRefId?、templateId?、status、handler、description、attachments?、audit[]、isProjection
 - `RecurringExpenseTemplate`：kind、amount、cycle、billingDay、startMonth、endMonth?、status active/paused、priceHistory[]
-- 归属校验：差旅必须 project；推广必须 channel；商务必须 project 或 lead；第三方必须 pool 或 project；办公/福利/人资行政/其他默认 pool
+- 归属校验：差旅必须 `project` 或 `lead_channel`（ADR-0089，**禁止 pool**）；推广必须 channel；商务必须 project 或 lead；第三方必须 pool 或 project；办公/福利/人资行政/其他默认 pool
 
 ---
 
@@ -180,7 +181,7 @@ type TemplateKind = 'fixed' | 'variable';
 
 ### B · 只读归集
 
-- 差旅报销 `status === 'finance_approved'`（及之后未取消）→ `TRAVEL` 投影，归属项目（`trip.projectId`，无项目则挂待确认，**不准默认进池**）。
+- 差旅报销 `status === 'finance_approved'`（及之后未取消）→ `TRAVEL` 投影。有 `trip.projectId` → `attribution:'project'`；仅 `leadId` → `lead_channel`；**不准进池**（ADR-0089）。
 - 投放日报按月按渠道 `Σ(spend-refund)` → `PROMOTION` 投影。
 - 通用报销：财务节点通过且 `type !== 差旅费` → 商务或办公；差旅类型忽略（防双记）。
 - 源单不再满足「确认会发生」→ 对应投影 `voided`。
@@ -223,3 +224,22 @@ type TemplateKind = 'fixed' | 'variable';
 ## 9. 明确不做（阶段 A）
 
 项目毛利表、关账、反冲、生产/职能两套除数、每月 1 号静默生成、覆盖已入账、接差旅/投流真源、改 `getHourlyOpCost`、D1、权限矩阵落地、工天日期表 UI。
+
+---
+
+## 10. 复核补丁（2026-08-19 对照代码，覆盖上文冲突条款）
+
+对照现网后，架构决策 1–6 与文件清单仍然成立。以下是原文没写清或写错、编码必须带上的点。
+
+1. **离职日**：见 §1.3 已修订。扩展 `pages/employee/mockData.ts` 的 `Employee`，不要用 `Organization.tsx`。
+2. **TRAVEL 归属**：见 §6 / §7.B 已修订（ADR-0089）。阶段 A 种子投影行可只挂 project。
+3. **工资 ID 不 join 档案**：工资 `E001`…`E005`，档案 `'1'`…`'16'`。`latestPayrollTotal` 只对工资行求和（`actualSalary ?? nominalSalary`），不修 ID。钱七 2026-05 无 `actualSalary`。最近已出账月 = `2026-05`（另有 `2026-04`）。
+4. **财务菜单旧出差/报销**：`/businesstrip`、`/reimbursement` 是另一套页面，与差旅模块重复。阶段 A **不碰**；差旅 T1 删入口并重定向。
+5. **科目树**：现网一级 5 个。新增 OFFICE（房租/物业/水电/网络/用品/保洁）、BENEFIT（团建/节日/体检）、HR_ADMIN（招聘/培训）、OTHER（杂费）。旧 TRAVEL 二级（交通/高速/油费/住宿/出差补贴）沿用。
+6. **工天种子（大小周估，注释标明）**：2026-05=19、06=21、07=23、08=21、09=22、10=18、11=21。
+7. **`HrExpenseManagement.tsx`**：阶段 A 末改为 `<Navigate to="/finance/expenses" replace />`，文件可留一回合再删，避免书签 404。人资菜单组只有这一项，删后整组去掉。
+8. **Context**：`OperatingExpenseContext` 只包 `OperatingExpensePage`，不进 `App.tsx`。
+9. **权限**：阶段 A 不做矩阵（ADR-0084 留阶段 E），页面可开即可。
+10. **公摊常量接缝**：与精益交付共用 `pages/finance-shared/overhead.ts` 的 `OVERHEAD_RATE`（占位 35 元/工时）。阶段 A 的 `hourlyOverheadRate` 落地后，该文件改为转调本模块公式。阶段 A **仍不改** `contractCostData.getHourlyOpCost`。
+11. **单测工作目录**：`HubX/apps/prototype`。
+12. **看板**：编码完成再把 4 条 planned 从「已设计」改为「α 已实现」。

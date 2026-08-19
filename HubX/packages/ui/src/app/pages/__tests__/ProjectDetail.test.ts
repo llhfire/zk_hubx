@@ -1,3 +1,6 @@
+// Mock react-quill to avoid 'document is not defined' in non-DOM test environment
+import { vi } from 'vitest'
+vi.mock('react-quill', () => ({ default: () => null }))
 import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -5,6 +8,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { ProjectDetail } from '../ProjectDetail'
 import { ContractsProvider } from '../contracts/ContractsContext'
 import { EmployeeProvider } from '../employee'
+import { ProjectProvider } from '../project-management/ProjectContext'
 
 function renderProjectDetailMarkup(path = '/projects/1') {
   return renderToStaticMarkup(
@@ -18,12 +22,16 @@ function renderProjectDetailMarkup(path = '/projects/1') {
           ContractsProvider,
           null,
           createElement(
-            Routes,
+            ProjectProvider,
             null,
-            createElement(Route, {
-              path: '/projects/:id',
-              element: createElement(ProjectDetail),
-            }),
+            createElement(
+              Routes,
+              null,
+              createElement(Route, {
+                path: '/projects/:id',
+                element: createElement(ProjectDetail),
+              }),
+            ),
           ),
         ),
       ),

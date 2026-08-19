@@ -29,22 +29,22 @@ interface ComplianceGuideProps {
 }
 
 const CITY_LEVEL: Record<string, { level: string; hotelLimit: number; transportLimit: number }> = {
-  '北京': { level: '一线', hotelLimit: 220, transportLimit: 50 },
-  '上海': { level: '一线', hotelLimit: 220, transportLimit: 50 },
-  '广州': { level: '一线', hotelLimit: 220, transportLimit: 50 },
-  '深圳': { level: '一线', hotelLimit: 220, transportLimit: 50 },
-  '成都': { level: '新一线', hotelLimit: 220, transportLimit: 50 },
-  '重庆': { level: '二线', hotelLimit: 180, transportLimit: 30 },
-  '武汉': { level: '二线', hotelLimit: 180, transportLimit: 30 },
-  '杭州': { level: '新一线', hotelLimit: 220, transportLimit: 50 },
-  '南京': { level: '新一线', hotelLimit: 220, transportLimit: 50 },
-  '长沙': { level: '二线', hotelLimit: 180, transportLimit: 30 },
-  '西安': { level: '二线', hotelLimit: 180, transportLimit: 30 },
+  '北京': { level: '一线', hotelLimit: 500, transportLimit: 80 },
+  '上海': { level: '一线', hotelLimit: 500, transportLimit: 80 },
+  '广州': { level: '一线', hotelLimit: 500, transportLimit: 80 },
+  '深圳': { level: '一线', hotelLimit: 500, transportLimit: 80 },
+  '成都': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '重庆': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '武汉': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '杭州': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '南京': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '长沙': { level: '二线', hotelLimit: 350, transportLimit: 50 },
+  '西安': { level: '二线', hotelLimit: 350, transportLimit: 50 },
 };
 
 export function ComplianceGuide({ destination, days, department, companions }: ComplianceGuideProps) {
   const [expanded, setExpanded] = useState(false);
-  const cityInfo = CITY_LEVEL[destination] || { level: '三线及以下', hotelLimit: 150, transportLimit: 30 };
+  const cityInfo = CITY_LEVEL[destination] || { level: '其他', hotelLimit: 200, transportLimit: 30 };
   const isSoftware = department.includes('软件');
   const isSales = department.includes('销售');
   const hotelLimit = isSales && days >= 7 ? Math.round(cityInfo.hotelLimit * 0.9) : cityInfo.hotelLimit;

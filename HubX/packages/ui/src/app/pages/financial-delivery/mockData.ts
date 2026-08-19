@@ -1,538 +1,32 @@
 // 财务与交付管理模块 Mock 数据
+// 类型从 types.ts 导入（L1 拆分）
 
-// Case 状态枚举
-export enum CaseStatus {
-  DRAFTING = 'drafting',
-  QUOTING = 'quoting',
-  NEGOTIATING = 'negotiating',
-  SIGNED = 'signed',
-  IN_PROGRESS = 'in_progress',
-  SUSPENDED = 'suspended',
-  ACCEPTING = 'accepting',
-  COLLECTING = 'collecting',
-  COMPLETED = 'completed',
-  TERMINATED = 'terminated',
-}
+export {
+  CaseStatus, HealthStatus, FeatureListStatus, FeatureCategory,
+  QuotationStatus, ServiceCategory,
+} from './types';
+export type {
+  Case, FeatureList, Feature, FeatureEstimation, Quotation,
+  QuotationFeatureItem, QuotationServiceItem, CaseCostItem, PnLSnapshot,
+  CasePostMortem, CostVariance, RootCause, FeatureTag,
+  DashboardData, BubbleChartData, SimulatorData, SimilarProject,
+  CostTrendData, FinancialModel, ProfitMode, CostStructure, DrillDownData,
+} from './types';
 
-// 健康状态枚举
-export enum HealthStatus {
-  GREEN = 'green',
-  YELLOW = 'yellow',
-  RED = 'red',
-}
+import type {
+  Case, FeatureList, Feature, Quotation,
+  QuotationFeatureItem, QuotationServiceItem, CaseCostItem, PnLSnapshot,
+  CasePostMortem, CostTrendData, CostStructure, DashboardData,
+  FinancialModel, ProfitMode,
+} from './types';
+import {
+  CaseStatus, HealthStatus, FeatureListStatus, FeatureCategory,
+  QuotationStatus, ServiceCategory,
+} from './types';
 
-// 功能清单状态枚举
-export enum FeatureListStatus {
-  DRAFT = 'draft',
-  PENDING_ESTIMATE = 'pending_estimate',
-  ESTIMATED = 'estimated',
-  LOCKED = 'locked',
-}
-
-// 功能点分类枚举
-export enum FeatureCategory {
-  REUSE = 'reuse',
-  SEMI_CUSTOM = 'semi_custom',
-  NEW_DEV = 'new_dev',
-}
-
-// 报价单状态枚举
-export enum QuotationStatus {
-  DRAFT = 'draft',
-  REVIEWING = 'reviewing',
-  APPROVED = 'approved',
-  SENT = 'sent',
-  ACCEPTED = 'accepted',
-  REJECTED = 'rejected',
-}
-
-// 服务类别枚举
-export enum ServiceCategory {
-  TRAVEL = 'travel',
-  COMMERCIAL = 'commercial',
-  SALES = 'sales',
-  OPERATION = 'operation',
-  THIRD_PARTY = 'third_party',
-  HARDWARE = 'hardware',
-  CUSTOM = 'custom',
-}
-
-// Case 接口
-export interface Case {
-  id: string;
-  caseNo: string;
-  leadId?: string;
-  projectId?: string;
-  contractId?: string;
-  status: CaseStatus;
-  targetMargin?: number;
-  budgetCap?: number;
-  commercialCap?: number;
-  totalCost: number;
-  totalRevenue: number;
-  currentMargin?: number;
-  eac?: number;
-  wipValue?: number;
-  wipDays?: number;
-  healthStatus: HealthStatus;
-  industry?: string;
-  projectType?: string;
-  techStack?: string[];
-  durationDays?: number;
-  createdAt: string;
-  updatedAt: string;
-  completedAt?: string;
-  // 关联信息
-  leadName?: string;
-  projectName?: string;
-  contractAmount?: number;
-}
-
-// 功能清单接口
-export interface FeatureList {
-  id: string;
-  caseId: string;
-  version: number;
-  status: FeatureListStatus;
-  source: 'manual' | 'ai_suggested';
-  totalEstimatedDays: number;
-  totalEstimatedCost: number;
-  confirmedBy?: string;
-  confirmedAt?: string;
-  lockedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  // 关联信息
-  caseNo?: string;
-  features?: Feature[];
-}
-
-// 功能点接口
-export interface Feature {
-  id: string;
-  featureListId: string;
-  name: string;
-  description: string;
-  category: FeatureCategory;
-  priority: 'high' | 'medium' | 'low';
-  businessNotes?: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  // 估算信息
-  estimation?: FeatureEstimation;
-}
-
-// 功能点估算接口
-export interface FeatureEstimation {
-  id: string;
-  featureId: string;
-  estimatedBy: string;
-  estimatedDays: number;
-  technicalRisk: 'low' | 'medium' | 'high';
-  dependencies?: string;
-  notes?: string;
-  status: 'pending' | 'completed';
-  estimatedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  // 估算人信息
-  estimatedByName?: string;
-}
-
-// 报价单接口
-export interface Quotation {
-  id: string;
-  caseId: string;
-  featureListId?: string;
-  quotationNo: string;
-  projectName: string;
-  projectType?: string;
-  description?: string;
-  createdBy: string;
-  technicalReviewer?: string;
-  status: QuotationStatus;
-  featureQuoteMode: 'by_feature' | 'by_role';
-  rolePrices: Record<string, number>;
-  totalFeatureCost: number;
-  totalServiceCost: number;
-  totalAmount: number;
-  approvedBy?: string;
-  approvedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  // 关联信息
-  caseNo?: string;
-  createdByName?: string;
-  technicalReviewerName?: string;
-  featureItems?: QuotationFeatureItem[];
-  serviceItems?: QuotationServiceItem[];
-}
-
-// 报价功能项接口
-export interface QuotationFeatureItem {
-  id: string;
-  quotationId: string;
-  featureId?: string;
-  featureName: string;
-  description: string;
-  category?: FeatureCategory;
-  priority?: 'high' | 'medium' | 'low';
-  productDays: number;
-  designDays: number;
-  frontendDays: number;
-  backendDays: number;
-  testDays: number;
-  otherDays: number;
-  totalDays: number;
-  totalAmount: number;
-  notes?: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 报价服务项接口
-export interface QuotationServiceItem {
-  id: string;
-  quotationId: string;
-  category: ServiceCategory;
-  serviceType: string;
-  description: string;
-  amount: number;
-  quantity?: number;
-  unitPrice?: number;
-  period?: 'monthly' | 'yearly' | 'one_time';
-  notes?: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// 成本项接口
-export interface CaseCostItem {
-  id: string;
-  caseId: string;
-  sourceType: 'daily_report' | 'reimbursement' | 'work_item' | 'manual';
-  sourceId?: string;
-  costCategory: 'labor' | 'commercial' | 'operation' | 'third_party' | 'hardware';
-  costType: string;
-  amount: number;
-  employeeId?: string;
-  workItemId?: string;
-  date: string;
-  endDate?: string;  // 结束日期（用于已发生成本）
-  status: 'actual' | 'forecast';  // actual=已发生, forecast=未发生
-  description?: string;
-  createdAt: string;
-  // 关联信息
-  employeeName?: string;
-  sourceDescription?: string;
-}
-
-// 事后总结接口
-export interface CasePostMortem {
-  id: string;
-  caseId: string;
-  predictedPnl: PnLSnapshot;
-  actualPnl: PnLSnapshot;
-  costVariance: CostVariance;
-  revenueVariance: number;
-  marginVariance: number;
-  rootCauses: RootCause[];
-  lessonsLearned: string[];
-  unitOutputPerFte: number;
-  reuseSaving: number;
-  featureTags: FeatureTag[];
-  calibrationApplied: boolean;
-  createdAt: string;
-  updatedAt: string;
-  // 关联信息
-  caseNo?: string;
-}
-
-// P&L 快照接口
-export interface PnLSnapshot {
-  revenue: number;
-  laborCost: number;
-  commercialCost: number;
-  operationCost: number;
-  thirdPartyCost: number;
-  totalCost: number;
-  grossMargin: number;
-  netMargin: number;
-}
-
-// 成本差异接口
-export interface CostVariance {
-  laborVariance: number;
-  commercialVariance: number;
-  operationVariance: number;
-  thirdPartyVariance: number;
-  laborReasons: string[];
-  commercialReasons: string[];
-  operationReasons: string[];
-}
-
-// 根因分析接口
-export interface RootCause {
-  category: 'scope_creep' | 'quality_issue' | 'efficiency' | 'commercial_overrun' | 'external';
-  description: string;
-  impact: number;
-  confidence: number;
-}
-
-// 特征标签接口
-export interface FeatureTag {
-  key: string;
-  value: string;
-}
-
-// 仪表盘数据接口
-export interface DashboardData {
-  overview: {
-    totalRevenue: number;
-    totalCost: number;
-    totalProfit: number;
-    profitMargin: number;
-    alertCount: number;
-  };
-  bubbleChart: BubbleChartData[];
-  simulator: SimulatorData;
-  drillDown: DrillDownData;
-}
-
-// 气泡图数据接口
-export interface BubbleChartData {
-  caseId: string;
-  caseName: string;
-  wipDays: number;
-  currentMargin: number;
-  contractAmount: number;
-  healthStatus: HealthStatus;
-  eac: number;
-  wipValue: number;
-  riskWarnings: string[];
-}
-
-// 模拟器数据接口
-export interface SimulatorData {
-  currentConfig: {
-    featureScope: number;
-    commercialBudget: number;
-    targetMargin: number;
-  };
-  simulationResult: {
-    estimatedMargin: number;
-    breakEvenLine: number;
-    totalCost: number;
-    totalRevenue: number;
-  };
-  similarProjects: SimilarProject[];
-}
-
-// 相似项目接口
-export interface SimilarProject {
-  id: string;
-  name: string;
-  industry: string;
-  projectType: string;
-  margin: number;
-  durationDays: number;
-  totalCost: number;
-}
-
-// 成本趋势数据接口
-export interface CostTrendData {
-  date: string;
-  // 合同收入基线（阶梯线）
-  contractRevenue: number;
-  // 实际数据（已发生）
-  actualLaborCost: number;
-  actualCommercialCost: number;
-  actualOperationCost: number;
-  actualThirdPartyCost: number;
-  actualTotalCost: number;
-  actualRevenue: number;
-  // 预测数据（EAC）
-  forecastLaborCost: number | null;
-  forecastCommercialCost: number | null;
-  forecastOperationCost: number | null;
-  forecastThirdPartyCost: number | null;
-  forecastTotalCost: number | null;
-  forecastRevenue: number | null;
-  // 利润率
-  actualMargin: number | null;
-  forecastMargin: number | null;
-}
 
 // Mock 数据：成本趋势（按周）
 // 实际数据到当前周，之后为预测数据（EAC）
-export const mockCostTrends: Record<string, CostTrendData[]> = {
-  'case-001': [
-    // 截止每个月各个成本板块的总金额（累计数据）
-    // 项目周期：6月-11月（6个月）
-    // 合同约定：签约付30%，中期分4笔各10%，验收付30%
-    // 客户付款及时，足够驱动成本在安全范围
-
-    // 6月：售前阶段，只有商务成本，无开发成本
-    {
-      date: '6月',
-      contractRevenue: 0,
-      actualLaborCost: 0,
-      actualCommercialCost: 8000,
-      actualOperationCost: 2000,
-      actualThirdPartyCost: 0,
-      actualTotalCost: 10000,
-      actualRevenue: 0,
-      forecastLaborCost: null,
-      forecastCommercialCost: null,
-      forecastOperationCost: null,
-      forecastThirdPartyCost: null,
-      forecastTotalCost: null,
-      forecastRevenue: null,
-      actualMargin: null,
-      forecastMargin: null,
-    },
-
-    // 7月：签约后，开发团队投入，人力成本增加；收到签约款
-    {
-      date: '7月',
-      contractRevenue: 61500,      // 签约款30%
-      actualLaborCost: 35000,
-      actualCommercialCost: 2500,
-      actualOperationCost: 12000,
-      actualThirdPartyCost: 5000,
-      actualTotalCost: 54500,
-      actualRevenue: 61500,
-      forecastLaborCost: null,
-      forecastCommercialCost: null,
-      forecastOperationCost: null,
-      forecastThirdPartyCost: null,
-      forecastTotalCost: null,
-      forecastRevenue: null,
-      actualMargin: 11.4,
-      forecastMargin: null,
-    },
-
-    // 8月：开发高峰期，人力成本最高；收到中期款第1笔
-    {
-      date: '8月',
-      contractRevenue: 123000,     // 中期款20%
-      actualLaborCost: 80000,
-      actualCommercialCost: 3500,
-      actualOperationCost: 28000,
-      actualThirdPartyCost: 12000,
-      actualTotalCost: 123500,
-      actualRevenue: 123000,
-      forecastLaborCost: null,
-      forecastCommercialCost: null,
-      forecastOperationCost: null,
-      forecastThirdPartyCost: null,
-      forecastTotalCost: null,
-      forecastRevenue: null,
-      actualMargin: 49.6,
-      forecastMargin: null,
-    },
-
-    // 9月：开发中期，累计成本继续增长；收到中期款第2笔
-    {
-      date: '9月(当前)',
-      contractRevenue: 184500,     // 中期款20%
-      actualLaborCost: 105000,
-      actualCommercialCost: 4000,
-      actualOperationCost: 42000,
-      actualThirdPartyCost: 16000,
-      actualTotalCost: 167000,
-      actualRevenue: 184500,
-      forecastLaborCost: 105000,
-      forecastCommercialCost: 4000,
-      forecastOperationCost: 42000,
-      forecastThirdPartyCost: 16000,
-      forecastTotalCost: 167000,
-      forecastRevenue: 184500,
-      actualMargin: 50.6,
-      forecastMargin: 50.6,
-    },
-
-    // 10月（预测）：项目收尾，预测总成本；收到中期款第3笔
-    {
-      date: '10月(预测)',
-      contractRevenue: 246000,     // 中期款20%
-      actualLaborCost: null,
-      actualCommercialCost: null,
-      actualOperationCost: null,
-      actualThirdPartyCost: null,
-      actualTotalCost: null,
-      actualRevenue: null,
-      forecastLaborCost: 120000,
-      forecastCommercialCost: 4500,
-      forecastOperationCost: 52000,
-      forecastThirdPartyCost: 20000,
-      forecastTotalCost: 196500,
-      forecastRevenue: 246000,
-      actualMargin: null,
-      forecastMargin: 51.4,
-    },
-
-    // 11月（结项）：项目结项，收到尾款
-    {
-      date: '11月(结项)',
-      contractRevenue: 307500,     // 尾款30%
-      actualLaborCost: null,
-      actualCommercialCost: null,
-      actualOperationCost: null,
-      actualThirdPartyCost: null,
-      actualTotalCost: null,
-      actualRevenue: null,
-      forecastLaborCost: 120000,
-      forecastCommercialCost: 4500,
-      forecastOperationCost: 52000,
-      forecastThirdPartyCost: 20000,
-      forecastTotalCost: 196500,
-      forecastRevenue: 307500,
-      actualMargin: null,
-      forecastMargin: 57.9,
-    },
-  ],
-  'case-003': [
-    { date: '第1周', actualLaborCost: 0, actualCommercialCost: 3000, actualOperationCost: 0, actualThirdPartyCost: 0, actualTotalCost: 3000, actualRevenue: 0, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: null, forecastMargin: null },
-    { date: '第2周', actualLaborCost: 12000, actualCommercialCost: 5000, actualOperationCost: 0, actualThirdPartyCost: 0, actualTotalCost: 20000, actualRevenue: 0, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: null, forecastMargin: null },
-    { date: '第3周', actualLaborCost: 30000, actualCommercialCost: 8000, actualOperationCost: 3000, actualThirdPartyCost: 2000, actualTotalCost: 43000, actualRevenue: 0, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: null, forecastMargin: null },
-    { date: '第4周', actualLaborCost: 55000, actualCommercialCost: 12000, actualOperationCost: 5000, actualThirdPartyCost: 4000, actualTotalCost: 76000, actualRevenue: 125000, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: 39.2, forecastMargin: null },
-    { date: '第5周', actualLaborCost: 80000, actualCommercialCost: 15000, actualOperationCost: 8000, actualThirdPartyCost: 6000, actualTotalCost: 109000, actualRevenue: 125000, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: 12.8, forecastMargin: null },
-    { date: '第6周', actualLaborCost: 110000, actualCommercialCost: 18000, actualOperationCost: 10000, actualThirdPartyCost: 8000, actualTotalCost: 146000, actualRevenue: 250000, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: 41.6, forecastMargin: null },
-    { date: '第7周', actualLaborCost: 135000, actualCommercialCost: 22000, actualOperationCost: 12000, actualThirdPartyCost: 10000, actualTotalCost: 179000, actualRevenue: 250000, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: 28.4, forecastMargin: null },
-    { date: '第8周', actualLaborCost: 155000, actualCommercialCost: 25000, actualOperationCost: 15000, actualThirdPartyCost: 12000, actualTotalCost: 207000, actualRevenue: 250000, forecastLaborCost: null, forecastCommercialCost: null, forecastOperationCost: null, forecastThirdPartyCost: null, forecastTotalCost: null, forecastRevenue: null, actualMargin: 17.2, forecastMargin: null },
-    { date: '第9周', actualLaborCost: 180000, actualCommercialCost: 28000, actualOperationCost: 18000, actualThirdPartyCost: 14000, actualTotalCost: 240000, actualRevenue: 250000, forecastLaborCost: 180000, forecastCommercialCost: 28000, forecastOperationCost: 18000, forecastThirdPartyCost: 14000, forecastTotalCost: 240000, forecastRevenue: 250000, actualMargin: 4.0, forecastMargin: 4.0 },
-  ],
-};
-
-// 财务模型接口
-export interface FinancialModel {
-  id: string;
-  name: string;
-  version: string;
-  type: 'cost' | 'revenue';
-  applicableScenarios: string[];
-  description: string;
-  designRationale: string;
-  calculationFormula: string;
-  assumptions: string[];
-  limitations: string[];
-  updateHistory: { version: string; date: string; changes: string }[];
-}
-
-// 利润模式接口
-export interface ProfitMode {
-  level: number;
-  name: string;
-  description: string;
-  markupRange: string;
- 适用场景: string[];
-}
-
-// Mock 数据：利润模式
 export const mockProfitModes: ProfitMode[] = [
   {
     level: 1,
@@ -812,70 +306,9 @@ EAC = 已发生成本 + (剩余工作量 / 当前效率)
   },
 };
 
-// 成本结构接口
-export interface CostStructure {
-  category: string;
-  amount: number;
-  percentage: number;
-  color: string;
-}
 
 // Mock 数据：成本结构
 // 实际成本结构
-export const mockCostStructures: Record<string, CostStructure[]> = {
-  'case-001': [
-    { category: '人力成本', amount: 95000, percentage: 76.0, color: '#1e40af' },
-    { category: '商务成本', amount: 13200, percentage: 10.6, color: '#3b82f6' },
-    { category: '运营成本', amount: 14600, percentage: 11.7, color: '#60a5fa' },
-    { category: '第三方成本', amount: 2200, percentage: 1.7, color: '#93c5fd' },
-  ],
-};
-
-// 预测成本结构（EAC）
-export const mockForecastCostStructures: Record<string, CostStructure[]> = {
-  'case-001': [
-    { category: '人力成本', amount: 125000, percentage: 75.8, color: '#1e40af' },
-    { category: '商务成本', amount: 13200, percentage: 8.0, color: '#3b82f6' },
-    { category: '运营成本', amount: 21000, percentage: 12.7, color: '#60a5fa' },
-    { category: '第三方成本', amount: 5800, percentage: 3.5, color: '#93c5fd' },
-  ],
-  'case-003': [
-    { category: '人力成本', amount: 180000, percentage: 75.0, color: '#1e40af' },
-    { category: '商务成本', amount: 28000, percentage: 11.7, color: '#3b82f6' },
-    { category: '运营成本', amount: 18000, percentage: 7.5, color: '#60a5fa' },
-    { category: '第三方成本', amount: 14000, percentage: 5.8, color: '#93c5fd' },
-  ],
-};
-
-// 穿透看板数据接口
-export interface DrillDownData {
-  totalProfit: number;
-  byIndustry: {
-    industry: string;
-    profit: number;
-    percentage: number;
-    projects: {
-      projectId: string;
-      projectName: string;
-      profit: number;
-      costBreakdown: {
-        laborCost: {
-          total: number;
-          development: number;
-          rework: number;
-        };
-        commercialCost: {
-          total: number;
-          entertainment: number;
-          travel: number;
-        };
-        operationCost: number;
-        thirdPartyCost: number;
-      };
-    }[];
-  }[];
-}
-
 // Mock 数据：Case 列表
 export const mockCases: Case[] = [
   {
@@ -884,17 +317,11 @@ export const mockCases: Case[] = [
     leadId: 'lead-001',
     projectId: 'project-001',
     contractId: 'contract-001',
+    quoteIds: ['quot-001'],
     status: CaseStatus.IN_PROGRESS,
     targetMargin: 30,
     budgetCap: 350000,
     commercialCap: 25000,
-    totalCost: 125000,
-    totalRevenue: 205000,
-    currentMargin: 39.0,
-    eac: 140000,
-    wipValue: 22000,
-    wipDays: 10,
-    healthStatus: HealthStatus.GREEN,
     industry: '互联网',
     projectType: '企业办公',
     techStack: ['React', 'Spring Boot', 'MySQL', 'Redis', '小程序'],
@@ -903,26 +330,22 @@ export const mockCases: Case[] = [
     updatedAt: '2026-08-01T10:00:00Z',
     leadName: '阿里巴巴集团',
     projectName: '企业内部管理系统',
-    contractAmount: 205000,  // 原始合同 ¥185,000 + 变更追加 ¥20,000
   },
   {
     id: 'case-002',
     caseNo: 'CASE-2026-07-15-002',
     leadId: 'lead-002',
+    quoteIds: ['quot-002'],
     status: CaseStatus.QUOTING,
     targetMargin: 30,
     budgetCap: 150000,
     commercialCap: 20000,
-    totalCost: 0,
-    totalRevenue: 0,
-    healthStatus: HealthStatus.GREEN,
     industry: '金融',
     projectType: '金融理财',
     techStack: ['Vue.js', 'Java', 'MySQL'],
     createdAt: '2026-07-15T14:00:00Z',
     updatedAt: '2026-07-31T09:00:00Z',
     leadName: '腾讯-云服务平台',
-    contractAmount: 120000,
   },
   {
     id: 'case-003',
@@ -930,15 +353,11 @@ export const mockCases: Case[] = [
     leadId: 'lead-003',
     projectId: 'project-003',
     contractId: 'contract-003',
+    quoteIds: [],
     status: CaseStatus.COMPLETED,
     targetMargin: 25,
     budgetCap: 300000,
     commercialCap: 40000,
-    totalCost: 180000,
-    totalRevenue: 250000,
-    currentMargin: 28,
-    eac: 180000,
-    healthStatus: HealthStatus.GREEN,
     industry: '教育',
     projectType: '在线教育',
     techStack: ['React', 'Python', 'PostgreSQL'],
@@ -948,19 +367,16 @@ export const mockCases: Case[] = [
     completedAt: '2026-07-25T16:00:00Z',
     leadName: '字节跳动-教育平台',
     projectName: '在线教育平台',
-    contractAmount: 250000,
   },
   {
     id: 'case-004',
     caseNo: 'CASE-2026-07-20-004',
     leadId: 'lead-004',
+    quoteIds: [],
     status: CaseStatus.DRAFTING,
     targetMargin: 40,
     budgetCap: 100000,
     commercialCap: 15000,
-    totalCost: 0,
-    totalRevenue: 0,
-    healthStatus: HealthStatus.GREEN,
     industry: '医疗',
     projectType: '医疗健康',
     createdAt: '2026-07-20T11:00:00Z',
@@ -973,15 +389,11 @@ export const mockCases: Case[] = [
     leadId: 'lead-005',
     projectId: 'project-005',
     contractId: 'contract-005',
+    quoteIds: [],
     status: CaseStatus.COLLECTING,
     targetMargin: 30,
     budgetCap: 180000,
     commercialCap: 25000,
-    totalCost: 120000,
-    totalRevenue: 180000,
-    currentMargin: 33.3,
-    eac: 120000,
-    healthStatus: HealthStatus.YELLOW,
     industry: '企业办公',
     projectType: '企业办公',
     techStack: ['Angular', 'Java', 'Oracle'],
@@ -990,431 +402,10 @@ export const mockCases: Case[] = [
     updatedAt: '2026-07-30T14:00:00Z',
     leadName: '美团-企业服务',
     projectName: '企业办公系统',
-    contractAmount: 180000,
   },
 ];
 
 // Mock 数据：功能清单列表
-export const mockFeatureLists: FeatureList[] = [
-  // Case-001 的功能清单（原始版本）
-  {
-    id: 'fl-001',
-    caseId: 'case-001',
-    version: 1,
-    status: FeatureListStatus.LOCKED,
-    source: 'manual',
-    totalEstimatedDays: 180,
-    totalEstimatedCost: 108000,
-    confirmedBy: 'user-001',
-    confirmedAt: '2026-06-05T10:00:00Z',
-    lockedAt: '2026-06-10T14:00:00Z',
-    createdAt: '2026-06-01T08:00:00Z',
-    updatedAt: '2026-06-10T14:00:00Z',
-    caseNo: 'CASE-2026-07-01-001',
-  },
-  // Case-001 的功能清单（变更版本1 - 需求变更追加）
-  {
-    id: 'fl-001-v2',
-    caseId: 'case-001',
-    version: 2,
-    status: FeatureListStatus.LOCKED,
-    source: 'manual',
-    totalEstimatedDays: 210,
-    totalEstimatedCost: 126000,
-    confirmedBy: 'user-001',
-    confirmedAt: '2026-07-15T10:00:00Z',
-    lockedAt: '2026-07-18T14:00:00Z',
-    createdAt: '2026-07-10T08:00:00Z',
-    updatedAt: '2026-07-18T14:00:00Z',
-    caseNo: 'CASE-2026-07-01-001',
-  },
-  // Case-002 的功能清单
-  {
-    id: 'fl-002',
-    caseId: 'case-002',
-    version: 1,
-    status: FeatureListStatus.PENDING_ESTIMATE,
-    source: 'manual',
-    totalEstimatedDays: 0,
-    totalEstimatedCost: 0,
-    createdAt: '2026-07-16T09:00:00Z',
-    updatedAt: '2026-07-31T11:00:00Z',
-    caseNo: 'CASE-2026-07-15-002',
-  },
-  // Case-003 的功能清单
-  {
-    id: 'fl-003',
-    caseId: 'case-003',
-    version: 2,
-    status: FeatureListStatus.LOCKED,
-    source: 'manual',
-    totalEstimatedDays: 62,
-    totalEstimatedCost: 74400,
-    confirmedBy: 'user-002',
-    confirmedAt: '2026-06-25T10:00:00Z',
-    lockedAt: '2026-06-28T14:00:00Z',
-    createdAt: '2026-06-21T08:00:00Z',
-    updatedAt: '2026-06-28T14:00:00Z',
-    caseNo: 'CASE-2026-06-20-003',
-  },
-];
-
-// Mock 数据：功能点列表
-export const mockFeatures: Feature[] = [
-  // Case-001 的功能点
-  {
-    id: 'feat-001',
-    featureListId: 'fl-001',
-    name: '用户登录注册',
-    description: '手机号注册、微信登录、找回密码',
-    category: FeatureCategory.SEMI_CUSTOM,
-    priority: 'high',
-    businessNotes: '需要微信开放平台接口',
-    sortOrder: 1,
-    createdAt: '2026-07-02T08:00:00Z',
-    updatedAt: '2026-07-02T08:00:00Z',
-    estimation: {
-      id: 'est-001',
-      featureId: 'feat-001',
-      estimatedBy: 'user-003',
-      estimatedDays: 15,
-      technicalRisk: 'medium',
-      dependencies: '需要微信开放平台接口',
-      notes: '包含手机号验证、微信OAuth、密码重置',
-      status: 'completed',
-      estimatedAt: '2026-07-04T10:00:00Z',
-      createdAt: '2026-07-04T10:00:00Z',
-      updatedAt: '2026-07-04T10:00:00Z',
-      estimatedByName: '王五',
-    },
-  },
-  {
-    id: 'feat-002',
-    featureListId: 'fl-001',
-    name: '商品管理',
-    description: '商品列表、商品详情、商品搜索',
-    category: FeatureCategory.REUSE,
-    priority: 'medium',
-    sortOrder: 2,
-    createdAt: '2026-07-02T08:00:00Z',
-    updatedAt: '2026-07-02T08:00:00Z',
-    estimation: {
-      id: 'est-002',
-      featureId: 'feat-002',
-      estimatedBy: 'user-003',
-      estimatedDays: 8,
-      technicalRisk: 'low',
-      notes: '复用现有商品模块',
-      status: 'completed',
-      estimatedAt: '2026-07-04T11:00:00Z',
-      createdAt: '2026-07-04T11:00:00Z',
-      updatedAt: '2026-07-04T11:00:00Z',
-      estimatedByName: '王五',
-    },
-  },
-  {
-    id: 'feat-003',
-    featureListId: 'fl-001',
-    name: '订单管理',
-    description: '下单流程、订单列表、订单详情',
-    category: FeatureCategory.NEW_DEV,
-    priority: 'high',
-    businessNotes: '需要对接支付系统',
-    sortOrder: 3,
-    createdAt: '2026-07-02T08:00:00Z',
-    updatedAt: '2026-07-02T08:00:00Z',
-    estimation: {
-      id: 'est-003',
-      featureId: 'feat-003',
-      estimatedBy: 'user-004',
-      estimatedDays: 22.5,
-      technicalRisk: 'high',
-      dependencies: '支付系统、库存系统',
-      notes: '包含购物车、下单、支付、退款流程',
-      status: 'completed',
-      estimatedAt: '2026-07-05T09:00:00Z',
-      createdAt: '2026-07-05T09:00:00Z',
-      updatedAt: '2026-07-05T09:00:00Z',
-      estimatedByName: '赵六',
-    },
-  },
-];
-
-// Mock 数据：报价单列表
-export const mockQuotations: Quotation[] = [
-  // Case-001 的报价单（原始版本）
-  {
-    id: 'quot-001',
-    caseId: 'case-001',
-    featureListId: 'fl-001',
-    quotationNo: 'QT-2026-06-10-001',
-    projectName: '企业内部管理系统',
-    projectType: '企业办公',
-    description: '为阿里巴巴开发企业内部管理系统',
-    createdBy: 'user-001',
-    technicalReviewer: 'user-003',
-    status: QuotationStatus.ACCEPTED,
-    featureQuoteMode: 'by_feature',
-    rolePrices: {
-      product: 400,
-      design: 350,
-      frontend: 450,
-      backend: 500,
-      test: 350,
-      other: 400,
-    },
-    totalFeatureCost: 108000,
-    totalServiceCost: 15000,
-    totalAmount: 185000,
-    approvedBy: 'user-005',
-    approvedAt: '2026-06-08T14:00:00Z',
-    createdAt: '2026-06-06T10:00:00Z',
-    updatedAt: '2026-06-10T14:00:00Z',
-    caseNo: 'CASE-2026-07-01-001',
-    createdByName: '张三',
-    technicalReviewerName: '李四',
-  },
-  // Case-001 的报价单（变更版本1 - 需求变更追加）
-  {
-    id: 'quot-001-v2',
-    caseId: 'case-001',
-    featureListId: 'fl-001-v2',
-    quotationNo: 'QT-2026-07-18-002',
-    projectName: '企业内部管理系统（变更追加）',
-    projectType: '企业办公',
-    description: '需求变更追加：订单管理模块增强、数据报表功能',
-    createdBy: 'user-001',
-    technicalReviewer: 'user-003',
-    status: QuotationStatus.APPROVED,
-    featureQuoteMode: 'by_feature',
-    rolePrices: {
-      product: 400,
-      design: 350,
-      frontend: 450,
-      backend: 500,
-      test: 350,
-      other: 400,
-    },
-    totalFeatureCost: 18000,
-    totalServiceCost: 2000,
-    totalAmount: 20000,
-    approvedBy: 'user-005',
-    approvedAt: '2026-07-20T14:00:00Z',
-    createdAt: '2026-07-18T10:00:00Z',
-    updatedAt: '2026-07-20T14:00:00Z',
-    caseNo: 'CASE-2026-07-01-001',
-    createdByName: '张三',
-    technicalReviewerName: '李四',
-  },
-  {
-    id: 'quot-002',
-    caseId: 'case-002',
-    quotationNo: 'QT-2026-07-15-002',
-    projectName: '金融理财APP',
-    projectType: '金融理财',
-    description: '为腾讯开发金融理财APP',
-    createdBy: 'user-002',
-    technicalReviewer: 'user-004',
-    status: QuotationStatus.DRAFT,
-    featureQuoteMode: 'by_role',
-    rolePrices: {
-      product: 1000,
-      design: 800,
-      frontend: 1200,
-      backend: 1200,
-      test: 600,
-      other: 800,
-    },
-    totalFeatureCost: 0,
-    totalServiceCost: 0,
-    totalAmount: 0,
-    createdAt: '2026-07-20T09:00:00Z',
-    updatedAt: '2026-07-31T10:00:00Z',
-    caseNo: 'CASE-2026-07-15-002',
-    createdByName: '李四',
-    technicalReviewerName: '王五',
-  },
-];
-
-// Mock 数据：报价功能项列表
-export const mockQuotationFeatureItems: QuotationFeatureItem[] = [
-  {
-    id: 'qfi-001',
-    quotationId: 'quot-001',
-    featureId: 'feat-001',
-    featureName: '用户登录注册',
-    description: '手机号注册、微信登录、找回密码',
-    category: FeatureCategory.SEMI_CUSTOM,
-    priority: 'high',
-    productDays: 2,
-    designDays: 3,
-    frontendDays: 5,
-    backendDays: 3,
-    testDays: 2,
-    otherDays: 0,
-    totalDays: 15,
-    totalAmount: 18000,
-    notes: '需要微信开放平台接口',
-    sortOrder: 1,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qfi-002',
-    quotationId: 'quot-001',
-    featureId: 'feat-002',
-    featureName: '商品管理',
-    description: '商品列表、商品详情、商品搜索',
-    category: FeatureCategory.REUSE,
-    priority: 'medium',
-    productDays: 1,
-    designDays: 2,
-    frontendDays: 3,
-    backendDays: 5,
-    testDays: 2,
-    otherDays: 0,
-    totalDays: 13,
-    totalAmount: 15600,
-    sortOrder: 2,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qfi-003',
-    quotationId: 'quot-001',
-    featureId: 'feat-003',
-    featureName: '订单管理',
-    description: '下单流程、订单列表、订单详情',
-    category: FeatureCategory.NEW_DEV,
-    priority: 'high',
-    productDays: 2,
-    designDays: 3,
-    frontendDays: 5,
-    backendDays: 8,
-    testDays: 3,
-    otherDays: 0,
-    totalDays: 21,
-    totalAmount: 25200,
-    notes: '需要对接支付系统',
-    sortOrder: 3,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-];
-
-// Mock 数据：报价服务项列表（只包含客户可见的费用）
-export const mockQuotationServiceItems: QuotationServiceItem[] = [
-  {
-    id: 'qsi-001',
-    quotationId: 'quot-001',
-    category: ServiceCategory.TRAVEL,
-    serviceType: 'onsite',
-    description: '现场驻场服务',
-    amount: 18000,
-    quantity: 30,
-    unitPrice: 600,
-    period: 'one_time',
-    notes: '开发期间客户现场驻场支持',
-    sortOrder: 1,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-002',
-    quotationId: 'quot-001',
-    category: ServiceCategory.OPERATION,
-    serviceType: 'training',
-    description: '用户培训服务',
-    amount: 3000,
-    quantity: 2,
-    unitPrice: 1500,
-    period: 'one_time',
-    notes: '系统使用培训',
-    sortOrder: 2,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-003',
-    quotationId: 'quot-001',
-    category: ServiceCategory.OPERATION,
-    serviceType: 'documentation',
-    description: '技术文档交付',
-    amount: 2000,
-    period: 'one_time',
-    notes: '包含用户手册、API文档、部署文档',
-    sortOrder: 3,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-004',
-    quotationId: 'quot-001',
-    category: ServiceCategory.OPERATION,
-    serviceType: 'version_update',
-    description: '首年免费维护',
-    amount: 0,
-    period: 'one_time',
-    notes: '首年免费，次年起按合同金额15%收取',
-    sortOrder: 4,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-005',
-    quotationId: 'quot-001',
-    category: ServiceCategory.THIRD_PARTY,
-    serviceType: 'cloud_server',
-    description: '云服务器（首年）',
-    amount: 12000,
-    period: 'yearly',
-    notes: '阿里云 ECS，2核4G，客户承担',
-    sortOrder: 5,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-006',
-    quotationId: 'quot-001',
-    category: ServiceCategory.THIRD_PARTY,
-    serviceType: 'domain',
-    description: '域名注册',
-    amount: 100,
-    period: 'yearly',
-    notes: '.com 域名，客户承担',
-    sortOrder: 6,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-007',
-    quotationId: 'quot-001',
-    category: ServiceCategory.THIRD_PARTY,
-    serviceType: 'ssl',
-    description: 'SSL证书',
-    amount: 500,
-    period: 'yearly',
-    notes: 'DV SSL证书，客户承担',
-    sortOrder: 7,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-  {
-    id: 'qsi-008',
-    quotationId: 'quot-001',
-    category: ServiceCategory.THIRD_PARTY,
-    serviceType: 'sms',
-    description: '短信服务',
-    amount: 1000,
-    period: 'one_time',
-    notes: '首年短信包，客户承担',
-    sortOrder: 8,
-    createdAt: '2026-07-06T10:00:00Z',
-    updatedAt: '2026-07-06T10:00:00Z',
-  },
-];
-
-// Mock 数据：成本项列表
 export const mockCostItems: CaseCostItem[] = [
   // Case-001 的成本项（阿里巴巴企业内部管理系统）
   // ===== 已发生的成本 =====
@@ -1422,8 +413,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-001',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-001',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 10000,
@@ -1438,8 +428,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-002',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-002',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 5250,
@@ -1454,8 +443,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-003',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-003',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 15000,
@@ -1470,8 +458,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-004',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-004',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 12600,
@@ -1486,8 +473,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-005',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-005',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 11250,
@@ -1502,8 +488,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-006',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-006',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 7000,
@@ -1519,8 +504,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-007',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-007',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '返工工时',
     amount: 3500,
@@ -1535,8 +519,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-008',
     caseId: 'case-001',
-    sourceType: 'daily_report',
-    sourceId: 'dr-008',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '返工工时',
     amount: 1800,
@@ -1552,10 +535,9 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-009',
     caseId: 'case-001',
-    sourceType: 'reimbursement',
-    sourceId: 'reimb-009',
-    costCategory: 'labor',
-    costType: '出差补贴',
+    sourceType: 'manual',
+    costCategory: 'commercial',
+    costType: '差旅',
     amount: 5400,
     employeeId: 'user-001',
     date: '2026-06-01',
@@ -1569,8 +551,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-010',
     caseId: 'case-001',
-    sourceType: 'reimbursement',
-    sourceId: 'reimb-010',
+    sourceType: 'manual',
     costCategory: 'commercial',
     costType: '差旅费',
     amount: 8500,
@@ -1585,8 +566,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-011',
     caseId: 'case-001',
-    sourceType: 'reimbursement',
-    sourceId: 'reimb-011',
+    sourceType: 'manual',
     costCategory: 'commercial',
     costType: '招待费',
     amount: 3200,
@@ -1601,8 +581,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-012',
     caseId: 'case-001',
-    sourceType: 'reimbursement',
-    sourceId: 'reimb-012',
+    sourceType: 'manual',
     costCategory: 'commercial',
     costType: '礼品费',
     amount: 1500,
@@ -1721,8 +700,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-021',
     caseId: 'case-001',
-    sourceType: 'reimbursement',
-    sourceId: 'reimb-020',
+    sourceType: 'manual',
     costCategory: 'operation',
     costType: '团建聚餐',
     amount: 1500,
@@ -1836,12 +814,41 @@ export const mockCostItems: CaseCostItem[] = [
     description: 'GPT-4 API调用（代码生成）',
     createdAt: '2026-08-01T10:00:00Z',
   },
+  // 运营分摊（OVERHEAD_RATE=35 元/工时，人力 quantityDays × 8 × 35）
+  {
+    id: 'cost-oh-001',
+    caseId: 'case-001',
+    sourceType: 'overhead',
+    costCategory: 'operation',
+    costType: '运营分摊',
+    amount: 12320, // (25+15+30)天 × 8h × 35元
+    quantityDays: 70,
+    date: '2026-06-01',
+    endDate: '2026-06-30',
+    status: 'actual',
+    description: '6月运营分摊（70天 × 8h × ¥35/h）',
+    createdAt: '2026-07-01T10:00:00Z',
+  },
+  {
+    id: 'cost-oh-002',
+    caseId: 'case-001',
+    sourceType: 'overhead',
+    costCategory: 'operation',
+    costType: '运营分摊',
+    amount: 23520, // (28+25+20+7+4)天 × 8h × 35元
+    quantityDays: 84,
+    date: '2026-07-01',
+    endDate: '2026-07-31',
+    status: 'actual',
+    description: '7月运营分摊（84天 × 8h × ¥35/h）',
+    createdAt: '2026-08-01T10:00:00Z',
+  },
   // ===== 未发生的成本（预测） =====
   // 人力成本-未发生（预计8-9月）
   {
     id: 'cost-f001',
     caseId: 'case-001',
-    sourceType: 'daily_report',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 7500,
@@ -1856,7 +863,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-f002',
     caseId: 'case-001',
-    sourceType: 'daily_report',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 7200,
@@ -1871,7 +878,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-f003',
     caseId: 'case-001',
-    sourceType: 'daily_report',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 6750,
@@ -1886,7 +893,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-f004',
     caseId: 'case-001',
-    sourceType: 'daily_report',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 2100,
@@ -1995,8 +1002,7 @@ export const mockCostItems: CaseCostItem[] = [
   {
     id: 'cost-101',
     caseId: 'case-003',
-    sourceType: 'daily_report',
-    sourceId: 'dr-101',
+    sourceType: 'manual',
     costCategory: 'labor',
     costType: '开发工时',
     amount: 15000,
@@ -2020,9 +1026,10 @@ export const mockPostMortems: CasePostMortem[] = [
       commercialCost: 30000,
       operationCost: 20000,
       thirdPartyCost: 15000,
-      totalCost: 185000,
-      grossMargin: 65000,
-      netMargin: 26,
+        grossMarginAmount: 65000,
+      grossMarginRate: 26,
+      netMarginAmount: 65000,
+      netMarginRate: 26,
     },
     actualPnl: {
       revenue: 250000,
@@ -2030,9 +1037,10 @@ export const mockPostMortems: CasePostMortem[] = [
       commercialCost: 28000,
       operationCost: 18000,
       thirdPartyCost: 14000,
-      totalCost: 185000,
-      grossMargin: 65000,
-      netMargin: 26,
+        grossMarginAmount: 65000,
+      grossMarginRate: 26,
+      netMarginAmount: 65000,
+      netMarginRate: 26,
     },
     costVariance: {
       laborVariance: 5000,
@@ -2074,178 +1082,6 @@ export const mockPostMortems: CasePostMortem[] = [
 ];
 
 // Mock 数据：仪表盘数据
-export const mockDashboardData: DashboardData = {
-  overview: {
-    totalRevenue: 620000,
-    totalCost: 425000,
-    totalProfit: 195000,
-    profitMargin: 31.5,
-    alertCount: 1,
-  },
-  bubbleChart: [
-    {
-      caseId: 'case-001',
-      caseName: '企业内部管理系统',
-      wipDays: 10,
-      currentMargin: 30.5,
-      contractAmount: 185000,
-      healthStatus: HealthStatus.GREEN,
-      eac: 145000,
-      wipValue: 22000,
-      riskWarnings: [],
-    },
-    {
-      caseId: 'case-002',
-      caseName: '金融理财APP',
-      wipDays: 0,
-      currentMargin: 0,
-      contractAmount: 120000,
-      healthStatus: HealthStatus.GREEN,
-      eac: 0,
-      wipValue: 0,
-      riskWarnings: [],
-    },
-    {
-      caseId: 'case-003',
-      caseName: '在线教育平台',
-      wipDays: 0,
-      currentMargin: 28,
-      contractAmount: 250000,
-      healthStatus: HealthStatus.GREEN,
-      eac: 180000,
-      wipValue: 0,
-      riskWarnings: [],
-    },
-    {
-      caseId: 'case-005',
-      caseName: '企业办公系统',
-      wipDays: 20,
-      currentMargin: 33.3,
-      contractAmount: 180000,
-      healthStatus: HealthStatus.YELLOW,
-      eac: 120000,
-      wipValue: 30000,
-      riskWarnings: ['WIP 占用周期过长', '利润率下降趋势'],
-    },
-  ],
-  simulator: {
-    currentConfig: {
-      featureScope: 80,
-      commercialBudget: 60,
-      targetMargin: 35,
-    },
-    simulationResult: {
-      estimatedMargin: 28,
-      breakEvenLine: 15,
-      totalCost: 108000,
-      totalRevenue: 150000,
-    },
-    similarProjects: [
-      {
-        id: 'proj-sim-001',
-        name: '类似电商项目A',
-        industry: '互联网',
-        projectType: '电商购物',
-        margin: 32,
-        durationDays: 40,
-        totalCost: 95000,
-      },
-      {
-        id: 'proj-sim-002',
-        name: '类似电商项目B',
-        industry: '互联网',
-        projectType: '电商购物',
-        margin: 28,
-        durationDays: 50,
-        totalCost: 110000,
-      },
-    ],
-  },
-  drillDown: {
-    totalProfit: 195000,
-    byIndustry: [
-      {
-        industry: '互联网',
-        profit: 120000,
-        percentage: 61.5,
-        projects: [
-          {
-            projectId: 'project-001',
-            projectName: '电商购物小程序',
-            profit: 55000,
-            costBreakdown: {
-              laborCost: {
-                total: 50000,
-                development: 40000,
-                rework: 10000,
-              },
-              commercialCost: {
-                total: 15000,
-                entertainment: 5000,
-                travel: 10000,
-              },
-              operationCost: 10000,
-              thirdPartyCost: 20000,
-            },
-          },
-        ],
-      },
-      {
-        industry: '教育',
-        profit: 65000,
-        percentage: 33.3,
-        projects: [
-          {
-            projectId: 'project-003',
-            projectName: '在线教育平台',
-            profit: 65000,
-            costBreakdown: {
-              laborCost: {
-                total: 80000,
-                development: 65000,
-                rework: 15000,
-              },
-              commercialCost: {
-                total: 20000,
-                entertainment: 8000,
-                travel: 12000,
-              },
-              operationCost: 15000,
-              thirdPartyCost: 10000,
-            },
-          },
-        ],
-      },
-      {
-        industry: '企业办公',
-        profit: 10000,
-        percentage: 5.1,
-        projects: [
-          {
-            projectId: 'project-005',
-            projectName: '企业办公系统',
-            profit: 10000,
-            costBreakdown: {
-              laborCost: {
-                total: 60000,
-                development: 50000,
-                rework: 10000,
-              },
-              commercialCost: {
-                total: 10000,
-                entertainment: 3000,
-                travel: 7000,
-              },
-              operationCost: 8000,
-              thirdPartyCost: 12000,
-            },
-          },
-        ],
-      },
-    ],
-  },
-};
-
 // 状态显示映射
 export const caseStatusMap: Record<CaseStatus, { label: string; color: string }> = {
   [CaseStatus.DRAFTING]: { label: '草拟中', color: 'default' },
@@ -2356,3 +1192,4 @@ export const defaultRolePrices: Record<string, number> = {
   test: 600,
   other: 800,
 };
+

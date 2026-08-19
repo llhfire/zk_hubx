@@ -60,7 +60,7 @@ const MOCK_OCR_RESULTS: OCRResult[] = [
     company: '杭州西湖国宾馆有限公司',
     type: 'accommodation',
     compliant: false,
-    issues: ['住宿单价 438 元超出当日标准（新一线城市 220 元/天）'],
+    issues: ['住宿单价 438 元超出当日标准（二线城市 350 元/天）'],
   },
   {
     invoiceNo: '044002400112',

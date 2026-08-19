@@ -107,6 +107,8 @@ export function MainLayout() {
       label: '合同管理',
       children: [
         { key: '/contracts', label: '合同列表' },
+        { key: '/contracts/payments', label: '回款看板' },
+        { key: '/contracts/forecast', label: '回款预测' },
       ],
     },
     { key: '/projects', icon: <IconApps />, label: '项目管理' },
@@ -130,7 +132,6 @@ export function MainLayout() {
         { key: '/travel/reimbursements', label: '报销管理' },
         { key: '/travel/loans', label: '借款管理' },
         { key: '/travel/dormitory', label: '宿舍管理' },
-        { key: '/travel/punch', label: '打卡管理' },
         { key: '/travel/standards', label: '费用标准' },
         { key: '/travel/dashboard', label: '差旅看板' },
       ],
@@ -143,9 +144,6 @@ export function MainLayout() {
       children: [
         { key: '/financial-delivery/dashboard', label: '财务仪表盘' },
         { key: '/financial-delivery/cases', label: '业务单管理' },
-        { key: '/financial-delivery/feature-lists', label: '工时评估' },
-        { key: '/financial-delivery/quotations', label: '报价单管理' },
-        { key: '/financial-delivery/post-mortems', label: '项目决算' },
       ],
     },
     { key: '/reports', icon: <IconDashboard />, label: '数据报表' },
@@ -168,24 +166,15 @@ export function MainLayout() {
       ],
     },
     {
-      key: 'hr',
-      icon: <IconUserGroup />,
-      label: '人资管理',
-      children: [
-        { key: '/hr/expenses', label: '费用管理' },
-      ],
-    },
-    {
       key: 'finance',
       icon: <IconFile />,
       label: '财务管理',
       children: [
         { key: '/finance/dashboard', label: '财务统计' },
+        { key: '/finance/expenses', label: '运营费用' },
         { key: '/finance/project-cost', label: '项目成本核算' },
         { key: '/finance/salary', label: '工资表' },
         { key: '/finance/project-invoices', label: '开票审核' },
-        { key: '/businesstrip', label: '出差申请' },
-        { key: '/reimbursement', label: '报销申请' },
       ],
     },
     {
@@ -260,9 +249,6 @@ export function MainLayout() {
       }
       return ['/employees'];
     }
-    if (path.startsWith('/hr/')) {
-      return [path];
-    }
     return [path];
   };
 
@@ -270,9 +256,6 @@ export function MainLayout() {
     const path = location.pathname;
     if (path.startsWith('/employees/')) {
       return ['employees'];
-    }
-    if (path.startsWith('/hr/')) {
-      return ['hr'];
     }
     if (path === '/contracts' || path.startsWith('/contracts/')) {
       return ['contracts'];
@@ -294,8 +277,6 @@ export function MainLayout() {
     }
     if (
       path.startsWith('/finance/') ||
-      path === '/businesstrip' ||
-      path === '/reimbursement' ||
       path === '/paymentinvoice'
     ) {
       return ['finance'];

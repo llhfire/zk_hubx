@@ -14,16 +14,12 @@ import type {
   DormitoryExpense,
   DormitoryMaintenance,
   UtilityPayment,
-  PunchRecord,
-  PunchRule,
-  TemporaryZone,
   ExpenseStandard,
   TravelSubsidy,
   TripListParams,
   ReimbursementListParams,
   LoanListParams,
   DormitoryListParams,
-  PunchRecordListParams,
 } from './types';
 
 import {
@@ -31,10 +27,9 @@ import {
   mockReimbursements,
   mockLoans,
   mockDormitories,
-  mockPunchRecords,
-  mockPunchRule,
   mockExpenseStandards,
 } from './mock-data';
+import { calcSubsidyDays } from './travelCalc';
 
 // 模拟延迟
 const delay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
@@ -546,66 +541,6 @@ export async function createDormitoryMaintenance(data: Partial<DormitoryMaintena
   return { id: `maintenance-${Date.now()}`, ...data } as DormitoryMaintenance;
 }
 
-// ==================== 打卡模块 API ====================
-
-// 打卡
-export async function punch(data: Partial<PunchRecord>): Promise<PunchRecord> {
-  await delay(500);
-  const newPunch: PunchRecord = {
-    id: `punch-${Date.now()}`,
-    employeeId: data.employeeId || 'emp-001',
-    employeeName: data.employeeName || '当前用户',
-    punchTime: new Date().toISOString(),
-    punchType: data.punchType || 'clock_in',
-    punchMethod: data.punchMethod || 'gps',
-    isOnTrip: data.isOnTrip || false,
-    status: 'normal',
-    ...data,
-  };
-  return newPunch;
-}
-
-// 获取打卡记录
-export async function getPunchRecords(params?: PunchRecordListParams): Promise<{ list: PunchRecord[]; total: number }> {
-  await delay();
-  let filtered = [...mockPunchRecords];
-
-  if (params?.employeeId) {
-    filtered = filtered.filter(p => p.employeeId === params.employeeId);
-  }
-  if (params?.punchType) {
-    filtered = filtered.filter(p => p.punchType === params.punchType);
-  }
-  if (params?.status) {
-    filtered = filtered.filter(p => p.status === params.status);
-  }
-
-  return { list: filtered, total: filtered.length };
-}
-
-// 获取打卡规则
-export async function getPunchRule(): Promise<PunchRule> {
-  await delay();
-  return mockPunchRule;
-}
-
-// 更新打卡规则
-export async function updatePunchRule(data: Partial<PunchRule>): Promise<PunchRule> {
-  await delay(500);
-  return { ...mockPunchRule, ...data };
-}
-
-// 创建临时打卡区域
-export async function createTemporaryZone(data: Partial<TemporaryZone>): Promise<TemporaryZone> {
-  await delay(500);
-  return { id: `zone-${Date.now()}`, ...data } as TemporaryZone;
-}
-
-// 删除临时打卡区域
-export async function deleteTemporaryZone(id: string): Promise<void> {
-  await delay(500);
-}
-
 // ==================== 费用标准 API ====================
 
 // 获取费用标准列表
@@ -645,17 +580,15 @@ export async function calculateSubsidy(tripId: string): Promise<TravelSubsidy> {
   const trip = mockTrips.find(t => t.id === tripId);
   if (!trip) throw new Error('出差单不存在');
 
-  // 模拟计算逻辑
+  // 使用 travelCalc 计算补贴天数
+  const days = calcSubsidyDays(trip.startDate, trip.endDate);
   const subsidy: TravelSubsidy = {
     id: `sub-${Date.now()}`,
     tripId,
-    calcMode: 'calendar_day',
     cityLevel: 'first_tier',
     standard: 150,
-    days: trip.days,
-    totalAmount: 150 * trip.days,
-    workingDays: Math.max(0, trip.days - 2), // 简单模拟
-    overtimeDays: 0,
+    days,
+    totalAmount: 150 * days,
     isPaid: false,
   };
   return subsidy;

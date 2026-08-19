@@ -26,8 +26,7 @@ import { DailyReportList } from "./pages/DailyReportList";
 import { DailyReportView } from "./pages/DailyReportView";
 import { QuotationCenter } from "./pages/quotation/QuotationCenter";
 import { QuotationWorkbench } from "./pages/quotation/QuotationWorkbench";
-import { BusinessTripList } from "./pages/BusinessTripList";
-import { ReimbursementList } from "./pages/ReimbursementList";
+
 import { PaymentInvoiceList } from "./pages/PaymentInvoiceList";
 import { ContractRecordList } from "./pages/ContractRecordList";
 import { ProjectLogView } from "./pages/ProjectLogView";
@@ -47,6 +46,8 @@ import PaymentKanban from "./pages/contracts/PaymentKanban";
 import { PaymentKanbanV2 } from "./pages/contracts/PaymentKanbanV2";
 import { ContractKanban } from "./pages/contracts/ContractKanban";
 import { PaymentForecast } from "./pages/contracts/forecast/PaymentForecast";
+import PaymentDashboard from "./pages/contracts/payment/PaymentDashboard";
+import PaymentForecastPage from "./pages/contracts/payment/PaymentForecastPage";
 import { EmployeeList } from "./pages/employee";
 import { EmployeeDetail } from "./pages/employee";
 import { AttendanceManagement } from "./pages/employee";
@@ -69,7 +70,7 @@ import { MessageCenter } from "./pages/integrations/MessageCenter";
 import { ApprovalCenter } from "./pages/approvals/ApprovalCenter";
 import { TodoCenter } from "./pages/todos/TodoCenter";
 import { ProjectCostPage } from "./pages/project-management/ProjectCostPage";
-import { HrExpenseManagement } from "./pages/hr/HrExpenseManagement";
+import { OperatingExpensePage } from "./pages/operating-expense/OperatingExpensePage";
 import { ProjectInvoicePage } from "./pages/finance/ProjectInvoicePage";
 import { TripList } from "./pages/travel/trip/TripList";
 import { TripForm } from "./pages/travel/trip/TripForm";
@@ -77,7 +78,7 @@ import { TripDetail } from "./pages/travel/trip/TripDetail";
 import { ReimbursementList as TravelReimbursementList } from "./pages/travel/reimbursement/ReimbursementList";
 import { LoanList } from "./pages/travel/loan/LoanList";
 import { DormitoryManagement } from "./pages/travel/dormitory/DormitoryManagement";
-import { PunchClock } from "./pages/travel/punch/PunchClock";
+
 import { StandardList } from "./pages/travel/standard/StandardList";
 import { TravelDashboard } from "./pages/travel/dashboard/TravelDashboard";
 import DeliveryDashboard from "./pages/financial-delivery/dashboard/Dashboard";
@@ -109,9 +110,9 @@ export const router = createBrowserRouter([
       { path: "contracts/new", Component: ContractWizard },
       { path: "contracts/:id/edit", Component: ContractEditor },
       { path: "contracts/:id/preview", Component: ContractDocumentPreview },
-      { path: "contracts/payments", Component: PaymentKanban },
+      { path: "contracts/payments", Component: PaymentDashboard },
       { path: "contracts/payments-v2", Component: PaymentKanbanV2 },
-      { path: "contracts/forecast", Component: PaymentForecast },
+      { path: "contracts/forecast", Component: PaymentForecastPage },
       { path: "contracts/:id", Component: ContractDetail },
       { path: "projects", Component: Projects },
       { path: "projects/:id", Component: ProjectDetail },
@@ -130,8 +131,8 @@ export const router = createBrowserRouter([
       { path: "approvals", Component: ApprovalCenter },
       { path: "approvals/templates", Component: WorkflowTemplateList },
       { path: "approvals/business", Component: BusinessMappingList },
-      { path: "businesstrip", Component: BusinessTripList },
-      { path: "reimbursement", Component: ReimbursementList },
+      { path: "businesstrip", loader: () => redirect("/travel/trips") },
+      { path: "reimbursement", loader: () => redirect("/travel/reimbursements") },
       { path: "paymentinvoice", Component: PaymentInvoiceList },
       { path: "contractrecord", Component: ContractRecordList },
       { path: "reports", Component: Reports },
@@ -147,7 +148,7 @@ export const router = createBrowserRouter([
       { path: "employees/performance", Component: PerformanceManagement },
       { path: "employees/level-rates", Component: LevelRateSettings },
       { path: "employees/:id", Component: EmployeeDetail },
-      { path: "hr/expenses", Component: HrExpenseManagement },
+      { path: "hr/expenses", loader: () => redirect("/finance/expenses") },
       { path: "system/organization", Component: Organization },
       { path: "system/permission", Component: UserPermission },
       { path: "system/company", Component: CompanyEntity },
@@ -166,13 +167,14 @@ export const router = createBrowserRouter([
       { path: "finance/salary", Component: SalaryPage },
       { path: "finance/project-invoices", Component: ProjectInvoicePage },
       { path: "finance/contract-cost/:contractId", Component: ContractCostDetail },
+      { path: "finance/expenses", Component: OperatingExpensePage },
       { path: "travel/trips", Component: TripList },
       { path: "travel/trips/new", Component: TripForm },
       { path: "travel/trips/:id", Component: TripDetail },
       { path: "travel/reimbursements", Component: TravelReimbursementList },
       { path: "travel/loans", Component: LoanList },
       { path: "travel/dormitory", Component: DormitoryManagement },
-      { path: "travel/punch", Component: PunchClock },
+
       { path: "travel/standards", Component: StandardList },
       { path: "travel/dashboard", Component: TravelDashboard },
       { path: "financial-delivery/dashboard", Component: DeliveryDashboard },
@@ -180,11 +182,6 @@ export const router = createBrowserRouter([
       { path: "financial-delivery/cases/:id", Component: CaseDetail },
       { path: "financial-delivery/cases/:id/edit", Component: CaseDetail },
       { path: "financial-delivery/cases/create", Component: CaseDetail },
-      { path: "financial-delivery/feature-lists", Component: () => <div>功能清单列表</div> },
-      { path: "financial-delivery/feature-lists/:id", Component: () => <div>功能清单详情</div> },
-      { path: "financial-delivery/quotations", Component: () => <div>报价单列表</div> },
-      { path: "financial-delivery/quotations/:id", Component: () => <div>报价单详情</div> },
-      { path: "financial-delivery/post-mortems", Component: () => <div>项目决算列表</div> },
       { path: "financial-delivery/post-mortems/:id", Component: () => <div>项目决算详情</div> },
     ],
   },

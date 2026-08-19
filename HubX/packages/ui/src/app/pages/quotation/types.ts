@@ -95,7 +95,10 @@ export type QuoteAction =
   | 'new_version'
   | 'withdraw_sent'
   | 'return_to_stamp'
-  | 'return_to_edit_features';
+  | 'return_to_edit_features'
+  | 'delete_quote'
+  | 'reassign_sales'
+  | 'reassign_evaluator';
 
 export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   create: '创建报价单',
@@ -115,6 +118,9 @@ export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   withdraw_sent: '撤回发出',
   return_to_stamp: '退回盖章',
   return_to_edit_features: '退回改清单',
+  delete_quote: '删除报价',
+  reassign_sales: '改指销售',
+  reassign_evaluator: '改指评估人',
 };
 
 export interface QuoteTimelineEvent {
@@ -423,6 +429,7 @@ export interface Quote {
   status: QuoteStatus;
   leadId: string;
   contractId?: string;
+  salesOwnerName: string;     // 报价销售责任人（4.2）
   basicInfo: QuoteBasicInfo;
   endpointConfigs: EndpointConfig[];  // 端+平台配置
   featureList: FeatureModule[];

@@ -71,6 +71,22 @@ export function applyTransition(
   };
 }
 
+/** 改指销售或评估人（非终态可改） */
+export function applyReassign(
+  quote: Quote,
+  field: 'salesOwnerName' | 'techEvaluatorName',
+  newValue: string,
+  actorName: string,
+): Quote {
+  const action = field === 'salesOwnerName' ? 'reassign_sales' : 'reassign_evaluator';
+  return {
+    ...quote,
+    [field]: newValue,
+    timeline: [...quote.timeline, makeEvent(action, 'sales' as QuoteRole, `${field === 'salesOwnerName' ? '销售' : '评估人'}改指为 ${newValue}`)],
+    updatedAt: now(),
+  };
+}
+
 /** 三人会签决策：任一驳回→全员重审，全部通过→待盖章 */
 export function applyDecideAudit(
   quote: Quote,
@@ -145,6 +161,7 @@ export function buildNewQuote(
   leadId: string,
   featureList: FeatureModule[],
   basicInfo: Partial<Quote['basicInfo']>,
+  salesOwnerName?: string,
 ): Quote {
   const nowStr = now();
   return {
@@ -153,6 +170,7 @@ export function buildNewQuote(
     version: 'v1.0',
     status: 'draft',
     leadId,
+    salesOwnerName: salesOwnerName ?? '张三',
     basicInfo: {
       projectName: basicInfo.projectName ?? '未命名项目',
       projectType: basicInfo.projectType ?? '其他定制',
@@ -240,10 +258,13 @@ export function migrateQuote(quote: Quote): Quote {
     console.warn(`[migrateQuote] 未知状态 "${quote.status}"，保留原值 (quote ${quote.id})`);
     return quote;
   }
-  if (mapped === quote.status) return quote;
+  const needsStatusChange = mapped !== quote.status;
+  const needsSalesOwner = !quote.salesOwnerName;
+  if (!needsStatusChange && !needsSalesOwner) return quote;
   return {
     ...quote,
-    status: mapped,
+    ...(needsStatusChange ? { status: mapped } : {}),
+    ...(needsSalesOwner ? { salesOwnerName: quote.ccSalesNames?.[0] ?? '张三' } : {}),
     timeline: quote.timeline.map((ev) =>
       ev.action === 'mark_deal' ? { ...ev, action: 'mark_confirmed' as QuoteAction } : ev,
     ),

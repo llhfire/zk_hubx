@@ -98,7 +98,7 @@
       "planned": [
         {
           "name": "状态机按 PRD 收口（已确认/已废止/过期标记）",
-          "status": "已设计"
+          "status": "已完成"
         },
         {
           "name": "数据流转与文件流转双来源",
@@ -126,7 +126,7 @@
         },
         {
           "name": "责任人/通知/列表/权限按配置",
-          "status": "已设计"
+          "status": "已完成"
         }
       ],
       "alpha": {
@@ -138,7 +138,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "PRD grill 已收束（CONTEXT + ADR 0001–0065）；实现计划 计划/当前/quote-flow-prd-implementation.md。α 功能流程未按新词表收口。β 已上线 http+D1，复合接口后置。"
+      "note": "PRD grill 已收束（CONTEXT + ADR 0001–0065）；4.1 词表收口+回退动作已完成；4.2 责任人/权限/列表/过期标记已完成。β 已上线 http+D1，复合接口后置。"
     },
     {
       "module": "客户与报价基础",

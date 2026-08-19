@@ -9,6 +9,12 @@ import { buildQuoteTodos } from './quoteFlow';
 import { createMockQuotationService, type QuotationService } from '@/services/quotationService';
 import type { TodoItem } from '@/app/todos/types';
 
+/** 线索简况（跨域注入，不建 LeadsContext） */
+export interface LeadBrief {
+  status: string;
+  ownerName?: string;
+}
+
 interface QuotationContextValue {
   quotes: Quote[];
   loading: boolean;
@@ -44,6 +50,23 @@ interface QuotationContextValue {
   markConfirmed: (quoteId: string) => Promise<void>;
   markVoided: (quoteId: string, reason: string) => Promise<void>;
   createNewVersion: (quoteId: string) => Promise<string>;
+
+  // ── 回退动作 ──
+  withdrawSent: (quoteId: string) => Promise<void>;
+  returnToStamp: (quoteId: string) => Promise<void>;
+  returnToEditFeatures: (quoteId: string) => Promise<void>;
+
+  // ── 4.2 新增 ──
+  /** 当前查看者姓名（从角色映射） */
+  currentViewer: string;
+  /** 是否管理员 */
+  isAdmin: boolean;
+  /** 线索简况注入器（α 读 mock，β 换 HTTP join） */
+  leadBriefProvider?: (leadId: string) => LeadBrief | null;
+  /** 删除报价（仅从未提交评估的草稿） */
+  deleteQuote: (quoteId: string) => Promise<void>;
+  /** 改指销售或评估人 */
+  reassignOwner: (quoteId: string, field: 'salesOwnerName' | 'techEvaluatorName', value: string) => Promise<void>;
 }
 
 const QuotationContext = createContext<QuotationContextValue | null>(null);
@@ -63,9 +86,23 @@ function loadRole(): QuoteRole {
 interface QuotationProviderProps extends PropsWithChildren {
   /** 数据源：α版注入 mock，β版注入 http。缺省 mock。 */
   service?: QuotationService;
+  /** 线索简况注入器 */
+  leadBriefProvider?: (leadId: string) => LeadBrief | null;
 }
 
-export function QuotationProvider({ children, service }: QuotationProviderProps) {
+/** 角色 → 默认姓名映射（α 版硬编码，后续接真实用户体系时替换） */
+const ROLE_DEFAULT_NAME: Record<QuoteRole, string> = {
+  pm: '张产品',
+  tech: '罗总',
+  sales: '张三',
+  sales_manager: '黄奕',
+  decision: '闵总',
+  assistant: '黄海',
+};
+
+const ADMIN_ROLES: QuoteRole[] = ['sales_manager', 'decision'];
+
+export function QuotationProvider({ children, service, leadBriefProvider }: QuotationProviderProps) {
   const svc = useMemo(() => service ?? createMockQuotationService(), [service]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,6 +274,49 @@ export function QuotationProvider({ children, service }: QuotationProviderProps)
     [svc, refresh],
   );
 
+  const withdrawSent = useCallback(
+    async (quoteId: string) => {
+      await svc.withdrawSent(quoteId);
+      await refresh();
+    },
+    [svc, refresh],
+  );
+
+  const returnToStamp = useCallback(
+    async (quoteId: string) => {
+      await svc.returnToStamp(quoteId);
+      await refresh();
+    },
+    [svc, refresh],
+  );
+
+  const returnToEditFeatures = useCallback(
+    async (quoteId: string) => {
+      await svc.returnToEditFeatures(quoteId);
+      await refresh();
+    },
+    [svc, refresh],
+  );
+
+  const deleteQuote = useCallback(
+    async (quoteId: string) => {
+      await svc.deleteQuote(quoteId);
+      await refresh();
+    },
+    [svc, refresh],
+  );
+
+  const reassignOwner = useCallback(
+    async (quoteId: string, field: 'salesOwnerName' | 'techEvaluatorName', value: string) => {
+      await svc.reassignOwner(quoteId, field, value);
+      await refresh();
+    },
+    [svc, refresh],
+  );
+
+  const currentViewer = ROLE_DEFAULT_NAME[currentRole];
+  const isAdmin = ADMIN_ROLES.includes(currentRole);
+
   const value = useMemo<QuotationContextValue>(() => ({
     quotes,
     loading,
@@ -261,12 +341,22 @@ export function QuotationProvider({ children, service }: QuotationProviderProps)
     markConfirmed,
     markVoided,
     createNewVersion,
+    withdrawSent,
+    returnToStamp,
+    returnToEditFeatures,
+    currentViewer,
+    isAdmin,
+    leadBriefProvider,
+    deleteQuote,
+    reassignOwner,
   }), [
     quotes, loading, currentRole, myQuoteTodos, getQuoteById, updateQuote, createQuote,
     saveFeatureList, setDeadline, submitFeatureList,
     saveEvalSheet, submitEval, assignToSales,
     returnToTech, submitForAudit, withdrawAudit,
     decideAudit, stampQuote, markSent, markConfirmed, markVoided, createNewVersion,
+    withdrawSent, returnToStamp, returnToEditFeatures,
+    currentViewer, isAdmin, leadBriefProvider, deleteQuote, reassignOwner,
   ]);
 
   return <QuotationContext.Provider value={value}>{children}</QuotationContext.Provider>;

@@ -119,6 +119,7 @@ function buildQuote(overrides: Partial<Quote> = {}): Quote {
     },
     auditNodes: buildInitialAuditNodes(),
     stampNode: { stamperName: '黄海', status: 'LOCKED' },
+    salesOwnerName: '张三',
     timeline: [],
     ccSalesNames: ['张三'],
     createdAt: '2026-08-14 10:00',
@@ -443,6 +444,12 @@ describe('版本与待办人', () => {
     for (const status of statuses) {
       expect(getPendingOwner(buildQuote({ status }))).not.toBe('—');
     }
+  });
+
+  it('pending_quote/rejected/stamped/sent 使用 salesOwnerName 而非写死张三', () => {
+    const q = buildQuote({ status: 'pending_quote', salesOwnerName: '李四' });
+    expect(getPendingOwner(q)).toContain('李四');
+    expect(getPendingOwner(q)).not.toContain('张三');
   });
 });
 

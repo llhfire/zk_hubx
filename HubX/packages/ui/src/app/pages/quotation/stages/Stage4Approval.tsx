@@ -30,7 +30,7 @@ const ROLE_TO_AUDITOR: Record<string, string | null> = {
 };
 
 export function Stage4Approval({ quote, readonly }: StageProps) {
-  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided } = useQuotation();
+  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided, withdrawSent, returnToStamp, returnToEditFeatures } = useQuotation();
   const navigate = useNavigate();
   const [rejectVisible, setRejectVisible] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
@@ -91,7 +91,22 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
     markVoided(quote.id, voidReason.trim());
     setVoidVisible(false);
     setVoidReason('');
-    Message.success('报价已作废');
+    Message.success('报价已废止');
+  };
+
+  const handleWithdrawSent = () => {
+    withdrawSent(quote.id);
+    Message.success('已撤回发出，报价回到已盖章状态');
+  };
+
+  const handleReturnToStamp = () => {
+    returnToStamp(quote.id);
+    Message.success('已退回盖章，报价回到待盖章状态');
+  };
+
+  const handleReturnToEditFeatures = () => {
+    returnToEditFeatures(quote.id);
+    Message.success('已退回改清单，报价回到草稿状态');
   };
 
   const auditColor = (s: string) => (s === 'APPROVED' ? 'green' : s === 'REJECTED' ? 'red' : 'gray');
@@ -425,6 +440,12 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
         </Space>
       )}
 
+      {!readonly && isSales && quote.status === 'rejected' && (
+        <Space>
+          <Button onClick={handleReturnToEditFeatures}>退回改清单</Button>
+        </Space>
+      )}
+
       {rejectVisible && (
         <div style={{ marginTop: 12, padding: 12, background: 'rgb(var(--red-1))', borderRadius: 6 }}>
           <Input.TextArea rows={2} placeholder="驳回意见（必填，将退回销售修改并全员重审）" value={rejectComment} onChange={setRejectComment} style={{ marginBottom: 8 }} />
@@ -440,6 +461,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
         <Space>
           <Button type="primary" icon={<IconSend />} onClick={handleSend}>发送客户</Button>
           <Button icon={<IconDownload />} onClick={() => Message.info('下载正式 PDF 报价单（盖章版，占位）')}>下载盖章版 PDF</Button>
+          {!quote.sentAt && <Button onClick={handleReturnToStamp}>退回盖章</Button>}
         </Space>
       )}
 
@@ -447,6 +469,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
         <Space>
           <Button type="primary" status="success" icon={<IconCheckCircle />} onClick={handleConfirmed}>确认成交</Button>
           <Button status="danger" icon={<IconCloseCircle />} onClick={() => setVoidVisible(true)}>客户放弃，作废</Button>
+          <Button onClick={handleWithdrawSent}>撤回发出</Button>
         </Space>
       )}
 
@@ -473,7 +496,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
             </Space>
           </div>
         ) : (
-          <AlertLike text="该报价已作废，历史版本保留不可删除。" />
+          <AlertLike text="该报价已废止，历史版本保留不可删除。" />
         )
       )}
 

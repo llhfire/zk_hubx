@@ -103,7 +103,7 @@ export function getPendingOwner(quote: Quote): string {
       return `${quote.basicInfo.techEvaluatorName}（技术评估）`;
     case 'pending_quote':
     case 'rejected':
-      return '张三（报价配置）';
+      return `${quote.salesOwnerName}（报价配置）`;
     case 'auditing': {
       const pending = quote.auditNodes.filter((n) => n.status === 'PENDING').map((n) => n.auditorName);
       return pending.length ? `${pending.join('、')}（待会签）` : '—';
@@ -111,9 +111,9 @@ export function getPendingOwner(quote: Quote): string {
     case 'pending_stamp':
       return `${quote.stampNode.stamperName}（待盖章）`;
     case 'stamped':
-      return '张三（待发送客户）';
+      return `${quote.salesOwnerName}（待发送客户）`;
     case 'sent':
-      return '张三（待客户确认）';
+      return `${quote.salesOwnerName}（待客户确认）`;
     default:
       return '—';
   }

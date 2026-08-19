@@ -49,6 +49,7 @@ function seedQuote() {
     ],
     stampNode: { stamperName: '黄海', status: 'LOCKED' },
     timeline: [],
+    salesOwnerName: '张三',
     ccSalesNames: ['张三'],
     createdAt: '2026-08-16 10:00',
     updatedAt: '2026-08-16 10:00',

@@ -5,7 +5,9 @@ import {
 } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconRight, IconUser } from '@arco-design/web-react/icon';
 import { useQuotation } from './QuotationContext';
-import { computeAmountBreakdown, getPendingOwner, getPendingRoles } from './quoteFlow';
+import { computeAmountBreakdown, getPendingOwner, getPendingRoles, isExpired } from './quoteFlow';
+import { canViewQuote, canCreateQuote } from './quoteAccess';
+import { loadQuotePermission } from './quotePermissionStore';
 import {
   QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, QUOTE_STAGE_NAMES,
 } from './types';
@@ -20,11 +22,12 @@ function money(n: number): string {
 
 export function QuotationCenter() {
   const navigate = useNavigate();
-  const { quotes, currentRole } = useQuotation();
+  const { quotes, currentRole, currentViewer, isAdmin } = useQuotation();
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | ''>('');
   const [stageFilter, setStageFilter] = useState<QuoteStage | ''>('');
   const [mineOnly, setMineOnly] = useState(false);
+  const permission = useMemo(() => loadQuotePermission(), []);
 
   // 分组统计
   const stats = useMemo(() => {
@@ -35,6 +38,7 @@ export function QuotationCenter() {
 
   const filtered = useMemo(() => {
     return quotes.filter((q) => {
+      if (!canViewQuote(q, currentViewer, isAdmin)) return false;
       if (mineOnly && !getPendingRoles(q).includes(currentRole)) return false;
       if (statusFilter && q.status !== statusFilter) return false;
       if (stageFilter && deriveStage(q.status) !== stageFilter) return false;
@@ -48,7 +52,7 @@ export function QuotationCenter() {
       }
       return true;
     });
-  }, [quotes, keyword, statusFilter, stageFilter, mineOnly, currentRole]);
+  }, [quotes, keyword, statusFilter, stageFilter, mineOnly, currentRole, currentViewer, isAdmin]);
 
   const columns = [
     { title: '报价编号', dataIndex: 'quoteNo', width: 150, render: (v: string) => <Text bold>{v}</Text> },
@@ -60,8 +64,15 @@ export function QuotationCenter() {
       render: (_: unknown, r: Quote) => <Tag color="arcoblue">{QUOTE_STAGE_NAMES[deriveStage(r.status)]}</Tag>,
     },
     {
-      title: '状态', dataIndex: 'status', width: 110,
-      render: (s: QuoteStatus) => <Tag color={QUOTE_STATUS_COLORS[s]}>{QUOTE_STATUS_LABELS[s]}</Tag>,
+      title: '状态', dataIndex: 'status', width: 140,
+      render: (_: unknown, r: Quote) => (
+        <Space size={4}>
+          <Tag color={QUOTE_STATUS_COLORS[r.status]}>{QUOTE_STATUS_LABELS[r.status]}</Tag>
+          {r.status === 'sent' && isExpired(r, new Date().toISOString().slice(0, 10)) && (
+            <Tag color="red" size="small">已过期</Tag>
+          )}
+        </Space>
+      ),
     },
     {
       title: '当前待办人', dataIndex: 'pendingOwner', width: 150,
@@ -145,9 +156,11 @@ export function QuotationCenter() {
         )}
 
         <Space style={{ marginTop: 12 }}>
-          <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/leads')}>
-            从线索发起报价
-          </Button>
+          {canCreateQuote(currentViewer, permission) && (
+            <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/leads')}>
+              从线索发起报价
+            </Button>
+          )}
           <Text type="secondary">
             <IconUser style={{ marginRight: 4 }} />
             报价由线索详情页「发起工时评估」创建，进入对应阶段的工作台处理

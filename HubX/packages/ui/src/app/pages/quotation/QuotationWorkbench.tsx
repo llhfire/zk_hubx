@@ -8,13 +8,14 @@ import { Stage1FeatureList } from './stages/Stage1FeatureList';
 import { Stage2EvalSheet } from './stages/Stage2EvalSheet';
 import { Stage3WebAutomation } from './stages/Stage3WebAutomation';
 import { Stage4Approval } from './stages/Stage4Approval';
+import { canViewQuote } from './quoteAccess';
 import {
   QUOTE_STAGE_NAMES,
   QUOTE_STATUS_COLORS,
   QUOTE_STATUS_LABELS,
 } from './types';
 import type { Quote, QuoteStage } from './types';
-import { deriveStage, getPendingOwner, getStageAccess } from './quoteFlow';
+import { deriveStage, getPendingOwner, getStageAccess, isTerminalStatus } from './quoteFlow';
 
 const { Text, Title } = Typography;
 
@@ -30,13 +31,16 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   const { quoteId: urlQuoteId } = useParams();
   const quoteId = propQuoteId ?? urlQuoteId;
   const navigate = useNavigate();
-  const { getQuoteById, currentRole, markVoided, loading } = useQuotation();
+  const { getQuoteById, currentRole, currentViewer, isAdmin, markVoided, reassignOwner, loading } = useQuotation();
   const handleBack = onClose ?? (() => navigate('/quotation'));
   const quote = quoteId ? getQuoteById(quoteId) : undefined;
   const [viewedStage, setViewedStage] = useState<QuoteStage | null>(null);
   const [timelineVisible, setTimelineVisible] = useState(false);
   const [voidVisible, setVoidVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  const [reassignVisible, setReassignVisible] = useState(false);
+  const [reassignField, setReassignField] = useState<'salesOwnerName' | 'techEvaluatorName'>('salesOwnerName');
+  const [reassignValue, setReassignValue] = useState('');
 
   const currentStage = useMemo(() => (quote ? deriveStage(quote.status) : 1), [quote]);
   const stage = viewedStage ?? currentStage;
@@ -47,8 +51,17 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     markVoided(quote.id, voidReason.trim());
     setVoidVisible(false);
     setVoidReason('');
-    Message.success('报价已作废');
+    Message.success('报价已废止');
     handleBack();
+  };
+
+  const handleReassign = async () => {
+    if (!quote) return;
+    if (!reassignValue.trim()) { Message.warning('请填写目标人员姓名'); return; }
+    await reassignOwner(quote.id, reassignField, reassignValue.trim());
+    setReassignVisible(false);
+    setReassignValue('');
+    Message.success(`已改指${reassignField === 'salesOwnerName' ? '销售' : '评估人'}为 ${reassignValue.trim()}`);
   };
 
   if (loading) {
@@ -61,6 +74,17 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
         status="404"
         title="报价单不存在"
         subTitle="该报价单可能已被删除或链接有误"
+        extra={<Button type="primary" onClick={handleBack}>返回报价中心</Button>}
+      />
+    );
+  }
+
+  if (!canViewQuote(quote, currentViewer, isAdmin)) {
+    return (
+      <Result
+        status="403"
+        title="无权访问"
+        subTitle="您没有权限查看此报价单"
         extra={<Button type="primary" onClick={handleBack}>返回报价中心</Button>}
       />
     );
@@ -90,6 +114,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <Button icon={<IconLeft />} onClick={handleBack}>返回列表</Button>
         <Button icon={<IconHistory />} onClick={() => setTimelineVisible(true)}>流转轨迹</Button>
+        {!isTerminalStatus(quote.status) && (
+          <Button onClick={() => setReassignVisible(true)}>改指</Button>
+        )}
         <Button status="danger" onClick={() => setVoidVisible(true)}>作废</Button>
         <div style={{ flex: 1 }} />
       </div>
@@ -200,6 +227,43 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
           value={voidReason}
           onChange={setVoidReason}
         />
+      </Modal>
+
+      <Modal
+        title="改指负责人"
+        visible={reassignVisible}
+        onOk={handleReassign}
+        onCancel={() => { setReassignVisible(false); setReassignValue(''); }}
+        okText="确认改指"
+      >
+        <div style={{ marginBottom: 8 }}>
+          <Text type="secondary">改指后原负责人将不再收到该报价单的待办提醒。</Text>
+        </div>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div>
+            <Text bold style={{ display: 'block', marginBottom: 4 }}>改指类型</Text>
+            <Space>
+              <Button
+                size="small"
+                type={reassignField === 'salesOwnerName' ? 'primary' : 'outline'}
+                onClick={() => setReassignField('salesOwnerName')}
+              >销售</Button>
+              <Button
+                size="small"
+                type={reassignField === 'techEvaluatorName' ? 'primary' : 'outline'}
+                onClick={() => setReassignField('techEvaluatorName')}
+              >评估人</Button>
+            </Space>
+          </div>
+          <div>
+            <Text bold style={{ display: 'block', marginBottom: 4 }}>目标人员</Text>
+            <Input
+              placeholder="请输入姓名"
+              value={reassignValue}
+              onChange={setReassignValue}
+            />
+          </div>
+        </Space>
       </Modal>
     </div>
   );

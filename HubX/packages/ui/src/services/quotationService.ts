@@ -53,6 +53,15 @@ export interface QuotationService {
   markConfirmed(quoteId: string): Promise<void>;
   markVoided(quoteId: string, reason: string): Promise<void>;
   createNewVersion(quoteId: string): Promise<string>;
+
+  // ── 回退动作（PRD §回退，TRANSITIONS 表驱动）──
+  withdrawSent(quoteId: string): Promise<void>;       // sent → stamped
+  returnToStamp(quoteId: string): Promise<void>;      // stamped → pending_stamp（未发出才可）
+  returnToEditFeatures(quoteId: string): Promise<void>; // rejected → draft（ADR 0064）
+
+  // ── 4.2 新增 ──
+  deleteQuote(quoteId: string): Promise<void>;
+  reassignOwner(quoteId: string, field: 'salesOwnerName' | 'techEvaluatorName', value: string): Promise<void>;
 }
 
 const STORAGE_KEY = 'hubx-quotation-quotes-v2';
@@ -142,6 +151,26 @@ export function createMockQuotationService(): QuotationService {
       persist();
       return newId;
     },
+    withdrawSent: async (id) =>
+      mapOne(id, (q) => applyTransition(q, 'withdraw_sent', 'sales', 'stamped', undefined, () => ({ sentAt: undefined }))),
+    returnToStamp: async (id) =>
+      mapOne(id, (q) => {
+        if (q.sentAt) throw new Error('已发出的报价不能退回盖章');
+        return applyTransition(q, 'return_to_stamp', 'assistant', 'pending_stamp');
+      }),
+    returnToEditFeatures: async (id) =>
+      mapOne(id, (q) => applyTransition(q, 'return_to_edit_features', 'sales', 'draft')),
+    deleteQuote: async (id) => {
+      quotes = quotes.filter((q) => q.id !== id);
+      persist();
+    },
+    reassignOwner: async (id, field, value) =>
+      mapOne(id, (q) => {
+        if (field === 'salesOwnerName') {
+          return { ...q, salesOwnerName: value, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_sales' as const, actorName: value, actorRole: 'sales', time: now(), note: `销售改指为 ${value}` }], updatedAt: now() };
+        }
+        return { ...q, basicInfo: { ...q.basicInfo, techEvaluatorName: value }, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_evaluator' as const, actorName: value, actorRole: 'tech', time: now(), note: `评估人改指为 ${value}` }], updatedAt: now() };
+      }),
   };
 }
 
@@ -229,5 +258,24 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
       await saveOne(applyNewVersion(source, newId));
       return newId;
     },
+    withdrawSent: async (id) =>
+      mutate(id, (q) => applyTransition(q, 'withdraw_sent', 'sales', 'stamped', undefined, () => ({ sentAt: undefined }))),
+    returnToStamp: async (id) =>
+      mutate(id, (q) => {
+        if (q.sentAt) throw new Error('已发出的报价不能退回盖章');
+        return applyTransition(q, 'return_to_stamp', 'assistant', 'pending_stamp');
+      }),
+    returnToEditFeatures: async (id) =>
+      mutate(id, (q) => applyTransition(q, 'return_to_edit_features', 'sales', 'draft')),
+    deleteQuote: async (id) => {
+      await fetch(api(`/api/quotes/${id}`), { method: 'DELETE' });
+    },
+    reassignOwner: async (id, field, value) =>
+      mutate(id, (q) => {
+        if (field === 'salesOwnerName') {
+          return { ...q, salesOwnerName: value, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_sales' as const, actorName: value, actorRole: 'sales', time: now(), note: `销售改指为 ${value}` }], updatedAt: now() };
+        }
+        return { ...q, basicInfo: { ...q.basicInfo, techEvaluatorName: value }, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_evaluator' as const, actorName: value, actorRole: 'tech', time: now(), note: `评估人改指为 ${value}` }], updatedAt: now() };
+      }),
   };
 }

@@ -71,6 +71,18 @@ import { TodoCenter } from "./pages/todos/TodoCenter";
 import { ProjectCostPage } from "./pages/project-management/ProjectCostPage";
 import { HrExpenseManagement } from "./pages/hr/HrExpenseManagement";
 import { ProjectInvoicePage } from "./pages/finance/ProjectInvoicePage";
+import { TripList } from "./pages/travel/trip/TripList";
+import { TripForm } from "./pages/travel/trip/TripForm";
+import { TripDetail } from "./pages/travel/trip/TripDetail";
+import { ReimbursementList as TravelReimbursementList } from "./pages/travel/reimbursement/ReimbursementList";
+import { LoanList } from "./pages/travel/loan/LoanList";
+import { DormitoryManagement } from "./pages/travel/dormitory/DormitoryManagement";
+import { PunchClock } from "./pages/travel/punch/PunchClock";
+import { StandardList } from "./pages/travel/standard/StandardList";
+import { TravelDashboard } from "./pages/travel/dashboard/TravelDashboard";
+import DeliveryDashboard from "./pages/financial-delivery/dashboard/Dashboard";
+import CaseList from "./pages/financial-delivery/cases/CaseList";
+import CaseDetail from "./pages/financial-delivery/cases/CaseDetail";
 
 export const router = createBrowserRouter([
   {
@@ -154,6 +166,26 @@ export const router = createBrowserRouter([
       { path: "finance/salary", Component: SalaryPage },
       { path: "finance/project-invoices", Component: ProjectInvoicePage },
       { path: "finance/contract-cost/:contractId", Component: ContractCostDetail },
+      { path: "travel/trips", Component: TripList },
+      { path: "travel/trips/new", Component: TripForm },
+      { path: "travel/trips/:id", Component: TripDetail },
+      { path: "travel/reimbursements", Component: TravelReimbursementList },
+      { path: "travel/loans", Component: LoanList },
+      { path: "travel/dormitory", Component: DormitoryManagement },
+      { path: "travel/punch", Component: PunchClock },
+      { path: "travel/standards", Component: StandardList },
+      { path: "travel/dashboard", Component: TravelDashboard },
+      { path: "financial-delivery/dashboard", Component: DeliveryDashboard },
+      { path: "financial-delivery/cases", Component: CaseList },
+      { path: "financial-delivery/cases/:id", Component: CaseDetail },
+      { path: "financial-delivery/cases/:id/edit", Component: CaseDetail },
+      { path: "financial-delivery/cases/create", Component: CaseDetail },
+      { path: "financial-delivery/feature-lists", Component: () => <div>功能清单列表</div> },
+      { path: "financial-delivery/feature-lists/:id", Component: () => <div>功能清单详情</div> },
+      { path: "financial-delivery/quotations", Component: () => <div>报价单列表</div> },
+      { path: "financial-delivery/quotations/:id", Component: () => <div>报价单详情</div> },
+      { path: "financial-delivery/post-mortems", Component: () => <div>项目决算列表</div> },
+      { path: "financial-delivery/post-mortems/:id", Component: () => <div>项目决算详情</div> },
     ],
   },
 ]);

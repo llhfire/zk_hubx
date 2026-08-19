@@ -121,6 +121,33 @@ export function MainLayout() {
         { key: '/dailyreport/job-work-config', label: '日报配置' },
       ],
     },
+    {
+      key: 'travel',
+      icon: <IconCalendar />,
+      label: '差旅管理',
+      children: [
+        { key: '/travel/trips', label: '出差申请' },
+        { key: '/travel/reimbursements', label: '报销管理' },
+        { key: '/travel/loans', label: '借款管理' },
+        { key: '/travel/dormitory', label: '宿舍管理' },
+        { key: '/travel/punch', label: '打卡管理' },
+        { key: '/travel/standards', label: '费用标准' },
+        { key: '/travel/dashboard', label: '差旅看板' },
+      ],
+    },
+    {
+      key: 'financial-delivery',
+      icon: <IconFile />,
+      label: '精益交付',
+      badge: 'New',
+      children: [
+        { key: '/financial-delivery/dashboard', label: '财务仪表盘' },
+        { key: '/financial-delivery/cases', label: '业务单管理' },
+        { key: '/financial-delivery/feature-lists', label: '工时评估' },
+        { key: '/financial-delivery/quotations', label: '报价单管理' },
+        { key: '/financial-delivery/post-mortems', label: '项目决算' },
+      ],
+    },
     { key: '/reports', icon: <IconDashboard />, label: '数据报表' },
     { key: '/assets', icon: <IconApps />, label: '资产管理' },
     { key: '/maintenance', icon: <IconCustomerService />, label: '售后运维' },
@@ -272,6 +299,12 @@ export function MainLayout() {
       path === '/paymentinvoice'
     ) {
       return ['finance'];
+    }
+    if (path.startsWith('/travel/')) {
+      return ['travel'];
+    }
+    if (path.startsWith('/financial-delivery/')) {
+      return ['financial-delivery'];
     }
     return [];
   };

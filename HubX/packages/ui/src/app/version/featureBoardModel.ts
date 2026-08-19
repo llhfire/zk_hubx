@@ -196,6 +196,9 @@ const FEATURES_SEED: Record<string, ExistingFeature[]> = {
     { name: '按人员工时成本', description: 'ProjectCostPanel.tsx：工时×时薪计算人工成本，按项目/部门汇总。' },
     { name: '差旅商务成本', description: '差旅报销、商务费用归集到项目成本。' },
   ],
+  '运营费用': [
+    { name: '人资费用卡片墙（待替换）', description: 'HrExpenseManagement.tsx：10 类扁平费用，改金额选生效时间。将被运营费用四 Tab 替换。' },
+  ],
   '财务视图': [
     { name: '财务统计面板', description: 'FinanceDashboard：收入/支出/利润汇总，趋势图表。' },
     { name: '项目成本报表', description: 'ProjectCostPage.tsx：项目维度成本明细，利润率分析。' },
@@ -262,16 +265,17 @@ const PLANNED_SEED: Record<string, string[]> = {
   // 财务域
   '回款管理': ['逾期判断（预计回款日期对比，自动标记逾期）'],
   '开票管理': ['开票统计（按项目/客户/时间段汇总）'],
-  '成本核算': ['运营分摊（公共运营成本按规则分摊到项目）', '异常检测（成本异常预警：超出预算/工时异常/费用异常）'],
+  '成本核算': ['运营分摊（读取公共运营池，按全公司在职编制工时）', '异常检测（成本异常预警：超出预算/工时异常/费用异常）'],
+  '运营费用': ['费用大盘（6个月滚动+工资平移）', '费用台账（确认即入账、作废不删）', '周期模板（固定即入账/浮动待确认）', '公摊参数（池÷全公司在职编制工时）'],
   '财务视图': ['合同统计（合同金额/回款/开票/待收汇总）'],
   // 获客域
   '线索池与初筛': ['去重清洗（按公司名/联系人手机号自动去重）', '清洗分级（线索质量评分，自动分级 A/B/C/D）'],
   // 支撑域
   '组织与权限': ['菜单路由（前端菜单树配置）', '逐人权限（特殊场景额外授权）'],
-  '人资行政': ['工资管理（基本工资+绩效+补贴-扣款）', '调整记录（调薪/调岗/晋升历史）', '人资费用（招聘/培训/福利费用归集）', '员工档案（完整档案：合同/考勤/薪资/绩效）'],
+  '人资行政': ['工资管理（基本工资+绩效+补贴-扣款）', '调整记录（调薪/调岗/晋升历史）', '员工档案（完整档案：合同/考勤/薪资/绩效）'],
   '工作台与审批': ['审批模板（串行/并行/会签节点配置）', '报价审批与补充报价审批两条业务类型', '数据看板（管理者：销售业绩/项目进度/财务概览）'],
   // 跨域工具
-  '基础工具': ['操作日志（谁/何时/做了什么）', '权限拦截（路由级+接口级权限校验）', '工天配置（工作日历/节假日/加班规则）', '登录认证（登录/登出/会话管理）', '全链路 ROI（广告消耗→线索→客户→合同→利润，按渠道拆分）'],
+  '基础工具': ['操作日志（谁/何时/做了什么）', '权限拦截（路由级+接口级权限校验）', '工天配置（大小周日历/法定节假日/调休）', '登录认证（登录/登出/会话管理）', '全链路 ROI（广告消耗→线索→客户→合同→利润，按渠道拆分）'],
 
   // ========== 规划模块（原有） ==========
   // 销售域规划
@@ -304,7 +308,7 @@ const PLANNED_SEED: Record<string, string[]> = {
 };
 
 export function createSeedBoard(): FeatureBoard {
-  // 架构图全部 36 模块（17 现有 + 19 规划），按领域优先级排列
+  // 架构图全部 37 模块（18 现有 + 19 规划），按领域优先级排列
   const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: ExistingFeature[]; planned?: string[]; note: string }> = [
     // === 销售域（优先级 1）===
     { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '认领/分配/跟进/流转/生命周期/公海回收/需求记录/竞对/阶段推进' },
@@ -322,7 +326,8 @@ export function createSeedBoard(): FeatureBoard {
     // === 财务域（优先级 3）===
     { module: '回款管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['回款管理'] ?? [], note: '期次拆分/回款登记/状态自动计算/权限矩阵（WIP）' },
     { module: '开票管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['开票管理'] ?? [], note: '开票申请/发票冲红/开票工作台' },
-    { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊' },
+    { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊读池' },
+    { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: '替换 /hr/expenses。阶段 A 计划已展开，未写代码' },
     { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
     { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
     // === 获客域（优先级 4）===

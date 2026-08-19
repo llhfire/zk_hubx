@@ -42,7 +42,7 @@
 <body>
 
 <div class="title">ZK HubX 功能架构</div>
-<div class="subtitle">中科集团内部运营管理系统 · 按业务价值链规划 · 8 域 · 现有模块 17 + 新增规划 19 = 36 模块</div>
+<div class="subtitle">中科集团内部运营管理系统 · 按业务价值链规划 · 8 域 · 现有模块 18 + 新增规划 19 = 37 模块</div>
 <div class="note">基于需求底稿 + 交付 SOP 重构 · 现有 = 已实现 / 规划 = 有业务依据、待落地（区分当下与下一步）</div>
 
 <div class="arch">
@@ -169,7 +169,7 @@
 
     <!-- 财务域 -->
     <div class="domain">
-      <div class="domain-header">财务域<span class="sub">现有 4 + 规划 1 模块</span></div>
+      <div class="domain-header">财务域<span class="sub">现有 5 + 规划 1 模块</span></div>
       <div class="module">
         <div class="module-name">回款管理</div>
         <div class="module-items">期次拆分 · 实际回款 · 状态自动计算 · 权限矩阵 · 逾期判断 · 合同回款Tab</div>
@@ -180,7 +180,11 @@
       </div>
       <div class="module">
         <div class="module-name">成本核算</div>
-        <div class="module-items">按人员工时成本 · 差旅/商务/第三方 · 运营分摊 · 异常检测</div>
+        <div class="module-items">按人员工时成本 · 差旅/商务/第三方 · 运营分摊（读公共运营池） · 异常检测</div>
+      </div>
+      <div class="module">
+        <div class="module-name">运营费用</div>
+        <div class="module-items">费用大盘 · 费用台账 · 周期模板 · 公摊参数 · 公共运营池 · 工资平移预测</div>
       </div>
       <div class="module">
         <div class="module-name">财务视图</div>
@@ -201,7 +205,7 @@
       </div>
       <div class="module">
         <div class="module-name">人资行政</div>
-        <div class="module-items">员工列表 · 岗位 · 工资 · 调整记录 · 人资费用 · 考勤请假 · 员工档案</div>
+        <div class="module-items">员工列表 · 岗位 · 工资 · 调整记录 · 考勤请假 · 员工档案</div>
       </div>
       <div class="module">
         <div class="module-name">工作台与审批</div>
@@ -222,7 +226,7 @@
       <div class="domain-header">跨域工具<span class="sub">现有 5 + 规划 2 模块</span></div>
       <div class="module">
         <div class="module-name">基础工具</div>
-        <div class="module-items">登录 · 操作日志 · 权限拦截 · 工天配置 · 企微集成</div>
+        <div class="module-items">登录 · 操作日志 · 权限拦截 · 工天配置（大小周） · 企微集成</div>
       </div>
       <div class="module">
         <div class="module-name">管理者工具<span class="tag plan">规划</span></div>
@@ -256,10 +260,10 @@
   <div class="stat"><div class="num">5</div><div class="label">交付域</div></div>
   <div class="stat"><div class="num">5</div><div class="label">资源域</div></div>
   <div class="stat"><div class="num">4</div><div class="label">运维域</div></div>
-  <div class="stat"><div class="num">5</div><div class="label">财务域</div></div>
+  <div class="stat"><div class="num">6</div><div class="label">财务域</div></div>
   <div class="stat"><div class="num">5</div><div class="label">支撑域</div></div>
   <div class="stat"><div class="num">3</div><div class="label">跨域工具</div></div>
-  <div class="stat"><div class="num">36</div><div class="label">模块合计（现17规19）</div></div>
+  <div class="stat"><div class="num">37</div><div class="label">模块合计（现18规19）</div></div>
 </div>
 
 </body>

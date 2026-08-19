@@ -21,9 +21,9 @@ import { VERSION_URLS } from '../versionMatrix';
 import type { Domain, ExistingFeature } from '../featureBoardModel';
 
 describe('featureBoardModel', () => {
-  it('seed board has 36 modules across 8 domains in priority order', () => {
+  it('seed board has 39 modules across 8 domains in priority order', () => {
     const board = createSeedBoard();
-    expect(board.modules).toHaveLength(36);
+    expect(board.modules).toHaveLength(39);
 
     // 领域优先级：销售→交付→财务→获客→支撑→跨域→资源→运维
     const domainOrder: Domain[] = ['销售域', '交付域', '财务域', '获客域', '支撑域', '跨域工具', '资源域', '运维域'];

@@ -697,6 +697,84 @@
       "note": "替换 /hr/expenses。PRD 已设计。阶段 A 计划已展开（计划/当前/operating-expense-dev-plan.md），未写代码"
     },
     {
+      "module": "精益交付",
+      "domain": "财务域",
+      "isPlanned": false,
+      "scope": "",
+      "features": [
+        {
+          "name": "业务单管理",
+          "description": "CaseList/CaseDetail：CASE- 独立编号，财务交付视角聚合（报价/合同/回款/成本/EAC）。"
+        },
+        {
+          "name": "精益交付仪表盘",
+          "description": "Dashboard：概览统计、健康气泡图、风险预警列表（移植自 llhfire/hubX，数据链路待收口）。"
+        }
+      ],
+      "planned": [
+        { "name": "五条数据链派生化（评估/报价/合同/回款/成本全有来源）", "status": "已设计" },
+        { "name": "跨域引用报价域+合同域（删平行 mock）", "status": "已设计" },
+        { "name": "回款口径收入+WIP/趋势双线", "status": "已设计" },
+        { "name": "模拟器敏感性+底线价、穿透看板派生化", "status": "已设计" }
+      ],
+      "alpha": {
+        "页面场景": true,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "页面已移植。PRD-精益交付数据链路 + 计划/当前/lean-delivery-dataline-dev-plan.md 已设计，待编码（ADR-0086~0088）"
+    },
+    {
+      "module": "差旅管理",
+      "domain": "财务域",
+      "isPlanned": false,
+      "scope": "",
+      "features": [
+        {
+          "name": "出差申请",
+          "description": "TripForm/TripList/TripDetail 6 Tab：行程段、费用预估、借款意向、审批记录（移植自 llhfire/hubX）。"
+        },
+        {
+          "name": "报销与借款",
+          "description": "ReimbursementList/LoanList：报销单冲抵借款、打款状态流。"
+        },
+        {
+          "name": "宿舍管理",
+          "description": "DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。"
+        },
+        {
+          "name": "费用标准",
+          "description": "StandardList：版本+生效期+职级×城市等级标准明细。"
+        },
+        {
+          "name": "差旅看板",
+          "description": "TravelDashboard + FinanceAuditDashboard：个人/部门/项目差旅统计与财务审计。"
+        }
+      ],
+      "planned": [
+        { "name": "核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）", "status": "已设计" },
+        { "name": "审批固定流+借款金额分级（阈值入配置）", "status": "已设计" },
+        { "name": "报销双出口（运营费用只读归集+成本流水）", "status": "已设计" },
+        { "name": "删除打卡模块（考勤归工时加工）", "status": "已设计" },
+        { "name": "可配置审批引擎", "status": "未开始" },
+        { "name": "票据 OCR", "status": "未开始" }
+      ],
+      "alpha": {
+        "页面场景": true,
+        "功能流程": false,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "页面已移植（travel-api 接缝）。PRD-差旅管理 + travel-dev-plan 已设计，待编码（ADR-0089/0090）"
+    },
+    {
       "module": "财务视图",
       "domain": "财务域",
       "isPlanned": false,

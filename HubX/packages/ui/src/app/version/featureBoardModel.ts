@@ -113,6 +113,8 @@ const MODULE_DOMAIN_MAP: Record<string, Domain> = {
   '开票管理': '财务域',
   '成本核算': '财务域',
   '财务视图': '财务域',
+  '精益交付': '财务域',
+  '差旅管理': '财务域',
   '全期次视图': '财务域',
   // 支撑域
   '组织与权限': '支撑域',
@@ -199,6 +201,17 @@ const FEATURES_SEED: Record<string, ExistingFeature[]> = {
   '运营费用': [
     { name: '人资费用卡片墙（待替换）', description: 'HrExpenseManagement.tsx：10 类扁平费用，改金额选生效时间。将被运营费用四 Tab 替换。' },
   ],
+  '精益交付': [
+    { name: '业务单管理', description: 'CaseList/CaseDetail：CASE- 独立编号，财务交付视角聚合（报价/合同/回款/成本/EAC）。' },
+    { name: '精益交付仪表盘', description: 'Dashboard：概览统计、健康气泡图、风险预警列表（移植自 llhfire/hubX，数据链路待收口）。' },
+  ],
+  '差旅管理': [
+    { name: '出差申请', description: 'TripForm/TripList/TripDetail 6 Tab：行程段、费用预估、借款意向、审批记录（移植自 llhfire/hubX）。' },
+    { name: '报销与借款', description: 'ReimbursementList/LoanList：报销单冲抵借款、打款状态流。' },
+    { name: '宿舍管理', description: 'DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。' },
+    { name: '费用标准', description: 'StandardList：版本+生效期+职级×城市等级标准明细。' },
+    { name: '差旅看板', description: 'TravelDashboard + FinanceAuditDashboard：个人/部门/项目差旅统计与财务审计。' },
+  ],
   '财务视图': [
     { name: '财务统计面板', description: 'FinanceDashboard：收入/支出/利润汇总，趋势图表。' },
     { name: '项目成本报表', description: 'ProjectCostPage.tsx：项目维度成本明细，利润率分析。' },
@@ -267,6 +280,8 @@ const PLANNED_SEED: Record<string, string[]> = {
   '开票管理': ['开票统计（按项目/客户/时间段汇总）'],
   '成本核算': ['运营分摊（读取公共运营池，按全公司在职编制工时）', '异常检测（成本异常预警：超出预算/工时异常/费用异常）'],
   '运营费用': ['费用大盘（6个月滚动+工资平移）', '费用台账（确认即入账、作废不删）', '周期模板（固定即入账/浮动待确认）', '公摊参数（池÷全公司在职编制工时）'],
+  '精益交付': ['五条数据链派生化（评估/报价/合同/回款/成本全有来源）', '跨域引用报价域+合同域（删平行 mock）', '回款口径收入+WIP/趋势双线', '模拟器敏感性+底线价、穿透看板派生化'],
+  '差旅管理': ['核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）', '审批固定流+借款金额分级（阈值入配置）', '报销双出口（运营费用只读归集+成本流水）', '删除打卡模块（考勤归工时加工）', '可配置审批引擎', '票据 OCR'],
   '财务视图': ['合同统计（合同金额/回款/开票/待收汇总）'],
   // 获客域
   '线索池与初筛': ['去重清洗（按公司名/联系人手机号自动去重）', '清洗分级（线索质量评分，自动分级 A/B/C/D）'],
@@ -328,6 +343,8 @@ export function createSeedBoard(): FeatureBoard {
     { module: '开票管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['开票管理'] ?? [], note: '开票申请/发票冲红/开票工作台' },
     { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊读池' },
     { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: '替换 /hr/expenses。阶段 A 计划已展开，未写代码' },
+    { module: '精益交付', domain: '财务域', isPlanned: false, features: FEATURES_SEED['精益交付'] ?? [], note: '页面已移植。PRD-精益交付数据链路 + lean-delivery-dataline-dev-plan 已设计，待编码（ADR-0086~0088）' },
+    { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: '页面已移植（travel-api 接缝）。PRD-差旅管理 + travel-dev-plan 已设计，待编码（ADR-0089/0090）' },
     { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
     { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
     // === 获客域（优先级 4）===

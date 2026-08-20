@@ -6,7 +6,7 @@ import { MyLeads } from "./pages/MyLeads";
 import { AllLeads } from "./pages/AllLeads";
 import { TrashLeads } from "./pages/TrashLeads";
 import { ClosedLeads } from "./pages/ClosedLeads";
-import { LeadDetail } from "./pages/LeadDetail";
+// import { LeadDetail } from "./pages/LeadDetail"; // 已由 LeadDetail360 替代
 import { Customers } from "./pages/Customers";
 import { CustomerDetail } from "./pages/CustomerDetail";
 import { Contracts } from "./pages/Contracts";

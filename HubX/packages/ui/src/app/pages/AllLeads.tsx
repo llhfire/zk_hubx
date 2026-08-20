@@ -6,7 +6,6 @@ import {
   Button,
   Input,
   Select,
-  Badge,
   Message,
   Space,
   Tag,
@@ -14,7 +13,7 @@ import {
   Popover,
   Tabs,
 } from '@arco-design/web-react';
-import { IconSearch, IconEye, IconUserAdd, IconDelete, IconReply, IconFilter } from '@arco-design/web-react/icon';
+import { IconSearch, IconEye, IconUserAdd, IconDelete, IconFilter } from '@arco-design/web-react/icon';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -32,7 +31,6 @@ import {
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_COLOR,
   COMPANY_ENTITY_LIST,
-  GROUP_TYPE_ICON,
   TRANSFER_ACTION_LABEL,
   TRANSFER_ACTION_COLOR,
   QUICK_FILTER_LABEL,

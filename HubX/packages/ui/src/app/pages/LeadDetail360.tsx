@@ -133,15 +133,32 @@ export function LeadDetail360() {
       {/* ========== 顶部一体化控制台 ========== */}
       <Card bodyStyle={{ padding: '16px 20px' }}>
         {/* 项目元数据 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <Button type="text" icon={<IconLeft />} onClick={() => navigate(-1)}>返回列表</Button>
-          <Divider type="vertical" />
-          <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>#{lead.name?.slice(0, 6) || id}</span>
-          <span style={{ fontSize: 18, fontWeight: 600 }}>{lead.name}</span>
-          <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
-          {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}级</Tag>}
-          <Tag color="gray">{lead.entity}</Tag>
-          <Tag color="default">{lead.source}</Tag>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Button type="text" icon={<IconLeft />} onClick={() => navigate(-1)}>返回列表</Button>
+            <Divider type="vertical" />
+            <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>#{lead.name?.slice(0, 6) || id}</span>
+            <span style={{ fontSize: 18, fontWeight: 600 }}>{lead.name}</span>
+            <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
+            {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}级</Tag>}
+            <Tag color="gray">{lead.entity}</Tag>
+            <Tag color="default">{lead.source}</Tag>
+          </div>
+          {/* 行动栏按钮 — 右上角 */}
+          <Space wrap>
+            <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>登记跟进</Button>
+            {showAssignActions && <Button size="small" icon={<IconPlus />}>新建补充报价</Button>}
+            <Button size="small" icon={<IconEdit />}>编辑线索</Button>
+            {showAssignActions && <Button size="small" icon={<IconSwap />}>转移给他人</Button>}
+            {showReturn && <Button size="small" icon={<IconReply />} status="warning">扔回公海</Button>}
+            {showReturnWithWarning && (
+              <Tooltip content={`已退回${lead.trashCount}次，再退回将自动标记为垃圾`}>
+                <Button size="small" icon={<IconReply />} status="warning">扔回公海 ({lead.trashCount}/3)</Button>
+              </Tooltip>
+            )}
+            {lead.clueType !== 'trash' && <Button size="small" icon={<IconDelete />} status="danger">标记垃圾</Button>}
+            <Button size="small" icon={<IconDelete />} status="danger">删除</Button>
+          </Space>
         </div>
 
         {/* 6 步生命周期步骤条 */}
@@ -196,22 +213,6 @@ export function LeadDetail360() {
             </div>
           )}
         </div>
-
-        {/* 全局行动栏 */}
-        <Space wrap>
-          <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>登记跟进</Button>
-          {showAssignActions && <Button size="small" icon={<IconPlus />}>新建补充报价</Button>}
-          <Button size="small" icon={<IconEdit />}>编辑线索</Button>
-          {showAssignActions && <Button size="small" icon={<IconSwap />}>转移给他人</Button>}
-          {showReturn && <Button size="small" icon={<IconReply />} status="warning">扔回公海</Button>}
-          {showReturnWithWarning && (
-            <Tooltip content={`已退回${lead.trashCount}次，再退回将自动标记为垃圾`}>
-              <Button size="small" icon={<IconReply />} status="warning">扔回公海 ({lead.trashCount}/3)</Button>
-            </Tooltip>
-          )}
-          {lead.clueType !== 'trash' && <Button size="small" icon={<IconDelete />} status="danger">标记垃圾</Button>}
-          <Button size="small" icon={<IconDelete />} status="danger">删除</Button>
-        </Space>
       </Card>
 
       {/* ========== 主体区域：50:50 分栏 ========== */}

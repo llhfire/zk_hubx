@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import {
   Card,
   Button,
@@ -13,6 +13,7 @@ import {
   Tooltip,
   Message,
   Divider,
+  Drawer,
   Modal,
   Form,
   Input,
@@ -47,7 +48,13 @@ import {
 } from './leads/types';
 import { getLeadDetailProfile } from './leads/leadDetailProfiles';
 import { FOLLOWUP_RECORDS } from './leads/mockData';
-import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from './quotation/types';
+import { buildLeadContextFromDetail } from './contracts/leadContextMock';
+import { useContracts } from './contracts/ContractsContext';
+import type { Contract, ContractStatus } from './contracts/types';
+import { useQuotation } from './quotation/QuotationContext';
+import { QuotationWorkbench } from './quotation/QuotationWorkbench';
+import { computeAmountBreakdown } from './quotation/quoteFlow';
+import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, type Quote } from './quotation/types';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -68,9 +75,65 @@ function getLifecycleIndex(status: string): number {
   return idx >= 0 ? idx : 0;
 }
 
+function money(n: number) {
+  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
+
+const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
+  draft: '草稿',
+  approving: '审批中',
+  pending_mail: '待寄出',
+  pending_return: '待回寄',
+  archived: '已归档',
+  voided: '已作废',
+};
+
+const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
+  draft: 'gray',
+  approving: 'orange',
+  pending_mail: 'gold',
+  pending_return: 'arcoblue',
+  archived: 'green',
+  voided: 'gray',
+};
+
+/** 报价卡片：进入四阶段工作台 */
+function QuoteCard({ quote, onOpen }: { quote: Quote; onOpen: () => void }) {
+  const breakdown = computeAmountBreakdown(quote);
+  const evalSheet = quote.evalSheet;
+  const totalDays = evalSheet ? evalSheet.evaluationUnits.reduce((s, u) => s + u.totalDays, 0) : 0;
+  const epCount = (quote.endpointConfigs || []).length;
+  const modCount = (quote.featureList || []).length;
+  const subCount = (quote.featureList || []).reduce((s, m) => s + (m.subFeatures?.length || 0), 0);
+
+  return (
+    <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+        <Text style={{ fontWeight: 600 }}>{quote.basicInfo.projectName}</Text>
+        <Tag color="arcoblue" size="small">{quote.version}</Tag>
+        <Tag size="small" color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{quote.quoteNo}</div>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, fontSize: 12 }}>
+        {evalSheet && <span>工期 <strong>{evalSheet.manualWorkDays}</strong> 工作日</span>}
+        <span>人天 <strong>{totalDays.toFixed(1)}</strong></span>
+        <span>报价 <strong style={{ color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</strong></span>
+        <span>{epCount} 端 · {modCount} 模块 · {subCount} 功能</span>
+      </div>
+      <Button size="mini" type="primary" onClick={onOpen}>进入工作台</Button>
+    </div>
+  );
+}
+
 export function LeadDetail360() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (
+    (location.state as { from?: string } | null)?.from
+    || new URLSearchParams(location.search).get('from')
+    || 'my'
+  );
   const [activeMainTab, setActiveMainTab] = useState('basic');
   const [activeSideTab, setActiveSideTab] = useState('follow');
   const [followVisible, setFollowVisible] = useState(false);
@@ -83,6 +146,10 @@ export function LeadDetail360() {
   const [travelForm] = Form.useForm();
   const [reimbursementModalVisible, setReimbursementModalVisible] = useState(false);
   const [reimbursementForm] = Form.useForm();
+  const { createQuote, quotes } = useQuotation();
+  const { contracts: allContracts } = useContracts();
+  const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
+  const [quotationDrawerQuoteId, setQuotationDrawerQuoteId] = useState<string | null>(null);
 
   // Mock 数据
   const [demos, setDemos] = useState([
@@ -105,8 +172,33 @@ export function LeadDetail360() {
   ]);
 
   // 加载线索数据
-  const profile = useMemo(() => getLeadDetailProfile(id, 'my'), [id]);
+  const profile = useMemo(() => getLeadDetailProfile(id, from), [id, from]);
   const lead = profile?.leadInfo;
+  const { quotationHistory, useLiveContracts, demoContracts } = profile ?? {
+    quotationHistory: [],
+    useLiveContracts: true,
+    demoContracts: [],
+  };
+
+  const relatedContracts = useMemo<Contract[]>(() => {
+    if (useLiveContracts) {
+      return allContracts.filter((contract) => contract.leadId === id);
+    }
+    return demoContracts
+      .map((demoContract) => allContracts.find((contract) => contract.id === demoContract.id))
+      .filter((contract): contract is Contract => Boolean(contract));
+  }, [allContracts, demoContracts, id, useLiveContracts]);
+
+  useEffect(() => {
+    const state = location.state as { activeMainTab?: string; activeSideTab?: string } | null;
+    if (state?.activeSideTab) {
+      setActiveSideTab(state.activeSideTab);
+      return;
+    }
+    if (state?.activeMainTab === 'contracts-history') {
+      setActiveSideTab('contract-records');
+    }
+  }, [location.state]);
 
   if (!lead) {
     return (
@@ -128,6 +220,41 @@ export function LeadDetail360() {
   const showAssignActions = lead.clueType === 'assigned';
   const showReturn = lead.clueType === 'assigned' && lead.trashCount < 3;
   const showReturnWithWarning = lead.clueType === 'assigned' && lead.trashCount >= 3;
+
+  const handleViewContractDetail = (contractId: string) => {
+    navigate(`/contracts/${contractId}`, {
+      state: {
+        contractDetailReturn: {
+          pathname: `/leads/${id}`,
+          state: { from, activeSideTab: 'contract-records' },
+        },
+      },
+    });
+  };
+
+  const handleCreateContract = () => {
+    const latestApproved = quotationHistory.find(
+      (quote) => quote.flowStatus === '已审核' && quote.status === '已报价',
+    );
+    const params = new URLSearchParams({
+      leadId: id ?? '',
+      returnTo: 'lead',
+      from,
+    });
+    if (latestApproved) {
+      params.set('quoteId', latestApproved.id);
+    }
+
+    navigate(`/contracts/new?${params.toString()}`, {
+      state: {
+        leadContractPrefill: {
+          lead: buildLeadContextFromDetail(id ?? '', lead, quotationHistory),
+          quoteId: latestApproved?.id,
+        },
+        from,
+      },
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -432,30 +559,65 @@ export function LeadDetail360() {
               {activeSideTab === 'quotation' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => navigate('/quotation')}>新建报价</Button>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<IconPlus />}
+                      onClick={async () => {
+                        const newId = await createQuote(id ?? '', [], {
+                          projectName: lead.name,
+                          customerName: lead.customer,
+                          customerContact: lead.contact,
+                          customerPhone: lead.phone,
+                        });
+                        setQuotationDrawerQuoteId(newId);
+                        setQuotationDrawerVisible(true);
+                      }}
+                    >
+                      新建报价
+                    </Button>
                   </div>
-                  {profile.quotationHistory?.map((q) => {
-                    const statusKey = (q.flowStatus || 'draft') as keyof typeof QUOTE_STATUS_LABELS;
-                    const statusLabel = QUOTE_STATUS_LABELS[statusKey] || q.flowStatus;
-                    const statusColor = QUOTE_STATUS_COLORS[statusKey] || 'gray';
+                  {(() => {
+                    const leadQuotes = quotes.filter((q) => q.leadId === id);
+                    const active = leadQuotes.filter((q) => q.status !== 'voided');
+                    const voided = leadQuotes.filter((q) => q.status === 'voided');
+                    if (leadQuotes.length === 0) {
+                      return <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报价记录</div>;
+                    }
                     return (
-                      <Card key={q.id} size="small" style={{ marginBottom: 8 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <Text style={{ fontWeight: 500 }}>{q.name}</Text>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{q.entity} · {q.period}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 16, fontWeight: 600 }}>¥{q.amount}</div>
-                            <Tag color={statusColor} size="small">{statusLabel}</Tag>
-                          </div>
-                        </div>
-                      </Card>
+                      <div>
+                        {active.map((q) => (
+                          <QuoteCard
+                            key={q.id}
+                            quote={q}
+                            onOpen={() => {
+                              setQuotationDrawerQuoteId(q.id);
+                              setQuotationDrawerVisible(true);
+                            }}
+                          />
+                        ))}
+                        {voided.length > 0 && (
+                          <>
+                            <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '12px 0' }} />
+                            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</Text>
+                            {voided.map((q) => (
+                              <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 8, opacity: 0.5, background: 'var(--color-fill-1)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                                  <Text style={{ fontWeight: 600, textDecoration: 'line-through' }}>{q.basicInfo.projectName}</Text>
+                                  <Tag color="arcoblue" size="small">{q.version}</Tag>
+                                  <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
+                                </div>
+                                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{q.quoteNo}</div>
+                                <div style={{ fontSize: 12, color: 'rgb(var(--red-6))', background: 'rgb(var(--red-1))', padding: '4px 8px', borderRadius: 4, marginTop: 4 }}>
+                                  作废原因：{q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
                     );
-                  })}
-                  {(!profile.quotationHistory || profile.quotationHistory.length === 0) && (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报价记录</div>
-                  )}
+                  })()}
                 </div>
               )}
 
@@ -463,12 +625,39 @@ export function LeadDetail360() {
               {activeSideTab === 'contract-records' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => navigate('/contracts')}>新建合同</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={handleCreateContract}>新建合同</Button>
                   </div>
-                  {profile.demoContracts?.map((c) => {
+                  {relatedContracts.map((c) => (
+                    <Card
+                      key={c.id}
+                      size="small"
+                      hoverable
+                      style={{ marginBottom: 8, cursor: 'pointer' }}
+                      onClick={() => handleViewContractDetail(c.id)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <Text style={{ fontWeight: 500 }}>{c.current.contractName}</Text>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.current.signingEntity}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: 16, fontWeight: 600 }}>{money(c.current.totalAmount)}</div>
+                          <Tag color={CONTRACT_STATUS_COLORS[c.status]} size="small">{CONTRACT_STATUS_LABELS[c.status]}</Tag>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                  {relatedContracts.length === 0 && profile.demoContracts?.map((c) => {
                     const contractStatusColor = c.status === '已归档' || c.status === '已盖章' ? 'green' : c.status === '审批通过' ? 'blue' : 'orange';
+                    const liveMatch = allContracts.find((contract) => contract.id === c.id);
                     return (
-                      <Card key={c.id} size="small" style={{ marginBottom: 8 }}>
+                      <Card
+                        key={c.id}
+                        size="small"
+                        hoverable={Boolean(liveMatch)}
+                        style={{ marginBottom: 8, cursor: liveMatch ? 'pointer' : 'default' }}
+                        onClick={liveMatch ? () => handleViewContractDetail(liveMatch.id) : undefined}
+                      >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <Text style={{ fontWeight: 500 }}>{c.name}</Text>
@@ -482,7 +671,7 @@ export function LeadDetail360() {
                       </Card>
                     );
                   })}
-                  {(!profile.demoContracts || profile.demoContracts.length === 0) && (
+                  {relatedContracts.length === 0 && (!profile.demoContracts || profile.demoContracts.length === 0) && (
                     <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同记录</div>
                   )}
                 </div>
@@ -695,6 +884,24 @@ export function LeadDetail360() {
           <Form.Item label="金额" field="amount" rules={[{ required: true }]}><InputNumber min={0} style={{ width: '100%' }} prefix="¥" /></Form.Item>
         </Form>
       </Modal>
+
+      <Drawer
+        title="报价工作台"
+        visible={quotationDrawerVisible}
+        onCancel={() => setQuotationDrawerVisible(false)}
+        footer={null}
+        width="100%"
+        style={{ top: 0, bottom: 0 }}
+        bodyStyle={{ padding: 24 }}
+      >
+        {quotationDrawerVisible && quotationDrawerQuoteId && (
+          <QuotationWorkbench
+            embedded
+            quoteId={quotationDrawerQuoteId}
+            onClose={() => setQuotationDrawerVisible(false)}
+          />
+        )}
+      </Drawer>
     </div>
   );
 }

@@ -132,7 +132,7 @@ export function LeadDetail360() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* ========== 顶部一体化控制台 ========== */}
       <Card bodyStyle={{ padding: '16px 20px' }}>
-        {/* 项目元数据 */}
+        {/* 项目元数据 — 右上角操作按钮 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Button type="text" icon={<IconLeft />} onClick={() => navigate(-1)}>返回列表</Button>
@@ -144,10 +144,7 @@ export function LeadDetail360() {
             <Tag color="gray">{lead.entity}</Tag>
             <Tag color="default">{lead.source}</Tag>
           </div>
-          {/* 行动栏按钮 — 右上角 */}
           <Space wrap>
-            <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>登记跟进</Button>
-            {showAssignActions && <Button size="small" icon={<IconPlus />}>新建补充报价</Button>}
             <Button size="small" icon={<IconEdit />}>编辑线索</Button>
             {showAssignActions && <Button size="small" icon={<IconSwap />}>转移给他人</Button>}
             {showReturn && <Button size="small" icon={<IconReply />} status="warning">扔回公海</Button>}
@@ -161,64 +158,66 @@ export function LeadDetail360() {
           </Space>
         </div>
 
-        {/* 6 步生命周期步骤条 */}
-        <div style={{ marginBottom: 16 }}>
-          <Steps current={lifecycleIdx} size="small" style={{ maxWidth: 700 }}>
-            {LIFECYCLE_STEPS.map((step, index) => (
-              <Step
-                key={step.key}
-                title={step.label}
-                description={
-                  index === 4 && lead.status === '已签单' ? '进行中' :
-                  index === 5 && lead.status === '已签单' ? '待完成' :
-                  undefined
-                }
-              />
-            ))}
-          </Steps>
-        </div>
+        {/* 6 步生命周期步骤条 — 横向全宽 */}
+        <Steps current={lifecycleIdx} size="small" style={{ marginBottom: 16 }}>
+          {LIFECYCLE_STEPS.map((step, index) => (
+            <Step
+              key={step.key}
+              title={step.label}
+              description={
+                index === 4 && lead.status === '已签单' ? '进行中' :
+                index === 5 && lead.status === '已签单' ? '待完成' :
+                undefined
+              }
+            />
+          ))}
+        </Steps>
+      </Card>
 
-        {/* 6 维指标胶囊 */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <IconUserAdd style={{ color: 'rgb(var(--primary-6))' }} />
-            <Text type="secondary">负责人:</Text>
-            <Text style={{ fontWeight: 500 }}>{lead.owner || '公海'}</Text>
-            {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 12 }}>({lead.daysHeld}天)</Text>}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <IconPhone style={{ color: 'var(--color-text-3)' }} />
-            <Text type="secondary">对接人:</Text>
-            <Text style={{ fontWeight: 500 }}>{lead.contact}</Text>
-            <Tooltip content="点击复制电话">
-              <Button type="text" size="mini" icon={<IconCopy />} onClick={() => { navigator.clipboard.writeText(lead.phone); Message.success('已复制'); }} />
-            </Tooltip>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="secondary">总标的:</Text>
-            <Text style={{ fontWeight: 500, color: 'rgb(var(--success-6))' }}>{lead.customerBudget || '-'}</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="secondary">客资成本:</Text>
-            <Text style={{ fontWeight: 500 }}>{lead.customerCost || '-'}</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="-secondary">跟进:</Text>
-            <Text style={{ fontWeight: 500 }}>{lead.followCount}次</Text>
-          </div>
-          {lead.nextFollowTime && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-              <Text type="secondary">下次跟进:</Text>
-              <Text style={{ fontWeight: 500 }}>{lead.nextFollowTime.slice(0, 16)}</Text>
+      {/* 6 维指标胶囊 — 独立卡片 */}
+      <Card size="small">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>负责人</Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              <IconUserAdd style={{ color: 'rgb(var(--primary-6))' }} />
+              <Text style={{ fontWeight: 500, fontSize: 14 }}>{lead.owner || '公海'}</Text>
+              {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 12 }}>({lead.daysHeld}天)</Text>}
             </div>
-          )}
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>对接人</Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              <IconPhone style={{ color: 'var(--color-text-3)' }} />
+              <Text style={{ fontWeight: 500, fontSize: 14 }}>{lead.contact}</Text>
+              <Tooltip content="复制电话">
+                <Button type="text" size="mini" icon={<IconCopy />} onClick={() => { navigator.clipboard.writeText(lead.phone); Message.success('已复制'); }} />
+              </Tooltip>
+            </div>
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>总标的</Text>
+            <Text style={{ fontWeight: 600, fontSize: 16, color: 'rgb(var(--success-6))', marginTop: 4 }}>{lead.customerBudget || '-'}</Text>
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text>
+            <Text style={{ fontWeight: 600, fontSize: 16, marginTop: 4 }}>{lead.customerCost || '-'}</Text>
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>跟进次数</Text>
+            <Text style={{ fontWeight: 600, fontSize: 16, marginTop: 4 }}>{lead.followCount}次</Text>
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>下次跟进</Text>
+            <Text style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>{lead.nextFollowTime ? lead.nextFollowTime.slice(0, 16) : '-'}</Text>
+          </div>
         </div>
       </Card>
 
-      {/* ========== 主体区域：50:50 分栏 ========== */}
+      {/* ========== 主体区域：70:30 分栏 ========== */}
       <div style={{ display: 'flex', gap: 16 }}>
-        {/* 左侧主区域 (50%) */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 左侧主区域 (70%) */}
+        <div style={{ flex: 7, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* 关键信息档案卡 */}
           <Card size="small">
             <div style={{ marginBottom: 12 }}>
@@ -360,8 +359,8 @@ export function LeadDetail360() {
           </Card>
         </div>
 
-        {/* 右侧业务过程 (50%) */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* 右侧业务过程 (30%) */}
+        <div style={{ flex: 3, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* 售前聊天群分析（独立板块） */}
           {lead.presalesGroupName && (
             <Card size="small" title="售前聊天群分析">

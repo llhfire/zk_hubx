@@ -219,24 +219,24 @@ export function LeadDetail360() {
         {/* 左侧主区域 (70%) */}
         <div style={{ flex: 7, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* 关键信息档案卡 */}
-          <Card size="small">
-            <div style={{ marginBottom: 12 }}>
+          <Card size="small" bodyStyle={{ padding: '12px 16px' }}>
+            <div style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 16, fontWeight: 600 }}>{lead.name}</span>
             </div>
-            <Grid.Row gutter={[16, 8]}>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>来源:</Text> <Tag color="default">{lead.source}</Tag></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>客资成本:</Text> <Text>{lead.customerCost || '-'}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>客户称呼:</Text> <Text>{lead.customerTitle || '-'}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>电话:</Text> <Text>{lead.phone || '-'}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>微信:</Text> <Text>{lead.wechat || '-'}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>对接主体:</Text> <Text>{lead.entity}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>创建人:</Text> <Text>{lead.creator}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>优化师:</Text> <Text>{lead.optimizer || '-'}</Text></Grid.Col>
-              <Grid.Col span={8}><Text type="secondary" style={{ fontSize: 12 }}>协助人:</Text> <Text>{lead.assistant || '-'}</Text></Grid.Col>
+            <Grid.Row gutter={[8, 4]}>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="default" size="small">{lead.source}</Tag></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text> <Text style={{ fontSize: 14 }}>{lead.customerCost || '-'}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客户称呼</Text> <Text style={{ fontSize: 14 }}>{lead.customerTitle || '-'}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>电话</Text> <Text style={{ fontSize: 14 }}>{lead.phone || '-'}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>微信</Text> <Text style={{ fontSize: 14 }}>{lead.wechat || '-'}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>对接主体</Text> <Text style={{ fontSize: 14 }}>{lead.entity}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>创建人</Text> <Text style={{ fontSize: 14 }}>{lead.creator}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>优化师</Text> <Text style={{ fontSize: 14 }}>{lead.optimizer || '-'}</Text></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>协助人</Text> <Text style={{ fontSize: 14 }}>{lead.assistant || '-'}</Text></Grid.Col>
             </Grid.Row>
-            <Divider style={{ margin: '12px 0' }} />
+            <Divider style={{ margin: '8px 0' }} />
             <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>初始需求:</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>初始需求</Text>
               <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{lead.requirement || lead.initialRequirement || '-'}</div>
             </div>
           </Card>
@@ -254,6 +254,7 @@ export function LeadDetail360() {
               {activeMainTab === 'basic' && (
                 <Descriptions
                   column={2}
+                  size="small"
                   data={[
                     { label: '对接主体', value: lead.entity },
                     { label: '线索意向', value: lead.intention || '-' },

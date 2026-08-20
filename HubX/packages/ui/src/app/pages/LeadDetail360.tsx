@@ -47,6 +47,7 @@ import {
 } from './leads/types';
 import { getLeadDetailProfile } from './leads/leadDetailProfiles';
 import { FOLLOWUP_RECORDS } from './leads/mockData';
+import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from './quotation/types';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -433,20 +434,25 @@ export function LeadDetail360() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
                     <Button size="small" icon={<IconPlus />} onClick={() => navigate('/quotation')}>新建报价</Button>
                   </div>
-                  {profile.quotationHistory?.map((q) => (
-                    <Card key={q.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{q.name}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{q.entity} · {q.period}</div>
+                  {profile.quotationHistory?.map((q) => {
+                    const statusKey = (q.flowStatus || 'draft') as keyof typeof QUOTE_STATUS_LABELS;
+                    const statusLabel = QUOTE_STATUS_LABELS[statusKey] || q.flowStatus;
+                    const statusColor = QUOTE_STATUS_COLORS[statusKey] || 'gray';
+                    return (
+                      <Card key={q.id} size="small" style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <Text style={{ fontWeight: 500 }}>{q.name}</Text>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{q.entity} · {q.period}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 16, fontWeight: 600 }}>¥{q.amount}</div>
+                            <Tag color={statusColor} size="small">{statusLabel}</Tag>
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>¥{q.amount}</div>
-                          <Tag color={q.flowStatus === '已审核' ? 'green' : 'orange'} size="small">{q.flowStatus}</Tag>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                   {(!profile.quotationHistory || profile.quotationHistory.length === 0) && (
                     <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报价记录</div>
                   )}
@@ -459,20 +465,23 @@ export function LeadDetail360() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
                     <Button size="small" icon={<IconPlus />} onClick={() => navigate('/contracts')}>新建合同</Button>
                   </div>
-                  {profile.demoContracts?.map((c) => (
-                    <Card key={c.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{c.name}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.contractEntity}</div>
+                  {profile.demoContracts?.map((c) => {
+                    const contractStatusColor = c.status === '已归档' || c.status === '已盖章' ? 'green' : c.status === '审批通过' ? 'blue' : 'orange';
+                    return (
+                      <Card key={c.id} size="small" style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <Text style={{ fontWeight: 500 }}>{c.name}</Text>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.contractEntity}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 16, fontWeight: 600 }}>¥{c.amount}</div>
+                            <Tag color={contractStatusColor} size="small">{c.status}</Tag>
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>¥{c.amount}</div>
-                          <Tag color="green" size="small">{c.status}</Tag>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    );
+                  })}
                   {(!profile.demoContracts || profile.demoContracts.length === 0) && (
                     <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同记录</div>
                   )}

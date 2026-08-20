@@ -88,12 +88,6 @@ export function ProjectList() {
   const [assignProject, setAssignProject] = useState<ProjectListItem | null>(null);
   const [assignForm] = Form.useForm();
 
-  // 计算指标
-  const metrics = useMemo(() => calculateMetrics(visibleProjects), [visibleProjects]);
-
-  // 快捷分栏计数
-  const filterCounts = useMemo(() => getProjectQuickFilterCounts(visibleProjects, currentUser), [visibleProjects]);
-
   // 数据权限过滤（管理员看全部，普通用户看负责/销售/协助的）
   const currentUser = '张三'; // mock 当前用户
   const isAdmin = true; // mock 管理员身份
@@ -105,6 +99,12 @@ export function ProjectList() {
       p.salesUsers.includes(currentUser)
     );
   }, []);
+
+  // 计算指标
+  const metrics = useMemo(() => calculateMetrics(visibleProjects), [visibleProjects]);
+
+  // 快捷分栏计数
+  const filterCounts = useMemo(() => getProjectQuickFilterCounts(visibleProjects, currentUser), [visibleProjects]);
 
   // 筛选
   const filteredProjects = useMemo(() => {

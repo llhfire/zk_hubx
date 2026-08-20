@@ -253,7 +253,7 @@ export function LeadDetail360() {
               {/* 基础信息 */}
               {activeMainTab === 'basic' && (
                 <Descriptions
-                  column={2}
+                  column={4}
                   size="small"
                   data={[
                     { label: '对接主体', value: lead.entity },
@@ -277,7 +277,8 @@ export function LeadDetail360() {
                 <div>
                   <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
                     <Descriptions
-                      column={2}
+                      column={4}
+                      size="small"
                       data={[
                         { label: '合同编号', value: profile.demoContracts?.[0]?.contractNo || '-' },
                         { label: '标的额', value: profile.demoContracts?.[0]?.amount || '-' },
@@ -296,15 +297,24 @@ export function LeadDetail360() {
               {/* 回款与发票 */}
               {activeMainTab === 'payments' && (
                 <div>
-                  <Grid.Row gutter={16} style={{ marginBottom: 16 }}>
+                  <Grid.Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
                     <Grid.Col span={8}>
-                      <Card size="small"><Text type="secondary" style={{ fontSize: 12 }}>有效总标的</Text><div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{lead.customerBudget || '-'}</div></Card>
+                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>有效总标的</Text>
+                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{lead.customerBudget || '-'}</div>
+                      </div>
                     </Grid.Col>
                     <Grid.Col span={8}>
-                      <Card size="small"><Text type="secondary" style={{ fontSize: 12 }}>已到账</Text><div style={{ fontSize: 18, fontWeight: 700, marginTop: 4, color: 'rgb(var(--success-6))' }}>-</div></Card>
+                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>已到账</Text>
+                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4, color: 'rgb(var(--success-6))' }}>-</div>
+                      </div>
                     </Grid.Col>
                     <Grid.Col span={8}>
-                      <Card size="small"><Text type="secondary" style={{ fontSize: 12 }}>待回款</Text><div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>-</div></Card>
+                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
+                        <Text type="secondary" style={{ fontSize: 12 }}>待回款</Text>
+                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>-</div>
+                      </div>
                     </Grid.Col>
                   </Grid.Row>
                   <Card size="small" title="回款期次台账">

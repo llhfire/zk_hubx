@@ -394,11 +394,7 @@ export function LeadDetail360() {
               {activeSideTab === 'follow' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Space>
-                      <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建报价功能开发中')}>新建报价</Button>
-                      <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建合同功能开发中')}>新建合同</Button>
-                      <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>写跟进</Button>
-                    </Space>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>写跟进</Button>
                   </div>
                   <Timeline>
                     {FOLLOWUP_RECORDS.filter((r) => r.leadId === id || r.leadId === '5940').map((record, index) => (
@@ -423,6 +419,9 @@ export function LeadDetail360() {
               {/* 报价 */}
               {activeSideTab === 'quotation' && (
                 <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                    <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建报价功能开发中')}>新建报价</Button>
+                  </div>
                   {profile.quotationHistory?.map((q) => (
                     <Card key={q.id} size="small" style={{ marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -446,6 +445,9 @@ export function LeadDetail360() {
               {/* 合同记录 */}
               {activeSideTab === 'contract-records' && (
                 <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                    <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建合同功能开发中')}>新建合同</Button>
+                  </div>
                   {profile.demoContracts?.map((c) => (
                     <Card key={c.id} size="small" style={{ marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

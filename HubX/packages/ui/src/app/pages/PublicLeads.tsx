@@ -143,7 +143,7 @@ export function PublicLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: 14 }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>
@@ -184,7 +184,7 @@ export function PublicLeads() {
                 {c.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
                 {c.label}
               </span>
-              {c.subLabel && <span style={{ fontSize: 11, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
+              {c.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
             </div>
           );
         }

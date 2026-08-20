@@ -127,7 +127,7 @@ export function ClosedLeads() {
       render: (_: unknown, r: ClosedLeadItem) => (
         <div>
           <div style={{ fontWeight: 500 }}>¥{r.contractAmount.toLocaleString()}</div>
-          <div style={{ fontSize: 11, color: 'var(--color-text-3)' }}>已回款 ¥{r.receivedAmount.toLocaleString()}</div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>已回款 ¥{r.receivedAmount.toLocaleString()}</div>
         </div>
       ),
     },

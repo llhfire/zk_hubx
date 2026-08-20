@@ -70,7 +70,7 @@ export function TrashLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: 14 }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>

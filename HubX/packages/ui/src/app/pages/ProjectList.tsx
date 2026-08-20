@@ -335,7 +335,7 @@ export function ProjectList() {
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">活跃项目总数</Text>
-            <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: 'rgb(var(--primary-6))' }}>{metrics.activeCount}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: 'rgb(var(--primary-6))' }}>{metrics.activeCount}</div>
             <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
               外包 {metrics.activeByLine['外包']} · 自研 {metrics.activeByLine['自研']} · 自运营 {metrics.activeByLine['自运营']}
             </div>
@@ -344,21 +344,21 @@ export function ProjectList() {
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">健康度预警</Text>
-            <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: metrics.warningCount > 0 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))' }}>{metrics.warningCount}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: metrics.warningCount > 0 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))' }}>{metrics.warningCount}</div>
             <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>工期延期或缺陷积压</div>
           </Card>
         </Grid.Col>
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">待确认指派</Text>
-            <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: metrics.pendingConfirmCount > 0 ? 'rgb(var(--warning-6))' : 'var(--color-text-3)' }}>{metrics.pendingConfirmCount}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: metrics.pendingConfirmCount > 0 ? 'rgb(var(--warning-6))' : 'var(--color-text-3)' }}>{metrics.pendingConfirmCount}</div>
             <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>等待指派项目经理</div>
           </Card>
         </Grid.Col>
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">本月工时投入</Text>
-            <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: 'rgb(var(--success-6))' }}>{metrics.monthlyHours}h</div>
+            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: 'rgb(var(--success-6))' }}>{metrics.monthlyHours}h</div>
             <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>全员有效工时</div>
           </Card>
         </Grid.Col>

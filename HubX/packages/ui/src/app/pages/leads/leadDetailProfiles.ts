@@ -1,3 +1,13 @@
+export interface Attachment {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+}
+
+export type ClueType = 'public' | 'assigned' | 'trash' | 'hightech';
+
 export interface LeadDetailInfo {
   name: string;
   customer: string;
@@ -6,9 +16,14 @@ export interface LeadDetailInfo {
   wechat: string;
   source: string;
   keyword: string;
-  level: string;
+  level: string;             // 意向等级：高/中/低
+  customerLevel?: string;    // 客户等级：S/A/B/C
   intention: string;
   status: string;
+  clueType: ClueType;        // 线索类型
+  transformStatus: boolean;  // 是否已转客户
+  trashCount: number;        // 退回公海次数
+  trashReason?: string;      // 垃圾原因
   tags: string[];
   requirement: string;
   initialRequirement: string;
@@ -34,6 +49,7 @@ export interface LeadDetailInfo {
   customerNote?: string;
   followCount: number;
   daysHeld: number;
+  attachments: Attachment[];
 }
 
 export interface LeadQuotationItem {
@@ -162,8 +178,12 @@ const DEFAULT_LEAD_INFO: LeadDetailInfo = {
   source: '百度推广',
   keyword: 'APP开发',
   level: '高',
+  customerLevel: 'S',
   intention: '强烈',
   status: '需求调研',
+  clueType: 'assigned',
+  transformStatus: false,
+  trashCount: 0,
   tags: ['APP', '移动应用'],
   requirement: '需要开发一款企业内部管理APP，支持iOS和Android双平台，包含考勤、审批、通知等功能模块。',
   initialRequirement: 'APP开发需求',
@@ -182,6 +202,7 @@ const DEFAULT_LEAD_INFO: LeadDetailInfo = {
   agent: '巴蜀文攻',
   followCount: 8,
   daysHeld: 15,
+  attachments: [],
 };
 
 const DEFAULT_QUOTATIONS: LeadQuotationItem[] = [
@@ -272,8 +293,12 @@ export function getLeadDetailProfile(
         source: '客户转介绍',
         keyword: 'OA流程优化',
         level: '高',
+        customerLevel: 'S',
         intention: '强烈',
         status: '项目执行中',
+        clueType: 'assigned' as ClueType,
+        transformStatus: true,
+        trashCount: 0,
         tags: ['OA系统', '流程管理', '审批'],
         requirement: '建设内部 OA 流程优化系统，优先覆盖审批、合同、项目协同和日报管理，并与现有组织架构及 SSO 登录对接。',
         initialRequirement: '华信科技内部OA流程优化',
@@ -296,6 +321,7 @@ export function getLeadDetailProfile(
         customerNote: '客户要求一期优先交付审批、合同和项目协同能力。',
         followCount: 6,
         daysHeld: 46,
+        attachments: [],
       },
       quotationHistory: [
         {
@@ -340,8 +366,12 @@ export function getLeadDetailProfile(
         source: '百度推广',
         keyword: '小程序开发',
         level: '高',
+        customerLevel: 'A',
         intention: '较强',
         status: '需求调研',
+        clueType: 'public' as ClueType,
+        transformStatus: false,
+        trashCount: 0,
         tags: ['小程序', '餐饮'],
         requirement: '需要开发餐饮连锁品牌微信小程序，支持门店点餐、会员积分、优惠券核销及后台运营管理。',
         initialRequirement: '餐饮连锁小程序开发',
@@ -354,6 +384,7 @@ export function getLeadDetailProfile(
         owner: '',
         followCount: 0,
         daysHeld: 0,
+        attachments: [],
         presalesGroupName: '【果蔬零售小程序】项目沟通群',
       },
       quotationHistory: [],

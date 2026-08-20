@@ -3,6 +3,7 @@ import { MainLayout } from "./components/MainLayout";
 import { Dashboard } from "./pages/Dashboard";
 import { PublicLeads } from "./pages/PublicLeads";
 import { MyLeads } from "./pages/MyLeads";
+import { AllLeads } from "./pages/AllLeads";
 import { TrashLeads } from "./pages/TrashLeads";
 import { ClosedLeads } from "./pages/ClosedLeads";
 import { LeadDetail } from "./pages/LeadDetail";
@@ -14,6 +15,9 @@ import { ContractWizard } from "./pages/contracts/ContractWizard";
 import { ContractEditor } from "./pages/contracts/ContractEditor";
 import { ContractDocumentPreview } from "./pages/contracts/ContractDocumentPreview";
 import { Projects } from "./pages/Projects";
+import { ProjectList } from "./pages/ProjectList";
+import { ProjectDetail360 } from "./pages/ProjectDetail360";
+import { LeadDetail360 } from "./pages/LeadDetail360";
 import { ProjectDetail } from "./pages/ProjectDetail";
 import { Reports } from "./pages/Reports";
 import { Organization } from "./pages/Organization";
@@ -95,6 +99,7 @@ export const router = createBrowserRouter([
       { path: "todos", Component: TodoCenter },
       { path: "leads/public", Component: PublicLeads },
       { path: "leads/my", Component: MyLeads },
+      { path: "leads/all", Component: AllLeads },
       { path: "leads/closed", Component: ClosedLeads },
       { path: "leads/trash", Component: TrashLeads },
       { path: "leads/governance", Component: LeadGovernance },
@@ -115,6 +120,9 @@ export const router = createBrowserRouter([
       { path: "contracts/forecast", Component: PaymentForecastPage },
       { path: "contracts/:id", Component: ContractDetail },
       { path: "projects", Component: Projects },
+      { path: "project-list", Component: ProjectList },
+      { path: "project-detail/:id", Component: ProjectDetail360 },
+      { path: "lead-detail/:id", Component: LeadDetail360 },
       { path: "projects/:id", Component: ProjectDetail },
       { path: "projects/:id/delivery", Component: DeliveryPlanPage },
       { path: "project-cost-accounting", Component: ProjectCostPage },

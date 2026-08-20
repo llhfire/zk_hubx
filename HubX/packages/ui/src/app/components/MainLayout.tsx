@@ -83,6 +83,7 @@ export function MainLayout() {
       children: [
         { key: '/leads/public', label: '公海线索' },
         { key: '/leads/my', label: '我的线索' },
+        { key: '/leads/all', label: '全部线索' },
         { key: '/leads/closed', label: '已成交线索' },
         { key: '/leads/trash', label: '垃圾线索' },
         { key: '/leads/governance', label: '线索治理' },
@@ -214,7 +215,7 @@ export function MainLayout() {
   const getSelectedKeys = () => {
     const path = location.pathname;
     if (path.startsWith('/leads/')) {
-      if (path === '/leads/public' || path === '/leads/my' || path === '/leads/closed' || path === '/leads/trash' || path === '/leads/governance') {
+      if (path === '/leads/public' || path === '/leads/my' || path === '/leads/all' || path === '/leads/closed' || path === '/leads/trash' || path === '/leads/governance') {
         return [path];
       }
       return ['/leads/my'];

@@ -132,9 +132,10 @@ const MODULE_DOMAIN_MAP: Record<string, Domain> = {
 const FEATURES_SEED: Record<string, ExistingFeature[]> = {
   // ========== 销售域 ==========
   '线索全流程': [
-    { name: '四池流转', description: 'LeadList（公海/我的/已成交/垃圾）：线索状态自动流转（领取/分配/成交/回收），来源标记。' },
-    { name: '线索详情', description: 'LeadDetail：基础信息、跟进记录时间线、报价 Tab（内嵌报价工作台 Drawer）、合同关联、资料附件。' },
-    { name: '线索跟进记录', description: '按时间线记录每次跟进（电话/拜访/微信），支持快捷回复模板。' },
+    { name: '五池流转', description: 'LeadList（公海/我的/全部/已成交/垃圾）：线索类型独立维度（public/assigned/trash/hightech），8态销售漏斗，快捷筛选（今日未跟进/S类/AB类/超期），标红规则。' },
+    { name: '线索详情', description: 'LeadDetail：基础信息+客户等级(S/A/B/C)+意向等级+线索类型+附件，跟进记录时间线（24h修改删除限制），报价 Tab，合同关联，操作按钮（领取/分配/退回/标记垃圾/软删除/转客户）。' },
+    { name: '线索跟进记录', description: '跟进方式/客户状态/客户级别/跟进内容(max1000)/下次跟进时间/附件。自动同步线索状态和客户等级。4分类Tab（全部/今日待跟进/今日已跟进/超期未跟进）。' },
+    { name: '线索操作规则', description: '领取(→assigned)/分配(批量+原因)/退回公海(第3次自动垃圾)/标记垃圾/软删除/转客户(自动填充+同步跟进)。重复检查(新增+修改)。' },
     { name: '线索治理', description: 'LeadGovernance：重复线索合并、线索状态批量操作、分配规则配置。' },
     { name: '售前群沟通分析', description: 'vite 中间件 wx-cli-bridge：wx CLI 导出企微售前群聊天记录，DeepSeek 做沟通总结。' },
   ],
@@ -326,7 +327,7 @@ export function createSeedBoard(): FeatureBoard {
   // 架构图全部 37 模块（18 现有 + 19 规划），按领域优先级排列
   const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: ExistingFeature[]; planned?: string[]; note: string }> = [
     // === 销售域（优先级 1）===
-    { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '认领/分配/跟进/流转/生命周期/公海回收/需求记录/竞对/阶段推进' },
+    { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '五池流转+线索类型维度+客户等级SABC+跟进自动同步+操作规则+重复检查+24h限制+3次退回自动垃圾+复合列压缩+倒计时胶囊+色彩降噪+快捷模板+高级筛选Popover+枚举映射层' },
     { module: '报价工作台', domain: '销售域', isPlanned: false, features: FEATURES_SEED['报价工作台'] ?? [], note: 'β版报价单落 D1，含状态迁移校验；已上线 http+D1' },
     { module: '客户与报价基础', domain: '销售域', isPlanned: false, features: FEATURES_SEED['客户与报价基础'] ?? [], note: '客户档案/联系人/关系视图/开票信息' },
     { module: '合同签约', domain: '销售域', isPlanned: false, features: FEATURES_SEED['合同签约'] ?? [], note: 'mock/http 共享 contractMutations；已上线 http+D1' },

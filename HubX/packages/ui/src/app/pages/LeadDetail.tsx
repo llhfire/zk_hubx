@@ -569,6 +569,28 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
     });
   };
 
+  const handleTransformToCustomer = () => {
+    Modal.confirm({
+      title: '确认转为客户?',
+      content: '将自动创建客户记录（名称/联系人/电话/来源从线索填充），线索状态改为「已签单」，历史跟进记录将同步到客户。',
+      onOk: () => {
+        Message.success('已成功转为客户，线索状态已更新为「已签单」');
+        navigate('/leads/closed');
+      },
+    });
+  };
+
+  const handleDeleteLead = () => {
+    Modal.confirm({
+      title: '确认删除线索?',
+      content: '删除后可通过管理员恢复，关联的跟进记录将一并标记删除。',
+      onOk: () => {
+        Message.success('线索已删除（软删除）');
+        navigate('/leads/my');
+      },
+    });
+  };
+
   const handleAddDemo = () => {
     demoForm.resetFields();
     setDemoModalVisible(true);
@@ -634,8 +656,17 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const leadPhoneOrWechat = Array.from(new Set(
     [leadInfo.phone, leadInfo.wechat].filter(value => value?.trim()),
   )).join(' / ') || '-';
+  const clueTypeLabel: Record<string, string> = {
+    public: '公海线索',
+    assigned: '已分配',
+    trash: '垃圾线索',
+    hightech: '高科技线索',
+  };
+
   const leadSummaryItems = [
     { label: '线索来源', value: displayLeadValue(leadInfo.source) },
+    { label: '线索类型', value: displayLeadValue(clueTypeLabel[leadInfo.clueType] || leadInfo.clueType) },
+    { label: '客户等级', value: displayLeadValue(leadInfo.customerLevel) },
     { label: '客资成本', value: displayLeadValue(leadInfo.customerCost) },
     { label: '客户称呼', value: displayLeadValue(leadInfo.customerTitle) },
     { label: '联系电话/微信', value: leadPhoneOrWechat },
@@ -705,6 +736,9 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             </Button>,
             <Button key="public-trash" size="small" status="danger" icon={<IconDelete />} onClick={handleMarkAsTrash}>
               标记为垃圾
+            </Button>,
+            <Button key="public-delete" size="small" status="danger" icon={<IconDelete />} onClick={handleDeleteLead}>
+              删除
             </Button>
           ]}
           {from === 'trash' && [
@@ -716,6 +750,9 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             </Button>,
             <Button key="trash-return" size="small" type="primary" icon={<IconReply />} onClick={handleReturnToPublic}>
               扔回公海
+            </Button>,
+            <Button key="trash-delete" size="small" status="danger" icon={<IconDelete />} onClick={handleDeleteLead}>
+              删除
             </Button>
           ]}
           {from === 'closed' && [
@@ -733,8 +770,14 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             <Button key="my-return" size="small" icon={<IconReply />} onClick={handleReturnToPublic}>
               扔回公海
             </Button>,
+            <Button key="my-transform" size="small" type="primary" icon={<IconSwap />} onClick={handleTransformToCustomer}>
+              转客户
+            </Button>,
             <Button key="my-trash" size="small" status="danger" icon={<IconDelete />} onClick={handleMarkAsTrash}>
               标记为垃圾
+            </Button>,
+            <Button key="my-delete" size="small" status="danger" icon={<IconDelete />} onClick={handleDeleteLead}>
+              删除
             </Button>
           ]}
         </Space>
@@ -963,8 +1006,31 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                             </Space>
                           </div>
                         )}
-                        <div style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
-                          操作人: {item.operator}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                          <div style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
+                            操作人: {item.operator}
+                          </div>
+                          <Space size="small">
+                            {(() => {
+                              // 24h 限制：跟进创建超过 24 小时后不能修改/删除
+                              const recordTime = new Date(item.time || Date.now());
+                              const now = new Date();
+                              const hoursDiff = (now.getTime() - recordTime.getTime()) / (1000 * 60 * 60);
+                              const canEdit = hoursDiff < 24;
+                              return canEdit ? (
+                                <>
+                                  <Button type="text" size="mini" onClick={() => Message.info('编辑跟进记录')}>
+                                    编辑
+                                  </Button>
+                                  <Button type="text" size="mini" status="danger" onClick={() => Message.info('删除跟进记录')}>
+                                    删除
+                                  </Button>
+                                </>
+                              ) : (
+                                <ArcoText type="secondary" style={{ fontSize: 11 }}>超过24小时不可修改</ArcoText>
+                              );
+                            })()}
+                          </Space>
                         </div>
                       </div>
                     </Timeline.Item>
@@ -1588,15 +1654,67 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             </Grid.Col>
           </Grid.Row>
 
+          <Grid.Row gutter={16}>
+            <Grid.Col span={12}>
+              <FormItem label="客户等级" field="customerLevel">
+                <Select placeholder="请选择客户等级" allowClear>
+                  <Select.Option key="cl-s" value="S">S</Select.Option>
+                  <Select.Option key="cl-a" value="A">A</Select.Option>
+                  <Select.Option key="cl-b" value="B">B</Select.Option>
+                  <Select.Option key="cl-c" value="C">C</Select.Option>
+                </Select>
+              </FormItem>
+            </Grid.Col>
+          </Grid.Row>
+
+          <Grid.Row gutter={16}>
+            <Grid.Col span={8}>
+              <FormItem label="消耗时间" field="costHours">
+                <InputNumber placeholder="小时" min={0} max={24} />
+              </FormItem>
+            </Grid.Col>
+            <Grid.Col span={8}>
+              <FormItem label=" " field="costMins">
+                <InputNumber placeholder="分钟" min={0} max={59} />
+              </FormItem>
+            </Grid.Col>
+          </Grid.Row>
+
           <FormItem
-            label="跟进详情"
+            label={
+              <Space>
+                <span>跟进详情</span>
+                <span style={{ fontSize: 12, color: 'var(--color-text-3)', fontWeight: 'normal' }}>
+                  快捷模板：
+                  {['初步建联', '无人接听', '确认需求', '暂无进展'].map((t) => (
+                    <Tag
+                      key={t}
+                      size="small"
+                      color="arcoblue"
+                      style={{ cursor: 'pointer', marginLeft: 4 }}
+                      onClick={() => {
+                        const templates: Record<string, string> = {
+                          '初步建联': '已电话初步建联，约定明天发方案',
+                          '无人接听': '无人接听，已转短信提醒',
+                          '确认需求': '已确认需求，进入方案报价阶段',
+                          '暂无进展': '客户暂无进展，下周再跟进',
+                        };
+                        form.setFieldValue('content', templates[t] || '');
+                      }}
+                    >
+                      {t}
+                    </Tag>
+                  ))}
+                </span>
+              </Space>
+            }
             field="content"
             rules={[{ required: true, message: '请输入跟进详情' }]}
           >
             <Input.TextArea
               placeholder="请详细记录本次沟通的内容、客户反馈、关键信息等"
               rows={6}
-              maxLength={2000}
+              maxLength={1000}
               showWordLimit
             />
           </FormItem>
@@ -1618,14 +1736,33 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           </FormItem>
 
           <FormItem label="下次跟进提醒" field="nextFollow">
-            <Select placeholder="请选择跟进提醒时间" defaultValue="3">
-              <Select.Option key="follow-1" value="1">1天后（高频跟进）</Select.Option>
-              <Select.Option key="follow-3" value="3">3天后（默认）</Select.Option>
-              <Select.Option key="follow-7" value="7">7天后（中频跟进）</Select.Option>
-              <Select.Option key="follow-10" value="10">10天后（低频跟进）</Select.Option>
-              <Select.Option key="follow-15" value="15">15天后</Select.Option>
-              <Select.Option key="follow-30" value="30">30天后</Select.Option>
-            </Select>
+            <div>
+              <Space style={{ marginBottom: 8 }}>
+                {[
+                  { label: '明天上午10:00', value: '1' },
+                  { label: '3天后', value: '3' },
+                  { label: '下周一', value: '7' },
+                ].map((item) => (
+                  <Tag
+                    key={item.value}
+                    size="small"
+                    color="arcoblue"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => form.setFieldValue('nextFollow', item.value)}
+                  >
+                    {item.label}
+                  </Tag>
+                ))}
+              </Space>
+              <Select placeholder="或选择跟进提醒时间" defaultValue="3">
+                <Select.Option key="follow-1" value="1">1天后（高频跟进）</Select.Option>
+                <Select.Option key="follow-3" value="3">3天后（默认）</Select.Option>
+                <Select.Option key="follow-7" value="7">7天后（中频跟进）</Select.Option>
+                <Select.Option key="follow-10" value="10">10天后（低频跟进）</Select.Option>
+                <Select.Option key="follow-15" value="15">15天后</Select.Option>
+                <Select.Option key="follow-30" value="30">30天后</Select.Option>
+              </Select>
+            </div>
           </FormItem>
         </Form>
       </Modal>

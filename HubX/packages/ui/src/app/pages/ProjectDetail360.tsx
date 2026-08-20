@@ -173,17 +173,26 @@ export function ProjectDetail360() {
       {/* ========== 控制台头部 ========== */}
       <Card style={{ marginBottom: 16 }}>
         {/* 顶部：返回+项目元数据 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <Button type="text" icon={<IconLeft />} onClick={() => navigate('/projects')}>返回列表</Button>
-          <Divider type="vertical" />
-          <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
-          <span style={{ fontSize: 18, fontWeight: 600 }}>{project.name}</span>
-          <Tag color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag>
-          <Tag color="gray">{project.entity}</Tag>
-          <Tag color={PROJECT_PRIORITY_COLOR[project.priority]}>优先级: {project.priority}</Tag>
-          <Tag color={HEALTH_COLOR[project.healthStatus]}>
-            健康度: {HEALTH_LABEL[project.healthStatus]}
-          </Tag>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Button type="text" icon={<IconLeft />} onClick={() => navigate('/projects')}>返回列表</Button>
+            <Divider type="vertical" />
+            <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
+            <span style={{ fontSize: 18, fontWeight: 600 }}>{project.name}</span>
+            <Tag color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag>
+            <Tag color="gray">{project.entity}</Tag>
+            <Tag color={PROJECT_PRIORITY_COLOR[project.priority]}>优先级: {project.priority}</Tag>
+            <Tag color={HEALTH_COLOR[project.healthStatus]}>
+              健康度: {HEALTH_LABEL[project.healthStatus]}
+            </Tag>
+          </div>
+          {/* 行动栏按钮 — 右上角 */}
+          <Space>
+            <Button type="primary" size="small" icon={<IconPlus />}>登记跟进</Button>
+            <Button size="small" icon={<IconPlus />}>新建任务</Button>
+            <Button size="small" icon={<IconFile />}>录入纪要</Button>
+            <Button size="small" icon={<IconCalendar />}>甘特图</Button>
+          </Space>
         </div>
 
         {/* 全生命周期步骤条 */}
@@ -245,13 +254,6 @@ export function ProjectDetail360() {
           </div>
         </div>
 
-        {/* 全局行动栏 */}
-        <Space>
-          <Button type="primary" size="small" icon={<IconPlus />}>登记跟进</Button>
-          <Button size="small" icon={<IconPlus />}>新建任务</Button>
-          <Button size="small" icon={<IconFile />}>录入纪要</Button>
-          <Button size="small" icon={<IconCalendar />}>甘特图</Button>
-        </Space>
       </Card>
 
       {/* ========== 五大核心业务域工作台 ========== */}

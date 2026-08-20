@@ -173,7 +173,7 @@ export function ProjectList() {
       fixed: 'left' as const,
       render: (_: unknown, r: ProjectListItem) => (
         <div>
-          <a onClick={() => navigate(`/project-detail/${r.id}`)} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
+          <a onClick={() => navigate(`/projects/${r.id}`)} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
           <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
             <Tag color={BUSINESS_LINE_COLOR[r.businessLine]} size="small">{r.businessLine}</Tag>
             <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>{r.entity}</span>
@@ -276,7 +276,7 @@ export function ProjectList() {
               <Button type="text" size="small" onClick={() => openAssignModal(r)}>指派</Button>
             </Tooltip>
           )}
-          <Tooltip content="详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/project-detail/${r.id}`)} /></Tooltip>
+          <Tooltip content="详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/projects/${r.id}`)} /></Tooltip>
           <Tooltip content="跟进"><Button type="text" size="small" onClick={() => openFollowModal(r)}>跟进</Button></Tooltip>
           <Tooltip content="编辑"><Button type="text" icon={<IconEdit />} size="small" onClick={() => openEditDrawer(r)} /></Tooltip>
         </Space>

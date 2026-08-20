@@ -155,7 +155,7 @@ export function ProjectDetail360() {
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Text type="secondary">项目不存在</Text>
           <div style={{ marginTop: 16 }}>
-            <Button onClick={() => navigate('/project-list')}>返回列表</Button>
+            <Button onClick={() => navigate('/projects')}>返回列表</Button>
           </div>
         </div>
       </Card>
@@ -174,7 +174,7 @@ export function ProjectDetail360() {
       <Card style={{ marginBottom: 16 }}>
         {/* 顶部：返回+项目元数据 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <Button type="text" icon={<IconLeft />} onClick={() => navigate('/project-list')}>返回列表</Button>
+          <Button type="text" icon={<IconLeft />} onClick={() => navigate('/projects')}>返回列表</Button>
           <Divider type="vertical" />
           <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
           <span style={{ fontSize: 18, fontWeight: 600 }}>{project.name}</span>

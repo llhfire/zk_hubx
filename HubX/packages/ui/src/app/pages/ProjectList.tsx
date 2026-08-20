@@ -176,7 +176,7 @@ export function ProjectList() {
           <a onClick={() => navigate(`/projects/${r.id}`)} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
           <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
             <Tag color={BUSINESS_LINE_COLOR[r.businessLine]} size="small">{r.businessLine}</Tag>
-            <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>{r.entity}</span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.entity}</span>
           </div>
         </div>
       ),
@@ -200,7 +200,7 @@ export function ProjectList() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Tag color={PROJECT_STATUS_COLOR[r.status]}>{r.status}</Tag>
             {health !== 'normal' && (
-              <span style={{ fontSize: 11, color: health === 'danger' ? 'rgb(var(--danger-6))' : 'rgb(var(--warning-6))' }}>
+              <span style={{ fontSize: 12, color: health === 'danger' ? 'rgb(var(--danger-6))' : 'rgb(var(--warning-6))' }}>
                 {health === 'danger' ? '⚠ 预警' : '⚡ 关注'}
               </span>
             )}
@@ -302,16 +302,16 @@ export function ProjectList() {
     return (
       <div key={project.id} style={{ padding: 12, marginBottom: 8, background: 'var(--color-bg-2)', borderRadius: 8, border: '1px solid var(--color-border-2)', cursor: 'pointer' }} onClick={() => navigate(`/projects/${project.id}`)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-3)', fontFamily: 'monospace' }}>{project.projectNo}</span>
+          <span style={{ fontSize: 12, color: 'var(--color-text-3)', fontFamily: 'monospace' }}>{project.projectNo}</span>
           <Tag color={PROJECT_PRIORITY_COLOR[project.priority]} size="small">{project.priority}</Tag>
         </div>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>{project.name}</div>
-        <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginBottom: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{project.name}</div>
+        <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>
           {project.owner || '待指派'} · {project.businessLine} · {project.entity}
         </div>
         <Progress percent={project.progress} size="small" style={{ marginBottom: 8 }} />
         {project.expectedEndDate && (
-          <div style={{ fontSize: 11, color: cd.isOverdue ? 'rgb(var(--danger-6))' : 'var(--color-text-3)' }}>
+          <div style={{ fontSize: 12, color: cd.isOverdue ? 'rgb(var(--danger-6))' : 'var(--color-text-3)' }}>
             {cd.label}
           </div>
         )}
@@ -336,7 +336,7 @@ export function ProjectList() {
           <Card>
             <Text type="secondary">活跃项目总数</Text>
             <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: 'rgb(var(--primary-6))' }}>{metrics.activeCount}</div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
               外包 {metrics.activeByLine['外包']} · 自研 {metrics.activeByLine['自研']} · 自运营 {metrics.activeByLine['自运营']}
             </div>
           </Card>
@@ -345,21 +345,21 @@ export function ProjectList() {
           <Card>
             <Text type="secondary">健康度预警</Text>
             <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: metrics.warningCount > 0 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))' }}>{metrics.warningCount}</div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>工期延期或缺陷积压</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>工期延期或缺陷积压</div>
           </Card>
         </Grid.Col>
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">待确认指派</Text>
             <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: metrics.pendingConfirmCount > 0 ? 'rgb(var(--warning-6))' : 'var(--color-text-3)' }}>{metrics.pendingConfirmCount}</div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>等待指派项目经理</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>等待指派项目经理</div>
           </Card>
         </Grid.Col>
         <Grid.Col span={6}>
           <Card>
             <Text type="secondary">本月工时投入</Text>
             <div style={{ fontSize: 28, fontWeight: 700, marginTop: 8, color: 'rgb(var(--success-6))' }}>{metrics.monthlyHours}h</div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>全员有效工时</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>全员有效工时</div>
           </Card>
         </Grid.Col>
       </Grid.Row>
@@ -419,7 +419,7 @@ export function ProjectList() {
           <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
             {KANBAN_LANES.filter((l) => l.key !== 'shelved').map((lane) => (
               <div key={lane.key} style={{ minWidth: 260, flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
                   {lane.label} ({kanbanData[lane.key].length})
                 </div>
                 {kanbanData[lane.key].map(renderKanbanCard)}
@@ -430,7 +430,7 @@ export function ProjectList() {
             ))}
             {/* 搁置/延迟侧栏 */}
             <div style={{ minWidth: 220, flex: 0.8, borderLeft: '2px dashed var(--color-border-3)', paddingLeft: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 6, color: 'var(--color-text-3)' }}>
+              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 6, color: 'var(--color-text-3)' }}>
                 搁置/延迟 ({kanbanData.shelved.length})
               </div>
               {kanbanData.shelved.map(renderKanbanCard)}

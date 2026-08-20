@@ -176,7 +176,7 @@ export function ProjectDetail360() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <Button type="text" icon={<IconLeft />} onClick={() => navigate('/projects')}>返回列表</Button>
           <Divider type="vertical" />
-          <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
+          <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
           <span style={{ fontSize: 18, fontWeight: 600 }}>{project.name}</span>
           <Tag color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag>
           <Tag color="gray">{project.entity}</Tag>
@@ -209,35 +209,35 @@ export function ProjectDetail360() {
 
         {/* 6 维指标胶囊 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <IconUser style={{ color: 'rgb(var(--primary-6))' }} />
             <Text type="secondary">PM:</Text>
             <Text style={{ fontWeight: 500 }}>{project.owner || '待指派'}</Text>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="secondary">客户:</Text>
             <Text style={{ fontWeight: 500 }}>{project.customerName || '-'}</Text>
           </div>
           {project.contractAmount && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
               <Text type="secondary">合同额:</Text>
               <Text style={{ fontWeight: 500, color: 'rgb(var(--success-6))' }}>{formatAmount(project.contractAmount)}</Text>
               {project.receivedAmount && (
-                <Text type="secondary" style={{ fontSize: 11 }}>已回{Math.round(project.receivedAmount / project.contractAmount * 100)}%</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>已回{Math.round(project.receivedAmount / project.contractAmount * 100)}%</Text>
               )}
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: cd.isOverdue ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: cd.isOverdue ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <IconClockCircle style={{ color: cd.isOverdue ? 'rgb(var(--danger-6))' : 'var(--color-text-3)' }} />
             <Text type="secondary">工期:</Text>
             <Text style={{ fontWeight: 500, color: cd.isOverdue ? 'rgb(var(--danger-6))' : undefined }}>{cd.label}</Text>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="secondary">工时:</Text>
             <Text style={{ fontWeight: 500 }}>{formatHours(project.totalHours)} / {formatHours(project.budgetHours)}</Text>
             <Progress percent={Math.round(project.totalHours / project.budgetHours * 100)} size="mini" style={{ width: 60 }} showText={false} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: project.bugP0Count + project.bugP1Count > 0 ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: project.bugP0Count + project.bugP1Count > 0 ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="secondary">Bug:</Text>
             <Text style={{ fontWeight: 500, color: project.bugP0Count > 0 ? 'rgb(var(--danger-6))' : project.bugP1Count > 0 ? 'rgb(var(--warning-6))' : 'rgb(var(--success-6))' }}>
               P0:{project.bugP0Count} P1:{project.bugP1Count}
@@ -313,7 +313,7 @@ export function ProjectDetail360() {
               {/* Activity Stream 时间轴 */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ fontSize: 15, fontWeight: 500 }}>项目综合动态</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 500 }}>项目综合动态</Text>
                   <Space size={4}>
                     <Tag
                       color={activityFilter.length === 0 ? 'blue' : 'default'}
@@ -353,12 +353,12 @@ export function ProjectDetail360() {
                       <div style={{ marginBottom: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span>{ACTIVITY_EVENT_ICON[event.type]}</span>
-                          <Text style={{ fontWeight: 500, fontSize: 13 }}>{event.title}</Text>
+                          <Text style={{ fontWeight: 500, fontSize: 14 }}>{event.title}</Text>
                           {event.isPreSale && <Tag size="small" color="gray">售前</Tag>}
-                          <Text type="secondary" style={{ fontSize: 11 }}>{event.createdAt}</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>{event.createdAt}</Text>
                         </div>
-                        <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 4 }}>{event.content}</div>
-                        <Text type="secondary" style={{ fontSize: 11 }}>操作人: {event.operator}</Text>
+                        <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 4 }}>{event.content}</div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>操作人: {event.operator}</Text>
                       </div>
                     </Timeline.Item>
                   ))}
@@ -385,7 +385,7 @@ export function ProjectDetail360() {
           {activeWorkspace === 'tasks' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={{ fontSize: 15, fontWeight: 500 }}>任务管理</Text>
+                <Text style={{ fontSize: 16, fontWeight: 500 }}>任务管理</Text>
                 <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { taskForm.resetFields(); setTaskModalVisible(true); }}>新建任务</Button>
               </div>
               <Table
@@ -413,7 +413,7 @@ export function ProjectDetail360() {
 
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <Text style={{ fontSize: 15, fontWeight: 500 }}>缺陷跟踪 (Bug Tracker)</Text>
+                  <Text style={{ fontSize: 16, fontWeight: 500 }}>缺陷跟踪 (Bug Tracker)</Text>
                   <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建缺陷')}>新建缺陷</Button>
                 </div>
                 <Table

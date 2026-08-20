@@ -136,7 +136,7 @@ export function LeadDetail360() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <Button type="text" icon={<IconLeft />} onClick={() => navigate(-1)}>返回列表</Button>
           <Divider type="vertical" />
-          <span style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--color-text-3)' }}>#{lead.name?.slice(0, 6) || id}</span>
+          <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>#{lead.name?.slice(0, 6) || id}</span>
           <span style={{ fontSize: 18, fontWeight: 600 }}>{lead.name}</span>
           <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
           {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}级</Tag>}
@@ -163,13 +163,13 @@ export function LeadDetail360() {
 
         {/* 6 维指标胶囊 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <IconUserAdd style={{ color: 'rgb(var(--primary-6))' }} />
             <Text type="secondary">负责人:</Text>
             <Text style={{ fontWeight: 500 }}>{lead.owner || '公海'}</Text>
-            {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 11 }}>({lead.daysHeld}天)</Text>}
+            {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 12 }}>({lead.daysHeld}天)</Text>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <IconPhone style={{ color: 'var(--color-text-3)' }} />
             <Text type="secondary">对接人:</Text>
             <Text style={{ fontWeight: 500 }}>{lead.contact}</Text>
@@ -177,20 +177,20 @@ export function LeadDetail360() {
               <Button type="text" size="mini" icon={<IconCopy />} onClick={() => { navigator.clipboard.writeText(lead.phone); Message.success('已复制'); }} />
             </Tooltip>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="secondary">总标的:</Text>
             <Text style={{ fontWeight: 500, color: 'rgb(var(--success-6))' }}>{lead.customerBudget || '-'}</Text>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="secondary">客资成本:</Text>
             <Text style={{ fontWeight: 500 }}>{lead.customerCost || '-'}</Text>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
             <Text type="-secondary">跟进:</Text>
             <Text style={{ fontWeight: 500 }}>{lead.followCount}次</Text>
           </div>
           {lead.nextFollowTime && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
               <Text type="secondary">下次跟进:</Text>
               <Text style={{ fontWeight: 500 }}>{lead.nextFollowTime.slice(0, 16)}</Text>
             </div>
@@ -237,7 +237,7 @@ export function LeadDetail360() {
             <Divider style={{ margin: '12px 0' }} />
             <div>
               <Text type="secondary" style={{ fontSize: 12 }}>初始需求:</Text>
-              <div style={{ marginTop: 4, fontSize: 13, color: 'var(--color-text-1)' }}>{lead.requirement || lead.initialRequirement || '-'}</div>
+              <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{lead.requirement || lead.initialRequirement || '-'}</div>
             </div>
           </Card>
 
@@ -329,7 +329,7 @@ export function LeadDetail360() {
             </div>
 
             <div style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 13, fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
+              <Text style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
               <Steps current={2} size="small">
                 <Step title="立项启动" description="08-20 已确认" />
                 <Step title="UI确认" description="08-28 客户盖章" />
@@ -368,7 +368,7 @@ export function LeadDetail360() {
                 <span style={{ color: '#07C160', fontSize: 16 }}>💬</span>
                 <Text style={{ fontWeight: 500 }}>{lead.presalesGroupName}</Text>
               </div>
-              <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13, color: 'var(--color-text-2)' }}>
+              <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14, color: 'var(--color-text-2)' }}>
                 <Text type="secondary">AI 摘要分析</Text>
                 <div style={{ marginTop: 8 }}>
                   客户对小程序点餐系统需求明确，重点关注多门店管理和微信支付对接。已确认基础功能清单，待确认抖音端增项需求。
@@ -402,12 +402,12 @@ export function LeadDetail360() {
                         <div style={{ marginBottom: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <Tag color="blue" size="small">{record.method}</Tag>
-                            <Text type="secondary" style={{ fontSize: 11 }}>{record.createdAt}</Text>
-                            <Text type="secondary" style={{ fontSize: 11 }}>· {record.creator}</Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>{record.createdAt}</Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>· {record.creator}</Text>
                           </div>
-                          <div style={{ fontSize: 13, color: 'var(--color-text-1)', marginBottom: 4 }}>{record.content}</div>
+                          <div style={{ fontSize: 14, color: 'var(--color-text-1)', marginBottom: 4 }}>{record.content}</div>
                           {record.nextFollowTime && (
-                            <Text type="secondary" style={{ fontSize: 11 }}>下次跟进: {record.nextFollowTime}</Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>下次跟进: {record.nextFollowTime}</Text>
                           )}
                         </div>
                       </Timeline.Item>
@@ -498,8 +498,8 @@ export function LeadDetail360() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <IconFile style={{ color: 'var(--color-text-3)' }} />
                         <div>
-                          <Text style={{ fontSize: 13 }}>{doc.name}</Text>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-3)' }}>
+                          <Text style={{ fontSize: 14 }}>{doc.name}</Text>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
                             <Tag size="small" color="gray">{doc.type}</Tag>
                             <Tag size="small" color="default">{doc.source}</Tag>
                             {doc.uploader} · {doc.createdAt}
@@ -533,7 +533,7 @@ export function LeadDetail360() {
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <Tag color="green" size="small">{travel.status}</Tag>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {travel.approvalNo}</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {travel.approvalNo}</div>
                         </div>
                       </div>
                     </Card>
@@ -559,7 +559,7 @@ export function LeadDetail360() {
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <Tag color="green" size="small">{rb.status}</Tag>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {rb.approvalNo}</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {rb.approvalNo}</div>
                         </div>
                       </div>
                     </Card>

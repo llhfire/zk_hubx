@@ -110,7 +110,7 @@ export function AllLeads() {
               </div>
             )}
             {stepIndex < 0 && (
-              <div style={{ fontSize: 11, color: 'var(--color-text-4)' }}>已终止</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-4)' }}>已终止</div>
             )}
           </div>
         );
@@ -142,7 +142,7 @@ export function AllLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: 14 }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>
@@ -191,7 +191,7 @@ export function AllLeads() {
                 {capsule.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
                 {capsule.label}
               </span>
-              {capsule.subLabel && <span style={{ fontSize: 11, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{capsule.subLabel}</span>}
+              {capsule.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{capsule.subLabel}</span>}
             </div>
           );
         }
@@ -211,11 +211,11 @@ export function AllLeads() {
         return (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-              <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>{r.lastFollowTime.slice(5)}</span>
-              {r.owner && <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>· {r.owner}</span>}
+              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.lastFollowTime.slice(5)}</span>
+              {r.owner && <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>· {r.owner}</span>}
             </div>
             <Tooltip content={r.lastFollowContent || ''} disabled={!r.lastFollowContent}>
-              <div style={{ fontSize: 13, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+              <div style={{ fontSize: 14, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                 {r.lastFollowContent || '-'}
               </div>
             </Tooltip>

@@ -20,6 +20,7 @@ import {
   DatePicker,
   Timeline,
   Progress,
+  Upload,
 } from '@arco-design/web-react';
 import {
   IconLeft,

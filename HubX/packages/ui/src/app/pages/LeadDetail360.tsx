@@ -16,6 +16,7 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
   Select,
   DatePicker,
   Timeline,

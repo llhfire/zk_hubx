@@ -431,7 +431,7 @@ export function LeadDetail360() {
               {activeSideTab === 'quotation' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建报价功能开发中')}>新建报价</Button>
+                    <Button size="small" icon={<IconPlus />} onClick={() => navigate('/quotation')}>新建报价</Button>
                   </div>
                   {profile.quotationHistory?.map((q) => (
                     <Card key={q.id} size="small" style={{ marginBottom: 8 }}>
@@ -457,7 +457,7 @@ export function LeadDetail360() {
               {activeSideTab === 'contract-records' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建合同功能开发中')}>新建合同</Button>
+                    <Button size="small" icon={<IconPlus />} onClick={() => navigate('/contracts')}>新建合同</Button>
                   </div>
                   {profile.demoContracts?.map((c) => (
                     <Card key={c.id} size="small" style={{ marginBottom: 8 }}>

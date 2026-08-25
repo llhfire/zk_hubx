@@ -38,7 +38,7 @@ import {
 } from './project-management/mockData';
 import { useProjects } from './project-management/ProjectContext';
 import { getProjectBugSummary } from './project-management/projectQuality';
-import { confirmProject, filterProjectsForViewer } from '@/app/business-case';
+import { filterProjectsForViewer } from '@/app/business-case';
 import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 
 const Title = Typography.Title;
@@ -93,7 +93,7 @@ function toDateString(value: any) {
 
 export function Projects() {
   const navigate = useNavigate();
-  const { projects, addProject, updateProject: updateProjectInContext, removeProject: removeProjectInContext } = useProjects();
+  const { projects, addProject, updateProject: updateProjectInContext, removeProject: removeProjectInContext, confirmAssign } = useProjects();
   const [keyword, setKeyword] = useState('');
   const [ownerFilter, setOwnerFilter] = useState<string>();
   const [priorityFilter, setPriorityFilter] = useState<ProjectPriority>();
@@ -137,19 +137,9 @@ export function Projects() {
 
   const saveConfirm = () => {
     if (!confirmingProject) return;
-    confirmForm.validate().then((values) => {
+    confirmForm.validate().then(async (values) => {
       try {
-        const next = confirmProject({
-          project: confirmingProject,
-          productManager: values.productManager,
-        });
-        updateProjectInContext({
-          ...confirmingProject,
-          status: next.status,
-          productUsers: next.productUsers,
-          owner: next.owner,
-          latestProgress: `已指派产品经理 ${next.owner}，等待交付启动。`,
-        });
+        await confirmAssign(confirmingProject.id, values.productManager);
         setConfirmingProject(null);
         Message.success(`已确认并指派 ${values.productManager}`);
       } catch (error) {

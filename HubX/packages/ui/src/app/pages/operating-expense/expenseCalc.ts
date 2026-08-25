@@ -129,3 +129,95 @@ export function latestPayrollTotal(
 ): number {
   return salaryRows.reduce((sum, r) => sum + (r.actualSalary ?? r.nominalSalary), 0);
 }
+
+// ─── 4.3 新增：双口径、排行、堆叠 ──────────────────────────
+
+import type { ExpenseCategoryPrimary } from './types';
+
+/** 堆叠层序（不含 LABOR） */
+export const STACK_PRIMARIES: ExpenseCategoryPrimary[] = [
+  'OFFICE', 'BENEFIT', 'HR_ADMIN', 'OTHER',
+  'TRAVEL', 'PROMOTION', 'BUSINESS', 'THIRD_PARTY',
+];
+
+/** 是否已入账 */
+export function isPosted(r: ExpenseRecord): boolean {
+  return r.status === 'posted';
+}
+
+/** 当月台账合计（已入账 + 未作废） */
+export function postedLedgerTotal(records: ExpenseRecord[], month: string): number {
+  return records
+    .filter((r) => isPosted(r) && r.billingMonth === month)
+    .reduce((s, r) => s + r.amount, 0);
+}
+
+/** 按归属归口的直接支出 */
+export function directByAttribution(
+  records: ExpenseRecord[],
+  month: string,
+  attribution: Attribution,
+): number {
+  return records
+    .filter((r) => isPosted(r) && r.billingMonth === month && r.attribution === attribution)
+    .reduce((s, r) => s + r.amount, 0);
+}
+
+/** 八层科目堆叠（不含 LABOR） */
+export function categoryStack(
+  records: ExpenseRecord[],
+  month: string,
+): Record<ExpenseCategoryPrimary, number> {
+  const out = Object.fromEntries(STACK_PRIMARIES.map((p) => [p, 0])) as Record<ExpenseCategoryPrimary, number>;
+  for (const r of records) {
+    if (!isPosted(r) || r.billingMonth !== month) continue;
+    if (r.categoryPrimary === 'LABOR') continue;
+    if (out[r.categoryPrimary] !== undefined) out[r.categoryPrimary] += r.amount;
+  }
+  return out;
+}
+
+/** 含/不含人力的总额 */
+export function includeLaborTotal(ledgerTotal: number, payroll: number, includeLabor: boolean): number {
+  return includeLabor ? ledgerTotal + payroll : ledgerTotal;
+}
+
+export interface RankRow {
+  key: string;
+  name: string;
+  amount: number;
+}
+
+/** 部门归口排行 */
+export function rankByDepartment(
+  records: ExpenseRecord[],
+  month: string,
+  nameOf: (departmentId: string) => string,
+): RankRow[] {
+  const map = new Map<string, number>();
+  for (const r of records) {
+    if (!isPosted(r) || r.billingMonth !== month) continue;
+    if (!r.departmentId) continue;
+    map.set(r.departmentId, (map.get(r.departmentId) ?? 0) + r.amount);
+  }
+  return Array.from(map.entries())
+    .map(([key, amount]) => ({ key, name: nameOf(key), amount }))
+    .sort((a, b) => b.amount - a.amount);
+}
+
+/** 项目直接支出排行 */
+export function rankByProject(
+  records: ExpenseRecord[],
+  month: string,
+  nameOf: (projectId: string) => string,
+): RankRow[] {
+  const map = new Map<string, number>();
+  for (const r of records) {
+    if (!isPosted(r) || r.billingMonth !== month) continue;
+    if (r.attribution !== 'project' || !r.projectId) continue;
+    map.set(r.projectId, (map.get(r.projectId) ?? 0) + r.amount);
+  }
+  return Array.from(map.entries())
+    .map(([key, amount]) => ({ key, name: nameOf(key), amount }))
+    .sort((a, b) => b.amount - a.amount);
+}

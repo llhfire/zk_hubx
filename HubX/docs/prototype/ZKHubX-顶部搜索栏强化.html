@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK HubX - 顶部全局 AI 生产力入口 / Copilot 交互原型 (Arco Design)</title>
+  <!-- FontAwesome 图标库 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ═══════════════════════ ARCO DESIGN 变量系统 ═══════════════════════ */
+    :root {
+      --primary-6: #165DFF;
+      --primary-5: #4080FF;
+      --primary-7: #0E42D2;
+      --primary-1: #E8F3FF;
+      --primary-2: #BEDAFF;
+      --success-6: #00B42A;
+      --success-1: #E8FFEA;
+      --warning-6: #FF7D00;
+      --warning-1: #FFF7E8;
+      --danger-6: #F53F3F;
+      --danger-1: #FFECE8;
+      --purple-6: #722ED1;
+      --purple-1: #F5E8FF;
+      --cyan-6: #0FC6C2;
+      --cyan-1: #E8FFFB;
+
+      --color-bg-1: #FFFFFF;
+      --color-bg-2: #F7F8FA;
+      --color-bg-3: #F2F3F5;
+      --color-bg-4: #E5E6EB;
+
+      --color-text-1: #1D2129;
+      --color-text-2: #4E5969;
+      --color-text-3: #86909C;
+      --color-text-4: #C9CDD4;
+
+      --color-border-1: #F2F3F5;
+      --color-border-2: #E5E6EB;
+      --color-border-3: #C9CDD4;
+
+      --radius-sm: 4px;
+      --radius-base: 6px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.08);
+      --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.16), 0 0 1px rgba(0,0,0,0.2);
+
+      --font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-family);
+      background-color: #F2F3F5;
+      color: var(--color-text-1);
+      font-size: 13px;
+      line-height: 1.5715;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════ 顶部导航栏 (Navbar) ═══════════════════════ */
+    .navbar {
+      height: 56px;
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--color-border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: var(--color-text-1); cursor: pointer; }
+    .brand-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #165DFF 0%, #722ED1 100%);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px;
+    }
+    .badge-hubx { background: var(--primary-1); color: var(--primary-6); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .nav-links { display: flex; align-items: center; gap: 6px; margin-left: 12px; }
+    .nav-item {
+      padding: 6px 12px; border-radius: 4px; color: var(--color-text-2); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+    }
+    .nav-item:hover { background: var(--color-bg-3); color: var(--primary-6); }
+    .nav-item.active { background: var(--primary-1); color: var(--primary-6); font-weight: 600; }
+
+    /* 顶部中间：全局 AI 搜索触发器 */
+    .nav-center { flex: 1; max-width: 480px; margin: 0 20px; position: relative; }
+    .global-search-trigger {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #F7F8FA; border: 1px solid #E5E6EB; height: 36px; padding: 0 12px; border-radius: 8px; cursor: pointer; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .global-search-trigger:hover {
+      background: #FFFFFF; border-color: var(--primary-5); box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.12), 0 2px 8px rgba(22, 93, 255, 0.08); transform: translateY(-1px);
+    }
+    .trigger-left { display: flex; align-items: center; gap: 8px; color: var(--color-text-3); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ai-spark-icon {
+      background: linear-gradient(135deg, #165DFF 0%, #722ED1 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 14px; font-weight: bold; animation: pulseSparkle 2.5s infinite;
+    }
+    @keyframes pulseSparkle {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 4px rgba(114, 46, 209, 0.5)); }
+    }
+    .rotating-placeholder { color: var(--color-text-3); transition: opacity 0.3s; user-select: none; }
+    .trigger-right { display: flex; align-items: center; gap: 6px; }
+    .kbd-badge {
+      background: #FFFFFF; border: 1px solid var(--color-border-3); color: var(--color-text-2); font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; padding: 1px 6px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); font-weight: 600;
+    }
+
+    /* 顶部右侧 */
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .action-icon-btn {
+      width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--color-text-2); cursor: pointer; transition: all 0.2s; position: relative;
+    }
+    .action-icon-btn:hover { background: var(--color-bg-3); color: var(--primary-6); }
+    .notification-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; background: var(--danger-6); border-radius: 50%; }
+    .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
+    .user-profile:hover { background: var(--color-bg-2); }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #165DFF 0%, #4080FF 100%);
+      color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px;
+    }
+
+    /* ═══════════════════════ 主体背景工作台 ═══════════════════════ */
+    .main-content { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+    .cockpit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    .metric-card { background: #FFFFFF; border: 1px solid var(--color-border-2); border-radius: 8px; padding: 16px 20px; box-shadow: var(--shadow-card); }
+    .metric-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .metric-label { font-size: 12px; color: var(--color-text-3); font-weight: 500; }
+    .metric-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .metric-val { font-size: 24px; font-weight: 700; color: var(--color-text-1); line-height: 1.2; margin-bottom: 6px; }
+    .metric-sub { font-size: 12px; color: var(--color-text-3); display: flex; align-items: center; gap: 6px; }
+
+    .workbench-card { background: #FFFFFF; border-radius: 8px; border: 1px solid var(--color-border-2); box-shadow: var(--shadow-card); overflow: hidden; }
+    .card-header-bar { padding: 14px 20px; border-bottom: 1px solid var(--color-border-2); display: flex; align-items: center; justify-content: space-between; background: #FAFAFB; }
+    .table-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .table-container { overflow-x: auto; }
+    .arco-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .arco-table th { background: var(--color-bg-2); padding: 10px 14px; text-align: left; font-weight: 600; color: var(--color-text-2); border-bottom: 1px solid var(--color-border-2); }
+    .arco-table td { padding: 12px 14px; border-bottom: 1px solid var(--color-border-1); color: var(--color-text-1); }
+    .arco-table tr:hover td { background: #FAFCFF; }
+
+    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+    .tag-blue { background: var(--primary-1); color: var(--primary-6); }
+    .tag-green { background: var(--success-1); color: var(--success-6); }
+    .tag-orange { background: var(--warning-1); color: var(--warning-6); }
+    .tag-red { background: var(--danger-1); color: var(--danger-6); }
+    .tag-purple { background: var(--purple-1); color: var(--purple-6); }
+    .tag-gray { background: var(--color-bg-3); color: var(--color-text-2); }
+
+    /* ═══════════════════════ AI COMMAND PALETTE 弹层 ═══════════════════════ */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      z-index: 1000; display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh;
+      opacity: 0; pointer-events: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .command-palette {
+      width: 760px; max-width: 92vw; background: #FFFFFF; border-radius: 14px; border: 1px solid rgba(22, 93, 255, 0.15);
+      box-shadow: var(--shadow-modal); overflow: hidden; transform: scale(0.96) translateY(-10px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column;
+    }
+    .modal-overlay.active .command-palette { transform: scale(1) translateY(0); }
+
+    .palette-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--color-border-2); display: flex; align-items: center; gap: 12px; background: #FFFFFF;
+    }
+    .palette-ai-badge {
+      display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px;
+      background: linear-gradient(135deg, rgba(22, 93, 255, 0.1) 0%, rgba(114, 46, 209, 0.1) 100%);
+      color: var(--primary-6); font-weight: 700; font-size: 12px; border: 1px solid rgba(22, 93, 255, 0.2);
+    }
+    .palette-input {
+      flex: 1; border: none; outline: none; font-size: 15px; color: var(--color-text-1); background: transparent; font-family: inherit;
+    }
+    .palette-input::placeholder { color: var(--color-text-4); font-size: 14px; }
+    .palette-tools { display: flex; align-items: center; gap: 8px; }
+    .btn-clear { color: var(--color-text-3); cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; }
+    .btn-clear:hover { background: var(--color-bg-3); color: var(--color-text-1); }
+
+    .palette-chips-bar {
+      padding: 8px 18px; background: #FAFAFC; border-bottom: 1px solid var(--color-border-1); display: flex; align-items: center; gap: 8px; overflow-x: auto;
+    }
+    .chip-label { font-size: 11px; color: var(--color-text-3); font-weight: 500; white-space: nowrap; }
+    .action-chip {
+      padding: 3px 10px; background: #FFFFFF; border: 1px solid var(--color-border-2); border-radius: 12px;
+      font-size: 11px; color: var(--color-text-2); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s; white-space: nowrap; user-select: none;
+    }
+    .action-chip:hover {
+      background: var(--primary-1); border-color: var(--primary-2); color: var(--primary-6); transform: translateY(-1px);
+    }
+
+    .palette-body { max-height: 440px; overflow-y: auto; padding: 12px 18px; background: #FFFFFF; }
+
+    .agent-intent-card {
+      background: #FAFCFF; border: 1px solid #BEDAFF; border-radius: 8px; padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(22, 93, 255, 0.06); animation: fadeIn 0.25s ease-out;
+    }
+    .intent-card-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #BEDAFF; padding-bottom: 10px;
+    }
+    .intent-title { font-size: 13px; font-weight: 700; color: var(--primary-6); display: flex; align-items: center; gap: 8px; }
+    .intent-status { font-size: 11px; background: var(--primary-1); color: var(--primary-6); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .intent-slots-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; margin-bottom: 14px; background: #FFFFFF; padding: 12px; border-radius: 6px; border: 1px solid #E5E6EB;
+    }
+    .slot-item { font-size: 12px; }
+    .slot-label { color: var(--color-text-3); margin-bottom: 3px; font-size: 11px; }
+    .slot-val { color: var(--color-text-1); font-weight: 600; }
+    .intent-actions-row { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+
+    .slash-form-card {
+      background: #FFFFFF; border: 1px solid var(--color-border-2); border-radius: 8px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); animation: fadeIn 0.2s ease-out;
+    }
+    .form-row { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .form-label { font-size: 12px; color: var(--color-text-2); font-weight: 500; text-align: right; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; height: 32px; padding: 4px 10px; border: 1px solid var(--color-border-2); border-radius: 4px; font-size: 12px; color: var(--color-text-1); outline: none; transition: all 0.2s;
+    }
+    .form-textarea { height: 60px; resize: vertical; padding: 6px 10px; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary-6); box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.12); }
+
+    .search-section-title {
+      font-size: 11px; font-weight: 600; color: var(--color-text-3); text-transform: uppercase; margin: 12px 0 6px 4px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-list { display: flex; flex-direction: column; gap: 4px; }
+    .result-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+    }
+    .result-item:hover, .result-item.focused { background: #F2F3F5; border-color: #E5E6EB; }
+    .result-item.focused { background: #E8F3FF; border-color: #BEDAFF; }
+    .result-main { display: flex; align-items: center; gap: 10px; }
+    .result-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .result-info { display: flex; flex-direction: column; gap: 2px; }
+    .result-title { font-size: 13px; font-weight: 600; color: var(--color-text-1); display: flex; align-items: center; gap: 6px; }
+    .result-meta { font-size: 11px; color: var(--color-text-3); display: flex; align-items: center; gap: 8px; }
+    .result-shortcut { font-size: 11px; color: var(--color-text-3); display: flex; align-items: center; gap: 4px; }
+
+    .palette-footer {
+      padding: 10px 18px; background: #FAFAFC; border-top: 1px solid var(--color-border-2); display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--color-text-3);
+    }
+    .footer-hints { display: flex; align-items: center; gap: 14px; }
+    .hint-item { display: flex; align-items: center; gap: 4px; }
+
+    .arco-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 14px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; white-space: nowrap;
+    }
+    .arco-btn-primary { background: var(--primary-6); color: #FFFFFF; }
+    .arco-btn-primary:hover { background: var(--primary-5); }
+    .arco-btn-secondary { background: var(--color-bg-3); color: var(--color-text-2); border-color: var(--color-border-2); }
+    .arco-btn-secondary:hover { background: var(--color-bg-4); color: var(--color-text-1); }
+    .arco-btn-sm { height: 26px; padding: 0 10px; font-size: 11px; }
+
+    .toast-container {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1D2129; color: #FFFFFF; padding: 10px 18px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 16px; z-index: 2000; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); font-size: 12px;
+    }
+    .toast-container.active { transform: translateX(-50%) translateY(0); }
+    .toast-undo-btn { color: #4080FF; font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- ═════════════════ 顶部导航栏 ═════════════════ -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="nav-brand">
+        <div class="brand-icon"><i class="fa-solid fa-cube"></i></div>
+        <span>ZK HubX</span>
+        <span class="badge-hubx">v2.5 · AI 生产力引擎</span>
+      </div>
+      <div class="nav-links">
+        <div class="nav-item active"><i class="fa-solid fa-list-check"></i> 项目工作台</div>
+        <div class="nav-item"><i class="fa-solid fa-funnel-dollar"></i> 线索管理</div>
+        <div class="nav-item"><i class="fa-solid fa-receipt"></i> 费用与差旅</div>
+        <div class="nav-item"><i class="fa-solid fa-chart-pie"></i> 经营看板</div>
+      </div>
+    </div>
+
+    <!-- 顶部居中：AI 搜索触发器 -->
+    <div class="nav-center">
+      <div class="global-search-trigger" id="globalSearchTrigger" onclick="openPalette()">
+        <div class="trigger-left">
+          <i class="fa-solid fa-wand-magic-sparkles ai-spark-icon"></i>
+          <span class="rotating-placeholder" id="rotatingPlaceholder">搜索项目、线索，或按 ⌘K 让 Agent 执行...</span>
+        </div>
+        <div class="trigger-right">
+          <span class="kbd-badge">⌘ K</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顶部右侧 -->
+    <div class="nav-right">
+      <div class="action-icon-btn" title="消息通知">
+        <i class="fa-regular fa-bell"></i>
+        <span class="notification-dot"></span>
+      </div>
+      <div class="action-icon-btn" title="快捷帮助" onclick="openPaletteWithQuery('/help')">
+        <i class="fa-regular fa-circle-question"></i>
+      </div>
+      <div class="user-profile">
+        <div class="user-avatar">PM</div>
+        <div>
+          <div style="font-weight: 600; font-size: 12px;">李四 (项目经理)</div>
+          <div style="font-size: 11px; color: var(--color-text-3);">中科集团 · 交付中心</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═════════════════ 主体背景 ═════════════════ -->
+  <main class="main-content">
+    <div class="cockpit-grid">
+      <div class="metric-card">
+        <div class="metric-top">
+          <span class="metric-label">活跃交付项目</span>
+          <div class="metric-icon" style="background: var(--primary-1); color: var(--primary-6);"><i class="fa-solid fa-diagram-project"></i></div>
+        </div>
+        <div class="metric-val" id="metricActiveProjects">12 <span style="font-size: 13px; font-weight: 400; color: var(--color-text-3);">个</span></div>
+        <div class="metric-sub"><span class="tag tag-blue">外包 8</span> <span class="tag tag-purple">自研 3</span> <span class="tag tag-cyan">自运营 1</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-top">
+          <span class="metric-label">交付健康度预警</span>
+          <div class="metric-icon" style="background: var(--danger-1); color: var(--danger-6);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        </div>
+        <div class="metric-val" style="color: var(--danger-6);" id="metricRiskCount">2 <span style="font-size: 13px; font-weight: 400; color: var(--color-text-3);">项预警</span></div>
+        <div class="metric-sub"><span style="color: var(--danger-6);"><i class="fa-solid fa-circle-exclamation"></i> 1 工期延期</span> <span style="color: var(--warning-6);"><i class="fa-solid fa-bug"></i> 2 P1缺陷</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-top">
+          <span class="metric-label">待跟进销售线索</span>
+          <div class="metric-icon" style="background: var(--warning-1); color: var(--warning-6);"><i class="fa-solid fa-headset"></i></div>
+        </div>
+        <div class="metric-val" id="metricPendingLeads">7 <span style="font-size: 13px; font-weight: 400; color: var(--color-text-3);">条</span></div>
+        <div class="metric-sub"><span class="tag tag-orange">今日待触达 4</span> <span class="tag tag-red">逾期 3</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-top">
+          <span class="metric-label">本月累计交付工时</span>
+          <div class="metric-icon" style="background: var(--success-1); color: var(--success-6);"><i class="fa-solid fa-clock"></i></div>
+        </div>
+        <div class="metric-val" id="metricHours">842 <span style="font-size: 13px; font-weight: 400; color: var(--color-text-3);">小时</span></div>
+        <div class="metric-sub" style="color: var(--success-6);"><i class="fa-solid fa-arrow-trend-up"></i> 进度达成率 92.4%</div>
+      </div>
+    </div>
+
+    <div class="workbench-card">
+      <div class="card-header-bar">
+        <div class="table-title"><i class="fa-solid fa-cubes-stacked" style="color: var(--primary-6);"></i> 进行中交付项目列表</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="openPaletteWithQuery('/task')"><i class="fa-solid fa-plus"></i> 新建任务</button>
+          <button class="arco-btn arco-btn-primary arco-btn-sm" onclick="openPaletteWithQuery('/clue')"><i class="fa-solid fa-user-plus"></i> 录入线索</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="arco-table" id="mainProjectsTable">
+          <thead>
+            <tr>
+              <th style="width: 110px;">项目编号</th>
+              <th style="width: 220px;">项目名称</th>
+              <th style="width: 100px;">责任 PM</th>
+              <th style="width: 90px;">业务线</th>
+              <th style="width: 100px;">交付进度</th>
+              <th style="width: 110px;">健康状态</th>
+              <th style="width: 160px;">计划周期</th>
+              <th>最新进展纪要</th>
+              <th style="width: 120px; text-align: center;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="projectsTableBody">
+            <tr id="row-PRJ202605001">
+              <td><span style="font-family: monospace; font-weight: 600;">PRJ202605001</span></td>
+              <td><strong style="color: var(--primary-6); cursor: pointer;">A公司CRM系统开发</strong></td>
+              <td>李四</td>
+              <td><span class="tag tag-blue">外包定制</span></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div style="flex: 1; height: 6px; background: #F2F3F5; border-radius: 3px; overflow: hidden; width: 60px;">
+                    <div style="width: 65%; height: 100%; background: var(--primary-6);"></div>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 600;">65%</span>
+                </div>
+              </td>
+              <td><span class="tag tag-orange" id="tag-PRJ202605001"><i class="fa-solid fa-bug"></i> 2个P1缺陷</span></td>
+              <td>05-01 ~ 08-30</td>
+              <td>已完成客户管理列表筛选联调，正在排查移动端遮挡缺陷</td>
+              <td style="text-align: center;">
+                <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="openPaletteWithQuery('给 A公司CRM 建一个开发任务')">智能指派</button>
+              </td>
+            </tr>
+            <tr id="row-PROJ-2026-CQ01">
+              <td><span style="font-family: monospace; font-weight: 600;">PROJ-2026-CQ01</span></td>
+              <td><strong style="color: var(--primary-6); cursor: pointer;">重庆·微官网与商城</strong></td>
+              <td>张三</td>
+              <td><span class="tag tag-purple">自研产品</span></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div style="flex: 1; height: 6px; background: #F2F3F5; border-radius: 3px; overflow: hidden; width: 60px;">
+                    <div style="width: 88%; height: 100%; background: var(--success-6);"></div>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 600;">88%</span>
+                </div>
+              </td>
+              <td><span class="tag tag-green"><i class="fa-solid fa-circle-check"></i> 交付正常</span></td>
+              <td>06-15 ~ 09-10</td>
+              <td>分销核销模块已验收完成，待最终支付网关上线</td>
+              <td style="text-align: center;">
+                <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="openPaletteWithQuery('/follow 重庆商城')">写跟进</button>
+              </td>
+            </tr>
+            <tr id="row-PROJ-2026-ZZ02">
+              <td><span style="font-family: monospace; font-weight: 600;">PROJ-2026-ZZ02</span></td>
+              <td><strong style="color: var(--primary-6); cursor: pointer;">郑州·物联网数据中台</strong></td>
+              <td>赵六</td>
+              <td><span class="tag tag-blue">外包定制</span></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <div style="flex: 1; height: 6px; background: #F2F3F5; border-radius: 3px; overflow: hidden; width: 60px;">
+                    <div style="width: 42%; height: 100%; background: var(--danger-6);"></div>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 600;">42%</span>
+                </div>
+              </td>
+              <td><span class="tag tag-red"><i class="fa-solid fa-clock"></i> 延期风险</span></td>
+              <td>07-01 ~ 09-30</td>
+              <td>硬件网关数据协议联调受阻，需要安排研发出差驻场</td>
+              <td style="text-align: center;">
+                <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="openPaletteWithQuery('/trip 郑州物联网项目')">出差申请</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═════════════════ AI COMMAND PALETTE 弹层 ═════════════════ -->
+  <div class="modal-overlay" id="paletteOverlay" onclick="handleOverlayClick(event)">
+    <div class="command-palette" id="paletteCard">
+      <div class="palette-header">
+        <div class="palette-ai-badge">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Copilot</span>
+        </div>
+        <input 
+          type="text" 
+          id="paletteInput" 
+          class="palette-input" 
+          placeholder="输入关键词、斜杠指令 / 或口述任务（例如：给A公司CRM建一个P1缺陷指派给王五）..." 
+          autocomplete="off"
+          oninput="handleInputChange(this.value)"
+          onkeydown="handleInputKeyDown(event)"
+        />
+        <div class="palette-tools">
+          <span class="btn-clear" id="btnClear" style="display: none;" onclick="clearInput()">⌫ 清空</span>
+          <span class="kbd-badge" style="cursor: pointer;" onclick="closePalette()">ESC</span>
+        </div>
+      </div>
+
+      <div class="palette-chips-bar" id="chipsBar">
+        <span class="chip-label">⚡ 快捷动作:</span>
+        <div class="action-chip" onclick="applyChip('/task ')"><i class="fa-solid fa-thumbtack" style="color: var(--primary-6);"></i> /task 指派任务</div>
+        <div class="action-chip" onclick="applyChip('/follow ')"><i class="fa-solid fa-pen-to-square" style="color: var(--success-6);"></i> /follow 录跟进</div>
+        <div class="action-chip" onclick="applyChip('/clue ')"><i class="fa-solid fa-user-plus" style="color: var(--purple-6);"></i> /clue 录线索</div>
+        <div class="action-chip" onclick="applyChip('/trip ')"><i class="fa-solid fa-plane" style="color: var(--warning-6);"></i> /trip 差旅申请</div>
+        <div class="action-chip" onclick="applyChip('帮我诊断当前有哪些即将延期的交付项目？')"><i class="fa-solid fa-shield-halved" style="color: var(--danger-6);"></i> @项目风险诊断</div>
+      </div>
+
+      <div class="palette-body" id="paletteBody">
+        <div id="defaultView">
+          <div class="search-section-title">
+            <span>🕒 最近访问与高频实体</span>
+            <span style="font-size: 10px; color: var(--color-text-4);">直接点击或使用键盘导航</span>
+          </div>
+          <div class="result-list">
+            <div class="result-item focused" onclick="quickJump('A公司CRM系统开发')">
+              <div class="result-main">
+                <div class="result-icon" style="background: var(--primary-1); color: var(--primary-6);"><i class="fa-solid fa-cubes-stacked"></i></div>
+                <div class="result-info">
+                  <div class="result-title">A公司CRM系统开发 <span class="tag tag-blue">外包</span> <span class="tag tag-orange">2个P1缺陷</span></div>
+                  <div class="result-meta"><span>PRJ202605001</span> • <span>负责人: 李四</span> • <span>进度: 65%</span></div>
+                </div>
+              </div>
+              <div class="result-shortcut"><span class="kbd-badge">↵ 查看详情</span></div>
+            </div>
+
+            <div class="result-item" onclick="quickJump('顺丰智能仓储升级方案')">
+              <div class="result-main">
+                <div class="result-icon" style="background: var(--warning-1); color: var(--warning-6);"><i class="fa-solid fa-headset"></i></div>
+                <div class="result-info">
+                  <div class="result-title">顺丰智能仓储升级方案 <span class="tag tag-orange">意向高</span> <span class="tag tag-purple">百度渠道</span></div>
+                  <div class="result-meta"><span>线索编号: LEAD-2026-081</span> • <span>客户: 顺丰快运 (李总)</span> • <span>预算: ¥280k</span></div>
+                </div>
+              </div>
+              <div class="result-shortcut"><span class="kbd-badge">↵ 查看线索</span></div>
+            </div>
+
+            <div class="result-item" onclick="quickJump('王五 (前端开发)')">
+              <div class="result-main">
+                <div class="result-icon" style="background: var(--success-1); color: var(--success-6);"><i class="fa-solid fa-user-gear"></i></div>
+                <div class="result-info">
+                  <div class="result-title">王五 · 技术研发部 (高级前端工程师)</div>
+                  <div class="result-meta"><span>当前在研: A公司CRM、重庆商城</span> • <span>本周工时: 38h</span></div>
+                </div>
+              </div>
+              <div class="result-shortcut"><span class="kbd-badge">↵ 查看档案</span></div>
+            </div>
+          </div>
+
+          <div class="search-section-title">
+            <span>💡 智能指令与提效模式</span>
+          </div>
+          <div class="result-list">
+            <div class="result-item" onclick="applyChip('帮我给 A公司CRM 项目建一个 P1 级别的 Bug，指派给王五，明天下午前修复')">
+              <div class="result-main">
+                <div class="result-icon" style="background: var(--purple-1); color: var(--purple-6);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="result-info">
+                  <div class="result-title">口述任务示例：指派缺陷与任务</div>
+                  <div class="result-meta">“给 A公司CRM 项目建一个 P1 级别的 Bug，指派给王五，明天下午前修复”</div>
+                </div>
+              </div>
+              <span class="tag tag-purple">NL2Action</span>
+            </div>
+            <div class="result-item" onclick="applyChip('给小红书李总线索写跟进：今天电话沟通意向高，约明天发方案')">
+              <div class="result-main">
+                <div class="result-icon" style="background: var(--success-1); color: var(--success-6);"><i class="fa-solid fa-pen-clip"></i></div>
+                <div class="result-info">
+                  <div class="result-title">口述跟进示例：销售纪要智能回写</div>
+                  <div class="result-meta">“给小红书李总线索写跟进：今天电话沟通意向高，约明天发方案”</div>
+                </div>
+              </div>
+              <span class="tag tag-green">智能写跟进</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="dynamicView" style="display: none;"></div>
+      </div>
+
+      <div class="palette-footer">
+        <div class="footer-hints">
+          <div class="hint-item"><span class="kbd-badge">↑</span><span class="kbd-badge">↓</span> 导航</div>
+          <div class="hint-item"><span class="kbd-badge">↵</span> 确认 / 执行</div>
+          <div class="hint-item"><span class="kbd-badge">/</span> 快捷指令</div>
+          <div class="hint-item"><span class="kbd-badge">ESC</span> 关闭</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="color: var(--primary-6); font-weight: 600;">✦ ZK HubX Copilot</span>
+          <span>Schema-Driven Engine</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮动通知与撤销条 -->
+  <div class="toast-container" id="toastContainer">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-circle-check" style="color: var(--success-6);"></i>
+      <span id="toastMessage">已成功执行动作</span>
+    </div>
+    <span class="toast-undo-btn" onclick="undoLastAction()">撤销操作 (Undo)</span>
+  </div>
+</div>
+
+<script>
+  const mockDatabase = {
+    projects: [
+      { id: "PRJ202605001", name: "A公司CRM系统开发", pm: "李四", type: "外包定制", progress: "65%", status: "2个P1缺陷", desc: "已完成客户管理列表筛选联调，正在排查移动端遮挡缺陷" },
+      { id: "PROJ-2026-CQ01", name: "重庆·微官网与商城", pm: "张三", type: "自研产品", progress: "88%", status: "交付正常", desc: "分销核销模块已验收完成，待最终支付网关上线" },
+      { id: "PROJ-2026-ZZ02", name: "郑州·物联网数据中台", pm: "赵六", type: "外包定制", progress: "42%", status: "延期风险", desc: "硬件网关数据协议联调受阻，需要安排研发出差驻场" },
+      { id: "PROJ-2026-GZ03", name: "广州·移动端数字营销底座", pm: "李四", type: "自运营项目", progress: "15%", status: "待启动", desc: "商务合同已会签完成，等待产品原型评审" }
+    ],
+    leads: [
+      { id: "LEAD-2026-081", name: "顺丰智能仓储升级方案", contact: "李总 (13800138000)", source: "百度渠道", intention: "意向高", budget: "¥280k", status: "需求沟通中" },
+      { id: "LEAD-2026-089", name: "具身智能调度控制台", contact: "赵女士 (微信: zhao_ai)", source: "小红书", intention: "意向中", budget: "¥450k", status: "初步建联" },
+      { id: "LEAD-2026-092", name: "连锁咖啡门店核销小程序", contact: "乐炎 (13911112222)", source: "抖音", intention: "意向高", budget: "¥80k", status: "待发方案" }
+    ],
+    members: [
+      { name: "李四", role: "项目经理 / 管理员", dept: "交付中心", skills: "PRD、项目架构、排期" },
+      { name: "王五", role: "高级前端工程师", dept: "技术研发部", skills: "React、Vue、Arco Design" },
+      { name: "赵六", role: "资深后端工程师", dept: "技术研发部", skills: "Node.js、Java、高并发" },
+      { name: "孙七", role: "UI/UX 设计师", dept: "设计中心", skills: "Figma、交互原型、B端规范" }
+    ]
+  };
+
+  let lastExecutedAction = null;
+  let undoTimeout = null;
+
+  const placeholders = [
+    "搜索项目、线索，或按 ⌘K 让 Agent 执行...",
+    "输入「/task」快速给 PM 指派交付任务...",
+    "输入「/follow」快速给销售线索登记跟进...",
+    "口述：「给 A公司CRM 建一个 P1 缺陷指派给王五」...",
+    "口述：「帮我诊断本月有哪些即将延期的项目」..."
+  ];
+  let placeholderIndex = 0;
+  setInterval(() => {
+    placeholderIndex = (placeholderIndex + 1) % placeholders.length;
+    const el = document.getElementById("rotatingPlaceholder");
+    if (el) {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.innerText = placeholders[placeholderIndex];
+        el.style.opacity = '1';
+      }, 300);
+    }
+  }, 4000);
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openPalette();
+    } else if (e.key === 'Escape') {
+      closePalette();
+    }
+  });
+
+  function openPalette() {
+    const overlay = document.getElementById('paletteOverlay');
+    overlay.classList.add('active');
+    setTimeout(() => {
+      const input = document.getElementById('paletteInput');
+      input.focus();
+      input.select();
+    }, 100);
+  }
+
+  function closePalette() {
+    const overlay = document.getElementById('paletteOverlay');
+    overlay.classList.remove('active');
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target.id === 'paletteOverlay') {
+      closePalette();
+    }
+  }
+
+  function openPaletteWithQuery(query) {
+    openPalette();
+    const input = document.getElementById('paletteInput');
+    input.value = query;
+    handleInputChange(query);
+  }
+
+  function applyChip(text) {
+    const input = document.getElementById('paletteInput');
+    input.value = text;
+    input.focus();
+    handleInputChange(text);
+  }
+
+  function clearInput() {
+    const input = document.getElementById('paletteInput');
+    input.value = '';
+    handleInputChange('');
+    input.focus();
+  }
+
+  function handleInputChange(val) {
+    const btnClear = document.getElementById('btnClear');
+    const defaultView = document.getElementById('defaultView');
+    const dynamicView = document.getElementById('dynamicView');
+
+    if (!val || val.trim() === '') {
+      btnClear.style.display = 'none';
+      defaultView.style.display = 'block';
+      dynamicView.style.display = 'none';
+      return;
+    }
+
+    btnClear.style.display = 'inline-block';
+    defaultView.style.display = 'none';
+    dynamicView.style.display = 'block';
+
+    const trimmed = val.trim();
+
+    if (trimmed.startsWith('/')) {
+      renderSlashCommand(trimmed);
+      return;
+    }
+
+    if (isNaturalLanguageTask(trimmed)) {
+      renderNL2Action(trimmed);
+      return;
+    }
+
+    renderUniversalSearch(trimmed);
+  }
+
+  function isNaturalLanguageTask(text) {
+    const keywords = ['建', '派', '提', '写', '录', '出差', '申请', '诊断', '查一下', '帮我', '总结', 'bug', '缺陷', '任务', '跟进', '明天', '下午'];
+    return keywords.some(k => text.toLowerCase().includes(k)) && text.length >= 6;
+  }
+
+  function renderSlashCommand(cmd) {
+    const dynamicView = document.getElementById('dynamicView');
+    const lower = cmd.toLowerCase();
+
+    if (lower.startsWith('/task')) {
+      dynamicView.innerHTML = `
+        <div class="slash-form-card">
+          <div class="intent-title" style="margin-bottom: 12px;">
+            <i class="fa-solid fa-thumbtack"></i> 快速指派交付任务 (Slash /task)
+          </div>
+          <div class="form-row">
+            <div class="form-label">所属项目 *</div>
+            <select class="form-select" id="formTaskProject">
+              <option value="PRJ202605001">A公司CRM系统开发 (外包)</option>
+              <option value="PROJ-2026-CQ01">重庆·微官网与商城 (自研)</option>
+              <option value="PROJ-2026-ZZ02">郑州·物联网数据中台 (外包)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">任务名称 *</div>
+            <input type="text" class="form-input" id="formTaskTitle" value="客户管理列表筛选交互联调与适配" />
+          </div>
+          <div class="form-row">
+            <div class="form-label">指派责任人 *</div>
+            <select class="form-select" id="formTaskAssignee">
+              <option value="王五">王五 (前端工程师)</option>
+              <option value="赵六">赵六 (后端工程师)</option>
+              <option value="孙七">孙七 (UI设计)</option>
+              <option value="钱九">钱九 (测试工程师)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">截止日期</div>
+            <input type="date" class="form-input" id="formTaskDeadline" value="2026-08-25" />
+          </div>
+          <div class="form-row">
+            <div class="form-label">任务描述</div>
+            <textarea class="form-textarea" id="formTaskDesc" placeholder="输入任务验收标准或注意事项...">支持客户名称、手机号模糊检索，修复小屏遮挡缺陷。</textarea>
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary" onclick="clearInput()">取消</button>
+            <button class="arco-btn arco-btn-primary" onclick="executeSlashTask()"><i class="fa-solid fa-check"></i> 立即创建并指派 (Enter)</button>
+          </div>
+        </div>
+      `;
+    } else if (lower.startsWith('/follow')) {
+      dynamicView.innerHTML = `
+        <div class="slash-form-card">
+          <div class="intent-title" style="color: var(--success-6); margin-bottom: 12px;">
+            <i class="fa-solid fa-pen-to-square"></i> 登记业务跟进记录 (Slash /follow)
+          </div>
+          <div class="form-row">
+            <div class="form-label">关联线索/项目</div>
+            <select class="form-select" id="formFollowTarget">
+              <option value="LEAD-2026-081">顺丰智能仓储升级方案 (李总)</option>
+              <option value="LEAD-2026-089">具身智能调度控制台 (赵女士)</option>
+              <option value="PRJ202605001">A公司CRM系统开发 (外包)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">跟进方式 *</div>
+            <select class="form-select" id="formFollowType">
+              <option value="电话沟通">电话沟通</option>
+              <option value="微信沟通">微信沟通</option>
+              <option value="上门拜访">上门拜访</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">意向/状态</div>
+            <select class="form-select" id="formFollowIntention">
+              <option value="意向高">意向高 · 需求明确</option>
+              <option value="意向中">意向中 · 正在对比方案</option>
+              <option value="已签约">已达成意向准备签约</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">跟进纪要 *</div>
+            <textarea class="form-textarea" id="formFollowContent" placeholder="记录核心沟通细节...">已与李总电话初步确认需求范围，对方认可架构设计，约定明日上午10点发送正式报价单。</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-label">下次跟进提醒</div>
+            <input type="text" class="form-input" id="formFollowNext" value="2026-08-24 10:00:00 (明天上午)" />
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary" onclick="clearInput()">取消</button>
+            <button class="arco-btn arco-btn-primary" style="background: var(--success-6);" onclick="executeSlashFollow()"><i class="fa-solid fa-check"></i> 保存并更新主表 (Enter)</button>
+          </div>
+        </div>
+      `;
+    } else if (lower.startsWith('/trip')) {
+      dynamicView.innerHTML = `
+        <div class="slash-form-card">
+          <div class="intent-title" style="color: var(--warning-6); margin-bottom: 12px;">
+            <i class="fa-solid fa-plane"></i> 发起差旅申请 (ADR-0089 必选项目/线索)
+          </div>
+          <div class="form-row">
+            <div class="form-label">关联业务对象 *</div>
+            <select class="form-select" id="formTripProj">
+              <option value="PROJ-2026-ZZ02">项目: 郑州·物联网数据中台 (计入项目直接成本)</option>
+              <option value="LEAD-2026-081">线索: 顺丰智能仓储升级方案 (计入售前商务成本)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-label">出差目的地</div>
+            <input type="text" class="form-input" value="郑州 (二线城市 · 包干补贴 ¥100/天)" />
+          </div>
+          <div class="form-row">
+            <div class="form-label">出差日期</div>
+            <input type="text" class="form-input" value="2026-08-25 ~ 2026-08-29 (共5天 · 驻地3天)" />
+          </div>
+          <div class="form-row">
+            <div class="form-label">包干补贴测算</div>
+            <div style="font-size: 12px; color: var(--primary-6); font-weight: 600; padding: 6px 0;">
+              自然日 5天 - 2 = 3 驻地天 × ¥100/天 = ¥ 300.00 (随工资发放)
+            </div>
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary" onclick="clearInput()">取消</button>
+            <button class="arco-btn arco-btn-primary" style="background: var(--warning-6);" onclick="executeSlashTrip()"><i class="fa-solid fa-check"></i> 提交出差审批 (Enter)</button>
+          </div>
+        </div>
+      `;
+    } else {
+      dynamicView.innerHTML = `
+        <div class="search-section-title"><span>斜杠指令帮助 (Slash Cheatsheet)</span></div>
+        <div class="result-list">
+          <div class="result-item" onclick="applyChip('/task ')"><div class="result-title">/task · 快速指派项目任务</div></div>
+          <div class="result-item" onclick="applyChip('/follow ')"><div class="result-title">/follow · 登记线索/项目跟进记录</div></div>
+          <div class="result-item" onclick="applyChip('/trip ')"><div class="result-title">/trip · 发起差旅与借款申请</div></div>
+          <div class="result-item" onclick="applyChip('/clue ')"><div class="result-title">/clue · 新增销售线索 (支持对称查重)</div></div>
+        </div>
+      `;
+    }
+  }
+
+  function renderNL2Action(query) {
+    const dynamicView = document.getElementById('dynamicView');
+    const q = query.toLowerCase();
+
+    if (q.includes('bug') || q.includes('缺陷') || (q.includes('crm') && q.includes('王五'))) {
+      dynamicView.innerHTML = `
+        <div class="agent-intent-card">
+          <div class="intent-card-header">
+            <div class="intent-title">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 识别意图：新建交付缺陷 (Bug Tracker)
+            </div>
+            <div class="intent-status">解析置信度 99% · 待确认</div>
+          </div>
+          <div class="intent-slots-grid">
+            <div class="slot-item">
+              <div class="slot-label">关联项目</div>
+              <div class="slot-val">[PRJ202605001] A公司CRM系统开发</div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">严重度等级</div>
+              <div class="slot-val"><span class="tag tag-red">P1 严重</span></div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">指派修复人</div>
+              <div class="slot-val">王五 (高级前端工程师)</div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">期望截止时间</div>
+              <div class="slot-val">2026-08-24 18:00 (明天下午)</div>
+            </div>
+            <div class="slot-item" style="grid-column: span 2;">
+              <div class="slot-label">缺陷描述</div>
+              <div class="slot-val">移动端与客户列表按手机号搜索无结果问题排查与修复</div>
+            </div>
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="applyChip('/task ')">调整参数</button>
+            <button class="arco-btn arco-btn-primary arco-btn-sm" onclick="confirmNLAction('已为 A公司CRM 创建 P1 缺陷并指派给王五！', 'PRJ202605001')">
+              <i class="fa-solid fa-check"></i> 确认执行创建 (Enter)
+            </button>
+          </div>
+        </div>
+
+        <div class="search-section-title"><span>相关上下文与实体匹配</span></div>
+        <div class="result-list">
+          <div class="result-item">
+            <div class="result-main">
+              <div class="result-icon" style="background: var(--primary-1); color: var(--primary-6);"><i class="fa-solid fa-cubes-stacked"></i></div>
+              <div class="result-info">
+                <div class="result-title">A公司CRM系统开发 · PRJ202605001</div>
+                <div class="result-meta"><span>当前负责人: 李四</span> • <span>当前已有 2 个 P1 Bug</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (q.includes('延期') || q.includes('诊断') || q.includes('风险')) {
+      dynamicView.innerHTML = `
+        <div class="agent-intent-card" style="border-color: #FFA39E; background: #FFF1F0;">
+          <div class="intent-card-header" style="border-color: #FFA39E;">
+            <div class="intent-title" style="color: var(--danger-6);">
+              <i class="fa-solid fa-triangle-exclamation"></i> 诊断报告：发现 2 项交付与工期风险
+            </div>
+            <div class="intent-status" style="background: var(--danger-1); color: var(--danger-6);">实时分析完成</div>
+          </div>
+          <div style="font-size: 12px; color: var(--color-text-1); line-height: 1.6; margin-bottom: 12px;">
+            <p><strong>1. [PRJ202605001] A公司CRM系统开发</strong>：存在 2 个未关闭的 P1 Bug，距离 8 月 30 日首期交付仅剩 7 天，建议优先排期修复。</p>
+            <p style="margin-top: 6px;"><strong>2. [PROJ-2026-ZZ02] 郑州·物联网数据中台</strong>：进度仅 42%，硬件网关联调受阻，建议安排研发人员出差实地对接。</p>
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="applyChip('/trip 郑州物联网')">快速发起出差</button>
+            <button class="arco-btn arco-btn-primary arco-btn-sm" style="background: var(--danger-6);" onclick="closePalette()">
+              查看风险项目详情
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (q.includes('跟进') || q.includes('李总') || q.includes('小红书')) {
+      dynamicView.innerHTML = `
+        <div class="agent-intent-card" style="border-color: #B7EB8F; background: #F6FFED;">
+          <div class="intent-card-header" style="border-color: #B7EB8F;">
+            <div class="intent-title" style="color: var(--success-6);">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 识别意图：线索跟进智能反写
+            </div>
+            <div class="intent-status" style="background: var(--success-1); color: var(--success-6);">解析就绪</div>
+          </div>
+          <div class="intent-slots-grid">
+            <div class="slot-item">
+              <div class="slot-label">目标线索</div>
+              <div class="slot-val">[LEAD-2026-081] 顺丰智能仓储升级方案 (李总)</div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">跟进方式</div>
+              <div class="slot-val"><span class="tag tag-green">电话沟通</span></div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">意向等级</div>
+              <div class="slot-val"><span class="tag tag-orange">意向高</span></div>
+            </div>
+            <div class="slot-item">
+              <div class="slot-label">下次提醒</div>
+              <div class="slot-val">2026-08-24 10:00 (明天上午发方案)</div>
+            </div>
+            <div class="slot-item" style="grid-column: span 2;">
+              <div class="slot-label">纪要内容</div>
+              <div class="slot-val">今天电话沟通意向高，认可整体架构方案，约定明日上午发送详细报价单。</div>
+            </div>
+          </div>
+          <div class="intent-actions-row">
+            <button class="arco-btn arco-btn-secondary arco-btn-sm" onclick="clearInput()">取消</button>
+            <button class="arco-btn arco-btn-primary arco-btn-sm" style="background: var(--success-6);" onclick="confirmNLAction('已成功写入跟进记录并同步下次跟进时间！', 'LEAD-2026-081')">
+              <i class="fa-solid fa-check"></i> 确认写入跟进 (Enter)
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      renderUniversalSearch(query);
+    }
+  }
+
+  function renderUniversalSearch(keyword) {
+    const dynamicView = document.getElementById('dynamicView');
+    const kw = keyword.toLowerCase();
+
+    const matchedProjects = mockDatabase.projects.filter(p => p.name.toLowerCase().includes(kw) || p.id.toLowerCase().includes(kw) || p.pm.includes(kw));
+    const matchedLeads = mockDatabase.leads.filter(l => l.name.toLowerCase().includes(kw) || l.contact.toLowerCase().includes(kw) || l.source.includes(kw));
+    const matchedMembers = mockDatabase.members.filter(m => m.name.toLowerCase().includes(kw) || m.role.toLowerCase().includes(kw) || m.dept.includes(kw));
+
+    let html = '';
+
+    if (matchedProjects.length > 0) {
+      html += `<div class="search-section-title"><span>📁 项目交付 (${matchedProjects.length})</span></div><div class="result-list">`;
+      matchedProjects.forEach((p, idx) => {
+        html += `
+          <div class="result-item ${idx === 0 ? 'focused' : ''}" onclick="quickJump('${p.name}')">
+            <div class="result-main">
+              <div class="result-icon" style="background: var(--primary-1); color: var(--primary-6);"><i class="fa-solid fa-cubes-stacked"></i></div>
+              <div class="result-info">
+                <div class="result-title">${highlightKeyword(p.name, kw)} <span class="tag tag-blue">${p.type}</span> <span class="tag tag-gray">${p.status}</span></div>
+                <div class="result-meta"><span>${p.id}</span> • <span>PM: ${p.pm}</span> • <span>进度: ${p.progress}</span></div>
+              </div>
+            </div>
+            <div class="result-shortcut"><span class="kbd-badge">↵ 跳转</span></div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    if (matchedLeads.length > 0) {
+      html += `<div class="search-section-title"><span>🎯 销售线索 (${matchedLeads.length})</span></div><div class="result-list">`;
+      matchedLeads.forEach(l => {
+        html += `
+          <div class="result-item" onclick="quickJump('${l.name}')">
+            <div class="result-main">
+              <div class="result-icon" style="background: var(--warning-1); color: var(--warning-6);"><i class="fa-solid fa-headset"></i></div>
+              <div class="result-info">
+                <div class="result-title">${highlightKeyword(l.name, kw)} <span class="tag tag-orange">${l.intention}</span> <span class="tag tag-purple">${l.source}</span></div>
+                <div class="result-meta"><span>${l.id}</span> • <span>${l.contact}</span> • <span>预算: ${l.budget}</span></div>
+              </div>
+            </div>
+            <div class="result-shortcut"><span class="kbd-badge">↵ 查看</span></div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    if (matchedMembers.length > 0) {
+      html += `<div class="search-section-title"><span>👤 团队成员 (${matchedMembers.length})</span></div><div class="result-list">`;
+      matchedMembers.forEach(m => {
+        html += `
+          <div class="result-item" onclick="quickJump('${m.name}')">
+            <div class="result-main">
+              <div class="result-icon" style="background: var(--success-1); color: var(--success-6);"><i class="fa-solid fa-user-check"></i></div>
+              <div class="result-info">
+                <div class="result-title">${highlightKeyword(m.name, kw)} · ${m.dept}</div>
+                <div class="result-meta"><span>${m.role}</span> • <span>${m.skills}</span></div>
+              </div>
+            </div>
+            <div class="result-shortcut"><span class="kbd-badge">↵ 档案</span></div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    if (!html) {
+      html = `
+        <div style="text-align: center; padding: 36px 0; color: var(--color-text-3);">
+          <i class="fa-solid fa-robot" style="font-size: 32px; color: var(--color-text-4); margin-bottom: 10px;"></i>
+          <p style="font-size: 13px;">未检索到与「${keyword}」直接匹配的内容</p>
+          <p style="font-size: 11px; margin-top: 4px;">您可以尝试输入自然语言，让 AI Copilot 协助您创建任务或流转流程</p>
+        </div>
+      `;
+    }
+
+    dynamicView.innerHTML = html;
+  }
+
+  function highlightKeyword(text, kw) {
+    if (!kw) return text;
+    const regex = new RegExp(`(${kw})`, 'gi');
+    return text.replace(regex, `<span style="color: var(--primary-6); background: rgba(22, 93, 255, 0.1); border-radius: 2px; padding: 0 2px;">$1</span>`);
+  }
+
+  function executeSlashTask() {
+    const proj = document.getElementById('formTaskProject').value;
+    const title = document.getElementById('formTaskTitle').value;
+    const assignee = document.getElementById('formTaskAssignee').value;
+
+    closePalette();
+    showToast(`已成功创建任务「${title}」并指派给 ${assignee}！`, () => {
+      showToast('已撤销新建任务操作。');
+    });
+
+    const row = document.getElementById(`row-${proj}`);
+    if (row) {
+      row.style.background = '#E8F3FF';
+      setTimeout(() => row.style.background = '', 2000);
+    }
+  }
+
+  function executeSlashFollow() {
+    closePalette();
+    showToast(`跟进记录已登记完成，已自动更新主表下次跟进时间！`, () => {
+      showToast('已撤销本次跟进提交。');
+    });
+  }
+
+  function executeSlashTrip() {
+    closePalette();
+    showToast(`差旅申请已提交，已生成包干补贴预估 ¥300 并流转至主管审批！`);
+  }
+
+  function confirmNLAction(msg, targetId) {
+    closePalette();
+    showToast(msg, () => {
+      showToast('已撤销该 AI Agent 触发的操作。');
+    });
+
+    if (targetId && document.getElementById(`row-${targetId}`)) {
+      const row = document.getElementById(`row-${targetId}`);
+      row.style.background = '#E8FFEA';
+      setTimeout(() => row.style.background = '', 2500);
+    }
+  }
+
+  function quickJump(name) {
+    closePalette();
+    showToast(`已为您直达「${name}」详情视图`);
+  }
+
+  function showToast(msg, undoCallback) {
+    const toast = document.getElementById('toastContainer');
+    const msgEl = document.getElementById('toastMessage');
+    msgEl.innerText = msg;
+    toast.classList.add('active');
+
+    lastExecutedAction = undoCallback || null;
+
+    if (undoTimeout) clearTimeout(undoTimeout);
+    undoTimeout = setTimeout(() => {
+      toast.classList.remove('active');
+    }, 5000);
+  }
+
+  function undoLastAction() {
+    const toast = document.getElementById('toastContainer');
+    toast.classList.remove('active');
+    if (lastExecutedAction) {
+      lastExecutedAction();
+      lastExecutedAction = null;
+    }
+  }
+
+  function handleInputKeyDown(e) {
+    if (e.key === 'Enter') {
+      const primaryBtn = document.querySelector('.palette-body .arco-btn-primary');
+      if (primaryBtn) {
+        primaryBtn.click();
+      } else {
+        const focusedItem = document.querySelector('.result-item.focused');
+        if (focusedItem) focusedItem.click();
+      }
+    }
+  }
+</script>
+
+</body>
+</html>

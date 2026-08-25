@@ -3,7 +3,19 @@
 > 2026-08-19 · grill 后展开
 > 研究文档：`research/合同回款看板与甘特图.md`
 > 事实源：`HubX/CONTEXT.md` + `HubX/docs/adr/`
-> 本次开工范围：**全部阶段 P1–P5**
+> 本次开工范围：**全部阶段 P1–P5**（**后于** B4 实收表与 B5 双写）
+
+## 修订（2026-08-22）— 钱的口径
+
+决议：`计划/当前/conflict-spawn-and-collections.md` 冲突 2。CONTEXT：期次 ≠ 实收。
+
+| 看板数字 | 读 |
+|---|---|
+| 待付期次、逾期、即将到期、甘特期次节点 | 合同 `paymentPlans` |
+| 已回、进度%、本月已回款、结清判定的「收到多少」 | `CollectionService` / `collections`，按 `contractId` 合计 |
+| 录入到账 | **必须** `registerMainPaymentDualWrite`（与合同详情同一套），禁止只写嵌套 `collectionRecords` |
+
+P1 的 `deriveCollectionProgress(contract)` 改为入参 `(contract, ledgerEntries)`（或已按合同切好的实收列表），**不要** `Σ contract.collectionRecords`。P2 **不要**新建主数据 `paymentMock`；五态用现有合同种子 + 台账。嵌套流水仍可双写（旧页），但不是看板事实源。
 
 ---
 
@@ -41,7 +53,7 @@
 | `aggregateCashflow(contracts, months)` | 合同列表 + 月份范围 | `CashflowMetric[]`（按月按确定性分级聚合） |
 | `buildGanttNodes(contracts)` | 合同列表 | `ForecastNode[]`（甘特图数据） |
 | `deriveNextPayPeriod(contract)` | contract | 当前待付期次 + 金额 + 日期 |
-| `deriveCollectionProgress(contract)` | contract | `{ received, total, percentage, remaining }` |
+| `deriveCollectionProgress(contract, ledgerEntries)` | 合同 + 该合同实收列表 | `{ received, total, percentage, remaining }`；`received` 只加台账 |
 
 ### 看板五态派生规则
 
@@ -70,10 +82,10 @@ blocked  = 存在未解决的合同纠纷或严重卡点
 |---|---|---|
 | 1 | `pages/contracts/payment/PaymentDashboard.tsx` | **新建**。KPI 摘要栏 + 五列看板 + 筛选 |
 | 2 | `pages/contracts/payment/ContractPaymentCard.tsx` | **新建**。合同卡片（10 维信息） |
-| 3 | `pages/contracts/payment/RecordCollectionModal.tsx` | **新建**。录入回款弹窗 |
+| 3 | `pages/contracts/payment/RecordCollectionModal.tsx` | **新建**。录入回款弹窗 → `registerMainPaymentDualWrite` |
 | 4 | `pages/contracts/payment/BlockerModal.tsx` | **新建**。标记/解决卡点弹窗 |
-| 5 | `pages/contracts/payment/paymentMock.ts` | **新建**。扩展 mock 数据 |
-| 6 | `pages/contracts/mockData.ts` | 补充五态合同 mock |
+| 5 | ~~`paymentMock.ts` 主数据~~ | **不做**。用合同种子 + `CollectionService` |
+| 6 | `pages/contracts/mockData.ts` | 仅补齐缺的五态演示合同，金额以台账为准 |
 
 ### 合同卡片 10 维
 

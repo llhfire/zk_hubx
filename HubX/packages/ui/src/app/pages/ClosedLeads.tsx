@@ -23,10 +23,11 @@ import {
 import type { LeadListItem } from './leads/types';
 import {
   LEAD_SOURCE_LIST,
+  LEAD_SOURCE_LABEL,
   LEAD_SOURCE_COLOR,
   COMPANY_ENTITY_LIST,
 } from './leads/types';
-import { CLOSED_LEADS } from './leads/mockData';
+import { useLeads } from '@/app/leads/LeadContext';
 import { searchLeads } from './leads/utils';
 
 const { Text } = Typography;
@@ -45,7 +46,6 @@ interface ClosedLeadItem extends LeadListItem {
 
 const closedLeadsData: ClosedLeadItem[] = [
   {
-    ...CLOSED_LEADS[0],
     closedStatus: '已签约',
     closeDate: '2026-08-12',
     contractNo: 'ZKRY202608080001',
@@ -59,18 +59,36 @@ const closedLeadsData: ClosedLeadItem[] = [
 
 export function ClosedLeads() {
   const navigate = useNavigate();
+  const { leads } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [entityFilter, setEntityFilter] = useState<string>('');
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
+  const dataSource = useMemo<ClosedLeadItem[]>(() => {
+    const closedPool = leads.filter((l) => l.transformStatus && l.status === '已签单');
+    if (closedPool.length === 0) return closedLeadsData;
+    return closedPool.map((lead) => ({
+      ...lead,
+      closedStatus: '已签约',
+      closeDate: lead.lastFollowTime || lead.updateTime || '',
+      contractNo: 'ZKRY202608080001',
+      contractAmount: Number(lead.customerBudget?.replace(/[¥,]/g, '') || 0),
+      receivedAmount: 0,
+      projectName: lead.name,
+      projectStatus: '进行中',
+      conversionDays: lead.daysHeld,
+    }));
+  }, [leads]);
+
   const filteredLeads = useMemo(() => {
-    return closedLeadsData.filter((lead) => {
+    const base = dataSource;
+    return base.filter((lead) => {
       const hitKeyword = !keyword || [lead.id, lead.name, lead.customer, lead.contractNo, lead.projectName].some((item) => item.includes(keyword));
       const hitEntity = !entityFilter || lead.entity === entityFilter;
       return hitKeyword && hitEntity;
     });
-  }, [keyword, entityFilter]);
+  }, [keyword, entityFilter, dataSource]);
 
   const totalAmount = filteredLeads.reduce((sum, lead) => sum + lead.contractAmount, 0);
   const receivedAmount = filteredLeads.reduce((sum, lead) => sum + lead.receivedAmount, 0);
@@ -109,7 +127,7 @@ export function ClosedLeads() {
       width: 130,
       render: (_: unknown, r: ClosedLeadItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
         </Space>
       ),
@@ -174,7 +192,7 @@ export function ClosedLeads() {
         <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
           <Input allowClear prefix={<IconSearch />} placeholder="搜索线索、客户、合同或项目" value={keyword} onChange={setKeyword} style={{ width: 280 }} />
           <Select placeholder="线索来源" style={{ width: 130 }} allowClear>
-            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
           <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}

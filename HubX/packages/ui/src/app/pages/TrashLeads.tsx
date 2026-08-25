@@ -22,14 +22,16 @@ import {
 import type { LeadListItem } from './leads/types';
 import {
   LEAD_SOURCE_LIST,
+  LEAD_SOURCE_LABEL,
   LEAD_SOURCE_COLOR,
   COMPANY_ENTITY_LIST,
 } from './leads/types';
-import { TRASH_LEADS } from './leads/mockData';
+import { useLeads } from '@/app/leads/LeadContext';
 import { searchLeads } from './leads/utils';
 
 export function TrashLeads() {
   const navigate = useNavigate();
+  const { leads } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
@@ -37,12 +39,13 @@ export function TrashLeads() {
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
   const filteredLeads = useMemo(() => {
-    let result = TRASH_LEADS;
+    const pool = leads.filter((l) => l.clueType === 'trash');
+    let result = pool;
     if (keyword) result = searchLeads(result, keyword);
     if (sourceFilter) result = result.filter((l) => l.source === sourceFilter);
     if (entityFilter) result = result.filter((l) => l.entity === entityFilter);
     return result;
-  }, [keyword, sourceFilter, entityFilter]);
+  }, [leads, keyword, sourceFilter, entityFilter]);
 
   const handleOpenCompanyEntity = (entityName: string) => {
     if (!companyEntityPermissions.view) { Message.warning('暂无权限'); return; }
@@ -81,7 +84,7 @@ export function TrashLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
         </Space>
       ),
@@ -122,7 +125,7 @@ export function TrashLeads() {
         <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
           <Input style={{ width: 280 }} placeholder="搜索线索名称、联系人" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
           <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
-            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
           <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}

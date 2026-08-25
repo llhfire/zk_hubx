@@ -1,64 +1,127 @@
-import { useMemo } from 'react';
-import { Card, Statistic, Typography } from '@arco-design/web-react';
+import { useMemo, useState } from 'react';
+import { Card, Statistic, Typography, Radio, Table, Alert } from '@arco-design/web-react';
 import { useOperatingExpense } from './OperatingExpenseContext';
-import { overheadPool, capacityHours, hourlyOverheadRate, latestPayrollTotal } from './expenseCalc';
-import { mockWorkdaysByMonth, mockEmployeesForOverhead, mockSalaryForOverhead } from './mockData';
+import {
+  overheadPool, capacityHours, hourlyOverheadRate, latestPayrollTotal,
+  postedLedgerTotal, directByAttribution, includeLaborTotal,
+  rankByDepartment, rankByProject,
+} from './expenseCalc';
+import { detectAnomalies } from './expenseAnomalies';
+import { canGenerate, generateFromTemplate } from './expenseMutations';
+import { mockWorkdaysByMonth, mockEmployeesForOverhead, mockSalaryForOverhead, OPEX_DEPARTMENTS, OPEX_PROJECT_NAMES } from './mockData';
+import { CURRENT_MONTH, rollingMonths } from './opexConstants';
+import { downloadLedgerXlsx } from './exportLedger';
 
 const { Text } = Typography;
 
-/** 最近 6 个月 */
-const MONTHS = ['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11'];
+const MONTHS = rollingMonths();
 
 export function DashboardTab() {
-  const { records } = useOperatingExpense();
+  const { records, setRecords, templates } = useOperatingExpense();
+  const [includeLabor, setIncludeLabor] = useState(true);
   const payrollTotal = useMemo(() => latestPayrollTotal(mockSalaryForOverhead), []);
 
-  const monthlyStats = useMemo(() => {
-    return MONTHS.map(month => {
-      const pool = overheadPool(records, month);
-      const hours = capacityHours(mockEmployeesForOverhead, month, mockWorkdaysByMonth);
-      const rate = hourlyOverheadRate(pool, hours);
-      return { month, pool, hours, rate };
-    });
-  }, [records]);
+  const currentMonth = CURRENT_MONTH;
+  const ledgerTotal = useMemo(() => postedLedgerTotal(records, currentMonth), [records, currentMonth]);
+  const totalWithLabor = includeLaborTotal(ledgerTotal, payrollTotal, includeLabor);
 
-  const current = monthlyStats[1] ?? monthlyStats[0];
-  const maxPool = Math.max(...monthlyStats.map(x => x.pool), 1);
+  const pool = useMemo(() => overheadPool(records, currentMonth), [records, currentMonth]);
+  const hours = useMemo(() => capacityHours(mockEmployeesForOverhead, currentMonth, mockWorkdaysByMonth), [currentMonth]);
+  const rate = useMemo(() => hourlyOverheadRate(pool, hours), [pool, hours]);
+
+  const projectDirect = useMemo(() => directByAttribution(records, currentMonth, 'project'), [records, currentMonth]);
+  const leadDirect = useMemo(() => directByAttribution(records, currentMonth, 'lead_channel'), [records, currentMonth]);
+
+  // 排行
+  const deptRank = useMemo(() => rankByDepartment(records, currentMonth, id => OPEX_DEPARTMENTS.find(d => d.id === id)?.name ?? id), [records, currentMonth]);
+  const projRank = useMemo(() => rankByProject(records, currentMonth, id => OPEX_PROJECT_NAMES[id] ?? id), [records, currentMonth]);
+
+  // 异动
+  const anomalies = useMemo(() => detectAnomalies({
+    records, templates, currentMonth, today: '2026-08-21',
+    canGenerate: (t, m, r) => canGenerate(t, m, r),
+  }), [records, templates]);
+
+  const handleExport = () => {
+    const posted = records.filter(r => r.status === 'posted' && r.billingMonth === currentMonth && r.categoryPrimary !== 'LABOR');
+    downloadLedgerXlsx(posted, `运营费用_${currentMonth}.xlsx`);
+  };
 
   return (
     <div style={{ padding: 'var(--space-4)' }}>
-      {/* KPI 卡片 */}
+      {/* 口径切换 + 导出 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Radio.Group value={includeLabor} onChange={setIncludeLabor} type="button">
+          <Radio value={true}>含人力</Radio>
+          <Radio value={false}>不含人力</Radio>
+        </Radio.Group>
+        <a onClick={handleExport} style={{ cursor: 'pointer', color: 'var(--color-primary-6)' }}>导出当月台账</a>
+      </div>
+
+      {/* 头条 KPI */}
+      <Card style={{ marginBottom: 16, background: 'var(--color-fill-1)' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
+          <Statistic title={`${currentMonth} 合计（${includeLabor ? '含人力' : '不含人力'}）`} value={totalWithLabor} prefix="¥" />
+          {includeLabor && <Text type="secondary">台账 ¥{ledgerTotal.toLocaleString()} + 工资 ¥{payrollTotal.toLocaleString()}</Text>}
+        </div>
+      </Card>
+
+      {/* 支撑 KPI */}
       <div className="expense-kpi-grid">
         <Card className="expense-kpi-card">
-          <Statistic title="当月费用池" value={current?.pool ?? 0} prefix="¥" />
+          <Statistic title="公共运营池" value={pool} prefix="¥" />
         </Card>
         <Card className="expense-kpi-card">
-          <Statistic title="R_hour（元/工时）" value={current?.rate?.toFixed(2) ?? '0'} prefix="¥" />
+          <Statistic title="项目直接" value={projectDirect} prefix="¥" />
         </Card>
         <Card className="expense-kpi-card">
-          <Statistic title="编制工时" value={current?.hours ?? 0} suffix="h" />
+          <Statistic title="线索直接" value={leadDirect} prefix="¥" />
         </Card>
         <Card className="expense-kpi-card">
-          <Statistic title="工资引用（最近月）" value={payrollTotal} prefix="¥" />
-          <Text type="secondary" className="expense-kpi-hint">2026-05 合计</Text>
+          <Statistic title="R_hour（元/工时）" value={rate?.toFixed(2) ?? '0'} prefix="¥" />
+        </Card>
+        <Card className="expense-kpi-card">
+          <Statistic title="工资引用" value={payrollTotal} prefix="¥" />
+          <Text type="secondary" style={{ fontSize: 12 }}>2026-05 · 平移</Text>
         </Card>
       </div>
 
-      {/* 趋势柱状图 */}
-      <Card title="近 6 个月费用池趋势（不含工资）">
-        <div className="expense-bar-chart">
-          {monthlyStats.map(s => {
-            const height = (s.pool / maxPool) * 160;
-            return (
-              <div key={s.month} className="expense-bar-chart-col">
-                <div className="expense-bar-chart-value">¥{(s.pool / 1000).toFixed(1)}k</div>
-                <div className="expense-bar-chart-bar" style={{ height }} />
-                <div className="expense-bar-chart-label">{s.month.slice(5)}</div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+      {/* 异动 */}
+      {anomalies.length > 0 && (
+        <Card title="异动提醒" style={{ marginTop: 16 }}>
+          {anomalies.map((a, i) => (
+            <Alert key={i} type="warning" content={`${a.title}：${a.detail}`} style={{ marginBottom: 8 }} />
+          ))}
+        </Card>
+      )}
+
+      {/* 两张排行 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+        <Card title="部门归口排行">
+          <Table
+            data={deptRank.map((r, i) => ({ ...r, rank: i + 1 }))}
+            columns={[
+              { title: '#', dataIndex: 'rank', width: 40 },
+              { title: '部门', dataIndex: 'name' },
+              { title: '金额', dataIndex: 'amount', render: (v: number) => `¥${v.toLocaleString()}` },
+            ]}
+            pagination={false}
+            size="small"
+          />
+        </Card>
+        <Card title="项目直接支出排行">
+          <Table
+            data={projRank.map((r, i) => ({ ...r, rank: i + 1 }))}
+            columns={[
+              { title: '#', dataIndex: 'rank', width: 40 },
+              { title: '项目', dataIndex: 'name' },
+              { title: '金额', dataIndex: 'amount', render: (v: number) => `¥${v.toLocaleString()}` },
+            ]}
+            pagination={false}
+            size="small"
+          />
+        </Card>
+      </div>
     </div>
   );
 }

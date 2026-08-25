@@ -37,6 +37,8 @@ import {
   mapUploadFilesToAttachments,
 } from '@/app/pages/contracts/contractModification';
 import { getLeadDetailProfile } from '@/app/pages/leads/leadDetailProfiles';
+import { channelLabel } from '@/app/pages/lead-dispatch/channelDictionary';
+import { LEAD_SOURCE_LIST, LEAD_SOURCE_LABEL } from '@/app/pages/leads/types';
 import { LeadPaymentInvoicePanel } from '@/app/pages/leads/components/LeadPaymentInvoicePanel';
 import { LeadFinalContractPanel } from '@/app/pages/leads/components/LeadFinalContractPanel';
 import { LeadFeatureListPanel, initialLeadBusinessEnds, type LeadBusinessEnd } from '@/app/pages/leads/components/LeadFeatureListPanel';
@@ -251,13 +253,11 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   }, [leadInfo.presalesGroupName]);
 
   useEffect(() => {
-    if (!hasApprovedContract && ['contracts-history', 'payments-invoice'].includes(activeMainTab)) {
-      setActiveMainTab('basic');
-    }
+    // U4：合同信息、回款与发票 Tab 常驻，不再踢回基础信息
     if (!hasConfirmedProject && activeMainTab === 'project-execution') {
       setActiveMainTab('basic');
     }
-  }, [activeMainTab, hasApprovedContract, hasConfirmedProject]);
+  }, [activeMainTab, hasConfirmedProject]);
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState(['APP', '小程序', '管理系统', '官网', '电商系统', 'CMS', 'OA系统']);
@@ -664,7 +664,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   };
 
   const leadSummaryItems = [
-    { label: '线索来源', value: displayLeadValue(leadInfo.source) },
+    { label: '线索来源', value: displayLeadValue(channelLabel(leadInfo.source)) },
     { label: '线索类型', value: displayLeadValue(clueTypeLabel[leadInfo.clueType] || leadInfo.clueType) },
     { label: '客户等级', value: displayLeadValue(leadInfo.customerLevel) },
     { label: '客资成本', value: displayLeadValue(leadInfo.customerCost) },
@@ -835,8 +835,9 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             <TabPane key="basic" title="基础信息" />
             <TabPane key="customer-communication" title="客户沟通" />
             {hasConfirmedProject ? <TabPane key="project-execution" title="项目执行" /> : null}
-            {hasApprovedContract ? <TabPane key="contracts-history" title="合同信息" /> : null}
-            {hasApprovedContract ? <TabPane key="payments-invoice" title="回款与发票" /> : null}
+            {/* U4：合同信息、回款与发票 Tab 常驻 */}
+            <TabPane key="contracts-history" title="合同信息" />
+            <TabPane key="payments-invoice" title="回款与发票" />
           </Tabs>
         </div>
 
@@ -886,34 +887,48 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           <LeadProjectExecutionPanel project={linkedProject} />
         ) : null}
 
-        {hasApprovedContract && activeMainTab === 'contracts-history' && (
+        {/* U4：合同信息 Tab 常驻，无合同显示空态 */}
+        {activeMainTab === 'contracts-history' && (
           <div className="lead-detail-main-content">
               <Card bordered={false}>
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  <LeadFinalContractPanel contract={approvedContract} projectLayout projectFullInfo />
-                </Space>
+                {approvedContract ? (
+                  <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    <LeadFinalContractPanel contract={approvedContract} projectLayout projectFullInfo />
+                  </Space>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-3)' }}>
+                    暂无合同信息。从已确认报价生成合同后，此处将展示合同详情。
+                  </div>
+                )}
               </Card>
           </div>
         )}
 
-        {hasApprovedContract && activeMainTab === 'payments-invoice' && (
+        {/* U4：回款与发票 Tab 常驻，无已批准合同显示空态 */}
+        {activeMainTab === 'payments-invoice' && (
           <div className="lead-detail-main-content">
               <Card bordered={false}>
-                <LeadPaymentInvoicePanel
-                  contractAmount={approvedContract.current.totalAmount}
-                  projectMode
-                  customerInvoiceInfo={{
-                    customerName: approvedContract.current.customerName,
-                    taxpayerId: approvedContract.current.customerTaxNo,
-                    address: approvedContract.current.customerAddress,
-                    phone: approvedContract.current.customerPhone,
-                    bankName: approvedContract.current.bankName,
-                    bankAccount: approvedContract.current.bankAccount,
-                    recipientName: approvedContract.current.customerContact,
-                    recipientPhone: approvedContract.current.customerPhone,
-                    recipientEmail: approvedContract.current.customerEmail,
-                  }}
-                />
+                {approvedContract ? (
+                  <LeadPaymentInvoicePanel
+                    contractAmount={approvedContract.current.totalAmount}
+                    projectMode
+                    customerInvoiceInfo={{
+                      customerName: approvedContract.current.customerName,
+                      taxpayerId: approvedContract.current.customerTaxNo,
+                      address: approvedContract.current.customerAddress,
+                      phone: approvedContract.current.customerPhone,
+                      bankName: approvedContract.current.bankName,
+                      bankAccount: approvedContract.current.bankAccount,
+                      recipientName: approvedContract.current.customerContact,
+                      recipientPhone: approvedContract.current.customerPhone,
+                      recipientEmail: approvedContract.current.customerEmail,
+                    }}
+                  />
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-3)' }}>
+                    暂无已批准合同，回款在合同详情中登记。
+                  </div>
+                )}
               </Card>
           </div>
         )}
@@ -1854,11 +1869,9 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
             <Grid.Col span={8}>
               <FormItem label="线索来源" field="source" rules={[{ required: true, message: '请选择线索来源' }]}>
                 <Select placeholder="请选择">
-                  <Select.Option key="baidu" value="百度推广">百度推广</Select.Option>
-                  <Select.Option key="douyin" value="抖音">抖音</Select.Option>
-                  <Select.Option key="xiaohongshu" value="小红书">小红书</Select.Option>
-                  <Select.Option key="wechat" value="微信推广">微信推广</Select.Option>
-                  <Select.Option key="other" value="其他">其他</Select.Option>
+                  {LEAD_SOURCE_LIST.map((s) => (
+                    <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>
+                  ))}
                 </Select>
               </FormItem>
             </Grid.Col>

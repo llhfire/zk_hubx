@@ -61,11 +61,10 @@ describe('线索类型定义', () => {
     expect(CUSTOMER_LEVEL_COLOR.C).toBe('gray');
   });
 
-  it('LEAD_SOURCE_LIST 包含 8 种来源', () => {
-    expect(LEAD_SOURCE_LIST).toHaveLength(8);
-    expect(LEAD_SOURCE_LIST).toContain('百度');
-    expect(LEAD_SOURCE_LIST).toContain('威客');
-    expect(LEAD_SOURCE_LIST).toContain('小红书');
+  it('LEAD_SOURCE_LIST 与渠道数据字典对齐（5 值英文 key）', () => {
+    expect(LEAD_SOURCE_LIST).toEqual(['xiaohongshu', 'baidu', 'douyin', 'wechat', 'website']);
+    expect(LEAD_SOURCE_LIST).toContain('baidu');
+    expect(LEAD_SOURCE_LIST).toContain('xiaohongshu');
   });
 });
 

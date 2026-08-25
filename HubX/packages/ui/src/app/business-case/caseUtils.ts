@@ -161,6 +161,39 @@ export function startDelivery(input: {
   };
 }
 
+/**
+ * 退回线索：未确认，或未开始且无未作废主合同，可退回。
+ * 有未作废主合同或进行中 → 拒绝。
+ */
+/** 主合同作废 → 项目搁置（U3）。仅进行中项目且绑定该合同时生效。 */
+export function shelveProject(input: {
+  project: { status: string; contractId?: string | null };
+  contractId: string;
+  reason?: string;
+}): { status: '搁置'; latestProgress: string } | null {
+  if (input.project.status !== '进行中') return null;
+  if (input.project.contractId !== input.contractId) return null;
+  return {
+    status: '搁置',
+    latestProgress: `主合同作废（${input.reason || '无原因'}），项目已搁置。日报与交付计划保留。`,
+  };
+}
+
+export function canReturnToLead(
+  project: { status: string },
+  contracts: ContractRef[],
+): { allowed: boolean; reason?: string } {
+  if (project.status === '未确认') return { allowed: true };
+  if (project.status === '未开始') {
+    const hasActiveContract = contracts.some(isActiveContract);
+    if (hasActiveContract) {
+      return { allowed: false, reason: '存在未作废主合同，不能退回线索' };
+    }
+    return { allowed: true };
+  }
+  return { allowed: false, reason: `项目状态为「${project.status}」，不能退回线索` };
+}
+
 export function isVisibleToProductManager(
   project: { status: string; productUsers: string[] },
   productManager: string,
@@ -175,6 +208,50 @@ export function filterProjectsForViewer<T extends { status: string; productUsers
 ): T[] {
   if (viewer.isAdmin) return projects;
   return projects.filter((project) => isVisibleToProductManager(project, viewer.viewerName));
+}
+
+/** U5：管理员可改指产品经理（仅未开始/进行中） */
+export function canReassignProject(
+  project: { status: string },
+  viewer: { isAdmin: boolean },
+): boolean {
+  return viewer.isAdmin && (project.status === '未开始' || project.status === '进行中');
+}
+
+/** U5：改指产品经理，owner 联动 */
+export function reassignProductManager(
+  project: { productUsers: string[]; owner: string },
+  pm: string,
+): { productUsers: string[]; owner: string } {
+  const trimmed = pm.trim();
+  if (!trimmed) throw new Error('请指定产品经理');
+  return { productUsers: [trimmed], owner: trimmed };
+}
+
+/** U5：线索客户 ≠ 合同甲方 → 黄灯 */
+export function customerPartyMismatch(
+  leadCustomer: string | undefined,
+  contractParty: string | undefined,
+): boolean {
+  const a = (leadCustomer ?? '').trim();
+  const b = (contractParty ?? '').trim();
+  if (!a || !b) return false;
+  return a !== b;
+}
+
+/** U6：内部项目判定（无线索、无客户、无合同） */
+export function isInternalProject(project: { leadId?: string; contractId?: string }): boolean {
+  return !project.leadId && !project.contractId;
+}
+
+/** U6：内部项目预算告警豁免 */
+export function projectBudgetAlert(
+  project: { leadId?: string; contractId?: string },
+  _metrics?: { marginRate?: number },
+): 'none' | 'warning' | 'danger' {
+  if (isInternalProject(project)) return 'none';
+  // 外部项目沿用现阈值（此处简化，实际由调用方判断）
+  return 'none';
 }
 
 export function leadProjectBanner(

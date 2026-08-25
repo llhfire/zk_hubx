@@ -1,31 +1,61 @@
-// 项目模块全局状态：阶段 2 把项目列表从各页面局部 useState 收敛到共享 Context，
-// 让「项目列表确认指派」与「线索详情项目条幅 / 项目执行 Tab」读到同一份状态。
-// 项目数据仍是 mock（未接 HTTP），先保持内存态，接后端时再抽 services 数据接缝。
+// 项目模块全局状态（B4 数据接缝）。数据层抽到 services/projectService（mock/http 双实现），
+// 这里只是 React 绑定：镜像 service 返回的数据 + 委托操作后 refresh。
+// α 缺省 mock（SSR 测试用 initialProjects 作首帧）；β 注入 http（apps/web/src/main.tsx）。
 
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
-import { initialProjects, type Project } from './mockData';
+import { initialProjects, type Project, type ProjectStatus } from './mockData';
+import { createMockProjectService, type ProjectService } from '@/services/projectService';
 
 interface ProjectContextValue {
   projects: Project[];
+  loading: boolean;
   getProjectById: (id: string | undefined) => Project | undefined;
   /** 按线索 ID 别名集（原样 ID / lead-* 形式）找关联项目 */
   getProjectByLeadId: (leadId: string | undefined) => Project | null;
-  updateProject: (next: Project) => void;
-  addProject: (project: Project) => void;
-  removeProject: (projectId: string) => void;
+  refresh: () => Promise<void>;
+  updateProject: (next: Project) => Promise<void>;
+  addProject: (project: Project) => Promise<void>;
+  removeProject: (projectId: string) => Promise<void>;
+  confirmAssign: (id: string, productManager: string) => Promise<void>;
+  reassignPm: (id: string, productManager: string) => Promise<void>;
+  advanceStatus: (id: string, status: ProjectStatus) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
-export function ProjectProvider({ children }: PropsWithChildren) {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+interface ProjectProviderProps extends PropsWithChildren {
+  service?: ProjectService;
+}
+
+export function ProjectProvider({ children, service }: ProjectProviderProps) {
+  const svc = useMemo(() => service ?? createMockProjectService(), [service]);
+  // α / 单测 SSR：首帧用种子，避免 renderToStaticMarkup 看不到项目
+  const [projects, setProjects] = useState<Project[]>(() => (service ? [] : initialProjects));
+  const [loading, setLoading] = useState(() => Boolean(service));
+
+  useEffect(() => {
+    let cancelled = false;
+    svc.list().then((ps) => {
+      if (cancelled) return;
+      setProjects(ps);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [svc]);
+
+  const refresh = useCallback(async () => {
+    setProjects(await svc.list());
+  }, [svc]);
 
   const getProjectById = useCallback(
     (id: string | undefined) => (id ? projects.find((project) => project.id === id) : undefined),
@@ -44,21 +74,63 @@ export function ProjectProvider({ children }: PropsWithChildren) {
     [projects],
   );
 
-  const updateProject = useCallback((next: Project) => {
-    setProjects((current) => current.map((project) => (project.id === next.id ? next : project)));
-  }, []);
+  const updateProject = useCallback(async (next: Project) => {
+    await svc.updateProject(next.id, () => next);
+    await refresh();
+  }, [svc, refresh]);
 
-  const addProject = useCallback((project: Project) => {
-    setProjects((current) => [project, ...current]);
-  }, []);
+  const addProject = useCallback(async (project: Project) => {
+    await svc.create(project);
+    await refresh();
+  }, [svc, refresh]);
 
-  const removeProject = useCallback((projectId: string) => {
-    setProjects((current) => current.filter((project) => project.id !== projectId));
-  }, []);
+  const removeProject = useCallback(async (projectId: string) => {
+    await svc.remove(projectId);
+    await refresh();
+  }, [svc, refresh]);
+
+  const confirmAssign = useCallback(async (id: string, productManager: string) => {
+    await svc.confirmAssign(id, productManager);
+    await refresh();
+  }, [svc, refresh]);
+
+  const reassignPm = useCallback(async (id: string, productManager: string) => {
+    await svc.reassignPm(id, productManager);
+    await refresh();
+  }, [svc, refresh]);
+
+  const advanceStatus = useCallback(async (id: string, status: ProjectStatus) => {
+    await svc.advanceStatus(id, status);
+    await refresh();
+  }, [svc, refresh]);
 
   const value = useMemo<ProjectContextValue>(
-    () => ({ projects, getProjectById, getProjectByLeadId, updateProject, addProject, removeProject }),
-    [projects, getProjectById, getProjectByLeadId, updateProject, addProject, removeProject],
+    () => ({
+      projects,
+      loading,
+      getProjectById,
+      getProjectByLeadId,
+      refresh,
+      updateProject,
+      addProject,
+      removeProject,
+      confirmAssign,
+      reassignPm,
+      advanceStatus,
+    }),
+    [
+      projects,
+      loading,
+      getProjectById,
+      getProjectByLeadId,
+      refresh,
+      updateProject,
+      addProject,
+      removeProject,
+      confirmAssign,
+      reassignPm,
+      advanceStatus,
+    ],
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

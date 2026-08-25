@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK-HubX 精益交付 - 业务单详情全景高保真原型 (含补充合同工时与5类成本预测)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f4f6f8;
+      color: #1d2129;
+    }
+    .arco-card {
+      background: #ffffff;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
+    }
+    .arco-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+    .tab-active {
+      color: #165dff !important;
+      border-bottom: 2px solid #165dff !important;
+      font-weight: 600 !important;
+    }
+    .step-line {
+      height: 2px;
+      background-color: #e5e6eb;
+      flex-grow: 1;
+    }
+    .step-line.active {
+      background-color: #165dff;
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f2f5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c9cdd4;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #86909c;
+    }
+  </style>
+</head>
+<body class="p-6">
+
+  <!-- 顶部面包屑与全景标题栏 -->
+  <div class="max-w-7xl mx-auto mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+      <button onclick="alert('返回业务单列表')" class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none shadow-sm">
+        <svg class="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        返回列表
+      </button>
+      <h1 class="text-xl font-bold text-gray-900">业务单详情</h1>
+      <span class="px-2.5 py-0.5 text-xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 rounded">CASE-2026-07-01-001</span>
+      <span class="px-2.5 py-0.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded flex items-center">
+        <span class="badge-dot bg-green-500 mr-1.5"></span>全周期健康 (36.8% > 30.0%)
+      </span>
+      <span class="px-2.5 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 rounded">
+        关联：1 主合同 + 2 补充合同 ｜ 1 主报价 + 2 补充报价
+      </span>
+    </div>
+
+    <div class="flex items-center space-x-2">
+      <button onclick="alert('已生成并导出经营简报 PDF')" class="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md shadow-sm inline-flex items-center">
+        <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        导出经营简报
+      </button>
+      <button onclick="window.print()" class="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md shadow-sm inline-flex items-center">
+        <svg class="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        打印
+      </button>
+      <button onclick="openEditModal()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm inline-flex items-center">
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        管理参数设置
+      </button>
+    </div>
+  </div>
+
+  <!-- 6 大标签页导航 -->
+  <div class="max-w-7xl mx-auto mb-6 bg-white rounded-lg border border-gray-200 px-4 shadow-sm">
+    <div class="flex space-x-8 text-sm overflow-x-auto">
+      <button onclick="switchTab('overview')" id="tab-btn-overview" class="py-3 px-1 tab-active font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        <span>概览看板 (全量聚合)</span>
+      </button>
+      <button onclick="switchTab('eval')" id="tab-btn-eval" class="py-3 px-1 text-gray-500 hover:text-gray-700 font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <span>工时评估 (含主合同+补充协议)</span>
+        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">102 人天</span>
+      </button>
+      <button onclick="switchTab('costs')" id="tab-btn-costs" class="py-3 px-1 text-gray-500 hover:text-gray-700 font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <span>成本归集 (5大分类·含预计发生)</span>
+        <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">已发 ¥118k / 预发 ¥33k</span>
+      </button>
+      <button onclick="switchTab('contracts')" id="tab-btn-contracts" class="py-3 px-1 text-gray-500 hover:text-gray-700 font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <span>主合同与补充协议</span>
+        <span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">1主 + 2补</span>
+      </button>
+      <button onclick="switchTab('quote')" id="tab-btn-quote" class="py-3 px-1 text-gray-500 hover:text-gray-700 font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <span>报价单版本池</span>
+        <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">3 份</span>
+      </button>
+      <button onclick="switchTab('postmortem')" id="tab-btn-postmortem" class="py-3 px-1 text-gray-500 hover:text-gray-700 font-medium flex items-center space-x-1.5 whitespace-nowrap">
+        <span>项目决算 (Post-Mortem)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 主体内容容器 -->
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ==================== TAB 1: 概览看板 ==================== -->
+    <div id="tab-content-overview" class="space-y-6">
+
+      <!-- 1. 业务单生命周期 10 态进度轨迹 & 智能提示 -->
+      <div class="arco-card p-5 bg-white">
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 gap-3">
+          <div class="flex items-center space-x-3">
+            <span class="text-base font-bold text-gray-900">业务单生命周期推进轨迹</span>
+            <span class="text-xs text-gray-500 font-normal">（自有 10 态状态机 · 伴随补充合同动态演进）</span>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="text-gray-500">主合同签署：2026-06-05</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-purple-600 font-medium">补充协议#1 归档：2026-07-10 (+¥3.5万)</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-blue-600 font-bold">延展交付期：2026-09-20 (剩余30天)</span>
+          </div>
+        </div>
+
+        <div class="pt-5 pb-2 px-2">
+          <div class="flex items-center justify-between text-xs font-medium text-center">
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">✓</div>
+              <span class="mt-2 text-gray-700 font-medium">草拟</span>
+            </div>
+            <div class="step-line active"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">✓</div>
+              <span class="mt-2 text-gray-700 font-medium">报价</span>
+            </div>
+            <div class="step-line active"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">✓</div>
+              <span class="mt-2 text-gray-700 font-medium">协商</span>
+            </div>
+            <div class="step-line active"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">✓</div>
+              <span class="mt-2 text-gray-700 font-medium">已签主合同</span>
+            </div>
+            <div class="step-line active"></div>
+
+            <div class="flex flex-col items-center relative w-24">
+              <div class="w-8 h-8 rounded-full bg-blue-600 ring-4 ring-blue-100 text-white flex items-center justify-center font-bold text-xs shadow-md animate-pulse">
+                进行
+              </div>
+              <span class="mt-2 text-blue-700 font-bold">增项交付中</span>
+              <span class="text-[10px] text-purple-600 font-semibold bg-purple-50 px-1 rounded mt-0.5">履约 补充合同#1</span>
+            </div>
+            <div class="step-line"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-gray-100 border border-gray-300 text-gray-500 flex items-center justify-center text-xs">6</div>
+              <span class="mt-2 text-gray-400">客户验收</span>
+            </div>
+            <div class="step-line"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-gray-100 border border-gray-300 text-gray-500 flex items-center justify-center text-xs">7</div>
+              <span class="mt-2 text-gray-400">合并催款</span>
+            </div>
+            <div class="step-line"></div>
+
+            <div class="flex flex-col items-center relative w-16">
+              <div class="w-7 h-7 rounded-full bg-gray-100 border border-gray-300 text-gray-500 flex items-center justify-center text-xs">8</div>
+              <span class="mt-2 text-gray-400">联合结项</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 bg-amber-50 border border-amber-200 rounded-md p-3 flex items-start justify-between text-xs text-amber-800">
+          <div class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+            <div>
+              <span class="font-bold">多协议经营提示：</span>
+              已生效补充合同#1（+¥35,000）已纳入有效标的额并生成 2 期回款计划；补充协议#2（+¥20,000）仍在审批中；主合同中期款 P3（¥41,000）已逾期 6 天，建议催款。
+            </div>
+          </div>
+          <button onclick="switchTab('contracts')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-medium shadow-xs ml-3 flex-shrink-0">
+            查看合同变更链
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 有效标的额与合同版本演进脉络卡 -->
+      <div class="arco-card p-5 bg-white">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <h2 class="text-base font-bold text-gray-900">有效标的额与合同版本演进脉络</h2>
+            <span class="text-xs text-gray-400 font-normal">（主合同 + Σ已归档未作废补充合同变更额）</span>
+          </div>
+          <span class="text-xs font-mono bg-purple-50 text-purple-700 px-2.5 py-1 rounded border border-purple-200 font-bold">
+            当前有效标的额：¥240,000
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-lg">
+            <div class="flex justify-between items-center text-xs text-gray-500 mb-1">
+              <span class="font-bold text-gray-700">主合同 (HT-2026-001)</span>
+              <span class="px-1.5 py-0.2 bg-green-100 text-green-800 rounded text-[10px]">已归档生效</span>
+            </div>
+            <div class="text-lg font-black text-gray-900 font-mono">¥205,000</div>
+            <div class="text-[11px] text-gray-500 mt-1">基准签约额 · 88 人天</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">签约日期：2026-06-05</div>
+          </div>
+
+          <div class="p-3.5 bg-purple-50/60 border border-purple-200 rounded-lg">
+            <div class="flex justify-between items-center text-xs text-purple-700 mb-1">
+              <span class="font-bold">补充协议 #1 (BC01)</span>
+              <span class="px-1.5 py-0.2 bg-green-100 text-green-800 rounded text-[10px]">已归档生效</span>
+            </div>
+            <div class="text-lg font-black text-purple-700 font-mono">+¥35,000</div>
+            <div class="text-[11px] text-purple-600 mt-1">离线多语言增项 · +14 人天</div>
+            <div class="text-[10px] text-purple-400 mt-0.5">归档生效：2026-07-10</div>
+          </div>
+
+          <div class="p-3.5 bg-amber-50/40 border border-dashed border-amber-300 rounded-lg opacity-80">
+            <div class="flex justify-between items-center text-xs text-amber-700 mb-1">
+              <span class="font-bold">补充协议 #2 (BC02)</span>
+              <span class="px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded text-[10px]">审批中 (未生效)</span>
+            </div>
+            <div class="text-lg font-black text-amber-700 font-mono">+¥20,000</div>
+            <div class="text-[11px] text-amber-600 mt-1">第三方 BI 接口对接 · +8 人天</div>
+            <div class="text-[10px] text-amber-500 mt-0.5">不计入当前有效标的额</div>
+          </div>
+
+          <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-lg flex flex-col justify-between">
+            <div class="flex justify-between items-center text-xs text-blue-700 mb-1">
+              <span class="font-bold">有效标的额 (合并基准)</span>
+              <span class="px-1.5 py-0.2 bg-blue-600 text-white rounded text-[10px]">当前执行标准</span>
+            </div>
+            <div class="text-2xl font-black text-blue-700 font-mono">¥240,000</div>
+            <div class="text-[11px] text-blue-600 mt-1 flex justify-between">
+              <span>总有效基线：102 人天</span>
+              <span class="text-gray-400">潜在预期：¥260,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 四维健康度智能诊断看板 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="arco-card p-4 border-l-4 border-green-500">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>全周期利润率达成度</span>
+            <span class="px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-semibold text-[10px]">达标 +6.8%</span>
+          </div>
+          <div class="text-2xl font-black text-green-600">36.8%</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span>目标基线: 30.0%</span>
+            <span class="text-gray-400">有效标的额 ¥24.0万</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-green-500 h-full rounded-full" style="width: 92%"></div>
+          </div>
+        </div>
+
+        <div class="arco-card p-4 border-l-4 border-blue-500">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>EAC 完工估算 vs 预算帽</span>
+            <span class="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded font-semibold text-[10px]">在控 43.3%</span>
+          </div>
+          <div class="text-2xl font-black text-gray-900 font-mono">¥151,702</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span>预算帽: ¥350,000</span>
+            <span class="text-emerald-600 font-medium">结余空间: ¥19.8万</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-blue-500 h-full rounded-full" style="width: 43.3%"></div>
+          </div>
+        </div>
+
+        <div class="arco-card p-4 border-l-4 border-amber-500">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>WIP 资金占用与账龄</span>
+            <span class="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded font-semibold text-[10px]">关注垫资</span>
+          </div>
+          <div class="text-2xl font-black text-blue-600 font-mono">¥0</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span>实收 ¥12.0万 vs 支出 ¥11.8万</span>
+            <span class="text-emerald-600 font-medium">垫资结清</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div>
+          </div>
+        </div>
+
+        <div class="arco-card p-4 border-l-4 border-purple-500">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+            <span>商务上限 (含增补商务)</span>
+            <span class="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded font-semibold text-[10px]">在额度内 49.6%</span>
+          </div>
+          <div class="text-2xl font-black text-gray-900 font-mono">¥12,400</div>
+          <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span>商务上限: ¥25,000</span>
+            <span class="text-gray-400">已发生商务成本</span>
+          </div>
+          <div class="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div class="bg-purple-500 h-full rounded-full" style="width: 49.6%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 双口径财务全景看板 -->
+      <div class="arco-card p-5">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+            <h2 class="text-base font-bold text-gray-900">双口径核心财务全景看板（多合同合并计算）</h2>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="flex items-center text-blue-700"><span class="w-2 h-2 rounded-full bg-blue-600 mr-1.5"></span>全周期口径 (有效标的额 ¥24.0万)</span>
+            <span class="text-gray-300">|</span>
+            <span class="flex items-center text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-600 mr-1.5"></span>收付实现口径 (实收 ¥12.0万)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- 全周期口径 -->
+          <div class="bg-blue-50/40 rounded-lg p-4 border border-blue-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-bold text-blue-900">全周期经营视角（主合同+已生效补充#1）</span>
+              <span class="text-[11px] px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-medium">有效标的额基准</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-3">
+              <div class="bg-white p-3 rounded border border-blue-100 shadow-2xs">
+                <div class="text-xs text-gray-500">有效标的额 (生效总额)</div>
+                <div class="text-xl font-bold text-gray-900 mt-1 font-mono">¥240,000</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">主 ¥20.5万 + 补充#1 ¥3.5万</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-blue-100 shadow-2xs">
+                <div class="text-xs text-gray-500">EAC 完工估算总成本</div>
+                <div class="text-xl font-bold text-red-500 mt-1 font-mono">¥151,702</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">含已发 ¥11.8万 + 预发 ¥3.3万</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-blue-100 shadow-2xs">
+                <div class="text-xs text-gray-500">预测全周期净利润</div>
+                <div class="text-xl font-bold text-emerald-600 mt-1 font-mono">¥88,298</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">标的额 − EAC</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-blue-100 shadow-2xs">
+                <div class="text-xs text-gray-500">全周期利润率</div>
+                <div class="text-xl font-bold text-emerald-600 mt-1">36.8%</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">目标: 30.0% (健康达标)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 现金流口径 -->
+          <div class="bg-emerald-50/40 rounded-lg p-4 border border-emerald-100">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-bold text-emerald-900">收付实现现金流视角（多协议合并到账）</span>
+              <span class="text-[11px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-medium">到账流水基准</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-3">
+              <div class="bg-white p-3 rounded border border-emerald-100 shadow-2xs">
+                <div class="text-xs text-gray-500">累计实收到账 (7期计划)</div>
+                <div class="text-xl font-bold text-emerald-600 mt-1 font-mono">¥120,000</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">主已收 ¥10.25万 + 补#1 ¥1.75万</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-emerald-100 shadow-2xs">
+                <div class="text-xs text-gray-500">已发生实际支出</div>
+                <div class="text-xl font-bold text-red-500 mt-1 font-mono">¥118,502</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">已报销、已结算工时与账单</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-emerald-100 shadow-2xs">
+                <div class="text-xs text-gray-500">WIP 垫付资金占用</div>
+                <div class="text-xl font-bold text-blue-600 mt-1 font-mono">¥0</div>
+                <div class="text-[11px] text-emerald-600 font-medium mt-0.5">实收 > 支出，现金流健康</div>
+              </div>
+
+              <div class="bg-white p-3 rounded border border-emerald-100 shadow-2xs">
+                <div class="text-xs text-gray-500">待收未回款敞口</div>
+                <div class="text-xl font-bold text-amber-600 mt-1 font-mono">¥120,000</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">剩余 4 期款项待收</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 【图表 1 & 2】成本与收入趋势（按月累计） vs 利润率波动趋势 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 成本与收入趋势 -->
+        <div class="arco-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-gray-900">成本与收入趋势（按月累计）</h3>
+                <span class="text-xs text-gray-400">主合同+补充合同多期次合并阶梯应收 vs 实际回款与成本</span>
+              </div>
+              <span class="text-xs text-gray-400">单位：元</span>
+            </div>
+            <div class="h-64 w-full">
+              <canvas id="revenueCostDetailChart"></canvas>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-amber-50/60 border border-amber-200 rounded-md text-xs text-amber-900 space-y-1">
+            <div class="font-bold flex items-center text-amber-800">
+              <svg class="w-3.5 h-3.5 mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              收款进度与应收差异穿透：
+            </div>
+            <div>• 首期签约款（¥61,500）：2026-06-20 已全额到账 ✓</div>
+            <div>• 中期款 1（¥41,000）：2026-07-20 已全额到账 ✓</div>
+            <div>• 补充协议#1 首期（¥17,500）：2026-07-28 已全额到账 ✓</div>
+            <div>• 中期款 2（¥41,000）：原定 2026-08-15，目前待到账（逾期 6 天 ⚠️）</div>
+            <div>• 当前待收总敞口：<strong class="text-red-600 font-bold">¥120,000</strong>（有效标的 ¥24.0万 − 实收 ¥12.0万）</div>
+          </div>
+        </div>
+
+        <!-- 利润率波动趋势 -->
+        <div class="arco-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-gray-900">利润率波动趋势（全周期 vs 回款口径）</h3>
+                <span class="text-xs text-gray-400">全周期利润率基准 vs 现金流实收口径利润率</span>
+              </div>
+              <span class="text-xs text-gray-400">单位：%</span>
+            </div>
+            <div class="h-64 w-full">
+              <canvas id="marginTrendDetailChart"></canvas>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-blue-50/60 border border-blue-200 rounded-md text-xs text-blue-900 space-y-1">
+            <div class="font-bold flex items-center text-blue-800">
+              <svg class="w-3.5 h-3.5 mr-1 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              利润率波动归因分析：
+            </div>
+            <div>• 全周期预测利润率稳定在 <strong class="text-emerald-600">36.8%</strong>（补充#1生效后由 34.8% 提升至 36.8%）。</div>
+            <div>• 回款口径利润率因 8 月中期款后置产生阶段性下探，不影响项目全周期盈利评级。</div>
+            <div>• 结项收敛预测：随着 9~10 月验收款与尾款回笼，回款口径利润率将最终回归 36.8%。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. 【图表 3 & 表格】5大分类成本结构分布 vs 成本构成明细与 EAC 差异比对表 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 5大分类成本结构分布饼图 -->
+        <div class="arco-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-sm font-bold text-gray-900">成本结构分布 (5大分类)</h3>
+                <span class="text-xs text-gray-400">人工 / 差旅 / 推广 / 商务 / 第三方</span>
+              </div>
+              <div class="inline-flex rounded-md shadow-2xs" role="group">
+                <button onclick="toggleCostStructure('actual')" id="btn-cost-actual" class="px-2.5 py-1 text-xs font-medium bg-blue-600 text-white rounded-l-md border border-blue-600">
+                  已发生成本
+                </button>
+                <button onclick="toggleCostStructure('forecast')" id="btn-cost-forecast" class="px-2.5 py-1 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 rounded-r-md border border-gray-300">
+                  预测完工 (EAC)
+                </button>
+              </div>
+            </div>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="costStructurePie"></canvas>
+            </div>
+          </div>
+
+          <div class="mt-4 p-2.5 bg-gray-50 rounded border border-gray-200 text-xs text-gray-600 flex justify-between items-center">
+            <span>当前视角：<strong id="cost-view-label" class="text-blue-600">已发生支出 (¥118,502)</strong></span>
+            <span class="text-gray-400">点击右上角按钮切换已发生 / EAC 完工</span>
+          </div>
+        </div>
+
+        <!-- 成本构成明细与 EAC 差异比对表 (5大分类) -->
+        <div class="arco-card p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+              <div>
+                <h3 class="text-sm font-bold text-gray-900">成本构成明细与 EAC 差异 (5大分类)</h3>
+                <span class="text-xs text-gray-400">分类汇总：已发生成本 vs 预计发生费用 vs 完工 EAC</span>
+              </div>
+              <span class="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">标准五大类</span>
+            </div>
+
+            <div class="space-y-2.5">
+              <div class="flex justify-between text-xs text-gray-400 font-medium pb-1 border-b border-gray-100">
+                <span>成本科目分类</span>
+                <div class="flex space-x-4 text-right">
+                  <span class="w-20">已发生金额</span>
+                  <span class="w-20 text-purple-600 font-semibold">预计将发生</span>
+                  <span class="w-20 font-bold text-gray-700">完工(EAC)</span>
+                </div>
+              </div>
+
+              <!-- 1. 人工成本 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span class="font-medium text-gray-800">人工成本</span>
+                </div>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-gray-900 font-semibold">¥79,200</span>
+                  <span class="w-20 text-purple-600 font-semibold">+¥24,300</span>
+                  <span class="w-20 text-gray-900 font-bold">¥103,500</span>
+                </div>
+              </div>
+
+              <!-- 2. 差旅成本 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                  <span class="font-medium text-gray-800">差旅成本</span>
+                </div>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-gray-900 font-semibold">¥7,400</span>
+                  <span class="w-20 text-purple-600 font-semibold">+¥2,800</span>
+                  <span class="w-20 text-gray-900 font-bold">¥10,200</span>
+                </div>
+              </div>
+
+              <!-- 3. 推广成本 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                  <span class="font-medium text-gray-800">推广成本</span>
+                </div>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-gray-900 font-semibold">¥13,702</span>
+                  <span class="w-20 text-purple-600 font-semibold">+¥1,500</span>
+                  <span class="w-20 text-gray-900 font-bold">¥15,202</span>
+                </div>
+              </div>
+
+              <!-- 4. 商务成本 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                  <span class="font-medium text-gray-800">商务成本</span>
+                </div>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-gray-900 font-semibold">¥7,400</span>
+                  <span class="w-20 text-purple-600 font-semibold">+¥4,600</span>
+                  <span class="w-20 text-gray-900 font-bold">¥12,000</span>
+                </div>
+              </div>
+
+              <!-- 5. 第三方费用 -->
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                  <span class="font-medium text-gray-800">第三方费用</span>
+                </div>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-gray-900 font-semibold">¥10,800</span>
+                  <span class="w-20 text-purple-600 font-semibold">+¥0</span>
+                  <span class="w-20 text-gray-900 font-bold">¥10,800</span>
+                </div>
+              </div>
+
+              <!-- 合计行 -->
+              <div class="pt-2.5 border-t border-gray-200 flex items-center justify-between text-xs font-bold text-gray-900">
+                <span>总成本合计 (Total / EAC)</span>
+                <div class="flex space-x-4 text-right font-mono">
+                  <span class="w-20 text-red-600 font-bold">¥118,502</span>
+                  <span class="w-20 text-purple-700 font-bold">+¥33,200</span>
+                  <span class="w-20 text-red-600 font-bold">¥151,702</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-2.5 bg-blue-50/60 rounded border border-blue-100 text-xs text-blue-800 mt-2">
+            <span>💡 成本管控评价：人工占比 68.2%，预计后续发生 ¥33,200（含冲刺人天 ¥24.3k 与现场验收差旅商务 ¥7.4k），整体在预算帽内。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. 【图表 4】成本增长动态构成（包括预测、堆叠面积趋势） -->
+      <div class="arco-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-sm font-bold text-gray-900">成本增长动态构成（包括预测、堆叠面积趋势）</h3>
+            <span class="text-xs text-gray-400">人工 / 差旅 / 推广 / 商务 / 第三方 多科目累计发生曲线 + PROJECTED 预测区域</span>
+          </div>
+          <div class="flex items-center space-x-4 text-xs">
+            <span class="flex items-center"><span class="w-3 h-2 bg-blue-600 mr-1 rounded-xs"></span>人工成本</span>
+            <span class="flex items-center"><span class="w-3 h-2 bg-cyan-500 mr-1 rounded-xs"></span>差旅成本</span>
+            <span class="flex items-center"><span class="w-3 h-2 bg-indigo-500 mr-1 rounded-xs"></span>推广成本</span>
+            <span class="flex items-center"><span class="w-3 h-2 bg-amber-500 mr-1 rounded-xs"></span>商务成本</span>
+            <span class="flex items-center"><span class="w-3 h-2 bg-purple-500 mr-1 rounded-xs"></span>第三方费用</span>
+          </div>
+        </div>
+
+        <div class="h-72 w-full relative">
+          <canvas id="stackedCostGrowthChart"></canvas>
+          <div class="absolute top-3 right-4 bg-white/90 px-2.5 py-1 rounded border border-gray-300 text-[11px] text-gray-600 font-bold shadow-xs">
+            PROJECTED (预测延伸区)
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. 商务谈判底线价与敏感性动态模拟器 -->
+      <div class="arco-card p-5 bg-gradient-to-r from-gray-50 to-blue-50/30">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+          <div class="flex items-center space-x-2">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <h3 class="text-sm font-bold text-gray-900">商务谈判底线价与敏感性动态模拟器</h3>
+          </div>
+          <button onclick="openModelDetail()" class="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center">
+            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            查看底层财务模型公式
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="bg-white p-3.5 rounded-lg border border-gray-200 shadow-2xs">
+            <div class="text-xs text-gray-500 font-medium">盈亏平衡合同额 (Break-even)</div>
+            <div class="text-xl font-bold text-gray-900 mt-1 font-mono" id="sim-breakeven">¥151,702</div>
+            <div class="text-[11px] text-gray-400 mt-0.5">利润率 = 0% 时的绝对保本线</div>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-lg border border-blue-200 shadow-2xs">
+            <div class="text-xs text-blue-700 font-medium">最低谈判签约底线价 (Floor Price)</div>
+            <div class="text-xl font-bold text-blue-600 mt-1 font-mono" id="sim-floorprice">¥216,717</div>
+            <div class="text-[11px] text-gray-400 mt-0.5">保 30.0% 目标利润率的底线签约价</div>
+          </div>
+
+          <div class="bg-white p-3.5 rounded-lg border border-green-200 shadow-2xs">
+            <div class="text-xs text-green-700 font-medium">议价安全边际 (Safety Buffer)</div>
+            <div class="text-xl font-bold text-emerald-600 mt-1 font-mono" id="sim-buffer">+¥23,283</div>
+            <div class="text-[11px] text-emerald-600 mt-0.5">当前标的额 (¥24万) 相对底线价的安全垫</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex justify-between text-xs font-medium text-gray-700 mb-1">
+                <span>交付功能范围缩放 (Scope %): <strong id="scope-val" class="text-blue-600">100%</strong></span>
+                <span class="text-gray-400">仅缩放 forecast 人力，固定成本不缩</span>
+              </div>
+              <input type="range" min="50" max="150" value="100" id="scope-slider" oninput="updateSimulator()" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+
+            <div class="flex-1">
+              <div class="flex justify-between text-xs font-medium text-gray-700 mb-1">
+                <span>目标利润率微调 (Target %): <strong id="target-val" class="text-blue-600">30%</strong></span>
+                <span class="text-gray-400">公司基准配置：30%</span>
+              </div>
+              <input type="range" min="10" max="50" value="30" id="target-slider" oninput="updateSimulator()" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== TAB 2: 工时评估 (包含主合同 + 补充合同) ==================== -->
+    <div id="tab-content-eval" class="hidden arco-card p-6 bg-white space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">工时评估链明细 (EvalSheet · 包含补充合同部分)</h2>
+          <span class="text-xs text-gray-400">主合同评估 88 人天 + 补充协议#1 14 人天 = 累计有效基线 102 人天 (补充#2 审批中 8 人天)</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs text-purple-700 font-bold bg-purple-50 px-2.5 py-1 rounded border border-purple-200">
+            已生效基线：102 人天 (¥46,050)
+          </span>
+          <span class="text-xs text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
+            待生效预期：110 人天 (¥49,650)
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 text-xs">
+        <div class="p-3 bg-blue-50/50 border border-blue-200 rounded-lg">
+          <div class="font-bold text-blue-900">主合同工时评估 (QT-2026-001)</div>
+          <div class="text-lg font-black text-blue-700 mt-1">88 人天 · ¥39,450</div>
+          <div class="text-gray-500 mt-0.5">PM 12 / UI 8 / 前端 25 / 后端 30 / 测试 13</div>
+        </div>
+        <div class="p-3 bg-purple-50/50 border border-purple-200 rounded-lg">
+          <div class="font-bold text-purple-900">补充合同#1 评估 (QT-2026-001-S1)</div>
+          <div class="text-lg font-black text-purple-700 mt-1">+14 人天 · ¥6,600</div>
+          <div class="text-gray-500 mt-0.5">离线缓存 (前端 6 / 后端 8) · 已归档生效</div>
+        </div>
+        <div class="p-3 bg-amber-50/50 border border-dashed border-amber-300 rounded-lg">
+          <div class="font-bold text-amber-900">补充合同#2 评估 (QT-2026-001-S2)</div>
+          <div class="text-lg font-black text-amber-700 mt-1">+8 人天 · ¥3,600</div>
+          <div class="text-gray-500 mt-0.5">BI接口对接 (后端 6 / 测试 2) · 审批中</div>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs text-left">
+          <thead class="text-gray-500 bg-gray-100 font-medium">
+            <tr>
+              <th class="p-2.5">归属合同/协议</th>
+              <th class="p-2.5">模块与功能范围</th>
+              <th class="p-2.5">岗位类别</th>
+              <th class="p-2.5">评估人天</th>
+              <th class="p-2.5">成本日薪</th>
+              <th class="p-2.5">对外报价日单价</th>
+              <th class="p-2.5">成本小计 (EAC)</th>
+              <th class="p-2.5">对外报价小计</th>
+              <th class="p-2.5">状态</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white font-mono">
+            <tr>
+              <td class="p-2.5 font-sans font-bold text-gray-800" rowspan="5">主合同 (HT-2026-001)</td>
+              <td class="p-2.5 font-sans text-gray-700" rowspan="5">企业管理系统核心底座与微信小程序</td>
+              <td class="p-2.5 font-sans">产品经理 (PM)</td>
+              <td class="p-2.5 font-bold">12 天</td>
+              <td class="p-2.5">¥400/天</td>
+              <td class="p-2.5">¥1,000/天</td>
+              <td class="p-2.5 font-bold">¥4,800</td>
+              <td class="p-2.5 text-blue-600 font-bold">¥12,000</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+            <tr>
+              <td class="p-2.5 font-sans">UI/UX 设计师</td>
+              <td class="p-2.5 font-bold">8 天</td>
+              <td class="p-2.5">¥350/天</td>
+              <td class="p-2.5">¥800/天</td>
+              <td class="p-2.5 font-bold">¥2,800</td>
+              <td class="p-2.5 text-blue-600 font-bold">¥6,400</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+            <tr>
+              <td class="p-2.5 font-sans">前端工程师 (Web/小程序)</td>
+              <td class="p-2.5 font-bold">25 天</td>
+              <td class="p-2.5">¥500/天</td>
+              <td class="p-2.5">¥1,200/天</td>
+              <td class="p-2.5 font-bold">¥12,500</td>
+              <td class="p-2.5 text-blue-600 font-bold">¥30,000</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+            <tr>
+              <td class="p-2.5 font-sans">后端开发工程师 (Java)</td>
+              <td class="p-2.5 font-bold">30 天</td>
+              <td class="p-2.5">¥450/天</td>
+              <td class="p-2.5">¥1,200/天</td>
+              <td class="p-2.5 font-bold">¥13,500</td>
+              <td class="p-2.5 text-blue-600 font-bold">¥36,000</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+            <tr>
+              <td class="p-2.5 font-sans">测试工程师 (QA)</td>
+              <td class="p-2.5 font-bold">13 天</td>
+              <td class="p-2.5">¥450/天</td>
+              <td class="p-2.5">¥600/天</td>
+              <td class="p-2.5 font-bold">¥5,850</td>
+              <td class="p-2.5 text-blue-600 font-bold">¥7,800</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+
+            <tr class="bg-purple-50/40">
+              <td class="p-2.5 font-sans font-bold text-purple-900" rowspan="2">补充合同#1 (BC01)</td>
+              <td class="p-2.5 font-sans text-purple-800" rowspan="2">离线缓存与多语言增项</td>
+              <td class="p-2.5 font-sans text-purple-900 font-medium">前端工程师 (离线包)</td>
+              <td class="p-2.5 font-bold text-purple-900">+6 天</td>
+              <td class="p-2.5">¥500/天</td>
+              <td class="p-2.5">¥1,200/天</td>
+              <td class="p-2.5 text-purple-900 font-bold">¥3,000</td>
+              <td class="p-2.5 text-purple-700 font-bold">¥7,200</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+            <tr class="bg-purple-50/40">
+              <td class="p-2.5 font-sans text-purple-900 font-medium">后端工程师 (数据同步)</td>
+              <td class="p-2.5 font-bold text-purple-900">+8 天</td>
+              <td class="p-2.5">¥450/天</td>
+              <td class="p-2.5">¥1,200/天</td>
+              <td class="p-2.5 text-purple-900 font-bold">¥3,600</td>
+              <td class="p-2.5 text-purple-700 font-bold">¥9,600</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">已生效</span></td>
+            </tr>
+
+            <tr class="bg-amber-50/30">
+              <td class="p-2.5 font-sans font-bold text-amber-900" rowspan="2">补充合同#2 (BC02)</td>
+              <td class="p-2.5 font-sans text-amber-800" rowspan="2">第三方 BI 报表接口对接</td>
+              <td class="p-2.5 font-sans text-amber-900 font-medium">后端工程师 (BI 接口)</td>
+              <td class="p-2.5 font-bold text-amber-900">+6 天</td>
+              <td class="p-2.5">¥450/天</td>
+              <td class="p-2.5">¥1,200/天</td>
+              <td class="p-2.5 text-amber-900 font-bold">¥2,700</td>
+              <td class="p-2.5 text-amber-700 font-bold">¥7,200</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-medium">审批中</span></td>
+            </tr>
+            <tr class="bg-amber-50/30">
+              <td class="p-2.5 font-sans text-amber-900 font-medium">测试工程师 (性能压测)</td>
+              <td class="p-2.5 font-bold text-amber-900">+2 天</td>
+              <td class="p-2.5">¥450/天</td>
+              <td class="p-2.5">¥600/天</td>
+              <td class="p-2.5 text-amber-900 font-bold">¥900</td>
+              <td class="p-2.5 text-amber-700 font-bold">¥1,200</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-medium">审批中</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: 成本归集 (5大分类 · 已发生 vs 预计发生) ==================== -->
+    <div id="tab-content-costs" class="hidden arco-card p-6 bg-white space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">成本归集流水台账 (5大分类 · 已发生 vs 预计发生)</h2>
+          <span class="text-xs text-gray-400">分类：人工成本、差旅成本、推广成本、商务成本、第三方费用 ｜ 严格分离已发生与预计发生</span>
+        </div>
+        <button onclick="alert('录入预计支出项')" class="px-3 py-1.5 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700 shadow-sm">
+          + 录入预计未来费用
+        </button>
+      </div>
+
+      <div class="grid grid-cols-5 gap-3 text-xs">
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="text-blue-900 font-bold">1. 人工成本</div>
+          <div class="text-base font-black text-blue-700 mt-1 font-mono">¥103,500</div>
+          <div class="text-gray-500 mt-0.5">已发 ¥79.2k ｜ 预发 ¥24.3k</div>
+        </div>
+        <div class="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+          <div class="text-cyan-900 font-bold">2. 差旅成本</div>
+          <div class="text-base font-black text-cyan-700 mt-1 font-mono">¥10,200</div>
+          <div class="text-gray-500 mt-0.5">已发 ¥7.4k ｜ 预发 ¥2.8k</div>
+        </div>
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <div class="text-indigo-900 font-bold">3. 推广成本</div>
+          <div class="text-base font-black text-indigo-700 mt-1 font-mono">¥15,202</div>
+          <div class="text-gray-500 mt-0.5">已发 ¥13.7k ｜ 预发 ¥1.5k</div>
+        </div>
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div class="text-amber-900 font-bold">4. 商务成本</div>
+          <div class="text-base font-black text-amber-700 mt-1 font-mono">¥12,000</div>
+          <div class="text-gray-500 mt-0.5">已发 ¥7.4k ｜ 预发 ¥4.6k</div>
+        </div>
+        <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div class="text-purple-900 font-bold">5. 第三方费用</div>
+          <div class="text-base font-black text-purple-700 mt-1 font-mono">¥10,800</div>
+          <div class="text-gray-500 mt-0.5">已发 ¥10.8k ｜ 预发 ¥0</div>
+        </div>
+      </div>
+
+      <!-- 独立分区 1: 【预计会发生的费用清单 (Forecast)】 -->
+      <div class="border-2 border-purple-200 rounded-lg p-4 bg-purple-50/20">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-purple-600 animate-pulse"></span>
+            <h3 class="text-sm font-bold text-purple-900">预计会发生的费用清单 (Forecast Expenses · 合计 ¥33,200)</h3>
+          </div>
+          <span class="text-xs text-purple-700 font-medium">完工前待发生预估项 · 动态纳入 EAC 完工估算</span>
+        </div>
+
+        <table class="min-w-full text-xs text-left bg-white rounded border border-purple-100">
+          <thead class="bg-purple-50 text-purple-900 font-medium">
+            <tr>
+              <th class="p-2.5">预计发生时间</th>
+              <th class="p-2.5">成本分类</th>
+              <th class="p-2.5">科目名称</th>
+              <th class="p-2.5">预估金额</th>
+              <th class="p-2.5">责任人/团队</th>
+              <th class="p-2.5">预估依据与说明</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-purple-100 font-mono">
+            <tr>
+              <td class="p-2.5 text-purple-800">2026-09-05</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">人工成本</span></td>
+              <td class="p-2.5 font-sans text-gray-800 font-bold">交付收尾与终验冲刺工时 (54人天)</td>
+              <td class="p-2.5 text-purple-700 font-black">¥24,300</td>
+              <td class="p-2.5 font-sans text-gray-700">前端/后端/测试组</td>
+              <td class="p-2.5 font-sans text-gray-500">主合同与补充#1 验收前系统集成与回归测试</td>
+            </tr>
+            <tr>
+              <td class="p-2.5 text-purple-800">2026-09-12</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded font-medium">差旅成本</span></td>
+              <td class="p-2.5 font-sans text-gray-800 font-bold">客户现场终验与培训出差</td>
+              <td class="p-2.5 text-purple-700 font-black">¥2,800</td>
+              <td class="p-2.5 font-sans text-gray-700">李四 (PM) + 王五</td>
+              <td class="p-2.5 font-sans text-gray-500">杭州甲方现场交付培训、系统割接上线 3 天差旅标准</td>
+            </tr>
+            <tr>
+              <td class="p-2.5 text-purple-800">2026-09-15</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded font-medium">商务成本</span></td>
+              <td class="p-2.5 font-sans text-gray-800 font-bold">终验签署与尾款推进商务宴请</td>
+              <td class="p-2.5 text-purple-700 font-black">¥4,600</td>
+              <td class="p-2.5 font-sans text-gray-700">张三 (商务)</td>
+              <td class="p-2.5 font-sans text-gray-500">终验单签署对齐与二期项目线索拓展商务招待</td>
+            </tr>
+            <tr>
+              <td class="p-2.5 text-purple-800">2026-09-20</td>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium">推广成本</span></td>
+              <td class="p-2.5 font-sans text-gray-800 font-bold">客户联合案例包装与宣传分摊</td>
+              <td class="p-2.5 text-purple-700 font-black">¥1,500</td>
+              <td class="p-2.5 font-sans text-gray-700">市场运营组</td>
+              <td class="p-2.5 font-sans text-gray-500">标杆案例软文制作与行业渠道投放分摊</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 独立分区 2: 【已发生成本明细表 (Actual)】 -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-gray-900">已发生成本流水明细 (Actual · 合计 ¥118,502)</h3>
+          <span class="text-xs text-gray-400">日报、报销、公摊、第三方实际已发生流水</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs text-left">
+            <thead class="text-gray-500 bg-gray-100 font-medium">
+              <tr>
+                <th class="p-2.5">发生日期</th>
+                <th class="p-2.5">成本分类</th>
+                <th class="p-2.5">科目名称</th>
+                <th class="p-2.5">金额</th>
+                <th class="p-2.5">写入通道</th>
+                <th class="p-2.5">责任人</th>
+                <th class="p-2.5">摘要说明</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white font-mono">
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-06-15</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">人工成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">前端开发工时 (25天)</td>
+                <td class="p-2.5 font-bold text-gray-900">¥12,500</td>
+                <td class="p-2.5 font-sans text-gray-600">日报通道</td>
+                <td class="p-2.5 font-sans text-gray-800">王五</td>
+                <td class="p-2.5 font-sans text-gray-500">基础组件库搭建与页面框架构建</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-06-20</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded font-medium">差旅成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">售前方案现场演示差旅</td>
+                <td class="p-2.5 font-bold text-gray-900">¥3,200</td>
+                <td class="p-2.5 font-sans text-gray-600">报销通道</td>
+                <td class="p-2.5 font-sans text-gray-800">张三</td>
+                <td class="p-2.5 font-sans text-gray-500">杭州客户现场技术对齐往返高铁与住宿</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-06-25</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium">推广成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">百度投放线索获取成本分摊</td>
+                <td class="p-2.5 font-bold text-gray-900">¥6,851</td>
+                <td class="p-2.5 font-sans text-gray-600">公摊通道</td>
+                <td class="p-2.5 font-sans text-gray-400">-</td>
+                <td class="p-2.5 font-sans text-gray-500">广告投放线索直接归集至对应成交业务单</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-07-15</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded font-medium">第三方费用</span></td>
+                <td class="p-2.5 font-sans text-gray-800">开发测试云主机及数据库</td>
+                <td class="p-2.5 font-bold text-gray-900">¥2,400</td>
+                <td class="p-2.5 font-sans text-gray-600">报销通道</td>
+                <td class="p-2.5 font-sans text-gray-800">李四</td>
+                <td class="p-2.5 font-sans text-gray-500">阿里云测试环境 ECS 实例 3 个月</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-07-22</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">人工成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">离线缓存模块开发 (补充#1)</td>
+                <td class="p-2.5 font-bold text-gray-900">¥7,200</td>
+                <td class="p-2.5 font-sans text-gray-600">日报通道</td>
+                <td class="p-2.5 font-sans text-gray-800">赵六</td>
+                <td class="p-2.5 font-sans text-gray-500">补充协议#1 离线 SQLite 缓存逻辑编写</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-08-05</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-amber-50 text-amber-700 rounded font-medium">商务成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">中期阶段确认商务宴请</td>
+                <td class="p-2.5 font-bold text-gray-900">¥7,400</td>
+                <td class="p-2.5 font-sans text-gray-600">报销通道</td>
+                <td class="p-2.5 font-sans text-gray-800">张三</td>
+                <td class="p-2.5 font-sans text-gray-500">客户项目组商务对齐与阶段宴请招待</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-08-10</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">人工成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">后端核心交易联调工时</td>
+                <td class="p-2.5 font-bold text-gray-900">¥59,500</td>
+                <td class="p-2.5 font-sans text-gray-600">日报通道</td>
+                <td class="p-2.5 font-sans text-gray-800">赵六/周八</td>
+                <td class="p-2.5 font-sans text-gray-500">核心接口网关与高并发压测联调</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-08-18</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-purple-50 text-purple-700 rounded font-medium">第三方费用</span></td>
+                <td class="p-2.5 font-sans text-gray-800">企业 SSL 证书与短信套餐</td>
+                <td class="p-2.5 font-bold text-gray-900">¥8,400</td>
+                <td class="p-2.5 font-sans text-gray-600">报销通道</td>
+                <td class="p-2.5 font-sans text-gray-800">李四</td>
+                <td class="p-2.5 font-sans text-gray-500">DigiCert OV 证书 2年 + 短信包</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-08-19</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-cyan-50 text-cyan-700 rounded font-medium">差旅成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">中期联调驻场差旅</td>
+                <td class="p-2.5 font-bold text-gray-900">¥4,200</td>
+                <td class="p-2.5 font-sans text-gray-600">报销通道</td>
+                <td class="p-2.5 font-sans text-gray-800">李四</td>
+                <td class="p-2.5 font-sans text-gray-500">现场联调与性能排查 4 天住宿与往返交通</td>
+              </tr>
+              <tr>
+                <td class="p-2.5 text-gray-600">2026-08-20</td>
+                <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-medium">推广成本</span></td>
+                <td class="p-2.5 font-sans text-gray-800">字节巨量引擎获客成本分摊</td>
+                <td class="p-2.5 font-bold text-gray-900">¥6,851</td>
+                <td class="p-2.5 font-sans text-gray-600">公摊通道</td>
+                <td class="p-2.5 font-sans text-gray-400">-</td>
+                <td class="p-2.5 font-sans text-gray-500">月度获客推广费用按成交额分摊</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 4: 主合同与补充协议 ==================== -->
+    <div id="tab-content-contracts" class="hidden arco-card p-6 bg-white space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">主合同与补充协议台账</h2>
+          <span class="text-xs text-gray-400">支持 1 主合同 + N 补充合同穿透追溯 · 仅已归档生效且未作废的协议计入有效标的额</span>
+        </div>
+        <button onclick="alert('进入新建补充协议向导')" class="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700">
+          + 新建补充协议
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-mono font-bold rounded">主合同 · HT-2026-001</span>
+              <span class="font-bold text-gray-900 text-sm">阿里巴巴-企业内部管理系统开发主合同</span>
+              <span class="text-base font-bold text-gray-900 font-mono">¥205,000</span>
+            </div>
+            <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium">已归档生效</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-gray-200">
+            <div>
+              <span class="text-gray-400">签署日期：</span>
+              <span class="text-gray-700 font-medium">2026-06-05</span>
+            </div>
+            <div>
+              <span class="text-gray-400">基准工期：</span>
+              <span class="text-gray-700 font-medium">90 工作日</span>
+            </div>
+            <div>
+              <span class="text-gray-400">关联主报价：</span>
+              <span class="text-blue-600 font-mono">QT-2026-001</span>
+            </div>
+            <div>
+              <span class="text-gray-400">分期方案：</span>
+              <span class="text-gray-700">5 期 (首30%/中20%*3/尾10%)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border border-purple-200 rounded-lg bg-purple-50/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-mono font-bold rounded">补充协议#1 · BC01</span>
+              <span class="font-bold text-purple-900 text-sm">离线缓存、批量导出与多语言国际化功能增项</span>
+              <span class="text-base font-bold text-purple-700 font-mono">+¥35,000</span>
+            </div>
+            <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium">已归档生效</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-purple-100">
+            <div>
+              <span class="text-gray-400">生效日期：</span>
+              <span class="text-gray-700 font-medium">2026-07-10</span>
+            </div>
+            <div>
+              <span class="text-gray-400">追加工期：</span>
+              <span class="text-gray-700 font-medium">+15 工作日</span>
+            </div>
+            <div>
+              <span class="text-gray-400">关联补充报价：</span>
+              <span class="text-purple-600 font-mono">QT-2026-001-S1</span>
+            </div>
+            <div>
+              <span class="text-gray-400">追加分期：</span>
+              <span class="text-gray-700">2 期 (启动50% / 验收50%)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border border-dashed border-amber-300 rounded-lg bg-amber-50/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-mono font-bold rounded">补充协议#2 · BC02</span>
+              <span class="font-bold text-amber-900 text-sm">第三方 BI 数据中台接口协议对接与性能压测</span>
+              <span class="text-base font-bold text-amber-700 font-mono">+¥20,000 (待生效)</span>
+            </div>
+            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">会签审批中 (法务复核)</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-amber-100">
+            <div>
+              <span class="text-gray-400">发起日期：</span>
+              <span class="text-gray-700 font-medium">2026-08-10</span>
+            </div>
+            <div>
+              <span class="text-gray-400">预计工期：</span>
+              <span class="text-gray-700 font-medium">+8 工作日</span>
+            </div>
+            <div>
+              <span class="text-gray-400">关联补充报价：</span>
+              <span class="text-amber-600 font-mono">QT-2026-001-S2</span>
+            </div>
+            <div>
+              <span class="text-gray-400">生效影响：</span>
+              <span class="text-amber-700">生效后有效标的额将升至 ¥260,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: 报价单版本池 ==================== -->
+    <div id="tab-content-quote" class="hidden arco-card p-6 bg-white space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">报价单版本池（主报价 + 全部补充报价）</h2>
+          <span class="text-xs text-gray-400">Case ↔ 报价 1:N 映射 · 补充报价总价为变更差额</span>
+        </div>
+        <button onclick="alert('发起新补充报价')" class="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700">
+          + 发起补充报价
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-mono font-bold rounded">主报价单 · QT-2026-001</span>
+              <span class="font-bold text-gray-900 text-sm">阿里巴巴-企业内部管理系统定制开发主报价</span>
+              <span class="text-base font-bold text-blue-600 font-mono">¥205,000</span>
+            </div>
+            <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium">已确认（已转主合同）</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-gray-200">
+            <div>
+              <span class="text-gray-400">功能评估：</span>
+              <span class="text-gray-800 font-bold">88 人天 (¥92,200)</span>
+            </div>
+            <div>
+              <span class="text-gray-400">利润加成：</span>
+              <span class="text-gray-800 font-bold">25% (增强模式)</span>
+            </div>
+            <div>
+              <span class="text-gray-400">服务报价合计：</span>
+              <span class="text-gray-800 font-bold">¥89,750</span>
+            </div>
+            <div>
+              <span class="text-gray-400">第三方代收代付：</span>
+              <span class="text-gray-500 font-bold">¥12,000 (不计利润)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border border-purple-200 rounded-lg bg-purple-50/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs font-mono font-bold rounded">补充报价#1 · QT-2026-001-S1</span>
+              <span class="font-bold text-purple-900 text-sm">离线缓存与多语言模块变更报价</span>
+              <span class="text-base font-bold text-purple-700 font-mono">+¥35,000</span>
+            </div>
+            <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded font-medium">已确认（已转补充合同#1）</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-purple-100">
+            <div>
+              <span class="text-gray-400">增项工时：</span>
+              <span class="text-purple-800 font-bold">+14 人天 (¥16,800)</span>
+            </div>
+            <div>
+              <span class="text-gray-400">岗位拆分：</span>
+              <span class="text-gray-700">前端 6 天 / 后端 8 天</span>
+            </div>
+            <div>
+              <span class="text-gray-400">服务增项：</span>
+              <span class="text-purple-800 font-bold">+¥14,000</span>
+            </div>
+            <div>
+              <span class="text-gray-400">对应变更额：</span>
+              <span class="text-purple-700 font-bold font-mono">+¥35,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border border-dashed border-amber-300 rounded-lg bg-amber-50/20">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-mono font-bold rounded">补充报价#2 · QT-2026-001-S2</span>
+              <span class="font-bold text-amber-900 text-sm">BI 接口中台对接与压测增项</span>
+              <span class="text-base font-bold text-amber-700 font-mono">+¥20,000</span>
+            </div>
+            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-medium">审批中（待转补充合同#2）</span>
+          </div>
+          <div class="mt-3 grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded border border-amber-100">
+            <div>
+              <span class="text-gray-400">增项工时：</span>
+              <span class="text-amber-800 font-bold">+8 人天 (¥9,600)</span>
+            </div>
+            <div>
+              <span class="text-gray-400">岗位拆分：</span>
+              <span class="text-gray-700">后端 6 天 / 测试 2 天</span>
+            </div>
+            <div>
+              <span class="text-gray-400">服务增项：</span>
+              <span class="text-amber-800 font-bold">+¥8,000</span>
+            </div>
+            <div>
+              <span class="text-gray-400">当前流转：</span>
+              <span class="text-amber-700 font-medium">待客户最终签章确认</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 6: 项目决算 (Post-Mortem) ==================== -->
+    <div id="tab-content-postmortem" class="hidden arco-card p-6 bg-white space-y-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-100">
+        <div>
+          <h2 class="text-base font-bold text-gray-900">项目决算与复盘总结 (Post-Mortem)</h2>
+          <span class="text-xs text-gray-400">结项时点预测快照 vs 最终派生实算对比</span>
+        </div>
+        <span class="px-2 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-semibold">
+          估算模型已校准
+        </span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-xs text-gray-500">人均产出效能 (FTE Output)</div>
+          <div class="text-2xl font-bold text-gray-900 mt-1">1.15 FTE</div>
+          <div class="text-xs text-emerald-600 mt-0.5">高于行业平均 15%</div>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-xs text-gray-500">架构与组件复用节约额</div>
+          <div class="text-2xl font-bold text-emerald-600 mt-1">¥18,500</div>
+          <div class="text-xs text-gray-400 mt-0.5">复用中科低代码权限底座</div>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="text-xs text-gray-500">最终全周期毛利率</div>
+          <div class="text-2xl font-bold text-blue-600 mt-1">36.8%</div>
+          <div class="text-xs text-gray-400 mt-0.5">毛利金额 ¥88,298</div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-bold text-sm text-gray-900 mb-2">交付过程偏差与根因分析</h3>
+        <table class="min-w-full text-xs text-left">
+          <thead class="text-gray-500 bg-gray-100 font-medium">
+            <tr>
+              <th class="p-2.5">根因分类</th>
+              <th class="p-2.5">现象与具体原因</th>
+              <th class="p-2.5">影响成本金额</th>
+              <th class="p-2.5">置信度</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 bg-white font-mono">
+            <tr>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">需求变更增项</span></td>
+              <td class="p-2.5 font-sans text-gray-800">客户中期提出增加离线缓存与多语言，已成功追加补充协议#1</td>
+              <td class="p-2.5 text-emerald-600 font-bold">+¥35,000 (增收)</td>
+              <td class="p-2.5">100%</td>
+            </tr>
+            <tr>
+              <td class="p-2.5 font-sans"><span class="px-2 py-0.5 bg-green-50 text-green-700 rounded font-medium">架构组件复用</span></td>
+              <td class="p-2.5 font-sans text-gray-800">直接套用公司标准微服务网关与 RBAC 权限模块，节约 18 人天</td>
+              <td class="p-2.5 text-emerald-600 font-bold">-¥8,100 (节约成本)</td>
+              <td class="p-2.5">95%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 财务模型详情弹窗 Modal -->
+  <div id="model-modal" class="hidden fixed inset-0 bg-gray-900/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6">
+      <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+        <div>
+          <h3 class="text-base font-bold text-gray-900">软件外包成本模型（驻场-二线城市）</h3>
+          <span class="text-xs text-gray-400 font-mono">ID: cost-software-outsourcing-tier2 · 版本: 20260801002</span>
+        </div>
+        <button onclick="closeModelDetail()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="mt-4 space-y-4 text-xs text-gray-700 leading-relaxed">
+        <div>
+          <div class="font-bold text-gray-900 mb-1">适用场景：</div>
+          <ul class="list-disc pl-5 text-gray-600 space-y-0.5">
+            <li>软件定制开发项目 / 驻场或半驻场模式</li>
+            <li>二线城市基准（成都、武汉、南京等），周期 1~6 个月</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="font-bold text-gray-900 mb-1">核心计算公式 (5大分类)：</div>
+          <div class="p-3 bg-gray-50 border border-gray-200 rounded font-mono text-[11px] text-gray-800 space-y-1">
+            <div>• 总完工成本 (EAC) = 人工成本 + 差旅成本 + 推广成本 + 商务成本 + 第三方费用</div>
+            <div>• 人工成本 = Σ(各岗位人天 × 岗位日薪)</div>
+            <div>• 商务成本 ≤ commercialCap (¥25,000 上限管控)</div>
+            <div>• 最低谈判底线价 = EAC / (1 − 目标利润率)</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="font-bold text-gray-900 mb-1">局限性与风险控制：</div>
+          <p class="text-amber-700 bg-amber-50 p-2.5 rounded border border-amber-200">
+            若客户在中期发生重大需求蔓延，需发起变更补充报价与补充合同，重新核算 EAC 完工估算，避免击穿利润率底线。
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-3 border-t border-gray-200 flex justify-end">
+        <button onclick="closeModelDetail()" class="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 shadow-sm">
+          关闭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      const tabs = ['overview', 'eval', 'costs', 'contracts', 'quote', 'postmortem'];
+      tabs.forEach(t => {
+        const el = document.getElementById('tab-content-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (el) el.classList.add('hidden');
+        if (btn) {
+          btn.classList.remove('tab-active');
+          btn.classList.add('text-gray-500');
+        }
+      });
+      const targetEl = document.getElementById('tab-content-' + tabId);
+      const targetBtn = document.getElementById('tab-btn-' + tabId);
+      if (targetEl) targetEl.classList.remove('hidden');
+      if (targetBtn) {
+        targetBtn.classList.add('tab-active');
+        targetBtn.classList.remove('text-gray-500');
+      }
+    }
+
+    function openModelDetail() {
+      document.getElementById('model-modal').classList.remove('hidden');
+    }
+    function closeModelDetail() {
+      document.getElementById('model-modal').classList.add('hidden');
+    }
+    function openEditModal() {
+      alert('管理参数设置：可调整 targetMargin: 30%, budgetCap: ¥350k, commercialCap: ¥25k');
+    }
+
+    // Chart 1: 成本与收入趋势（按月累计）
+    const ctx1 = document.getElementById('revenueCostDetailChart').getContext('2d');
+    new Chart(ctx1, {
+      type: 'line',
+      data: {
+        labels: ['2026-06 (主签约)', '2026-07 (补#1生效)', '2026-08 (当前)', '2026-09 (预)', '2026-10 (预)'],
+        datasets: [
+          {
+            label: '实际成本',
+            data: [22551, 56351, 118502, null, null],
+            borderColor: '#165dff',
+            backgroundColor: 'rgba(22, 93, 255, 0.1)',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'EAC 预测成本',
+            data: [null, null, 118502, 142000, 151702],
+            borderColor: '#165dff',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.3
+          },
+          {
+            label: '合同约定应收基线 (阶梯)',
+            data: [61500, 120000, 161000, 219500, 240000],
+            borderColor: '#722ed1',
+            borderDash: [8, 4],
+            stepped: true,
+            fill: false
+          },
+          {
+            label: '实际回款到账',
+            data: [61500, 120000, 120000, null, null],
+            borderColor: '#ff7d00',
+            backgroundColor: 'rgba(255, 125, 0, 0.12)',
+            stepped: true,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => '¥' + (v/1000) + 'k' }
+          }
+        }
+      }
+    });
+
+    // Chart 2: 利润率波动趋势（全周期 vs 回款口径）
+    const ctx2 = document.getElementById('marginTrendDetailChart').getContext('2d');
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: ['2026-06', '2026-07', '2026-08 (当前)', '2026-09 (预)', '2026-10 (结项)'],
+        datasets: [
+          {
+            label: '目标基线 (30%)',
+            data: [30, 30, 30, 30, 30],
+            borderColor: '#00b42a',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: '全周期预测利润率 (EAC派生)',
+            data: [34.8, 36.8, 36.8, 36.8, 36.8],
+            borderColor: '#165dff',
+            borderDash: [4, 4],
+            pointRadius: 3,
+            fill: false
+          },
+          {
+            label: '回款口径已发生利润率',
+            data: [63.3, 53.0, 1.2, 28.5, 36.8],
+            borderColor: '#ff7d00',
+            pointRadius: 4,
+            pointBackgroundColor: '#ff7d00',
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+        },
+        scales: {
+          y: {
+            ticks: { callback: v => v + '%' }
+          }
+        }
+      }
+    });
+
+    // Chart 3: 成本结构分布（5大分类）
+    let pieChart;
+    const pieDataActual = [79200, 7400, 13702, 7400, 10800];
+    const pieDataForecast = [103500, 10200, 15202, 12000, 10800];
+    const pieLabels = ['人工成本', '差旅成本', '推广成本', '商务成本', '第三方费用'];
+    const pieColors = ['#165dff', '#06b6d4', '#6366f1', '#ff7d00', '#722ed1'];
+
+    const ctx3 = document.getElementById('costStructurePie').getContext('2d');
+    pieChart = new Chart(ctx3, {
+      type: 'doughnut',
+      data: {
+        labels: pieLabels,
+        datasets: [{
+          data: pieDataActual,
+          backgroundColor: pieColors,
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+        }
+      }
+    });
+
+    function toggleCostStructure(type) {
+      if (type === 'actual') {
+        pieChart.data.datasets[0].data = pieDataActual;
+        document.getElementById('btn-cost-actual').className = 'px-2.5 py-1 text-xs font-medium bg-blue-600 text-white rounded-l-md border border-blue-600';
+        document.getElementById('btn-cost-forecast').className = 'px-2.5 py-1 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 rounded-r-md border border-gray-300';
+        document.getElementById('cost-view-label').innerText = '已发生支出 (¥118,502)';
+      } else {
+        pieChart.data.datasets[0].data = pieDataForecast;
+        document.getElementById('btn-cost-forecast').className = 'px-2.5 py-1 text-xs font-medium bg-blue-600 text-white rounded-r-md border border-blue-600';
+        document.getElementById('btn-cost-actual').className = 'px-2.5 py-1 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 rounded-l-md border border-gray-300';
+        document.getElementById('cost-view-label').innerText = '完工估算 EAC (¥151,702)';
+      }
+      pieChart.update();
+    }
+
+    // Chart 4: 成本增长动态构成（5大分类堆叠图 + 预测）
+    const ctx4 = document.getElementById('stackedCostGrowthChart').getContext('2d');
+    new Chart(ctx4, {
+      type: 'line',
+      data: {
+        labels: ['6月第1周', '6月第3周', '7月第1周', '7月第3周', '8月第1周', '8月第3周 (当前)', '9月 (预测)', '10月 (完工)'],
+        datasets: [
+          {
+            label: '人工成本',
+            data: [12500, 25000, 42000, 58000, 72000, 79200, 95000, 103500],
+            backgroundColor: 'rgba(22, 93, 255, 0.75)',
+            borderColor: '#165dff',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: '差旅成本',
+            data: [3200, 3200, 3200, 5200, 6200, 7400, 9000, 10200],
+            backgroundColor: 'rgba(6, 182, 212, 0.75)',
+            borderColor: '#06b6d4',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: '推广成本',
+            data: [6851, 6851, 6851, 6851, 10200, 13702, 14500, 15202],
+            backgroundColor: 'rgba(99, 102, 241, 0.75)',
+            borderColor: '#6366f1',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: '商务成本',
+            data: [0, 0, 3200, 4500, 6000, 7400, 10500, 12000],
+            backgroundColor: 'rgba(255, 125, 0, 0.75)',
+            borderColor: '#ff7d00',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: '第三方费用',
+            data: [0, 2400, 2400, 2400, 10800, 10800, 10800, 10800],
+            backgroundColor: 'rgba(114, 46, 209, 0.75)',
+            borderColor: '#722ed1',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { stacked: true },
+          y: {
+            stacked: true,
+            ticks: { callback: v => '¥' + (v/1000) + 'k' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    // 敏感性测算器
+    function updateSimulator() {
+      const scope = parseInt(document.getElementById('scope-slider').value);
+      const target = parseInt(document.getElementById('target-slider').value);
+      document.getElementById('scope-val').innerText = scope + '%';
+      document.getElementById('target-val').innerText = target + '%';
+
+      const baseLaborForecast = 103500;
+      const baseOtherFixed = 10200 + 15202 + 12000 + 10800;
+      const dynamicEac = Math.round((baseLaborForecast * (scope / 100)) + baseOtherFixed);
+      const floorPrice = Math.round(dynamicEac / (1 - (target / 100)));
+      const contractAmount = 240000;
+      const buffer = contractAmount - floorPrice;
+
+      document.getElementById('sim-breakeven').innerText = '¥' + dynamicEac.toLocaleString();
+      document.getElementById('sim-floorprice').innerText = '¥' + floorPrice.toLocaleString();
+      const bufEl = document.getElementById('sim-buffer');
+      bufEl.innerText = (buffer >= 0 ? '+' : '') + '¥' + buffer.toLocaleString();
+      if (buffer >= 0) {
+        bufEl.className = 'text-xl font-bold text-emerald-600 mt-1 font-mono';
+      } else {
+        bufEl.className = 'text-xl font-bold text-red-600 mt-1 font-mono';
+      }
+    }
+  </script>
+</body>
+</html>

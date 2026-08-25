@@ -5,6 +5,7 @@ import { DashboardTab } from './DashboardTab';
 import { LedgerTab } from './LedgerTab';
 import { TemplateTab } from './TemplateTab';
 import { OverheadTab } from './OverheadTab';
+import { CategoryTab } from './CategoryTab';
 
 const TabPane = Tabs.TabPane;
 
@@ -21,11 +22,14 @@ export function OperatingExpensePage() {
           <TabPane key="ledger" title="费用台账">
             <LedgerTab />
           </TabPane>
-          <TabPane key="template" title="固定模板">
+          <TabPane key="template" title="周期模板">
             <TemplateTab />
           </TabPane>
           <TabPane key="overhead" title="公摊参数">
             <OverheadTab />
+          </TabPane>
+          <TabPane key="category" title="科目入口">
+            <CategoryTab />
           </TabPane>
         </Tabs>
       </Card>

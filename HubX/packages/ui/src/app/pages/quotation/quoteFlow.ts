@@ -205,6 +205,8 @@ export interface QuoteAmountBreakdown {
   travelSubtotal: number;
   onsiteSubtotal: number;
   otherCostSubtotal: number;
+  /** 自费项目合计（不计入报价总价，ADR 0031） */
+  selfPaidSubtotal: number;
   grandTotal: number;
   /** 各部分占总报价比例，0~1 */
   ratios: { labor: number; travelOnsite: number; other: number };
@@ -218,7 +220,9 @@ export function computeAmountBreakdown(quote: Quote): QuoteAmountBreakdown {
   const laborSubtotal = techLaborCost + addedCost;
   const travelSubtotal = quote.travelOnsite.enableTravel ? quote.travelOnsite.travelSubtotal : 0;
   const onsiteSubtotal = quote.travelOnsite.enableOnsite ? quote.travelOnsite.onsiteSubtotal : 0;
-  const otherCostSubtotal = quote.otherCosts.reduce((s, c) => s + c.amount, 0);
+  // 自费项目不进总价（ADR 0031）：otherCosts 独立归集
+  const selfPaidSubtotal = quote.otherCosts.reduce((s, c) => s + c.amount, 0);
+  const otherCostSubtotal = 0; // 自费移出后，报价内 otherCosts 为 0
   const grandTotal = laborSubtotal + travelSubtotal + onsiteSubtotal + otherCostSubtotal;
 
   const safe = (n: number) => (grandTotal > 0 ? n / grandTotal : 0);
@@ -232,6 +236,7 @@ export function computeAmountBreakdown(quote: Quote): QuoteAmountBreakdown {
     travelSubtotal,
     onsiteSubtotal,
     otherCostSubtotal,
+    selfPaidSubtotal,
     grandTotal,
     ratios: {
       labor: safe(laborSubtotal),
@@ -294,6 +299,8 @@ export interface ValidationIssue {
   /** 对应文档中的校验编号，便于界面按序展示 */
   code: 'labor_days' | 'cost_sum' | 'payment_percent' | 'travel_amount' | 'no_eval' | 'no_price';
   message: string;
+  /** error = 硬拦（步骤完成条件），warning = 黄灯（数字类） */
+  severity: 'error' | 'warning';
 }
 
 /**
@@ -306,47 +313,48 @@ export function validateBeforeAudit(quote: Quote): ValidationIssue[] {
   const breakdown = computeAmountBreakdown(quote);
 
   if (!quote.evalSheet || quote.evalSheet.evaluationUnits.length === 0) {
-    issues.push({ code: 'no_eval', message: '缺少技术人天评估数据，无法提交审批' });
+    issues.push({ code: 'no_eval', message: '缺少技术人天评估数据，无法提交审批', severity: 'error' });
   }
 
-  // 校验 1：分项人天之和须等于汇总人天
+  // 校验 1：分项人天之和须等于汇总人天（黄灯）
   const techByRole = Object.values(sumEvalDaysByRole(quote.evalSheet)).reduce((s, n) => s + n, 0);
   if (quote.evalSheet && Math.abs(round1(techByRole) - breakdown.techDays) > 0.05) {
     issues.push({
       code: 'labor_days',
       message: `分项人天合计 ${round1(techByRole)} 与总人天 ${breakdown.techDays} 不一致`,
+      severity: 'warning',
     });
   }
 
-  // 校验 2：各成本小计之和须等于总报价
+  // 校验 2：各成本小计之和须等于总报价（黄灯）
   const costSum = round2(
     breakdown.laborSubtotal + breakdown.travelSubtotal + breakdown.onsiteSubtotal + breakdown.otherCostSubtotal,
   );
   if (Math.abs(costSum - round2(breakdown.grandTotal)) > 0.01) {
-    issues.push({ code: 'cost_sum', message: `成本小计之和 ${costSum} 与项目总报价 ${breakdown.grandTotal} 不一致` });
+    issues.push({ code: 'cost_sum', message: `成本小计之和 ${costSum} 与项目总报价 ${breakdown.grandTotal} 不一致`, severity: 'warning' });
   }
 
   if (breakdown.grandTotal <= 0) {
-    issues.push({ code: 'no_price', message: '项目总报价必须大于 0' });
+    issues.push({ code: 'no_price', message: '项目总报价必须大于 0', severity: 'error' });
   }
 
-  // 校验 3：付款比例合计必须精确等于 100%
+  // 校验 3：付款比例合计必须精确等于 100%（黄灯）
   const terms = quote.summary?.paymentTerms ?? [];
   if (terms.length === 0) {
-    issues.push({ code: 'payment_percent', message: '请配置付款方式' });
+    issues.push({ code: 'payment_percent', message: '请配置付款方式', severity: 'warning' });
   } else {
     const percentSum = round2(terms.reduce((s, t) => s + t.percent, 0));
     if (Math.abs(percentSum - 100) > 0.01) {
-      issues.push({ code: 'payment_percent', message: `付款阶段比例合计为 ${percentSum}%，必须等于 100%` });
+      issues.push({ code: 'payment_percent', message: `付款阶段比例合计为 ${percentSum}%，必须等于 100%`, severity: 'warning' });
     }
   }
 
-  // 校验 4：开启差旅/驻场则金额必须大于 0
+  // 校验 4：开启差旅/驻场则金额必须大于 0（黄灯）
   if (quote.travelOnsite.enableTravel && quote.travelOnsite.travelSubtotal <= 0) {
-    issues.push({ code: 'travel_amount', message: '已开启出差配置，差旅费用必须大于 0' });
+    issues.push({ code: 'travel_amount', message: '已开启出差配置，差旅费用必须大于 0', severity: 'warning' });
   }
   if (quote.travelOnsite.enableOnsite && quote.travelOnsite.onsiteSubtotal <= 0) {
-    issues.push({ code: 'travel_amount', message: '已开启驻场配置，驻场费用必须大于 0' });
+    issues.push({ code: 'travel_amount', message: '已开启驻场配置，驻场费用必须大于 0', severity: 'warning' });
   }
 
   return issues;

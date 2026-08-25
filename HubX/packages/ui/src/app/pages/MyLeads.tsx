@@ -39,6 +39,7 @@ import {
   INTENTION_LEVEL_COLOR,
   LEAD_SOURCE_COLOR,
   LEAD_SOURCE_LIST,
+  LEAD_SOURCE_LABEL,
   COMPANY_ENTITY_LIST,
   GROUP_TYPE_ICON,
   TRANSFER_ACTION_LABEL,
@@ -46,7 +47,10 @@ import {
   QUICK_FILTER_LABEL,
   SALES_STATUS_LIST,
 } from './leads/types';
-import { MY_LEADS, MY_CREATED_LEADS, MY_ASSISTED_LEADS, getTransferRecordsByLeadId } from './leads/mockData';
+import { useLeads } from '@/app/leads/LeadContext';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
+import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
+import { LeadTransferPopover } from '@/app/leads/LeadTransferPopover';
 import {
   searchLeads,
   applyQuickFilterExtended,
@@ -73,6 +77,8 @@ export function getLeadFollowupReminderBanner(reminders: ReminderItem[]) {
 export function MyLeads() {
   const navigate = useNavigate();
   const { reminders } = useReminders();
+  const { leads, getTransferRecords } = useLeads();
+  const currentUser = CURRENT_LOGIN_USER.name;
   const banner = getLeadFollowupReminderBanner(reminders);
   const [activeTab, setActiveTab] = useState('my');
   const [keyword, setKeyword] = useState('');
@@ -83,14 +89,15 @@ export function MyLeads() {
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
+  const myPool = leads.filter((l) => l.clueType === 'assigned');
   const rawLeads = useMemo(() => {
     switch (activeTab) {
-      case 'my': return MY_LEADS;
-      case 'created': return MY_CREATED_LEADS;
-      case 'assisted': return MY_ASSISTED_LEADS;
-      default: return MY_LEADS;
+      case 'my': return myPool;
+      case 'created': return myPool.filter((l) => l.optimizer === currentUser);
+      case 'assisted': return myPool.filter((l) => l.assistant === currentUser);
+      default: return myPool;
     }
-  }, [activeTab]);
+  }, [activeTab, myPool, currentUser]);
 
   const leadsWithOverdue = useMemo(() => calculateOverdueStatus(rawLeads), [rawLeads]);
   const filterCounts = useMemo(() => getQuickFilterCounts(leadsWithOverdue), [leadsWithOverdue]);
@@ -102,6 +109,14 @@ export function MyLeads() {
     if (quickFilter) result = applyQuickFilterExtended(result, quickFilter);
     return result;
   }, [leadsWithOverdue, keyword, statusFilter, quickFilter]);
+
+  // SLA 视图（派发时效 + 首联时效）
+  const now = useMemo(() => new Date(), []);
+  const dispatchViews = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof leadDispatchView>>();
+    for (const l of filteredLeads) map.set(l.id, leadDispatchView(l, now));
+    return map;
+  }, [filteredLeads, now]);
 
   const handleOpenCompanyEntity = (entityName: string) => {
     if (!companyEntityPermissions.view) { Message.warning('暂无权限'); return; }
@@ -181,7 +196,7 @@ export function MyLeads() {
       width: 120,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
         </Space>
       ),
@@ -198,32 +213,41 @@ export function MyLeads() {
     },
     {
       title: '跟进倒计时',
-      width: 130,
+      width: 160,
       render: (_: unknown, r: LeadListItem) => {
         const c = getCountdownCapsule(r.nextFollowTime);
-        if (c.status === 'none') {
-          return <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>;
-        }
-        if (c.status === 'today' || c.status === 'overdue') {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-              <span style={{
-                display: 'inline-block', padding: '2px 8px', borderRadius: 10,
-                fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap',
-                color: COUNTDOWN_COLOR[c.status], backgroundColor: COUNTDOWN_BG[c.status],
-                border: c.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))',
-              }}>
-                {c.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
-                {c.label}
-              </span>
-              {c.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
-            </div>
-          );
-        }
+        const view = dispatchViews.get(r.id);
+        const SLA_COLOR: Record<string, string> = { normal: 'green', warning: 'orange', overdue: 'red', contacted: 'green' };
+        const hasSla = view && r.dispatchedAt;
+        const capsule = c.status === 'none' && !hasSla
+          ? <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>
+          : c.status === 'none'
+            ? null
+            : c.status === 'today' || c.status === 'overdue'
+              ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                    fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap',
+                    color: COUNTDOWN_COLOR[c.status], backgroundColor: COUNTDOWN_BG[c.status],
+                    border: c.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))',
+                  }}>
+                    {c.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
+                    {c.label}
+                  </span>
+                  {c.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
+                </div>
+              )
+              : <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>{c.label} {c.subLabel}</span>;
+        if (!hasSla) return capsule;
         return (
-          <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>
-            {c.label} {c.subLabel}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {capsule}
+            <div style={{ display: 'flex', gap: 2 }}>
+              <Tag size="mini" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
+              <Tag size="mini" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+            </div>
+          </div>
         );
       },
     },
@@ -251,52 +275,8 @@ export function MyLeads() {
       title: '跟进/持有',
       width: 100,
       render: (_: unknown, r: LeadListItem) => {
-        const records = getTransferRecordsByLeadId(r.id);
         return (
-          <Popover
-            title="流转记录"
-            trigger="click"
-            popupStyle={{ maxWidth: 520 }}
-            content={
-              <div style={{ fontSize: 12 }}>
-                <div style={{ marginBottom: 8, color: 'var(--color-text-3)' }}>
-                  跟进 {r.followCount} 次 · 持有 {r.daysHeld} 天{r.historyOwners ? ` · 历史归属: ${r.historyOwners}` : ''}
-                </div>
-                {records.length > 0 ? (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--color-border-2)', color: 'var(--color-text-3)' }}>
-                          <th style={{ textAlign: 'left', padding: '4px 6px 4px 0', fontWeight: 500, whiteSpace: 'nowrap' }}>操作人</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>操作</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>归属人</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>状态</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>原因</th>
-                          <th style={{ textAlign: 'left', padding: '4px 0 4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>时间</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {records.map((tr) => (
-                          <tr key={tr.id} style={{ borderBottom: '1px solid var(--color-border-1)' }}>
-                            <td style={{ padding: '4px 6px 4px 0', whiteSpace: 'nowrap' }}>{tr.operator}</td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}><Tag color={TRANSFER_ACTION_COLOR[tr.action]} size="small">{TRANSFER_ACTION_LABEL[tr.action]}</Tag></td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}>{tr.toOwner || '-'}</td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}>{tr.status}</td>
-                            <td style={{ padding: '4px 6px', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><Tooltip content={tr.reason || ''}><span>{tr.reason || '-'}</span></Tooltip></td>
-                            <td style={{ padding: '4px 0 4px 6px', whiteSpace: 'nowrap' }}>{tr.createdAt.slice(5)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--color-text-4)', textAlign: 'center', padding: 12 }}>暂无流转记录</div>
-                )}
-              </div>
-            }
-          >
-            <span style={{ fontSize: 12, cursor: 'pointer', color: 'var(--primary-6)' }}>{r.followCount}次 · {r.daysHeld}天</span>
-          </Popover>
+          <LeadTransferPopover leadId={r.id} followCount={r.followCount} daysHeld={r.daysHeld} historyOwners={r.historyOwners} />
         );
       },
     },
@@ -314,6 +294,10 @@ export function MyLeads() {
     },
   ];
 
+  const myCount = myPool.length;
+  const createdCount = myPool.filter((l) => l.optimizer === currentUser).length;
+  const assistedCount = myPool.filter((l) => l.assistant === currentUser).length;
+
   return (
     <div>
       {banner && (
@@ -326,9 +310,9 @@ export function MyLeads() {
 
       <Card>
         <Tabs activeTab={activeTab} onChange={setActiveTab} style={{ marginBottom: 12 }}>
-          <TabPane key="my" title={`我的线索 (${MY_LEADS.length})`} />
-          <TabPane key="created" title={`我录入的 (${MY_CREATED_LEADS.length})`} />
-          <TabPane key="assisted" title={`我协助的 (${MY_ASSISTED_LEADS.length})`} />
+          <TabPane key="my" title={`我的线索 (${myCount})`} />
+          <TabPane key="created" title={`我录入的 (${createdCount})`} />
+          <TabPane key="assisted" title={`我协助的 (${assistedCount})`} />
         </Tabs>
 
         {/* 快捷筛选 Tab */}
@@ -347,7 +331,7 @@ export function MyLeads() {
             {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
           <Select placeholder="线索来源" style={{ width: 130 }} allowClear>
-            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
           <Select placeholder="对接主体" style={{ width: 130 }} allowClear>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}

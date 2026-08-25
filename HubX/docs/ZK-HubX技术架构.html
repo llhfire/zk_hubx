@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZK HubX β 技术架构（如实快照）</title>
+<style>
+  :root {
+    --ink: #111;
+    --muted: #666;
+    --faint: #999;
+    --line: #ddd;
+    --paper: #fff;
+    --wash: #f6f6f6;
+    --hole: #b42318;
+    --code: #9a3412;
+    --ok: #1f6b3a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 36px 24px 64px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .kicker { font-size: 11px; letter-spacing: 0.16em; color: var(--faint); text-transform: uppercase; }
+  h1 { font-size: 22px; font-weight: 650; margin: 4px 0 6px; letter-spacing: -0.02em; }
+  .lede { font-size: 13px; color: var(--muted); max-width: 780px; }
+  .meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .banner {
+    margin-top: 18px;
+    border: 1px solid var(--ink);
+    padding: 10px 14px;
+    font-size: 12px;
+    background: var(--wash);
+  }
+  .banner strong { font-weight: 650; }
+  h2 {
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 32px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--ink);
+  }
+  h3 { font-size: 13px; font-weight: 650; margin: 16px 0 8px; }
+  p, li { font-size: 12.5px; color: #333; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; background: #f3f3f3; padding: 0 3px; }
+  .rt-box.dark code { background: #3a3a3a; color: #f2f2f2; }
+  .muted { color: var(--muted); }
+  .faint { color: var(--faint); }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 12px; font-size: 11px; color: var(--muted); }
+  .pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 2px;
+    vertical-align: 1px;
+    letter-spacing: 0.02em;
+  }
+  .p-wired { background: var(--ink); color: #fff; }
+  .p-code { background: #c2410c; color: #fff; }
+  .p-hole { background: var(--hole); color: #fff; }
+  .p-mock { background: #e5e5e5; color: #444; }
+  .p-off { background: #fff; color: #666; border: 1px dashed #bbb; }
+  .p-design { background: #1d4ed8; color: #fff; }
+  .p-later { background: #fff; color: #888; border: 1px solid #ccc; }
+
+  /* runtime */
+  .runtime { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .rt-box { border: 1px solid var(--line); padding: 12px 14px; background: #fff; }
+  .rt-box.dark { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .rt-box.dark .sub { color: #bbb; }
+  .rt-title { font-size: 12px; font-weight: 650; margin-bottom: 4px; }
+  .rt-box .sub, .rt-box ul { font-size: 11.5px; color: var(--muted); }
+  .rt-box.dark ul { color: #ccc; }
+  .rt-box ul { margin: 6px 0 0 16px; }
+
+  /* layers */
+  .layers { border: 1px solid var(--ink); }
+  .layer { display: grid; grid-template-columns: 88px 1fr 220px; border-bottom: 1px solid var(--line); }
+  .layer:last-child { border-bottom: none; }
+  .layer .who { padding: 10px 12px; font-size: 12px; font-weight: 650; background: var(--wash); border-right: 1px solid var(--line); }
+  .layer .what { padding: 10px 12px; font-size: 12px; }
+  .layer .path { padding: 10px 12px; font-size: 11px; color: var(--muted); border-left: 1px solid var(--line); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+
+  /* flow */
+  .flow { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+  .flow div { padding: 10px 12px; font-size: 12px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .flow div:nth-child(3n) { border-right: none; }
+  .flow div:nth-last-child(-n+3) { border-bottom: none; }
+  .flow b { display: block; font-size: 12px; margin-bottom: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; vertical-align: top; }
+  th { background: var(--wash); font-weight: 650; font-size: 11px; }
+  td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; word-break: break-word; }
+  tr.hole td { background: #fff5f5; }
+  tr.warn td { background: #fff7ed; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { border: 1px solid var(--line); padding: 12px 14px; }
+  .card h3 { margin-top: 0; }
+  .card ul { margin: 6px 0 0 16px; }
+  .card li { margin: 3px 0; }
+
+  .mods { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+  .mod { padding: 10px 12px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .mod:nth-child(3n) { border-right: none; }
+  .mod-name { font-size: 12px; font-weight: 650; margin-bottom: 4px; }
+  .mod-items { font-size: 11px; color: var(--muted); line-height: 1.7; }
+
+  .holes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .hole-card { border: 1px solid var(--hole); padding: 12px; }
+  .hole-card .tag { font-size: 10px; font-weight: 700; color: var(--hole); letter-spacing: 0.08em; }
+  .hole-card h3 { margin: 4px 0 6px; }
+
+  .seq { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; background: var(--wash); border: 1px solid var(--line); padding: 12px 14px; white-space: pre; overflow-x: auto; line-height: 1.55; }
+
+  .timeline { display: grid; grid-template-columns: repeat(6, 1fr); border: 1px solid var(--line); }
+  .tl { padding: 10px 10px 12px; border-right: 1px solid var(--line); }
+  .tl:last-child { border-right: none; }
+  .tl .st { font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+  .tl b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .done { background: #111; color: #fff; }
+  .done .st, .next .st { color: inherit; opacity: 0.7; }
+  .next { background: #fff7ed; }
+
+  .note { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 11px; color: var(--faint); }
+
+  @media (max-width: 900px) {
+    .runtime, .flow, .mods, .holes, .timeline, .grid-2, .layer { grid-template-columns: 1fr; }
+    .layer .path { border-left: none; border-top: 1px solid var(--line); }
+  }
+  @media print {
+    body { padding: 12px; }
+    .banner, .hole-card, .rt-box, .layers, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Engineering snapshot · not the product roadmap</div>
+  <h1>ZK HubX β 技术架构</h1>
+  <p class="lede">
+    如实描述 β 版（<code>apps/web</code> + <code>apps/api</code> + D1）现在怎么跑、哪些模块接了后端、接到哪一步、哪里会在冒烟时挂掉。
+    产品目标图仍是仓库根目录 <code>ZK-HubX架构图.html</code>，两份不要混读。
+  </p>
+  <div class="meta">
+    <span>快照日 <b>2026-08-22</b></span>
+    <span>git HEAD <b>4fdecb1</b></span>
+    <span>工作区 <b>B1–B4 已编码未提交</b></span>
+    <span>B5 <b>详细设计 Approved，生产代码未写</b></span>
+    <span>线上 <b>四份 D1 迁移仍待执行</b></span>
+  </div>
+
+  <div class="banner">
+    <strong>读图口径。</strong>
+    「已注入」= <code>apps/web/src/main.tsx</code> 已把 http service 传进 Provider，β 列表读写走 Workers，不是从零接线。
+    「工作区已编码」= 相对 HEAD 有 diff，尚未 commit / push / 发 Cloudflare。
+    「冒烟洞」= B5 必做，不修则漏斗主线在 β 独立跑不通。
+    看板 <code>productionOn</code> 不是接线事实：仅「线索全流程」为 true；报价/合同/项目/回款 http 已注入但开关仍 false。
+  </div>
+
+  <div class="legend">
+    <span><i class="pill p-wired">已注入</i> β 入口走 http</span>
+    <span><i class="pill p-code">工作区已编码</i> 未发布</span>
+    <span><i class="pill p-hole">冒烟洞</i> B5 P0</span>
+    <span><i class="pill p-design">设计已批</i> 待编码</span>
+    <span><i class="pill p-mock">α mock</i> 页面仍内存/种子</span>
+    <span><i class="pill p-off">未接缝</i> β 打开也是假数据</span>
+    <span><i class="pill p-later">规划</i> 不挡第一次 β 可用</span>
+  </div>
+
+  <!-- 1 -->
+  <h2>1. 运行时拓扑</h2>
+  <div class="runtime">
+    <div class="rt-box">
+      <div class="rt-title">α · Cloudflare Pages</div>
+      <div class="sub">https://alpha.zkhubx.com</div>
+      <ul>
+        <li>入口 <code>apps/prototype</code>，只挂 <code>&lt;App /&gt;</code></li>
+        <li>不传 service，五个域走 mock</li>
+        <li>无 <code>__ZK_BETA__</code>，签约桥仍前端 diff</li>
+        <li>日常 <code>npm run dev</code> → :5173</li>
+      </ul>
+    </div>
+    <div class="rt-box dark">
+      <div class="rt-title">β 前端 · Pages → 调 API</div>
+      <div class="sub">https://beta.zkhubx.com</div>
+      <ul>
+        <li>入口 <code>apps/web</code>，构建内联 <code>VITE_API_BASE_URL</code></li>
+        <li>注入报价 / 合同 / 线索 / 项目 / 实收 http</li>
+        <li><code>appVersion="beta"</code> + <code>__ZK_BETA__=true</code></li>
+        <li>本地 <code>npm run dev -w apps/web</code> → :5174</li>
+      </ul>
+    </div>
+    <div class="rt-box">
+      <div class="rt-title">β 后端 · Workers + D1</div>
+      <div class="sub">https://zkhubx-api.llhfire.workers.dev</div>
+      <ul>
+        <li>Hono，<code>apps/api/src/index.ts</code></li>
+        <li>D1 <code>zkhubx-db</code> · id <code>ac02e216-…53339</code></li>
+        <li>文档式：<code>id + data JSON + version</code></li>
+        <li>本机 <code>wrangler dev</code> → :8787</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">
+    α / β 共用同一份 UI（<code>packages/ui</code>）。改页面两边一起变；差的是入口注入和签约桥是否跳过业务。
+    Workers 仍是 <code>*.workers.dev</code>，浏览器直连可能被墙。自定义域只绑了两个前端。
+    <strong>第一次把工作区接到生产，必须同一次下班：提交 → D1 迁移 → Workers → α+β Pages → Source SHA = HEAD。</strong>
+  </p>
+
+  <!-- 2 -->
+  <h2>2. 代码分层（monorepo）</h2>
+  <div class="layers">
+    <div class="layer">
+      <div class="who">挂载</div>
+      <div class="what">α 不传 service；β 注入五个 http service。actor 取自 <code>CURRENT_LOGIN_USER.name</code>（现网固定为张三，不是会话）。</div>
+      <div class="path">apps/prototype · apps/web</div>
+    </div>
+    <div class="layer">
+      <div class="who">应用壳</div>
+      <div class="what">Provider 栈：版本 / 集成 / 审批 / 待办 / 反馈 / 提醒 / 员工 / 日报配置 / 合同 / 线索 / 项目 / 实收 / 商机 / 开票 / 报价；内嵌无 UI 的 <code>SigningOpenBridge</code>。</div>
+      <div class="path">packages/ui/.../App.tsx</div>
+    </div>
+    <div class="layer">
+      <div class="who">页面</div>
+      <div class="what">React 18 + Router 7 + Arco + Tailwind v4。列表/详情读 Context。真正项目列表是 <code>ProjectList.tsx</code>，不是 <code>Projects.tsx</code>。</div>
+      <div class="path">packages/ui/.../pages/</div>
+    </div>
+    <div class="layer">
+      <div class="who">接缝</div>
+      <div class="what">每域 <code>XxxService</code> 接口 + mock/http 双实现；状态迁移在 <code>*Mutations.ts</code>，两端共用。http 捕获 409 后提示刷新。</div>
+      <div class="path">packages/ui/.../services/</div>
+    </div>
+    <div class="layer">
+      <div class="who">Workers</div>
+      <div class="what">GET 列表/单条；PUT 整文档 + 乐观锁 + 服务端 <code>updatedAt</code>；合同 PUT 后 <code>handleSigningLinkage</code>（现网有洞 C）。报价 GET 会 <code>ensureSeed</code> 插入 <code>q-seed-1</code>。</div>
+      <div class="path">apps/api/src/index.ts</div>
+    </div>
+    <div class="layer">
+      <div class="who">D1</div>
+      <div class="what">文档式存储（ADR-0094）：不拆列、无外键。表：quotes / contracts / leads / lead_followups / lead_transfers / projects / cases / collections。生产是否已有新表以实施当天探测为准。</div>
+      <div class="path">schema.sql · migrations/</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <h2>3. 一次写入怎么走</h2>
+  <div class="flow">
+    <div><b>1 页面动作</b>向导保存、跟进、登记实收</div>
+    <div><b>2 Context</b>调用 service.put / create</div>
+    <div><b>3 http service</b>fetch + 头 <code>X-Actor</code> + body.version</div>
+    <div><b>4 Workers PUT</b>比 version，不匹配 409</div>
+    <div><b>5 D1</b>INSERT OR REPLACE 整段 JSON，version+1</div>
+    <div><b>6 写时联动</b>仅合同：created / approved / voided → 项目/商机</div>
+  </div>
+  <p class="note">
+    没有登录会话、没有接口鉴权、没有操作日志表。actor 信任请求头。
+    没有导航级 refetch：β 签约桥在 <code>isBeta()</code> 为 true 时直接 return，<strong>也不调 <code>refresh()</code></strong>（洞 A）。
+  </p>
+
+  <!-- 4 -->
+  <h2>4. 平台基座（ADR-0094）</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>已落地的可信度修补 <span class="pill p-code">工作区已编码</span></h3>
+      <ul>
+        <li><b>文档式 D1</b>：一域一张表，<code>data</code> 存整对象。β 期不做关系建模。</li>
+        <li><b>乐观锁</b>：PUT 带 <code>version</code>，冲突 409 + 当前 version。</li>
+        <li><b>服务端时钟</b>：<code>updatedAt</code> 由 Workers 生成，回写前端。</li>
+        <li><b>X-Actor</b>：过渡身份；登录落地后换会话。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>刻意没做</h3>
+      <ul>
+        <li>JWT / 登录页 / 路由守卫 / 接口级权限</li>
+        <li>按状态/客户的列查询、引用完整性</li>
+        <li>WebSocket、合并冲突 UI</li>
+        <li>D1 <code>migrations_dir</code> 自动迁；现流程是 <code>d1 execute --file</code></li>
+        <li>两个文件都叫 <code>0002_*.sql</code>，B5 P1 才改名</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <h2>5. 漏斗五域 · 接线事实</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>域</th>
+        <th>前端入口</th>
+        <th>Service / 表 / 路由</th>
+        <th>看板开关</th>
+        <th>如实状态</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>报价</td>
+        <td>QuotationProvider</td>
+        <td class="mono">quotationService · quotes · /api/quotes</td>
+        <td>productionOn false<br>devStatus 未开始</td>
+        <td>最早接 http+D1。服务端校验状态迁移。note 已写「β 已上线 http+D1」。复合接口后置。</td>
+      </tr>
+      <tr>
+        <td>合同</td>
+        <td>ContractsProvider</td>
+        <td class="mono">contractService · contracts · /api/contracts</td>
+        <td>false / 未开始</td>
+        <td>CRUD 已通。写时联动意图在 B3。<strong>首次 PUT 是 INSERT，整段跳过联动（洞 C）</strong>。</td>
+      </tr>
+      <tr>
+        <td>线索</td>
+        <td>LeadsProvider</td>
+        <td class="mono">leadService · leads + followups + transfers · /api/leads*</td>
+        <td>true / 编码中</td>
+        <td>B2 五池+跟进+领取/退回。洽谈无合同 spawn 不在 B5，归 U1（<code>ap-lead-{id}</code>）。</td>
+      </tr>
+      <tr class="hole">
+        <td>项目</td>
+        <td>ProjectProvider</td>
+        <td class="mono">projectService · projects · /api/projects</td>
+        <td>false / 编码中</td>
+        <td>B4 列表走 http。β 桥不 refresh（洞 A）。<code>spawnUnconfirmedProject</code> 因洞 C 现网不可达。SOP 不写 D1。</td>
+      </tr>
+      <tr class="hole">
+        <td>实收</td>
+        <td>CollectionProvider</td>
+        <td class="mono">collectionService · collections · /api/collections</td>
+        <td>false / 编码中</td>
+        <td>期次仍在合同 <code>paymentPlans</code>。360 读台账。合同详情 <code>addCollection</code> 只写嵌套流水（洞 B）。</td>
+      </tr>
+      <tr>
+        <td>商机 Case</td>
+        <td>BusinessCaseProvider 纯内存</td>
+        <td class="mono">/api/cases 有 · 前端未注入</td>
+        <td>—</td>
+        <td>B5 明确不接。Workers 合同联动会 INSERT cases，UI 看不见 http 数据。</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note">
+    P3 冒烟通过后口头已确认：报价 / 合同 / 项目 / 回款 <code>productionOn → true</code>；基础工具保持 false；线索保持 true。编码阶段禁止代开开关。
+  </p>
+
+  <!-- 6 -->
+  <h2>6. 三个会挡冒烟的洞（B5 P0，均必做）</h2>
+  <div class="holes">
+    <div class="hole-card">
+      <div class="tag">洞 C · Workers</div>
+      <h3>首次创建合同不 spawn</h3>
+      <p>PUT <code>/api/contracts/:id</code> 仅 <code>if (old)</code> 才 <code>handleSigningLinkage</code>。向导第一次是 INSERT，<code>old</code> 空，整段跳过。之后 <code>prevSnapshot</code> 含本 id，<code>events.created</code> 永假。批准路径无项目则 <code>continue</code>，从不补 spawn。结果：β 从未 INSERT <code>ap-{合同id}</code>。</p>
+    </div>
+    <div class="hole-card">
+      <div class="tag">洞 A · 前端桥</div>
+      <h3>β 不刷新项目 Context</h3>
+      <p><code>ApprovalDeliveryBridge</code> 注释写「合同列表变化时刷新项目」。<code>isBeta()</code> 为 true 时直接 return，且未取出 <code>refresh</code>。只修 A 不修 C，refresh 仍是空列表。同会话新建合同后项目列表不会自己出现。</p>
+    </div>
+    <div class="hole-card">
+      <div class="tag">洞 B · 双写</div>
+      <h3>登记实收进错账</h3>
+      <p>合同详情 <code>addCollection</code> → 嵌套 <code>collectionRecords</code> + <code>receivedAmount</code>。360 / 台账读 <code>collections</code> 表。用户只能在合同详情登记，360 看不到这笔钱。B5 要求与看板共用 <code>registerMainPaymentDualWrite</code>。</p>
+    </div>
+  </div>
+  <h3>签约联动（设计意图 vs 现网）</h3>
+  <div class="seq">设计（ADR-0093 / 0095）：
+  主合同草稿 PUT ──created──► INSERT projects id=ap-{合同id}   未确认
+  已指派 + 批准   ──approved─► startDelivery                    进行中
+  主合同作废     ──voided───► shelveProject                    搁置
+  批准时无项目                              不 spawn（不是立项点）
+
+现网：created 因洞 C 永不命中 → spawnUnconfirmedProject 是死代码
+α：SigningOpenBridge 仍 diff；跟进另有内存 spawn lead-spawn-{线索id}
+β 洽谈无合同：应走 U1 / ap-lead-{线索id}，B5 不做</div>
+
+  <!-- 7 -->
+  <h2>7. 功能模块 · 按「β 能不能当真用」分层</h2>
+  <p class="muted" style="margin-bottom:10px;">看板 39 个模块。β 第一次可用只需要基座 + 漏斗五域闭环。其余 α 能点、β 仍是 mock 或规划。</p>
+
+  <h3>A. 基座与漏斗 — 决定 β 是否可用</h3>
+  <div class="mods">
+    <div class="mod">
+      <div class="mod-name">基础工具 · 数据底座 <span class="pill p-code">B1 已编码</span></div>
+      <div class="mod-items">乐观锁 / actor / 时钟 · productionOn 保持 false（登录未做）· B5 收口已设计</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">线索全流程 <span class="pill p-wired">已注入</span></div>
+      <div class="mod-items">五池 · 跟进 · 领取退回 · 360 报价/合同入口 · U1 洽谈 spawn 未做</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">报价工作台 <span class="pill p-wired">已注入</span></div>
+      <div class="mod-items">10 态词表 · 双来源 · 审批快照 · 标准件 PDF · 已确认出向导</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">合同签约 <span class="pill p-hole">洞 C</span></div>
+      <div class="mod-items">向导 · 审批 · 归档 · 写时联动现网不可达 · 补充协议对象仍残留</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">项目管理 <span class="pill p-hole">洞 A/C</span></div>
+      <div class="mod-items">360 · 未确认/指派 · http 列表 · SOP β 空 · /projects 走 ProjectList</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">回款管理（实收） <span class="pill p-hole">洞 B</span></div>
+      <div class="mod-items">台账表已接 · 详情未双写 · 看板/甘特独立计划、后于 B5</div>
+    </div>
+  </div>
+
+  <h3>B. 主线旁路 — 不挡 B5 冒烟，日常会缺</h3>
+  <div class="mods">
+    <div class="mod">
+      <div class="mod-name">统一视图 U1–U6 <span class="pill p-later">B5 之后</span></div>
+      <div class="mod-items">U1 计划已改 Lead 写时 spawn · U2 退回 · U3 作废搁置 · 三套项目 id 未消</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">回款看板 <span class="pill p-later">有计划</span></div>
+      <div class="mod-items">payment-kanban-dev-plan P1–P5 · 待付读 paymentPlans · 已回读 collections</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">客户与报价基础 <span class="pill p-mock">α mock</span></div>
+      <div class="mod-items">客户列表/详情 · 联系人/开票信息 planned 未开始 · 无独立 PRD</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">开票管理 <span class="pill p-mock">α mock</span></div>
+      <div class="mod-items">申请/冲红/工作台 · 无 β service</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">工作台与审批 <span class="pill p-mock">localStorage</span></div>
+      <div class="mod-items">审批模板在本地 · 报价会签读配置快照 · 待办/提醒内存</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">登录 / 权限 / 操作日志 <span class="pill p-off">未开始</span></div>
+      <div class="mod-items">无 PRD、无详细设计 · B5 Non-Goal · 现身份写死张三</div>
+    </div>
+  </div>
+
+  <h3>C. α 已较完整 — 计划规定漏斗后再接 β</h3>
+  <div class="mods">
+    <div class="mod">
+      <div class="mod-name">日报工时 <span class="pill p-off">未接缝</span></div>
+      <div class="mod-items">角色模板 · 提交进提醒 Context 内存</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">差旅管理 <span class="pill p-off">T1–T4 α 完</span></div>
+      <div class="mod-items">出差/报销/宿舍 · 双出口纯函数有，无 Workers 表</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">运营费用 <span class="pill p-off">A–E α 完</span></div>
+      <div class="mod-items">五 Tab · restyle 详细设计 Draft · 不进 B5</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">精益交付 <span class="pill p-off">L1–L4 α 完</span></div>
+      <div class="mod-items">Case 派生指标 · /api/cases 前端未注入</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">成本核算 <span class="pill p-off">未接缝</span></div>
+      <div class="mod-items">工时×时薪 + 公摊占位 35 元/工时 · 与运营费率未对齐</div>
+    </div>
+    <div class="mod">
+      <div class="mod-name">交付支撑 / SOP <span class="pill p-mock">α 内存</span></div>
+      <div class="mod-items">deliveryPlanStore · schema 无 delivery_plans · B5 不补</div>
+    </div>
+  </div>
+
+  <h3>D. 规划模块 — 与当前 β 无关</h3>
+  <p class="note">
+    获客：渠道与投放。交付：工时加工、交付过程。财务：全期次视图。支撑：人力增强、行政后勤。
+    跨域：管理者工具、开发者工具。资源域全套、运维域全套。看板多为 <code>isPlanned</code> + 未开始。
+  </p>
+
+  <!-- 8 -->
+  <h2>8. Workers 路由与 D1 表</h2>
+  <table>
+    <thead>
+      <tr><th>路由</th><th>表</th><th>备注</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">GET /</td><td>—</td><td>健康检查</td></tr>
+      <tr><td class="mono">/api/quotes CRUD</td><td>quotes</td><td>GET 列表 ensureSeed；PUT 校验报价状态迁移</td></tr>
+      <tr><td class="mono">/api/contracts CRUD</td><td>contracts</td><td>PUT 后联动；洞 C 使 created 不触发</td></tr>
+      <tr><td class="mono">/api/leads CRUD + followups + transfers</td><td>leads / lead_followups / lead_transfers</td><td>领取/退回服务端校验</td></tr>
+      <tr><td class="mono">/api/projects CRUD</td><td>projects</td><td>spawn 应由联动写入，现网未发生</td></tr>
+      <tr><td class="mono">POST/GET /api/collections</td><td>collections</td><td>前端合同详情尚未调用这条写入</td></tr>
+      <tr><td class="mono">GET/PUT /api/cases</td><td>cases</td><td>无前端 http service</td></tr>
+    </tbody>
+  </table>
+  <p class="note">
+    迁移文件：<code>0001_add_version.sql</code>（ALTER 非幂等）、<code>0002_add_leads.sql</code>、<code>0002_add_projects_cases.sql</code>（编号冲突）、<code>0003_add_collections.sql</code>。
+    <code>schema.sql</code> 已含 version 列，全新库用这一份即可。
+  </p>
+
+  <!-- 9 -->
+  <h2>9. 施工进度</h2>
+  <div class="timeline">
+    <div class="tl done">
+      <div class="st">完成</div>
+      <b>B0</b>
+      ADR-0093 签约联动服务端化<br>ADR-0094 数据底座
+    </div>
+    <div class="tl done">
+      <div class="st">编码完成 · 未发生产</div>
+      <b>B1</b>
+      version / 409 / 时钟 / X-Actor
+    </div>
+    <div class="tl done">
+      <div class="st">编码完成 · 未发生产</div>
+      <b>B2</b>
+      LeadService + leads 表
+    </div>
+    <div class="tl done">
+      <div class="st">编码完成 · 洞 C</div>
+      <b>B3</b>
+      合同 PUT 联动（现网不可达）
+    </div>
+    <div class="tl done">
+      <div class="st">编码完成 · 洞 B</div>
+      <b>B4</b>
+      Project + Collection；看板 UI 不做
+    </div>
+    <div class="tl next">
+      <div class="st">下一步</div>
+      <b>B5</b>
+      补洞 A/B/C · 迁移改名 · 同一次下班发布 · 冒烟 · 翻牌
+    </div>
+  </div>
+  <p class="note">
+    B5 之后才是 U1（洽谈 spawn）、回款看板 P1–P5、补充协议清理、登录权限。
+    日报 / 差旅 / 运营费用 / 精益 的 β 接缝排在漏斗主线之后。
+  </p>
+
+  <h2>10. 和功能架构图怎么配合</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>ZK-HubX架构图.html（根目录）</h3>
+      <ul>
+        <li>产品价值链目标图，8 域模块清单</li>
+        <li>侧栏版本标识打开功能看板，页签切「功能架构」（<code>/architecture.html</code>）</li>
+        <li>计划变更、看板新增板块时改 <code>module-items</code></li>
+        <li>写的是「要做到什么」，含规划模块</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>本文 HubX/docs/ZK-HubX技术架构.html</h3>
+      <ul>
+        <li>β 工程实况：仓库、请求路径、表、洞</li>
+        <li>功能看板页签切「技术架构」（<code>/tech-architecture.html</code>，plugin 从本文 copy）</li>
+        <li>B5 收口、接线变化、下班/退下必核这一份</li>
+        <li>写的是「现在接了什么、差什么」</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    事实源：<code>计划/当前/beta-foundation-dev-plan.md</code>、
+    <code>beta-foundation-b5-design.md</code>（Approved）、
+    ADR-0093/0094/0095、
+    <code>apps/web/src/main.tsx</code>、<code>apps/api/src/index.ts</code>、<code>schema.sql</code>、
+    <code>featureBoard.config.json</code>。
+    过时文档不要当现状：<code>ALPHA-BETA-ARCHITECTURE.md</code> 进度停在 2026-08-16；
+    <code>SYSTEM-OVERVIEW.md</code> 仍有旧项目态与补充协议。
+    本文随 B5 编码/发布改，不替代 ADR。
+  </footer>
+</div>
+</body>
+</html>

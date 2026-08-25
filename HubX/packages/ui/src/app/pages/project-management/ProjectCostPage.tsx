@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Card, Select, Tag, Typography } from '@arco-design/web-react';
 import { useContracts } from '../contracts/ContractsContext';
-import { initialDailyReports, initialProjects } from './mockData';
+import { initialDailyReports } from './mockData';
+import { useProjects } from './ProjectContext';
 import { ProjectCostPanel } from './ProjectCostPanel';
 import type { ProjectTeamRow } from './ProjectDetailWorkspace';
 
@@ -10,8 +11,9 @@ const { Title, Text } = Typography;
 
 export function ProjectCostPage() {
   const { contracts } = useContracts();
-  const [projectId, setProjectId] = useState(initialProjects[0]?.id ?? '');
-  const project = initialProjects.find(item => item.id === projectId) ?? initialProjects[0];
+  const { projects } = useProjects();
+  const [projectId, setProjectId] = useState(projects[0]?.id ?? '');
+  const project = projects.find(item => item.id === projectId) ?? projects[0];
   const contract = contracts.find(item => item.id === project?.contractId || item.projectId === project?.id);
   const dailyReports = useMemo(
     () => initialDailyReports.filter(item => item.projectId === project?.id),
@@ -35,7 +37,7 @@ export function ProjectCostPage() {
           showSearch
           placeholder="请选择项目"
         >
-          {initialProjects.map(item => (
+          {projects.map(item => (
             <Select.Option key={item.id} value={item.id}>{item.projectNo} · {item.name}</Select.Option>
           ))}
         </Select>

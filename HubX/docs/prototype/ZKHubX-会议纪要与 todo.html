@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK HubX 智能会议管理与纪要工作台</title>
+  <style>
+    :root {
+      --primary-6: #165DFF;
+      --primary-5: #4080FF;
+      --primary-1: #E8F3FF;
+      --primary-hover: #0E42D2;
+      --success-6: #00B42A;
+      --success-1: #E8FFEA;
+      --warning-6: #FF7D00;
+      --warning-1: #FFF7E8;
+      --danger-6: #F53F3F;
+      --danger-1: #FFECE8;
+      --purple-6: #722ED1;
+      --purple-1: #F5E8FF;
+      --cyan-6: #00B2B2;
+      --cyan-1: #E6FFFA;
+      
+      --color-text-1: #1D2129;
+      --color-text-2: #4E5969;
+      --color-text-3: #86909C;
+      --color-text-4: #C9CDD4;
+      
+      --color-border-1: #F2F3F5;
+      --color-border-2: #E5E6EB;
+      --color-border-3: #C9CDD4;
+      
+      --color-bg-1: #FFFFFF;
+      --color-bg-2: #F7F8FA;
+      --color-bg-3: #F2F3F5;
+      --color-bg-white: #FFFFFF;
+      
+      --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+      
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background-color: var(--color-bg-2);
+      color: var(--color-text-1);
+      font-size: 14px;
+      line-height: 1.6;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部全局导航 */
+    .top-navbar {
+      height: 56px;
+      background: var(--color-bg-white);
+      border-bottom: 1px solid var(--color-border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--primary-6);
+      cursor: pointer;
+    }
+    .logo-badge svg {
+      width: 22px;
+      height: 22px;
+    }
+    .nav-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--color-border-2);
+    }
+    .nav-tabs-global {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-tab-btn {
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-2);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .nav-tab-btn:hover {
+      background: var(--color-bg-3);
+      color: var(--color-text-1);
+    }
+    .nav-tab-btn.active {
+      background: var(--primary-1);
+      color: var(--primary-6);
+      font-weight: 600;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .save-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-text-3);
+      margin-right: 4px;
+    }
+    .save-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success-6);
+    }
+
+    /* 按钮样式 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      outline: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .btn-default {
+      background: var(--color-bg-white);
+      border-color: var(--color-border-2);
+      color: var(--color-text-1);
+    }
+    .btn-default:hover {
+      background: var(--color-bg-3);
+      border-color: var(--color-border-3);
+    }
+    .btn-primary {
+      background: var(--primary-6);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--primary-5);
+      box-shadow: 0 2px 8px rgba(22, 93, 255, 0.3);
+    }
+    .btn-subtle {
+      background: var(--primary-1);
+      color: var(--primary-6);
+    }
+    .btn-subtle:hover {
+      background: #D4E8FF;
+    }
+
+    /* 容器主视图切换 */
+    .main-view-container {
+      flex: 1;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+      position: relative;
+    }
+    .page-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+    .page-view.active-view {
+      display: flex;
+    }
+
+    /* VIEW 1: 会议列表页 */
+    .list-page-wrapper {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      background: var(--color-bg-2);
+      padding: 24px 32px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .list-header-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .list-title-box h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-text-1);
+    }
+    .list-title-box p {
+      font-size: 13px;
+      color: var(--color-text-3);
+      margin-top: 2px;
+    }
+
+    .stat-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .metric-card {
+      background: #FFFFFF;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border-2);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .metric-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--color-text-1);
+      margin-top: 4px;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--color-text-3);
+    }
+    .metric-badge-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .filter-action-bar {
+      background: #FFFFFF;
+      padding: 14px 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border-2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .filter-left-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    .search-input-wrap {
+      position: relative;
+      width: 280px;
+    }
+    .search-input-wrap input {
+      width: 100%;
+      padding: 7px 12px 7px 32px;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      outline: none;
+    }
+    .search-input-wrap input:focus {
+      border-color: var(--primary-6);
+    }
+    .search-icon-pos {
+      position: absolute;
+      left: 10px;
+      top: 9px;
+      color: var(--color-text-3);
+    }
+    .filter-select {
+      padding: 7px 12px;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--color-text-2);
+      outline: none;
+      background: #FFFFFF;
+      cursor: pointer;
+    }
+
+    .meeting-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .meeting-card-item {
+      background: #FFFFFF;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-xl);
+      padding: 20px 24px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .meeting-card-item:hover {
+      border-color: var(--primary-5);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .meeting-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .meeting-item-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text-1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .meeting-status-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .status-active { background: var(--success-1); color: var(--success-6); }
+    .status-archived { background: var(--color-bg-3); color: var(--color-text-3); }
+
+    .meeting-item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--color-text-2);
+    }
+    .meta-tag-project {
+      background: var(--primary-1);
+      color: var(--primary-6);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .meeting-item-summary {
+      font-size: 13px;
+      color: var(--color-text-2);
+      line-height: 1.6;
+      background: #F9FAFC;
+      border-left: 3px solid var(--primary-6);
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+    }
+    .meeting-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--color-text-3);
+      border-top: 1px solid var(--color-border-1);
+      padding-top: 10px;
+    }
+
+    /* VIEW 2: 会议工作台 */
+    .workbench-layout {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      transition: grid-template-columns 0.25s ease;
+    }
+    .workbench-layout.collapsed-left {
+      grid-template-columns: 0px 1fr;
+    }
+
+    .left-panel {
+      background: var(--color-bg-white);
+      border-right: 1px solid var(--color-border-2);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--color-border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #FAFAFB;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .panel-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .upload-box {
+      border: 1.5px dashed var(--color-border-3);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      text-align: center;
+      background: var(--color-bg-2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-box:hover {
+      border-color: var(--primary-6);
+      background: var(--primary-1);
+    }
+    .upload-icon {
+      font-size: 22px;
+      color: var(--primary-6);
+    }
+    .upload-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-1);
+    }
+    .upload-hint {
+      font-size: 11px;
+      color: var(--color-text-3);
+    }
+
+    .preset-container {
+      background: var(--color-bg-2);
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border-2);
+    }
+    .preset-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-3);
+      margin-bottom: 6px;
+    }
+    .preset-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .preset-tag {
+      font-size: 12px;
+      padding: 3px 8px;
+      background: #FFFFFF;
+      border: 1px solid var(--color-border-2);
+      border-radius: 12px;
+      cursor: pointer;
+      color: var(--color-text-2);
+      transition: all 0.15s;
+    }
+    .preset-tag:hover {
+      border-color: var(--primary-6);
+      color: var(--primary-6);
+      background: var(--primary-1);
+    }
+
+    .raw-textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 180px;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--color-text-1);
+      resize: none;
+      outline: none;
+      background: #FFFFFF;
+    }
+    .raw-textarea:focus {
+      border-color: var(--primary-6);
+    }
+
+    .panel-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--color-border-2);
+      background: var(--color-bg-white);
+    }
+    .btn-parse-ai {
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .right-panel {
+      background: var(--color-bg-2);
+      height: 100%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .workbench-top-bar {
+      background: var(--color-bg-white);
+      padding: 10px 24px;
+      border-bottom: 1px solid var(--color-border-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .view-segments {
+      display: inline-flex;
+      background: var(--color-bg-3);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      gap: 2px;
+    }
+    .segment-btn {
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text-2);
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .segment-btn.active {
+      background: #FFFFFF;
+      color: var(--primary-6);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .document-sheet-container {
+      max-width: 960px;
+      width: 100%;
+      margin: 20px auto 60px;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card-sheet {
+      background: var(--color-bg-white);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border-2);
+      padding: 22px 26px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .doc-title-input {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-text-1);
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      outline: none;
+      width: 100%;
+      margin-bottom: 14px;
+      padding: 4px 6px;
+    }
+    .doc-title-input:hover, .doc-title-input:focus {
+      border-color: var(--color-border-2);
+      background: var(--color-bg-2);
+    }
+
+    .meta-form-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .form-item-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+    .form-item-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-2);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 1. 下拉日期时间组件 */
+    .datetime-picker-trigger {
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      padding: 6px 10px;
+      background: #FFFFFF;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--color-text-1);
+      user-select: none;
+    }
+    .datetime-picker-trigger:hover {
+      border-color: var(--primary-6);
+    }
+    .datetime-dropdown-popover {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 120;
+      background: #FFFFFF;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 12px;
+      width: 320px;
+      margin-top: 4px;
+      display: none;
+    }
+    .datetime-dropdown-popover.show {
+      display: block;
+    }
+    .preset-time-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border-1);
+    }
+    .preset-time-chip {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: var(--color-bg-2);
+      border: 1px solid var(--color-border-2);
+      cursor: pointer;
+    }
+    .preset-time-chip:hover {
+      background: var(--primary-1);
+      color: var(--primary-6);
+    }
+
+    /* 2. 涉及多个项目 */
+    .multi-tag-box {
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      padding: 4px 8px;
+      min-height: 36px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      background: #FFFFFF;
+      cursor: text;
+    }
+    .multi-tag-box:focus-within {
+      border-color: var(--primary-6);
+    }
+    .project-pill {
+      background: var(--primary-1);
+      color: var(--primary-6);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .project-pill-remove {
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--primary-5);
+    }
+    .project-pill-remove:hover {
+      color: var(--danger-6);
+    }
+
+    /* 3. 参会人员可联想 */
+    .attendee-pill {
+      background: var(--color-bg-3);
+      color: var(--color-text-1);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .attendee-pill-remove {
+      cursor: pointer;
+      color: var(--color-text-3);
+    }
+    .attendee-pill-remove:hover {
+      color: var(--danger-6);
+    }
+    .inline-tag-input {
+      border: none;
+      outline: none;
+      font-size: 13px;
+      flex: 1;
+      min-width: 90px;
+      padding: 2px;
+    }
+    .autocomplete-popover {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      margin-top: 4px;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 120;
+      display: none;
+    }
+    .autocomplete-popover.show {
+      display: block;
+    }
+    .autocomplete-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .autocomplete-item:hover {
+      background: var(--primary-1);
+      color: var(--primary-6);
+    }
+
+    .core-takeaway-banner {
+      background: linear-gradient(135deg, #F0F6FF 0%, #E6F0FF 100%);
+      border: 1px solid #BFD8FE;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .takeaway-editable {
+      font-size: 13px;
+      color: #103375;
+      line-height: 1.55;
+      outline: none;
+      flex: 1;
+    }
+
+    .rich-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: var(--color-bg-2);
+      padding: 4px 8px;
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+      border: 1px solid var(--color-border-2);
+    }
+    .tb-btn {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--color-text-2);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tb-btn:hover {
+      background: #FFFFFF;
+      color: var(--primary-6);
+    }
+    .tb-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--color-border-2);
+      margin: 0 4px;
+    }
+    .prose-editor-area {
+      min-height: 220px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--color-text-1);
+    }
+    .prose-editor-area h2 {
+      font-size: 16px;
+      margin: 18px 0 8px;
+      color: #1D2129;
+      font-weight: 700;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--color-border-1);
+    }
+    .prose-editor-area p {
+      margin-bottom: 10px;
+    }
+
+    /* TODO 表格与【所属业务】字段 */
+    .todo-table-custom {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--color-border-2);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .todo-table-custom th {
+      background: var(--color-bg-2);
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-2);
+      border-bottom: 1px solid var(--color-border-2);
+    }
+    .todo-table-custom td {
+      padding: 8px 10px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--color-border-1);
+      vertical-align: middle;
+      background: #FFFFFF;
+    }
+    .todo-table-custom tr:last-child td {
+      border-bottom: none;
+    }
+    .todo-table-custom tr:hover td {
+      background: #FAFBFC;
+    }
+
+    .priority-badge-btn {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .priority-p0 { background: var(--danger-1); color: var(--danger-6); border: 1px solid #FFA39E; }
+    .priority-p1 { background: var(--warning-1); color: var(--warning-6); border: 1px solid #FFD591; }
+    .priority-p2 { background: var(--success-1); color: var(--success-6); border: 1px solid #B7EB8F; }
+
+    .domain-badge-select {
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--color-border-2);
+      outline: none;
+      background: var(--color-bg-2);
+      color: var(--color-text-1);
+      cursor: pointer;
+    }
+
+    .todo-text-edit {
+      width: 100%;
+      border: 1px solid transparent;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--color-text-1);
+      outline: none;
+      font-family: inherit;
+    }
+    .todo-text-edit:hover, .todo-text-edit:focus {
+      border-color: var(--color-border-2);
+      background: var(--color-bg-2);
+    }
+
+    .member-select-dropdown {
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid var(--color-border-2);
+      outline: none;
+      background: #FFF;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1D2129;
+      color: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.34, 0.69, 0.1, 1);
+      z-index: 1000;
+    }
+    .toast-container.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部全局导航栏 -->
+  <header class="top-navbar">
+    <div class="nav-left">
+      <div class="logo-badge" onclick="switchMainView('list')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>ZK HubX 智能会议</span>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-tabs-global">
+        <button class="nav-tab-btn active" id="tabListBtn" onclick="switchMainView('list')">
+          📋 会议列表
+        </button>
+        <button class="nav-tab-btn" id="tabWorkbenchBtn" onclick="switchMainView('workbench')">
+          ✍️ 纪要生成与编辑
+        </button>
+      </div>
+    </div>
+    
+    <div class="nav-right">
+      <div class="save-status">
+        <span class="save-dot"></span>
+        <span id="saveStatusText">已自动同步 10:24</span>
+      </div>
+      <button class="btn btn-default" onclick="showToast('已加载版本历史快照')">
+        历史版本
+      </button>
+      <button class="btn btn-subtle" onclick="aiPolishContent()">
+        ✨ AI 润色
+      </button>
+      <button class="btn btn-primary" onclick="createNewMeetingFromNav()">
+        + 新建会议纪要
+      </button>
+    </div>
+  </header>
+
+  <!-- 主视图容器 -->
+  <div class="main-view-container">
+    
+    <!-- PAGE 1: 会议列表页 -->
+    <section class="page-view active-view" id="viewMeetingList">
+      <div class="list-page-wrapper">
+        
+        <div class="list-header-banner">
+          <div class="list-title-box">
+            <h1>企业会议纪要与行动项台账</h1>
+            <p>集中沉淀项目会议决议、支持多项目关联追溯与 TODO 自动派发</p>
+          </div>
+          <button class="btn btn-primary" style="padding:8px 18px; font-size:14px;" onclick="openNewMeetingWorkbench()">
+            ✨ 上传转写文本并生成纪要
+          </button>
+        </div>
+
+        <div class="stat-cards-grid">
+          <div class="metric-card">
+            <div>
+              <div class="metric-label">本月沉淀会议</div>
+              <div class="metric-number">12 <span style="font-size:13px; font-weight:normal; color:var(--color-text-3);">场</span></div>
+            </div>
+            <div class="metric-badge-icon" style="background:var(--primary-1); color:var(--primary-6);">📅</div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="metric-label">沉淀待办任务 (TODO)</div>
+              <div class="metric-number">38 <span style="font-size:13px; font-weight:normal; color:var(--color-text-3);">项</span></div>
+            </div>
+            <div class="metric-badge-icon" style="background:var(--warning-1); color:var(--warning-6);">⚡</div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="metric-label">P0 紧急待办</div>
+              <div class="metric-number" style="color:var(--danger-6);">8 <span style="font-size:13px; font-weight:normal; color:var(--color-text-3);">项待推进</span></div>
+            </div>
+            <div class="metric-badge-icon" style="background:var(--danger-1); color:var(--danger-6);">🔥</div>
+          </div>
+          <div class="metric-card">
+            <div>
+              <div class="metric-label">关联业务项目</div>
+              <div class="metric-number">6 <span style="font-size:13px; font-weight:normal; color:var(--color-text-3);">个</span></div>
+            </div>
+            <div class="metric-badge-icon" style="background:var(--purple-1); color:var(--purple-6);">🏷️</div>
+          </div>
+        </div>
+
+        <div class="filter-action-bar">
+          <div class="filter-left-group">
+            <div class="search-input-wrap">
+              <span class="search-icon-pos">🔍</span>
+              <input type="text" placeholder="搜索会议主题、决议关键词、待办内容...">
+            </div>
+            <select class="filter-select">
+              <option>全部所属业务</option>
+              <option>报价审批</option>
+              <option>成本核算</option>
+              <option>合同回款</option>
+              <option>人资OA</option>
+              <option>硬件对接</option>
+            </select>
+            <select class="filter-select">
+              <option>全部涉及项目</option>
+              <option>ZK HubX 核心业务链路改造</option>
+              <option>重庆先行试点项目</option>
+              <option>郑州先行试点项目</option>
+              <option>配送机器人系统</option>
+            </select>
+            <select class="filter-select">
+              <option>全部参会人员</option>
+              <option>何江奇</option>
+              <option>贾慧媛</option>
+              <option>杨培豪</option>
+              <option>黄奕</option>
+            </select>
+          </div>
+          <div style="font-size: 12px; color: var(--color-text-3);">
+            共检索到 3 篇会议纪要
+          </div>
+        </div>
+
+        <div class="meeting-cards-list">
+          
+          <div class="meeting-card-item" onclick="loadMeetingIntoWorkbench('hubx')">
+            <div class="meeting-item-top">
+              <div class="meeting-item-title">
+                <span>HubX 业务流程、报价审批与成本核算评审会议纪要</span>
+                <span class="meeting-status-tag status-active">进行中 · 6 项待办</span>
+              </div>
+              <button class="btn btn-subtle" style="padding:4px 10px; font-size:12px;">进入编辑 ➔</button>
+            </div>
+            <div class="meeting-item-meta">
+              <span>📅 2026-08-11 14:30 - 16:30</span>
+              <span>🏷️ 涉及项目：
+                <span class="meta-tag-project">ZK HubX 核心业务链路改造</span>
+                <span class="meta-tag-project">重庆先行试点项目</span>
+                <span class="meta-tag-project">郑州先行试点项目</span>
+              </span>
+              <span>👥 参会人：何江奇、贾慧媛、杨培豪、黄奕、闵总、王总</span>
+            </div>
+            <div class="meeting-item-summary">
+              <b>💡 核心决议：</b>成本核算为当前最高优先级，重庆与郑州试点先行；全流程必须形成线上闭环（沟通 → 需求 → 清单 → 工时 → 成本 → 报价 → 审批 → 合同 → 回款），严禁双轨制；由贾慧媛负责纪要确认。
+            </div>
+            <div class="meeting-item-footer">
+              <span>待办分布：P0 (3) · P1 (2) · P2 (1) ｜ 所属业务：报价审批、成本核算、合同回款</span>
+              <span>更新时间：今天 10:24 · 由贾慧媛整理</span>
+            </div>
+          </div>
+
+          <div class="meeting-card-item" onclick="loadMeetingIntoWorkbench('robot')">
+            <div class="meeting-item-top">
+              <div class="meeting-item-title">
+                <span>配送机器人项目各终端需求与硬件对接周会</span>
+                <span class="meeting-status-tag status-active">进行中 · 4 项待办</span>
+              </div>
+              <button class="btn btn-subtle" style="padding:4px 10px; font-size:12px;">进入编辑 ➔</button>
+            </div>
+            <div class="meeting-item-meta">
+              <span>📅 2026-08-06 10:30 - 12:00</span>
+              <span>🏷️ 涉及项目：
+                <span class="meta-tag-project">配送机器人系统</span>
+                <span class="meta-tag-project">智慧物业平台</span>
+              </span>
+              <span>👥 参会人：老何、刘毅、陈工、硬件供应商、测试组</span>
+            </div>
+            <div class="meeting-item-summary">
+              <b>💡 核心决议：</b>交付日期锁定在10月18日，9月底完成全部小程序与后台软件开发；硬件对接由技术组列出资源清单与电梯联动方案。
+            </div>
+            <div class="meeting-item-footer">
+              <span>待办分布：P0 (2) · P1 (2) ｜ 所属业务：硬件对接、系统集成</span>
+              <span>更新时间：2026-08-06 · 由刘毅整理</span>
+            </div>
+          </div>
+
+          <div class="meeting-card-item" onclick="loadMeetingIntoWorkbench('oa')">
+            <div class="meeting-item-top">
+              <div class="meeting-item-title">
+                <span>内部人事 OA 与工时薪酬体系设计评审</span>
+                <span class="meeting-status-tag status-archived">已归档 · 3 项待办</span>
+              </div>
+              <button class="btn btn-subtle" style="padding:4px 10px; font-size:12px;">进入编辑 ➔</button>
+            </div>
+            <div class="meeting-item-meta">
+              <span>📅 2026-07-28 16:00 - 17:30</span>
+              <span>🏷️ 涉及项目：
+                <span class="meta-tag-project">公司内部治理</span>
+                <span class="meta-tag-project">人资OA系统</span>
+              </span>
+              <span>👥 参会人：何江奇、贾慧媛、HR主管、财务部</span>
+            </div>
+            <div class="meeting-item-summary">
+              <b>💡 核心决议：</b>统一60名员工薪酬与每月标准工天档案，日报工时与项目成本强绑定，差旅与费用项实行受控字典管理。
+            </div>
+            <div class="meeting-item-footer">
+              <span>待办分布：P0 (1) · P1 (2) ｜ 所属业务：人资OA</span>
+              <span>更新时间：2026-07-28 · 由贾慧媛整理</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PAGE 2: 会议纪要生成与编辑工作台 -->
+    <section class="page-view" id="viewMeetingWorkbench">
+      <div class="workbench-layout" id="workbenchLayout">
+        
+        <aside class="left-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>🎙️ 会议文本源 / 转写录音</span>
+            </div>
+            <button class="btn btn-default" style="padding:2px 8px; font-size:11px;" onclick="clearInputText()">清空</button>
+          </div>
+
+          <div class="panel-body">
+            <div class="upload-box" onclick="document.getElementById('hiddenFileInput').click()">
+              <div class="upload-icon">📁</div>
+              <div class="upload-title">点击或拖拽上传会议转写文本</div>
+              <div class="upload-hint">支持 .txt / .docx / .json / 飞书妙记 / 腾讯会议导出</div>
+              <input type="file" id="hiddenFileInput" style="display:none" onchange="onFileUpload(event)">
+            </div>
+
+            <div class="preset-container">
+              <div class="preset-header">快速载入会议转写示例：</div>
+              <div class="preset-tags">
+                <div class="preset-tag" onclick="loadSamplePreset('hubx')">HubX 流程与成本核算</div>
+                <div class="preset-tag" onclick="loadSamplePreset('robot')">配送机器人研发周会</div>
+                <div class="preset-tag" onclick="loadSamplePreset('oa')">人事 OA 架构评审</div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; flex:1; gap:6px;">
+              <label style="font-size:12px; font-weight:600; color:var(--color-text-2);">原始会议记录全文：</label>
+              <textarea class="raw-textarea" id="rawTextInputArea" placeholder="可粘贴纯文本、包含说话人标签的转写记录..." oninput="updateCharInfo()"></textarea>
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--color-text-3);">
+                <span>支持多说话人替换</span>
+                <span id="charCountLabel">已输入 0 字</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-footer">
+            <button class="btn btn-primary btn-parse-ai" id="aiGenerateBtn" onclick="runAIGeneration()">
+              <span id="aiBtnIcon">✨</span>
+              <span id="aiBtnLabel">AI 智能提取并生成纪要</span>
+            </button>
+          </div>
+        </aside>
+
+        <main class="right-panel">
+          
+          <div class="workbench-top-bar">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <button class="btn btn-default" style="padding:4px 10px; font-size:12px;" onclick="switchMainView('list')">
+                ← 返回会议列表
+              </button>
+              <div class="view-segments">
+                <button class="segment-btn active" onclick="changeViewSegment('all', this)">全部 (正文 + 待办)</button>
+                <button class="segment-btn" onclick="changeViewSegment('doc', this)">仅正文</button>
+                <button class="segment-btn" onclick="changeViewSegment('todo', this)">仅待办 TODO</button>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button class="btn btn-default" style="padding:4px 10px; font-size:12px;" onclick="toggleLeftSplit()">
+                ◫ 转写对照视图
+              </button>
+              <button class="btn btn-subtle" style="padding:4px 10px; font-size:12px;" onclick="copyMarkdownContent()">
+                📋 复制 Markdown
+              </button>
+              <button class="btn btn-primary" style="padding:4px 12px; font-size:12px;" onclick="saveAndSyncAll()">
+                保存并同步 TODO
+              </button>
+            </div>
+          </div>
+
+          <div class="document-sheet-container">
+            
+            <div class="card-sheet">
+              <input type="text" class="doc-title-input" id="meetingTitleInput" value="HubX 业务流程、报价审批与成本核算评审会议纪要">
+              
+              <div class="meta-form-grid">
+                
+                <div class="form-item-vertical">
+                  <span class="form-item-label">📅 会议时间 (点击下拉选择)</span>
+                  <div class="datetime-picker-trigger" onclick="toggleDateTimePopover()">
+                    <span id="displayMeetingTime">2026-08-11 14:30 - 16:30</span>
+                    <span style="color:var(--color-text-3);">▾</span>
+                  </div>
+                  <div class="datetime-dropdown-popover" id="dateTimePopover">
+                    <div style="font-size:11px; font-weight:bold; color:var(--color-text-3); margin-bottom:6px;">快捷区间预设：</div>
+                    <div class="preset-time-row">
+                      <div class="preset-time-chip" onclick="setPresetTime('今天上午 09:30 - 11:30')">今天上午</div>
+                      <div class="preset-time-chip" onclick="setPresetTime('今天下午 14:30 - 16:30')">今天下午</div>
+                      <div class="preset-time-chip" onclick="setPresetTime('昨天上午 10:00 - 12:00')">昨天上午</div>
+                      <div class="preset-time-chip" onclick="setPresetTime('2026-08-11 14:30 - 16:30')">评审原定时间</div>
+                    </div>
+                    <div style="font-size:11px; font-weight:bold; color:var(--color-text-3); margin-bottom:4px;">自定义起止：</div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                      <input type="datetime-local" class="meta-field-input" id="customStartDt" value="2026-08-11T14:30" style="padding:4px 6px; font-size:12px;">
+                      <input type="datetime-local" class="meta-field-input" id="customEndDt" value="2026-08-11T16:30" style="padding:4px 6px; font-size:12px;">
+                      <button class="btn btn-primary" style="padding:4px; font-size:12px; margin-top:4px;" onclick="applyCustomDateTime()">确认时间</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-item-vertical">
+                  <span class="form-item-label">🏷️ 涉及项目 (支持关联多个)</span>
+                  <div class="multi-tag-box" id="projectTagContainer" onclick="focusProjectInput()">
+                    <span class="project-pill">ZK HubX 核心业务链路改造 <span class="project-pill-remove" onclick="removeProjectPill(this, event)">×</span></span>
+                    <span class="project-pill">重庆先行试点项目 <span class="project-pill-remove" onclick="removeProjectPill(this, event)">×</span></span>
+                    <span class="project-pill">郑州先行试点项目 <span class="project-pill-remove" onclick="removeProjectPill(this, event)">×</span></span>
+                    <input type="text" class="inline-tag-input" id="projectInput" placeholder="+ 添加项目..." onfocus="showProjectDropdown()" oninput="filterProjectDropdown(this)">
+                  </div>
+                  <div class="autocomplete-popover" id="projectPopover">
+                    <div class="autocomplete-item" onclick="addProjectTag('配送机器人系统')">📦 配送机器人系统</div>
+                    <div class="autocomplete-item" onclick="addProjectTag('智慧物业协同平台')">🏢 智慧物业协同平台</div>
+                    <div class="autocomplete-item" onclick="addProjectTag('公司内部人资OA系统')">👥 公司内部人资OA系统</div>
+                    <div class="autocomplete-item" onclick="addProjectTag('财务成本核算中心')">💰 财务成本核算中心</div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="form-item-vertical" style="margin-bottom:14px;">
+                <span class="form-item-label">👥 参会人员 (支持输入拼音/中文实时联想)</span>
+                <div class="multi-tag-box" id="attendeeTagContainer" onclick="focusAttendeeInput()">
+                  <span class="attendee-pill"><span style="color:var(--primary-6); font-weight:bold;">何</span> 何江奇 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <span class="attendee-pill"><span style="color:var(--purple-6); font-weight:bold;">贾</span> 贾慧媛 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <span class="attendee-pill"><span style="color:var(--warning-6); font-weight:bold;">杨</span> 杨培豪 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <span class="attendee-pill"><span style="color:var(--success-6); font-weight:bold;">黄</span> 黄奕 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <span class="attendee-pill"><span style="color:var(--cyan-6); font-weight:bold;">闵</span> 闵总 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <span class="attendee-pill"><span style="color:var(--color-text-2); font-weight:bold;">王</span> 王总 <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span></span>
+                  <input type="text" class="inline-tag-input" id="attendeeInput" placeholder="+ 联想添加人员..." onfocus="showAttendeeDropdown()" oninput="filterAttendeeDropdown(this)">
+                </div>
+                <div class="autocomplete-popover" id="attendeePopover">
+                  <div class="autocomplete-item" onclick="addAttendeeTag('王程', '开发负责人')">👤 <b>王程</b> (技术架构 / 开发负责人)</div>
+                  <div class="autocomplete-item" onclick="addAttendeeTag('刘毅', '产品经理')">👤 <b>刘毅</b> (智能终端产品经理)</div>
+                  <div class="autocomplete-item" onclick="addAttendeeTag('何文涛', '运营推广')">👤 <b>何文涛</b> (推广运营负责人)</div>
+                  <div class="autocomplete-item" onclick="addAttendeeTag('财务主管', '财务部')">👤 <b>财务主管</b> (成本核算 / 资金结算)</div>
+                </div>
+              </div>
+
+              <div class="core-takeaway-banner">
+                <div style="font-size:18px; line-height:1;">💡</div>
+                <div style="flex:1;">
+                  <div style="font-size:12px; font-weight:700; color:var(--primary-6); margin-bottom:2px;">核心决议与全局结论</div>
+                  <div class="takeaway-editable" contenteditable="true" id="takeawayContent">
+                    成本核算为当前最高优先级，重庆与郑州项目先行试点；业务流程必须形成线上闭环（客户沟通留痕 → 需求梳理 → 功能清单 → 工时评估 → 成本核算 → 报价审批 → 合同 → 回款开票），严禁双轨线下流转；由贾慧媛负责纪要逐条确认。
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="card-sheet" id="proseCardSection">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--color-border-1);">
+                <div style="font-size:15px; font-weight:600; color:var(--color-text-1); display:flex; align-items:center; gap:8px;">
+                  <span style="background:var(--primary-1); color:var(--primary-6); width:20px; height:20px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">1</span>
+                  会议纪要正文与议题研讨
+                </div>
+                <span style="font-size:12px; color:var(--color-text-3);">富文本所见即所得编辑</span>
+              </div>
+
+              <div class="rich-toolbar">
+                <button class="tb-btn" onclick="execEditorCommand('formatBlock', '<h2>')">H2</button>
+                <button class="tb-btn" onclick="execEditorCommand('formatBlock', '<h3>')">H3</button>
+                <div class="tb-divider"></div>
+                <button class="tb-btn" onclick="execEditorCommand('bold')"><b>B</b></button>
+                <button class="tb-btn" onclick="execEditorCommand('italic')"><i>I</i></button>
+                <button class="tb-btn" onclick="execEditorCommand('strikeThrough')"><s>S</s></button>
+                <div class="tb-divider"></div>
+                <button class="tb-btn" onclick="execEditorCommand('insertUnorderedList')">• List</button>
+                <button class="tb-btn" onclick="execEditorCommand('insertOrderedList')">1. List</button>
+                <button class="tb-btn" onclick="execEditorCommand('formatBlock', '<blockquote>')">“ Quote</button>
+              </div>
+
+              <div class="prose-editor-area" contenteditable="true" id="proseEditableArea">
+                <h2>一、业务流程与端到端闭环</h2>
+                <p>1. <b>全流程线上化原则</b>：系统目标流程统一明确为“客户沟通留痕 → 需求梳理 → 功能清单 → 工作量评估 → 成本核算 → 对外报价 → 报价审批 → 合同 → 项目执行 → 回款/开票 → 资料归档”。已上线的功能必须全程在系统内完成，禁止出现“线上录一次、线下私聊再做一次”的双轨脱节。</p>
+                <p>2. <b>AI 辅助边界与约束</b>：AI 可用于提炼功能清单与工作量概算，但严禁无边界自行补充客户未提出的需求，避免导致报价虚高与验收争议。</p>
+
+                <h2>二、报价配置与审批流改造</h2>
+                <p>1. <b>报价单数据联动</b>：功能清单直接作为报价单生成的前置基础，岗位工时细化至前端、后端、UI、产品、测试等维度。</p>
+                <p>2. <b>价格上浮调整</b>：原始成本保持锁定，提供“按比例上浮”与“按固定金额上浮”两种调整模式，调整金额需合理分摊到人天。</p>
+                <p>3. <b>统一审批中心</b>：报价提交后直接在系统内审批中心流转，支持审批意见填写与多轮驳回历史留痕。</p>
+
+                <h2>三、回款、开票与成本核算控制</h2>
+                <p>1. <b>回款计划模板化</b>：付款比例采用下拉模板（如 3:3:3:1、4:5:1 等），选择模板自动带出期数和回款条件，并允许各期独立微调。</p>
+                <p>2. <b>状态机严格互锁</b>：未回款可拆分期次，已开票可发起冲红；资金一旦实际到账则禁止拆分，规范财务合规风险。</p>
+                <p>3. <b>成本核算分析</b>：人工成本支持“按人员”与“按工作性质”双维度汇总统计，日报填写强制关联工作性质。</p>
+              </div>
+            </div>
+
+            <div class="card-sheet" id="todoCardSection">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--color-border-1);">
+                <div style="font-size:15px; font-weight:600; color:var(--color-text-1); display:flex; align-items:center; gap:8px;">
+                  <span style="background:var(--warning-1); color:var(--warning-6); width:20px; height:20px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">2</span>
+                  行动项与待办清单 (Action Items / TODO)
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <span class="preset-time-chip" style="background:var(--danger-1); color:var(--danger-6); font-weight:bold;" id="statP0">P0 紧急: 3</span>
+                  <span class="preset-time-chip" style="background:var(--warning-1); color:var(--warning-6); font-weight:bold;" id="statP1">P1 重要: 2</span>
+                  <span class="preset-time-chip" style="background:var(--success-1); color:var(--success-6); font-weight:bold;" id="statP2">P2 正常: 1</span>
+                </div>
+              </div>
+
+              <table class="todo-table-custom" id="actionTable">
+                <thead>
+                  <tr>
+                    <th style="width:40px; text-align:center;">状态</th>
+                    <th style="width:70px;">优先级</th>
+                    <th style="width:110px;">所属业务</th>
+                    <th>待办事项内容</th>
+                    <th style="width:115px;">责任人</th>
+                    <th style="width:130px;">截止日期</th>
+                    <th style="width:95px;">关联议题</th>
+                    <th style="width:60px; text-align:center;">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="actionTbody">
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p0" onclick="cyclePriorityBadge(this)">P0</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="业务闭环" selected>业务闭环</option>
+                        <option value="报价审批">报价审批</option>
+                        <option value="成本核算">成本核算</option>
+                        <option value="合同回款">合同回款</option>
+                        <option value="人资OA">人资OA</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="整理本次会议纪要并输出端到端业务流程图，逐条群内确认"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="贾慧媛" selected>贾慧媛</option>
+                        <option value="何江奇">何江奇</option>
+                        <option value="杨培豪">杨培豪</option>
+                        <option value="黄奕">黄奕</option>
+                        <option value="王程">王程</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-15"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">业务闭环</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p0" onclick="cyclePriorityBadge(this)">P0</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="报价审批" selected>报价审批</option>
+                        <option value="业务闭环">业务闭环</option>
+                        <option value="成本核算">成本核算</option>
+                        <option value="合同回款">合同回款</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="重构报价流程：原始成本锁定、支持上浮比例配置与报价单生成"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="杨培豪" selected>杨培豪</option>
+                        <option value="贾慧媛">贾慧媛</option>
+                        <option value="何江奇">何江奇</option>
+                        <option value="王程">王程</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-18"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">报价审批</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p0" onclick="cyclePriorityBadge(this)">P0</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="报价审批" selected>报价审批</option>
+                        <option value="审批中心">审批中心</option>
+                        <option value="业务闭环">业务闭环</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="完善统一审批中心与弹窗交互，支持多轮驳回留痕"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="何江奇" selected>何江奇</option>
+                        <option value="贾慧媛">贾慧媛</option>
+                        <option value="杨培豪">杨培豪</option>
+                        <option value="王程">王程</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-20"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">审批流</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p1" onclick="cyclePriorityBadge(this)">P1</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="合同回款" selected>合同回款</option>
+                        <option value="财务开票">财务开票</option>
+                        <option value="业务闭环">业务闭环</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="付款比例模板改造为下拉选择，并支持存为新模板"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="黄奕" selected>黄奕</option>
+                        <option value="贾慧媛">贾慧媛</option>
+                        <option value="何江奇">何江奇</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-22"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">合同回款</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p1" onclick="cyclePriorityBadge(this)">P1</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="成本核算" selected>成本核算</option>
+                        <option value="人资OA">人资OA</option>
+                        <option value="业务闭环">业务闭环</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="成本核算模块增加人员/工作性质双维度分析与日报统计"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="杨培豪" selected>杨培豪</option>
+                        <option value="贾慧媛">贾慧媛</option>
+                        <option value="何江奇">何江奇</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-25"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">成本核算</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                  <tr>
+                    <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+                    <td><span class="priority-badge-btn priority-p2" onclick="cyclePriorityBadge(this)">P2</span></td>
+                    <td>
+                      <select class="domain-badge-select">
+                        <option value="系统集成" selected>系统集成</option>
+                        <option value="业务闭环">业务闭环</option>
+                        <option value="人资OA">人资OA</option>
+                      </select>
+                    </td>
+                    <td><input type="text" class="todo-text-edit" value="规划企微消息待办推送规则与重试机制"></td>
+                    <td>
+                      <select class="member-select-dropdown">
+                        <option value="待指派" selected>待指派</option>
+                        <option value="贾慧媛">贾慧媛</option>
+                        <option value="何江奇">何江奇</option>
+                        <option value="王程">王程</option>
+                      </select>
+                    </td>
+                    <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-30"></td>
+                    <td><span style="font-size:11px; color:var(--color-text-3);">集成配置</span></td>
+                    <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+                  </tr>
+
+                </tbody>
+              </table>
+
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <button class="btn btn-subtle" onclick="appendNewTodoRow()">
+                  + 新增行动项 (TODO)
+                </button>
+                <div style="font-size:12px; color:var(--color-text-3);">
+                  💡 支持行内调整所属业务、责任人、截止时间与优先级 (P0/P1/P2)
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="toast-container" id="globalToast">
+    <span id="toastMessage">操作成功</span>
+  </div>
+
+  <script>
+    const SAMPLE_PRESETS = {
+      hubx: `业务流程与成本核算会议纪要
+时间：2026年8月11日 14:30
+参会人：何江奇、贾慧媛、杨培豪、黄奕、闵总、王总
+主要议题与决议：
+1. 明确从需求到报价、合同、项目执行、回款开票的完整线上闭环，严禁双轨制。
+2. 报价流程以功能清单为基础，支持按比例或固定金额上浮，原始成本保持锁定。
+3. 统一审批中心建设，支持查看报价上下文与多轮审批历史。
+4. 回款计划模板化，支持3:3:3:1等预置比例及存为新模板。
+5. 人工成本按人员和工作性质双维度核算，日报强制填报工作性质。
+待办与分工：
+- 贾慧媛：输出端到端业务流程图（8月15日前）
+- 杨培豪：重构报价流程与成本核算模块（8月18日前）
+- 何江奇：完善统一审批中心与弹窗交互（8月20日前）
+- 黄奕：付款比例模板改为下拉选择并支持保存（8月22日前）`,
+
+      robot: `配送机器人项目研发与落地周会
+时间：2026年8月06日 10:30
+参会人员：老何、刘毅、陈工、硬件组、测试组
+会议核心内容：
+1. 交付日期锁定在10月18日，9月底必须完成全部软件端开发，10月进入客户试用。
+2. 终端拆分：包含用户端小程序、骑手端、商户端、代理端和后台管理端。
+3. 硬件对接：机器人无外置屏幕，通过手机尾号后4位取餐，自动关仓时间与电梯联动需硬件厂商确认。
+行动项：
+1. 产品组：完善小程序及后台管理原型（P0，8月12日前，负责人：刘毅）
+2. 技术组：评估机器人硬件对接资源并输出清单（P0，8月14日前，负责人：陈工）`,
+
+      oa: `内部人事OA与工时薪酬体系设计评审
+时间：2026年7月28日 16:00
+参会人：何江奇、贾慧媛、HR主管、财务部
+核心结论：
+1. 建立集中化员工档案，覆盖转正薪资、社保公积金及每月标准工天。
+2. 工时归集：与项目日报强绑定，自动计算项目人天成本。
+待办：
+1. 贾慧媛：梳理60人薪酬与职级字典（P0，8月5日前）
+2. 架构组：输出OA数据Schema与权限控制矩阵（P0，8月8日前）`
+    };
+
+    function switchMainView(viewName) {
+      document.querySelectorAll('.page-view').forEach(el => el.classList.remove('active-view'));
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (viewName === 'list') {
+        document.getElementById('viewMeetingList').classList.add('active-view');
+        document.getElementById('tabListBtn').classList.add('active');
+      } else {
+        document.getElementById('viewMeetingWorkbench').classList.add('active-view');
+        document.getElementById('tabWorkbenchBtn').classList.add('active');
+      }
+    }
+
+    function createNewMeetingFromNav() {
+      switchMainView('workbench');
+      clearInputText();
+      showToast('已进入空白会议纪要创建页面');
+    }
+
+    function openNewMeetingWorkbench() {
+      switchMainView('workbench');
+      showToast('请在左侧上传或粘贴会议转写文本');
+    }
+
+    function loadMeetingIntoWorkbench(key) {
+      switchMainView('workbench');
+      loadSamplePreset(key);
+      showToast('已载入该会议纪要内容并进入编辑工作台');
+    }
+
+    function toggleDateTimePopover() {
+      const popover = document.getElementById('dateTimePopover');
+      popover.classList.toggle('show');
+    }
+    function setPresetTime(timeStr) {
+      document.getElementById('displayMeetingTime').innerText = timeStr;
+      document.getElementById('dateTimePopover').classList.remove('show');
+      showToast(`已设置会议时间: ${timeStr}`);
+    }
+    function applyCustomDateTime() {
+      const start = document.getElementById('customStartDt').value.replace('T', ' ');
+      const end = document.getElementById('customEndDt').value.replace('T', ' ');
+      if (start && end) {
+        document.getElementById('displayMeetingTime').innerText = `${start} - ${end}`;
+        document.getElementById('dateTimePopover').classList.remove('show');
+        showToast('自定义时间已应用');
+      }
+    }
+
+    function focusProjectInput() {
+      document.getElementById('projectInput').focus();
+    }
+    function showProjectDropdown() {
+      document.getElementById('projectPopover').classList.add('show');
+    }
+    function filterProjectDropdown(input) {
+      const val = input.value.toLowerCase();
+      document.querySelectorAll('#projectPopover .autocomplete-item').forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
+      });
+    }
+    function addProjectTag(name) {
+      const container = document.getElementById('projectTagContainer');
+      const input = document.getElementById('projectInput');
+      const pill = document.createElement('span');
+      pill.className = 'project-pill';
+      pill.innerHTML = `${name} <span class="project-pill-remove" onclick="removeProjectPill(this, event)">×</span>`;
+      container.insertBefore(pill, input);
+      input.value = '';
+      document.getElementById('projectPopover').classList.remove('show');
+      showToast(`已关联项目: ${name}`);
+    }
+    function removeProjectPill(span, e) {
+      e.stopPropagation();
+      span.closest('.project-pill').remove();
+    }
+
+    function focusAttendeeInput() {
+      document.getElementById('attendeeInput').focus();
+    }
+    function showAttendeeDropdown() {
+      document.getElementById('attendeePopover').classList.add('show');
+    }
+    function filterAttendeeDropdown(input) {
+      const val = input.value.toLowerCase();
+      document.querySelectorAll('#attendeePopover .autocomplete-item').forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(val) ? 'flex' : 'none';
+      });
+    }
+    function addAttendeeTag(name, role) {
+      const container = document.getElementById('attendeeTagContainer');
+      const input = document.getElementById('attendeeInput');
+      const pill = document.createElement('span');
+      pill.className = 'attendee-pill';
+      const initial = name.slice(0, 1);
+      pill.innerHTML = `<span style="color:var(--primary-6); font-weight:bold;">${initial}</span> ${name} <span class="attendee-pill-remove" onclick="removeAttendeePill(this, event)">×</span>`;
+      container.insertBefore(pill, input);
+      input.value = '';
+      document.getElementById('attendeePopover').classList.remove('show');
+      showToast(`已添加参会人: ${name} (${role})`);
+    }
+    function removeAttendeePill(span, e) {
+      e.stopPropagation();
+      span.closest('.attendee-pill').remove();
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.datetime-picker-trigger') && !e.target.closest('#dateTimePopover')) {
+        document.getElementById('dateTimePopover')?.classList.remove('show');
+      }
+      if (!e.target.closest('#projectTagContainer') && !e.target.closest('#projectPopover')) {
+        document.getElementById('projectPopover')?.classList.remove('show');
+      }
+      if (!e.target.closest('#attendeeTagContainer') && !e.target.closest('#attendeePopover')) {
+        document.getElementById('attendeePopover')?.classList.remove('show');
+      }
+    });
+
+    function updateCharInfo() {
+      const val = document.getElementById('rawTextInputArea').value;
+      document.getElementById('charCountLabel').innerText = `已输入 ${val.length} 字`;
+    }
+    function loadSamplePreset(key) {
+      document.getElementById('rawTextInputArea').value = SAMPLE_PRESETS[key];
+      updateCharInfo();
+      showToast('已载入预置会议转写文本');
+    }
+    function clearInputText() {
+      document.getElementById('rawTextInputArea').value = '';
+      updateCharInfo();
+    }
+    function onFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('rawTextInputArea').value = evt.target.result;
+        updateCharInfo();
+        showToast(`已成功读取文件: ${file.name}`);
+      };
+      reader.readAsText(file);
+    }
+    function runAIGeneration() {
+      const text = document.getElementById('rawTextInputArea').value.trim();
+      if (!text) {
+        showToast('请先输入或上传会议文本！');
+        return;
+      }
+      const btn = document.getElementById('aiGenerateBtn');
+      const icon = document.getElementById('aiBtnIcon');
+      const label = document.getElementById('aiBtnLabel');
+      btn.disabled = true;
+      icon.innerText = '⏳';
+      label.innerText = 'AI 正在解析多项目与业务待办...';
+
+      setTimeout(() => {
+        btn.disabled = false;
+        icon.innerText = '✨';
+        label.innerText = 'AI 智能提取并生成纪要';
+        showToast('🎉 结构化会议纪要与待办项已重新生成！');
+      }, 900);
+    }
+
+    function cyclePriorityBadge(el) {
+      const classes = ['priority-p0', 'priority-p1', 'priority-p2'];
+      const texts = ['P0', 'P1', 'P2'];
+      let idx = 0;
+      if (el.classList.contains('priority-p0')) idx = 1;
+      else if (el.classList.contains('priority-p1')) idx = 2;
+      else idx = 0;
+      el.className = `priority-badge-btn ${classes[idx]}`;
+      el.innerText = texts[idx];
+      recalcStats();
+    }
+
+    function handleTodoCheckbox(cb) {
+      const row = cb.closest('tr');
+      const input = row.querySelector('.todo-text-edit');
+      if (cb.checked) {
+        input.style.textDecoration = 'line-through';
+        input.style.color = 'var(--color-text-4)';
+      } else {
+        input.style.textDecoration = 'none';
+        input.style.color = 'var(--color-text-1)';
+      }
+    }
+
+    function appendNewTodoRow() {
+      const tbody = document.getElementById('actionTbody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:center;"><input type="checkbox" onchange="handleTodoCheckbox(this)"></td>
+        <td><span class="priority-badge-btn priority-p1" onclick="cyclePriorityBadge(this)">P1</span></td>
+        <td>
+          <select class="domain-badge-select">
+            <option value="业务闭环">业务闭环</option>
+            <option value="报价审批">报价审批</option>
+            <option value="成本核算">成本核算</option>
+            <option value="合同回款">合同回款</option>
+            <option value="人资OA">人资OA</option>
+            <option value="系统集成">系统集成</option>
+          </select>
+        </td>
+        <td><input type="text" class="todo-text-edit" placeholder="输入待办事项内容..."></td>
+        <td>
+          <select class="member-select-dropdown">
+            <option value="贾慧媛" selected>贾慧媛</option>
+            <option value="何江奇">何江奇</option>
+            <option value="杨培豪">杨培豪</option>
+            <option value="黄奕">黄奕</option>
+            <option value="王程">王程</option>
+            <option value="待指派">待指派</option>
+          </select>
+        </td>
+        <td><input type="date" class="meta-field-input" style="padding:2px 6px; font-size:12px;" value="2026-08-30"></td>
+        <td><span style="font-size:11px; color:var(--color-text-3);">常规推进</span></td>
+        <td style="text-align:center;"><button class="btn btn-default" style="padding:2px 6px; font-size:11px;" onclick="removeTodoRow(this)">删除</button></td>
+      `;
+      tbody.appendChild(tr);
+      recalcStats();
+      showToast('已新增行动项');
+    }
+
+    function removeTodoRow(btn) {
+      btn.closest('tr').remove();
+      recalcStats();
+      showToast('已移除该行动项');
+    }
+
+    function recalcStats() {
+      const p0 = document.querySelectorAll('.priority-p0').length;
+      const p1 = document.querySelectorAll('.priority-p1').length;
+      const p2 = document.querySelectorAll('.priority-p2').length;
+      document.getElementById('statP0').innerText = `P0 紧急: ${p0}`;
+      document.getElementById('statP1').innerText = `P1 重要: ${p1}`;
+      document.getElementById('statP2').innerText = `P2 正常: ${p2}`;
+    }
+
+    function execEditorCommand(cmd, val = null) {
+      document.execCommand(cmd, false, val);
+    }
+
+    function changeViewSegment(mode, btnEl) {
+      document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+      const prose = document.getElementById('proseCardSection');
+      const todo = document.getElementById('todoCardSection');
+      if (mode === 'all') { prose.style.display = 'block'; todo.style.display = 'block'; }
+      else if (mode === 'doc') { prose.style.display = 'block'; todo.style.display = 'none'; }
+      else if (mode === 'todo') { prose.style.display = 'none'; todo.style.display = 'block'; }
+    }
+
+    function toggleLeftSplit() {
+      document.getElementById('workbenchLayout').classList.toggle('collapsed-left');
+    }
+
+    function aiPolishContent() {
+      showToast('✨ AI 正在对正文进行润色与排版优化...');
+      setTimeout(() => {
+        showToast('正文重点与语句通顺度润色已完成！');
+      }, 700);
+    }
+
+    function copyMarkdownContent() {
+      showToast('已复制格式化 Markdown 纪要到剪贴板！');
+    }
+
+    function saveAndSyncAll() {
+      showToast('✅ 纪要已保存，行动项与所属业务已同步至项目任务看板！');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('globalToast');
+      document.getElementById('toastMessage').innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 2400);
+    }
+
+    loadSamplePreset('hubx');
+  </script>
+</body>
+</html>

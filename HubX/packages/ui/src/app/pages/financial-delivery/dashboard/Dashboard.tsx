@@ -10,6 +10,7 @@ import {
   Grid,
   Slider,
   Statistic,
+  Message,
 } from '@arco-design/web-react';
 import {
   IconUp,
@@ -32,8 +33,10 @@ import {
   deriveWip,
   deriveHealth,
   simulateSensitivity,
+  assembleCaseMetrics,
 } from '../calc';
-import { getContract, totalCollected } from '../contractSeam';
+import { getContract, totalCollected, getCollections, getSupplementSummaries } from '../contractSeam';
+import type { SupplementContractSummary } from '../types';
 
 const { Text, Title } = Typography;
 const { Row, Col } = Grid;
@@ -45,21 +48,21 @@ export default function Dashboard() {
   const [scopePct, setScopePct] = useState(100);
   const [targetMargin, setTargetMargin] = useState(30);
 
-  // 派生每个 Case 的指标
+  // 派生每个 Case 的指标（使用 assembleCaseMetrics 消除硬编码日期）
+  const today = new Date().toISOString().slice(0, 10);
   const caseMetrics = useMemo(() => {
     return mockCases.map(c => {
       const caseItems = mockCostItems.filter(i => i.caseId === c.id);
-      const totalCost = deriveTotalCost(caseItems);
-      const eac = deriveEac(caseItems);
-      const revenue = c.contractId ? totalCollected(c.contractId) : 0;
-      const contractAmount = c.contractId ? (getContract(c.contractId) as any)?.totalAmount ?? 0 : 0;
-      const lifecycleMargin = deriveLifecycleMargin(contractAmount, eac);
-      const lastCollDate = c.contractId ? '2026-07-01' : null; // α 简化
-      const wip = deriveWip(totalCost, revenue, lastCollDate, '2026-08-19');
-      const health = deriveHealth(lifecycleMargin, (c.targetMargin ?? 30) / 100, eac, c.budgetCap ?? 0, wip.days);
-      return { ...c, totalCost, eac, revenue, contractAmount, lifecycleMargin, wip, health };
+      const mainAmount = c.contractId ? ((getContract(c.contractId) as any)?.totalAmount ?? 0) : 0;
+      const supplements: SupplementContractSummary[] = c.extraContractIds
+        ? getSupplementSummaries(c.extraContractIds)
+        : [];
+      const colls = c.contractId ? getCollections(c.contractId) : [];
+      const plans = c.contractId ? [] : []; // 期次由 contractSeam 提供
+      const m = assembleCaseMetrics(c, caseItems, mainAmount, supplements, colls, plans, today);
+      return { ...c, ...m };
     });
-  }, []);
+  }, [today]);
 
   // 统计
   const statistics = useMemo(() => {
@@ -131,7 +134,7 @@ export default function Dashboard() {
         <Title heading={3}>精益交付仪表盘</Title>
         <Space>
           <Button onClick={() => navigate('/financial-delivery/cases')}>业务单管理</Button>
-          <Button type="primary" onClick={() => navigate('/financial-delivery/cases/create')}>新建业务单</Button>
+          <Button type="primary" onClick={() => Message.info('业务单由线索签约链路生成，不支持手工创建')}>新建业务单</Button>
         </Space>
       </div>
 
@@ -262,6 +265,65 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+
+      {/* 穿透看板：按行业聚合利润 */}
+      <Card title="行业利润穿透" style={{ marginTop: 16 }}>
+        <Table
+          size="small"
+          rowKey="industry"
+          pagination={false}
+          data={(() => {
+            const byIndustry = new Map<string, { profit: number; count: number }>();
+            for (const c of caseMetrics) {
+              const industry = c.industry ?? '未知';
+              const entry = byIndustry.get(industry) ?? { profit: 0, count: 0 };
+              entry.profit += (c.contractAmount ?? 0) - (c.eac ?? 0);
+              entry.count++;
+              byIndustry.set(industry, entry);
+            }
+            const totalProfit = [...byIndustry.values()].reduce((s, e) => s + e.profit, 0);
+            return [...byIndustry.entries()].map(([industry, e]) => ({
+              industry,
+              profit: e.profit,
+              percentage: totalProfit > 0 ? Math.round((e.profit / totalProfit) * 100) : 0,
+              count: e.count,
+            }));
+          })()}
+          columns={[
+            { title: '行业', dataIndex: 'industry', width: 120 },
+            { title: '利润', dataIndex: 'profit', width: 120, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
+            { title: '占比', dataIndex: 'percentage', width: 80, render: (v: number) => `${v}%` },
+            { title: '业务单数', dataIndex: 'count', width: 80 },
+          ]}
+        />
+      </Card>
+
+      {/* 相似项目 Top 3 */}
+      {simulatorCase && (
+        <Card title={`相似项目 — ${simulatorCase.projectName ?? simulatorCase.caseNo}`} style={{ marginTop: 16 }}>
+          <Table
+            size="small"
+            rowKey="id"
+            pagination={false}
+            data={caseMetrics
+              .filter(c => c.id !== simulatorCase.id && c.industry === simulatorCase.industry && c.status === CaseStatus.COMPLETED)
+              .slice(0, 3)
+              .map(c => ({
+                id: c.id,
+                name: c.projectName ?? c.caseNo,
+                industry: c.industry,
+                margin: c.lifecycleMargin !== null ? `${(c.lifecycleMargin * 100).toFixed(1)}%` : '-',
+                totalCost: c.totalCost,
+              }))}
+            columns={[
+              { title: '项目', dataIndex: 'name' },
+              { title: '行业', dataIndex: 'industry', width: 100 },
+              { title: '利润率', dataIndex: 'margin', width: 80 },
+              { title: '总成本', dataIndex: 'totalCost', width: 120, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
+            ]}
+          />
+        </Card>
+      )}
     </div>
   );
 }

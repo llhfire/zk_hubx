@@ -12,9 +12,16 @@ import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
 import { QuotationProvider } from './pages/quotation/QuotationContext';
 import { ProjectProvider } from './pages/project-management/ProjectContext';
 import { BusinessCaseProvider } from './business-case/BusinessCaseContext';
+import { SmartMeetingProvider } from './pages/smart-meetings/SmartMeetingContext';
 import { SigningOpenBridge } from './pages/contracts/ApprovalDeliveryBridge';
 import type { QuotationService } from '@/services/quotationService';
 import type { ContractService } from '@/services/contractService';
+import type { LeadService } from '@/services/leadService';
+import type { ProjectService } from '@/services/projectService';
+import type { CollectionService } from '@/services/collectionService';
+import type { EmployeeService } from '@/services/employeeService';
+import { LeadsProvider } from './leads/LeadContext';
+import { CollectionProvider } from './collections/CollectionContext';
 import { AppVersionProvider } from './version/AppVersionContext';
 import type { AppVersion } from './version/versionMatrix';
 
@@ -23,11 +30,19 @@ interface AppProps {
   quotationService?: QuotationService;
   /** 合同数据源：α版注入 mock，β版注入 http。缺省 mock。 */
   contractService?: ContractService;
+  /** 线索数据源：α版注入 mock，β版注入 http。缺省 mock。 */
+  leadService?: LeadService;
+  /** 项目数据源：α版注入 mock，β版注入 http。缺省 mock。 */
+  projectService?: ProjectService;
+  /** 回款实收台账：α版注入 mock，β版注入 http。缺省 mock。 */
+  collectionService?: CollectionService;
+  /** 员工数据源：α版注入 mock，β版注入 http。缺省 mock。 */
+  employeeService?: EmployeeService;
   /** 当前版本标识：α版=prototype（缺省），β版=web。控制侧边栏版本标识与功能对比弹窗。 */
   appVersion?: AppVersion;
 }
 
-function App({ quotationService, contractService, appVersion = 'alpha' }: AppProps) {
+function App({ quotationService, contractService, leadService, projectService, collectionService, employeeService, appVersion = 'alpha' }: AppProps) {
   return (
     <AppVersionProvider version={appVersion}>
       <IntegrationProvider>
@@ -35,20 +50,26 @@ function App({ quotationService, contractService, appVersion = 'alpha' }: AppPro
         <TodoProvider>
           <FeedbackProvider>
             <ReminderProvider>
-              <EmployeeProvider>
+              <EmployeeProvider service={employeeService}>
                 <JobWorkConfigProvider>
                   <ContractsProvider service={contractService}>
-                    <ProjectProvider>
+                    <LeadsProvider service={leadService}>
+                    <ProjectProvider service={projectService}>
+                      <CollectionProvider service={collectionService}>
                       <BusinessCaseProvider>
                       <ProjectInvoiceProvider>
                         <QuotationProvider service={quotationService}>
+                          <SmartMeetingProvider>
                           {/* 签约开启联动桥（无 UI，见 SigningOpenBridge 注释） */}
                           <SigningOpenBridge />
                           <RouterProvider router={router} />
+                          </SmartMeetingProvider>
                         </QuotationProvider>
                       </ProjectInvoiceProvider>
                       </BusinessCaseProvider>
+                      </CollectionProvider>
                     </ProjectProvider>
+                    </LeadsProvider>
                   </ContractsProvider>
                 </JobWorkConfigProvider>
               </EmployeeProvider>

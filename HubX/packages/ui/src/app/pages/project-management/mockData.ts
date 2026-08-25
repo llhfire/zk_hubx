@@ -1,3 +1,11 @@
+// ============================================================
+// 项目模块 - 共享业务数据（ProjectContext 种子 / 详情域）
+// 事实源统一为 projectMockData.ts 的 PROJECT_LIST（8 条），
+// 这里只维护详情域补充数据：角色团队、附件，以及日报/跟进等台账。
+// ============================================================
+
+import { PROJECT_LIST } from './projectMockData';
+
 export type ProjectPriority = '高' | '中' | '低';
 export type ProjectStatus = '未确认' | '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
 export type BusinessLine = '外包' | '自研' | '自运营';
@@ -35,6 +43,8 @@ export interface Project {
   leadId?: string;
   contractId?: string;
   createdAt: string;
+  /** 乐观锁（ADR-0094），http 读路径注入 */
+  version?: number;
 }
 
 export interface ProjectFollowUp {
@@ -111,18 +121,21 @@ export const roleEmployees = {
   legal: ['张三'],
 };
 
-export const initialProjects: Project[] = [
-  {
-    id: '1',
-    projectNo: 'PRJ202605001',
-    name: 'A公司CRM系统开发',
-    latestProgress: '完成项目管理底座需求梳理，进入原型确认阶段。',
-    priority: '高',
-    entity: '中科软艺',
-    status: '进行中',
-    businessLine: '外包',
-    salesUsers: ['张三'],
-    owner: '李四',
+/** 详情域补充数据：角色团队分工与项目附件（key = projectId） */
+interface ProjectExtras {
+  assistants: string[];
+  productUsers: string[];
+  uiUsers: string[];
+  frontendUsers: string[];
+  backendUsers: string[];
+  opsUsers: string[];
+  testUsers: string[];
+  legalUsers: string[];
+  attachments: ProjectAttachment[];
+}
+
+const PROJECT_EXTRAS: Record<string, ProjectExtras> = {
+  '1': {
     assistants: ['王五'],
     productUsers: ['李四'],
     uiUsers: ['孙七'],
@@ -131,25 +144,9 @@ export const initialProjects: Project[] = [
     opsUsers: ['周八'],
     testUsers: ['钱九'],
     legalUsers: ['张三'],
-    progress: 65,
-    startDate: '2026-05-01',
-    expectedEndDate: '2026-06-30',
-    remark: '客户重点关注销售跟进、客户管理和项目成本统计。',
     attachments: [{ id: 'att-1', name: '项目需求初稿.pdf', size: '1.2MB' }],
-    contractId: '4',
-    createdAt: '2026-05-01 09:30',
   },
-  {
-    id: '2',
-    projectNo: 'PRJ202605002',
-    name: 'B公司小程序定制开发',
-    latestProgress: '客户已确认首页和订单流程，等待 UI 终稿。',
-    priority: '中',
-    entity: '软艺信息',
-    status: '验收中',
-    businessLine: '外包',
-    salesUsers: ['李四'],
-    owner: '王五',
+  '2': {
     assistants: ['赵六'],
     productUsers: ['孙七'],
     uiUsers: ['周八'],
@@ -158,25 +155,9 @@ export const initialProjects: Project[] = [
     opsUsers: ['王五'],
     testUsers: ['钱九'],
     legalUsers: [],
-    progress: 90,
-    startDate: '2026-04-10',
-    expectedEndDate: '2026-05-20',
-    remark: '验收阶段重点跟进客户反馈。',
     attachments: [],
-    contractId: '2',
-    createdAt: '2026-04-10 10:00',
   },
-  {
-    id: '3',
-    projectNo: 'PRJ202605003',
-    name: '内部OA流程优化',
-    latestProgress: '客户已确认核心审批流程与原型，当前进行一期功能开发和接口联调。',
-    priority: '高',
-    entity: '中科软艺',
-    status: '进行中',
-    businessLine: '外包',
-    salesUsers: ['张三'],
-    owner: '李四',
+  '3': {
     assistants: ['孙七'],
     productUsers: ['李四'],
     uiUsers: ['孙七'],
@@ -185,29 +166,13 @@ export const initialProjects: Project[] = [
     opsUsers: ['周八'],
     testUsers: ['钱九'],
     legalUsers: [],
-    progress: 58,
-    startDate: '2026-06-18',
-    expectedEndDate: '2026-10-30',
-    remark: '为华信科技有限公司建设内部 OA 流程优化系统，覆盖审批、合同、项目协同和日报管理等核心场景。',
     attachments: [
       { id: 'att-3-1', name: '华信科技OA流程优化需求说明.pdf', size: '1.8MB' },
       { id: 'att-3-2', name: 'OA流程原型确认稿.pdf', size: '2.4MB' },
       { id: 'att-3-3', name: '接口对接清单.xlsx', size: '426KB' },
     ],
-    leadId: 'lead-9',
-    createdAt: '2026-06-10 10:10',
   },
-  {
-    id: '4',
-    projectNo: 'PRJ202608004',
-    name: '星河数据合同洽谈（待确认）',
-    latestProgress: '线索已进入合同洽谈，等待管理员确认并指派产品经理。',
-    priority: '高',
-    entity: '中科软艺',
-    status: '未确认',
-    businessLine: '外包',
-    salesUsers: ['张三'],
-    owner: '',
+  '4': {
     assistants: [],
     productUsers: [],
     uiUsers: [],
@@ -216,42 +181,88 @@ export const initialProjects: Project[] = [
     opsUsers: [],
     testUsers: [],
     legalUsers: [],
-    progress: 0,
-    startDate: '',
-    expectedEndDate: '',
-    remark: '由线索签约自动生成，尚未确认。',
     attachments: [],
-    leadId: 'LS001',
-    createdAt: '2026-08-18 09:00',
   },
-  {
-    id: '5',
-    projectNo: 'PRJ202608005',
-    name: '青橙零售报价已确认（未开工）',
-    latestProgress: '管理员已指派产品经理，等待主合同审批通过后启动交付。',
-    priority: '中',
-    entity: '中科软艺',
-    status: '未开始',
-    businessLine: '外包',
-    salesUsers: ['张三'],
-    owner: '李四',
+  '5': {
     assistants: [],
-    productUsers: ['李四'],
+    productUsers: [],
     uiUsers: [],
     frontendUsers: [],
     backendUsers: [],
     opsUsers: [],
     testUsers: [],
     legalUsers: [],
-    progress: 0,
-    startDate: '2026-08-20',
-    expectedEndDate: '2026-12-31',
-    remark: '已确认指派，交付未启动。',
     attachments: [],
-    leadId: 'LS002',
-    createdAt: '2026-08-17 14:00',
   },
-];
+  '6': {
+    assistants: ['王五'],
+    productUsers: ['李四'],
+    uiUsers: ['孙七'],
+    frontendUsers: ['王五'],
+    backendUsers: [],
+    opsUsers: [],
+    testUsers: [],
+    legalUsers: [],
+    attachments: [],
+  },
+  '7': {
+    assistants: ['孙七'],
+    productUsers: ['李四'],
+    uiUsers: ['孙七'],
+    frontendUsers: ['王五'],
+    backendUsers: ['赵六'],
+    opsUsers: ['周八'],
+    testUsers: ['钱九'],
+    legalUsers: [],
+    attachments: [],
+  },
+  '8': {
+    assistants: ['周八'],
+    productUsers: ['孙七'],
+    uiUsers: ['孙七'],
+    frontendUsers: ['王五'],
+    backendUsers: ['赵六'],
+    opsUsers: [],
+    testUsers: ['钱九'],
+    legalUsers: [],
+    attachments: [],
+  },
+};
+
+const EMPTY_EXTRAS: ProjectExtras = {
+  assistants: [],
+  productUsers: [],
+  uiUsers: [],
+  frontendUsers: [],
+  backendUsers: [],
+  opsUsers: [],
+  testUsers: [],
+  legalUsers: [],
+  attachments: [],
+};
+
+/** 项目列表事实源 + 详情域补充数据 -> 共享 Project（ProjectContext 种子） */
+export const initialProjects: Project[] = PROJECT_LIST.map((item) => ({
+  id: item.id,
+  projectNo: item.projectNo,
+  name: item.name,
+  latestProgress: item.latestProgress,
+  priority: item.priority,
+  entity: item.entity,
+  status: item.status,
+  businessLine: item.businessLine,
+  salesUsers: item.salesUsers,
+  owner: item.owner,
+  ...(PROJECT_EXTRAS[item.id] ?? EMPTY_EXTRAS),
+  progress: item.progress,
+  startDate: item.startDate,
+  expectedEndDate: item.expectedEndDate,
+  remark: item.remark,
+  attachments: (PROJECT_EXTRAS[item.id] ?? EMPTY_EXTRAS).attachments,
+  leadId: item.leadId,
+  contractId: item.contractId,
+  createdAt: item.createdAt,
+}));
 
 export const availableLeads: ProjectLeadRelation[] = [
   {
@@ -487,7 +498,7 @@ export const initialDailyReports: ProjectDailyReport[] = [
     id: 'daily-5',
     projectId: '3',
     date: '2026-07-16',
-    projectName: '内部OA流程优化',
+    projectName: '华信科技内部OA流程优化',
     personName: '李四',
     position: '产品经理',
     hours: 6.5,
@@ -498,7 +509,7 @@ export const initialDailyReports: ProjectDailyReport[] = [
     id: 'daily-6',
     projectId: '3',
     date: '2026-07-17',
-    projectName: '内部OA流程优化',
+    projectName: '华信科技内部OA流程优化',
     personName: '孙七',
     position: 'UI设计师',
     hours: 5.5,
@@ -509,7 +520,7 @@ export const initialDailyReports: ProjectDailyReport[] = [
     id: 'daily-7',
     projectId: '3',
     date: '2026-07-18',
-    projectName: '内部OA流程优化',
+    projectName: '华信科技内部OA流程优化',
     personName: '王五',
     position: '前端开发工程师',
     hours: 7,
@@ -520,7 +531,7 @@ export const initialDailyReports: ProjectDailyReport[] = [
     id: 'daily-8',
     projectId: '3',
     date: '2026-07-20',
-    projectName: '内部OA流程优化',
+    projectName: '华信科技内部OA流程优化',
     personName: '赵六',
     position: '后端开发工程师',
     hours: 6.5,
@@ -531,7 +542,7 @@ export const initialDailyReports: ProjectDailyReport[] = [
     id: 'daily-9',
     projectId: '3',
     date: '2026-07-21',
-    projectName: '内部OA流程优化',
+    projectName: '华信科技内部OA流程优化',
     personName: '钱九',
     position: '测试工程师',
     hours: 5,

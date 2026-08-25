@@ -50,10 +50,11 @@ import {
   PROJECT_QUICK_FILTER_LABEL,
   KANBAN_LANES,
 } from './project-management/types';
-import {
-  PROJECT_LIST,
-  PROJECT_METRICS,
-} from './project-management/projectMockData';
+import { PROJECT_LIST } from './project-management/projectMockData';
+import { useProjects } from './project-management/ProjectContext';
+import { deriveProjectViewMetrics } from './project-management/projectViewMetrics';
+import { filterProjectsForViewer } from '@/app/business-case';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 import {
   calculateHealthStatus,
   getProjectCountdown,
@@ -71,6 +72,7 @@ const TabPane = Tabs.TabPane;
 
 export function ProjectList() {
   const navigate = useNavigate();
+  const { projects, confirmAssign, updateProject } = useProjects();
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [quickFilter, setQuickFilter] = useState<ProjectQuickFilter>('all');
   const [keyword, setKeyword] = useState('');
@@ -88,17 +90,32 @@ export function ProjectList() {
   const [assignProject, setAssignProject] = useState<ProjectListItem | null>(null);
   const [assignForm] = Form.useForm();
 
-  // 数据权限过滤（管理员看全部，普通用户看负责/销售/协助的）
-  const currentUser = '张三'; // mock 当前用户
-  const isAdmin = true; // mock 管理员身份
+  const currentUser = CURRENT_LOGIN_USER.name;
+  const isAdmin = CURRENT_LOGIN_USER.isAdmin;
 
   const visibleProjects = useMemo(() => {
-    if (isAdmin) return PROJECT_LIST;
-    return PROJECT_LIST.filter((p) =>
-      p.owner === currentUser ||
-      p.salesUsers.includes(currentUser)
-    );
-  }, []);
+    const filtered = filterProjectsForViewer(projects, { isAdmin, viewerName: currentUser });
+    return filtered.map((p) => {
+      const seed = PROJECT_LIST.find((s) => s.id === p.id);
+      if (seed) {
+        return {
+          ...seed,
+          status: p.status,
+          owner: p.owner,
+          salesUsers: p.salesUsers,
+          progress: p.progress,
+          latestProgress: p.latestProgress,
+          startDate: p.startDate,
+          expectedEndDate: p.expectedEndDate,
+          name: p.name,
+          entity: p.entity,
+          priority: p.priority,
+          businessLine: p.businessLine,
+        };
+      }
+      return deriveProjectViewMetrics(p);
+    });
+  }, [projects, isAdmin, currentUser]);
 
   // 计算指标
   const metrics = useMemo(() => calculateMetrics(visibleProjects), [visibleProjects]);
@@ -142,15 +159,30 @@ export function ProjectList() {
   };
 
   const handleAssign = () => {
-    assignForm.validate().then((values) => {
-      Message.success(`已指派 ${values.productManager} 为项目经理`);
-      setAssignVisible(false);
+    if (!assignProject) return;
+    assignForm.validate().then(async (values) => {
+      try {
+        await confirmAssign(assignProject.id, values.productManager);
+        Message.success(`已确认并指派 ${values.productManager}`);
+        setAssignVisible(false);
+      } catch (error) {
+        Message.error(error instanceof Error ? error.message : '确认失败');
+      }
     });
   };
 
   const handleFollow = () => {
-    followForm.validate().then(() => {
-      Message.success('跟进记录已保存');
+    if (!followProject) return;
+    followForm.validate().then(async (values) => {
+      const current = projects.find((p) => p.id === followProject.id);
+      if (!current) return;
+      await updateProject({
+        ...current,
+        status: values.status,
+        progress: values.progress ?? current.progress,
+        latestProgress: values.content || current.latestProgress,
+      });
+      Message.success('跟进记录已保存，项目状态已同步');
       setFollowVisible(false);
     });
   };

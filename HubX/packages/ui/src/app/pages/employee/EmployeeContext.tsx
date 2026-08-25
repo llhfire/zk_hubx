@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import {
   Employee,
   AttendanceRecord,
@@ -16,6 +16,7 @@ import {
   skillTreeDefinitions,
   ExperienceSource,
 } from './mockData';
+import { createMockEmployeeService, type EmployeeService } from '@/services/employeeService';
 
 interface EmployeeContextValue {
   // state
@@ -54,10 +55,24 @@ function genId(prefix: string) {
   return `${prefix}${++nextId}`;
 }
 
-export function EmployeeProvider({ children }: { children: ReactNode }) {
+interface EmployeeProviderProps extends React.PropsWithChildren {
+  service?: EmployeeService;
+}
+
+export function EmployeeProvider({ children, service }: EmployeeProviderProps) {
+  const svc = useMemo(() => service ?? createMockEmployeeService(), [service]);
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(initialAttendance);
   const [performanceReviews, setPerformanceReviews] = useState<PerformanceReview[]>(initialPerformanceReviews);
+
+  // β版：从 service 加载员工列表
+  useEffect(() => {
+    let cancelled = false;
+    svc.list().then((emps) => {
+      if (!cancelled && emps.length > 0) setEmployees(emps);
+    }).catch(() => { /* 静默失败，fallback 到 initialEmployees */ });
+    return () => { cancelled = true; };
+  }, [svc]);
   const [levelRates, setLevelRates] = useState<LevelRateConfig[]>(initialLevelRates);
   const [positions, setPositions] = useState<string[]>(ALL_POSITIONS);
 

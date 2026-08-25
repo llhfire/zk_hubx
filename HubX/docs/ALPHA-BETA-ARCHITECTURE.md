@@ -46,7 +46,9 @@ export function createHttpQuotationService(baseUrl: string): QuotationService { 
 4. 后端实现对应 `/api/xxx` 路由；
 5. `apps/web` 注入 http、`apps/prototype` 用 mock。
 
-## 三、当前进度（2026-08-16）
+> **接线实况（2026-08-22 起）**以 [`ZK-HubX技术架构.html`](ZK-HubX技术架构.html) 为准。下文「当前进度」停在 2026-08-16，线索/项目/实收接缝与 B5 洞不要以本节为事实源。
+
+## 三、当前进度（2026-08-16，历史）
 
 **已完成：**
 - monorepo 落地（packages/ui + apps/prototype/web/api），α/β 两个前端都能 build。

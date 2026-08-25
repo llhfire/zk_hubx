@@ -32,13 +32,13 @@
 
 ### U1. 立项触发改回签约开启
 
-阶段 3 把 `spawnUnconfirmedProject` 挂在 `approvedAt` 上，按 ADR 0067 拆开：
+阶段 3 把 `spawnUnconfirmedProject` 挂在 `approvedAt` 上，按 ADR 0067 拆开（接线见 ADR-0095，**不要**按 2026-08-18 的前端桥方案）：
 
-- 线索进入合同洽谈/已签单，或主合同创建（草稿）→ spawn（尚无项目时）。
+- 线索进入合同洽谈/已签单，或主合同创建（草稿）→ spawn（尚无项目时）。合同创建半边由 B5 洞 C 做；洽谈无合同半边仍是本阶段，走 Lead 写时（Workers / 共用 mutations）。
 - `approvedAt` 只对已指派的未开始/搁置项目走 `startDelivery`。
 - 未确认项目不在批准时才第一次出现。
 
-**验收**：线索打成合同洽谈、尚无合同，管理员队列里出现未确认项目。
+**验收**：线索打成合同洽谈、尚无合同，管理员队列里出现未确认项目（β 刷新后 D1 有 `ap-lead-{leadId}`）。
 
 > 详细开发计划（实施步骤 / 文件清单 / 测试用例设计 / 边界决策）：`计划/当前/unified-view-u1-dev-plan.md`。
 

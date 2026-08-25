@@ -52,6 +52,8 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 用户说「下班」即发布到 Cloudflare，不要再问。α / β 前端每次都发；Workers 仅在 `apps/api` 有改动时发。命令与核对步骤见 `docs/DEPLOYMENT.md`「下班发布」。线上地址：`https://alpha.zkhubx.com` / `https://beta.zkhubx.com` / `https://zkhubx-api.llhfire.workers.dev`。
 
+用户说「退下」只落交接文档、功能看板、工作记录、功能架构图、β 技术架构，**不提交、不部署**。完整步骤见根目录 `CLAUDE.md`「上下班仪式 · 退下」。
+
 ## 技术栈
 
 - React 18 + Vite 6
@@ -127,12 +129,13 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 ## 功能看板（Feature Board）-- Claude 行为约定
 
-唯一事实源：`packages/ui/src/app/version/featureBoard.config.json`（UI 侧点侧边栏版本标识打开，α版 dev server 经 `GET/PUT /api/feature-board` 读写该文件；术语见 `CONTEXT.md` §功能看板）。**每个会话结束前或状态变化时，Claude 直接编辑该文件维护状态并随 git 提交**：
+唯一事实源：`packages/ui/src/app/version/featureBoard.config.json`（UI 侧点侧边栏版本标识打开功能看板场景，页签含功能架构 / 技术架构 / 工作记录；α版 dev server 经 `GET/PUT /api/feature-board` 读写该文件；术语见 `CONTEXT.md` §功能看板）。**每个会话结束前或状态变化时，Claude 直接编辑该文件维护状态并随 git 提交**：
 
 1. **新想法入板**：会话中出现新的功能模块想法时，写入对应模块的 `planned` 数组（新想法默认 `status: "未开始"`；属于全新领域就新增模块行），不要只留在对话里。
 2. **自主判断状态**：`planned[].status`（未开始/已调研/设计中/已设计）与 `alpha` 三项勾选（页面场景/功能流程/UX 优化）由 Claude 根据实际完成情况自主更新；用户在 UI 的手动勾选/取消优先于 Claude 判断（取消 = 用户要求继续或重做该项，下次处理时留意）。
 3. **开关不开不编码**：模块 `beta.productionOn` 是用户对β版开发的许可，**Claude 永不代开**；`productionOn: false` 的模块不得开始β版（前后端）编码。
 4. **随进度更新**：开关已开的模块，`beta.devStatus`（未开始/编码中/测试中/测试通过）随实际开发进度更新；`note` 备注写当前特殊说明与状态说明。
 5. **已有功能描述**：`features[]` 是模块已有功能的结构化描述（`name` + `description`），点击看板中的功能名可查看详细说明；新功能上线或功能行为变更时，Claude 应同步更新对应 `description`（包含原始需求、功能流程、功能说明），新模块需补充 features 列表。
-6. **计划和需求分析必须四件套对齐**：实现计划、PRD、本看板、根目录 `ZK-HubX架构图.html`。只改看板不算做完计划。领域词看 `CONTEXT.md`，硬决策看 `docs/adr/`。
+6. **计划和需求分析必须对齐**：实现计划、PRD、本看板、根目录 `ZK-HubX架构图.html`；β 接线/进度变了还要改 `docs/ZK-HubX技术架构.html`。只改看板不算做完计划。领域词看 `CONTEXT.md`，硬决策看 `docs/adr/`。
+7. **工作记录**：当天做完的事追加 `packages/ui/src/app/version/workLog.config.json`（分类：功能/底座/设计/文档/修洞/其它，一句话）。schema 见 `workLogModel.ts` 的 `isValidWorkLog`。
 - 编辑文件时保持 schema：`featureBoardModel.ts` 的 `isValidFeatureBoard` 是校验口径，写坏会被端点拒绝。

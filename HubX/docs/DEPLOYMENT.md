@@ -70,6 +70,18 @@ npx wrangler pages deploy apps/prototype/dist --project-name zkhubx-alpha
 
 在 `HubX/` 下执行。先提交当天改动，再构建部署，最后核对线上 Source SHA = 当前 `git rev-parse --short HEAD`。
 
+> **D1 迁移**：当 `apps/api/schema.sql` 或 `apps/api/migrations/` 有变更时，**必须在 Workers 部署前**按序执行迁移：
+> ```bash
+> cd apps/api
+> # 按编号顺序执行（首次部署或新库需要全部跑）
+> npx wrangler d1 execute zkhubx-db --file migrations/0001_add_version.sql --remote
+> npx wrangler d1 execute zkhubx-db --file migrations/0001b_add_contracts_version.sql --remote
+> npx wrangler d1 execute zkhubx-db --file migrations/0002_add_leads.sql --remote
+> npx wrangler d1 execute zkhubx-db --file migrations/0003_add_projects_cases.sql --remote
+> npx wrangler d1 execute zkhubx-db --file migrations/0004_add_collections.sql --remote
+> ```
+> 否则新版 API 代码访问不存在的列会 500。迁移文件已按 B5 编号唯一化（不再有重名 `0002_*.sql`）。
+
 ```bash
 # α 前端（必发）
 npm run build -w apps/prototype

@@ -1,0 +1,164 @@
+{
+  "days": [
+    {
+      "date": "2026-08-25",
+      "items": [
+        {
+          "id": "wl-2026-08-25-1",
+          "category": "设计",
+          "text": "全局搜索 grill 收束 9 项决策（⌘K 六实体直达/L1 只做检索/AI 品牌全去/权限不过滤留 actor 接缝），PRD+CONTEXT 词条+看板+架构图全套落地；正名推翻线索派发旧「⌘K 不做」决议。"
+        },
+        {
+          "id": "wl-2026-08-25-2",
+          "category": "设计",
+          "text": "全局搜索详细设计定稿：读六域 Context 而非直调 service（消第二 mock 实例）、客户 mockData 提取方案、matchEntities/键盘焦点纯函数与 9 测试用例规格。"
+        },
+        {
+          "id": "wl-2026-08-25-3",
+          "category": "设计",
+          "text": "业务单详情原型重构详细开发计划定稿：8 条病灶清单（extraContractIds 缺失/死按钮/死代码等）、五类成本 ADR-0091 落地、mock 重造 case-001 链路、10 组件拆分、Dashboard 补穿透与相似项目；原型 HTML 归档入库。"
+        },
+        {
+          "id": "wl-2026-08-25-4",
+          "category": "功能",
+          "text": "全局搜索全量编码完成：S1 纯函数层（matchEntities+highlightParts+nextFocusIndex, 20 测试）+ S2 六域适配器（useGlobalSearchIndex 读 Context）+ S3 弹层组件（GlobalSearchPalette+MainLayout 接线+⌘K）。"
+        },
+        {
+          "id": "wl-2026-08-25-5",
+          "category": "功能",
+          "text": "线索派发阶段 A 编码完成：6 纯函数模块（slaCalc/dispatchRules/roleViewFilter/cohortCalc/eventLog/types）+ 34 测试全绿。"
+        },
+        {
+          "id": "wl-2026-08-25-6",
+          "category": "功能",
+          "text": "智能会议阶段 B+C 全量编码完成：Context+路由+菜单+列表页+工作台壳+8 面板组件+TODO 投影+行政入口按钮；测试 788→847。"
+        },
+        {
+          "id": "wl-2026-08-25-7",
+          "category": "功能",
+          "text": "业务单详情阶段 1+2+3 全量编码完成：types 新五类+calc 6 新函数+mock 重造+contractSeam 补充合同+CaseDetail 1038→350 行重构+Dashboard 补穿透与相似项目；消除 8 病灶。"
+        },
+        {
+          "id": "wl-2026-08-25-8",
+          "category": "设计",
+          "text": "线索派发 grill 收束 22 项决策（无 D 级/无意图评分/渠道英文 key/无侧边栏 KPI+Tab/先勾选再批量派发），PLAN.md 落地阶段 0+B-D 完整 UI 规格。"
+        },
+        {
+          "id": "wl-2026-08-25-4",
+          "category": "编码",
+          "text": "线索派发阶段 C 完成：DispatchModal 派发弹窗+催办+批量派发。"
+        },
+        {
+          "id": "wl-2026-08-25-5",
+          "category": "编码",
+          "text": "线索派发阶段 D 完成：LevelAdjustModal 等级调整+质检确认。"
+        },
+        {
+          "id": "wl-2026-08-25-6",
+          "category": "编码",
+          "text": "线索派发阶段 E 完成：LeadDetail360 派发信息+五池列表 SLA 融入跟进倒计时。"
+        },
+        {
+          "id": "wl-2026-08-25-7",
+          "category": "编码",
+          "text": "项目阻塞项+风险等级类型落地，ProjectDetail360 展示阻塞项列表+风险备注+验收标准。"
+        },
+        {
+          "id": "wl-2026-08-25-8",
+          "category": "编码",
+          "text": "6 个真实项目 mock 数据落地（含回款计划+触发条件+回款记录+活动事件）。"
+        },
+        {
+          "id": "wl-2026-08-25-9",
+          "category": "底座",
+          "text": "β 阶段 0：MySQL→D1 迁移脚本，1882 线索+2 合同+54 项目+100 员工。"
+        },
+        {
+          "id": "wl-2026-08-25-10",
+          "category": "底座",
+          "text": "β 阶段 1：employeeService mock+HTTP 双实现，EmployeeContext 支持 service 注入。"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "items": [
+        {
+          "id": "wl-2026-08-24-1",
+          "category": "功能",
+          "text": "功能看板完成 α 版本更新摘要、已有功能级验收勾选、待设计条目悬停删除与未开始状态入口调整。"
+        },
+        {
+          "id": "wl-2026-08-24-2",
+          "category": "设计",
+          "text": "完成智能会议功能边界 grill，锁定独立一级菜单、纪要状态、业务单视角引用与统一待办投影边界。"
+        },
+        {
+          "id": "wl-2026-08-24-3",
+          "category": "文档",
+          "text": "落地智能会议 PLAN.md 与功能看板 α 信息设计/实现计划文档。"
+        },
+        {
+          "id": "wl-2026-08-24-4",
+          "category": "功能",
+          "text": "bf1c814 功能看板改动经 merge-file 三方合并回主工作区：四页签+工作记录与 α 验收勾选两套正交改动零丢失，全量 701 测试通过。"
+        },
+        {
+          "id": "wl-2026-08-24-5",
+          "category": "设计",
+          "text": "智能会议详细设计 5 份定稿（PRD/领域/UI/AI与β接线/dev-plan），阶段 A-E 切分与测试清单齐备。"
+        },
+        {
+          "id": "wl-2026-08-24-6",
+          "category": "设计",
+          "text": "补齐 3 项设计债：废弃补充协议收口、审批模板运行时引擎、报价 Excel 双向导入导出，设计文档全覆盖。"
+        },
+        {
+          "id": "wl-2026-08-24-7",
+          "category": "编码",
+          "text": "智能会议阶段 A 编码完成：8 个领域纯函数文件 + 7 个测试文件，75 测试全绿。"
+        },
+        {
+          "id": "wl-2026-08-24-8",
+          "category": "编码",
+          "text": "补充协议收口编码完成：删除 SupplementaryAgreement 旧对象，启用 Contract.kind/parentContractId，实现 effectiveAmount 纯函数。"
+        },
+        {
+          "id": "wl-2026-08-24-9",
+          "category": "编码",
+          "text": "B5 编码完成：洞 C（prevSnapshotForWrite + ensureUnconfirmedProjectIfMissing）、洞 A（桥 refresh）、洞 B（双写 registerMainPaymentDualWrite）、D1 迁移重编号。"
+        },
+        {
+          "id": "wl-2026-08-24-10",
+          "category": "设计",
+          "text": "线索派发工作台 grill 收束（17 项决策）：同一 Lead 实体、S/A/B/C 无 D、派发锁自领（ADR-0096）、30min/2h SLA、降级走审批、3人3轮质检按人头去重；落 PRD+dev-plan+CONTEXT 10 词条+看板+架构图。"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "items": [
+        {
+          "id": "wl-2026-08-22-1",
+          "category": "功能",
+          "text": "功能看板场景改为页签：功能看板 / 功能架构 / 技术架构 / 工作记录；侧栏 Logo 不再单独弹架构图。"
+        },
+        {
+          "id": "wl-2026-08-22-2",
+          "category": "文档",
+          "text": "新建 β 技术架构图；下班/退下必核该文件。"
+        },
+        {
+          "id": "wl-2026-08-22-3",
+          "category": "设计",
+          "text": "B5 详细设计 Approved；productionOn 口头确认未改 JSON。"
+        },
+        {
+          "id": "wl-2026-08-22-4",
+          "category": "底座",
+          "text": "B1–B4 工作区已编码未提交；三洞未修（C 首次合同 PUT 不 spawn；A β 桥不 refresh；B 实收未双写）。"
+        }
+      ]
+    }
+  ]
+}

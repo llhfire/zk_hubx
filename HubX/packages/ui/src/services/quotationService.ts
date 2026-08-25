@@ -7,6 +7,7 @@
 // 接口是异步的（Promise），因为 HTTP 天生异步；mock 实现用 Promise.resolve 包装本地状态。
 // 业务逻辑（状态迁移/会签/版本）抽在 quotationMutations.ts，mock 与 http 共用，保证口径一致。
 
+import { Message } from '@arco-design/web-react';
 import { initialQuotes } from '@/app/pages/quotation/mockData';
 import { resetAuditNodes } from '@/app/pages/quotation/quoteFlow';
 import {
@@ -43,7 +44,7 @@ export interface QuotationService {
 
   // ── 阶段三：销售报价配置 ──
   returnToTech(quoteId: string, reason: string): Promise<void>;
-  submitForAudit(quoteId: string): Promise<void>;
+  submitForAudit(quoteId: string, auditSnapshot?: { auditNodes: import('@/app/pages/quotation/types').AuditNode[]; stampNode: import('@/app/pages/quotation/types').StampNode }): Promise<void>;
   withdrawAudit(quoteId: string, reason: string): Promise<void>;
 
   // ── 阶段四：审批与盖章 ──
@@ -117,11 +118,11 @@ export function createMockQuotationService(): QuotationService {
     assignToSales: async (id) => mapOne(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote')),
 
     returnToTech: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason)),
-    submitForAudit: async (id) =>
+    submitForAudit: async (id, snapshot) =>
       mapOne(id, (q) =>
         applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
-          auditNodes: resetAuditNodes(),
-          stampNode: { stamperName: '黄海', status: 'LOCKED' as const },
+          auditNodes: snapshot?.auditNodes ?? resetAuditNodes(),
+          stampNode: snapshot?.stampNode ?? { stamperName: '黄海', status: 'LOCKED' as const },
         })),
       ),
     withdrawAudit: async (id, reason) =>
@@ -174,28 +175,35 @@ export function createMockQuotationService(): QuotationService {
   };
 }
 
-export function createHttpQuotationService(baseUrl: string): QuotationService {
+export function createHttpQuotationService(baseUrl: string, opts?: { actor?: string }): QuotationService {
   const api = (p: string) => `${baseUrl}${p}`;
 
   async function getList(): Promise<Quote[]> {
     const r = await fetch(api('/api/quotes'));
-    const d = (await r.json()) as { quotes?: Quote[] };
+    const d = (await r.json()) as { quotes?: Array<Quote & { version?: number }> };
     return (d.quotes ?? []).map(migrateQuote);
   }
 
   async function getOne(id: string): Promise<Quote | undefined> {
     const r = await fetch(api(`/api/quotes/${id}`));
     if (!r.ok) return undefined;
-    const d = (await r.json()) as { quote?: Quote };
+    const d = (await r.json()) as { quote?: Quote & { version?: number } };
     return d.quote;
   }
 
-  async function saveOne(quote: Quote): Promise<void> {
-    await fetch(api(`/api/quotes/${quote.id}`), {
+  // 乐观锁（ADR-0094）：GET 返回的 version 随对象全程携带，PUT 原样回传，服务端比对。
+  // 409 = 数据已被他人修改：提示用户并放弃本次写入（不抛错，Context 随后 refresh 拉到最新）。
+  async function saveOne(quote: Quote): Promise<boolean> {
+    const r = await fetch(api(`/api/quotes/${quote.id}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(opts?.actor ? { 'X-Actor': opts.actor } : {}) },
       body: JSON.stringify(quote),
     });
+    if (r.status === 409) {
+      Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
+      return false;
+    }
+    return r.ok;
   }
 
   async function mutate(id: string, fn: (q: Quote) => Quote): Promise<void> {
@@ -225,11 +233,11 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
     assignToSales: async (id) => mutate(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote')),
 
     returnToTech: async (id, reason) => mutate(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason)),
-    submitForAudit: async (id) =>
+    submitForAudit: async (id, snapshot) =>
       mutate(id, (q) =>
         applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
-          auditNodes: resetAuditNodes(),
-          stampNode: { stamperName: '黄海', status: 'LOCKED' as const },
+          auditNodes: snapshot?.auditNodes ?? resetAuditNodes(),
+          stampNode: snapshot?.stampNode ?? { stamperName: '黄海', status: 'LOCKED' as const },
         })),
       ),
     withdrawAudit: async (id, reason) =>
@@ -255,8 +263,9 @@ export function createHttpQuotationService(baseUrl: string): QuotationService {
       const source = await getOne(id);
       if (!source) return id;
       const newId = generateQuoteId();
-      await saveOne(applyNewVersion(source, newId));
-      return newId;
+      // 409 冲突时未写成：返回原 id，Context refresh 后用户看到最新版再重试
+      const saved = await saveOne(applyNewVersion(source, newId));
+      return saved ? newId : id;
     },
     withdrawSent: async (id) =>
       mutate(id, (q) => applyTransition(q, 'withdraw_sent', 'sales', 'stamped', undefined, () => ({ sentAt: undefined }))),

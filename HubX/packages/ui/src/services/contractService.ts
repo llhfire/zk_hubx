@@ -1,6 +1,7 @@
 // 合同域数据访问服务（数据接缝）。
 // UI 只依赖本接口；α版注入 mock，β版注入 http（/api/contracts）。业务逻辑在 contractMutations.ts 共用。
 
+import { Message } from '@arco-design/web-react';
 import { buildInitialContracts } from '@/app/pages/contracts/mockData';
 import {
   applyAddBlocker,
@@ -63,7 +64,7 @@ export interface ContractService {
   uploadWordContract(id: string, file: Omit<UploadedWordContract, 'uploadedAt' | 'uploadedBy'>): Promise<void>;
   setPrimaryScan(id: string, entryId: string): Promise<void>;
   voidContract(id: string, reason: string): Promise<void>;
-  addCollection(contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'>): Promise<void>;
+  addCollection(contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'> & { id?: string }): Promise<boolean>;
   addBlocker(contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>): Promise<void>;
   resolveBlocker(contractId: string, blockerId: string): Promise<void>;
   addDunning(contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>): Promise<void>;
@@ -146,40 +147,46 @@ export function createMockContractService(): ContractService {
     uploadWordContract: async (id, file) => update(id, (c) => applyUploadWordContract(c, file)),
     setPrimaryScan: async (id, entryId) => update(id, (c) => applySetPrimaryScan(c, entryId)),
     voidContract: async (id, reason) => update(id, (c) => applyVoidContract(c, reason)),
-    addCollection: async (contractId, record) => update(contractId, (c) => applyAddCollection(c, record, contractId)),
+    addCollection: async (contractId, record) => { await update(contractId, (c) => applyAddCollection(c, record, contractId)); return true; },
     addBlocker: async (contractId, blocker) => update(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
     resolveBlocker: async (contractId, blockerId) => update(contractId, (c) => applyResolveBlocker(c, blockerId)),
     addDunning: async (contractId, record) => update(contractId, (c) => applyAddDunning(c, record, contractId)),
   };
 }
 
-export function createHttpContractService(baseUrl: string): ContractService {
+export function createHttpContractService(baseUrl: string, opts?: { actor?: string }): ContractService {
   const api = (p: string) => `${baseUrl}${p}`;
 
   async function getList(): Promise<Contract[]> {
     const r = await fetch(api('/api/contracts'));
-    const d = (await r.json()) as { contracts?: Contract[] };
+    const d = (await r.json()) as { contracts?: Array<Contract & { version?: number }> };
     return d.contracts ?? [];
   }
 
   async function getOne(id: string): Promise<Contract | undefined> {
     const r = await fetch(api(`/api/contracts/${id}`));
     if (!r.ok) return undefined;
-    const d = (await r.json()) as { contract?: Contract };
+    const d = (await r.json()) as { contract?: Contract & { version?: number } };
     return d.contract;
   }
 
-  async function saveOne(contract: Contract): Promise<void> {
-    await fetch(api(`/api/contracts/${contract.id}`), {
+  // 乐观锁（ADR-0094）：与报价同规则。409 提示后放弃本次写入（不抛错，Context 随后 refresh 拉最新）。
+  async function saveOne(contract: Contract): Promise<boolean> {
+    const r = await fetch(api(`/api/contracts/${contract.id}`), {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(opts?.actor ? { 'X-Actor': opts.actor } : {}) },
       body: JSON.stringify(contract),
     });
+    if (r.status === 409) {
+      Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
+      return false;
+    }
+    return r.ok;
   }
 
   async function mutate(id: string, fn: (c: Contract) => Contract): Promise<void> {
     const c = await getOne(id);
-    if (c) await saveOne({ ...fn(c), updatedAt: nowString() });
+    if (c) await saveOne(fn(c));
   }
 
   return {
@@ -234,7 +241,10 @@ export function createHttpContractService(baseUrl: string): ContractService {
     uploadWordContract: async (id, file) => mutate(id, (c) => applyUploadWordContract(c, file)),
     setPrimaryScan: async (id, entryId) => mutate(id, (c) => applySetPrimaryScan(c, entryId)),
     voidContract: async (id, reason) => mutate(id, (c) => applyVoidContract(c, reason)),
-    addCollection: async (contractId, record) => mutate(contractId, (c) => applyAddCollection(c, record, contractId)),
+    addCollection: async (contractId, record) => {
+      await mutate(contractId, (c) => applyAddCollection(c, record, contractId));
+      return true;
+    },
     addBlocker: async (contractId, blocker) => mutate(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
     resolveBlocker: async (contractId, blockerId) => mutate(contractId, (c) => applyResolveBlocker(c, blockerId)),
     addDunning: async (contractId, record) => mutate(contractId, (c) => applyAddDunning(c, record, contractId)),

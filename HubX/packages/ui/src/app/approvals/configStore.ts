@@ -41,6 +41,12 @@ export interface BusinessApprovalDefinition {
 const TEMPLATE_STORAGE_KEY = 'hubx-workflow-templates-v2';
 const BUSINESS_STORAGE_KEY = 'hubx-business-approvals-v2';
 
+import {
+  QUOTE_PARALLEL_TEMPLATE,
+  QUOTE_APPROVAL_BINDING,
+  SUPPLEMENT_QUOTE_APPROVAL_BINDING,
+} from '@/app/pages/quotation/quoteAuditSnapshot';
+
 export const defaultWorkflowTemplates: WorkflowTemplateDefinition[] = [
   {
     key: 'template-quotation',
@@ -78,6 +84,7 @@ export const defaultWorkflowTemplates: WorkflowTemplateDefinition[] = [
     enabled: true,
     updatedAt: '2026-07-29',
   },
+  QUOTE_PARALLEL_TEMPLATE,
 ];
 
 export const defaultBusinessApprovals: BusinessApprovalDefinition[] = [
@@ -110,6 +117,8 @@ export const defaultBusinessApprovals: BusinessApprovalDefinition[] = [
     enabled: true,
     updatedAt: '2026-07-29',
   },
+  QUOTE_APPROVAL_BINDING,
+  SUPPLEMENT_QUOTE_APPROVAL_BINDING,
 ];
 
 function loadStorage<T>(key: string, fallback: T): T {

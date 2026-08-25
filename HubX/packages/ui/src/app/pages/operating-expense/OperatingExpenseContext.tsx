@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import type { ExpenseRecord, RecurringExpenseTemplate } from './types';
 import { mockExpenseRecords, mockTemplates } from './mockData';
 
-const STORAGE_KEY = 'hubx-operating-expense-v1';
+const STORAGE_KEY = 'hubx-operating-expense-v2';
 
 interface OperatingExpenseState {
   records: ExpenseRecord[];

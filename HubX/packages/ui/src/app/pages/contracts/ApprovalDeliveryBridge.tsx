@@ -1,12 +1,6 @@
-// 签约开启联动桥（原 ApprovalDeliveryBridge）。
-// 职责：监听 contracts 快照，产出两类事件——
-//   created（合同新建）→ spawn 未确认项目
-//   approved（批准）  → startDelivery + SOP 计划（仅对已有项目）
-// 两条接线共用 caseUtils 纯函数层，防止行为分叉。
-//
-// 阶段 3 原名 ApprovalDeliveryBridge，U1 改名 SigningOpenBridge。
-// 合同在全局 ContractsContext 里，快照 diff 可靠；
-// 线索侧不在桥内处理（跟进弹窗 onOk 显式调联动，见 LeadDetail）。
+// 签约开启联动桥（ADR-0093 降级版）。
+// β：合同列表变化且有 created/approved/voided 时 `refresh()` 项目 Context；不承担 spawn。
+// α 版仍走前端 diff 引擎（单机单用户，无并发问题）。
 
 import { useEffect, useRef } from 'react';
 import { Message } from '@arco-design/web-react';
@@ -14,7 +8,7 @@ import { useContracts } from './ContractsContext';
 import { useProjects } from '../project-management/ProjectContext';
 import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
 import { buildUnconfirmedProject, spawnUnconfirmedProject, startDelivery } from '@/app/business-case';
-import { diffContractEvents } from './signingOpenEvents';
+import { diffContractEvents, type ContractSnapshotEntry } from './signingOpenEvents';
 import { generateDeliveryPlan } from '../delivery-plan/utils';
 import { saveDeliveryPlan } from '../delivery-plan/deliveryPlanStore';
 import { SOP_PHASES } from '../delivery-plan/constants';
@@ -28,20 +22,25 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** β 模式标记：由 apps/web 注入 window.__ZK_BETA__ = true */
+function isBeta(): boolean {
+  try { return !!(globalThis as Record<string, unknown>).__ZK_BETA__; } catch { return false; }
+}
+
 export function SigningOpenBridge() {
   const { contracts } = useContracts();
-  const { getProjectByLeadId, updateProject, addProject } = useProjects();
+  const { getProjectByLeadId, updateProject, addProject, refresh } = useProjects();
   const { getByLeadId, upsertCase } = useBusinessCases();
 
-  // id -> approvedAt 的上一份快照；null 表示尚未做首帧快照（首帧只记录不触发）
-  const snapshotRef = useRef<Record<string, string | undefined> | null>(null);
+  // 快照形状（与服务端 prevSnapshotForWrite 同形）：null 表示尚未做首帧快照（首帧只记录不触发）
+  const snapshotRef = useRef<Record<string, ContractSnapshotEntry> | null>(null);
 
   useEffect(() => {
     const prev = snapshotRef.current;
     // 构建下一份快照
-    const next: Record<string, string | undefined> = {};
+    const next: Record<string, ContractSnapshotEntry> = {};
     contracts.forEach((c) => {
-      next[c.id] = c.approvedAt;
+      next[c.id] = { approvedAt: c.approvedAt, status: c.status };
     });
     snapshotRef.current = next;
 
@@ -50,19 +49,28 @@ export function SigningOpenBridge() {
 
     const events = diffContractEvents(prev, contracts);
 
-    // created 事件：合同新建 → spawn 未确认项目
+    // β 模式：联动由 Workers 在合同 PUT 时同步完成（ADR-0093），
+    // 前端桥负责刷新项目 Context（洞 A 修复）
+    if (isBeta()) {
+      if (events.created.length || events.approved.length || events.voided.length) {
+        void refresh().catch(() => {
+          Message.warning('项目列表同步失败，请刷新页面');
+        });
+      }
+      return;
+    }
+
+    // α 模式：保留前端 diff 引擎（单机单用户）
     for (const contract of events.created) {
       handleContractCreated(contract);
     }
-
-    // approved 事件：批准 → startDelivery（仅对已有项目）
     for (const contract of events.approved) {
       handleContractApproved(contract);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contracts]);
 
-  /** 合同新建时的联动：spawn 未确认项目 */
+  /** α 模式：合同新建 → spawn 未确认项目 */
   function handleContractCreated(contract: Contract) {
     const leadId = contract.leadId;
     if (!leadId) return;
@@ -70,7 +78,6 @@ export function SigningOpenBridge() {
     const today = todayStr();
     const project = getProjectByLeadId(leadId);
     if (project) {
-      // 已有项目不重复 spawn，只补全商机关联
       const bizCase = getByLeadId(leadId);
       if (bizCase) {
         upsertCase({
@@ -83,7 +90,6 @@ export function SigningOpenBridge() {
       return;
     }
 
-    // 无项目 → spawn
     const projectId = 'ap-' + contract.id;
     const spawned = spawnUnconfirmedProject({ caseId: 'case-' + leadId, leadId, projectId });
     const fullProject = buildUnconfirmedProject({
@@ -97,7 +103,7 @@ export function SigningOpenBridge() {
     Message.success('合同 ' + contract.contractNo + ' 已创建：已生成未确认项目，待管理员确认指派');
   }
 
-  /** 合同批准时的联动：startDelivery + SOP 计划（仅对已有项目） */
+  /** α 模式：合同批准 → startDelivery + SOP 计划 */
   function handleContractApproved(contract: Contract) {
     const leadId = contract.leadId;
     if (!leadId) return;
@@ -107,12 +113,10 @@ export function SigningOpenBridge() {
     const bizCase = getByLeadId(leadId);
 
     if (!project) {
-      // ADR 0067 严格执行：批准时无项目不兜底 spawn
       Message.warning('合同 ' + contract.contractNo + ' 审批通过，但线索下无项目，请先创建项目');
       return;
     }
 
-    // 补全商机关联
     if (bizCase) {
       upsertCase({
         ...bizCase,

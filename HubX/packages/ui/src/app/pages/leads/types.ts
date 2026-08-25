@@ -2,6 +2,9 @@
 // 线索管理模块 — 共享类型定义
 // ============================================================
 
+import type { ChannelKey } from '@/app/pages/lead-dispatch/channelDictionary';
+import { CHANNEL_LIST, CHANNEL_LABEL } from '@/app/pages/lead-dispatch/channelDictionary';
+
 // --- 线索类型（分类维度，与销售漏斗状态正交） ---
 export type ClueType = 'public' | 'assigned' | 'trash' | 'hightech';
 
@@ -153,38 +156,20 @@ export const INTENTION_LEVEL_COLOR: Record<IntentionLevel, string> = {
   无意向: 'gray',
 };
 
-// --- 线索来源（按说明书对齐） ---
-export type LeadSource =
-  | '威客'
-  | '百度'
-  | '小红书'
-  | '抖音'
-  | '必应'
-  | '淘宝'
-  | '互站'
-  | '豆包';
+// --- 线索来源（数据字典维护，英文 key；事实源：lead-dispatch/channelDictionary.ts） ---
+export type LeadSource = ChannelKey;
 
-export const LEAD_SOURCE_LIST: LeadSource[] = [
-  '威客',
-  '百度',
-  '小红书',
-  '抖音',
-  '必应',
-  '淘宝',
-  '互站',
-  '豆包',
-];
+export const LEAD_SOURCE_LIST: LeadSource[] = CHANNEL_LIST;
+
+export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = CHANNEL_LABEL;
 
 // 色彩降噪：来源统一用边框样式（灰边黑字，清晰可读）
 export const LEAD_SOURCE_COLOR: Record<LeadSource, string> = {
-  威客: 'gray',
-  百度: 'gray',
-  小红书: 'gray',
-  抖音: 'gray',
-  必应: 'gray',
-  淘宝: 'gray',
-  互站: 'gray',
-  豆包: 'gray',
+  xiaohongshu: 'gray',
+  baidu: 'gray',
+  douyin: 'gray',
+  wechat: 'gray',
+  website: 'gray',
 };
 
 // --- 售前群类型 ---
@@ -344,6 +329,18 @@ export interface LeadListItem {
   transformStatus: boolean;
   /** 是否标红（超期未跟进） — 保留兼容，优先用倒计时胶囊 */
   isOverdue: boolean;
+
+  // --- 线索派发字段（lead-dispatch-dev-plan.md 阶段 A） ---
+  /** 业务线 */
+  businessLine?: string;
+  /** 渠道计划（自由文本） */
+  channelPlan?: string;
+  /** 派发时间 */
+  dispatchedAt?: string;
+  /** 派发目标：销售 or 公海 */
+  dispatchTarget?: string;
+  /** 线索事件记录（只增不删） */
+  leadEvents?: import('@/app/pages/lead-dispatch/types').LeadEvent[];
 }
 
 // --- 快捷筛选类型 ---

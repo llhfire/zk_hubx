@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Card,
   Grid,
@@ -119,6 +120,7 @@ const mockMinutes: MeetingMinute[] = [
 // ---------- 主组件 ----------
 
 export function MeetingManagement() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('meetings');
   const [rooms, setRooms] = useState(mockRooms);
   const [meetings, setMeetings] = useState(mockMeetings);
@@ -251,12 +253,23 @@ export function MeetingManagement() {
                     render: (s: string) => <Tag color={meetingStatusLabels[s]?.color || 'var(--muted-foreground)'}>{meetingStatusLabels[s]?.label || s}</Tag>,
                   },
                   {
-                    title: '操作', width: 130,
+                    title: '操作', width: 180,
                     render: (_: unknown, row: Meeting) => (
                       <Space>
                         <Tooltip content="编辑">
                           <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEditMeeting(row)} />
                         </Tooltip>
+                        {(row.status === 'completed' || row.status === 'ongoing') && (
+                          <Tooltip content="创建智能纪要">
+                            <Button
+                              type="text"
+                              size="small"
+                              onClick={() => navigate(`/smart-meetings/new?sourceMeeting=${row.id}`)}
+                            >
+                              智能纪要
+                            </Button>
+                          </Tooltip>
+                        )}
                         {row.status === 'scheduled' && (
                           <Tooltip content="取消">
                             <Button type="text" size="small" status="danger" icon={<IconCloseCircle />} onClick={() => handleCancelMeeting(row.id)} />

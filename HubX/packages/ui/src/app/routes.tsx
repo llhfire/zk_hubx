@@ -59,6 +59,7 @@ import { PerformanceManagement } from "./pages/employee";
 import { LevelRateSettings } from "./pages/employee";
 import { PersonalWorkbench } from "./pages/workbench/PersonalWorkbench";
 import { LeadGovernance } from "./pages/leads/LeadGovernance";
+import { LeadDispatchPage } from "./pages/lead-dispatch/LeadDispatchPage";
 import { AssetManagement } from "./pages/assets/AssetManagement";
 import { MaintenanceManagement } from "./pages/maintenance/MaintenanceManagement";
 import { SupplierManagement } from "./pages/suppliers/SupplierManagement";
@@ -88,6 +89,8 @@ import { TravelDashboard } from "./pages/travel/dashboard/TravelDashboard";
 import DeliveryDashboard from "./pages/financial-delivery/dashboard/Dashboard";
 import CaseList from "./pages/financial-delivery/cases/CaseList";
 import CaseDetail from "./pages/financial-delivery/cases/CaseDetail";
+import { SmartMeetingListPage } from "./pages/smart-meetings/SmartMeetingListPage";
+import { SmartMeetingWorkbench } from "./pages/smart-meetings/SmartMeetingWorkbench";
 
 export const router = createBrowserRouter([
   {
@@ -103,6 +106,7 @@ export const router = createBrowserRouter([
       { path: "leads/closed", Component: ClosedLeads },
       { path: "leads/trash", Component: TrashLeads },
       { path: "leads/governance", Component: LeadGovernance },
+      { path: "lead-dispatch", Component: LeadDispatchPage },
       { path: "leads/:id", Component: LeadDetail360 },
       { path: "lead-cost/dashboard", Component: LeadCostDashboard },
       { path: "lead-cost/daily", Component: LeadCostDaily },
@@ -146,6 +150,9 @@ export const router = createBrowserRouter([
       { path: "suppliers", Component: SupplierManagement },
       { path: "knowledge", Component: KnowledgeBase },
       { path: "meetings", Component: MeetingManagement },
+      { path: "smart-meetings", Component: SmartMeetingListPage },
+      { path: "smart-meetings/new", Component: SmartMeetingWorkbench },
+      { path: "smart-meetings/:id", Component: SmartMeetingWorkbench },
       { path: "roi", Component: FullChainROI },
       { path: "ai", Component: AIDriven },
       { path: "employees", Component: EmployeeList },
@@ -185,8 +192,6 @@ export const router = createBrowserRouter([
       { path: "financial-delivery/dashboard", Component: DeliveryDashboard },
       { path: "financial-delivery/cases", Component: CaseList },
       { path: "financial-delivery/cases/:id", Component: CaseDetail },
-      { path: "financial-delivery/cases/:id/edit", Component: CaseDetail },
-      { path: "financial-delivery/cases/create", Component: CaseDetail },
       { path: "financial-delivery/post-mortems/:id", Component: () => <div>项目决算详情</div> },
     ],
   },

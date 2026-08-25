@@ -137,13 +137,13 @@ describe('buildProjectSummaryCards', () => {
     const leadProfile = getLeadDetailProfile('lead-9', '');
 
     expect(project).toMatchObject({
-      name: '内部OA流程优化',
+      name: '华信科技内部OA流程优化',
       status: '进行中',
       progress: 58,
       businessLine: '外包',
       leadId: 'lead-9',
     });
-    expect(project?.contractId).toBeUndefined();
+    expect(project?.contractId).toBe('9');
     expect(project?.productUsers).toEqual(['李四']);
     expect(project?.frontendUsers).toEqual(['王五']);
     expect(project?.backendUsers).toEqual(['赵六']);

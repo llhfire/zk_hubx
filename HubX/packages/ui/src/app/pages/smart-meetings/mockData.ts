@@ -1,0 +1,128 @@
+/** α 种子数据 */
+
+import type { SmartMinute } from './types';
+
+export const MOCK_MINUTES: SmartMinute[] = [
+  {
+    id: 'minute_001',
+    title: 'Q3 销售策略复盘会',
+    meetingTime: '2026-08-20T14:00:00',
+    organizerId: 'user_zhang',
+    reviewerId: 'user_li',
+    attendeeIds: ['user_zhang', 'user_li', 'user_wang', 'user_chen'],
+    status: 'confirmed',
+    refs: [
+      { kind: 'lead', id: 'lead_001', displaySnapshot: '中科智慧园区项目', savedAsView: '销售' },
+    ],
+    coreDecisions: [
+      '调整 Q3 投放预算分配',
+      '优化线索跟进流程',
+    ],
+    contentMarkdown: '# Q3 销售策略复盘会\n\n## 议题一：投放效果分析\n\n...\n\n## 议题二：线索转化率\n\n...',
+    actionItems: [
+      {
+        actionItemId: 'ai_001',
+        content: '整理 Q3 投放数据报告',
+        assigneeId: 'user_wang',
+        assigneeName: '王五',
+        priority: 'P0',
+        priorityNeedsReview: false,
+        dueDate: '2026-08-25',
+        refs: [{ kind: 'lead', id: 'lead_001', displaySnapshot: '中科智慧园区项目', savedAsView: '销售' }],
+        status: 'pending',
+      },
+      {
+        actionItemId: 'ai_002',
+        content: '优化线索评分模型',
+        assigneeId: 'user_chen',
+        assigneeName: '陈六',
+        priority: 'P1',
+        priorityNeedsReview: false,
+        dueDate: '2026-08-30',
+        refs: [],
+        status: 'pending',
+      },
+    ],
+    source: null,
+    versions: [
+      {
+        versionId: 'v1_2026-08-20T16:00:00',
+        reason: 'confirm',
+        createdAt: '2026-08-20T16:00:00',
+        snapshot: {
+          title: 'Q3 销售策略复盘会',
+          meetingTime: '2026-08-20T14:00:00',
+          attendeeIds: ['user_zhang', 'user_li', 'user_wang', 'user_chen'],
+          refs: [{ kind: 'lead', id: 'lead_001', displaySnapshot: '中科智慧园区项目', savedAsView: '销售' }],
+          coreDecisions: ['调整 Q3 投放预算分配', '优化线索跟进流程'],
+          contentMarkdown: '# Q3 销售策略复盘会\n\n...',
+          actionItems: [],
+        },
+      },
+    ],
+    adminSource: null,
+    polishPreview: null,
+    createdAt: '2026-08-20T14:00:00',
+    updatedAt: '2026-08-20T16:00:00',
+  },
+  {
+    id: 'minute_002',
+    title: '合同评审会 - 华为云项目',
+    meetingTime: '2026-08-22T10:00:00',
+    organizerId: 'user_li',
+    reviewerId: 'user_zhang',
+    attendeeIds: ['user_li', 'user_zhang', 'user_wang'],
+    status: 'pending_review',
+    refs: [
+      { kind: 'contract', id: 'contract_001', displaySnapshot: '华为云服务合同', savedAsView: '交付' },
+    ],
+    coreDecisions: ['合同条款需法务复核'],
+    contentMarkdown: '# 合同评审会\n\n...',
+    actionItems: [
+      {
+        actionItemId: 'ai_003',
+        content: '提交法务审核',
+        assigneeId: 'user_wang',
+        assigneeName: '王五',
+        priority: 'P0',
+        priorityNeedsReview: false,
+        dueDate: '2026-08-24',
+        refs: [{ kind: 'contract', id: 'contract_001', displaySnapshot: '华为云服务合同', savedAsView: '交付' }],
+        status: 'pending',
+      },
+    ],
+    source: null,
+    versions: [],
+    adminSource: null,
+    polishPreview: null,
+    createdAt: '2026-08-22T10:00:00',
+    updatedAt: '2026-08-22T12:00:00',
+  },
+  {
+    id: 'minute_003',
+    title: '周例会 - 项目进度同步',
+    meetingTime: '2026-08-23T09:00:00',
+    organizerId: 'user_zhang',
+    reviewerId: 'user_li',
+    attendeeIds: ['user_zhang', 'user_li', 'user_chen'],
+    status: 'draft',
+    refs: [],
+    coreDecisions: [],
+    contentMarkdown: '',
+    actionItems: [],
+    source: null,
+    versions: [],
+    adminSource: null,
+    polishPreview: null,
+    createdAt: '2026-08-23T09:00:00',
+    updatedAt: '2026-08-23T09:00:00',
+  },
+];
+
+/** 人员目录（简化版） */
+export const MOCK_USERS = [
+  { id: 'user_zhang', name: '张三' },
+  { id: 'user_li', name: '李四' },
+  { id: 'user_wang', name: '王五' },
+  { id: 'user_chen', name: '陈六' },
+];

@@ -11,6 +11,8 @@ import type {
   CaseCostItem,
   EvalSheet,
   QuotationAtoms,
+  SupplementContractSummary,
+  Case,
 } from './types';
 
 // ==================== 常量 ====================
@@ -198,15 +200,32 @@ export function deriveCostStructure(
 }
 
 /**
- * 趋势：按月累计 应收 / 实收 / 成本
- * 注意：此函数签名示意，实际使用需传入完整的 paymentPlans / collectionRecords
+ * 趋势：按月累计 应收 / 实收 / 成本（按分类拆分）
+ * 返回值同时满足 Recharts 图表的 dataKey 需求
+ *
+ * ADR-0091 新五类：labor / travel / promotion / commercial / third_party
  */
 export function deriveTrend(
   paymentPlans: { dueDate: string; amount: number }[],
   collectionRecords: { date: string; amount: number }[],
   costItems: CaseCostItem[],
-): { month: string; receivable: number; collected: number; cost: number }[] {
-  // 收集所有月份
+): {
+  month: string;
+  receivable: number;
+  collected: number;
+  cost: number;
+  // 图表兼容字段
+  date: string;
+  actualTotalCost: number;
+  contractRevenue: number;
+  actualRevenue: number;
+  actualLaborCost: number;
+  actualTravelCost: number;
+  actualPromotionCost: number;
+  actualCommercialCost: number;
+  actualThirdPartyCost: number;
+  actualMargin: number | null;
+}[] {
   const months = new Set<string>();
   for (const p of paymentPlans) months.add(p.dueDate.slice(0, 7));
   for (const c of collectionRecords) months.add(c.date.slice(0, 7));
@@ -224,7 +243,35 @@ export function deriveTrend(
     collected += cr.reduce((s, c) => s + c.amount, 0);
     const ci = costItems.filter(c => c.date.startsWith(month));
     cost += ci.reduce((s, c) => s + c.amount, 0);
-    return { month, receivable, collected, cost };
+
+    // 按分类拆分当月成本（新五类）
+    const monthActuals = ci.filter(c => c.status === 'actual');
+    const laborCost = monthActuals.filter(c => c.costCategory === 'labor').reduce((s, c) => s + c.amount, 0);
+    const travelCost = monthActuals.filter(c => c.costCategory === 'travel').reduce((s, c) => s + c.amount, 0);
+    const promotionCost = monthActuals.filter(c => c.costCategory === 'promotion').reduce((s, c) => s + c.amount, 0);
+    const commercialCost = monthActuals.filter(c => c.costCategory === 'commercial').reduce((s, c) => s + c.amount, 0);
+    const thirdPartyCost = monthActuals.filter(c => c.costCategory === 'third_party').reduce((s, c) => s + c.amount, 0);
+
+    // 累计利润率
+    const margin = receivable > 0 ? (receivable - cost) / receivable : null;
+
+    return {
+      month,
+      receivable,
+      collected,
+      cost,
+      // 图表兼容
+      date: month,
+      actualTotalCost: cost,
+      contractRevenue: receivable,
+      actualRevenue: collected,
+      actualLaborCost: laborCost,
+      actualTravelCost: travelCost,
+      actualPromotionCost: promotionCost,
+      actualCommercialCost: commercialCost,
+      actualThirdPartyCost: thirdPartyCost,
+      actualMargin: margin !== null ? Math.round(margin * 1000) / 10 : null,
+    };
   });
 }
 
@@ -287,4 +334,156 @@ export function simulateSensitivity(
   const breakevenAmount = eac;
   const floorPrice = targetMargin < 1 ? eac / (1 - targetMargin) : Infinity;
   return { eac, margin, breakevenAmount, floorPrice };
+}
+
+// ==================== ADR-0091 新增函数 ====================
+
+/** 商务费用是否超上限 */
+export function deriveCommercialOverrun(
+  costItems: CaseCostItem[],
+  commercialCap: number,
+): { commercialActual: number; cap: number; overrun: boolean } {
+  const commercialActual = costItems
+    .filter(c => c.costCategory === 'commercial' && c.status === 'actual')
+    .reduce((s, c) => s + c.amount, 0);
+  return {
+    commercialActual,
+    cap: commercialCap,
+    overrun: commercialCap > 0 && commercialActual > commercialCap,
+  };
+}
+
+/** 生命周期轨迹节点 */
+export interface LifecycleNode {
+  status: CaseStatus;
+  label: string;
+  reached: boolean;
+  current: boolean;
+  suspended: boolean;
+  terminated: boolean;
+  supplementCount: number;
+}
+
+/** 10 态生命周期轨迹 */
+export function buildLifecycleTrack(
+  status: CaseStatus,
+  supplements: SupplementContractSummary[],
+): LifecycleNode[] {
+  const allStatuses: CaseStatus[] = [
+    'drafting', 'quoting', 'negotiating', 'signed', 'in_progress',
+    'suspended', 'accepting', 'collecting', 'completed', 'terminated',
+  ];
+  const labels: Record<CaseStatus, string> = {
+    drafting: '草拟', quoting: '报价', negotiating: '洽谈', signed: '签约',
+    in_progress: '进行中', suspended: '已挂起', accepting: '验收中',
+    collecting: '催款中', completed: '已完结', terminated: '已终止',
+  };
+  const statusOrder = allStatuses.indexOf(status);
+  const isTerminated = status === 'terminated';
+  const isSuspended = status === 'suspended';
+
+  return allStatuses.map((s, i) => ({
+    status: s,
+    label: labels[s],
+    reached: isTerminated ? i < statusOrder : i <= statusOrder,
+    current: s === status,
+    suspended: isSuspended && s === 'in_progress',
+    terminated: isTerminated,
+    supplementCount: supplements.filter(sup => sup.archived).length,
+  }));
+}
+
+/** 有效标的额演进阶段 */
+export interface AmountStage {
+  stage: string;
+  label: string;
+  delta: number;
+  cumulative: number;
+  pending?: boolean;
+}
+
+/** 1主N补+合并基准演进脉络 */
+export function buildAmountEvolution(
+  mainAmount: number,
+  supplements: SupplementContractSummary[],
+): AmountStage[] {
+  const stages: AmountStage[] = [];
+  let cumulative = mainAmount;
+
+  stages.push({ stage: 'main', label: '主合同', delta: mainAmount, cumulative });
+
+  for (const sup of supplements) {
+    const isPending = sup.status === 'pending_approval';
+    cumulative += sup.amount;
+    stages.push({
+      stage: sup.contractNo,
+      label: sup.name || sup.contractNo,
+      delta: sup.amount,
+      cumulative,
+      pending: isPending,
+    });
+  }
+
+  stages.push({ stage: 'baseline', label: '有效标的额', delta: 0, cumulative });
+  return stages;
+}
+
+/** 经营提示横幅 */
+export function buildOperatingHints(
+  supplements: SupplementContractSummary[],
+  plans: { dueDate: string; amount: number }[],
+  collections: { planId?: string; amount: number }[],
+  asOf: string,
+): string[] {
+  const hints: string[] = [];
+
+  // 补充合同审批中提示
+  const pendingSupplements = supplements.filter(s => s.status === 'pending_approval');
+  for (const sup of pendingSupplements) {
+    hints.push(`补充合同 ${sup.contractNo} 审批中（+¥${(sup.amount / 1000).toFixed(0)}k），归档后计入有效标的额`);
+  }
+
+  // 逾期催款提示
+  if (suggestCollecting('in_progress', plans, collections, asOf)) {
+    hints.push('有逾期期次未收，建议催款');
+  }
+
+  return hints;
+}
+
+/** CaseMetrics 汇总指标 */
+export interface CaseMetrics {
+  totalCost: number;
+  eac: number;
+  contractAmount: number;
+  lifecycleMargin: number | null;
+  collectedMargin: number | null;
+  wip: { value: number; days: number };
+  health: 'green' | 'yellow' | 'red';
+  costStructure: Record<string, { actual: number; forecast: number }>;
+  commercialOverrun: { commercialActual: number; cap: number; overrun: boolean };
+}
+
+/** 单一装配函数：CaseDetail 与 Dashboard 共用 */
+export function assembleCaseMetrics(
+  caseData: Case,
+  costItems: CaseCostItem[],
+  mainAmount: number,
+  supplements: SupplementContractSummary[],
+  collections: { planId?: string; amount: number; date: string }[],
+  plans: { dueDate: string; amount: number }[],
+  asOf: string,
+): CaseMetrics {
+  const totalCost = deriveTotalCost(costItems);
+  const eac = deriveEac(costItems);
+  const contractAmount = deriveContractAmount(mainAmount, supplements);
+  const revenue = deriveRevenue(collections);
+  const lifecycleMargin = deriveLifecycleMargin(contractAmount, eac);
+  const collectedMargin = deriveCollectedMargin(revenue, totalCost);
+  const wip = deriveWip(totalCost, revenue, collections.length > 0 ? collections[collections.length - 1].date : null, asOf);
+  const health = deriveHealth(lifecycleMargin, caseData.targetMargin ?? 0.2, eac, caseData.budgetCap ?? 0, wip.days);
+  const costStructure = deriveCostStructure(costItems);
+  const commercialOverrun = deriveCommercialOverrun(costItems, caseData.commercialCap ?? 0);
+
+  return { totalCost, eac, contractAmount, lifecycleMargin, collectedMargin, wip, health, costStructure, commercialOverrun };
 }

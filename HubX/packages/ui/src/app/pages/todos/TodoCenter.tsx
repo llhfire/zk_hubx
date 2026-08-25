@@ -161,11 +161,14 @@ export function TodoCenter() {
               <Tooltip content={record.external ? '去企业微信处理' : '去处理'}>
                 <Button type="primary" size="mini" icon={<IconCheck />} onClick={() => goProcess(record)} />
               </Tooltip>
-              <Tooltip content="延后">
-                <Dropdown droplist={snoozeMenu(record)} position="br">
-                  <Button type="text" size="small" icon={<IconClockCircle />} />
-                </Dropdown>
-              </Tooltip>
+              {/* 智能会议待办是只读投影，不提供延后操作 */}
+              {record.source !== 'smart_meeting' && (
+                <Tooltip content="延后">
+                  <Dropdown droplist={snoozeMenu(record)} position="br">
+                    <Button type="text" size="small" icon={<IconClockCircle />} />
+                  </Dropdown>
+                </Tooltip>
+              )}
             </>
           ) : null}
         </Space>

@@ -61,6 +61,34 @@ export enum ServiceCategory {
   CUSTOM = 'custom',
 }
 
+/** 成本五类（ADR-0091）：人工/差旅/推广/商务/第三方 */
+export type CostCategory = 'labor' | 'travel' | 'promotion' | 'commercial' | 'third_party';
+
+/** 成本五类常量 */
+export const COST_CATEGORIES: CostCategory[] = ['labor', 'travel', 'promotion', 'commercial', 'third_party'];
+
+/** 成本五类中文标签 */
+export const COST_CATEGORY_LABELS: Record<CostCategory, string> = {
+  labor: '人工',
+  travel: '差旅',
+  promotion: '推广',
+  commercial: '商务',
+  third_party: '第三方',
+};
+
+/** 补充合同摘要（用于业务单详情 1主多补演进脉络） */
+export interface SupplementContractSummary {
+  id: string;
+  contractNo: string;
+  name: string;
+  amount: number;
+  status: 'archived' | 'pending_approval' | 'voided';
+  archived: boolean;
+  voided: boolean;
+  signingDate?: string;
+  sourceQuoteId?: string;
+}
+
 /** 精益角色（与报价域 EVAL_ROLE_MAP 对齐） */
 export type LeanRole = 'product' | 'design' | 'frontend' | 'backend' | 'test' | 'other';
 
@@ -72,6 +100,8 @@ export interface Case {
   projectId?: string;
   contractId?: string;
   quoteIds: string[];           // L1 新增：关联报价 ID
+  /** 补充合同 ID 列表（1 主多补，ADR-0091） */
+  extraContractIds?: string[];
   status: CaseStatus;
   targetMargin?: number;
   budgetCap?: number;
@@ -220,7 +250,7 @@ export interface CaseCostItem {
   caseId: string;
   sourceType: 'daily_report' | 'reimbursement' | 'work_item' | 'manual' | 'overhead';
   sourceId?: string;
-  costCategory: 'labor' | 'commercial' | 'operation' | 'third_party' | 'hardware';
+  costCategory: CostCategory;
   costType: string;
   amount: number;
   employeeId?: string;
@@ -239,8 +269,9 @@ export interface CaseCostItem {
 export interface PnLSnapshot {
   revenue: number;
   laborCost: number;
+  travelCost: number;
+  promotionCost: number;
   commercialCost: number;
-  operationCost: number;
   thirdPartyCost: number;
   totalCost: number;
   grossMarginAmount: number;    // 毛利金额
@@ -272,12 +303,12 @@ export interface CasePostMortem {
 // 成本差异接口
 export interface CostVariance {
   laborVariance: number;
+  travelVariance: number;
+  promotionVariance: number;
   commercialVariance: number;
-  operationVariance: number;
   thirdPartyVariance: number;
   laborReasons: string[];
   commercialReasons: string[];
-  operationReasons: string[];
 }
 
 // 根因分析接口
@@ -353,14 +384,16 @@ export interface CostTrendData {
   date: string;
   contractRevenue: number;
   actualLaborCost: number;
+  actualTravelCost: number;
+  actualPromotionCost: number;
   actualCommercialCost: number;
-  actualOperationCost: number;
   actualThirdPartyCost: number;
   actualTotalCost: number;
   actualRevenue: number;
   forecastLaborCost: number | null;
+  forecastTravelCost: number | null;
+  forecastPromotionCost: number | null;
   forecastCommercialCost: number | null;
-  forecastOperationCost: number | null;
   forecastThirdPartyCost: number | null;
   forecastTotalCost: number | null;
   forecastRevenue: number | null;
@@ -413,8 +446,9 @@ export interface DrillDownData {
       profit: number;
       costBreakdown: {
         laborCost: { total: number; development: number; rework: number };
-        commercialCost: { total: number; entertainment: number; travel: number };
-        operationCost: number;
+        travelCost: number;
+        promotionCost: number;
+        commercialCost: { total: number; entertainment: number };
         thirdPartyCost: number;
       };
     }[];

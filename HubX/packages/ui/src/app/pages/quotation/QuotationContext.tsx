@@ -6,7 +6,9 @@ import type {
   QuoteRole,
 } from './types';
 import { buildQuoteTodos } from './quoteFlow';
+import { getQuoteAuditSnapshot } from './quoteAuditSnapshot';
 import { createMockQuotationService, type QuotationService } from '@/services/quotationService';
+import { loadBusinessApprovals, loadWorkflowTemplates } from '@/app/approvals/configStore';
 import type { TodoItem } from '@/app/todos/types';
 
 /** 线索简况（跨域注入，不建 LeadsContext） */
@@ -211,7 +213,9 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const submitForAudit = useCallback(
     async (quoteId: string) => {
-      await svc.submitForAudit(quoteId);
+      // 提交时拍配置快照（ADR 0049）
+      const snapshot = getQuoteAuditSnapshot(loadBusinessApprovals, loadWorkflowTemplates);
+      await svc.submitForAudit(quoteId, snapshot);
       await refresh();
     },
     [svc, refresh],

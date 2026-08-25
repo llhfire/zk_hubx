@@ -13,6 +13,7 @@ import {
   getPendingRoles,
   getStageAccess,
   groupSubFeatures,
+  isExpired,
   nextVersion,
   packModule,
   removeRoleFromUnits,
@@ -235,8 +236,9 @@ describe('金额汇总', () => {
     expect(b.addedDays).toBe(5);
     expect(b.addedCost).toBe(4000);
     expect(b.totalLaborDays).toBe(15);
-    expect(b.otherCostSubtotal).toBe(2000);
-    expect(b.grandTotal).toBe(6000 + 4000 + 2000);
+    expect(b.selfPaidSubtotal).toBe(2000);
+    // 自费项目不进总价（ADR 0031）
+    expect(b.grandTotal).toBe(6000 + 4000);
   });
 
   it('未开启差旅时不计入总价', () => {
@@ -491,5 +493,38 @@ describe('待办推导（getPendingRoles / buildQuoteTodos）', () => {
   it('终态报价不生成待办', () => {
     const quotes = [buildQuote({ id: 'q-confirmed', status: 'confirmed' })];
     expect(buildQuoteTodos(quotes, 'sales')).toEqual([]);
+  });
+});
+
+describe('isExpired 过期判断', () => {
+  it('sent + sentAt + 29 天 → 未过期', () => {
+    const quote = buildQuote({ status: 'sent', sentAt: '2026-08-01 10:00' });
+    expect(isExpired(quote, '2026-08-30')).toBe(false);
+  });
+
+  it('sent + sentAt + 30 天 → 过期（默认 30 天）', () => {
+    const quote = buildQuote({ status: 'sent', sentAt: '2026-08-01 10:00' });
+    expect(isExpired(quote, '2026-08-31')).toBe(true);
+  });
+
+  it('自定义有效期 quoteValidityDays=7 覆盖默认', () => {
+    const quote = buildQuote({
+      status: 'sent',
+      sentAt: '2026-08-01 10:00',
+      basicInfo: { ...buildQuote().basicInfo, quoteValidityDays: 7 },
+    });
+    expect(isExpired(quote, '2026-08-07')).toBe(false);
+    expect(isExpired(quote, '2026-08-08')).toBe(true);
+  });
+
+  it('非 sent 状态恒不过期（含 confirmed）', () => {
+    for (const status of ['draft', 'pending_eval', 'auditing', 'stamped', 'confirmed', 'voided'] as QuoteStatus[]) {
+      expect(isExpired(buildQuote({ status, sentAt: '2020-01-01 00:00' }), '2030-01-01')).toBe(false);
+    }
+  });
+
+  it('sentAt 缺失恒不过期', () => {
+    const quote = buildQuote({ status: 'sent', sentAt: undefined });
+    expect(isExpired(quote, '2030-01-01')).toBe(false);
   });
 });

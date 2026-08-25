@@ -522,5 +522,186 @@ export function buildInitialContracts(): Contract[] {
     updatedAt: '2026-06-04 10:00',
   };
 
-  return [contract1, contract2, contract3, contract4, contract5, contract9, contract6, contract7, contract8];
+  // ====== 6 条真实未交付项目合同（2026-08-25 进度汇报） ======
+
+  // 合同 10: 智能家居系统 - 逾期130天
+  const contract10Form = buildFormData({
+    contractName: '智能家居系统开发合同',
+    customerName: '智能家居客户',
+    productCategory: '软件开发',
+    totalAmount: 88000,
+    signDate: '2026-02-09',
+    effectiveDate: '2026-02-09',
+    endDate: '2026-04-10',
+    paymentPlans: [
+      { period: 1, periodName: '首付款', amount: 26400, percentage: 30, expectedDate: '2026-02-12', expectedDateType: 'natural', expectedDays: 3, condition: '合同签订3个自然日' },
+      { period: 2, periodName: 'UI确认款', amount: 26400, percentage: 30, expectedDate: '2026-04-24', expectedDateType: 'natural', expectedDays: 3, condition: 'UI确认3个自然日内' },
+      { period: 3, periodName: '验收款', amount: 26400, percentage: 30, expectedDate: '2026-09-10', expectedDateType: 'natural', condition: '开发完成并上线，通过客户验收' },
+      { period: 4, periodName: '尾款', amount: 8800, percentage: 10, expectedDate: '2026-09-25', expectedDateType: 'natural', expectedDays: 14, condition: '上线两周后' },
+    ],
+    templateId: 'software_sales',
+  });
+  const contract10: Contract = {
+    id: '10', contractNo: 'HT202602010', status: 'archived',
+    current: contract10Form,
+    versionHistory: [buildVersionFromForm('V1', contract10Form, '首次保存草稿', '2026-02-09 09:00')],
+    approvalFlow: [approved('发起申请', '严总', '2026-02-09 09:00'), approved('总经理审批', '赵总', '2026-02-09 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-02-09 10:00',
+    archivedScans: [], createdAt: '2026-02-09 09:00', createdBy: '严总', updatedAt: '2026-08-25 15:00',
+    receivedAmount: 52800, receivableAmount: 35200, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-10-1', contractId: '10', period: 1, amount: 26400, date: '2026-02-12', method: '银行转账', note: '首期款30%已支付' },
+      { id: 'col-10-2', contractId: '10', period: 2, amount: 26400, date: '2026-04-24', method: '银行转账', note: '二期款30%已支付（UI确认后）' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'overdue' as PaymentStatus,
+  };
+
+  // 合同 11: 智能酒店一期 - 逾期80天
+  const contract11Form = buildFormData({
+    contractName: '智能酒店一期开发合同',
+    customerName: '智能酒店客户',
+    productCategory: '软件开发',
+    totalAmount: 80000,
+    signDate: '2026-04-20',
+    effectiveDate: '2026-04-20',
+    endDate: '2026-06-04',
+    paymentPlans: [
+      { period: 1, periodName: '首付款', amount: 48000, percentage: 60, expectedDate: '2026-04-23', expectedDateType: 'workday', expectedDays: 3, condition: '合同签订后3个工作日' },
+      { period: 2, periodName: '验收款', amount: 16000, percentage: 20, expectedDate: '2026-09-25', expectedDateType: 'natural', expectedDays: 3, condition: '验收后3个自然日' },
+      { period: 3, periodName: '尾款', amount: 16000, percentage: 20, expectedDate: '2026-10-25', expectedDateType: 'natural', expectedDays: 30, condition: '上线1个月' },
+    ],
+    templateId: 'software_sales',
+  });
+  const contract11: Contract = {
+    id: '11', contractNo: 'HT202604011', status: 'archived',
+    current: contract11Form,
+    versionHistory: [buildVersionFromForm('V1', contract11Form, '首次保存草稿', '2026-04-20 09:00')],
+    approvalFlow: [approved('发起申请', '严总', '2026-04-20 09:00'), approved('总经理审批', '赵总', '2026-04-20 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-04-20 10:00',
+    archivedScans: [], createdAt: '2026-04-20 09:00', createdBy: '严总', updatedAt: '2026-08-25 18:20',
+    receivedAmount: 48000, receivableAmount: 32000, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-11-1', contractId: '11', period: 1, amount: 48000, date: '2026-04-22', method: '银行转账', note: '首期款60%已支付' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'upcoming' as PaymentStatus,
+  };
+
+  // 合同 12: 中铁信息化安全平台 - 即将逾期
+  const contract12Form = buildFormData({
+    contractName: '中铁信息化安全平台开发合同',
+    customerName: '中铁客户',
+    productCategory: '软件开发',
+    totalAmount: 23000,
+    signDate: '2026-06-03',
+    effectiveDate: '2026-06-03',
+    endDate: '2026-08-02',
+    paymentPlans: [
+      { period: 1, periodName: '首付款', amount: 11500, percentage: 50, expectedDate: '2026-06-24', expectedDateType: 'workday', expectedDays: 15, condition: '合同签订后15个工作日' },
+      { period: 2, periodName: '验收款', amount: 9200, percentage: 40, expectedDate: '2026-07-24', expectedDateType: 'workday', expectedDays: 15, condition: '验收后15个工作日' },
+      { period: 3, periodName: '尾款', amount: 2300, percentage: 10, expectedDate: '2026-09-10', expectedDateType: 'natural', expectedDays: 14, condition: '上线到正式2周后' },
+    ],
+    templateId: 'software_sales',
+  });
+  const contract12: Contract = {
+    id: '12', contractNo: 'HT202606012', status: 'archived',
+    current: contract12Form,
+    versionHistory: [buildVersionFromForm('V1', contract12Form, '首次保存草稿', '2026-06-03 09:00')],
+    approvalFlow: [approved('发起申请', '王进', '2026-06-03 09:00'), approved('总经理审批', '赵总', '2026-06-03 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-06-03 10:00',
+    archivedScans: [], createdAt: '2026-06-03 09:00', createdBy: '王进', updatedAt: '2026-08-25 17:00',
+    receivedAmount: 20700, receivableAmount: 2300, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-12-1', contractId: '12', period: 1, amount: 11500, date: '2026-06-16', method: '银行转账', note: '首期款50%已支付' },
+      { id: 'col-12-2', contractId: '12', period: 2, amount: 9200, date: '2026-07-24', method: '银行转账', note: '验收款40%已支付' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'upcoming' as PaymentStatus,
+  };
+
+  // 合同 13: 小红书插件 - 开发中
+  const contract13Form = buildFormData({
+    contractName: '小红书插件开发合同',
+    customerName: '小红书插件客户',
+    productCategory: '软件开发',
+    totalAmount: 20000,
+    signDate: '2026-08-13',
+    effectiveDate: '2026-08-13',
+    endDate: '2026-09-12',
+    paymentPlans: [
+      { period: 1, periodName: '首付款', amount: 10000, percentage: 50, expectedDate: '2026-08-13', expectedDateType: 'fixed', condition: '合同签订当日' },
+      { period: 2, periodName: '验收款', amount: 8000, percentage: 40, expectedDate: '2026-08-15', expectedDateType: 'fixed', condition: '验收通过' },
+      { period: 3, periodName: '尾款', amount: 2000, percentage: 10, expectedDate: '2026-09-15', expectedDateType: 'natural', condition: '上线后' },
+    ],
+    templateId: 'software_sales',
+  });
+  const contract13: Contract = {
+    id: '13', contractNo: 'HT202608013', status: 'archived',
+    current: contract13Form,
+    versionHistory: [buildVersionFromForm('V1', contract13Form, '首次保存草稿', '2026-08-13 09:00')],
+    approvalFlow: [approved('发起申请', '张三', '2026-08-13 09:00'), approved('总经理审批', '赵总', '2026-08-13 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-08-13 10:00',
+    archivedScans: [], createdAt: '2026-08-13 09:00', createdBy: '张三', updatedAt: '2026-08-25 10:00',
+    receivedAmount: 10000, receivableAmount: 10000, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-13-1', contractId: '13', period: 1, amount: 10000, date: '2026-08-13', method: '银行转账', note: '首期款50%已支付' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'normal' as PaymentStatus,
+  };
+
+  // 合同 14: 汽车配件索赔 - 验收中
+  const contract14Form = buildFormData({
+    contractName: '汽车配件索赔系统开发合同',
+    customerName: '汽车配件客户',
+    productCategory: '软件开发',
+    totalAmount: 18000,
+    signDate: '2026-07-30',
+    effectiveDate: '2026-07-30',
+    endDate: '2026-09-03',
+    paymentPlans: [
+      { period: 1, periodName: '首付款', amount: 9000, percentage: 50, expectedDate: '2026-07-31', expectedDateType: 'natural', expectedDays: 1, condition: '合同签订次日' },
+      { period: 2, periodName: '验收款', amount: 7200, percentage: 40, expectedDate: '2026-09-05', expectedDateType: 'fixed', condition: '验收通过' },
+      { period: 3, periodName: '尾款', amount: 1800, percentage: 10, expectedDate: '2026-09-20', expectedDateType: 'natural', expectedDays: 17, condition: '上线运行2周后3个工作日' },
+    ],
+    templateId: 'software_sales',
+  });
+  const contract14: Contract = {
+    id: '14', contractNo: 'HT202607014', status: 'archived',
+    current: contract14Form,
+    versionHistory: [buildVersionFromForm('V1', contract14Form, '首次保存草稿', '2026-07-30 09:00')],
+    approvalFlow: [approved('发起申请', '吴丹丹', '2026-07-30 09:00'), approved('总经理审批', '赵总', '2026-07-30 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-07-30 10:00',
+    archivedScans: [], createdAt: '2026-07-30 09:00', createdBy: '吴丹丹', updatedAt: '2026-08-25 10:00',
+    receivedAmount: 9000, receivableAmount: 9000, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-14-1', contractId: '14', period: 1, amount: 9000, date: '2026-07-31', method: '银行转账', note: '首期款50%已支付' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'upcoming' as PaymentStatus,
+  };
+
+  // 合同 15: 重庆B端一期 - 催款中
+  const contract15Form = buildFormData({
+    contractName: '重庆B端一期开发合同',
+    customerName: '重庆B端客户',
+    productCategory: '软件开发',
+    totalAmount: 50000,
+    signDate: '2026-06-01',
+    effectiveDate: '2026-06-01',
+    endDate: '2026-08-15',
+    paymentPlans: buildPaymentPlans(50000, [50, 40, 10]),
+    templateId: 'software_sales',
+  });
+  const contract15: Contract = {
+    id: '15', contractNo: 'HT202606015', status: 'archived',
+    current: contract15Form,
+    versionHistory: [buildVersionFromForm('V1', contract15Form, '首次保存草稿', '2026-06-01 09:00')],
+    approvalFlow: [approved('发起申请', '黄奕', '2026-06-01 09:00'), approved('总经理审批', '赵总', '2026-06-01 10:00')],
+    approvedVersionNo: 'V1', approvedAt: '2026-06-01 10:00',
+    archivedScans: [], createdAt: '2026-06-01 09:00', createdBy: '黄奕', updatedAt: '2026-08-25 10:00',
+    receivedAmount: 25000, receivableAmount: 25000, executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'col-15-1', contractId: '15', period: 1, amount: 25000, date: '2026-06-05', method: '银行转账', note: '首期款50%已支付' },
+    ],
+    paymentBlockers: [], dunningRecords: [], paymentStatus: 'overdue' as PaymentStatus,
+  };
+
+  return [contract1, contract2, contract3, contract4, contract5, contract9, contract6, contract7, contract8, contract10, contract11, contract12, contract13, contract14, contract15];
 }

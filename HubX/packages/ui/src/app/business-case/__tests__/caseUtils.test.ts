@@ -2,10 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPresalesTimeline,
   buildUnconfirmedProject,
+  canReassignProject,
+  canReturnToLead,
   confirmProject,
+  customerPartyMismatch,
   filterProjectsForViewer,
+  isInternalProject,
   isVisibleToProductManager,
   leadProjectBanner,
+  projectBudgetAlert,
+  reassignProductManager,
+  shelveProject,
   shouldSpawnUnconfirmedProject,
   spawnUnconfirmedProject,
   startDelivery,
@@ -346,5 +353,119 @@ describe('buildPresalesTimeline', () => {
     expect(events).toHaveLength(1);
     expect(events[0].type).toBe('lead');
     expect(events[0].title).toBe('线索创建');
+  });
+});
+
+describe('canReturnToLead 退回线索', () => {
+  it('未确认项目可退回', () => {
+    expect(canReturnToLead({ status: '未确认' }, []).allowed).toBe(true);
+  });
+
+  it('未开始且无未作废合同可退回', () => {
+    expect(
+      canReturnToLead({ status: '未开始' }, [{ id: 'c1', status: 'voided' }]).allowed,
+    ).toBe(true);
+  });
+
+  it('未开始但有未作废合同不可退回', () => {
+    const result = canReturnToLead({ status: '未开始' }, [{ id: 'c1', status: 'approved' }]);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain('未作废');
+  });
+
+  it('进行中不可退回', () => {
+    const result = canReturnToLead({ status: '进行中' }, []);
+    expect(result.allowed).toBe(false);
+  });
+
+  it('已完成不可退回', () => {
+    expect(canReturnToLead({ status: '已完成' }, []).allowed).toBe(false);
+  });
+
+  it('搁置不可退回', () => {
+    expect(canReturnToLead({ status: '搁置' }, []).allowed).toBe(false);
+  });
+});
+
+describe('shelveProject 主合同作废→搁置', () => {
+  it('进行中且绑定该合同 → 搁置', () => {
+    const result = shelveProject({ project: { status: '进行中', contractId: 'c1' }, contractId: 'c1' });
+    expect(result).not.toBeNull();
+    expect(result!.status).toBe('搁置');
+    expect(result!.latestProgress).toContain('作废');
+  });
+
+  it('进行中但绑其他合同 → 不动', () => {
+    expect(shelveProject({ project: { status: '进行中', contractId: 'c2' }, contractId: 'c1' })).toBeNull();
+  });
+
+  it('未确认 → 不动', () => {
+    expect(shelveProject({ project: { status: '未确认' }, contractId: 'c1' })).toBeNull();
+  });
+
+  it('未开始 → 不动', () => {
+    expect(shelveProject({ project: { status: '未开始', contractId: 'c1' }, contractId: 'c1' })).toBeNull();
+  });
+});
+
+describe('U5 改指产品经理', () => {
+  it('admin + 未开始 → 可改指', () => {
+    expect(canReassignProject({ status: '未开始' }, { isAdmin: true })).toBe(true);
+  });
+
+  it('admin + 进行中 → 可改指', () => {
+    expect(canReassignProject({ status: '进行中' }, { isAdmin: true })).toBe(true);
+  });
+
+  it('admin + 未确认 → 不可改指', () => {
+    expect(canReassignProject({ status: '未确认' }, { isAdmin: true })).toBe(false);
+  });
+
+  it('非 admin → 不可改指', () => {
+    expect(canReassignProject({ status: '未开始' }, { isAdmin: false })).toBe(false);
+  });
+
+  it('reassignProductManager 联动 owner', () => {
+    const result = reassignProductManager({ productUsers: ['旧PM'], owner: '旧PM' }, '新PM');
+    expect(result.productUsers).toEqual(['新PM']);
+    expect(result.owner).toBe('新PM');
+  });
+
+  it('reassignProductManager 空名抛错', () => {
+    expect(() => reassignProductManager({ productUsers: [], owner: '' }, '  ')).toThrow();
+  });
+});
+
+describe('U5 客户/甲方黄灯', () => {
+  it('两侧非空且不等 → true', () => {
+    expect(customerPartyMismatch('和昇塑料', '中科软艺')).toBe(true);
+  });
+
+  it('两侧相同 → false', () => {
+    expect(customerPartyMismatch('和昇塑料', '和昇塑料')).toBe(false);
+  });
+
+  it('任一侧空 → false', () => {
+    expect(customerPartyMismatch('', '中科软艺')).toBe(false);
+    expect(customerPartyMismatch('和昇塑料', undefined)).toBe(false);
+  });
+});
+
+describe('U6 内部项目', () => {
+  it('无 leadId 且无 contractId → 内部项目', () => {
+    expect(isInternalProject({})).toBe(true);
+    expect(isInternalProject({ leadId: undefined, contractId: undefined })).toBe(true);
+  });
+
+  it('有 leadId → 非内部', () => {
+    expect(isInternalProject({ leadId: 'lead-1' })).toBe(false);
+  });
+
+  it('有 contractId → 非内部', () => {
+    expect(isInternalProject({ contractId: 'c1' })).toBe(false);
+  });
+
+  it('内部项目预算告警豁免', () => {
+    expect(projectBudgetAlert({})).toBe('none');
   });
 });

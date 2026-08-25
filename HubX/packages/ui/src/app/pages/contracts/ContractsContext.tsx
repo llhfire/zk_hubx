@@ -50,7 +50,7 @@ interface ContractsContextValue {
   uploadWordContract: (id: string, file: Omit<UploadedWordContract, 'uploadedAt' | 'uploadedBy'>) => Promise<void>;
   setPrimaryScan: (id: string, entryId: string) => Promise<void>;
   voidContract: (id: string, reason: string) => Promise<void>;
-  addCollection: (contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'>) => Promise<void>;
+  addCollection: (contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'> & { id?: string }) => Promise<boolean>;
   addBlocker: (contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>) => Promise<void>;
   resolveBlocker: (contractId: string, blockerId: string) => Promise<void>;
   addDunning: (contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>) => Promise<void>;
@@ -119,7 +119,11 @@ export function ContractsProvider({ children, service }: ContractsProviderProps)
   const uploadWordContract = useCallback(async (id: string, file: Omit<UploadedWordContract, 'uploadedAt' | 'uploadedBy'>) => { await svc.uploadWordContract(id, file); await refresh(); }, [svc, refresh]);
   const setPrimaryScan = useCallback(async (id: string, entryId: string) => { await svc.setPrimaryScan(id, entryId); await refresh(); }, [svc, refresh]);
   const voidContract = useCallback(async (id: string, reason: string) => { await svc.voidContract(id, reason); await refresh(); }, [svc, refresh]);
-  const addCollection = useCallback(async (contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'>) => { await svc.addCollection(contractId, record); await refresh(); }, [svc, refresh]);
+  const addCollection = useCallback(async (contractId: string, record: Omit<CollectionRecord, 'id' | 'contractId'> & { id?: string }) => {
+    const ok = await svc.addCollection(contractId, record);
+    await refresh(); // 无论 true/false 都 refresh（409 后必须拉到新 version）
+    return ok;
+  }, [svc, refresh]);
   const addBlocker = useCallback(async (contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>) => { await svc.addBlocker(contractId, blocker); await refresh(); }, [svc, refresh]);
   const resolveBlocker = useCallback(async (contractId: string, blockerId: string) => { await svc.resolveBlocker(contractId, blockerId); await refresh(); }, [svc, refresh]);
   const addDunning = useCallback(async (contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>) => { await svc.addDunning(contractId, record); await refresh(); }, [svc, refresh]);

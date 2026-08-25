@@ -15,15 +15,51 @@ import {
   setModuleNote,
   setPlannedStatus,
   toggleAlphaCheck,
+  toggleFeatureAlphaCheck,
+  markAlphaUpdate,
   toggleProductionSwitch,
 } from '../featureBoardModel';
 import { VERSION_URLS } from '../versionMatrix';
 import type { Domain, ExistingFeature } from '../featureBoardModel';
 
 describe('featureBoardModel', () => {
-  it('seed board has 39 modules across 8 domains in priority order', () => {
+  it('每个已有功能拥有独立 alpha 检查项与版本级 alpha 元数据', () => {
     const board = createSeedBoard();
-    expect(board.modules).toHaveLength(39);
+    const feature = board.modules.find(m => m.features.length > 0)!.features[0];
+    expect(feature.alpha).toEqual({ '页面场景': false, '功能流程': false, 'UX 优化': false });
+    expect(board.alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
+  });
+
+  it('normalize migrates old module alpha and missing feature/meta fields', () => {
+    const normalized = normalizeFeatureBoard({ modules: [{ module: '报价工作台', alpha: { '页面场景': true, '功能流程': false, 'UX 优化': true }, features: [{ name: 'Stage1 功能清单', description: '说明' }], planned: [], beta: { productionOn: false, devStatus: '未开始' } }] });
+    expect(normalized.alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
+    expect(normalized.modules[0].features[0].alpha).toEqual({ '页面场景': false, '功能流程': false, 'UX 优化': false });
+    expect(isValidFeatureBoard(normalized)).toBe(true);
+  });
+
+  it('normalize keeps missing legacy features empty and produces a valid migrated board', () => {
+    const normalized = normalizeFeatureBoard({ modules: [{ module: '报价工作台', planned: [], beta: { productionOn: false, devStatus: '未开始' } }] });
+    expect(normalized.modules[0].features).toEqual([]);
+    expect(isValidFeatureBoard(normalized)).toBe(true);
+  });
+
+  it('toggles a single existing feature alpha check without changing other features', () => {
+    const board = createSeedBoard();
+    const module = board.modules.find(m => m.features.length > 1)!;
+    const next = toggleFeatureAlphaCheck(board, module.module, module.features[0].name, '页面场景');
+    expect(next.modules.find(m => m.module === module.module)!.features[0].alpha.页面场景).toBe(true);
+    expect(next.modules.find(m => m.module === module.module)!.features[1].alpha.页面场景).toBe(false);
+  });
+
+  it('marks alpha update explicitly and leaves checklist updates uncounted', () => {
+    const board = createSeedBoard();
+    const counted = markAlphaUpdate(board, '2026-08-24');
+    expect(counted.alphaMeta).toEqual({ updateCount: 1, lastUpdatedAt: '2026-08-24' });
+    expect(counted.alphaMeta.updateCount).toBe(1);
+  });
+  it('seed board has 40 modules across 8 domains in priority order', () => {
+    const board = createSeedBoard();
+    expect(board.modules).toHaveLength(40);
 
     // 领域优先级：销售→交付→财务→获客→支撑→跨域→资源→运维
     const domainOrder: Domain[] = ['销售域', '交付域', '财务域', '获客域', '支撑域', '跨域工具', '资源域', '运维域'];

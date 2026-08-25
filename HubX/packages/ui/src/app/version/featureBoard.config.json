@@ -8,31 +8,66 @@
       "features": [
         {
           "name": "五池流转",
-          "description": "LeadList（公海/我的/全部/已成交/垃圾）：线索类型独立维度（public/assigned/trash/hightech），8态销售漏斗，快捷筛选（今日未跟进/S类/AB类/超期），标红规则。"
+          "description": "LeadList（公海/我的/全部/已成交/垃圾）：线索类型独立维度（public/assigned/trash/hightech），8态销售漏斗，快捷筛选（今日未跟进/S类/AB类/超期），标红规则。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "线索详情",
-          "description": "LeadDetail：基础信息+客户等级(S/A/B/C)+意向等级+线索类型+附件，跟进记录时间线（24h修改删除限制），报价 Tab，合同关联，操作按钮（领取/分配/退回/标记垃圾/软删除/转客户）。"
+          "description": "LeadDetail360（/leads/:id）：70:30 分栏，6步生命周期+6维胶囊。右侧报价页签新建报价/进入工作台（createQuote+QuotationWorkbench 抽屉）；合同记录页签新建合同进向导（/contracts/new + leadContractPrefill）。跟进/演示/资料/出差/报销。操作：领取/分配/退回/标记垃圾。",
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         },
         {
           "name": "线索跟进记录",
-          "description": "跟进方式/客户状态/客户级别/跟进内容(max1000)/下次跟进时间/附件。自动同步线索状态和客户等级。4分类Tab（全部/今日待跟进/今日已跟进/超期未跟进）。"
+          "description": "跟进方式/客户状态/客户级别/跟进内容(max1000)/下次跟进时间/附件。自动同步线索状态和客户等级。4分类Tab（全部/今日待跟进/今日已跟进/超期未跟进）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "线索操作规则",
-          "description": "领取(→assigned)/分配(批量+原因)/退回公海(第3次自动垃圾)/标记垃圾/软删除/转客户(自动填充+同步跟进)。重复检查(新增+修改)。"
+          "description": "领取(→assigned)/分配(批量+原因)/退回公海(第3次自动垃圾)/标记垃圾/软删除/转客户(自动填充+同步跟进)。重复检查(新增+修改)。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "线索治理",
-          "description": "LeadGovernance：重复线索合并、线索状态批量操作、分配规则配置。"
+          "description": "LeadGovernance：重复线索合并、线索状态批量操作、分配规则配置。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "售前群沟通分析",
-          "description": "vite 中间件 wx-cli-bridge：wx CLI 导出企微售前群聊天记录，DeepSeek 做沟通总结。"
+          "description": "vite 中间件 wx-cli-bridge：wx CLI 导出企微售前群聊天记录，DeepSeek 做沟通总结。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目执行综合视图",
-          "description": "LeadProjectExecutionPanel：项目确认指派后线索详情新增「项目执行」主 Tab，展示项目概况（状态/进度/负责人/最新进展）、项目日报（工时汇总+日报列表）与任务管理，可一键打开项目详情；项目状态读取共享 ProjectContext，管理员确认指派后即时同步。"
+          "description": "LeadProjectExecutionPanel：项目确认指派后线索详情新增「项目执行」主 Tab，展示项目概况（状态/进度/负责人/最新进展）、项目日报（工时汇总+日报列表）与任务管理，可一键打开项目详情；项目状态读取共享 ProjectContext，管理员确认指派后即时同步。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -42,15 +77,19 @@
         },
         {
           "name": "签约开启时生成未确认项目",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "线索侧合同/回款入口（草稿即可引用）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "管理员退回线索（未确认或未开始无合同）",
-          "status": "已设计"
+          "status": "α 已实现"
+        },
+        {
+          "name": "线索域接缝（LeadService mock/http 双实现+服务端校验）",
+          "status": "未开始"
         }
       ],
       "alpha": {
@@ -59,10 +98,10 @@
         "UX 优化": false
       },
       "beta": {
-        "productionOn": false,
-        "devStatus": "未开始"
+        "productionOn": true,
+        "devStatus": "编码中"
       },
-      "note": "三视角销售侧。立项改回签约开启 spawn（洽谈/已签单/主合同草稿），不再只挂 approvedAt。计划：计划/当前/unified-view-implementation.md"
+      "note": "三视角销售侧。立项改回签约开启 spawn（洽谈/已签单/主合同草稿），不再只挂 approvedAt。计划：计划/当前/unified-view-implementation.md；β 接入计划：计划/当前/beta-foundation-dev-plan.md"
     },
     {
       "module": "报价工作台",
@@ -72,37 +111,72 @@
       "features": [
         {
           "name": "Stage1 功能清单",
-          "description": "两级模块+子功能（数据流转可挂端/平台）。Excel 导入导出。提交评估前至少一行。文件流转按标准五列解析。"
+          "description": "两级模块+子功能（数据流转可挂端/平台）。Excel 导入导出。提交评估前至少一行。文件流转按标准五列解析。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "Stage2 人天评估",
-          "description": "数据流转：岗位人天、切片、WASD。文件流转：评估文件+评估工期+总人天。主报价完成评估人天须>0。"
+          "description": "数据流转：岗位人天、切片、WASD。文件流转：评估文件+评估工期+总人天。主报价完成评估人天须>0。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "Stage3 销售报价",
-          "description": "增项、工期（工作日）、付款期次、含税总价。利润率是统计项不是输入。现网仍为 Stage3WebAutomation，将按 PRD 收口。"
+          "description": "增项、工期（工作日）、付款期次、含税总价。利润率是统计项不是输入。现网仍为 Stage3WebAutomation，将按 PRD 收口。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "Stage4 审批盖章",
-          "description": "目标：提交时拍审批配置快照，会签通过→待盖章→已盖章。现网仍写死三人会签。已确认后生成合同向导（阶段3已接）。"
+          "description": "目标：提交时拍审批配置快照，会签通过→待盖章→已盖章。现网仍写死三人会签。已确认后生成合同向导（阶段3已接）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "报价状态机",
-          "description": "现网 13 态。目标：草稿/待评估/待报价/待审核/已驳回/待盖章/已盖章/已发出/已确认/已废止；过期为已发出标记。见 ADR 0001–0065。"
+          "description": "现网 13 态。目标：草稿/待评估/待报价/待审核/已驳回/待盖章/已盖章/已发出/已确认/已废止；过期为已发出标记。见 ADR 0001–0065。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "角色切换器",
-          "description": "RoleSwitcher：6 角色模拟。目标责任人改为本单评估人/销售（配置默认，可改指）。"
+          "description": "RoleSwitcher：6 角色模拟。目标责任人改为本单评估人/销售（配置默认，可改指）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "报价中心",
-          "description": "QuotationCenter：列表。目标按新状态筛+待我处理+过期标记，无已完成桶。"
+          "description": "QuotationCenter：列表。目标按新状态筛+待我处理+过期标记，无已完成桶。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
         {
           "name": "状态机按 PRD 收口（已确认/已废止/过期标记）",
-          "status": "未开始"
+          "status": "α 已实现"
         },
         {
           "name": "数据流转与文件流转双来源",
@@ -110,23 +184,23 @@
         },
         {
           "name": "会签盖章读审批配置快照",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "客户报价单按中科标准件",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "文件流转在线文档+扫描件",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "利润率统计与岗位日成本配置",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "报价模板（增项/日成本/工期）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "责任人/通知/列表/权限按配置",
@@ -142,7 +216,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "PRD grill 已收束（CONTEXT + ADR 0001–0065）；4.1 词表收口+回退动作已完成；4.2 责任人/权限/列表/过期标记已完成。β 已上线 http+D1，复合接口后置。"
+      "note": "PRD grill 已收束（CONTEXT + ADR 0001–0065）；4.1 词表收口+回退动作+迁移函数已完成；4.2 责任人/权限/列表/过期标记已完成；4.3 计价纯函数+自费排除+severity 已完成；4.4 审批快照构建器+configStore 对接已完成；4.5 文件流转纯函数+UI 组件已完成；4.6 PDF 模板已完成；4.7 补充报价纯函数已完成。β 已上线 http+D1，复合接口后置。"
     },
     {
       "module": "客户与报价基础",
@@ -152,11 +226,21 @@
       "features": [
         {
           "name": "客户列表",
-          "description": "Customers.tsx：客户基础信息管理，按行业/规模/来源筛选。"
+          "description": "Customers.tsx：客户基础信息管理，按行业/规模/来源筛选。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "客户详情",
-          "description": "CustomerDetail.tsx：客户基本信息、关联线索/合同列表、联系人管理。"
+          "description": "CustomerDetail.tsx：客户基本信息、关联线索/合同列表、联系人管理。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -192,35 +276,75 @@
       "features": [
         {
           "name": "合同创建（带入线索）",
-          "description": "ContractWizard.tsx：新建合同自动带入线索基础信息。"
+          "description": "ContractWizard.tsx：新建合同自动带入线索基础信息。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同多版本管理",
-          "description": "ContractEditor.tsx：编辑自动生成新版本，历史版本只读对比。"
+          "description": "ContractEditor.tsx：编辑自动生成新版本，历史版本只读对比。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同审批流",
-          "description": "总经理单节点审批（P0① 已收敛），意见留痕，审批通过→释放回款 Tab。"
+          "description": "总经理单节点审批（P0① 已收敛），意见留痕，审批通过→释放回款 Tab。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同归档",
-          "description": "archiveFinalContract：审批通过后上传归档文件，支持多附件。"
+          "description": "archiveFinalContract：审批通过后上传归档文件，支持多附件。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "补充协议（将废弃）",
-          "description": "现网：合同详情填变更金额。目标：废止该对象，改为补充报价→已确认→向导生成补充合同（ADR 0008）。"
+          "description": "现网：合同详情填变更金额。目标：废止该对象，改为补充报价→已确认→向导生成补充合同（ADR 0008）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同列表",
-          "description": "ContractKanban.tsx：合同看板视图，编号自动生成（ZK-C-YYYYMMDD-NNN）。"
+          "description": "ContractKanban.tsx：合同看板视图，编号自动生成（ZK-C-YYYYMMDD-NNN）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同付款看板",
-          "description": "PaymentKanban.tsx / PaymentKanbanV2.tsx：回款期次可视化看板。"
+          "description": "PaymentKanban.tsx / PaymentKanbanV2.tsx：回款期次可视化看板。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "已确认生成主合同",
-          "description": "报价终态已确认（非成交/已签约）。Stage4 显示「生成主合同」→ 向导预填（含税总额/付款期次/工作日工期/质保/发票/主体）人工确认后创建，回写 quote.contractId。对应合同作废后可再生成；有未作废合同时不能废止该报价。"
+          "description": "报价终态已确认（非成交/已签约）。Stage4 显示「生成主合同」→ 向导预填（含税总额/付款期次/工作日工期/质保/发票/主体）人工确认后创建，回写 quote.contractId。对应合同作废后可再生成；有未作废合同时不能废止该报价。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -230,11 +354,11 @@
         },
         {
           "name": "多份补充报价/补充合同列表",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "需求变更闭环（补充报价→补充合同）",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "废弃补充协议对象",
@@ -292,7 +416,7 @@
       "planned": [
         {
           "name": "Excel 双向导入导出",
-          "status": "已调研"
+          "status": "已设计"
         },
         {
           "name": "版本 Diff 对比",
@@ -330,41 +454,76 @@
       "features": [
         {
           "name": "项目基础信息",
-          "description": "ProjectDetailWorkspace.tsx：名称/状态/负责人/时间，关联合同与回款。"
+          "description": "ProjectDetail360（/projects/:id）：对齐线索详情 70:30 结构。头部控制台（元数据+生命周期Steps+6维指标胶囊）；左侧档案卡+主Tab（基础信息/合同信息/回款与发票/团队与工时/日报/任务管理/项目动态）；右侧次级Tab（跟进/报价/合同记录/售前历程/会议纪要/演示/资料/出差/报销）。项目列表走 ProjectService（α mock / β http）；B3 spawn 的项目不在 PROJECT_LIST 时用 deriveProjectViewMetrics 兜底。报价接 QuotationContext，合同接 ContractsContext，回款期次读合同 paymentPlans，实收台账读 CollectionService，任务/日报/会议/确认书/演示环境按 projectId 接共享台账。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目任务管理",
-          "description": "ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。"
+          "description": "ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目成本核算",
-          "description": "ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。"
+          "description": "ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目报价配置",
-          "description": "ProjectQuotationConfigurator.tsx：项目与报价关联配置。"
+          "description": "ProjectQuotationConfigurator.tsx：项目与报价关联配置。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目质量面板",
-          "description": "ProjectQualityPanel.tsx：项目质量指标跟踪。"
+          "description": "ProjectQualityPanel.tsx：项目质量指标跟踪。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目售前历程",
-          "description": "ProjectPresalesHistoryPanel：项目详情右侧新增「售前历程」Tab（只增不删），上半部分为售前交接包（线索名称/客户称呼/售前群/原型链接/初始需求等，随项目确认带入），下半部分用 buildPresalesTimeline 纯函数聚合线索创建、售前跟进、报价、合同为时间倒序时间线，全量只读。"
+          "description": "ProjectPresalesHistoryPanel：项目详情右侧新增「售前历程」Tab（只增不删），上半部分为售前交接包（线索名称/客户称呼/售前群/原型链接/初始需求等，随项目确认带入），下半部分用 buildPresalesTimeline 纯函数聚合线索创建、售前跟进、报价、合同为时间倒序时间线，全量只读。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "交付启动（合同批准自动拉起）",
-          "description": "合同批准启动交付：未开始/搁置 → 进行中 + SOP 计划。未确认项目改在签约开启时 spawn，批准不再第一次立项。主合同作废则进行中改为搁置。"
+          "description": "合同批准启动交付：未开始/搁置 → 进行中 + SOP 计划。未确认项目改在签约开启时 spawn，批准不再第一次立项。主合同作废则进行中改为搁置。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
         {
           "name": "未确认项目与管理员指派产品经理",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "产品经理默认列表隐藏未确认/未指派",
-          "status": "已设计"
+          "status": "α 已实现"
         },
         {
           "name": "售前历程交接包（跟进/会议/演示/资料只读）",
@@ -372,11 +531,23 @@
         },
         {
           "name": "管理员退回线索 / 改指产品经理",
+          "status": "α 已实现"
+        },
+        {
+          "name": "项目详情原型样式对齐（智能诊断抽屉/大事记收敛/1主多补卡片化/回款合并台账/岗位工时表/日报CSV导出）",
           "status": "已设计"
         },
         {
           "name": "主合同作废则进行中项目搁置",
-          "status": "已设计"
+          "status": "α 已实现"
+        },
+        {
+          "name": "签约开启联动服务端化（ADR-0093，Workers 内 spawn/交付/SOP）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "项目域接缝（ProjectService mock/http 双实现）",
+          "status": "α 已实现"
         }
       ],
       "alpha": {
@@ -386,9 +557,9 @@
       },
       "beta": {
         "productionOn": false,
-        "devStatus": "未开始"
+        "devStatus": "编码中"
       },
-      "note": "三视角产品侧。签约开启出未确认；批准只开工；作废主合同则搁置。计划：计划/当前/unified-view-implementation.md"
+      "note": "三视角产品侧。签约开启出未确认；批准只开工（ADR-0067/0095）。B4 ProjectService 已接；合同创建 spawn 归 B5 洞 C；洽谈无合同 spawn 归 U1（Lead 写时，禁止页面 addProject）。"
     },
     {
       "module": "日报工时",
@@ -398,27 +569,57 @@
       "features": [
         {
           "name": "日报填写",
-          "description": "DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。"
+          "description": "DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "日报列表",
-          "description": "DailyReportList：按日期/成员/项目筛选，支持导出。"
+          "description": "DailyReportList：按日期/成员/项目筛选，支持导出。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "日报视图",
-          "description": "DailyReportView：个人日报查看与编辑，工作归属选择。"
+          "description": "DailyReportView：个人日报查看与编辑，工作归属选择。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目视图",
-          "description": "ProjectLogView：按项目维度查看团队日报汇总。"
+          "description": "ProjectLogView：按项目维度查看团队日报汇总。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "日报配置",
-          "description": "JobWorkConfigPage.tsx：工作种类/时薪模板/日报规则配置。"
+          "description": "JobWorkConfigPage.tsx：工作种类/时薪模板/日报规则配置。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "角色模板",
-          "description": "RoleSelectModal + SalesDaily/DevDaily/GeneralDaily/AdDeliveryDaily 四套模板。"
+          "description": "RoleSelectModal + SalesDaily/DevDaily/GeneralDaily/AdDeliveryDaily 四套模板。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -446,15 +647,30 @@
       "features": [
         {
           "name": "会议管理",
-          "description": "MeetingManagement.tsx：会议记录创建、纪要编辑、参会人管理。"
+          "description": "MeetingManagement.tsx：会议记录创建、纪要编辑、参会人管理。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "知识库",
-          "description": "KnowledgeBase.tsx：文档存储与检索，按模块分类。"
+          "description": "KnowledgeBase.tsx：文档存储与检索，按模块分类。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "售后运维",
-          "description": "MaintenanceManagement.tsx：售后工单管理，故障上报与处理。"
+          "description": "MaintenanceManagement.tsx：售后工单管理，故障上报与处理。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -552,29 +768,58 @@
       "features": [
         {
           "name": "期次拆分",
-          "description": "LeadPaymentInvoicePanel.tsx：按付款比例拆分期次，金额联动校验。"
+          "description": "LeadPaymentInvoicePanel.tsx：按付款比例拆分期次，金额联动校验。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "回款登记",
-          "description": "财务录入实际回款：金额/日期/方式/凭证/说明。"
+          "description": "财务录入实际到账款（金额/日期/方式/说明）。B4 起实收走 CollectionService（α mock 从合同 collectionRecords 抽种子 / β collections 表）；期次计划仍读合同 paymentPlans。合同详情 addCollection 仍写嵌套流水，尚未双写台账。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "状态自动计算",
-          "description": "paymentInvoiceModel.ts getPaymentPeriodMetrics：回款四态×开票三态自动计算。"
+          "description": "paymentInvoiceModel.ts getPaymentPeriodMetrics：回款四态×开票三态自动计算。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "回款权限矩阵",
-          "description": "getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。"
+          "description": "getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "合同回款 Tab",
-          "description": "原始需求：合同详情能看每一期回款状态并直接登记回款。功能流程：computePlanStatusRows 把已回款按期次顺序分摊 -> 每期标记 已收/部分到账/逾期/即将到期/待收 -> 登记回款弹窗选择期次提交 addCollection 写回 ContractsContext 并重算已回款。功能说明：paymentUtils.ts 纯函数（含 7 天缓冲口径，与看板一致）；补充协议回款登记仍在「补充」Tab（页面局部数据）。"
+          "description": "原始需求：合同详情能看每一期回款状态并直接登记回款。功能流程：computePlanStatusRows 把已回款按期次顺序分摊 -> 每期标记 已收/部分到账/逾期/即将到期/待收 -> 登记回款弹窗选择期次提交 addCollection 写回 ContractsContext 并重算已回款。功能说明：paymentUtils.ts 纯函数（含 7 天缓冲口径，与看板一致）；补充协议回款登记仍在「补充」Tab（页面局部数据）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
         {
           "name": "逾期判断（预计回款日期对比，自动标记逾期）",
           "status": "已设计"
+        },
+        {
+          "name": "回款记录与实收台账接缝（collections 表，与回款看板计划合并排期）",
+          "status": "α 已实现"
         }
       ],
       "alpha": {
@@ -584,9 +829,9 @@
       },
       "beta": {
         "productionOn": false,
-        "devStatus": "未开始"
+        "devStatus": "编码中"
       },
-      "note": "期次拆分/回款登记/状态自动计算/权限矩阵（WIP）；阶段3 合同详情新增回款 Tab（期次状态+登记回款写回 ContractsContext）"
+      "note": "期次=paymentPlans；已回读 collections（conflict-spawn-and-collections）。B4 台账已接；B5 双写纳入 P0；看板 P1–P5 后于 B5，勿按旧 paymentCalc Σ 嵌套流水。"
     },
     {
       "module": "开票管理",
@@ -596,15 +841,30 @@
       "features": [
         {
           "name": "开票申请",
-          "description": "LeadPaymentInvoicePanel.tsx：提交开票申请（发票类别/税率/金额/客户信息）。"
+          "description": "LeadPaymentInvoicePanel.tsx：提交开票申请（发票类别/税率/金额/客户信息）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "发票冲红",
-          "description": "填写冲红原因+附件，生成新的待开票记录。"
+          "description": "填写冲红原因+附件，生成新的待开票记录。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "开票审核工作台",
-          "description": "ProjectInvoicePage.tsx：Tab 切换（全部/待开票/已开票/已冲红），上传附件完成开票。"
+          "description": "ProjectInvoicePage.tsx：Tab 切换（全部/待开票/已开票/已冲红），上传附件完成开票。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -632,11 +892,21 @@
       "features": [
         {
           "name": "按人员工时成本",
-          "description": "ProjectCostPanel.tsx：工时×时薪计算人工成本，按项目/部门汇总。"
+          "description": "ProjectCostPanel.tsx：工时×时薪计算人工成本，按项目/部门汇总。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "差旅商务成本",
-          "description": "差旅报销、商务费用归集到项目成本。"
+          "description": "差旅报销、商务费用归集到项目成本。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -667,8 +937,13 @@
       "scope": "",
       "features": [
         {
-          "name": "人资费用卡片墙（待替换）",
-          "description": "HrExpenseManagement.tsx：10 类扁平费用，改金额选生效时间。将被运营费用四 Tab 替换。"
+          "name": "费用大盘 / 台账 / 周期模板 / 公摊参数",
+          "description": "OperatingExpensePage 四 Tab 已落地：确认即入账、作废不删、固定模板即入账/浮动待确认、R_hour=池÷在职编制工时。工资只看板引用。计划：计划/当前/operating-expense-dev-plan.md。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -687,18 +962,42 @@
         {
           "name": "公摊参数（池÷全公司在职编制工时）",
           "status": "α 已实现"
+        },
+        {
+          "name": "大盘双口径与八层流式堆叠",
+          "status": "α 已实现"
+        },
+        {
+          "name": "部门归口排行与项目直接支出排行",
+          "status": "α 已实现"
+        },
+        {
+          "name": "运营费用异动（三条）与台账导出",
+          "status": "α 已实现"
+        },
+        {
+          "name": "公摊公式条 + 只读公摊结果表",
+          "status": "α 已实现"
+        },
+        {
+          "name": "科目入口 Tab（系统费用分类同一棵树）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "录入抽屉发生日与按 Tab 主操作",
+          "status": "α 已实现"
         }
       ],
       "alpha": {
         "页面场景": true,
         "功能流程": true,
-        "UX 优化": false
+        "UX 优化": true
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "阶段 A–E 全部完成。12 文件完整模块 + expenseService β 骨架 + 工天日历 + getHourlyOpCost 接池"
+      "note": "A–E 已落地。2026-08-21 grill 收束菜单重构（双口径/五 Tab/只读公摊结果表/科目入口），计划：计划/当前/operating-expense-restyle.md。α UX 优化已全部编码完成。"
     },
     {
       "module": "精益交付",
@@ -708,18 +1007,44 @@
       "features": [
         {
           "name": "业务单管理",
-          "description": "CaseList/CaseDetail：CASE- 独立编号，财务交付视角聚合（报价/合同/回款/成本/EAC）。"
+          "description": "CaseList/CaseDetail：CASE- 独立编号，财务交付视角聚合（报价/合同/回款/成本/EAC）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "精益交付仪表盘",
-          "description": "Dashboard：概览统计、健康气泡图、风险预警列表（移植自 llhfire/hubX，数据链路待收口）。"
+          "description": "Dashboard：概览统计、健康气泡图、风险预警列表（移植自 llhfire/hubX，数据链路待收口）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
-        { "name": "五条数据链派生化（评估/报价/合同/回款/成本全有来源）", "status": "α 已实现" },
-        { "name": "跨域引用报价域+合同域（删平行 mock）", "status": "α 已实现" },
-        { "name": "回款口径收入+WIP/趋势双线", "status": "α 已实现" },
-        { "name": "模拟器敏感性+底线价、穿透看板派生化", "status": "α 已实现" }
+        {
+          "name": "五条数据链派生化（评估/报价/合同/回款/成本全有来源）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "跨域引用报价域+合同域（删平行 mock）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "回款口径收入+WIP/趋势双线",
+          "status": "α 已实现"
+        },
+        {
+          "name": "模拟器敏感性+底线价、穿透看板派生化",
+          "status": "α 已实现"
+        },
+        {
+          "name": "业务单详情原型重构（成本五类修订ADR-0091/1主多补演进脉络/10态轨迹/双口径全景/报价行级明细/状态推进+参数Modal/CSV导出/仪表盘补穿透看板与相似项目）",
+          "status": "α 已实现"
+        }
       ],
       "alpha": {
         "页面场景": true,
@@ -730,7 +1055,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "L1–L4 全部完成。calc.ts 纯函数层 + quoteSeam/contractSeam 接真实数据 + Dashboard/CaseList/CaseDetail 全面改造"
+      "note": "L1–L4 全部完成 + 业务单详情阶段 1+2+3 全部完成（2026-08-25）。types 新五类 ADR-0091 + calc 6 新函数 + mock case-001 补充合同链路 + contractSeam/quoteSeam 扩展 + CaseDetail 1038→350 行重构（消除 8 病灶）+ Dashboard 补穿透与相似项目 + CSV 真导出。"
     },
     {
       "module": "差旅管理",
@@ -740,32 +1065,75 @@
       "features": [
         {
           "name": "出差申请",
-          "description": "TripForm/TripList/TripDetail 6 Tab：行程段、费用预估、借款意向、审批记录（移植自 llhfire/hubX）。"
+          "description": "TripForm/TripList/TripDetail 6 Tab：行程段、费用预估、借款意向、审批记录（移植自 llhfire/hubX）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "报销与借款",
-          "description": "ReimbursementList/LoanList：报销单冲抵借款、打款状态流。"
+          "description": "ReimbursementList/LoanList：报销单冲抵借款、打款状态流。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "宿舍管理",
-          "description": "DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。"
+          "description": "DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "费用标准",
-          "description": "StandardList：版本+生效期+职级×城市等级标准明细。"
+          "description": "StandardList：版本+生效期+职级×城市等级标准明细。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "差旅看板",
-          "description": "TravelDashboard + FinanceAuditDashboard：个人/部门/项目差旅统计与财务审计。"
+          "description": "TravelDashboard + FinanceAuditDashboard：个人/部门/项目差旅统计与财务审计。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
-        { "name": "核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）", "status": "α 已实现" },
-        { "name": "审批固定流+借款金额分级（阈值入配置）", "status": "α 已实现" },
-        { "name": "报销双出口（运营费用只读归集+成本流水）", "status": "α 已实现" },
-        { "name": "删除打卡模块（考勤归工时加工）", "status": "α 已实现" },
-        { "name": "可配置审批引擎", "status": "未开始" },
-        { "name": "票据 OCR", "status": "未开始" }
+        {
+          "name": "核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "审批固定流+借款金额分级（阈值入配置）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "报销双出口（运营费用只读归集+成本流水）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "删除打卡模块（考勤归工时加工）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "可配置审批引擎",
+          "status": "未开始"
+        },
+        {
+          "name": "票据 OCR",
+          "status": "未开始"
+        }
       ],
       "alpha": {
         "页面场景": true,
@@ -786,15 +1154,30 @@
       "features": [
         {
           "name": "财务统计面板",
-          "description": "FinanceDashboard：收入/支出/利润汇总，趋势图表。"
+          "description": "FinanceDashboard：收入/支出/利润汇总，趋势图表。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "项目成本报表",
-          "description": "ProjectCostPage.tsx：项目维度成本明细，利润率分析。"
+          "description": "ProjectCostPage.tsx：项目维度成本明细，利润率分析。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "工资表",
-          "description": "SalaryPage：员工工资计算，工时×时薪汇总，按月生成。"
+          "description": "SalaryPage：员工工资计算，工时×时薪汇总，按月生成。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -853,14 +1236,118 @@
       "features": [
         {
           "name": "线索来源管理",
-          "description": "leads 模块：多渠道线索接入，来源标记与追踪。"
+          "description": "leads 模块：多渠道线索接入，来源标记与追踪。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "投放日报",
-          "description": "lead-cost 模块：投放日报、成本看板、渠道分析页面。"
+          "description": "lead-cost 模块：投放日报、成本看板、渠道分析页面。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "线索录入表单",
+          "description": "/lead-dispatch 录入：业务线/主体/渠道（数据字典）/channelPlan/客户信息/初始分级 S/A/B/C/初始分配（存待派发池或立即指派）。无 D 级、意向评分不落库。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "派发工作台列表",
+          "description": "三视角（管理者/推广/录入员，RoleSwitcher+权限纯函数）过滤、今日录入默认、业务线/主体/渠道/等级/派发状态多维筛选、告警卡（待派发/首联超时/重点客资/待审核/质检分桶）、Cohort 成交率卡片。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "派发动作",
+          "description": "派发弹窗选部门->选销售或派发到公海（ADR-0096：待派发锁领取，派发是唯一出口）；批量派发；派发到公海不算退回放弃，销售领取起算首联。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "SLA 时效监控",
+          "description": "30min 派发 SLA（超期标红+告警+催办，不自动派发）、2h 首联 SLA（首条跟进记录停表，含未接通）、1h 临期提醒；数字入系统配置；slaCalc 纯函数获客/销售两侧同一口径。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "催办",
+          "description": "对欠时效的人发站内提醒 + leadEvents 留痕（谁何时催了谁）；企微推送 β 经服务接缝接，α 不做。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "等级调整与审核",
+          "description": "升级免审即时生效+新晋升弱提示；降级走审批中心业务类型「线索等级调整」（审核人按业务线配审批配置，人名不写死）；管理员直改只留痕；未派发线索推广可直改。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "退回质检（3人3轮）",
+          "description": "退回按不同销售去重计数（同一人重复领退不累计）；满 3 人退回转待管理员确认进垃圾，不自动；派发到公海不算放弃；质检卡片分桶（1人/2人放弃）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "全生命周期穿透抽屉",
+          "description": "列表行点开只读抽屉：三节点进展（录入/跟进/成交）、流转属性、leadEvents 只增不删时光轴（录入/派发/催办/等级调整/退回/垃圾确认）；写动作跳 LeadDetail360。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "销售侧时效监控",
+          "description": "五池列表加「时效」列（首联超时红标/临期/已首联），LeadDetail360 头部加派发时间与首联状态、动态读同一份 leadEvents；与获客侧同一纯函数。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
-      "planned": [],
+      "planned": [
+        {
+          "name": "渠道词表迁数据字典（5 值英文 key：xiaohongshu/baidu/douyin/wechat/website，LeadSource 硬编码退位，存量中文值平移完成）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "用户档案「负责渠道」多选字段（三视角过滤依据）",
+          "status": "已设计"
+        },
+        {
+          "name": "企微催办推送（β 服务接缝，α 仅站内）",
+          "status": "已设计"
+        }
+      ],
       "alpha": {
         "页面场景": false,
         "功能流程": false,
@@ -870,7 +1357,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "官网表单/推广落地页/电话咨询/渠道合作/售前群"
+      "note": "官网表单/推广落地页/电话咨询/渠道合作/售前群 + 线索派发工作台（/lead-dispatch）。阶段 A 纯函数层已完成（6 模块/34 测试，2026-08-25）；阶段 0 渠道字典迁移完成（channelDictionary.ts + guard 测试 + 业务线枚举对齐 grill 决策，2026-08-25）。阶段 B-D UI 已编码（2026-08-25）：DispatchModal/LevelAdjustModal/LeadDispatchPage 全量接入。阶段 E 已完成：LeadDetail360 派发信息+五池列表 SLA 融入跟进倒计时。β 只留企微催办接缝。"
     },
     {
       "module": "线索池与初筛",
@@ -880,11 +1367,21 @@
       "features": [
         {
           "name": "四池管理",
-          "description": "公海/我的/已成交/垃圾四池统一视图，线索认领、分配、回收。"
+          "description": "公海/我的/已成交/垃圾四池统一视图，线索认领、分配、回收。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "来源标记",
-          "description": "线索来源渠道标记（百度/小红书/抖音/淘宝等）。"
+          "description": "线索来源渠道标记（百度/小红书/抖音/淘宝等）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -893,7 +1390,7 @@
           "status": "未开始"
         },
         {
-          "name": "清洗分级（线索质量评分，自动分级 A/B/C/D）",
+          "name": "清洗分级（线索质量评分，分级沿用 S/A/B/C，无 D 级）",
           "status": "未开始"
         }
       ],
@@ -955,19 +1452,39 @@
       "features": [
         {
           "name": "组织架构",
-          "description": "EmployeeContext.tsx：公司/部门/岗位树形结构管理。"
+          "description": "EmployeeContext.tsx：公司/部门/岗位树形结构管理。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "用户管理",
-          "description": "用户账号创建、启用/禁用，关联组织架构。"
+          "description": "用户账号创建、启用/禁用，关联组织架构。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "角色授权",
-          "description": "角色定义，角色关联菜单权限+操作权限。"
+          "description": "角色定义，角色关联菜单权限+操作权限。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "数据字典",
-          "description": "系统枚举值管理（回款方式/发票类型/线索来源等）。"
+          "description": "系统枚举值管理（回款方式/发票类型/线索来源等）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -999,15 +1516,30 @@
       "features": [
         {
           "name": "员工列表",
-          "description": "EmployeeContext.tsx：员工基础信息管理。"
+          "description": "EmployeeContext.tsx：员工基础信息管理。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "岗位管理",
-          "description": "岗位定义与职级体系（L1-L10），岗位关联时薪标准。"
+          "description": "岗位定义与职级体系（L1-L10），岗位关联时薪标准。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "考勤请假",
-          "description": "考勤记录、请假审批、加班统计。"
+          "description": "考勤记录、请假审批、加班统计。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -1043,33 +1575,81 @@
       "features": [
         {
           "name": "工作台仪表盘",
-          "description": "Dashboard.tsx：关键指标概览，快捷入口。"
+          "description": "Dashboard.tsx：关键指标概览，快捷入口。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "个人工作台",
-          "description": "PersonalWorkbench.tsx：个人任务清单、能力面板。"
+          "description": "PersonalWorkbench.tsx：个人任务清单、能力面板。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "审批中心",
-          "description": "ApprovalContext.tsx + ApprovalCenter：待办/已办/我发起的，通过/驳回。"
+          "description": "ApprovalContext.tsx + ApprovalCenter：待办/已办/我发起的，通过/驳回。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "待办中心",
-          "description": "TodoContext.tsx：统一待办聚合，支持完成/忽略操作。"
+          "description": "TodoContext.tsx：统一待办聚合，支持完成/忽略操作。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "消息提醒",
-          "description": "ReminderContext.tsx + ReminderBell：顶栏提醒，未读计数，日报催报。"
+          "description": "ReminderContext.tsx + ReminderBell：顶栏提醒，未读计数，日报催报。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
-          "name": "侧栏打开架构图",
-          "description": "点击左侧「ZK HubX」产品名/Logo 弹窗打开 ZK-HubX架构图.html（仓库根目录唯一事实源，dev/build 由 architectureDiagramPlugin 提供）。"
+          "name": "功能看板切换功能架构",
+          "description": "侧栏版本标识打开功能看板后，页签切「功能架构」，iframe 打开仓库根 ZK-HubX架构图.html（dev/build 由 architectureDiagramPlugin 提供 /architecture.html）。侧栏产品名不再单独弹架构图。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "功能看板切换技术架构",
+          "description": "功能看板页签切「技术架构」。读 HubX/docs/ZK-HubX技术架构.html（β 接线实况），dev/build 由 architectureDiagramPlugin 提供 /tech-architecture.html。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
+        },
+        {
+          "name": "工作记录页签",
+          "description": "功能看板页签「工作记录」：按日期归档、按分类（功能/底座/设计/文档/修洞/其它）写当天一句话。事实源 workLog.config.json（α dev GET/PUT /api/work-log）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
         {
           "name": "审批模板（串行/并行/会签节点配置）",
-          "status": "已调研"
+          "status": "已设计"
         },
         {
           "name": "报价审批与补充报价审批两条业务类型",
@@ -1170,6 +1750,49 @@
       "note": "规划中"
     },
     {
+      "module": "智能会议",
+      "domain": "支撑域",
+      "isPlanned": true,
+      "scope": "",
+      "features": [],
+      "planned": [
+        {
+          "name": "纪要列表页（本月沉淀统计/搜索/多维筛选/新建入口）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "纪要工作台（原始文本沉淀/AI草稿/核心决议/正文/行动项/版本留痕）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "行动项TODO只读投影（actionItemId幂等同步/软取消/不重开）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "行政会议来源入口（一次性快照/一会议至多一当前纪要）",
+          "status": "α 已实现"
+        },
+        {
+          "name": "AI解析与润色（α确定性解析/β服务端AI接口预留）",
+          "status": "已设计"
+        },
+        {
+          "name": "β接线（D1 smart_minutes 表+服务端不变量校验+AI Secret）",
+          "status": "已设计"
+        }
+      ],
+      "alpha": {
+        "页面场景": true,
+        "功能流程": true,
+        "UX 优化": false
+      },
+      "beta": {
+        "productionOn": false,
+        "devStatus": "未开始"
+      },
+      "note": "阶段 A 领域纯函数+阶段 B 列表页+阶段 C 工作台/TODO 投影/行政入口全部完成（2026-08-25）。阶段 D/E（β 接线/AI 服务）待 productionOn 许可后开工。"
+    },
+    {
       "module": "基础工具",
       "domain": "跨域工具",
       "isPlanned": false,
@@ -1177,19 +1800,39 @@
       "features": [
         {
           "name": "企业微信集成",
-          "description": "IntegrationContext.tsx：通讯录同步、消息推送、群聊导出（wx CLI）。"
+          "description": "IntegrationContext.tsx：通讯录同步、消息推送、群聊导出（wx CLI）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "数据报表",
-          "description": "Reports.tsx：销售报表、业绩统计、渠道 ROI 图表（recharts）。"
+          "description": "Reports.tsx：销售报表、业绩统计、渠道 ROI 图表（recharts）。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "资产管理",
-          "description": "AssetManagement.tsx：资产登记、分类管理、状态跟踪。"
+          "description": "AssetManagement.tsx：资产登记、分类管理、状态跟踪。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         },
         {
           "name": "供应商管理",
-          "description": "SupplierManagement.tsx：供应商信息管理、合作状态。"
+          "description": "SupplierManagement.tsx：供应商信息管理、合作状态。",
+          "alpha": {
+            "页面场景": false,
+            "功能流程": false,
+            "UX 优化": false
+          }
         }
       ],
       "planned": [
@@ -1212,18 +1855,30 @@
         {
           "name": "全链路 ROI（广告消耗→线索→客户→合同→利润，按渠道拆分）",
           "status": "未开始"
+        },
+        {
+          "name": "β 数据底座（乐观锁 version、actor/时钟服务端可信，ADR-0094）",
+          "status": "未开始"
+        },
+        {
+          "name": "B5 β 上线收口（http 核对/D1/冒烟/看板翻牌门）",
+          "status": "已设计"
+        },
+        {
+          "name": "全局搜索（⌘K 六实体跨域检索直达，只读投影不做权限过滤）",
+          "status": "α 已实现"
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
+        "页面场景": true,
+        "功能流程": true,
         "UX 优化": false
       },
       "beta": {
         "productionOn": false,
-        "devStatus": "未开始"
+        "devStatus": "编码中"
       },
-      "note": "登录/操作日志/权限拦截/工天配置/企微集成"
+      "note": "全局搜索 S1-S3 全部完成（纯函数层+六域适配器+弹层组件+MainLayout 接线），20 测试全绿（2026-08-25）。"
     },
     {
       "module": "管理者工具",
@@ -1614,5 +2269,9 @@
       },
       "note": "规划中"
     }
-  ]
+  ],
+  "alphaMeta": {
+    "updateCount": 0,
+    "lastUpdatedAt": ""
+  }
 }

@@ -46,15 +46,17 @@ import {
   FOLLOWUP_METHODS,
   FOLLOWUP_TEMPLATES,
 } from './leads/types';
+import { channelLabel } from '@/app/pages/lead-dispatch/channelDictionary';
+import { BUSINESS_LINE_LABEL, type LeadBusinessLine } from '@/app/pages/lead-dispatch/types';
+import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
 import { getLeadDetailProfile } from './leads/leadDetailProfiles';
-import { FOLLOWUP_RECORDS } from './leads/mockData';
+import { useLeads } from '@/app/leads/LeadContext';
 import { buildLeadContextFromDetail } from './contracts/leadContextMock';
 import { useContracts } from './contracts/ContractsContext';
 import type { Contract, ContractStatus } from './contracts/types';
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
-import { computeAmountBreakdown } from './quotation/quoteFlow';
-import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, type Quote } from './quotation/types';
+import { QuoteCard } from './quotation/QuoteCard';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -97,34 +99,6 @@ const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   voided: 'gray',
 };
 
-/** 报价卡片：进入四阶段工作台 */
-function QuoteCard({ quote, onOpen }: { quote: Quote; onOpen: () => void }) {
-  const breakdown = computeAmountBreakdown(quote);
-  const evalSheet = quote.evalSheet;
-  const totalDays = evalSheet ? evalSheet.evaluationUnits.reduce((s, u) => s + u.totalDays, 0) : 0;
-  const epCount = (quote.endpointConfigs || []).length;
-  const modCount = (quote.featureList || []).length;
-  const subCount = (quote.featureList || []).reduce((s, m) => s + (m.subFeatures?.length || 0), 0);
-
-  return (
-    <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-        <Text style={{ fontWeight: 600 }}>{quote.basicInfo.projectName}</Text>
-        <Tag color="arcoblue" size="small">{quote.version}</Tag>
-        <Tag size="small" color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
-      </div>
-      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{quote.quoteNo}</div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, fontSize: 12 }}>
-        {evalSheet && <span>工期 <strong>{evalSheet.manualWorkDays}</strong> 工作日</span>}
-        <span>人天 <strong>{totalDays.toFixed(1)}</strong></span>
-        <span>报价 <strong style={{ color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</strong></span>
-        <span>{epCount} 端 · {modCount} 模块 · {subCount} 功能</span>
-      </div>
-      <Button size="mini" type="primary" onClick={onOpen}>进入工作台</Button>
-    </div>
-  );
-}
-
 export function LeadDetail360() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -148,6 +122,8 @@ export function LeadDetail360() {
   const [reimbursementForm] = Form.useForm();
   const { createQuote, quotes } = useQuotation();
   const { contracts: allContracts } = useContracts();
+  const { leads, getFollowUps } = useLeads();
+  const [followUps, setFollowUps] = useState<FollowUpRecord[]>([]);
   const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
   const [quotationDrawerQuoteId, setQuotationDrawerQuoteId] = useState<string | null>(null);
 
@@ -180,6 +156,10 @@ export function LeadDetail360() {
     demoContracts: [],
   };
 
+  // 派发域数据（从 LeadListItem 获取 dispatch 字段）
+  const dispatchLead = useMemo(() => leads.find((l) => l.id === id), [leads, id]);
+  const dispatchView = useMemo(() => dispatchLead ? leadDispatchView(dispatchLead, new Date()) : null, [dispatchLead]);
+
   const relatedContracts = useMemo<Contract[]>(() => {
     if (useLiveContracts) {
       return allContracts.filter((contract) => contract.leadId === id);
@@ -188,6 +168,19 @@ export function LeadDetail360() {
       .map((demoContract) => allContracts.find((contract) => contract.id === demoContract.id))
       .filter((contract): contract is Contract => Boolean(contract));
   }, [allContracts, demoContracts, id, useLiveContracts]);
+
+  // 跟进记录：统一走 LeadContext（mock/http 同构），detail 加载后异步拉取
+  useEffect(() => {
+    let cancelled = false;
+    if (id) {
+      getFollowUps(id).then((fs) => {
+        if (!cancelled) setFollowUps(fs);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [id, getFollowUps]);
 
   useEffect(() => {
     const state = location.state as { activeMainTab?: string; activeSideTab?: string } | null;
@@ -270,7 +263,7 @@ export function LeadDetail360() {
             <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
             {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}级</Tag>}
             <Tag color="gray">{lead.entity}</Tag>
-            <Tag color="default">{lead.source}</Tag>
+            <Tag color="default">{channelLabel(lead.source)}</Tag>
           </div>
           <Space wrap>
             <Button size="small" icon={<IconEdit />}>编辑线索</Button>
@@ -352,7 +345,7 @@ export function LeadDetail360() {
               <span style={{ fontSize: 16, fontWeight: 600 }}>{lead.name}</span>
             </div>
             <Grid.Row gutter={[8, 4]}>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="default" size="small">{lead.source}</Tag></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="default" size="small">{channelLabel(lead.source)}</Tag></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text> <Text style={{ fontSize: 14 }}>{lead.customerCost || '-'}</Text></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客户称呼</Text> <Text style={{ fontSize: 14 }}>{lead.customerTitle || '-'}</Text></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>电话</Text> <Text style={{ fontSize: 14 }}>{lead.phone || '-'}</Text></Grid.Col>
@@ -396,6 +389,13 @@ export function LeadDetail360() {
                     { label: '推广关键词', value: lead.keyword || '-' },
                     { label: '意向标签', value: lead.tags?.join('、') || '-' },
                     { label: '客户信息备注', value: lead.customerNote || '-' },
+                    // 派发信息
+                    { label: '业务线', value: dispatchLead?.businessLine ? BUSINESS_LINE_LABEL[dispatchLead.businessLine as LeadBusinessLine] || dispatchLead.businessLine : '-' },
+                    { label: '渠道计划', value: dispatchLead?.channelPlan || '-' },
+                    { label: '派发时间', value: dispatchLead?.dispatchedAt || '未派发' },
+                    { label: '派发目标', value: dispatchLead?.dispatchTarget === 'sales' ? '指派销售' : dispatchLead?.dispatchTarget === 'pool' ? '公海' : '-' },
+                    { label: '派发时效', value: dispatchView ? <Tag color={dispatchView.dispatchSla.status === 'overdue' ? 'red' : dispatchView.dispatchSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.dispatchSla.label}</Tag> : '-' },
+                    { label: '首联时效', value: dispatchView ? <Tag color={dispatchView.firstContactSla.status === 'overdue' ? 'red' : dispatchView.firstContactSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.firstContactSla.label}</Tag> : '-' },
                   ]}
                 />
               )}
@@ -536,7 +536,7 @@ export function LeadDetail360() {
                     <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>写跟进</Button>
                   </div>
                   <Timeline>
-                    {FOLLOWUP_RECORDS.filter((r) => r.leadId === id || r.leadId === '5940').map((record, index) => (
+                    {followUps.filter((r) => r.leadId === id || r.leadId === '5940').map((record, index) => (
                       <Timeline.Item key={record.id} dotColor={index === 0 ? 'rgb(var(--primary-6))' : 'var(--color-border-2)'}>
                         <div style={{ marginBottom: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>

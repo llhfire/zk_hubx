@@ -5,6 +5,7 @@ import {
   Dropdown,
   Input,
   Modal,
+  Radio,
   Switch,
   Table,
   Tag,
@@ -25,13 +26,14 @@ import {
   addPlannedItem,
   loadFeatureBoard,
   migrateAlphaChecklist,
+  markAlphaUpdate,
   removePlannedItem,
   renamePlannedItem,
   saveFeatureBoard,
   setBetaDevStatus,
   setModuleNote,
   setPlannedStatus,
-  toggleAlphaCheck,
+  toggleFeatureAlphaCheck,
   toggleProductionSwitch,
   ALPHA_CHECK_KEYS,
   BETA_DEV_STATUSES,
@@ -43,7 +45,10 @@ import {
   type ExistingFeature,
   type FeatureBoard,
   type PlannedStatus,
+  type BoardChangeType,
 } from './featureBoardModel';
+import { WorkLogPane } from './WorkLogPane';
+import { loadWorkLog, saveWorkLog, type WorkLog } from './workLogModel';
 import './versionCompareModal.css';
 
 const { Text } = Typography;
@@ -83,11 +88,18 @@ interface VersionCompareModalProps {
   onCancel: () => void;
 }
 
-/** α/β 版本功能看板：点击侧边栏版本标识打开，全屏展示。
- *  唯一事实源 featureBoard.config.json（dev 端点读写），术语见 HubX/CONTEXT.md §功能看板。 */
+type BoardPane = 'board' | 'architecture' | 'tech' | 'log';
+
+const FRAME_PANES: BoardPane[] = ['architecture', 'tech'];
+
+/** α/β 版本功能看板场景：点击侧边栏版本标识打开，全屏展示。
+ *  页签：功能看板 / 功能架构 / 技术架构 / 工作记录。
+ *  看板事实源 featureBoard.config.json；工作记录事实源 workLog.config.json。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
-  const [board, setBoard] = useState<FeatureBoard>({ modules: [] });
+  const [pane, setPane] = useState<BoardPane>('board');
+  const [board, setBoard] = useState<FeatureBoard>({ modules: [], alphaMeta: { updateCount: 0, lastUpdatedAt: '' } });
+  const [workLog, setWorkLog] = useState<WorkLog>({ days: [] });
   // 备注列编辑态：模块名 -> 输入值
   const [noteEditing, setNoteEditing] = useState<{ module: string; value: string } | null>(null);
   // 计划项改名编辑态：模块名+原名 -> 输入值
@@ -98,7 +110,10 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   const [featureDetail, setFeatureDetail] = useState<{ module: string; feature: ExistingFeature } | null>(null);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setPane('board');
+      return;
+    }
     void loadFeatureBoard().then(loaded => {
       // 一次性迁移：旧 alphaChecklist 勾选（localStorage 字符串数组）合并进看板
       try {
@@ -118,11 +133,20 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       }
       setBoard(loaded);
     });
+    void loadWorkLog().then(setWorkLog);
   }, [visible]);
 
-  const update = (next: FeatureBoard) => {
-    setBoard(next);
-    void saveFeatureBoard(next);
+  const update = (next: FeatureBoard, changeType: BoardChangeType = 'planned') => {
+    const persisted = changeType === 'alpha'
+      ? markAlphaUpdate(next, new Date().toISOString().slice(0, 10))
+      : next;
+    setBoard(persisted);
+    void saveFeatureBoard(persisted);
+  };
+
+  const updateWorkLog = (next: WorkLog) => {
+    setWorkLog(next);
+    void saveWorkLog(next);
   };
 
   const statusMenu = (current: string, statuses: readonly string[], onSelect: (status: never) => void) => (
@@ -199,11 +223,11 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
                   value={renameEditing.value}
                   onChange={value => setRenameEditing({ ...renameEditing, value })}
                   onBlur={() => {
-                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value));
+                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value), 'planned');
                     setRenameEditing(null);
                   }}
                   onPressEnter={() => {
-                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value));
+                    update(renamePlannedItem(board, record.module, item.name, renameEditing.value), 'planned');
                     setRenameEditing(null);
                   }}
                   style={{ width: 150 }}
@@ -221,10 +245,14 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
               <Dropdown
                 trigger="click"
                 droplist={statusMenu(item.status, PLANNED_STATUSES, status => {
-                  update(setPlannedStatus(board, record.module, item.name, status as PlannedStatus));
+                  update(setPlannedStatus(board, record.module, item.name, status as PlannedStatus), 'planned');
                 })}
               >
-                <StatusDot status={item.status} />
+                {item.status === '未开始' ? (
+                  <span className="feature-board-status-entry">状态</span>
+                ) : (
+                  <StatusDot status={item.status} />
+                )}
               </Dropdown>
               <Tooltip content="删除该功能条目">
                 <Button
@@ -232,7 +260,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
                   size="mini"
                   status="danger"
                   icon={<IconDelete />}
-                  onClick={() => update(removePlannedItem(board, record.module, item.name))}
+                  onClick={() => update(removePlannedItem(board, record.module, item.name), 'planned')}
                 />
               </Tooltip>
             </div>
@@ -245,11 +273,11 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
               value={addingItem.value}
               onChange={value => setAddingItem({ ...addingItem, value })}
               onBlur={() => {
-                if (addingItem.value.trim()) update(addPlannedItem(board, record.module, addingItem.value));
+                if (addingItem.value.trim()) update(addPlannedItem(board, record.module, addingItem.value), 'planned');
                 setAddingItem(null);
               }}
               onPressEnter={() => {
-                update(addPlannedItem(board, record.module, addingItem.value));
+                update(addPlannedItem(board, record.module, addingItem.value), 'planned');
                 setAddingItem(null);
               }}
               style={{ width: 180 }}
@@ -272,19 +300,10 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       key: 'alpha',
       width: 150,
       render: (_: unknown, record: FeatureBoard['modules'][number]) => (
-        <Tooltip content="勾选表示该项已完成；取消勾选表示需要继续或重新进行">
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-            {ALPHA_CHECK_KEYS.map(key => (
-              <Checkbox
-                key={key}
-                checked={record.alpha[key]}
-                onChange={() => update(toggleAlphaCheck(board, record.module, key as AlphaCheckKey))}
-              >
-                <span style={{ fontSize: 12 }}>{key}</span>
-              </Checkbox>
-            ))}
-          </div>
-        </Tooltip>
+        <div className="feature-board-alpha-summary">
+          <Text>更新 {board.alphaMeta.updateCount} 次</Text>
+          <Text type="secondary">{board.alphaMeta.lastUpdatedAt ? `最近更新：${board.alphaMeta.lastUpdatedAt}` : '暂无更新记录'}</Text>
+        </div>
       ),
     },
     {
@@ -297,14 +316,14 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
             <Switch
               size="small"
               checked={record.beta.productionOn}
-              onChange={() => update(toggleProductionSwitch(board, record.module))}
+              onChange={() => update(toggleProductionSwitch(board, record.module), 'beta')}
             />
           </Tooltip>
           {record.beta.productionOn ? (
             <Dropdown
               trigger="click"
               droplist={statusMenu(record.beta.devStatus, BETA_DEV_STATUSES, status => {
-                update(setBetaDevStatus(board, record.module, status as BetaDevStatus));
+                update(setBetaDevStatus(board, record.module, status as BetaDevStatus), 'beta');
               })}
             >
               <Tooltip content="点击修改开发状态（未开始/编码中/测试中/测试通过）">
@@ -333,11 +352,11 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
           value={noteEditing.value}
           onChange={value => setNoteEditing({ ...noteEditing, value })}
           onBlur={() => {
-            update(setModuleNote(board, record.module, noteEditing.value));
+            update(setModuleNote(board, record.module, noteEditing.value), 'note');
             setNoteEditing(null);
           }}
           onPressEnter={() => {
-            update(setModuleNote(board, record.module, noteEditing.value));
+            update(setModuleNote(board, record.module, noteEditing.value), 'note');
             setNoteEditing(null);
           }}
         />
@@ -357,15 +376,48 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   return (
     <>
     <Modal
-      title="功能看板（α/β 版本）"
+      title={
+        <div className="feature-board-modal-title">
+          <span>功能看板（α/β 版本）</span>
+          <Radio.Group
+            type="button"
+            size="small"
+            value={pane}
+            onChange={(value) => setPane(value as BoardPane)}
+          >
+            <Radio value="board">功能看板</Radio>
+            <Radio value="architecture">功能架构</Radio>
+            <Radio value="tech">技术架构</Radio>
+            <Radio value="log">工作记录</Radio>
+          </Radio.Group>
+        </div>
+      }
       visible={visible}
       onCancel={onCancel}
       footer={null}
       alignCenter={false}
       focusLock={false}
-      className="version-compare-modal"
+      className={`version-compare-modal${FRAME_PANES.includes(pane) ? ' is-frame-pane' : ''}`}
       style={{ width: '100vw', maxWidth: '100vw', top: 0, height: '100vh', margin: 0, borderRadius: 0 }}
     >
+      {pane === 'architecture' ? (
+        <iframe
+          key={`arch-${String(visible)}`}
+          title="ZK HubX 功能架构"
+          src="/architecture.html"
+          className="feature-board-tech-frame"
+        />
+      ) : pane === 'tech' ? (
+        <iframe
+          key={`tech-${String(visible)}`}
+          title="ZK HubX β 技术架构"
+          src="/tech-architecture.html"
+          className="feature-board-tech-frame"
+        />
+      ) : pane === 'log' ? (
+        <WorkLogPane log={workLog} onChange={updateWorkLog} />
+      ) : (
+        <>
       <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <Tag color={VERSION_TAG_COLORS[version]}>当前版本：{VERSION_LABELS[version]}</Tag>
         <Text type="secondary">{VERSION_DESCRIPTIONS[version]}</Text>
@@ -410,15 +462,17 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
           icon={<IconPlus />}
           onClick={() => {
             const name = `新模块 ${board.modules.length + 1}`;
-            update(addModule(board, name));
+            update(addModule(board, name), 'planned');
           }}
         >
           新增模块
         </Button>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          事实源：featureBoard.config.json（本地 dev 自动保存）；生产开关仅手动开启；β开发状态在开关开启后可点选。
+          事实源：featureBoard.config.json（本地 dev 自动保存）；生产开关仅手动开启；β开发状态在开关开启后可点选。页签可切功能架构、技术架构、工作记录。
         </Text>
       </div>
+        </>
+      )}
     </Modal>
 
     {/* 已有功能详情弹窗 */}
@@ -432,9 +486,14 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       {featureDetail && (
         <div className="feature-board-detail">
           <div className="feature-board-detail-content">
-            {featureDetail.feature.description.split('\n').map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
+            {featureDetail.feature.description.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+            {ALPHA_CHECK_KEYS.map(key => <Checkbox key={key} checked={featureDetail.feature.alpha[key]} onChange={() => {
+              const next = toggleFeatureAlphaCheck(board, featureDetail.module, featureDetail.feature.name, key);
+              setFeatureDetail({ ...featureDetail, feature: next.modules.find(m => m.module === featureDetail.module)!.features.find(f => f.name === featureDetail.feature.name)! });
+              update(next, 'checklist');
+            }}>{key}</Checkbox>)}
           </div>
         </div>
       )}

@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK HubX · 推广域线索管理与派发工作台 (V3.0)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --primary-6: #165DFF;
+      --primary-5: #4080FF;
+      --primary-1: #E8F3FF;
+      --success-6: #00B42A;
+      --success-1: #E8FFEA;
+      --warning-6: #FF7D00;
+      --warning-1: #FFF7E8;
+      --danger-6: #F53F3F;
+      --danger-1: #FFECE8;
+      --purple-6: #722ED1;
+      --purple-1: #F5E8FF;
+      --color-bg-1: #FFFFFF;
+      --color-bg-2: #F7F8FA;
+      --color-bg-3: #F2F3F5;
+      --color-text-1: #1D2129;
+      --color-text-2: #4E5969;
+      --color-text-3: #86909C;
+      --color-border: #E5E6EB;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background-color: var(--color-bg-2);
+      color: var(--color-text-1);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f2f5;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c9cdd4;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #86909c;
+    }
+    .badge-pulse-red {
+      animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(245, 63, 63, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(245, 63, 63, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 63, 63, 0); }
+    }
+    .modal-backdrop {
+      backdrop-filter: blur(8px);
+      background-color: rgba(29, 33, 41, 0.45);
+    }
+  </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col antialiased">
+<div id="app" class="flex-1 flex flex-col h-full overflow-hidden" @keydown.window="handleGlobalKeydown">
+
+  <!-- 1. 顶部全局导航栏 (Arco Design Style) -->
+  <header class="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-30 shadow-sm">
+    
+    <!-- 品牌与业务域切换 -->
+    <div class="flex items-center space-x-5">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md font-bold text-lg tracking-wider">
+          ZK
+        </div>
+        <div>
+          <div class="text-sm font-bold text-gray-900 leading-none flex items-center space-x-1.5">
+            <span>ZK HubX 内部业务中台</span>
+            <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-rose-50 text-rose-600 rounded border border-rose-200">v3.0 落地版</span>
+          </div>
+          <div class="text-xs text-gray-400 mt-1">获客域 · 线索录入与派发全周期工作台</div>
+        </div>
+      </div>
+
+      <nav class="hidden lg:flex items-center space-x-1 bg-gray-100 p-1 rounded-lg text-xs font-medium">
+        <a href="javascript:void(0)" class="px-3 py-1.5 rounded-md bg-white text-blue-600 font-semibold shadow-xs flex items-center space-x-1.5">
+          <i data-lucide="target" class="w-3.5 h-3.5"></i>
+          <span>推广获客域</span>
+        </a>
+        <a href="javascript:void(0)" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5">
+          <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+          <span>销售跟进域</span>
+        </a>
+        <a href="javascript:void(0)" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5">
+          <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+          <span>线上报价域</span>
+        </a>
+        <a href="javascript:void(0)" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 transition flex items-center space-x-1.5">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+          <span>项目交付域</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- 顶部 Command Palette 搜索框 -->
+    <div class="flex-1 max-w-lg mx-6">
+      <button 
+        @click="openCommandPalette()"
+        class="w-full h-9 bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 px-3.5 rounded-lg border border-gray-200 flex items-center justify-between text-xs transition group cursor-pointer shadow-2xs">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500 animate-pulse"></i>
+          <span class="text-gray-500 font-medium">快捷指令 / 搜索小红书线索、主体(软齐/软通/网通)、销售...</span>
+        </div>
+        <div class="flex items-center space-x-1">
+          <kbd class="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-[11px] font-mono text-gray-500 shadow-2xs">⌘ K</kbd>
+        </div>
+      </button>
+    </div>
+
+    <!-- 右侧：登录角色切换器 + 新建线索按钮 -->
+    <div class="flex items-center space-x-3 text-xs">
+      
+      <!-- 1. 登录角色视角切换器 -->
+      <div class="flex items-center space-x-1.5 bg-indigo-50/80 border border-indigo-200 p-1 rounded-lg">
+        <span class="text-[11px] text-indigo-700 font-bold pl-1 flex items-center space-x-1">
+          <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">当前视角:</span>
+        </span>
+        <select 
+          v-model="currentRole" 
+          @change="onRoleChange"
+          class="bg-white border border-indigo-200 rounded px-2 py-1 text-xs font-bold text-indigo-900 focus:outline-none cursor-pointer">
+          <option value="admin">👑 管理者 (全量线索/全局看板)</option>
+          <option value="promoter">🎯 推广人员 (仅小红书&百度负责渠道)</option>
+          <option value="operator">📝 普通录入员 (仅看自己当日录入)</option>
+        </select>
+      </div>
+
+      <!-- 新建线索按钮 -->
+      <button 
+        @click="openCreateLeadModal"
+        class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-md hover:shadow-lg transition flex items-center space-x-1.5 cursor-pointer">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>新建线索</span>
+      </button>
+
+      <!-- 角色标识徽章 -->
+      <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs border border-blue-200">
+        {{ currentRole === 'admin' ? '总' : (currentRole === 'promoter' ? '推' : '员') }}
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 主体工作区 -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- 左侧快捷分类侧边栏 -->
+    <aside class="w-56 bg-white border-r border-gray-200 p-3 flex flex-col justify-between shrink-0 hidden md:flex">
+      <div class="space-y-1">
+        <div class="px-3 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider">线索流转监控</div>
+        
+        <button 
+          @click="currentTab = 'all'"
+          :class="currentTab === 'all' ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            <span>{{ currentRole === 'operator' ? '我今日录入线索' : '线索列表' }}</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-600">{{ roleFilteredLeads.length }}</span>
+        </button>
+
+        <button 
+          v-if="currentRole !== 'operator'"
+          @click="currentTab = 'dispatch_alert'"
+          :class="currentTab === 'dispatch_alert' ? 'bg-orange-50 text-orange-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="hourglass" class="w-4 h-4 text-orange-500"></i>
+            <span>待派发 / 派发超时</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-orange-100 text-orange-700 font-bold">{{ pendingDispatchCount }}</span>
+        </button>
+
+        <button 
+          v-if="currentRole !== 'operator'"
+          @click="currentTab = 'overdue'"
+          :class="currentTab === 'overdue' ? 'bg-red-50 text-red-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="alarm-clock" class="w-4 h-4 text-red-500"></i>
+            <span>首联超时 (企微催办)</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-red-100 text-red-700 font-bold">{{ overdueCount }}</span>
+        </button>
+
+        <button 
+          v-if="currentRole !== 'operator'"
+          @click="currentTab = 'high_value'"
+          :class="currentTab === 'high_value' ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="gem" class="w-4 h-4 text-indigo-500"></i>
+            <span>S/A 级重点客资</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-bold">{{ highValueCount }}</span>
+        </button>
+
+        <div v-if="currentRole === 'admin'" class="pt-3 pb-1 px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">双向监督与质检</div>
+
+        <button 
+          v-if="currentRole === 'admin'"
+          @click="currentTab = 'downgrade_audit'"
+          :class="currentTab === 'downgrade_audit' ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="shield-check" class="w-4 h-4 text-amber-600"></i>
+            <span>等级调整审核</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-100 text-amber-800 font-bold">{{ pendingAuditCount }}</span>
+        </button>
+
+        <button 
+          v-if="currentRole === 'admin'"
+          @click="currentTab = 'pool_gatekeeper'"
+          :class="currentTab === 'pool_gatekeeper' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'"
+          class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition">
+          <div class="flex items-center space-x-2.5">
+            <i data-lucide="waves" class="w-4 h-4 text-blue-600"></i>
+            <span>公海 3人3轮质检</span>
+          </div>
+          <span class="px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 font-bold">1</span>
+        </button>
+      </div>
+
+      <!-- 推广矩阵与事业部信息卡片 -->
+      <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs space-y-2">
+        <div class="font-bold text-gray-800 flex items-center space-x-1">
+          <i data-lucide="share-2" class="w-3.5 h-3.5 text-rose-600"></i>
+          <span>核心推广与事业部</span>
+        </div>
+        <div class="text-[11px] text-gray-600 space-y-1">
+          <div><strong class="text-rose-600 font-bold">主推渠道：</strong>小红书 · 百度 · 抖音</div>
+          <div><strong class="text-blue-700">软件事业：</strong>林丹丹、闻杨、黄奕</div>
+          <div><strong class="text-purple-700">移民事业：</strong>张京亚、陈君杨</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中间核心监控主视图 -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-gray-50 p-6 space-y-5">
+
+      <!-- 3. KPI 核心指标统计看板 (管理者/推广员视角) -->
+      <div v-if="currentRole !== 'operator'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 shrink-0">
+        
+        <!-- 今日入库/派发量 -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
+            <span>{{ timeFilterText }}入库 / 派发量</span>
+            <div class="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+              <i data-lucide="inbox" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-gray-900">{{ roleFilteredLeads.length }}</span>
+            <span class="text-xs text-gray-400">/ 已派发 {{ roleFilteredLeads.filter(l => l.dispatchedAt !== '--').length }}</span>
+          </div>
+          <div class="mt-2 text-[11px] text-rose-600 flex items-center space-x-1 font-bold">
+            <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+            <span>小红书主推: {{ roleFilteredLeads.filter(l => l.platform === 'xiaohongshu').length }} 条</span>
+          </div>
+        </div>
+
+        <!-- 待派发/派发超时 -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between" :class="pendingDispatchCount > 0 ? 'border-orange-300 bg-orange-50/20' : ''">
+          <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
+            <span>待派发 / 派发超时</span>
+            <div class="p-1.5 rounded-lg bg-orange-50 text-orange-600">
+              <i data-lucide="hourglass" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-orange-600">{{ pendingDispatchCount }}</span>
+            <span class="text-xs text-gray-400">条待推广分配</span>
+          </div>
+          <div class="mt-2 text-[11px] text-orange-700 flex items-center justify-between">
+            <span>入库 30min 内强制派发</span>
+            <button @click="currentTab = 'dispatch_alert'" class="underline font-bold hover:text-orange-900">立即派发</button>
+          </div>
+        </div>
+
+        <!-- 首联超时告警 (企微一键催办) -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between" :class="overdueCount > 0 ? 'border-red-300 bg-red-50/20' : ''">
+          <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
+            <span>首联超时告警 (1-2h)</span>
+            <div class="p-1.5 rounded-lg bg-red-50 text-red-600">
+              <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-red-600">{{ overdueCount }}</span>
+            <span class="text-xs text-red-400">条销售超期未联系</span>
+          </div>
+          <div class="mt-2 text-[11px] text-red-600 flex items-center justify-between font-bold">
+            <span>已触发首联告警</span>
+            <button @click="batchUrgeOverdue" class="underline hover:text-red-800 flex items-center space-x-1">
+              <i data-lucide="message-square" class="w-3 h-3"></i>
+              <span>企微一键催办</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 等级调整与审核 -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
+            <span>等级调整与审核</span>
+            <div class="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-amber-600">{{ pendingAuditCount }}</span>
+            <span class="text-xs text-gray-400">条待审核 (林总/黄奕)</span>
+          </div>
+          <div class="mt-2 text-[11px] text-amber-700">
+            支持林总/黄奕审核或免审配置
+          </div>
+        </div>
+
+        <!-- Cohort 录入周期成交率 -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
+            <span>录入周期签约成交率</span>
+            <div class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
+              <i data-lucide="trending-up" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 flex items-baseline space-x-2">
+            <span class="text-2xl font-bold text-emerald-600">18.5%</span>
+            <span class="text-xs text-gray-400">签合同为准 (9单)</span>
+          </div>
+          <div class="mt-2 text-[10px] text-gray-400 flex items-center space-x-1 truncate" title="按录入时间周期闭环统计，剔除非本期录入成交数据">
+            <span>Cohort模型 · 剔除跨周期混淆</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 4. 业务线顶部切换 Tabs (软件外包、移民、运营) -->
+      <div class="bg-white px-5 py-3 rounded-xl border border-gray-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-bold text-gray-500 mr-1 flex items-center space-x-1">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>业务线：</span>
+          </span>
+
+          <button 
+            @click="businessLineTab = 'all'"
+            :class="businessLineTab === 'all' ? 'bg-gray-900 text-white font-bold shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+            class="px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1.5">
+            <span>全部业务线</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="businessLineTab === 'all' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'">{{ roleFilteredLeads.length }}</span>
+          </button>
+
+          <button 
+            @click="businessLineTab = 'software_outsource'"
+            :class="businessLineTab === 'software_outsource' ? 'bg-blue-600 text-white font-bold shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'"
+            class="px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1.5">
+            <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+            <span>软件外包</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="businessLineTab === 'software_outsource' ? 'bg-white/20 text-white' : 'bg-blue-200 text-blue-900'">{{ getBusinessLineCount('software_outsource') }}</span>
+          </button>
+
+          <button 
+            @click="businessLineTab = 'immigration'"
+            :class="businessLineTab === 'immigration' ? 'bg-purple-600 text-white font-bold shadow-xs' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'"
+            class="px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1.5">
+            <i data-lucide="plane" class="w-3.5 h-3.5"></i>
+            <span>移民业务</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="businessLineTab === 'immigration' ? 'bg-white/20 text-white' : 'bg-purple-200 text-purple-900'">{{ getBusinessLineCount('immigration') }}</span>
+          </button>
+
+          <button 
+            @click="businessLineTab = 'operation'"
+            :class="businessLineTab === 'operation' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+            class="px-3 py-1.5 rounded-lg text-xs transition flex items-center space-x-1.5">
+            <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+            <span>代运营业务</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="businessLineTab === 'operation' ? 'bg-white/20 text-white' : 'bg-emerald-200 text-emerald-900'">{{ getBusinessLineCount('operation') }}</span>
+          </button>
+        </div>
+
+        <!-- 时间范围选择与排序切换 -->
+        <div class="flex items-center space-x-3 text-xs">
+          <!-- 默认展示当日录入 -->
+          <div class="flex items-center space-x-1.5 bg-gray-100 p-1 rounded-lg font-medium text-gray-600">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-gray-500 pl-0.5"></i>
+            <span class="text-[11px] text-gray-500">录入时间:</span>
+            <button 
+              @click="timeFilter = 'today'"
+              :class="timeFilter === 'today' ? 'bg-white text-blue-600 font-bold shadow-2xs' : 'text-gray-600 hover:text-gray-900'"
+              class="px-2 py-0.5 rounded text-xs transition">
+              今日录入 (默认)
+            </button>
+            <button 
+              @click="timeFilter = 'this_month'"
+              :class="timeFilter === 'this_month' ? 'bg-white text-blue-600 font-bold shadow-2xs' : 'text-gray-600 hover:text-gray-900'"
+              class="px-2 py-0.5 rounded text-xs transition">
+              本月录入
+            </button>
+            <button 
+              @click="timeFilter = 'all'"
+              :class="timeFilter === 'all' ? 'bg-white text-blue-600 font-bold shadow-2xs' : 'text-gray-600 hover:text-gray-900'"
+              class="px-2 py-0.5 rounded text-xs transition">
+              全部历史
+            </button>
+          </div>
+
+          <!-- 排序切换 -->
+          <div class="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg text-[11px]">
+            <span class="text-gray-500 pl-1">排序:</span>
+            <button 
+              @click="sortBy = 'time'"
+              :class="sortBy === 'time' ? 'bg-white text-gray-900 font-bold shadow-2xs' : 'text-gray-500'"
+              class="px-2 py-0.5 rounded transition">
+              录入时间 ↓
+            </button>
+            <button 
+              @click="sortBy = 'level'"
+              :class="sortBy === 'level' ? 'bg-white text-blue-600 font-bold shadow-2xs' : 'text-gray-500'"
+              class="px-2 py-0.5 rounded transition">
+              S-A-B-C-D 等级
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 多维筛选与控制栏 -->
+      <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 shrink-0">
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <!-- 关键词搜索 -->
+          <div class="relative w-56">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5"></i>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="搜索客户、企业、销售、电话..." 
+              class="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none transition">
+          </div>
+
+          <!-- 本公司主体筛选 -->
+          <select v-model="filterCompanyEntity" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 font-medium focus:outline-none focus:border-blue-500">
+            <option value="all">本公司主体 (全部)</option>
+            <option value="软齐">主体：软齐</option>
+            <option value="软通">主体：软通</option>
+            <option value="网通">主体：网通</option>
+          </select>
+
+          <!-- 推广渠道筛选 (小红书主推) -->
+          <select v-model="filterChannel" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 font-bold text-rose-700 focus:outline-none focus:border-blue-500">
+            <option value="all">全推广渠道 (全部)</option>
+            <option value="xiaohongshu">🔥 小红书推广 (主推渠道)</option>
+            <option value="baidu">百度竞价 / 信息流</option>
+            <option value="douyin">抖音短视频 / 直播</option>
+            <option value="wechat">微信生态矩阵</option>
+            <option value="website">官网表单自然流</option>
+          </select>
+
+          <!-- 销售部门筛选 -->
+          <select v-if="currentRole !== 'operator'" v-model="filterDepartment" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 font-medium focus:outline-none focus:border-blue-500">
+            <option value="all">销售部门 (全部)</option>
+            <option value="软件事业部">软件事业部 (林丹丹/闻杨/黄奕)</option>
+            <option value="移民事业部">移民事业部 (张京亚/陈君杨)</option>
+            <option value="待派发">⚠️ 未派发 (待分配)</option>
+          </select>
+
+          <!-- 客户分级筛选 (S/A/B/C/D) -->
+          <select v-model="filterLevel" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none focus:border-blue-500">
+            <option value="all">全部分级 (S/A/B/C/D)</option>
+            <option value="S">S 级 (高价值/强意向)</option>
+            <option value="A">A 级 (明确需求)</option>
+            <option value="B">B 级 (培育期)</option>
+            <option value="C">C 级 (低意向)</option>
+            <option value="D">D 级 (无效/无意向)</option>
+          </select>
+
+          <button @click="resetFilters" class="px-2.5 py-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition font-medium">
+            重置
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs">
+          <!-- 批量企微催办 -->
+          <button 
+            v-if="currentRole !== 'operator'"
+            @click="batchUrgeOverdue" 
+            class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-bold transition flex items-center space-x-1.5">
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+            <span>企微一键催办</span>
+          </button>
+
+          <!-- 批量派发 -->
+          <button 
+            v-if="currentRole !== 'operator'"
+            @click="openBatchAssignModal" 
+            class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition flex items-center space-x-1.5">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            <span>一键批量派发</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 6. 主监控表格：业务线置于最左端，标明入库/派发双时间戳与升级弱提示 -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-2xs flex-1 flex flex-col overflow-hidden">
+        
+        <div class="px-5 py-3 border-b border-gray-200 bg-gray-50/70 flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-gray-800">
+              {{ currentTabTitle }}
+            </span>
+            <span class="text-gray-400">|</span>
+            <span class="text-gray-500">当前视图共 <strong class="text-blue-600">{{ finalDisplayLeads.length }}</strong> 条线索</span>
+            <span v-if="timeFilter === 'today'" class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-medium border border-blue-200">仅展示今日录入</span>
+          </div>
+          <div class="flex items-center space-x-4 text-gray-500 text-[11px]">
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span><span>小红书主推</span></span>
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-orange-500"></span><span>派发超期 (>30min)</span></span>
+            <span class="flex items-center space-x-1"><span class="w-2 h-2 rounded-full bg-red-500"></span><span>首联超期 (>2h)</span></span>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-gray-100 text-gray-600 font-semibold sticky top-0 z-10 border-b border-gray-200">
+              <tr>
+                <th class="py-3 px-3 w-10 text-center">
+                  <input type="checkbox" v-model="selectAll" class="rounded text-blue-600">
+                </th>
+                <!-- 1. 最左端：业务线 -->
+                <th class="py-3 px-3 w-28">业务线</th>
+                <th class="py-3 px-4">客户信息 & 企业</th>
+                <th class="py-3 px-4">公司主体 & 推广渠道</th>
+                <th class="py-3 px-3 text-center">客户分级</th>
+                <th class="py-3 px-4">录入时间 / 派发时间</th>
+                <th class="py-3 px-4">时效监控 (派发/首联SLA)</th>
+                <th class="py-3 px-4">承接销售 / 部门</th>
+                <th class="py-3 px-4">跟进状态</th>
+                <th class="py-3 px-3 text-center">意向评分</th>
+                <th class="py-3 px-4 text-right pr-5">管理操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr 
+                v-for="item in finalDisplayLeads" 
+                :key="item.id" 
+                class="hover:bg-blue-50/40 transition group cursor-pointer"
+                :class="item.dispatchStatus === 'pending_overdue' ? 'bg-orange-50/30' : (item.slaStatus === 'danger' ? 'bg-red-50/25' : (item.abnormalFlag === 'downgrade_review' ? 'bg-amber-50/20' : ''))">
+                
+                <!-- 复选框 -->
+                <td class="py-3 px-3 text-center" @click.stop>
+                  <input type="checkbox" :value="item.id" v-model="selectedIds" class="rounded text-blue-600">
+                </td>
+
+                <!-- 1. 最左端：业务线字段 -->
+                <td class="py-3 px-3" @click="openLifecycleDrawer(item)">
+                  <span 
+                    :class="getBusinessLineBadgeClass(item.businessLine)" 
+                    class="px-2 py-0.8 rounded text-[11px] font-bold shadow-2xs inline-flex items-center space-x-1">
+                    <i :data-lucide="getBusinessLineIcon(item.businessLine)" class="w-3 h-3"></i>
+                    <span>{{ getBusinessLineName(item.businessLine) }}</span>
+                  </span>
+                </td>
+
+                <!-- 2. 客户信息 -->
+                <td class="py-3 px-4" @click="openLifecycleDrawer(item)">
+                  <div class="font-bold text-gray-900 flex items-center space-x-1.5">
+                    <span>{{ item.customerName }}</span>
+                    <span v-if="item.wechat" class="text-[10px] px-1 bg-green-50 text-green-700 rounded border border-green-200">微: {{ item.wechat }}</span>
+                  </div>
+                  <div class="text-[11px] text-gray-500">{{ item.company }}</div>
+                  <div class="text-[11px] text-gray-400 font-mono">{{ item.phone }}</div>
+                </td>
+
+                <!-- 3. 公司主体 & 推广渠道 (重点展示小红书) -->
+                <td class="py-3 px-4" @click="openLifecycleDrawer(item)">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-blue-900 text-white shadow-2xs">
+                      {{ item.companyEntity }}
+                    </span>
+                    <span :class="getChannelBadgeClass(item.platform)" class="px-1.5 py-0.5 rounded text-[10px] font-bold">
+                      {{ getChannelName(item.platform) }}
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-gray-400 mt-0.5 truncate max-w-[150px]" :title="item.channelPlan">
+                    {{ item.channelPlan }}
+                  </div>
+                </td>
+
+                <!-- 4. 客户评级 (S/A/B/C/D) + 升级弱提示 -->
+                <td class="py-3 px-3 text-center" @click="openLifecycleDrawer(item)">
+                  <div class="inline-flex flex-col items-center space-y-0.5">
+                    <span 
+                      :class="getLevelBadgeClass(item.level)" 
+                      class="px-2 py-0.5 rounded-md text-xs font-extrabold shadow-2xs">
+                      {{ item.level }} 级
+                    </span>
+                    <!-- 升级弱提示小标 (非打扰式) -->
+                    <span v-if="item.isRecentlyUpgraded" class="text-[9px] px-1 bg-amber-50 text-amber-700 border border-amber-200 rounded font-semibold flex items-center space-x-0.5" title="近期升级至此列表">
+                      <span>🌟 新晋升</span>
+                    </span>
+                  </div>
+                </td>
+
+                <!-- 5. 录入时间 / 派发时间 -->
+                <td class="py-3 px-4 text-[11px]" @click="openLifecycleDrawer(item)">
+                  <div class="text-gray-700 font-mono flex items-center space-x-1">
+                    <span class="text-gray-400 text-[10px]">录入:</span>
+                    <span>{{ item.inboundAt }}</span>
+                  </div>
+                  <div class="font-mono flex items-center space-x-1 mt-0.5">
+                    <span class="text-gray-400 text-[10px]">派发:</span>
+                    <span :class="item.dispatchedAt === '--' ? 'text-orange-600 font-bold bg-orange-50 px-1 rounded' : 'text-gray-600'">
+                      {{ item.dispatchedAt }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- 6. SLA 时效监控 (派发与首联) -->
+                <td class="py-3 px-4" @click="openLifecycleDrawer(item)">
+                  <!-- 待派发超期 (入库>30min) -->
+                  <div v-if="item.dispatchStatus === 'pending_overdue'" class="flex flex-col space-y-0.5">
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 bg-orange-100 text-orange-800 font-bold rounded border border-orange-200 w-fit">
+                      <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-orange-600"></i>
+                      <span>待派发 (超期 {{ item.dispatchOverdueMins }} 分钟)</span>
+                    </span>
+                    <span class="text-[10px] text-orange-600 font-medium">30分钟内强制派发</span>
+                  </div>
+
+                  <!-- 待派发正常倒计时 -->
+                  <div v-else-if="item.dispatchStatus === 'pending_normal'" class="flex flex-col space-y-0.5">
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 bg-blue-50 text-blue-700 font-medium rounded border border-blue-200 w-fit">
+                      <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                      <span>待派发 (剩余 {{ item.dispatchLeftMins }} 分钟)</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400">请尽快指派销售</span>
+                  </div>
+
+                  <!-- 销售首联严重超时 (>2h) -->
+                  <div v-else-if="item.slaStatus === 'danger'" class="flex flex-col space-y-0.5">
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 bg-red-100 text-red-700 font-bold rounded border border-red-200 w-fit">
+                      <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                      <span>首联超时 ({{ item.slaCountdownText }})</span>
+                    </span>
+                    <span class="text-[10px] text-red-500 font-medium">触发企微告警提醒</span>
+                  </div>
+
+                  <!-- 销售首联临期 (1-2h) -->
+                  <div v-else-if="item.slaStatus === 'warning'" class="flex flex-col space-y-0.5">
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 bg-amber-100 text-amber-800 font-bold rounded border border-amber-200 w-fit">
+                      <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                      <span>首联临期 ({{ item.slaCountdownText }})</span>
+                    </span>
+                    <span class="text-[10px] text-amber-600">已达 1 小时催办阈值</span>
+                  </div>
+
+                  <!-- 已首联达标 -->
+                  <div v-else class="flex flex-col space-y-0.5">
+                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 bg-green-50 text-green-700 font-medium rounded border border-green-200 w-fit">
+                      <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                      <span>{{ item.slaCountdownText }}</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400">已首联留痕</span>
+                  </div>
+                </td>
+
+                <!-- 7. 承接销售 & 部门 -->
+                <td class="py-3 px-4" @click="openLifecycleDrawer(item)">
+                  <div v-if="item.assignee === '待分配'" class="text-orange-600 font-bold flex items-center space-x-1">
+                    <i data-lucide="user-x" class="w-3.5 h-3.5"></i>
+                    <span>未指派销售</span>
+                  </div>
+                  <div v-else>
+                    <div class="font-medium text-gray-800 flex items-center space-x-1">
+                      <i data-lucide="user" class="w-3.5 h-3.5 text-gray-400"></i>
+                      <span class="font-bold">{{ item.assignee }}</span>
+                    </div>
+                    <div class="text-[11px] font-medium" :class="item.department.includes('软件') ? 'text-blue-600' : 'text-purple-600'">
+                      {{ item.department }}
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 8. 跟进状态 (轻量化展示，收敛细节) -->
+                <td class="py-3 px-4" @click="openLifecycleDrawer(item)">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="font-semibold" :class="getStatusTextColor(item.followStatus)">
+                      {{ item.followStatus }}
+                    </span>
+                    <span v-if="item.abnormalFlag === 'downgrade_review'" class="px-1.5 py-0.2 bg-red-100 text-red-700 text-[10px] font-bold rounded">
+                      待审
+                    </span>
+                  </div>
+                  <div class="text-[11px] text-gray-400 truncate max-w-[140px] mt-0.5">
+                    {{ item.notes }}
+                  </div>
+                </td>
+
+                <!-- 9. 意向评分 -->
+                <td class="py-3 px-3 text-center" @click="openLifecycleDrawer(item)">
+                  <span class="font-bold text-gray-800 text-xs">{{ item.intentScore }} 分</span>
+                </td>
+
+                <!-- 10. 管理端操作 -->
+                <td class="py-3 px-4 text-right pr-5" @click.stop>
+                  <div class="flex items-center justify-end space-x-1.5">
+                    <!-- 立即派发 -->
+                    <button 
+                      v-if="item.dispatchedAt === '--'"
+                      @click="openDispatchModal(item)"
+                      class="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded font-bold text-xs transition flex items-center space-x-1 shadow-xs animate-pulse">
+                      <i data-lucide="send" class="w-3 h-3"></i>
+                      <span>派发</span>
+                    </button>
+
+                    <!-- 企微单条催办 -->
+                    <button 
+                      v-else-if="item.slaStatus === 'danger'"
+                      @click="urgeSingleLead(item)"
+                      class="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-xs transition flex items-center space-x-1 shadow-2xs"
+                      title="发送企业微信催办通知">
+                      <i data-lucide="message-square" class="w-3 h-3"></i>
+                      <span>企微催办</span>
+                    </button>
+
+                    <!-- 等级调整申请 -->
+                    <button 
+                      @click="openAdjustLevelModal(item)"
+                      class="px-2 py-1 bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded text-xs transition"
+                      title="申请等级调整">
+                      <i data-lucide="sliders" class="w-3 h-3"></i>
+                    </button>
+
+                    <!-- 全链穿透 -->
+                    <button 
+                      @click="openLifecycleDrawer(item)"
+                      class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-medium text-xs transition flex items-center space-x-1">
+                      <i data-lucide="git-branch" class="w-3 h-3 text-gray-500"></i>
+                      <span>穿透</span>
+                    </button>
+                  </div>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 表格分页 -->
+        <div class="px-5 py-2.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+          <div>
+            显示第 1 到 {{ finalDisplayLeads.length }} 条，共 {{ roleFilteredLeads.length }} 条记录
+          </div>
+          <div class="flex items-center space-x-1">
+            <button class="px-2 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50" disabled>上一页</button>
+            <span class="px-2 py-1 bg-blue-600 text-white rounded font-bold">1</span>
+            <button class="px-2 py-1 border border-gray-300 rounded bg-white hover:bg-gray-50 disabled:opacity-50" disabled>下一页</button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- 7. 新建线索模态框 (录入小红书/百度等渠道线索) -->
+  <div v-if="showCreateLeadModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" @click="closeCreateLeadModal">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]" @click.stop>
+      
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          <div>
+            <h3 class="font-bold text-sm">录入新建线索 ({{ currentRole === 'promoter' ? '推广专员视角' : '推广获客域' }})</h3>
+            <p class="text-[11px] text-blue-100">自动记录入库时间，并启动 30 分钟派发时效监控</p>
+          </div>
+        </div>
+        <button @click="closeCreateLeadModal" class="text-white/80 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 text-xs">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">业务线归属 <span class="text-red-500">*</span></label>
+            <select v-model="newLeadForm.businessLine" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none font-medium">
+              <option value="software_outsource">💻 软件外包</option>
+              <option value="immigration">🌍 移民业务</option>
+              <option value="operation">📈 代运营业务</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">本公司主体 <span class="text-red-500">*</span></label>
+            <select v-model="newLeadForm.companyEntity" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none font-bold text-blue-900">
+              <option value="软齐">主体：软齐</option>
+              <option value="软通">主体：软通</option>
+              <option value="网通">主体：网通</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">推广渠道平台 <span class="text-red-500">*</span></label>
+            <select v-model="newLeadForm.platform" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-rose-700 focus:bg-white focus:border-blue-500 focus:outline-none">
+              <option value="xiaohongshu">🔥 小红书种草 / 官方号 (主推)</option>
+              <option value="baidu">百度搜索 / 竞价</option>
+              <option value="douyin">抖音短视频推广</option>
+              <option value="wechat">微信视频号 / 生态矩阵</option>
+              <option value="website">官网表单自然流</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">广告计划 / 投放笔记说明</label>
+            <input 
+              v-model="newLeadForm.channelPlan" 
+              type="text" 
+              placeholder="例：软齐_小红书私域获客专案" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">客户姓名 <span class="text-red-500">*</span></label>
+            <input 
+              v-model="newLeadForm.customerName" 
+              type="text" 
+              placeholder="请输入客户姓名" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">客户企业 / 单位名称</label>
+            <input 
+              v-model="newLeadForm.company" 
+              type="text" 
+              placeholder="请输入客户公司或单位" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">联系手机号 <span class="text-red-500">*</span></label>
+            <input 
+              v-model="newLeadForm.phone" 
+              type="text" 
+              placeholder="请输入11位手机号" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none font-mono">
+          </div>
+
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">微信号 (用于1-2h内加微)</label>
+            <input 
+              v-model="newLeadForm.wechat" 
+              type="text" 
+              placeholder="请输入微信号" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">初始客户分级 (S/A/B/C/D) <span class="text-red-500">*</span></label>
+            <select v-model="newLeadForm.level" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none font-extrabold">
+              <option value="S">S 级 (高价值/预算充足/急需)</option>
+              <option value="A">A 级 (明确需求/近期启动)</option>
+              <option value="B">B 级 (常规咨询/培育期)</option>
+              <option value="C">C 级 (低意向/信息不全)</option>
+              <option value="D">D 级 (无意向/非目标客群)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="font-bold text-gray-700 block mb-1">初评意向评分 (0-100)</label>
+            <input 
+              v-model.number="newLeadForm.intentScore" 
+              type="number" 
+              min="0" 
+              max="100" 
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">需求与留资备注</label>
+          <textarea 
+            v-model="newLeadForm.notes" 
+            placeholder="详细描述客户咨询背景、核心诉求及预算范围..." 
+            class="w-full h-16 p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2.5">
+          <div class="font-bold text-gray-800 flex items-center justify-between">
+            <span>初始分配设置：</span>
+            <div class="flex items-center space-x-3 text-xs">
+              <label class="flex items-center space-x-1.5 cursor-pointer">
+                <input type="radio" value="pending" v-model="newLeadForm.dispatchMode" class="text-blue-600">
+                <span>存入待派发池 (启动30min派发监控)</span>
+              </label>
+              <label class="flex items-center space-x-1.5 cursor-pointer">
+                <input type="radio" value="direct" v-model="newLeadForm.dispatchMode" class="text-blue-600">
+                <span>立即指派销售</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="newLeadForm.dispatchMode === 'direct'" class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label class="text-[11px] text-gray-500 block mb-1">指派部门</label>
+              <select v-model="newLeadForm.targetDept" class="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-md text-xs font-semibold text-gray-800">
+                <option value="软件事业部">软件事业部</option>
+                <option value="移民事业部">移民事业部</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-500 block mb-1">指派销售人员</label>
+              <select v-model="newLeadForm.targetSales" class="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-md text-xs font-bold text-blue-600">
+                <template v-if="newLeadForm.targetDept === '软件事业部'">
+                  <option value="林丹丹">林丹丹 (软件事业部)</option>
+                  <option value="闻杨">闻杨 (软件事业部)</option>
+                  <option value="黄奕">黄奕 (软件事业部)</option>
+                </template>
+                <template v-else>
+                  <option value="张京亚">张京亚 (移民事业部)</option>
+                  <option value="陈君杨">陈君杨 (移民事业部)</option>
+                </template>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
+        <div class="text-gray-400 text-[11px]">
+          录入人: {{ currentRole === 'operator' ? '小李 (录入员)' : (currentRole === 'promoter' ? '小王 (推广)' : '老杨 (总监)') }}
+        </div>
+        <div class="flex items-center space-x-2.5">
+          <button @click="closeCreateLeadModal" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition">
+            取消
+          </button>
+          <button @click="submitCreateLead" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-xs transition">
+            确认录入
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 8. 派发销售模态框 -->
+  <div v-if="showDispatchModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" @click="showDispatchModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md overflow-hidden flex flex-col" @click.stop>
+      
+      <div class="px-6 py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="send" class="w-5 h-5"></i>
+          <div>
+            <h3 class="font-bold text-sm">线索派发 · 指派承接销售</h3>
+            <p class="text-[11px] text-amber-100">派发后立即锁定派发时间，并启动 1-2h 销售首联 SLA</p>
+          </div>
+        </div>
+        <button @click="showDispatchModal = false" class="text-white/80 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        
+        <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+          <div class="font-bold text-gray-800 text-sm">{{ currentActiveLead?.customerName }}</div>
+          <div class="text-gray-500">{{ currentActiveLead?.company }} · {{ currentActiveLead?.phone }}</div>
+          <div class="text-gray-400 mt-1">
+            主体: <strong class="text-blue-900">{{ currentActiveLead?.companyEntity }}</strong> | 业务: {{ getBusinessLineName(currentActiveLead?.businessLine) }} | 录入: {{ currentActiveLead?.inboundAt }}
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">选择承接部门 <span class="text-red-500">*</span></label>
+          <select v-model="dispatchForm.dept" @change="onDispatchDeptChange" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none">
+            <option value="软件事业部">软件事业部 (外包/系统研发)</option>
+            <option value="移民事业部">移民事业部 (出国/置业/移民)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">选择承接销售人员 <span class="text-red-500">*</span></label>
+          <select v-model="dispatchForm.sales" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-blue-600 focus:outline-none">
+            <template v-if="dispatchForm.dept === '软件事业部'">
+              <option value="林丹丹">林丹丹 (软件事业部 · 资深顾问)</option>
+              <option value="闻杨">闻杨 (软件事业部 · 高级顾问)</option>
+              <option value="黄奕">黄奕 (软件事业部 · 技术销售)</option>
+            </template>
+            <template v-else>
+              <option value="张京亚">张京亚 (移民事业部 · 资深规划师)</option>
+              <option value="陈君杨">陈君杨 (移民事业部 · 高级顾问)</option>
+            </template>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-2 text-xs">
+        <button @click="showDispatchModal = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium">取消</button>
+        <button @click="confirmDispatch" class="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold shadow-xs">
+          确认派发并推送企微通知
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 9. 等级调整配置化审核模态框 -->
+  <div v-if="showAdjustLevelModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" @click="showAdjustLevelModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg overflow-hidden flex flex-col" @click.stop>
+      
+      <div class="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="sliders" class="w-5 h-5"></i>
+          <div>
+            <h3 class="font-bold text-sm">申请线索等级调整 (S/A/B/C/D)</h3>
+            <p class="text-[11px] text-amber-100">升级后仅在目标等级列表展示并附带弱提示小标</p>
+          </div>
+        </div>
+        <button @click="showAdjustLevelModal = false" class="text-white/80 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs">
+        
+        <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="font-bold text-gray-800">{{ currentActiveLead?.customerName }} ({{ currentActiveLead?.company }})</div>
+            <div class="text-gray-400">当前等级: <strong class="text-indigo-600 font-bold">{{ currentActiveLead?.level }} 级</strong></div>
+          </div>
+          <div class="text-right">
+            <span class="text-gray-400 block text-[10px]">承接销售</span>
+            <span class="font-bold text-gray-700">{{ currentActiveLead?.assignee }}</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">调整为目标等级 <span class="text-red-500">*</span></label>
+          <select v-model="adjustLevelForm.targetLevel" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-blue-600 focus:outline-none">
+            <option value="S">S 级 (高价值/强意向)</option>
+            <option value="A">A 级 (明确需求)</option>
+            <option value="B">B 级 (常规培育)</option>
+            <option value="C">C 级 (低意向)</option>
+            <option value="D">D 级 (无效客资)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">调整审核负责人配置 <span class="text-red-500">*</span></label>
+          <select v-model="adjustLevelForm.approver" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold text-gray-800 focus:outline-none">
+            <option value="林总">林总 (软件总经理审核)</option>
+            <option value="黄奕">黄奕 (技术负责人审核)</option>
+            <option value="张京亚">张京亚 (移民业务负责人审核)</option>
+            <option value="direct">免审模式 (直接生效调整)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="font-bold text-gray-700 block mb-1">调整原因说明</label>
+          <textarea 
+            v-model="adjustLevelForm.reason" 
+            placeholder="填写调整理由（如：客户明确表达本周签约意向，预算充足，申请晋升为 S 级）..." 
+            class="w-full h-16 p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:bg-white focus:border-blue-500 focus:outline-none"></textarea>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-2 text-xs">
+        <button @click="showAdjustLevelModal = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium">取消</button>
+        <button @click="confirmAdjustLevel" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shadow-xs">
+          提交调整申请
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 10. 全生命周期价值链穿透抽屉 -->
+  <div v-if="showLifecycleDrawer" class="fixed inset-0 z-50 flex items-center justify-end modal-backdrop" @click="closeLifecycleDrawer">
+    <div class="bg-white w-full max-w-2xl h-full shadow-2xl border-l border-gray-200 flex flex-col" @click.stop>
+      
+      <div class="px-6 py-4 bg-gray-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="p-1.5 bg-blue-600 rounded-lg">
+            <i data-lucide="git-merge" class="w-4 h-4 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h3 class="font-bold text-sm">{{ activeDrawerLead?.customerName }} · 全生命周期穿透</h3>
+              <span :class="getLevelBadgeClass(activeDrawerLead?.level)" class="px-2 py-0.5 text-[10px] rounded font-bold">{{ activeDrawerLead?.level }} 级</span>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-0.5">
+              主体: {{ activeDrawerLead?.companyEntity }} · 业务: {{ getBusinessLineName(activeDrawerLead?.businessLine) }} · 编号: {{ activeDrawerLead?.id }}
+            </p>
+          </div>
+        </div>
+        <button @click="closeLifecycleDrawer" class="text-gray-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 flex-1 overflow-y-auto space-y-6 text-xs">
+        
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div class="text-xs font-bold text-gray-700 mb-3 flex items-center justify-between">
+            <span>线索全流程节点进展 (激励仅与成交挂钩)</span>
+            <span class="text-emerald-600 font-mono font-bold">以签合同为准</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 text-center text-[11px]">
+            <div class="p-3 rounded-lg bg-green-100 text-green-800 font-bold border border-green-300">
+              <i data-lucide="check" class="w-4 h-4 mx-auto mb-1"></i>
+              1. 录入节点 ({{ activeDrawerLead?.inboundAt }})
+            </div>
+            <div class="p-3 rounded-lg" :class="activeDrawerLead?.dispatchedAt !== '--' ? 'bg-green-100 text-green-800 font-bold border border-green-300' : 'bg-orange-100 text-orange-800 font-bold border border-orange-300 animate-pulse'">
+              <i :data-lucide="activeDrawerLead?.dispatchedAt !== '--' ? 'check' : 'clock'" class="w-4 h-4 mx-auto mb-1"></i>
+              2. 跟进节点 ({{ activeDrawerLead?.assignee }})
+            </div>
+            <div class="p-3 rounded-lg" :class="activeDrawerLead?.followStatus.includes('签约') || activeDrawerLead?.followStatus.includes('成交') ? 'bg-green-100 text-green-800 font-bold border border-green-300' : 'bg-blue-50 text-blue-800 border border-blue-200'">
+              <i data-lucide="file-check" class="w-4 h-4 mx-auto mb-1"></i>
+              3. 成交节点 (合同签署)
+            </div>
+          </div>
+        </div>
+
+        <div class="border border-gray-200 rounded-xl p-4 space-y-3 bg-white shadow-2xs">
+          <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+            <h4 class="font-bold text-gray-800 flex items-center space-x-1.5">
+              <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
+              <span>基本信息与流转属性</span>
+            </h4>
+            <span class="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold">归因周期: 2026年08月</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-[11px]">
+            <div><span class="text-gray-400">公司主体：</span><span class="font-bold text-blue-900">{{ activeDrawerLead?.companyEntity }}</span></div>
+            <div><span class="text-gray-400">推广渠道：</span><span class="font-bold text-rose-600">{{ getChannelName(activeDrawerLead?.platform) }} ({{ activeDrawerLead?.channelPlan }})</span></div>
+            <div><span class="text-gray-400">承接销售：</span><span class="font-medium text-gray-800">{{ activeDrawerLead?.assignee }} ({{ activeDrawerLead?.department }})</span></div>
+            <div><span class="text-gray-400">录入人：</span><span class="text-gray-700">{{ activeDrawerLead?.recordedByName || '系统自动拉取' }}</span></div>
+            <div><span class="text-gray-400">录入时间：</span><span class="text-gray-700 font-mono">{{ activeDrawerLead?.inboundAt }}</span></div>
+            <div><span class="text-gray-400">派发时间：</span><span class="text-gray-700 font-mono">{{ activeDrawerLead?.dispatchedAt }}</span></div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-gray-800 text-sm mb-3">全流程不可篡改操作留痕时光轴</h4>
+          
+          <div class="space-y-3 pl-3 border-l-2 border-blue-500">
+            <div v-if="activeDrawerLead?.dispatchedAt !== '--'" class="space-y-0.5">
+              <div class="text-[11px] font-bold text-gray-800">{{ activeDrawerLead?.dispatchedAt }}:00 · 推广域派发至销售</div>
+              <div class="text-gray-600">由推广中台指派至【{{ activeDrawerLead?.department }} · {{ activeDrawerLead?.assignee }}】，系统启动 1-2h 首联监控。</div>
+            </div>
+            <div class="space-y-0.5">
+              <div class="text-[11px] font-bold text-gray-800">{{ activeDrawerLead?.inboundAt }}:00 · 线索成功入库</div>
+              <div class="text-gray-600">通过【{{ activeDrawerLead?.companyEntity }}】渠道投放【{{ activeDrawerLead?.channelPlan }}】自动接入并录入系统。</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs">
+        <span class="text-gray-400">Cohort 录入周期成交率统计闭环已开启</span>
+        <button @click="closeLifecycleDrawer" class="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg font-bold">
+          关闭
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 11. Command Palette 快捷指令弹窗 (⌘K) -->
+  <div v-if="showCommandModal" class="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 modal-backdrop" @click="closeCommandPalette">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl overflow-hidden flex flex-col transform transition-all" @click.stop>
+      
+      <div class="px-4 py-3.5 border-b border-gray-200 flex items-center space-x-3 bg-white">
+        <i data-lucide="sparkles" class="w-5 h-5 text-indigo-600 shrink-0"></i>
+        <input 
+          ref="commandInput"
+          v-model="commandQuery" 
+          type="text" 
+          placeholder="输入指令 (如 /create 新建, /urge 企微催办, /adjust 等级调整, /today 今日录入)..." 
+          class="w-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none bg-transparent">
+        <kbd class="px-2 py-0.5 bg-gray-100 border border-gray-300 text-gray-500 rounded text-xs font-mono">ESC</kbd>
+      </div>
+
+      <div class="px-4 py-2 bg-gray-50/70 border-b border-gray-100 flex items-center space-x-2 overflow-x-auto text-xs">
+        <span class="text-gray-400 text-[11px] font-medium shrink-0">快捷动作:</span>
+        <button @click="runCommandAction('/create')" class="px-2.5 py-1 bg-white border border-gray-200 hover:border-blue-400 rounded-md text-gray-700 font-medium transition flex items-center space-x-1 shrink-0">
+          <span class="text-blue-600 font-bold">/create</span>
+          <span>录入新建线索</span>
+        </button>
+        <button @click="runCommandAction('/urge')" class="px-2.5 py-1 bg-white border border-gray-200 hover:border-red-400 rounded-md text-gray-700 font-medium transition flex items-center space-x-1 shrink-0">
+          <span class="text-red-600 font-bold">/urge</span>
+          <span>企业微信催办</span>
+        </button>
+        <button @click="runCommandAction('/today')" class="px-2.5 py-1 bg-white border border-gray-200 hover:border-indigo-400 rounded-md text-gray-700 font-medium transition flex items-center space-x-1 shrink-0">
+          <span class="text-indigo-600 font-bold">/today</span>
+          <span>仅看今日录入</span>
+        </button>
+      </div>
+
+      <div class="max-h-80 overflow-y-auto p-2 divide-y divide-gray-100 text-xs">
+        <div 
+          v-for="(cmd, idx) in matchedCommands" 
+          :key="idx" 
+          @click="executeSelectedCommand(cmd)"
+          class="p-2.5 rounded-lg hover:bg-blue-50/70 flex items-center justify-between cursor-pointer transition">
+          <div class="flex items-center space-x-3">
+            <div :class="cmd.iconBg" class="p-2 rounded-lg text-white">
+              <i :data-lucide="cmd.icon" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="font-bold text-gray-800">{{ cmd.title }}</div>
+              <div class="text-gray-400 text-[11px]">{{ cmd.subtitle }}</div>
+            </div>
+          </div>
+          <span class="text-gray-400 font-mono text-[11px]">↵ 执行</span>
+        </div>
+      </div>
+
+      <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-[11px] text-gray-400">
+        <span>支持键盘 <kbd class="font-mono">↑</kbd> <kbd class="font-mono">↓</kbd> 切换，<kbd class="font-mono">Enter</kbd> 选中</span>
+        <span>ZK HubX 智能协同引擎</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 12. 浮动 Toast 提示 -->
+  <transition name="fade">
+    <div v-if="toast.show" class="fixed bottom-6 right-6 z-50 flex items-center space-x-3 px-4 py-3 rounded-xl shadow-xl text-xs font-medium text-white transition-all transform" :class="toast.type === 'success' ? 'bg-gray-900' : 'bg-red-600'">
+      <i :data-lucide="toast.type === 'success' ? 'check-circle-2' : 'alert-circle'" class="w-4 h-4"></i>
+      <span>{{ toast.message }}</span>
+      <button v-if="toast.undoable" @click="undoLastAction" class="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-[11px] font-bold underline">
+        撤销 (5s)
+      </button>
+    </div>
+  </transition>
+
+</div>
+
+<script>
+  const { createApp } = Vue;
+
+  createApp({
+    data() {
+      return {
+        currentRole: 'admin', // 'admin', 'promoter', 'operator'
+        currentTab: 'all',
+        businessLineTab: 'all',
+        timeFilter: 'today', // 'today', 'this_month', 'all'
+        sortBy: 'time', // 'time', 'level'
+        searchQuery: '',
+        filterCompanyEntity: 'all',
+        filterDepartment: 'all',
+        filterChannel: 'all',
+        filterLevel: 'all',
+        selectAll: false,
+        selectedIds: [],
+        showCommandModal: false,
+        commandQuery: '',
+        showCreateLeadModal: false,
+        showDispatchModal: false,
+        showAdjustLevelModal: false,
+        showLifecycleDrawer: false,
+        currentActiveLead: null,
+        activeDrawerLead: null,
+        newLeadForm: {
+          businessLine: 'software_outsource',
+          companyEntity: '软齐',
+          platform: 'xiaohongshu',
+          channelPlan: '软齐_小红书私域开发专案',
+          customerName: '',
+          company: '',
+          phone: '',
+          wechat: '',
+          level: 'S',
+          intentScore: 92,
+          notes: '',
+          dispatchMode: 'pending',
+          targetDept: '软件事业部',
+          targetSales: '林丹丹'
+        },
+        dispatchForm: {
+          dept: '软件事业部',
+          sales: '林丹丹'
+        },
+        adjustLevelForm: {
+          targetLevel: 'S',
+          approver: '林总',
+          reason: ''
+        },
+        toast: {
+          show: false,
+          message: '',
+          type: 'success',
+          undoable: false,
+          timer: null
+        },
+        leads: [
+          {
+            id: "CLUE-20260824-001",
+            businessLine: "software_outsource",
+            companyEntity: "软齐",
+            customerName: "张建国",
+            company: "智远科技有限公司",
+            phone: "138****5821",
+            wechat: "wx_zhangjg88",
+            platform: "xiaohongshu",
+            channelPlan: "软齐_小红书私域获客专案",
+            level: "S",
+            isRecentlyUpgraded: true,
+            inboundAt: "2026-08-24 08:30",
+            dispatchedAt: "2026-08-24 08:45",
+            dispatchStatus: "dispatched",
+            assignee: "林丹丹",
+            department: "软件事业部",
+            slaStatus: "warning",
+            slaCountdownText: "剩余 22 分钟",
+            followStatus: "待首联打卡",
+            intentScore: 92,
+            recordedBy: "admin",
+            recordedByName: "推广小王",
+            notes: "小红书官方号私信留资，咨询私域中台建设，预算50万。"
+          },
+          {
+            id: "CLUE-20260824-002",
+            businessLine: "software_outsource",
+            companyEntity: "软通",
+            customerName: "林海波",
+            company: "鼎盛重工制造",
+            phone: "139****1120",
+            wechat: "haibo_lin",
+            platform: "baidu",
+            channelPlan: "软通_百度信息流制造专项",
+            level: "S",
+            isRecentlyUpgraded: false,
+            inboundAt: "2026-08-24 07:05",
+            dispatchedAt: "2026-08-24 07:15",
+            dispatchStatus: "dispatched",
+            assignee: "闻杨",
+            department: "软件事业部",
+            slaStatus: "danger",
+            slaCountdownText: "已超时 45 分钟",
+            followStatus: "首联严重超时",
+            intentScore: 95,
+            recordedBy: "admin",
+            recordedByName: "系统同步",
+            notes: "主动留资急需MES系统方案，已触发企业微信告警。"
+          },
+          {
+            id: "CLUE-20260824-003",
+            businessLine: "immigration",
+            companyEntity: "网通",
+            customerName: "陈美玲",
+            company: "悦美连锁投资",
+            phone: "137****9033",
+            wechat: "cml_yuemei",
+            platform: "xiaohongshu",
+            channelPlan: "网通_小红书欧洲置业种草",
+            level: "A",
+            isRecentlyUpgraded: false,
+            inboundAt: "2026-08-24 09:15",
+            dispatchedAt: "2026-08-24 09:30",
+            dispatchStatus: "dispatched",
+            assignee: "张京亚",
+            department: "移民事业部",
+            slaStatus: "normal",
+            slaCountdownText: "剩余 105 分钟",
+            followStatus: "跟进中 (方案咨询)",
+            intentScore: 88,
+            recordedBy: "operator_li",
+            recordedByName: "客服小李",
+            notes: "小红书爆款笔记引流，咨询希腊购房移民政策与流程。"
+          },
+          {
+            id: "CLUE-20260824-004",
+            businessLine: "software_outsource",
+            companyEntity: "软齐",
+            customerName: "刘晓峰",
+            company: "新途物流冷链",
+            phone: "135****4429",
+            wechat: "liuxf_xt",
+            platform: "douyin",
+            channelPlan: "软齐_抖音冷链物流TMS专案",
+            level: "B",
+            isRecentlyUpgraded: false,
+            inboundAt: "2026-08-24 09:40",
+            dispatchedAt: "--",
+            dispatchStatus: "pending_normal",
+            dispatchLeftMins: 20,
+            assignee: "待分配",
+            department: "待指派",
+            slaStatus: "normal",
+            slaCountdownText: "--",
+            followStatus: "待派发销售",
+            intentScore: 78,
+            recordedBy: "operator_li",
+            recordedByName: "客服小李",
+            notes: "抖音短视频评论区线索，需要冷链排线调度系统。"
+          },
+          {
+            id: "CLUE-20260823-005",
+            businessLine: "immigration",
+            companyEntity: "软通",
+            customerName: "方伟民",
+            company: "华泰金融",
+            phone: "186****7731",
+            wechat: "weimin_fang",
+            platform: "baidu",
+            channelPlan: "软通_北美技术与投资移民",
+            level: "S",
+            isRecentlyUpgraded: false,
+            inboundAt: "2026-08-23 08:50",
+            dispatchedAt: "2026-08-23 09:00",
+            dispatchStatus: "dispatched",
+            assignee: "陈君杨",
+            department: "移民事业部",
+            slaStatus: "success",
+            slaCountdownText: "首联耗时 15分钟",
+            followStatus: "已签约成交 (待回款)",
+            intentScore: 98,
+            recordedBy: "admin",
+            recordedByName: "推广小王",
+            notes: "高净值客户，已完成线上方案签约，计入8月录入周期成交率。"
+          },
+          {
+            id: "CLUE-20260823-006",
+            businessLine: "operation",
+            companyEntity: "软齐",
+            customerName: "郭雅婷",
+            company: "星辰在线教育",
+            phone: "180****6621",
+            wechat: "guoyating_edu",
+            platform: "xiaohongshu",
+            channelPlan: "软齐_小红书代运营矩阵",
+            level: "D",
+            isRecentlyUpgraded: false,
+            inboundAt: "2026-08-23 14:00",
+            dispatchedAt: "2026-08-23 14:20",
+            dispatchStatus: "dispatched",
+            assignee: "黄奕",
+            department: "软件事业部",
+            slaStatus: "success",
+            slaCountdownText: "首联耗时 20分钟",
+            followStatus: "已确认为无效/D级",
+            intentScore: 35,
+            recordedBy: "operator_li",
+            recordedByName: "客服小李",
+            notes: "学生咨询求职实习，非目标企业客户，归入 D 级。"
+          }
+        ],
+        commandActions: [
+          { command: '/create', title: '新建录入线索', subtitle: '录入小红书/百度/抖音线索，启动30min派发倒计时', icon: 'plus-circle', iconBg: 'bg-blue-600' },
+          { command: '/urge', title: '企业微信一键催办', subtitle: '向首联超时(1-2h)销售推送企微工作通知', icon: 'message-square', iconBg: 'bg-red-600' },
+          { command: '/today', title: '切换为今日录入视图', subtitle: '默认仅查看今日录入线索', icon: 'calendar', iconBg: 'bg-indigo-600' }
+        ]
+      };
+    },
+    computed: {
+      timeFilterText() {
+        switch(this.timeFilter) {
+          case 'today': return '今日';
+          case 'this_month': return '本月';
+          default: return '累计';
+        }
+      },
+      roleFilteredLeads() {
+        return this.leads.filter(lead => {
+          if (this.currentRole === 'operator') {
+            const isToday = lead.inboundAt.startsWith('2026-08-24');
+            return lead.recordedBy === 'operator_li' && isToday;
+          }
+          if (this.currentRole === 'promoter') {
+            return lead.platform === 'xiaohongshu' || lead.platform === 'baidu';
+          }
+          return true;
+        });
+      },
+      pendingDispatchCount() {
+        return this.roleFilteredLeads.filter(l => l.dispatchedAt === '--').length;
+      },
+      pendingAuditCount() {
+        return this.roleFilteredLeads.filter(l => l.abnormalFlag === 'downgrade_review').length;
+      },
+      overdueCount() {
+        return this.roleFilteredLeads.filter(l => l.slaStatus === 'danger').length;
+      },
+      highValueCount() {
+        return this.roleFilteredLeads.filter(l => l.level === 'S' || l.level === 'A').length;
+      },
+      currentTabTitle() {
+        if (this.currentRole === 'operator') return '普通录入员工作台 · 我今日录入的线索';
+        if (this.currentRole === 'promoter') return '推广专员工作台 · 我负责的推广渠道 (小红书/百度)';
+        switch(this.currentTab) {
+          case 'dispatch_alert': return '待派发 / 派发超时告警清单 (入库30min红线)';
+          case 'overdue': return '销售首联超时告警清单 (1-2h 企微催办)';
+          case 'high_value': return 'S/A 级重点高价值客资追踪看板';
+          case 'downgrade_audit': return '线索等级调整审核清单 (林总/黄奕)';
+          case 'pool_gatekeeper': return '公海准入“3人3轮”规则强控拦截清单';
+          default: return '推广域 · 线索流转与成交归因全量总库';
+        }
+      },
+      finalDisplayLeads() {
+        let list = this.roleFilteredLeads.filter(lead => {
+          if (this.businessLineTab !== 'all' && lead.businessLine !== this.businessLineTab) return false;
+
+          if (this.timeFilter === 'today' && !lead.inboundAt.startsWith('2026-08-24')) return false;
+          if (this.timeFilter === 'this_month' && !lead.inboundAt.startsWith('2026-08')) return false;
+
+          if (this.currentTab === 'dispatch_alert' && lead.dispatchedAt !== '--') return false;
+          if (this.currentTab === 'overdue' && lead.slaStatus !== 'danger') return false;
+          if (this.currentTab === 'high_value' && (lead.level !== 'S' && lead.level !== 'A')) return false;
+          if (this.currentTab === 'downgrade_audit' && lead.abnormalFlag !== 'downgrade_review') return false;
+          if (this.currentTab === 'pool_gatekeeper' && lead.abnormalFlag !== 'public_pool_gatekeeper') return false;
+
+          if (this.filterCompanyEntity !== 'all' && lead.companyEntity !== this.filterCompanyEntity) return false;
+          if (this.filterChannel !== 'all' && lead.platform !== this.filterChannel) return false;
+          if (this.filterLevel !== 'all' && lead.level !== this.filterLevel) return false;
+
+          if (this.filterDepartment !== 'all') {
+            if (this.filterDepartment === '待派发' && lead.dispatchedAt !== '--') return false;
+            if (this.filterDepartment !== '待派发' && lead.department !== this.filterDepartment) return false;
+          }
+
+          if (this.searchQuery) {
+            const q = this.searchQuery.toLowerCase();
+            const matchName = lead.customerName.toLowerCase().includes(q);
+            const matchCompany = lead.company.toLowerCase().includes(q);
+            const matchSales = lead.assignee.toLowerCase().includes(q);
+            const matchPhone = lead.phone.includes(q);
+            const matchPlan = lead.channelPlan.toLowerCase().includes(q);
+            if (!matchName && !matchCompany && !matchSales && !matchPhone && !matchPlan) return false;
+          }
+
+          return true;
+        });
+
+        if (this.sortBy === 'level') {
+          const levelMap = { 'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1 };
+          list.sort((a, b) => (levelMap[b.level] || 0) - (levelMap[a.level] || 0));
+        } else {
+          list.sort((a, b) => b.inboundAt.localeCompare(a.inboundAt));
+        }
+
+        return list;
+      },
+      matchedCommands() {
+        if (!this.commandQuery) return this.commandActions;
+        const q = this.commandQuery.toLowerCase();
+        return this.commandActions.filter(c => 
+          c.command.toLowerCase().includes(q) || 
+          c.title.toLowerCase().includes(q) || 
+          c.subtitle.toLowerCase().includes(q)
+        );
+      }
+    },
+    mounted() {
+      this.$nextTick(() => {
+        lucide.createIcons();
+      });
+    },
+    updated() {
+      this.$nextTick(() => {
+        lucide.createIcons();
+      });
+    },
+    methods: {
+      handleGlobalKeydown(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          this.openCommandPalette();
+        }
+        if (e.key === 'Escape') {
+          this.closeCommandPalette();
+          this.closeCreateLeadModal();
+          this.showDispatchModal = false;
+          this.showAdjustLevelModal = false;
+          this.closeLifecycleDrawer();
+        }
+      },
+      onRoleChange() {
+        if (this.currentRole === 'operator') {
+          this.timeFilter = 'today';
+          this.currentTab = 'all';
+        }
+        this.showToast(`已切换至【${this.getRoleDisplayName(this.currentRole)}】视角，数据权限已重置`, 'success');
+      },
+      getRoleDisplayName(role) {
+        switch(role) {
+          case 'admin': return '管理者 (全量)';
+          case 'promoter': return '推广专员 (小红书/百度)';
+          case 'operator': return '普通录入员 (自录当日)';
+          default: return '员工';
+        }
+      },
+      getBusinessLineCount(line) {
+        return this.roleFilteredLeads.filter(l => l.businessLine === line).length;
+      },
+      getBusinessLineName(line) {
+        switch(line) {
+          case 'software_outsource': return '软件外包';
+          case 'immigration': return '移民业务';
+          case 'operation': return '代运营业务';
+          default: return '通用业务';
+        }
+      },
+      getBusinessLineBadgeClass(line) {
+        switch(line) {
+          case 'software_outsource': return 'bg-blue-100 text-blue-800 border border-blue-300';
+          case 'immigration': return 'bg-purple-100 text-purple-800 border border-purple-300';
+          case 'operation': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+          default: return 'bg-gray-100 text-gray-800';
+        }
+      },
+      getBusinessLineIcon(line) {
+        switch(line) {
+          case 'software_outsource': return 'code-2';
+          case 'immigration': return 'plane';
+          case 'operation': return 'activity';
+          default: return 'layers';
+        }
+      },
+      openCreateLeadModal() {
+        this.newLeadForm = {
+          businessLine: 'software_outsource',
+          companyEntity: '软齐',
+          platform: 'xiaohongshu',
+          channelPlan: '软齐_小红书私域获客专案',
+          customerName: '',
+          company: '',
+          phone: '',
+          wechat: '',
+          level: 'S',
+          intentScore: 90,
+          notes: '',
+          dispatchMode: 'pending',
+          targetDept: '软件事业部',
+          targetSales: '林丹丹'
+        };
+        this.showCreateLeadModal = true;
+      },
+      closeCreateLeadModal() {
+        this.showCreateLeadModal = false;
+      },
+      submitCreateLead() {
+        if (!this.newLeadForm.customerName || !this.newLeadForm.phone) {
+          this.showToast('请完整填写客户姓名与联系手机号！', 'error');
+          return;
+        }
+
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        const newId = `CLUE-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-00${this.leads.length + 1}`;
+
+        const isDirect = this.newLeadForm.dispatchMode === 'direct';
+        const recordedByRole = this.currentRole === 'operator' ? 'operator_li' : (this.currentRole === 'promoter' ? 'admin' : 'admin');
+        const recordedByName = this.currentRole === 'operator' ? '客服小李' : (this.currentRole === 'promoter' ? '推广小王' : '老杨(总监)');
+
+        const newLead = {
+          id: newId,
+          businessLine: this.newLeadForm.businessLine,
+          companyEntity: this.newLeadForm.companyEntity,
+          customerName: this.newLeadForm.customerName,
+          company: this.newLeadForm.company || '未填写企业',
+          phone: this.newLeadForm.phone,
+          wechat: this.newLeadForm.wechat || '',
+          platform: this.newLeadForm.platform,
+          channelPlan: this.newLeadForm.channelPlan || `${this.newLeadForm.companyEntity}_小红书获客`,
+          level: this.newLeadForm.level,
+          isRecentlyUpgraded: false,
+          inboundAt: timeStr,
+          dispatchedAt: isDirect ? timeStr : '--',
+          dispatchStatus: isDirect ? 'dispatched' : 'pending_normal',
+          dispatchLeftMins: isDirect ? 0 : 30,
+          assignee: isDirect ? this.newLeadForm.targetSales : '待分配',
+          department: isDirect ? this.newLeadForm.targetDept : '待指派',
+          slaStatus: isDirect ? 'normal' : 'normal',
+          slaCountdownText: isDirect ? '剩余 120 分钟' : '--',
+          followStatus: isDirect ? '待首联打卡' : '待派发销售',
+          intentScore: this.newLeadForm.intentScore || 85,
+          recordedBy: recordedByRole,
+          recordedByName: recordedByName,
+          notes: this.newLeadForm.notes || '手工新建录入'
+        };
+
+        this.leads.unshift(newLead);
+        this.closeCreateLeadModal();
+        this.showToast(`成功录入【${newLead.customerName}】！录入时间: ${timeStr}`, 'success', true);
+      },
+      openDispatchModal(lead) {
+        this.currentActiveLead = lead;
+        this.dispatchForm.dept = lead.businessLine === 'immigration' ? '移民事业部' : '软件事业部';
+        this.dispatchForm.sales = lead.businessLine === 'immigration' ? '张京亚' : '林丹丹';
+        this.showDispatchModal = true;
+      },
+      onDispatchDeptChange() {
+        if (this.dispatchForm.dept === '软件事业部') {
+          this.dispatchForm.sales = '林丹丹';
+        } else {
+          this.dispatchForm.sales = '张京亚';
+        }
+      },
+      confirmDispatch() {
+        if (!this.currentActiveLead) return;
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        
+        this.currentActiveLead.dispatchedAt = timeStr;
+        this.currentActiveLead.dispatchStatus = 'dispatched';
+        this.currentActiveLead.assignee = this.dispatchForm.sales;
+        this.currentActiveLead.department = this.dispatchForm.dept;
+        this.currentActiveLead.followStatus = '待首联打卡';
+        this.currentActiveLead.slaStatus = 'normal';
+        this.currentActiveLead.slaCountdownText = '剩余 120 分钟';
+
+        this.showDispatchModal = false;
+        this.showToast(`线索【${this.currentActiveLead.customerName}】已派发至【${this.dispatchForm.dept} · ${this.dispatchForm.sales}】，已推送企业微信工作通知！`, 'success', true);
+      },
+      openAdjustLevelModal(lead) {
+        this.currentActiveLead = lead;
+        this.adjustLevelForm = {
+          targetLevel: lead.level === 'S' ? 'A' : 'S',
+          approver: lead.businessLine === 'software_outsource' ? '林总' : '张京亚',
+          reason: ''
+        };
+        this.showAdjustLevelModal = true;
+      },
+      confirmAdjustLevel() {
+        if (!this.currentActiveLead) return;
+        const isUpgrade = this.adjustLevelForm.targetLevel === 'S' || (this.adjustLevelForm.targetLevel === 'A' && this.currentActiveLead.level !== 'S');
+        
+        if (this.adjustLevelForm.approver === 'direct') {
+          this.currentActiveLead.level = this.adjustLevelForm.targetLevel;
+          this.currentActiveLead.isRecentlyUpgraded = isUpgrade;
+          this.showToast(`已直接调整【${this.currentActiveLead.customerName}】为 ${this.adjustLevelForm.targetLevel} 级，${isUpgrade ? '目标列表已展示新晋升标识' : '已归档'}`, 'success');
+        } else {
+          this.showToast(`已向【${this.adjustLevelForm.approver}】提交等级调整审批单 (申请变更为 ${this.adjustLevelForm.targetLevel} 级)`, 'success');
+        }
+        this.showAdjustLevelModal = false;
+      },
+      openCommandPalette() {
+        this.showCommandModal = true;
+        this.commandQuery = '';
+        this.$nextTick(() => {
+          if (this.$refs.commandInput) this.$refs.commandInput.focus();
+        });
+      },
+      closeCommandPalette() {
+        this.showCommandModal = false;
+      },
+      runCommandAction(cmd) {
+        this.closeCommandPalette();
+        if (cmd === '/create') {
+          this.openCreateLeadModal();
+        } else if (cmd === '/urge') {
+          this.batchUrgeOverdue();
+        } else if (cmd === '/today') {
+          this.timeFilter = 'today';
+          this.showToast('已切换为【今日录入】视图', 'success');
+        }
+      },
+      executeSelectedCommand(cmd) {
+        this.runCommandAction(cmd.command);
+      },
+      openLifecycleDrawer(lead) {
+        this.activeDrawerLead = lead;
+        this.showLifecycleDrawer = true;
+      },
+      closeLifecycleDrawer() {
+        this.showLifecycleDrawer = false;
+      },
+      urgeSingleLead(lead) {
+        this.showToast(`已通过企业微信向销售【${lead.assignee}】发送首联催办消息卡片！`, 'success', true);
+      },
+      batchUrgeOverdue() {
+        this.showToast('已向所有首联超时销售（软件部闻杨等）发送企业微信催办通知！', 'success', true);
+      },
+      openBatchAssignModal() {
+        this.showToast('已进入批量派发模式，可一键派发至软件事业部或移民事业部', 'success');
+      },
+      resetFilters() {
+        this.searchQuery = '';
+        this.businessLineTab = 'all';
+        this.filterCompanyEntity = 'all';
+        this.filterDepartment = 'all';
+        this.filterChannel = 'all';
+        this.filterLevel = 'all';
+        this.timeFilter = 'today';
+        this.sortBy = 'time';
+        this.currentTab = 'all';
+      },
+      showToast(msg, type = 'success', undoable = false) {
+        if (this.toast.timer) clearTimeout(this.toast.timer);
+        this.toast = {
+          show: true,
+          message: msg,
+          type: type,
+          undoable: undoable,
+          timer: setTimeout(() => {
+            this.toast.show = false;
+          }, 5000)
+        };
+      },
+      undoLastAction() {
+        this.toast.show = false;
+        this.showToast('已撤销上一步操作！', 'success');
+      },
+      getLevelBadgeClass(level) {
+        switch(level) {
+          case 'S': return 'bg-red-100 text-red-700 border border-red-300';
+          case 'A': return 'bg-amber-100 text-amber-800 border border-amber-300';
+          case 'B': return 'bg-blue-100 text-blue-800 border border-blue-300';
+          case 'C': return 'bg-gray-100 text-gray-700 border border-gray-300';
+          case 'D': return 'bg-slate-100 text-slate-500 border border-slate-300';
+          default: return 'bg-gray-100 text-gray-700';
+        }
+      },
+      getChannelBadgeClass(platform) {
+        switch(platform) {
+          case 'xiaohongshu': return 'bg-rose-500 text-white shadow-2xs';
+          case 'douyin': return 'bg-black text-white';
+          case 'baidu': return 'bg-blue-600 text-white';
+          case 'wechat': return 'bg-green-600 text-white';
+          default: return 'bg-gray-700 text-white';
+        }
+      },
+      getChannelName(platform) {
+        switch(platform) {
+          case 'xiaohongshu': return '小红书';
+          case 'douyin': return '抖音';
+          case 'baidu': return '百度';
+          case 'wechat': return '微信';
+          default: return '官网';
+        }
+      },
+      getStatusTextColor(status) {
+        if (status.includes('超时') || status.includes('超期')) return 'text-red-600';
+        if (status.includes('待审') || status.includes('预警') || status.includes('待派发')) return 'text-amber-700';
+        if (status.includes('成交') || status.includes('签约')) return 'text-emerald-600';
+        if (status.includes('跟进') || status.includes('咨询')) return 'text-blue-600';
+        return 'text-gray-800';
+      }
+    }
+  }).mount('#app');
+</script>
+</body>
+</html>

@@ -6,6 +6,18 @@ export function getReceivedAmount(c: Contract): number {
   return (c.collectionRecords ?? []).reduce((sum, r) => sum + r.amount, 0);
 }
 
+/**
+ * 计算有效标的额：主合同额 + Σ已归档且未作废的补充合同额
+ * @param main 主合同
+ * @param supplements 该主合同下的补充合同列表（kind === 'supplement' && parentContractId === main.id）
+ */
+export function effectiveAmount(main: Contract, supplements: Contract[]): number {
+  const archivedSupplementAmount = supplements
+    .filter(s => s.kind === 'supplement' && s.status === 'archived' && s.status !== 'voided')
+    .reduce((sum, s) => sum + (s.current?.totalAmount ?? 0), 0);
+  return (main.current?.totalAmount ?? 0) + archivedSupplementAmount;
+}
+
 function getNextPendingPlan(c: Contract, now: Date) {
   const plans = c.current.paymentPlans ?? [];
   const received = getReceivedAmount(c);

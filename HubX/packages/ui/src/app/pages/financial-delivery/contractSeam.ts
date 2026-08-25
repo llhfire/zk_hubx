@@ -27,6 +27,24 @@ const FD_CONTRACTS: Record<string, any> = {
       { id: 'cr-2', contractId: 'contract-001', amount: 41000, collectionDate: '2026-07-20', method: '银行转账' },
     ],
   },
+  // 补充合同 BC01（已归档生效，+¥35k）
+  'contract-001-bc01': {
+    id: 'contract-001-bc01', contractNo: 'HT-2026-001-BC01', name: '阿里巴巴-企业管理系统（补充1）',
+    customerName: '阿里巴巴（中国）有限公司', totalAmount: 35000,
+    status: 'archived', signingDate: '2026-07-15',
+    sourceQuoteId: 'quot-001-supp1',
+    paymentPlans: [],
+    collectionRecords: [],
+  },
+  // 补充合同 BC02（审批中，+¥20k）
+  'contract-001-bc02': {
+    id: 'contract-001-bc02', contractNo: 'HT-2026-001-BC02', name: '阿里巴巴-企业管理系统（补充2）',
+    customerName: '阿里巴巴（中国）有限公司', totalAmount: 20000,
+    status: 'pending_approval', signingDate: undefined,
+    sourceQuoteId: 'quot-001-supp2',
+    paymentPlans: [],
+    collectionRecords: [],
+  },
   'contract-003': {
     id: 'contract-003', contractNo: 'HT-2026-003', name: '字节跳动-在线教育平台',
     customerName: '字节跳动-教育平台', totalAmount: 250000,
@@ -94,4 +112,25 @@ export function getPaymentPlans(contractId: string): { dueDate: string; amount: 
 /** 累计回款金额 */
 export function totalCollected(contractId: string): number {
   return getCollections(contractId).reduce((s, c) => s + c.amount, 0);
+}
+
+/** 补充合同摘要（用于 Case 补充合同列表与标的额演进） */
+export function getSupplementSummaries(extraContractIds: string[]): import('./types').SupplementContractSummary[] {
+  return extraContractIds.map(id => {
+    const contract = FD_CONTRACTS[id];
+    if (!contract) return null;
+    return {
+      id: contract.id,
+      contractNo: contract.contractNo,
+      name: contract.name ?? '',
+      amount: contract.totalAmount ?? 0,
+      status: contract.status === 'archived' ? 'archived' as const
+        : contract.status === 'pending_approval' ? 'pending_approval' as const
+        : 'voided' as const,
+      archived: contract.status === 'archived',
+      voided: contract.status === 'voided',
+      signingDate: contract.signingDate,
+      sourceQuoteId: contract.sourceQuoteId,
+    };
+  }).filter((s): s is import('./types').SupplementContractSummary => s !== null);
 }

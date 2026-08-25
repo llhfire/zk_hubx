@@ -2,63 +2,88 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ARCH_ROUTES = new Set(['/architecture.html', '/ZK-HubX架构图.html']);
-const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../ZK-HubX架构图.html');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const HUBX = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function isArchRequest(url) {
-  if (!url) return false;
+/** 静态架构 HTML：dev 按请求读盘，build 复制进 Pages dist。 */
+const DOCS = [
+  {
+    routes: ['/architecture.html', '/ZK-HubX架构图.html'],
+    source: path.join(ROOT, 'ZK-HubX架构图.html'),
+    copyAs: ['architecture.html', 'ZK-HubX架构图.html'],
+  },
+  {
+    routes: ['/tech-architecture.html', '/ZK-HubX技术架构.html'],
+    source: path.join(HUBX, 'docs/ZK-HubX技术架构.html'),
+    copyAs: ['tech-architecture.html', 'ZK-HubX技术架构.html'],
+  },
+];
+
+function pathnameOf(url) {
+  if (!url) return '';
   let pathname = url.split('?')[0];
   try {
     pathname = decodeURIComponent(pathname);
   } catch {
     /* keep raw */
   }
-  return ARCH_ROUTES.has(pathname);
+  return pathname;
 }
 
-function sendArch(response) {
-  const html = fs.readFileSync(SOURCE, 'utf8');
+function findDoc(url) {
+  const pathname = pathnameOf(url);
+  return DOCS.find((doc) => doc.routes.includes(pathname));
+}
+
+function sendHtml(response, filePath) {
+  const html = fs.readFileSync(filePath, 'utf8');
   response.setHeader('Content-Type', 'text/html; charset=utf-8');
+  response.setHeader('Cache-Control', 'no-store');
   response.end(html);
 }
 
-/** 以仓库根目录 ZK-HubX架构图.html 为唯一事实源，dev 与 build 都从这里读。 */
+/** 功能架构图（仓库根）+ β 技术架构（HubX/docs），dev 与 build 都从源文件读。 */
 export function architectureDiagramPlugin() {
   return {
     name: 'architecture-diagram',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        if (isArchRequest(request.url)) {
-          try {
-            sendArch(response);
-          } catch (error) {
-            response.statusCode = 500;
-            response.end(String(error?.message || error));
-          }
+        const doc = findDoc(request.url);
+        if (!doc) {
+          next();
           return;
         }
-        next();
+        try {
+          sendHtml(response, doc.source);
+        } catch (error) {
+          response.statusCode = 500;
+          response.end(String(error?.message || error));
+        }
       });
     },
     configurePreviewServer(server) {
       server.middlewares.use((request, response, next) => {
-        if (isArchRequest(request.url)) {
-          try {
-            sendArch(response);
-          } catch (error) {
-            response.statusCode = 500;
-            response.end(String(error?.message || error));
-          }
+        const doc = findDoc(request.url);
+        if (!doc) {
+          next();
           return;
         }
-        next();
+        try {
+          sendHtml(response, doc.source);
+        } catch (error) {
+          response.statusCode = 500;
+          response.end(String(error?.message || error));
+        }
       });
     },
     writeBundle(options) {
       const dir = options.dir;
       if (!dir) return;
-      fs.copyFileSync(SOURCE, path.join(dir, 'architecture.html'));
-      fs.copyFileSync(SOURCE, path.join(dir, 'ZK-HubX架构图.html'));
+      for (const doc of DOCS) {
+        for (const name of doc.copyAs) {
+          fs.copyFileSync(doc.source, path.join(dir, name));
+        }
+      }
     },
   };
 }

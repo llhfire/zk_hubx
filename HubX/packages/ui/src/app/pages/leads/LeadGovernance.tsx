@@ -27,6 +27,7 @@ import {
   IconArrowRight,
   IconEdit,
 } from '@arco-design/web-react/icon';
+import { channelLabel } from '@/app/pages/lead-dispatch/channelDictionary';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -91,16 +92,16 @@ interface GovernanceRule {
 // ---------- 模拟数据 ----------
 
 const mockLeads: LeadRecord[] = [
-  { id: 'LS001', name: '某科技公司APP开发', source: '百度推广', level: '高', status: '需求调研', owner: '张三', entity: '中科软艺', createTime: '2026-06-20', claimTime: '2026-06-20', lastFollowTime: '2026-07-01', nextFollowTime: '2026-06-28', followCount: 5, daysHeld: 12 },
-  { id: 'LS002', name: '金融公司管理系统', source: '抖音', level: '高', status: '方案报价', owner: '张三', entity: '软艺信息', createTime: '2026-06-15', claimTime: '2026-06-15', lastFollowTime: '2026-06-29', nextFollowTime: '2026-06-25', followCount: 8, daysHeld: 17 },
-  { id: 'LS003', name: '电商平台小程序', source: '百度推广', level: '中', status: '初步沟通', owner: '李四', entity: '中科软艺', createTime: '2026-06-25', claimTime: '2026-06-25', lastFollowTime: '2026-07-02', nextFollowTime: '2026-07-05', followCount: 3, daysHeld: 7 },
-  { id: 'LS004', name: '教育行业CRM', source: '小红书', level: '中', status: '未联系', owner: '李四', entity: '巴蜀文攻', createTime: '2026-06-28', claimTime: '2026-06-28', lastFollowTime: '', nextFollowTime: '2026-06-30', followCount: 0, daysHeld: 4 },
-  { id: 'LS005', name: '医疗健康APP', source: '百度推广', level: '高', status: '合同洽谈', owner: '王五', entity: '中科软艺', createTime: '2026-06-10', claimTime: '2026-06-10', lastFollowTime: '2026-07-01', nextFollowTime: '2026-07-03', followCount: 12, daysHeld: 22 },
-  { id: 'LS006', name: '物流追踪系统', source: '抖音', level: '低', status: '未接通', owner: '王五', entity: '软艺信息', createTime: '2026-06-22', claimTime: '2026-06-22', lastFollowTime: '2026-06-25', nextFollowTime: '2026-06-24', followCount: 2, daysHeld: 10 },
-  { id: 'LS007', name: '社交平台开发', source: '微信推广', level: '中', status: '需求调研', owner: '赵六', entity: '中科软艺', createTime: '2026-06-18', claimTime: '2026-06-18', lastFollowTime: '2026-06-30', nextFollowTime: '2026-07-01', followCount: 6, daysHeld: 14 },
-  { id: 'LS008', name: '零售POS系统', source: '百度推广', level: '高', status: '已签单', owner: '赵六', entity: '巴蜀文攻', createTime: '2026-06-05', claimTime: '2026-06-05', lastFollowTime: '2026-06-28', nextFollowTime: '', followCount: 15, daysHeld: 27 },
-  { id: 'LS009', name: '智能制造MES', source: '抖音', level: '高', status: '初步沟通', owner: '钱七', entity: '软艺信息', createTime: '2026-06-29', claimTime: '2026-06-29', lastFollowTime: '', nextFollowTime: '2026-07-01', followCount: 0, daysHeld: 3 },
-  { id: 'LS010', name: '保险行业系统', source: '小红书', level: '中', status: '未联系', owner: '钱七', entity: '中科软艺', createTime: '2026-06-30', claimTime: '2026-06-30', lastFollowTime: '', nextFollowTime: '2026-07-02', followCount: 0, daysHeld: 2 },
+  { id: 'LS001', name: '某科技公司APP开发', source: 'baidu', level: '高', status: '需求调研', owner: '张三', entity: '中科软艺', createTime: '2026-06-20', claimTime: '2026-06-20', lastFollowTime: '2026-07-01', nextFollowTime: '2026-06-28', followCount: 5, daysHeld: 12 },
+  { id: 'LS002', name: '金融公司管理系统', source: 'douyin', level: '高', status: '方案报价', owner: '张三', entity: '软艺信息', createTime: '2026-06-15', claimTime: '2026-06-15', lastFollowTime: '2026-06-29', nextFollowTime: '2026-06-25', followCount: 8, daysHeld: 17 },
+  { id: 'LS003', name: '电商平台小程序', source: 'baidu', level: '中', status: '初步沟通', owner: '李四', entity: '中科软艺', createTime: '2026-06-25', claimTime: '2026-06-25', lastFollowTime: '2026-07-02', nextFollowTime: '2026-07-05', followCount: 3, daysHeld: 7 },
+  { id: 'LS004', name: '教育行业CRM', source: 'xiaohongshu', level: '中', status: '未联系', owner: '李四', entity: '巴蜀文攻', createTime: '2026-06-28', claimTime: '2026-06-28', lastFollowTime: '', nextFollowTime: '2026-06-30', followCount: 0, daysHeld: 4 },
+  { id: 'LS005', name: '医疗健康APP', source: 'baidu', level: '高', status: '合同洽谈', owner: '王五', entity: '中科软艺', createTime: '2026-06-10', claimTime: '2026-06-10', lastFollowTime: '2026-07-01', nextFollowTime: '2026-07-03', followCount: 12, daysHeld: 22 },
+  { id: 'LS006', name: '物流追踪系统', source: 'douyin', level: '低', status: '未接通', owner: '王五', entity: '软艺信息', createTime: '2026-06-22', claimTime: '2026-06-22', lastFollowTime: '2026-06-25', nextFollowTime: '2026-06-24', followCount: 2, daysHeld: 10 },
+  { id: 'LS007', name: '社交平台开发', source: 'wechat', level: '中', status: '需求调研', owner: '赵六', entity: '中科软艺', createTime: '2026-06-18', claimTime: '2026-06-18', lastFollowTime: '2026-06-30', nextFollowTime: '2026-07-01', followCount: 6, daysHeld: 14 },
+  { id: 'LS008', name: '零售POS系统', source: 'baidu', level: '高', status: '已签单', owner: '赵六', entity: '巴蜀文攻', createTime: '2026-06-05', claimTime: '2026-06-05', lastFollowTime: '2026-06-28', nextFollowTime: '', followCount: 15, daysHeld: 27 },
+  { id: 'LS009', name: '智能制造MES', source: 'douyin', level: '高', status: '初步沟通', owner: '钱七', entity: '软艺信息', createTime: '2026-06-29', claimTime: '2026-06-29', lastFollowTime: '', nextFollowTime: '2026-07-01', followCount: 0, daysHeld: 3 },
+  { id: 'LS010', name: '保险行业系统', source: 'xiaohongshu', level: '中', status: '未联系', owner: '钱七', entity: '中科软艺', createTime: '2026-06-30', claimTime: '2026-06-30', lastFollowTime: '', nextFollowTime: '2026-07-02', followCount: 0, daysHeld: 2 },
 ];
 
 const mockViolations: ViolationRecord[] = [
@@ -326,7 +327,7 @@ export function LeadGovernance() {
             <Table
               columns={[
                 { title: '线索名称', dataIndex: 'name', width: 160 },
-                { title: '来源', dataIndex: 'source', width: 90, render: (v: string) => <Tag>{v}</Tag> },
+                { title: '来源', dataIndex: 'source', width: 90, render: (v: string) => <Tag>{channelLabel(v)}</Tag> },
                 { title: '等级', dataIndex: 'level', width: 60, render: (v: string) => <Tag color={v === '高' ? 'var(--destructive-500)' : v === '中' ? 'var(--warning-500)' : 'var(--muted-foreground)'}>{v}</Tag> },
                 {
                   title: '状态', dataIndex: 'status', width: 90,

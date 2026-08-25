@@ -30,9 +30,9 @@ describe('work attribution', () => {
 
   test('客户项目、内部项目和软件售前应读取对应关联对象', () => {
     expect(getWorkAttributionOptions('external-project').map(item => item.name)).toContain('A公司CRM系统开发');
-    // 内部项目：当前所有项目 businessLine 均为「外包」，internal-project 过滤后为空
+    // 内部项目：自研业务线项目（E平台数据分析看板 / H教育平台二期）
     const internalOptions = getWorkAttributionOptions('internal-project').map(item => item.name);
-    expect(internalOptions).toEqual([]);
+    expect(internalOptions).toEqual(['E平台数据分析看板', 'H教育平台二期']);
     expect(getWorkAttributionOptions('presales-lead', '', undefined, 'software-presales')
       .map(item => item.name))
       .toEqual(expect.arrayContaining(['线索跟进工时汇总', 'A公司CRM系统开发']));

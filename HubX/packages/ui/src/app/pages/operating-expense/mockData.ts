@@ -107,66 +107,53 @@ export const mockTemplates: RecurringExpenseTemplate[] = [
   },
 ];
 
-/** 已入账记录（2026-06 ~ 2026-07 的固定模板生成） */
+/** 已入账记录（2026-05 ~ 2026-08 + 部门/渠道补数） */
 export const mockExpenseRecords: ExpenseRecord[] = [
-  // 2026-06 房租
-  {
-    id: 'exp-rent-202606', expenseNo: 'EXP-202606-001',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_RENT',
-    amount: 35000, occurDate: '2026-06-01', billingMonth: '2026-06',
-    attribution: 'pool', source: 'template', templateId: 'tpl-rent',
-    status: 'posted', handler: '系统', audit: [], isProjection: false,
-  },
-  // 2026-06 物业
-  {
-    id: 'exp-property-202606', expenseNo: 'EXP-202606-002',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_PROPERTY',
-    amount: 8000, occurDate: '2026-06-01', billingMonth: '2026-06',
-    attribution: 'pool', source: 'template', templateId: 'tpl-property',
-    status: 'posted', handler: '系统', audit: [], isProjection: false,
-  },
-  // 2026-06 网络
-  {
-    id: 'exp-internet-202606', expenseNo: 'EXP-202606-003',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_INTERNET',
-    amount: 2000, occurDate: '2026-06-01', billingMonth: '2026-06',
-    attribution: 'pool', source: 'template', templateId: 'tpl-internet',
-    status: 'posted', handler: '系统', audit: [], isProjection: false,
-  },
-  // 2026-07 房租
-  {
-    id: 'exp-rent-202607', expenseNo: 'EXP-202607-001',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_RENT',
-    amount: 35000, occurDate: '2026-07-01', billingMonth: '2026-07',
-    attribution: 'pool', source: 'template', templateId: 'tpl-rent',
-    status: 'posted', handler: '系统', audit: [], isProjection: false,
-  },
-  // 2026-07 物业
-  {
-    id: 'exp-property-202607', expenseNo: 'EXP-202607-002',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_PROPERTY',
-    amount: 8000, occurDate: '2026-07-01', billingMonth: '2026-07',
-    attribution: 'pool', source: 'template', templateId: 'tpl-property',
-    status: 'posted', handler: '系统', audit: [], isProjection: false,
-  },
-  // 2026-07 水电（浮动，pending 待确认）
-  {
-    id: 'exp-utilities-202607', expenseNo: 'EXP-202607-003',
-    categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_UTILITIES',
-    amount: 4800, occurDate: '2026-07-05', billingMonth: '2026-07',
-    attribution: 'pool', source: 'template', templateId: 'tpl-utilities',
-    status: 'pending', handler: '系统', audit: [], isProjection: false,
-  },
-  // 种子投影行（来源=差旅，只读，演示投影形态）
-  {
-    id: 'exp-travel-proj', expenseNo: 'EXP-202607-004',
-    categoryPrimary: 'TRAVEL', categorySecondary: 'TRAVEL_TRANSPORT',
-    amount: 5500, occurDate: '2026-07-15', billingMonth: '2026-07',
-    attribution: 'project', projectId: 'project-001',
-    source: 'travel', status: 'posted', handler: '系统',
-    audit: [], isProjection: true,
-  },
+  // ─── 2026-05 四条固定 OFFICE ───
+  { id: 'exp-rent-202605', expenseNo: 'EXP-202605-001', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_RENT', amount: 35000, occurDate: '2026-05-01', billingMonth: '2026-05', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-rent', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-property-202605', expenseNo: 'EXP-202605-002', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_PROPERTY', amount: 8000, occurDate: '2026-05-01', billingMonth: '2026-05', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-property', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-internet-202605', expenseNo: 'EXP-202605-003', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_INTERNET', amount: 2000, occurDate: '2026-05-01', billingMonth: '2026-05', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-internet', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-feishu-202605', expenseNo: 'EXP-202605-004', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_SUPPLIES', amount: 3000, occurDate: '2026-05-01', billingMonth: '2026-05', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-feishu', status: 'posted', handler: '系统', audit: [], isProjection: false },
+
+  // ─── 2026-06 固定模板 OFFICE ───
+  { id: 'exp-rent-202606', expenseNo: 'EXP-202606-001', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_RENT', amount: 35000, occurDate: '2026-06-01', billingMonth: '2026-06', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-rent', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-property-202606', expenseNo: 'EXP-202606-002', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_PROPERTY', amount: 8000, occurDate: '2026-06-01', billingMonth: '2026-06', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-property', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-internet-202606', expenseNo: 'EXP-202606-003', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_INTERNET', amount: 2000, occurDate: '2026-06-01', billingMonth: '2026-06', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-internet', status: 'posted', handler: '系统', audit: [], isProjection: false },
+
+  // ─── 2026-07 固定模板 + 差旅投影 + 推广（7月推广10000，8月15000→+50%） ───
+  { id: 'exp-rent-202607', expenseNo: 'EXP-202607-001', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_RENT', amount: 35000, occurDate: '2026-07-01', billingMonth: '2026-07', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-rent', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-property-202607', expenseNo: 'EXP-202607-002', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_PROPERTY', amount: 8000, occurDate: '2026-07-01', billingMonth: '2026-07', attribution: 'pool', departmentId: 'dept-admin', source: 'template', templateId: 'tpl-property', status: 'posted', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-utilities-202607', expenseNo: 'EXP-202607-003', categoryPrimary: 'OFFICE', categorySecondary: 'OFFICE_UTILITIES', amount: 4800, occurDate: '2026-07-05', billingMonth: '2026-07', attribution: 'pool', source: 'template', templateId: 'tpl-utilities', status: 'pending', handler: '系统', audit: [], isProjection: false },
+  { id: 'exp-travel-proj', expenseNo: 'EXP-202607-004', categoryPrimary: 'TRAVEL', categorySecondary: 'TRAVEL_TRANSPORT', amount: 5500, occurDate: '2026-07-15', billingMonth: '2026-07', attribution: 'project', projectId: 'project-001', departmentId: 'dept-tech', source: 'travel', status: 'posted', handler: '系统', audit: [], isProjection: true },
+  { id: 'exp-promo-202607', expenseNo: 'EXP-202607-005', categoryPrimary: 'PROMOTION', categorySecondary: 'PROMOTION_SEM', amount: 10000, occurDate: '2026-07-10', billingMonth: '2026-07', attribution: 'lead_channel', channelId: 'ch-baidu', source: 'manual', status: 'posted', handler: '张三', audit: [], isProjection: false },
+
+  // ─── 2026-08 BENEFIT+OTHER（池=12000）+ 推广+第三方 ───
+  { id: 'exp-benefit-202608', expenseNo: 'EXP-202608-001', categoryPrimary: 'BENEFIT', categorySecondary: 'BENEFIT_TEAM', amount: 8000, occurDate: '2026-08-05', billingMonth: '2026-08', attribution: 'pool', departmentId: 'dept-hr', source: 'manual', status: 'posted', handler: '李四', audit: [], isProjection: false },
+  { id: 'exp-other-202608', expenseNo: 'EXP-202608-002', categoryPrimary: 'OTHER', categorySecondary: 'OTHER_MISC', amount: 4000, occurDate: '2026-08-10', billingMonth: '2026-08', attribution: 'pool', departmentId: 'dept-admin', source: 'manual', status: 'posted', handler: '王五', audit: [], isProjection: false },
+  { id: 'exp-promo-202608', expenseNo: 'EXP-202608-003', categoryPrimary: 'PROMOTION', categorySecondary: 'PROMOTION_SEM', amount: 15000, occurDate: '2026-08-10', billingMonth: '2026-08', attribution: 'lead_channel', channelId: 'ch-baidu', source: 'manual', status: 'posted', handler: '张三', audit: [], isProjection: false },
+  { id: 'exp-tp-202608', expenseNo: 'EXP-202608-004', categoryPrimary: 'THIRD_PARTY', categorySecondary: 'THIRD_PARTY_DEV', amount: 8600, occurDate: '2026-08-15', billingMonth: '2026-08', attribution: 'project', projectId: 'project-001', departmentId: 'dept-tech', source: 'manual', status: 'posted', handler: '赵六', audit: [], isProjection: false },
 ];
+
+// ─── 部门/渠道/项目字典 ──────────────────────────────────
+
+export const OPEX_DEPARTMENTS = [
+  { id: 'dept-admin', name: '行政部' },
+  { id: 'dept-hr', name: '人事部' },
+  { id: 'dept-tech', name: '技术部' },
+  { id: 'dept-sales', name: '销售部' },
+];
+
+export const OPEX_CHANNELS = [
+  { id: 'ch-baidu', name: '百度' },
+  { id: 'ch-douyin', name: '抖音' },
+  { id: 'ch-xhs', name: '小红书' },
+];
+
+export const OPEX_PROJECT_NAMES: Record<string, string> = {
+  'project-001': '企业内部管理系统',
+  'project-003': '在线教育平台',
+  'project-005': '企业办公系统',
+};
 
 /** 工资引用（最近已出账月 2026-05） */
 export const mockSalaryForOverhead = [

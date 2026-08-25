@@ -127,6 +127,68 @@ export function getLifecycleStepIndex(status: ProjectStatus): number {
   return map[status] ?? 0;
 }
 
+// --- 项目阻塞项（关键卡点 / 外部依赖） ---
+export type BlockerSource = 'customer' | 'third_party' | 'internal';
+
+export const BLOCKER_SOURCE_LABEL: Record<BlockerSource, string> = {
+  customer: '客户侧',
+  third_party: '第三方',
+  internal: '内部',
+};
+
+export type BlockerSeverity = 'critical' | 'major' | 'minor';
+
+export const BLOCKER_SEVERITY_LABEL: Record<BlockerSeverity, string> = {
+  critical: '阻塞',
+  major: '高风险',
+  minor: '关注',
+};
+
+export const BLOCKER_SEVERITY_COLOR: Record<BlockerSeverity, string> = {
+  critical: 'red',
+  major: 'orange',
+  minor: 'blue',
+};
+
+export interface ProjectBlocker {
+  id: string;
+  projectId: string;
+  /** 阻塞描述 */
+  title: string;
+  /** 来源：客户侧 / 第三方 / 内部 */
+  source: BlockerSource;
+  /** 严重程度 */
+  severity: BlockerSeverity;
+  /** 客户承诺 ETA（可选） */
+  customerEta?: string;
+  /** 预计解除日期 */
+  expectedResolveDate?: string;
+  /** 责任人 */
+  owner?: string;
+  /** 状态 */
+  resolved: boolean;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  createdAt: string;
+}
+
+// --- 项目风险等级 ---
+export type ProjectRiskLevel = 'high' | 'medium' | 'low' | 'none';
+
+export const PROJECT_RISK_LEVEL_LABEL: Record<ProjectRiskLevel, string> = {
+  high: '高风险',
+  medium: '中风险',
+  low: '低风险',
+  none: '无风险',
+};
+
+export const PROJECT_RISK_LEVEL_COLOR: Record<ProjectRiskLevel, string> = {
+  high: 'red',
+  medium: 'orange',
+  low: 'blue',
+  none: 'green',
+};
+
 // --- 项目列表项 ---
 export interface ProjectListItem {
   key: string;
@@ -147,6 +209,12 @@ export interface ProjectListItem {
   createdAt: string;
   leadId?: string;
   contractId?: string;
+
+  // 阶段 D 扩展：阻塞项 + 风险
+  blockers?: ProjectBlocker[];
+  riskLevel?: ProjectRiskLevel;
+  riskNote?: string;
+  acceptanceCriteria?: string[];
 
   // 计算字段
   totalHours: number;        // 累计工时
@@ -244,4 +312,36 @@ export interface ActivityEvent {
   createdAt: string;
   /** 关联线索的事件（售前阶段） */
   isPreSale?: boolean;
+}
+
+/** 项目会议纪要（详情域台账，按 projectId 组织） */
+export interface ProjectMeetingMinutes {
+  id: string;
+  projectId: string;
+  subject: string;
+  meetingTime: string;
+  employeeAttendees: string[];
+  externalAttendees: string[];
+  minutes: string;
+  recorder: string;
+}
+
+/** 项目确认书（需求确认/原型确认/终验单等，按 projectId 组织） */
+export interface ProjectConfirmation {
+  id: string;
+  projectId: string;
+  type: string;
+  status: '已签署' | '待签署';
+  signer: string;
+  signDate: string;
+  attachment: string;
+}
+
+/** 项目演示环境（原型/测试/预发布，按 projectId 组织） */
+export interface ProjectDemoEnv {
+  id: string;
+  projectId: string;
+  env: '原型演示' | '测试环境' | '预发布环境' | '正式环境';
+  url: string;
+  description: string;
 }

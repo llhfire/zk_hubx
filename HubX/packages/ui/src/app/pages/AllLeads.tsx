@@ -29,6 +29,7 @@ import {
   CUSTOMER_LEVEL_COLOR,
   INTENTION_LEVEL_COLOR,
   LEAD_SOURCE_LIST,
+  LEAD_SOURCE_LABEL,
   LEAD_SOURCE_COLOR,
   COMPANY_ENTITY_LIST,
   TRANSFER_ACTION_LABEL,
@@ -38,7 +39,9 @@ import {
   CUSTOMER_LEVEL_LIST,
   INTENTION_LEVEL_LIST,
 } from './leads/types';
-import { ALL_LEADS, getTransferRecordsByLeadId } from './leads/mockData';
+import { useLeads } from '@/app/leads/LeadContext';
+import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
+import { LeadTransferPopover } from '@/app/leads/LeadTransferPopover';
 import {
   searchLeads,
   applyQuickFilterExtended,
@@ -51,6 +54,7 @@ import {
 
 export function AllLeads() {
   const navigate = useNavigate();
+  const { leads } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [clueTypeFilter, setClueTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -62,7 +66,7 @@ export function AllLeads() {
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
-  const leadsWithOverdue = useMemo(() => calculateOverdueStatus(ALL_LEADS), []);
+  const leadsWithOverdue = useMemo(() => calculateOverdueStatus(leads), [leads]);
   const filterCounts = useMemo(() => getQuickFilterCounts(leadsWithOverdue), [leadsWithOverdue]);
 
   const filteredLeads = useMemo(() => {
@@ -79,6 +83,13 @@ export function AllLeads() {
 
     return result;
   }, [leadsWithOverdue, keyword, clueTypeFilter, statusFilter, sourceFilter, entityFilter, levelFilter, customerLevelFilter, quickFilter]);
+
+  const now = useMemo(() => new Date(), []);
+  const dispatchViews = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof leadDispatchView>>();
+    for (const l of filteredLeads) map.set(l.id, leadDispatchView(l, now));
+    return map;
+  }, [filteredLeads, now]);
 
   const handleOpenCompanyEntity = (entityName: string) => {
     if (!companyEntityPermissions.view) { Message.warning('暂无权限'); return; }
@@ -153,7 +164,7 @@ export function AllLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>
             {r.entity}
           </a>
@@ -172,34 +183,41 @@ export function AllLeads() {
     },
     {
       title: '跟进倒计时',
-      width: 130,
+      width: 160,
       render: (_: unknown, r: LeadListItem) => {
         const capsule = getCountdownCapsule(r.nextFollowTime);
-        if (capsule.status === 'none') {
-          return <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>;
-        }
-        // 有胶囊的（today/overdue）：竖排，上面胶囊下面日期
-        if (capsule.status === 'today' || capsule.status === 'overdue') {
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-              <span style={{
-                display: 'inline-block', padding: '2px 8px', borderRadius: 10,
-                fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap',
-                color: COUNTDOWN_COLOR[capsule.status], backgroundColor: COUNTDOWN_BG[capsule.status],
-                border: capsule.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))',
-              }}>
-                {capsule.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
-                {capsule.label}
-              </span>
-              {capsule.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{capsule.subLabel}</span>}
-            </div>
-          );
-        }
-        // 无胶囊（normal）：横排
+        const view = dispatchViews.get(r.id);
+        const SLA_COLOR: Record<string, string> = { normal: 'green', warning: 'orange', overdue: 'red', contacted: 'green' };
+        const hasSla = view && r.dispatchedAt;
+        const countdown = capsule.status === 'none' && !hasSla
+          ? <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>
+          : capsule.status === 'none'
+            ? null
+            : capsule.status === 'today' || capsule.status === 'overdue'
+              ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                  <span style={{
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                    fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap',
+                    color: COUNTDOWN_COLOR[capsule.status], backgroundColor: COUNTDOWN_BG[capsule.status],
+                    border: capsule.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))',
+                  }}>
+                    {capsule.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
+                    {capsule.label}
+                  </span>
+                  {capsule.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{capsule.subLabel}</span>}
+                </div>
+              )
+              : <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[capsule.status], whiteSpace: 'nowrap' }}>{capsule.label} {capsule.subLabel}</span>;
+        if (!hasSla) return countdown;
         return (
-          <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[capsule.status], whiteSpace: 'nowrap' }}>
-            {capsule.label} {capsule.subLabel}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {countdown}
+            <div style={{ display: 'flex', gap: 2 }}>
+              <Tag size="mini" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
+              <Tag size="mini" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+            </div>
+          </div>
         );
       },
     },
@@ -238,55 +256,8 @@ export function AllLeads() {
       title: '跟进/持有/预算',
       width: 130,
       render: (_: unknown, r: LeadListItem) => {
-        const records = getTransferRecordsByLeadId(r.id);
         return (
-          <Popover
-            title="流转记录"
-            trigger="click"
-            popupStyle={{ maxWidth: 520 }}
-            content={
-              <div style={{ fontSize: 12 }}>
-                <div style={{ marginBottom: 8, color: 'var(--color-text-3)' }}>
-                  跟进 {r.followCount} 次 · 持有 {r.daysHeld} 天{r.historyOwners ? ` · 历史归属: ${r.historyOwners}` : ''}
-                </div>
-                {records.length > 0 ? (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 420 }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--color-border-2)', color: 'var(--color-text-3)' }}>
-                          <th style={{ textAlign: 'left', padding: '4px 6px 4px 0', fontWeight: 500, whiteSpace: 'nowrap' }}>操作人</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>操作</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>归属人</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>状态</th>
-                          <th style={{ textAlign: 'left', padding: '4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>原因</th>
-                          <th style={{ textAlign: 'left', padding: '4px 0 4px 6px', fontWeight: 500, whiteSpace: 'nowrap' }}>时间</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {records.map((tr) => (
-                          <tr key={tr.id} style={{ borderBottom: '1px solid var(--color-border-1)' }}>
-                            <td style={{ padding: '4px 6px 4px 0', whiteSpace: 'nowrap' }}>{tr.operator}</td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}><Tag color={TRANSFER_ACTION_COLOR[tr.action]} size="small">{TRANSFER_ACTION_LABEL[tr.action]}</Tag></td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}>{tr.toOwner || '-'}</td>
-                            <td style={{ padding: '4px 6px', whiteSpace: 'nowrap' }}>{tr.status}</td>
-                            <td style={{ padding: '4px 6px', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><Tooltip content={tr.reason || ''}><span>{tr.reason || '-'}</span></Tooltip></td>
-                            <td style={{ padding: '4px 0 4px 6px', whiteSpace: 'nowrap' }}>{tr.createdAt.slice(5)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--color-text-4)', textAlign: 'center', padding: 12 }}>暂无流转记录</div>
-                )}
-              </div>
-            }
-          >
-            <div style={{ fontSize: 12, cursor: 'pointer', color: 'var(--primary-6)' }}>
-              <div>{r.followCount}次跟进 · {r.daysHeld}天持有</div>
-              {r.budget && <div style={{ color: 'var(--color-text-3)' }}>¥{r.budget.toLocaleString()}</div>}
-            </div>
-          </Popover>
+          <LeadTransferPopover leadId={r.id} followCount={r.followCount} daysHeld={r.daysHeld} historyOwners={r.historyOwners} budget={r.budget} />
         );
       },
     },
@@ -326,7 +297,7 @@ export function AllLeads() {
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>线索来源</div>
         <Select placeholder="不限来源" style={{ width: '100%' }} allowClear value={sourceFilter} onChange={setSourceFilter}>
-          {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+          {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
         </Select>
       </div>
       <div>
@@ -376,7 +347,7 @@ export function AllLeads() {
             {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
           <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
-            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+            {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
           <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}

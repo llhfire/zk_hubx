@@ -429,6 +429,8 @@ export interface Quote {
   status: QuoteStatus;
   leadId: string;
   contractId?: string;
+  /** 是否为补充报价（4.7） */
+  isSupplement?: boolean;
   salesOwnerName: string;     // 报价销售责任人（4.2）
   basicInfo: QuoteBasicInfo;
   endpointConfigs: EndpointConfig[];  // 端+平台配置

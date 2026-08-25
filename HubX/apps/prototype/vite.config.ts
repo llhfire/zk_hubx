@@ -6,6 +6,7 @@ import fs from 'node:fs/promises'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { isValidFeatureBoard } from '../../packages/ui/src/app/version/featureBoardModel'
+import { isValidWorkLog } from '../../packages/ui/src/app/version/workLogModel'
 import { architectureDiagramPlugin } from '../../scripts/architectureDiagramPlugin.js'
 
 const execFileAsync = promisify(execFile)
@@ -42,6 +43,49 @@ function featureBoardStore() {
             }
             await fs.writeFile(configFile, JSON.stringify(board, null, 2) + '\n')
             response.end(JSON.stringify({ board }))
+            return
+          }
+          response.statusCode = 405
+          response.end(JSON.stringify({ error: '仅支持 GET/PUT' }))
+        } catch (error: any) {
+          response.statusCode = 500
+          response.end(JSON.stringify({ error: String(error?.message || error) }))
+        }
+      })
+    },
+  }
+}
+
+// 工作记录：GET/PUT 读写 workLog.config.json。仅 α 版 dev server 提供；静态部署走 localStorage。
+function workLogStore() {
+  const configFile = path.resolve(__dirname, '../../packages/ui/src/app/version/workLog.config.json')
+  return {
+    name: 'work-log-store',
+    configureServer(server: any) {
+      server.middlewares.use('/api/work-log', async (request: any, response: any) => {
+        response.setHeader('Content-Type', 'application/json; charset=utf-8')
+        try {
+          if (request.method === 'GET') {
+            let log: unknown = null
+            try {
+              log = JSON.parse(await fs.readFile(configFile, 'utf8'))
+            } catch {
+              log = null
+            }
+            response.end(JSON.stringify({ log }))
+            return
+          }
+          if (request.method === 'PUT') {
+            const chunks: Buffer[] = []
+            for await (const chunk of request) chunks.push(chunk as Buffer)
+            const log = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+            if (!isValidWorkLog(log)) {
+              response.statusCode = 400
+              response.end(JSON.stringify({ error: '工作记录数据不符合 schema' }))
+              return
+            }
+            await fs.writeFile(configFile, JSON.stringify(log, null, 2) + '\n')
+            response.end(JSON.stringify({ log }))
             return
           }
           response.statusCode = 405
@@ -203,6 +247,7 @@ export default defineConfig(({ mode }) => {
     figmaAssetResolver(),
     architectureDiagramPlugin(),
     featureBoardStore(),
+    workLogStore(),
     wxCliBridge({ apiKey: env.DEEPSEEK_API_KEY, baseUrl: env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com', model: env.DEEPSEEK_MODEL || 'deepseek-v4-pro' }),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

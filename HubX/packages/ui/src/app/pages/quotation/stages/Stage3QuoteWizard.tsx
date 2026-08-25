@@ -354,7 +354,7 @@ export function Stage3QuoteWizard({ quote, readonly }: StageProps) {
           data={[
             { label: '人力成本小计', value: money(breakdown.laborSubtotal) },
             { label: '差旅驻场费用', value: money(breakdown.travelSubtotal + breakdown.onsiteSubtotal) },
-            { label: '其他成本', value: money(breakdown.otherCostSubtotal) },
+            { label: '自费项目（不计入报价）', value: money(breakdown.selfPaidSubtotal) },
             { label: '项目总报价', value: <Text bold style={{ fontSize: 16, color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</Text> },
           ]}
         />

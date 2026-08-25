@@ -2,9 +2,22 @@
 
 > 2026-08-18 · 只规划不写码  
 > 纲领计划：`计划/当前/unified-view-implementation.md` §U1（本文是其展开）  
-> 事实源：ADR `0067`、`0066`；PRD `文档/PRD/PRD-线索项目合同统一视图.md` v1.1
+> 事实源：ADR `0067`、`0066`、**0095**；PRD `文档/PRD/PRD-线索项目合同统一视图.md` v1.1
+
+## 修订（2026-08-22，ADR-0095）— 接线作废，行为矩阵仍有效
+
+§2 目标行为矩阵 **逐条保留**。作废的是 §3 决策 1 / 3 / 4 里「合同侧继续用桥 spawn、LeadDetail `addProject`」：
+
+- **触发 3（主合同创建）**：B5 P0 洞 C 已规定在 `PUT /api/contracts`。U1 **不再改桥去 spawn**。β 桥只 `refresh()`。
+- **触发 1/2（跟进写入洽谈/已签单、无合同）**：改为 `LeadService` mutations + **Workers `PUT /api/leads/:id`（及跟进写入导致状态变化）** 同一请求内 `shouldSpawnUnconfirmedProject` → spawn。项目 id = `ap-lead-{leadId}`。α mock 走同一函数，禁止只在页面 `addProject`。
+- **触发 4**：批准无项目仍不 spawn（与 B5 / 现网 `continue` 一致）。
+- T3「桥改造 spawn 移到 created」对 β 已由 B3/B5 接手；U1 的 T3 改为：核对 β 桥无 `addProject`，α 桥合同 created 仍可内存 spawn。
+- T4 改为 Lead 写路径接 mutations，不再把 spawn 写进 `LeadDetail.onOk` 组件体。
+- 开工顺序：B5 之后。决议全文：`计划/当前/conflict-spawn-and-collections.md`。
 
 ## 1. 现状与差距（为什么 U1 是接线问题，不是算法问题）
+
+> 2026-08-18 原文。B2 已有 LeadService；B3 合同联动已在 Workers。以下「桥在批准时 spawn」对 β 已部分过时，以文首修订为准。
 
 1. **纯函数层已按 ADR 0067 写好且有单测**：`business-case/caseUtils.ts` 的
    `hasEnteredSigning` / `shouldSpawnUnconfirmedProject` / `spawnUnconfirmedProject` / `startDelivery`

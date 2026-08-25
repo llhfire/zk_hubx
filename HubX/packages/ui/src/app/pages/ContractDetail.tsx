@@ -31,13 +31,12 @@ import {
 import { useContracts } from './contracts/ContractsContext';
 import { ContractStatusBadge } from './contracts/components/ContractStatusBadge';
 import { renderContractDocument } from './contracts/templates';
-import { computePlanStatusRows, PLAN_STATUS_META } from './contracts/paymentUtils';
+import { computePlanStatusRows, PLAN_STATUS_META, effectiveAmount, getReceivedAmount } from './contracts/paymentUtils';
+import { registerMainPaymentDualWrite, type DualWriteStatus } from '@/services/collectionMutations';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { useProjects } from './project-management/ProjectContext';
 import {
-  SUPPLEMENT_STATUS_LABELS,
-  SUPPLEMENT_STATUS_COLORS,
   type ContractVersion,
-  type SupplementaryAgreement,
-  type SupplementaryAgreementStatus,
 } from './contracts/types';
 
 const { Row, Col } = Grid;
@@ -126,99 +125,88 @@ export function ContractDetail() {
   const selectedVersion: ContractVersion | undefined =
     versions.find((v) => v.versionNo === selectedVersionNo) || latestVersion;
 
-  // 补充协议
-  const [supplements, setSupplements] = useState<SupplementaryAgreement[]>(contract.supplementaryAgreements ?? []);
-  const [supplementModalVisible, setSupplementModalVisible] = useState(false);
-  const [supplementForm] = Form.useForm();
-
-  const handleAddSupplement = () => {
-    supplementForm.validate().then((values) => {
-      const amountChange = Number(values.amountChange) || 0;
-      const now = new Date();
-      const newSupplement: SupplementaryAgreement = {
-        id: `sup-${Date.now()}`,
-        contractId: contract.id,
-        name: values.name || '补充协议',
-        amountChange,
-        signDate: values.signDate || now.toISOString().slice(0, 10),
-        status: 'draft',
-        approvalFlow: [
-          { step: '发起申请', approver: contract.createdBy || '张三', status: 'approved', time: now.toISOString().slice(0, 16).replace('T', ' '), comment: '' },
-          { step: '总经理审批', approver: '赵总 - 总经理', status: 'pending', time: '', comment: '' },
-        ],
-        paymentPlans: [],
-        scanFiles: [],
-        receivedAmount: 0,
-        createdAt: now.toISOString().slice(0, 10),
-        createdBy: contract.createdBy || '张三',
-      };
-      setSupplements((current) => [...current, newSupplement]);
-      setSupplementModalVisible(false);
-      supplementForm.resetFields();
-    });
-  };
-
-  const updateSupplementStatus = (supId: string, status: SupplementaryAgreementStatus) => {
-    setSupplements((current) => current.map((s) => (s.id === supId ? { ...s, status } : s)));
-  };
-
-  // 回款登记
-  const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-  const [paymentSupplementId, setPaymentSupplementId] = useState<string>('');
-  const [paymentForm] = Form.useForm();
-
-  const handleRegisterPayment = () => {
-    paymentForm.validate().then((values) => {
-      const amount = Number(values.amount) || 0;
-      const today = new Date().toISOString().slice(0, 10);
-      setSupplements((current) => current.map((s) => {
-        if (s.id !== paymentSupplementId) return s;
-        return {
-          ...s,
-          receivedAmount: (s.receivedAmount ?? 0) + amount,
-          collectionRecords: [
-            ...(s.collectionRecords ?? []),
-            { id: `cr-${Date.now()}`, contractId: s.contractId, amount, date: values.date || today, method: values.method || '银行转账', note: values.note || '' },
-          ],
-        };
-      }));
-      setPaymentModalVisible(false);
-      paymentForm.resetFields();
-    });
-  };
-
-  // 主合同回款登记（写回 ContractsContext，区别于补充协议的页面局部登记）
+  // 主合同回款登记（双写：合同嵌套流水 + 实收台账）
   const [mainPaymentModalVisible, setMainPaymentModalVisible] = useState(false);
   const [mainPaymentForm] = Form.useForm();
+  const [ledgerRetryId, setLedgerRetryId] = useState<string>('');
+  const [lastDualWriteStatus, setLastDualWriteStatus] = useState<DualWriteStatus | null>(null);
+  const { add: addLedgerEntry } = useCollections();
+  const { getProjectByLeadId } = useProjects();
 
-  const handleRegisterMainPayment = () => {
-    mainPaymentForm.validate().then((values) => {
+  const handleRegisterMainPayment = async () => {
+    try {
+      const values = await mainPaymentForm.validate();
       const periodValue = values.period === 'other' ? 'other' : Number(values.period) || undefined;
-      addCollection(contract.id, {
+      const record = {
         period: periodValue,
         amount: Number(values.amount) || 0,
         date: values.date || new Date().toISOString().slice(0, 10),
         method: values.method || '银行转账',
         note: values.note || '',
-      }).then(() => {
+      };
+
+      const projectId = contract.projectId
+        || getProjectByLeadId(contract.leadId)?.id
+        || ('ap-' + contract.id);
+
+      const result = await registerMainPaymentDualWrite({
+        contractId: contract.id,
+        projectId,
+        record,
+        addToContract: addCollection,
+        addToLedger: async (entry) => {
+          const id = await addLedgerEntry(entry);
+          return id || '';
+        },
+      });
+
+      if (result.status === 'ok') {
         Message.success('回款登记成功，已更新合同回款数据');
         setMainPaymentModalVisible(false);
         mainPaymentForm.resetFields();
-      });
+        setLedgerRetryId('');
+        setLastDualWriteStatus(null);
+      } else if (result.status === 'contract-failed') {
+        // 不再二次 toast（http 已 warning 409）；不关弹窗；主提交保持可用
+        setLastDualWriteStatus('contract-failed');
+      } else if (result.status === 'ledger-failed') {
+        Message.error('合同已记回款，实收台账未写入，请重试台账');
+        setLedgerRetryId(result.collectionId);
+        setLastDualWriteStatus('ledger-failed');
+      }
+    } catch {
+      // 表单验证失败
+    }
+  };
+
+  const handleRetryLedger = async () => {
+    if (!ledgerRetryId) return;
+    const projectId = contract.projectId
+      || getProjectByLeadId(contract.leadId)?.id
+      || ('ap-' + contract.id);
+    const id = await addLedgerEntry({
+      id: ledgerRetryId,
+      contractId: contract.id,
+      projectId,
+      amount: Number(mainPaymentForm.getFieldValue('amount')) || 0,
+      date: mainPaymentForm.getFieldValue('date') || new Date().toISOString().slice(0, 10),
+      method: mainPaymentForm.getFieldValue('method') || '银行转账',
+      note: mainPaymentForm.getFieldValue('note') || '',
     });
+    if (id) {
+      Message.success('台账写入成功');
+      setMainPaymentModalVisible(false);
+      mainPaymentForm.resetFields();
+      setLedgerRetryId('');
+      setLastDualWriteStatus(null);
+    }
   };
 
-  // 文件上传（mock：记录文件名）
-  const handleUploadBodyFile = (supId: string, fileName: string) => {
-    setSupplements((current) => current.map((s) => (s.id === supId ? { ...s, bodyFile: { name: fileName, size: '-' } } : s)));
-  };
-
-  const handleUploadScanFile = (supId: string, fileName: string) => {
-    setSupplements((current) => current.map((s) => (s.id === supId ? {
-      ...s,
-      scanFiles: [...s.scanFiles, { id: `sf-${Date.now()}`, fileName, fileSize: 0, mimeType: '', uploadedAt: new Date().toISOString().slice(0, 10), uploadedBy: contract.createdBy || '张三' }],
-    } : s)));
-  };
+  // 补充合同列表（从 ContractsContext 读取）
+  const { contracts: allContracts } = useContracts();
+  const supplements = allContracts.filter(
+    (c) => c.kind === 'supplement' && c.parentContractId === contract.id,
+  );
 
   // 跟进记录
   const [followUps, setFollowUps] = useState<FollowUpRecord[]>(mockFollowUps);
@@ -242,17 +230,13 @@ export function ContractDetail() {
     });
   };
 
-  // 金额动态计算：只计入「已归档」的补充协议（状态互斥，已归档即非作废）
-  const activeSupplements = supplements.filter((s) => s.status === 'archived');
-  const supplementAmount = activeSupplements.reduce((sum, s) => sum + s.amountChange, 0);
-  const supplementReceived = activeSupplements.reduce((sum, s) => sum + (s.receivedAmount ?? 0), 0);
-
-  const totalAmount = cd.totalAmount + supplementAmount;
-  const receivedAmount = (contract.receivedAmount ?? 0) + supplementReceived;
+  // 金额计算：使用 effectiveAmount 统一口径（主合同 + 已归档补充合同）
+  const totalAmount = effectiveAmount(contract, supplements);
+  const receivedAmount = getReceivedAmount(contract);
   const receivableAmount = Math.max(0, totalAmount - receivedAmount);
   const collectionRate = totalAmount > 0 ? Math.round((receivedAmount / totalAmount) * 100) : 0;
 
-  // 期次回款状态（回款 Tab）：含主合同期次 + 已归档补充协议金额并入总额口径
+  // 期次回款状态
   const planStatusRows = computePlanStatusRows(contract);
 
   const paymentPlanColumns = [
@@ -379,70 +363,6 @@ export function ContractDetail() {
               rowKey={(record) => String(record.period)}
               pagination={false}
             />
-
-            {supplements.length > 0 && (
-              <div style={{ marginTop: 24 }}>
-                <Text bold style={{ display: 'block', marginBottom: 8 }}>补充协议</Text>
-                <Table
-                  columns={[
-                    { title: '协议名称', dataIndex: 'name' },
-                    {
-                      title: '变更金额',
-                      dataIndex: 'amountChange',
-                      width: 130,
-                      render: (v: number) => (
-                        <span style={{ color: v >= 0 ? 'var(--destructive-500)' : 'var(--success-500)', fontWeight: 600 }}>
-                          {v >= 0 ? '+' : ''}{formatMoney(v)}
-                        </span>
-                      ),
-                    },
-                    { title: '签订日期', dataIndex: 'signDate', width: 120 },
-                    {
-                      title: '状态',
-                      dataIndex: 'status',
-                      width: 90,
-                      render: (v: SupplementaryAgreementStatus) => (
-                        <Tag color={SUPPLEMENT_STATUS_COLORS[v]} size="small">{SUPPLEMENT_STATUS_LABELS[v]}</Tag>
-                      ),
-                    },
-                    { title: '已回款', dataIndex: 'receivedAmount', width: 120, render: (v: number) => formatMoney(v) },
-                    {
-                      title: '回款进度',
-                      width: 160,
-                      render: (_: unknown, record: SupplementaryAgreement) => {
-                        const rate = record.amountChange > 0
-                          ? Math.round(((record.receivedAmount ?? 0) / record.amountChange) * 100)
-                          : 0;
-                        return <Progress percent={rate} size="small" />;
-                      },
-                    },
-                    {
-                      title: '操作',
-                      width: 190,
-                      render: (_: unknown, record: SupplementaryAgreement) => (
-                        <Space size={0}>
-                          {record.status === 'draft' && (
-                            <Button type="text" size="mini" onClick={() => updateSupplementStatus(record.id, 'approving')}>提交审批</Button>
-                          )}
-                          {record.status === 'approving' && (
-                            <Button type="text" size="mini" onClick={() => updateSupplementStatus(record.id, 'approved')}>审批通过</Button>
-                          )}
-                          {record.status === 'approved' && (
-                            <Button type="text" size="mini" onClick={() => updateSupplementStatus(record.id, 'archived')}>归档</Button>
-                          )}
-                          {record.status !== 'voided' && (
-                            <Button type="text" size="mini" status="danger" onClick={() => updateSupplementStatus(record.id, 'voided')}>作废</Button>
-                          )}
-                        </Space>
-                      ),
-                    },
-                  ]}
-                  data={supplements}
-                  rowKey="id"
-                  pagination={false}
-                />
-              </div>
-            )}
           </Card>
 
           {/* 合同文件 */}
@@ -577,66 +497,25 @@ export function ContractDetail() {
                   ))}
                 </Timeline>
               </TabPane>
-              <TabPane key="supplement" title="补充">
+              <TabPane key="supplement" title="补充合同">
                 <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
                   {supplements.length === 0 ? (
-                    <Text type="secondary">暂无补充协议，可上传需求变更导致的合同额增减协议。</Text>
+                    <Text type="secondary">暂无补充合同，需求变更请走补充报价→合同向导链路。</Text>
                   ) : (
                     supplements.map((sup) => (
-                      <div key={sup.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12 }}>
+                      <div key={sup.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12, cursor: 'pointer' }}
+                        onClick={() => navigate(`/contracts/${sup.id}`)}>
                         <Space direction="vertical" size={4} style={{ width: '100%' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text bold>{sup.name}</Text>
-                            <Tag color={SUPPLEMENT_STATUS_COLORS[sup.status]} size="small">{SUPPLEMENT_STATUS_LABELS[sup.status]}</Tag>
+                            <Text bold>{sup.current.contractName}</Text>
+                            <Tag color="arcoblue" size="small">补充合同</Tag>
                           </div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>{sup.signDate}</Text>
-                          <Text style={{ color: sup.amountChange >= 0 ? 'var(--destructive-500)' : 'var(--success-500)', fontWeight: 600 }}>
-                            {sup.amountChange >= 0 ? '+' : ''}{formatMoney(sup.amountChange)}
-                          </Text>
-                          <Space size={0}>
-                            {sup.status === 'draft' && (
-                              <Button type="text" size="mini" onClick={() => updateSupplementStatus(sup.id, 'approving')}>提交审批</Button>
-                            )}
-                            {sup.status === 'approving' && (
-                              <Button type="text" size="mini" onClick={() => updateSupplementStatus(sup.id, 'approved')}>审批通过</Button>
-                            )}
-                            {sup.status === 'approved' && (
-                              <Button type="text" size="mini" onClick={() => updateSupplementStatus(sup.id, 'archived')}>归档</Button>
-                            )}
-                            {sup.status !== 'voided' && (
-                              <Button type="text" size="mini" status="danger" onClick={() => updateSupplementStatus(sup.id, 'voided')}>作废</Button>
-                            )}
-                          </Space>
-                          <Space size={0} wrap>
-                            <Button
-                              type="text"
-                              size="mini"
-                              onClick={() => { setPaymentSupplementId(sup.id); setPaymentModalVisible(true); }}
-                            >
-                              登记回款
-                            </Button>
-                            <Upload autoUpload={false} showUploadList={false} onChange={(_, file) => { if (file?.name) handleUploadBodyFile(sup.id, file.name); }}>
-                              <Button type="text" size="mini" icon={<IconUpload />}>上传正文</Button>
-                            </Upload>
-                            <Upload autoUpload={false} showUploadList={false} onChange={(_, file) => { if (file?.name) handleUploadScanFile(sup.id, file.name); }}>
-                              <Button type="text" size="mini" icon={<IconUpload />}>上传扫描件</Button>
-                            </Upload>
-                          </Space>
-                          {(sup.bodyFile || sup.scanFiles.length > 0) && (
-                            <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                              {sup.bodyFile && <Text type="secondary" style={{ fontSize: 12 }}>正文：{sup.bodyFile.name}</Text>}
-                              {sup.scanFiles.length > 0 && (
-                                <Text type="secondary" style={{ fontSize: 12 }}>扫描件：{sup.scanFiles.map((f) => f.fileName).join('、')}</Text>
-                              )}
-                            </Space>
-                          )}
+                          <Text type="secondary" style={{ fontSize: 12 }}>合同额：{formatMoney(sup.current.totalAmount)}</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>来源报价：{sup.sourceQuoteId || '-'}</Text>
                         </Space>
                       </div>
                     ))
                   )}
-                  <Button type="outline" icon={<IconUpload />} long onClick={() => setSupplementModalVisible(true)}>
-                    上传补充协议
-                  </Button>
                 </Space>
               </TabPane>
             </Tabs>
@@ -644,59 +523,14 @@ export function ContractDetail() {
         </Col>
       </Row>
 
-      {/* 补充协议弹窗 */}
-      <Modal
-        title="上传补充协议"
-        visible={supplementModalVisible}
-        onCancel={() => setSupplementModalVisible(false)}
-        onOk={handleAddSupplement}
-        maskClosable={false}
-        style={{ width: 480 }}
-      >
-        <Form form={supplementForm} layout="vertical">
-          <Form.Item label="协议名称" field="name" rules={[{ required: true, message: '请输入协议名称' }]}>
-            <Input placeholder="如：补充协议一（需求变更增额）" />
-          </Form.Item>
-          <Form.Item label="变更金额（正数增额、负数减额）" field="amountChange" rules={[{ required: true, message: '请输入变更金额' }]}>
-            <Input placeholder="如：50000 或 -20000" />
-          </Form.Item>
-          <Form.Item label="签订日期" field="signDate">
-            <Input placeholder="如：2026-05-10" />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* 回款登记弹窗（补充协议，页面局部数据） */}
-      <Modal
-        title="登记回款（补充协议）"
-        visible={paymentModalVisible}
-        onCancel={() => setPaymentModalVisible(false)}
-        onOk={handleRegisterPayment}
-        maskClosable={false}
-        style={{ width: 420 }}
-      >
-        <Form form={paymentForm} layout="vertical">
-          <Form.Item label="回款金额" field="amount" rules={[{ required: true, message: '请输入回款金额' }]}>
-            <Input placeholder="如：50000" />
-          </Form.Item>
-          <Form.Item label="回款日期" field="date">
-            <Input placeholder="如：2026-06-20" />
-          </Form.Item>
-          <Form.Item label="回款方式" field="method">
-            <Input placeholder="如：银行转账" />
-          </Form.Item>
-          <Form.Item label="备注" field="note">
-            <Input placeholder="选填" />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* 主合同回款登记弹窗（写回 ContractsContext） */}
+      {/* 主合同回款登记弹窗 */}
       <Modal
         title="登记回款（主合同）"
         visible={mainPaymentModalVisible}
-        onCancel={() => setMainPaymentModalVisible(false)}
-        onOk={handleRegisterMainPayment}
+        onCancel={() => { setMainPaymentModalVisible(false); setLedgerRetryId(''); setLastDualWriteStatus(null); }}
+        onOk={lastDualWriteStatus === 'ledger-failed' ? handleRetryLedger : handleRegisterMainPayment}
+        okText={lastDualWriteStatus === 'ledger-failed' ? '重试台账' : '确定'}
+        okButtonProps={{ disabled: lastDualWriteStatus === 'ledger-failed' && !ledgerRetryId }}
         maskClosable={false}
         style={{ width: 420 }}
       >

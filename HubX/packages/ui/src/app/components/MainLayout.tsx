@@ -18,6 +18,7 @@ import {
   IconUserGroup,
   IconCheckSquare,
   IconQuote,
+  IconSearch,
 } from '@arco-design/web-react/icon';
 import { DailyReportModal } from '../pages/daily-report/DailyReportModal';
 import { DailyReport } from '../pages/daily-report/types';
@@ -32,7 +33,7 @@ import type { QuoteRole } from '../pages/quotation/types';
 import { useAppVersion } from '../version/AppVersionContext';
 import { VERSION_LABELS, VERSION_TAG_COLORS } from '../version/versionMatrix';
 import { VersionCompareModal } from '../version/VersionCompareModal';
-import { ArchitectureDiagramModal } from '../architecture/ArchitectureDiagramModal';
+import { GlobalSearchPalette } from '../global-search/GlobalSearchPalette';
 
 const Sider = Layout.Sider;
 const Header = Layout.Header;
@@ -55,7 +56,6 @@ export function MainLayout() {
   const currentActor = QUOTE_ROLE_ACTORS[currentRole];
   const appVersion = useAppVersion();
   const [versionCompareVisible, setVersionCompareVisible] = useState(false);
-  const [architectureVisible, setArchitectureVisible] = useState(false);
 
   const handleDailyReportOpen = () => {
     setSelectedRole(getDailyReportRuleForUser(currentUserId).templateType);
@@ -87,6 +87,7 @@ export function MainLayout() {
         { key: '/leads/closed', label: '已成交线索' },
         { key: '/leads/trash', label: '垃圾线索' },
         { key: '/leads/governance', label: '线索治理' },
+        { key: '/lead-dispatch', label: '线索派发' },
       ],
     },
     {
@@ -153,6 +154,7 @@ export function MainLayout() {
     { key: '/suppliers', icon: <IconUser />, label: '供应商管理' },
     { key: '/knowledge', icon: <IconFile />, label: '知识库' },
     { key: '/meetings', icon: <IconCalendar />, label: '会议管理' },
+    { key: '/smart-meetings', icon: <IconMessage />, label: '智能会议' },
     { key: '/roi', icon: <IconExperiment />, label: '全链路 ROI' },
     { key: '/ai', icon: <IconApps />, label: 'AI 智能助手' },
     {
@@ -337,7 +339,7 @@ export function MainLayout() {
           borderRight: '1px solid var(--grey-200)',
         }}
       >
-        {/* Branding：点产品名/Logo 打开架构图；版本标签仍打开功能看板 */}
+        {/* Branding：产品名只作标识；版本标签打开功能看板场景（含功能架构 / 技术架构 / 工作记录） */}
         <div
           className="flex items-center gap-3 overflow-hidden"
           style={{
@@ -346,18 +348,11 @@ export function MainLayout() {
             paddingRight: collapsed ? 16 : 20,
           }}
         >
-          <button
-            type="button"
-            onClick={() => setArchitectureVisible(true)}
-            title="查看功能架构图"
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              padding: 0,
-              border: 0,
-              background: 'transparent',
-              cursor: 'pointer',
               minWidth: 0,
             }}
           >
@@ -371,13 +366,13 @@ export function MainLayout() {
                 ZK HubX
               </span>
             )}
-          </button>
+          </div>
           <Tag
             color={VERSION_TAG_COLORS[appVersion]}
             size="small"
             style={{ marginLeft: collapsed ? 0 : 4, cursor: 'pointer', flexShrink: 0 }}
             onClick={() => setVersionCompareVisible(true)}
-            title="点击查看 α/β 版本功能清单对比"
+            title="点击打开功能看板（含功能架构、技术架构、工作记录）"
           >
             {VERSION_LABELS[appVersion]}
           </Tag>
@@ -425,13 +420,45 @@ export function MainLayout() {
             borderBottom: '1px solid var(--grey-200)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             padding: '0 24px',
             position: 'sticky',
             top: 0,
             zIndex: 50,
           }}
         >
+          {/* 左侧占位 */}
+          <div style={{ width: 200 }} />
+
+          {/* 中间：全局搜索触发器（窄屏隐藏） */}
+          <div
+            className="global-search-trigger hidden md:flex"
+            onClick={() => {
+              // 通过模拟 ⌘K 打开 Palette
+              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '6px 12px',
+              borderRadius: 8,
+              background: 'var(--grey-50)',
+              border: '1px solid var(--grey-200)',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
+              minWidth: 280,
+              maxWidth: 400,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--grey-300)')}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--grey-200)')}
+          >
+            <IconSearch style={{ fontSize: 14, color: 'var(--grey-400)' }} />
+            <span style={{ fontSize: 13, color: 'var(--grey-400)', flex: 1 }}>搜索线索、客户、报价、合同、项目、员工…</span>
+            <kbd style={{ fontSize: 10, padding: '1px 5px', borderRadius: 3, background: '#fff', border: '1px solid var(--grey-200)', color: 'var(--grey-400)' }}>⌘K</kbd>
+          </div>
+
+          {/* 右侧：图标组 */}
           <div className="flex items-center gap-3">
             {/* Daily Report */}
             <Badge
@@ -499,13 +526,11 @@ export function MainLayout() {
         onCancel={() => setFeedbackVisible(false)}
       />
 
+      <GlobalSearchPalette />
+
       <VersionCompareModal
         visible={versionCompareVisible}
         onCancel={() => setVersionCompareVisible(false)}
-      />
-      <ArchitectureDiagramModal
-        visible={architectureVisible}
-        onCancel={() => setArchitectureVisible(false)}
       />
     </Layout>
   );

@@ -575,7 +575,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             )}
             {otherCosts.length > 0 && (
               <div style={{ padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 4 }}>
-                <Text>其他合计：</Text>
+                <Text>自费项目合计（不计入报价）：</Text>
                 <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
               </div>
             )}
@@ -639,9 +639,9 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableOnsite ? `${travelOnsite.onsiteDetails.length} 个驻场地点` : '未开启'}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>其他成本</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.otherCostSubtotal)}</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{otherCosts.length > 0 ? otherCosts.map((c) => c.name || '未命名').join('、') : '无其他费用'}</td>
+                <td style={{ padding: '8px 12px', fontWeight: 500 }}>自费项目（不计入报价）</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.selfPaidSubtotal)}</td>
+                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{otherCosts.length > 0 ? otherCosts.map((c) => c.name || '未命名').join('、') : '无自费项目'}</td>
               </tr>
               {/* 合计行 */}
               <tr style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>

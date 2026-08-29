@@ -34,6 +34,18 @@ import { calcSubsidyDays } from './travelCalc';
 // 模拟延迟
 const delay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
 
+function updateMockTrip(id: string, updates: Partial<Trip>): Trip {
+  const index = mockTrips.findIndex(trip => trip.id === id);
+  if (index < 0) throw new Error('出差单不存在');
+  const next = {
+    ...mockTrips[index],
+    ...updates,
+    updateDate: new Date().toISOString().slice(0, 10),
+  };
+  mockTrips[index] = next;
+  return next;
+}
+
 // ==================== 出差管理 API ====================
 
 // 获取出差列表
@@ -109,65 +121,52 @@ export async function createTrip(data: Partial<Trip>): Promise<Trip> {
     updateDate: new Date().toISOString().slice(0, 10),
     ...data,
   };
+  mockTrips.push(newTrip);
   return newTrip;
 }
 
 // 更新出差申请
 export async function updateTrip(id: string, data: Partial<Trip>): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return { ...trip, ...data, updateDate: new Date().toISOString().slice(0, 10) };
+  return updateMockTrip(id, data);
 }
 
 // 提交出差申请（草稿 → 待审批）
 export async function submitTrip(id: string): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return { ...trip, status: 'pending', updateDate: new Date().toISOString().slice(0, 10) };
+  return updateMockTrip(id, { status: 'pending' });
 }
 
 // 审批出差申请
 export async function approveTrip(id: string, action: 'approve' | 'reject', comment: string): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return {
-    ...trip,
-    status: action === 'approve' ? 'approved' : 'rejected',
-    updateDate: new Date().toISOString().slice(0, 10),
-  };
+  return updateMockTrip(id, { status: action === 'approve' ? 'approved' : 'rejected' });
 }
 
 // 开始出差（已通过 → 进行中）
 export async function startTrip(id: string): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return { ...trip, status: 'in_progress', updateDate: new Date().toISOString().slice(0, 10) };
+  return updateMockTrip(id, { status: 'in_progress' });
 }
 
 // 结束出差（进行中 → 待报销）
 export async function endTrip(id: string): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return { ...trip, status: 'to_reimburse', updateDate: new Date().toISOString().slice(0, 10) };
+  return updateMockTrip(id, { status: 'to_reimburse' });
 }
 
 // 关闭出差（待报销 → 已关闭）
 export async function closeTrip(id: string): Promise<Trip> {
   await delay(500);
-  const trip = mockTrips.find(t => t.id === id);
-  if (!trip) throw new Error('出差单不存在');
-  return { ...trip, status: 'closed', updateDate: new Date().toISOString().slice(0, 10) };
+  return updateMockTrip(id, { status: 'closed' });
 }
 
 // 删除出差申请
 export async function deleteTrip(id: string): Promise<void> {
   await delay(500);
-  // 实际调用后端删除接口
+  const index = mockTrips.findIndex(trip => trip.id === id);
+  if (index < 0) throw new Error('出差单不存在');
+  mockTrips.splice(index, 1);
 }
 
 // ==================== 旅程管理 API ====================
@@ -353,6 +352,12 @@ export async function getLoanList(params?: LoanListParams): Promise<{ list: Loan
   }
   if (params?.status) {
     filtered = filtered.filter(l => l.status === params.status);
+  }
+  if (params?.startDate) {
+    filtered = filtered.filter(l => l.createDate >= params.startDate!);
+  }
+  if (params?.endDate) {
+    filtered = filtered.filter(l => l.createDate <= params.endDate!);
   }
   if (params?.tripId) {
     filtered = filtered.filter(l => l.tripId === params.tripId);

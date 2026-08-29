@@ -20,10 +20,10 @@ interface Props {
 const TODAY = '2026-08-19';
 
 const CERTAINTY_STYLES: Record<string, { backgroundColor: string; progressColor: string }> = {
-  high: { backgroundColor: '#dcfce7', progressColor: '#22c55e' },
-  medium: { backgroundColor: '#dbeafe', progressColor: '#3b82f6' },
-  low: { backgroundColor: '#fef3c7', progressColor: '#f59e0b' },
-  blocked: { backgroundColor: '#fee2e2', progressColor: '#ef4444' },
+  high: { backgroundColor: 'rgb(var(--success-2))', progressColor: 'rgb(var(--success-6))' },
+  medium: { backgroundColor: 'rgb(var(--blue-2))', progressColor: 'rgb(var(--blue-6))' },
+  low: { backgroundColor: 'rgb(var(--warning-2))', progressColor: 'rgb(var(--warning-6))' },
+  blocked: { backgroundColor: 'rgb(var(--danger-2))', progressColor: 'rgb(var(--danger-6))' },
 };
 
 export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOverride }: Props) {
@@ -61,7 +61,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
         end: contractEnd,
         progress: contractNodes.filter(n => n.isSettled).length / contractNodes.length * 100,
         hideChildren: !expandedAll,
-        styles: { progressSelectedColor: '#3b82f6' },
+        styles: { progressSelectedColor: 'rgb(var(--blue-6))' },
       });
 
       // 期次行（task 类型）
@@ -82,7 +82,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           project: contractId,
           styles: {
             backgroundColor: styles.backgroundColor,
-            progressColor: node.isSettled ? '#22c55e' : styles.progressColor,
+            progressColor: node.isSettled ? 'rgb(var(--success-6))' : styles.progressColor,
           },
         });
       }
@@ -117,10 +117,10 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
   };
 
   return (
-    <Card title="付款节点甘特图" style={{ marginBottom: 'var(--space-5)' }}>
+    <Card title="付款节点甘特图">
       {/* 工具栏 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-        <Space>
+      <div className="payment-forecast-toolbar">
+        <Space wrap>
           <Text type="secondary" style={{ fontSize: 'var(--text-sm)' }}>视图尺度:</Text>
           <Select value={viewMode} onChange={setViewMode} style={{ width: 100 }}>
             <Select.Option value={ViewMode.Week}>周</Select.Option>
@@ -136,7 +136,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
             <Space key={key} size={4}>
               <div style={{
                 width: 12, height: 12, borderRadius: 2,
-                background: CERTAINTY_STYLES[key]?.progressColor ?? '#ccc',
+                background: CERTAINTY_STYLES[key]?.progressColor ?? 'var(--color-fill-4)',
               }} />
               <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{label}</Text>
             </Space>

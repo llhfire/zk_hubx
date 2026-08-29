@@ -73,7 +73,7 @@ export function getStageAccess(quote: Quote, role: QuoteRole, stage: QuoteStage)
       return ['sales_manager', 'tech', 'decision'].includes(role) ? 'editable' : 'readonly';
     }
     if (quote.status === 'pending_stamp') {
-      return role === 'assistant' ? 'editable' : 'readonly';
+      return role === (quote.stampNode.stamperRole ?? 'assistant') ? 'editable' : 'readonly';
     }
     if (quote.status === 'stamped' || quote.status === 'sent') {
       // 盖章后由销售登记发送、成交或作废
@@ -119,7 +119,7 @@ export function getPendingOwner(quote: Quote): string {
   }
 }
 
-/** 会签人 auditorId → 报价角色（与 buildInitialAuditNodes 的三人对齐） */
+/** 旧快照 auditorId → 报价角色；新快照直接读取 quoteRole。 */
 const AUDITOR_ID_TO_ROLE: Record<string, QuoteRole> = {
   huangyi: 'sales_manager',
   luo: 'tech',
@@ -142,10 +142,10 @@ export function getPendingRoles(quote: Quote): QuoteRole[] {
     case 'auditing':
       return quote.auditNodes
         .filter((n) => n.status === 'PENDING')
-        .map((n) => AUDITOR_ID_TO_ROLE[n.auditorId])
+        .map((n) => n.quoteRole ?? AUDITOR_ID_TO_ROLE[n.auditorId])
         .filter((r): r is QuoteRole => Boolean(r));
     case 'pending_stamp':
-      return ['assistant'];
+      return [quote.stampNode.stamperRole ?? 'assistant'];
     case 'stamped':
     case 'sent':
       return ['sales'];
@@ -213,9 +213,18 @@ export interface QuoteAmountBreakdown {
 }
 
 export function computeAmountBreakdown(quote: Quote): QuoteAmountBreakdown {
-  const techDays = sumEvalDays(quote.evalSheet);
+  const techDays = quote.flowMode === 'file' && quote.fileFlow?.evaluationTotalDays != null
+    ? quote.fileFlow.evaluationTotalDays
+    : sumEvalDays(quote.evalSheet);
   const addedDays = quote.salesAddedRoles.reduce((s, r) => s + r.headcount * r.days, 0);
-  const techLaborCost = techDays * TECH_DAILY_RATE;
+  const roleDays = sumEvalDaysByRole(quote.evalSheet);
+  const roleBasedCost = round2(Object.entries(roleDays).reduce(
+    (sum, [roleKey, days]) => sum + days * (quote.roleDailyCosts?.[roleKey] ?? TECH_DAILY_RATE),
+    0,
+  ));
+  const techLaborCost = quote.flowMode === 'file' && Object.keys(roleDays).length === 0
+    ? round2(techDays * TECH_DAILY_RATE)
+    : roleBasedCost;
   const addedCost = quote.salesAddedRoles.reduce((s, r) => s + r.subtotal, 0);
   const laborSubtotal = techLaborCost + addedCost;
   const travelSubtotal = quote.travelOnsite.enableTravel ? quote.travelOnsite.travelSubtotal : 0;
@@ -223,7 +232,12 @@ export function computeAmountBreakdown(quote: Quote): QuoteAmountBreakdown {
   // 自费项目不进总价（ADR 0031）：otherCosts 独立归集
   const selfPaidSubtotal = quote.otherCosts.reduce((s, c) => s + c.amount, 0);
   const otherCostSubtotal = 0; // 自费移出后，报价内 otherCosts 为 0
-  const grandTotal = laborSubtotal + travelSubtotal + onsiteSubtotal + otherCostSubtotal;
+  const calculatedTotal = laborSubtotal + travelSubtotal + onsiteSubtotal + otherCostSubtotal;
+  const grandTotal = quote.isSupplement && quote.supplementChangeAmount != null
+    ? quote.supplementChangeAmount
+    : quote.flowMode === 'file' && quote.fileFlow?.quoteAmount != null
+      ? quote.fileFlow.quoteAmount
+      : calculatedTotal;
 
   const safe = (n: number) => (grandTotal > 0 ? n / grandTotal : 0);
   return {
@@ -334,7 +348,7 @@ export function validateBeforeAudit(quote: Quote): ValidationIssue[] {
     issues.push({ code: 'cost_sum', message: `成本小计之和 ${costSum} 与项目总报价 ${breakdown.grandTotal} 不一致`, severity: 'warning' });
   }
 
-  if (breakdown.grandTotal <= 0) {
+  if (!quote.isSupplement && breakdown.grandTotal <= 0) {
     issues.push({ code: 'no_price', message: '项目总报价必须大于 0', severity: 'error' });
   }
 
@@ -383,8 +397,14 @@ export function resolveAuditOutcome(nodes: AuditNode[]): QuoteStatus {
  * 驳回后全员重审重置：清空所有审批记录，禁止部分沿用。
  * 提交审批与重新提交都走这里，保证三人重新会签。
  */
-export function resetAuditNodes(): AuditNode[] {
-  return buildInitialAuditNodes();
+export function resetAuditNodes(nodes?: AuditNode[]): AuditNode[] {
+  const source = nodes ?? buildInitialAuditNodes();
+  return source.map((node) => ({
+    ...node,
+    status: 'PENDING',
+    auditTime: undefined,
+    comment: undefined,
+  }));
 }
 
 /** 版本号递增：v1.0 → v2.0 */

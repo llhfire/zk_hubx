@@ -176,7 +176,9 @@ const TaskList: React.FC<TaskListProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                padding: '10px 12px',
+                height: 40,
+                padding: '0 12px',
+                boxSizing: 'border-box',
                 background: 'var(--grey-100)',
                 borderBottom: '1px solid var(--grey-200)',
                 cursor: 'pointer',
@@ -238,19 +240,43 @@ const TaskList: React.FC<TaskListProps> = ({
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          padding: '8px 12px 8px 36px',
+                          height: 40,
+                          padding: '0 12px 0 36px',
+                          boxSizing: 'border-box',
                           background: '#fff',
                           borderBottom: '1px solid var(--grey-100)',
                           cursor: 'pointer',
                           userSelect: 'none',
                           gap: 8,
-                          minHeight: 40,
+                          overflow: 'hidden',
                         }}
                       >
                         {/* Step number + name */}
-                        <span style={{ fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                          <Text style={{ marginRight: 4 }}>{step.stepNo}</Text>
-                          <Text>{step.stepName}</Text>
+                        <span
+                          style={{
+                            fontSize: 14,
+                            display: 'flex',
+                            alignItems: 'center',
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          <Text style={{ flexShrink: 0, marginRight: 4, whiteSpace: 'nowrap' }}>{step.stepNo}</Text>
+                          <Text
+                            title={step.stepName}
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {step.stepName}
+                          </Text>
                           {step.isCustom && (
                             <Tag color="orange" size="small" style={{ marginLeft: 6 }}>
                               自
@@ -292,7 +318,9 @@ const TaskList: React.FC<TaskListProps> = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      padding: '8px 12px 8px 36px',
+                      height: 40,
+                      padding: '0 12px 0 36px',
+                      boxSizing: 'border-box',
                       background: 'var(--brand-50)',
                       borderBottom: '1px solid var(--grey-200)',
                       gap: 8,

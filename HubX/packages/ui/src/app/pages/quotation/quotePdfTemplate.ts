@@ -2,7 +2,7 @@
 // 按中科标准件版式：封面→整体报价→详细清单→自费项目→签章
 // 数据流转：盖章生成无水印正式版；文件流转在线编辑终稿+扫描件
 
-import type { Quote, FeatureModule } from './types';
+import type { Quote } from './types';
 import type { QuoteAmountBreakdown } from './quoteFlow';
 
 export interface PdfTemplateData {
@@ -88,6 +88,18 @@ ${watermark ? `<div class="watermark">${watermark}</div>` : ''}
 </div>
 
 <div class="section">
+  <h2>公司介绍</h2>
+  <p style="line-height: 1.8;">
+    ${company.name} 为客户提供软件产品设计、研发实施与交付服务。本报价以双方确认的需求范围为依据，
+    由项目团队按约定流程完成设计、开发、测试与上线支持。
+  </p>
+  <table>
+    <tr><th>地址</th><td>${company.address}</td><th>联系电话</th><td>${company.phone}</td></tr>
+    <tr><th>授权代表</th><td colspan="3">${company.representative}</td></tr>
+  </table>
+</div>
+
+<div class="section">
   <h2>功能清单</h2>
   <table>
     <tr><th>模块</th><th>子功能</th><th>描述</th></tr>
@@ -99,7 +111,7 @@ ${watermark ? `<div class="watermark">${watermark}</div>` : ''}
   <h2>费用汇总</h2>
   <div class="summary">
     <table>
-      <tr><th>人力成本</th><td>¥${breakdown.laborSubtotal.toLocaleString()}</td></tr>
+      <tr><th>软件开发服务费</th><td>¥${breakdown.laborSubtotal.toLocaleString()}</td></tr>
       <tr><th>差旅驻场</th><td>¥${(breakdown.travelSubtotal + breakdown.onsiteSubtotal).toLocaleString()}</td></tr>
       ${breakdown.selfPaidSubtotal > 0 ? `<tr><th>自费项目（不计入报价）</th><td>¥${breakdown.selfPaidSubtotal.toLocaleString()}</td></tr>` : ''}
       <tr><th>项目总报价</th><td class="total">¥${breakdown.grandTotal.toLocaleString()}</td></tr>

@@ -273,7 +273,7 @@ export function PersonalWorkbench() {
                       <List.Item key={task.id} style={{ padding: '8px 0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                           <Space>
-                            <Tag color={task.priority === 'high' ? 'var(--destructive-500)' : task.priority === 'medium' ? 'var(--warning-500)' : 'var(--grey-400)'}>
+                            <Tag color={task.priority === 'high' ? 'var(--destructive-500)' : task.priority === 'medium' ? 'var(--warning-500)' : 'gray'}>
                               {task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低'}
                             </Tag>
                             <span style={{ fontSize: 14 }}>{task.title}</span>
@@ -304,7 +304,7 @@ export function PersonalWorkbench() {
                   {
                     title: '优先级', dataIndex: 'priority', width: 70,
                     render: (p: string) => (
-                      <Tag color={p === 'high' ? 'var(--destructive-500)' : p === 'medium' ? 'var(--warning-500)' : 'var(--grey-400)'}>
+                      <Tag color={p === 'high' ? 'var(--destructive-500)' : p === 'medium' ? 'var(--warning-500)' : 'gray'}>
                         {p === 'high' ? '高' : p === 'medium' ? '中' : '低'}
                       </Tag>
                     ),
@@ -358,7 +358,7 @@ export function PersonalWorkbench() {
                       <Tag color="var(--success-500)">
                         已解锁 {cap.skills.filter(s => s.status === 'unlocked').length}
                       </Tag>
-                      <Tag color="var(--grey-300)">
+                      <Tag color="gray">
                         待解锁 {cap.skills.filter(s => s.status === 'locked').length}
                       </Tag>
                     </div>

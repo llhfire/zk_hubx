@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import {
   Button,
   Card,
-  Grid,
   Input,
   Message,
   Progress,
@@ -11,19 +10,28 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography,
 } from '@arco-design/web-react';
 import {
   IconClockCircle,
+  IconEye,
   IconFile,
-  IconPlus,
   IconSearch,
 } from '@arco-design/web-react/icon';
 import { useContracts } from './ContractsContext';
 import type { Contract, PaymentPlanItem } from './types';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { withCollectionLedger } from '@/services/collectionMutations';
+import {
+  FilterBar,
+  ProcessMetricGrid,
+  ProcessWorkspace,
+  ProcessWorkspaceAside,
+  ProcessWorkspaceMain,
+} from '@/app/components/ui';
+import './payment/paymentConsistency.css';
 
-const { Row, Col } = Grid;
-const Title = Typography.Title;
 const Text = Typography.Text;
 
 type MilestoneStage = 'blocked' | 'overdue' | 'week' | 'month' | 'future' | 'settled';
@@ -185,20 +193,59 @@ function stageWeight(stage: MilestoneStage): number {
   }[stage];
 }
 
+function csvCell(value: string | number): string {
+  const text = String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function downloadMilestoneList(items: PaymentMilestone[]): void {
+  if (items.length === 0) {
+    Message.warning('当前筛选条件下没有可导出的回款节点');
+    return;
+  }
+
+  const rows = items.map((item) => [
+    item.contractNo,
+    item.contractName,
+    item.customerName,
+    `第${item.plan.period}期`,
+    formatDate(item.dueDate),
+    item.remainingAmount,
+    STAGE_META[item.stage].label,
+    item.owner,
+  ]);
+  const csv = [
+    ['合同编号', '合同名称', '客户', '回款节点', '计划日期', '待回款金额', '优先级', '负责人'],
+    ...rows,
+  ].map((row) => row.map(csvCell).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `回款行动清单-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+  Message.success(`已导出 ${items.length} 个回款节点`);
+}
+
 export function PaymentKanbanV2() {
   const navigate = useNavigate();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const [keyword, setKeyword] = useState('');
   const [stageFilter, setStageFilter] = useState<'all' | MilestoneStage>('all');
 
   const today = useMemo(() => new Date(), []);
+  const financialContracts = useMemo(
+    () => contracts.map((contract) => withCollectionLedger(contract, collections)),
+    [contracts, collections],
+  );
   const milestones = useMemo(
-    () => buildMilestones(contracts, today).sort((a, b) => {
+    () => buildMilestones(financialContracts, today).sort((a, b) => {
       const stageDelta = stageWeight(a.stage) - stageWeight(b.stage);
       if (stageDelta !== 0) return stageDelta;
       return a.dueDate.getTime() - b.dueDate.getTime();
     }),
-    [contracts, today],
+    [financialContracts, today],
   );
 
   const filteredMilestones = useMemo(() => {
@@ -222,7 +269,7 @@ export function PaymentKanbanV2() {
     const next30Total = milestones
       .filter((item) => item.remainingAmount > 0 && item.daysLeft >= 0 && item.daysLeft <= 30)
       .reduce((sum, item) => sum + item.remainingAmount, 0);
-    const receivedThisMonth = contracts.reduce((sum, contract) => {
+    const receivedThisMonth = financialContracts.reduce((sum, contract) => {
       return sum + (contract.collectionRecords ?? [])
         .filter((record) => monthKey(asDate(record.date, today)) === monthKey(today))
         .reduce((recordSum, record) => recordSum + record.amount, 0);
@@ -240,7 +287,7 @@ export function PaymentKanbanV2() {
       avgOverdueDays,
       activeCount: milestones.filter((item) => item.remainingAmount > 0).length,
     };
-  }, [contracts, milestones, today]);
+  }, [financialContracts, milestones, today]);
 
   const focusItems = useMemo(
     () => milestones
@@ -270,6 +317,7 @@ export function PaymentKanbanV2() {
   }, [milestones]);
 
   const maxBucketAmount = Math.max(...cashBuckets.map((bucket) => bucket.amount), 1);
+  const filtersActive = Boolean(keyword.trim() || stageFilter !== 'all');
 
   const columns = [
     {
@@ -332,100 +380,78 @@ export function PaymentKanbanV2() {
     },
     {
       title: '操作',
-      width: 110,
+      width: 72,
       render: (_: unknown, item: PaymentMilestone) => (
-        <Button type="text" size="small" onClick={() => navigate(`/contracts/${item.contractId}`)}>
-          查看合同
-        </Button>
+        <Tooltip content="查看合同">
+          <Button
+            className="hubx-icon-action"
+            type="text"
+            size="small"
+            aria-label={`查看合同${item.contractNo}第${item.plan.period}期回款节点`}
+            icon={<IconEye />}
+            onClick={() => navigate(`/contracts/${item.contractId}`)}
+          />
+        </Tooltip>
       ),
     },
   ];
 
   return (
-    <div style={{ paddingBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+    <div className="payment-kanban-v2">
+      <div className="payment-kanban-v2__toolbar">
         <div>
-          <Text type="secondary">按风险、时点和金额组织回款动作，优先处理最影响现金流的合同节点。</Text>
+          <div className="payment-kanban-v2__title">回款行动队列</div>
+          <div className="payment-kanban-v2__description">按风险、时点和金额组织回款动作，优先处理最影响现金流的合同节点。</div>
         </div>
-        <Space>
-          <Button icon={<IconFile />} onClick={() => Message.info('已生成当前筛选条件下的回款清单')}>
+        <Space className="payment-kanban-v2__actions">
+          <Button icon={<IconFile />} onClick={() => downloadMilestoneList(filteredMilestones)}>
             生成清单
-          </Button>
-          <Button type="primary" icon={<IconPlus />} onClick={() => Message.info('请在合同详情中登记回款或催收记录')}>
-            登记动作
           </Button>
         </Space>
       </div>
 
-      <Row gutter={[16, 16]}>
-        <Col span={6}>
-          <MetricCard
-            title="未回款总额"
-            value={currency(summary.receivableTotal)}
-            caption={`${summary.activeCount} 个待处理节点`}
-            color="rgb(var(--blue-6))"
-          />
-        </Col>
-        <Col span={6}>
-          <MetricCard
-            title="30天内应收"
-            value={currency(summary.next30Total)}
-            caption="需要本月重点推进"
-            color="rgb(var(--green-6))"
-          />
-        </Col>
-        <Col span={6}>
-          <MetricCard
-            title="逾期与卡点"
-            value={currency(summary.overdueTotal)}
-            caption={`平均逾期 ${summary.avgOverdueDays} 天`}
-            color="rgb(var(--red-6))"
-          />
-        </Col>
-        <Col span={6}>
-          <MetricCard
-            title="本月已回"
-            value={currency(summary.receivedThisMonth)}
-            caption="来自已登记回款记录"
-            color="rgb(var(--orange-6))"
-          />
-        </Col>
-      </Row>
+      <ProcessMetricGrid items={[
+        { key: 'receivable', label: '未回款总额', value: currency(summary.receivableTotal), detail: `${summary.activeCount} 个待处理节点` },
+        { key: 'next30', label: '30天内应收', value: currency(summary.next30Total), detail: '需要本月重点推进', tone: summary.next30Total > 0 ? 'warning' : 'neutral' },
+        { key: 'overdue', label: '逾期与卡点', value: currency(summary.overdueTotal), detail: `平均逾期 ${summary.avgOverdueDays} 天`, tone: summary.overdueTotal > 0 ? 'danger' : 'success' },
+        { key: 'received', label: '本月已回', value: currency(summary.receivedThisMonth), detail: '来自已登记实收台账', tone: 'success' },
+      ]} />
 
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col span={17}>
-          <Card
-            title="回款队列"
-            bordered={false}
-            extra={
-              <Space>
-                <Input
-                  style={{ width: 260 }}
-                  prefix={<IconSearch />}
-                  placeholder="搜索合同、客户、编号"
-                  value={keyword}
-                  onChange={setKeyword}
-                />
-                <Select
-                  style={{ width: 130 }}
-                  value={stageFilter}
-                  onChange={setStageFilter}
-                  options={FILTER_OPTIONS}
-                />
-              </Space>
-            }
-          >
+      <ProcessWorkspace>
+        <ProcessWorkspaceMain>
+          <Card title="回款队列">
+            <FilterBar actions={filtersActive ? (
+              <Button type="text" onClick={() => { setKeyword(''); setStageFilter('all'); }}>重置筛选</Button>
+            ) : (
+              <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {filteredMilestones.length} 个节点</span>
+            )}>
+              <Input
+                style={{ width: 260 }}
+                prefix={<IconSearch />}
+                placeholder="搜索合同、客户、编号"
+                value={keyword}
+                onChange={setKeyword}
+              />
+              <Select
+                style={{ width: 130 }}
+                value={stageFilter}
+                onChange={setStageFilter}
+                options={FILTER_OPTIONS}
+              />
+            </FilterBar>
             <Table
               columns={columns}
               data={filteredMilestones}
               rowKey="id"
               pagination={{ pageSize: 8 }}
               scroll={{ x: 1080 }}
+              style={{ marginTop: 16 }}
             />
           </Card>
-        </Col>
-        <Col span={7}>
-          <Card title="今日优先处理" bordered={false}>
+        </ProcessWorkspaceMain>
+        <ProcessWorkspaceAside>
+          <>
+          <Card title="今日优先处理">
             <Space direction="vertical" size="medium" style={{ width: '100%' }}>
               {focusItems.length === 0 ? (
                 <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--color-text-3)' }}>
@@ -435,12 +461,7 @@ export function PaymentKanbanV2() {
                 focusItems.map((item) => (
                   <div
                     key={item.id}
-                    style={{
-                      padding: 12,
-                      background: 'var(--color-fill-2)',
-                      border: '1px solid var(--color-border-2)',
-                      borderRadius: 6,
-                    }}
+                    className="payment-kanban-v2__focus-item"
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                       <Text bold ellipsis style={{ maxWidth: 210 }}>{item.customerName}</Text>
@@ -460,7 +481,7 @@ export function PaymentKanbanV2() {
             </Space>
           </Card>
 
-          <Card title="90天现金流节奏" bordered={false} style={{ marginTop: 16 }}>
+          <Card title="90天现金流节奏">
             <Space direction="vertical" size="medium" style={{ width: '100%' }}>
               {cashBuckets.map((bucket) => (
                 <div key={bucket.key}>
@@ -468,14 +489,7 @@ export function PaymentKanbanV2() {
                     <span style={{ color: 'var(--color-text-2)' }}>{bucket.label}</span>
                     <Text bold>{currency(bucket.amount)}</Text>
                   </div>
-                  <div
-                    style={{
-                      height: 8,
-                      background: 'var(--color-fill-2)',
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <div className="payment-kanban-v2__cash-track">
                     <div
                       style={{
                         width: `${Math.max(4, (bucket.amount / maxBucketAmount) * 100)}%`,
@@ -488,28 +502,9 @@ export function PaymentKanbanV2() {
               ))}
             </Space>
           </Card>
-        </Col>
-      </Row>
+          </>
+        </ProcessWorkspaceAside>
+      </ProcessWorkspace>
     </div>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  caption,
-  color,
-}: {
-  title: string;
-  value: string;
-  caption: string;
-  color: string;
-}) {
-  return (
-    <Card bordered={false} bodyStyle={{ padding: 16 }}>
-      <div style={{ color: 'var(--color-text-3)', fontSize: 14 }}>{title}</div>
-      <div style={{ marginTop: 8, fontSize: 24, fontWeight: 700, color }}>{value}</div>
-      <div style={{ marginTop: 6, color: 'var(--color-text-2)' }}>{caption}</div>
-    </Card>
   );
 }

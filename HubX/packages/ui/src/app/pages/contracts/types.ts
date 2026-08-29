@@ -105,6 +105,7 @@ export interface ContractFormData {
   totalAmount: number;
   rebateAmount: number;
   paymentPlans: PaymentPlanItem[];
+  invoiceType?: '专票' | '普票';
   templateId: string;
   customContractHtml?: string; // 在模板预览中手动编辑后的合同正文
 }
@@ -283,5 +284,8 @@ export interface WizardInput {
   leadId?: string;
   quoteId?: string;
   projectId?: string;
+  kind?: 'main' | 'supplement';
+  parentContractId?: string;
+  sourceQuoteId?: string;
   formData: ContractFormData;
 }

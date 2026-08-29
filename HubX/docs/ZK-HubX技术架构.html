@@ -155,26 +155,26 @@
     产品目标图仍是仓库根目录 <code>ZK-HubX架构图.html</code>，两份不要混读。
   </p>
   <div class="meta">
-    <span>快照日 <b>2026-08-22</b></span>
-    <span>git HEAD <b>4fdecb1</b></span>
-    <span>工作区 <b>B1–B4 已编码未提交</b></span>
-    <span>B5 <b>详细设计 Approved，生产代码未写</b></span>
-    <span>线上 <b>四份 D1 迁移仍待执行</b></span>
+    <span>快照日 <b>2026-08-29</b></span>
+    <span>git HEAD <b>以本次下班提交为准</b></span>
+    <span>工作区 <b>B1–B5 + β真实数据 0-2 已编码</b></span>
+    <span>B5 <b>A / B / C 三项主线修复已完成</b></span>
+    <span>线上 <b>本次下班发布并核对 D1</b></span>
   </div>
 
   <div class="banner">
     <strong>读图口径。</strong>
     「已注入」= <code>apps/web/src/main.tsx</code> 已把 http service 传进 Provider，β 列表读写走 Workers，不是从零接线。
-    「工作区已编码」= 相对 HEAD 有 diff，尚未 commit / push / 发 Cloudflare。
-    「冒烟洞」= B5 必做，不修则漏斗主线在 β 独立跑不通。
+    「工作区已编码」= 已在本次下班提交中收口，仍需以线上冒烟确认生产状态。
+    「已修复」= B5 代码路径与测试已完成，发布后继续核对真实 D1 数据链路。
     看板 <code>productionOn</code> 不是接线事实：仅「线索全流程」为 true；报价/合同/项目/回款 http 已注入但开关仍 false。
   </div>
 
   <div class="legend">
     <span><i class="pill p-wired">已注入</i> β 入口走 http</span>
-    <span><i class="pill p-code">工作区已编码</i> 未发布</span>
-    <span><i class="pill p-hole">冒烟洞</i> B5 P0</span>
-    <span><i class="pill p-design">设计已批</i> 待编码</span>
+    <span><i class="pill p-code">工作区已编码</i> 本次发布</span>
+    <span><i class="pill p-wired">已修复</i> B5 P0</span>
+    <span><i class="pill p-design">设计已批</i> 按阶段实施</span>
     <span><i class="pill p-mock">α mock</i> 页面仍内存/种子</span>
     <span><i class="pill p-off">未接缝</i> β 打开也是假数据</span>
     <span><i class="pill p-later">规划</i> 不挡第一次 β 可用</span>
@@ -220,6 +220,56 @@
     <strong>第一次把工作区接到生产，必须同一次下班：提交 → D1 迁移 → Workers → α+β Pages → Source SHA = HEAD。</strong>
   </p>
 
+  <!-- 1b -->
+  <h2>1b. Cloudflare 托管技术栈（β 版）</h2>
+  <table>
+    <thead>
+      <tr><th>层级</th><th>Cloudflare 服务</th><th>技术栈</th><th>地址 / 标识</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>前端托管</strong></td>
+        <td>Cloudflare Pages</td>
+        <td>React 18 + Vite 6 + React Router 7 + Arco Design + Tailwind v4</td>
+        <td><code>beta.zkhubx.com</code>（自定义域）<br><code>zkhubx-web.pages.dev</code>（默认域）</td>
+        <td>静态 SPA，构建产物直接部署。α 前端共用同一 Pages 项目（<code>alpha.zkhubx.com</code>）。<code>VITE_API_BASE_URL</code> 构建时内联，指向 Workers。</td>
+      </tr>
+      <tr>
+        <td><strong>后端 API</strong></td>
+        <td>Cloudflare Workers</td>
+        <td>Hono（轻量 Web 框架）+ TypeScript，esbuild 扖包</td>
+        <td><code>zkhubx-api.llhfire.workers.dev</code></td>
+        <td>无服务器边缘运行时。入口 <code>apps/api/src/index.ts</code>，纯函数从 <code>packages/ui/src/services/*Mutations.ts</code> 单源导入（esbuild resolve alias）。文档式 REST API，乐观锁 + 服务端时钟。</td>
+      </tr>
+      <tr>
+        <td><strong>数据库</strong></td>
+        <td>Cloudflare D1</td>
+        <td>SQLite（serverless 关系型）</td>
+        <td><code>zkhubx-db</code>（id <code>ac02e216-…53339</code>）</td>
+        <td>文档式存储（ADR-0094）：一域一表，<code>data</code> 列存整段 JSON，<code>id + version</code> 做乐观锁。无外键、无列拆分。β 期不做关系建模。迁移用 <code>wrangler d1 execute --file</code>。</td>
+      </tr>
+      <tr>
+        <td><strong>部署工具</strong></td>
+        <td>wrangler CLI</td>
+        <td>Node.js CLI</td>
+        <td>—</td>
+        <td>Workers：<code>wrangler deploy</code>。Pages：<code>wrangler pages deploy</code>。D1 迁移：<code>wrangler d1 execute zkhubx-db --file=schema.sql</code>。本地开发：<code>wrangler dev</code> → :8787（本地 D1 需手动初始化）。</td>
+      </tr>
+      <tr>
+        <td><strong>域名与 DNS</strong></td>
+        <td>Cloudflare DNS</td>
+        <td>—</td>
+        <td><code>zkhubx.com</code></td>
+        <td>两个自定义域：<code>alpha.zkhubx.com</code>（α 前端）、<code>beta.zkhubx.com</code>（β 前端）。Workers 暂用默认 <code>*.workers.dev</code>，未绑自定义域。HTTPS 由 Cloudflare 自动签发。</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="note">
+    <strong>零运维：</strong>全栈跑在 Cloudflare 边缘网络，无独立服务器、无容器、无 Nginx。免费额度足够内部使用（Workers 10 万请求/天、D1 500 万行读/天、Pages 无限请求）。
+    <strong>部署流程：</strong>本地 <code>git push</code> → Cloudflare Pages 自动构建部署前端；Workers 需手动 <code>wrangler deploy</code>；D1 迁移需手动执行 SQL。
+    <strong>α / β 区别：</strong>α 前端不注入 service，纯 mock；β 前端注入 http service 调 Workers API。两者共用同一份 <code>packages/ui</code> 代码。
+  </p>
+
   <!-- 2 -->
   <h2>2. 代码分层（monorepo）</h2>
   <div class="layers">
@@ -245,12 +295,12 @@
     </div>
     <div class="layer">
       <div class="who">Workers</div>
-      <div class="what">GET 列表/单条；PUT 整文档 + 乐观锁 + 服务端 <code>updatedAt</code>；合同 PUT 后 <code>handleSigningLinkage</code>（现网有洞 C）。报价 GET 会 <code>ensureSeed</code> 插入 <code>q-seed-1</code>。</div>
+      <div class="what">GET 列表/单条；PUT 整文档 + 乐观锁 + 服务端 <code>updatedAt</code>；合同首次 PUT 也会用写前快照触发幂等项目联动。报价 GET 会 <code>ensureSeed</code> 插入 <code>q-seed-1</code>。</div>
       <div class="path">apps/api/src/index.ts</div>
     </div>
     <div class="layer">
       <div class="who">D1</div>
-      <div class="what">文档式存储（ADR-0094）：不拆列、无外键。表：quotes / contracts / leads / lead_followups / lead_transfers / projects / cases / collections。生产是否已有新表以实施当天探测为准。</div>
+      <div class="what">文档式存储（ADR-0094）：不拆列、无外键。表：quotes / contracts / leads / lead_followups / lead_transfers / projects / cases / collections / employees。生产是否已有新表以实施当天探测为准。</div>
       <div class="path">schema.sql · migrations/</div>
     </div>
   </div>
@@ -267,7 +317,7 @@
   </div>
   <p class="note">
     没有登录会话、没有接口鉴权、没有操作日志表。actor 信任请求头。
-    没有导航级 refetch：β 签约桥在 <code>isBeta()</code> 为 true 时直接 return，<strong>也不调 <code>refresh()</code></strong>（洞 A）。
+    β 签约桥不再执行 α 的前端联动，但合同变化后会调用项目 <code>refresh()</code>，使 Workers 创建的项目在同一会话可见。
   </p>
 
   <!-- 4 -->
@@ -289,7 +339,7 @@
         <li>按状态/客户的列查询、引用完整性</li>
         <li>WebSocket、合并冲突 UI</li>
         <li>D1 <code>migrations_dir</code> 自动迁；现流程是 <code>d1 execute --file</code></li>
-        <li>两个文件都叫 <code>0002_*.sql</code>，B5 P1 才改名</li>
+        <li>迁移文件已按 <code>0001</code> 至 <code>0005</code> 排序；生产执行前仍需先核对远端迁移状态</li>
       </ul>
     </div>
   </div>
@@ -319,28 +369,28 @@
         <td>ContractsProvider</td>
         <td class="mono">contractService · contracts · /api/contracts</td>
         <td>false / 未开始</td>
-        <td>CRUD 已通。写时联动意图在 B3。<strong>首次 PUT 是 INSERT，整段跳过联动（洞 C）</strong>。</td>
+        <td>CRUD 已通。首次 PUT 使用写前快照执行联动，并幂等补建未确认项目；批准、作废继续走既有状态联动。</td>
       </tr>
       <tr>
         <td>线索</td>
         <td>LeadsProvider</td>
         <td class="mono">leadService · leads + followups + transfers · /api/leads*</td>
         <td>true / 编码中</td>
-        <td>B2 五池+跟进+领取/退回。洽谈无合同 spawn 不在 B5，归 U1（<code>ap-lead-{id}</code>）。</td>
+        <td>B2 五池+跟进+领取/退回。β真实数据阶段 2 加派发域端点（dispatch/urge/level-change/level-audit）+ detail 复合，派发工作台动作已走服务方法。洽谈无合同 spawn 不在 B5，归 U1（<code>ap-lead-{id}</code>）。</td>
       </tr>
-      <tr class="hole">
+      <tr>
         <td>项目</td>
         <td>ProjectProvider</td>
         <td class="mono">projectService · projects · /api/projects</td>
         <td>false / 编码中</td>
-        <td>B4 列表走 http。β 桥不 refresh（洞 A）。<code>spawnUnconfirmedProject</code> 因洞 C 现网不可达。SOP 不写 D1。</td>
+        <td>B4 列表走 http。β 桥在合同变化后刷新项目 Context；首次合同 PUT 可持久化未确认项目。SOP 不写 D1。</td>
       </tr>
-      <tr class="hole">
+      <tr>
         <td>实收</td>
         <td>CollectionProvider</td>
         <td class="mono">collectionService · collections · /api/collections</td>
         <td>false / 编码中</td>
-        <td>期次仍在合同 <code>paymentPlans</code>。360 读台账。合同详情 <code>addCollection</code> 只写嵌套流水（洞 B）。</td>
+        <td>期次仍在合同 <code>paymentPlans</code>。360 读台账；合同详情登记实收复用 <code>registerMainPaymentDualWrite</code>，嵌套流水与台账双写并支持重试。</td>
       </tr>
       <tr>
         <td>商机 Case</td>
@@ -356,22 +406,22 @@
   </p>
 
   <!-- 6 -->
-  <h2>6. 三个会挡冒烟的洞（B5 P0，均必做）</h2>
+  <h2>6. B5 三项主线修复（已编码，待线上冒烟）</h2>
   <div class="holes">
     <div class="hole-card">
-      <div class="tag">洞 C · Workers</div>
-      <h3>首次创建合同不 spawn</h3>
-      <p>PUT <code>/api/contracts/:id</code> 仅 <code>if (old)</code> 才 <code>handleSigningLinkage</code>。向导第一次是 INSERT，<code>old</code> 空，整段跳过。之后 <code>prevSnapshot</code> 含本 id，<code>events.created</code> 永假。批准路径无项目则 <code>continue</code>，从不补 spawn。结果：β 从未 INSERT <code>ap-{合同id}</code>。</p>
+      <div class="tag">已修复 C · Workers</div>
+      <h3>首次创建合同可幂等生成项目</h3>
+      <p>PUT <code>/api/contracts/:id</code> 使用 <code>prevSnapshotForWrite</code> 计算首次创建事件，并通过 <code>ensureUnconfirmedProjectIfMissing</code> 幂等补建未确认项目；重复请求不会重复生成。</p>
     </div>
     <div class="hole-card">
-      <div class="tag">洞 A · 前端桥</div>
-      <h3>β 不刷新项目 Context</h3>
-      <p><code>ApprovalDeliveryBridge</code> 注释写「合同列表变化时刷新项目」。<code>isBeta()</code> 为 true 时直接 return，且未取出 <code>refresh</code>。只修 A 不修 C，refresh 仍是空列表。同会话新建合同后项目列表不会自己出现。</p>
+      <div class="tag">已修复 A · 前端桥</div>
+      <h3>β 合同变化后刷新项目</h3>
+      <p><code>ApprovalDeliveryBridge</code> 在 β 不重复执行 α 联动，但会调用项目 <code>refresh()</code>；同一会话可读取 Workers 刚持久化的项目。</p>
     </div>
     <div class="hole-card">
-      <div class="tag">洞 B · 双写</div>
-      <h3>登记实收进错账</h3>
-      <p>合同详情 <code>addCollection</code> → 嵌套 <code>collectionRecords</code> + <code>receivedAmount</code>。360 / 台账读 <code>collections</code> 表。用户只能在合同详情登记，360 看不到这笔钱。B5 要求与看板共用 <code>registerMainPaymentDualWrite</code>。</p>
+      <div class="tag">已修复 B · 双写</div>
+      <h3>合同详情与实收台账一致</h3>
+      <p>合同详情登记实收复用 <code>registerMainPaymentDualWrite</code>，同时更新合同嵌套流水和 <code>collections</code> 台账；台账失败时保留明确重试路径。</p>
     </div>
   </div>
   <h3>签约联动（设计意图 vs 现网）</h3>
@@ -381,9 +431,8 @@
   主合同作废     ──voided───► shelveProject                    搁置
   批准时无项目                              不 spawn（不是立项点）
 
-现网：created 因洞 C 永不命中 → spawnUnconfirmedProject 是死代码
-α：SigningOpenBridge 仍 diff；跟进另有内存 spawn lead-spawn-{线索id}
-β 洽谈无合同：应走 U1 / ap-lead-{线索id}，B5 不做</div>
+α：SigningOpenBridge 监测线索首次进入合同洽谈/已签单，统一使用 ap-lead-{线索id} 幂等生成未确认项目；后建合同只补绑 contractId
+β：Workers 已按写前快照和幂等规则生成、持久化未确认项目；前端随后刷新项目 Context</div>
 
   <!-- 7 -->
   <h2>7. 功能模块 · 按「β 能不能当真用」分层</h2>
@@ -393,7 +442,7 @@
   <div class="mods">
     <div class="mod">
       <div class="mod-name">基础工具 · 数据底座 <span class="pill p-code">B1 已编码</span></div>
-      <div class="mod-items">乐观锁 / actor / 时钟 · productionOn 保持 false（登录未做）· B5 收口已设计</div>
+      <div class="mod-items">乐观锁 / actor / 时钟 · productionOn 保持 false（登录未做）· B5 收口已完成</div>
     </div>
     <div class="mod">
       <div class="mod-name">线索全流程 <span class="pill p-wired">已注入</span></div>
@@ -404,28 +453,28 @@
       <div class="mod-items">10 态词表 · 双来源 · 审批快照 · 标准件 PDF · 已确认出向导</div>
     </div>
     <div class="mod">
-      <div class="mod-name">合同签约 <span class="pill p-hole">洞 C</span></div>
-      <div class="mod-items">向导 · 审批 · 归档 · 写时联动现网不可达 · 补充协议对象仍残留</div>
+      <div class="mod-name">合同签约 <span class="pill p-wired">B5 已修复</span></div>
+      <div class="mod-items">向导 · 审批 · 归档 · 首次写入可幂等联动项目 · 补充协议对象仍残留</div>
     </div>
     <div class="mod">
-      <div class="mod-name">项目管理 <span class="pill p-hole">洞 A/C</span></div>
-      <div class="mod-items">360 · 未确认/指派 · http 列表 · SOP β 空 · /projects 走 ProjectList</div>
+      <div class="mod-name">项目管理 <span class="pill p-wired">B5 已修复</span></div>
+      <div class="mod-items">360 · 未确认/指派 · http 列表 · 合同变化后刷新 · SOP β 空 · /projects 走 ProjectList</div>
     </div>
     <div class="mod">
-      <div class="mod-name">回款管理（实收） <span class="pill p-hole">洞 B</span></div>
-      <div class="mod-items">台账表已接 · 详情未双写 · 看板/甘特独立计划、后于 B5</div>
+      <div class="mod-name">回款管理（实收） <span class="pill p-wired">B5 已修复</span></div>
+      <div class="mod-items">台账表已接 · 合同详情双写 · 首页五泳道 / 行动队列 / 回款预测已进入 α</div>
     </div>
   </div>
 
   <h3>B. 主线旁路 — 不挡 B5 冒烟，日常会缺</h3>
   <div class="mods">
     <div class="mod">
-      <div class="mod-name">统一视图 U1–U6 <span class="pill p-later">B5 之后</span></div>
+      <div class="mod-name">统一视图 U1–U6 <span class="pill p-later">后续阶段</span></div>
       <div class="mod-items">U1 计划已改 Lead 写时 spawn · U2 退回 · U3 作废搁置 · 三套项目 id 未消</div>
     </div>
     <div class="mod">
-      <div class="mod-name">回款看板 <span class="pill p-later">有计划</span></div>
-      <div class="mod-items">payment-kanban-dev-plan P1–P5 · 待付读 paymentPlans · 已回读 collections</div>
+      <div class="mod-name">回款看板 <span class="pill p-code">α 已实现</span></div>
+      <div class="mod-items">首页按五泳道查看合同 · 行动队列 · 回款预测 · 待付读 paymentPlans · 已回读 collections</div>
     </div>
     <div class="mod">
       <div class="mod-name">客户与报价基础 <span class="pill p-mock">α mock</span></div>
@@ -488,15 +537,19 @@
     <tbody>
       <tr><td class="mono">GET /</td><td>—</td><td>健康检查</td></tr>
       <tr><td class="mono">/api/quotes CRUD</td><td>quotes</td><td>GET 列表 ensureSeed；PUT 校验报价状态迁移</td></tr>
-      <tr><td class="mono">/api/contracts CRUD</td><td>contracts</td><td>PUT 后联动；洞 C 使 created 不触发</td></tr>
+      <tr><td class="mono">/api/contracts CRUD</td><td>contracts</td><td>PUT 后联动；首次创建也按写前快照幂等生成项目</td></tr>
       <tr><td class="mono">/api/leads CRUD + followups + transfers</td><td>leads / lead_followups / lead_transfers</td><td>领取/退回服务端校验</td></tr>
-      <tr><td class="mono">/api/projects CRUD</td><td>projects</td><td>spawn 应由联动写入，现网未发生</td></tr>
-      <tr><td class="mono">POST/GET /api/collections</td><td>collections</td><td>前端合同详情尚未调用这条写入</td></tr>
+      <tr><td class="mono">GET /api/leads/:id/detail · GET /api/leads/:id/events</td><td>leads</td><td>β 真实数据阶段 2：服务端组装详情（迁移线索兜底）+ 事件时间线</td></tr>
+      <tr><td class="mono">POST /api/leads/:id/dispatch · urge · level-change · level-audit</td><td>leads + lead_transfers</td><td>派发域专门端点：事件 id/时间/actor 服务端生成，升级免审/降级走审批纯函数单源（leadMutations）</td></tr>
+      <tr><td class="mono">/api/projects CRUD</td><td>projects</td><td>合同首次写入由联动幂等生成，页面通过 refresh 读取</td></tr>
+      <tr><td class="mono">GET /api/projects/:id/detail</td><td>projects + contracts + collections</td><td>β 真实数据阶段 2：详情复合（合同按 contractId/leadId 双路匹配）</td></tr>
+      <tr><td class="mono">POST/GET /api/collections</td><td>collections</td><td>合同详情与回款操作共用双写服务</td></tr>
       <tr><td class="mono">GET/PUT /api/cases</td><td>cases</td><td>无前端 http service</td></tr>
+      <tr><td class="mono">GET /api/employees</td><td>employees</td><td>β 真实数据阶段 1：EmployeeContext 数据源</td></tr>
     </tbody>
   </table>
   <p class="note">
-    迁移文件：<code>0001_add_version.sql</code>（ALTER 非幂等）、<code>0002_add_leads.sql</code>、<code>0002_add_projects_cases.sql</code>（编号冲突）、<code>0003_add_collections.sql</code>。
+    迁移文件：<code>0001_add_version.sql</code>（ALTER 非幂等）、<code>0001b_add_contracts_version.sql</code>、<code>0002_add_leads.sql</code>、<code>0003_add_projects_cases.sql</code>、<code>0004_add_collections.sql</code>、<code>0005_seed_from_mysql.sql</code>。
     <code>schema.sql</code> 已含 version 列，全新库用这一份即可。
   </p>
 
@@ -519,23 +572,33 @@
       LeadService + leads 表
     </div>
     <div class="tl done">
-      <div class="st">编码完成 · 洞 C</div>
+      <div class="st">编码完成 · B5 已修复</div>
       <b>B3</b>
-      合同 PUT 联动（现网不可达）
+      合同 PUT 联动（首次写入可达）
     </div>
     <div class="tl done">
-      <div class="st">编码完成 · 洞 B</div>
+      <div class="st">编码完成 · B5 已修复</div>
       <b>B4</b>
-      Project + Collection；看板 UI 不做
+      Project + Collection；合同详情双写已接
+    </div>
+    <div class="tl done">
+      <div class="st">2026-08-25/26 编码完成 · 本次发布</div>
+      <b>β真实数据 0-2</b>
+      MySQL迁移 seed · employeeService · 详情复合 + 派发域端点（计划：beta-realdata-dev-plan.md）
+    </div>
+    <div class="tl done">
+      <div class="st">2026-08-29 编码完成</div>
+      <b>B5</b>
+      首次合同联动 · β 项目刷新 · 实收双写与重试
     </div>
     <div class="tl next">
       <div class="st">下一步</div>
-      <b>B5</b>
-      补洞 A/B/C · 迁移改名 · 同一次下班发布 · 冒烟 · 翻牌
+      <b>β真实数据 3-4</b>
+      页面切换真实数据 · 生产冒烟 · productionOn 决策 · 翻牌
     </div>
   </div>
   <p class="note">
-    B5 之后才是 U1（洽谈 spawn）、回款看板 P1–P5、补充协议清理、登录权限。
+    B5 已完成；下一阶段是 β 真实数据 3-4、生产冒烟与开关决策。U1（洽谈 spawn）、补充协议清理、登录权限继续后排；回款看板 α 首页/行动队列/预测已实现。
     日报 / 差旅 / 运营费用 / 精益 的 β 接缝排在漏斗主线之后。
   </p>
 

@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Button, Card, Empty, Input, Message, Space, Table, Tag, Timeline, Typography,
+  Button, Card, Empty, Input, Message, Radio, Space, Table, Tag, Timeline, Typography, Upload,
 } from '@arco-design/web-react';
 import {
-  IconCheck, IconClose, IconStamp, IconSend, IconDownload, IconCheckCircle, IconCloseCircle, IconApps,
+  IconCheck, IconClose, IconUpload, IconSend, IconDownload, IconCheckCircle, IconCloseCircle, IconApps, IconEye,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
@@ -12,6 +12,7 @@ import { computeAmountBreakdown, sumEvalDaysByRole } from '../quoteFlow';
 import { PLATFORM_OPTIONS, QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, RISK_META } from '../types';
 import type { EvalRole } from '../types';
 import { buildDealQuotePrefill } from '../../contracts/dealQuotePrefill';
+import { DocumentViewerModal } from '@/app/components/ui';
 
 const { Text, Title } = Typography;
 
@@ -19,27 +20,22 @@ function money(n: number): string {
   return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
-/** 当前视角角色对应的会签人；非会签角色返回 null */
-const ROLE_TO_AUDITOR: Record<string, string | null> = {
-  sales_manager: '黄奕',
-  tech: '罗总',
-  decision: '闵总',
-  sales: null,
-  pm: null,
-  assistant: null,
-};
-
 export function Stage4Approval({ quote, readonly }: StageProps) {
-  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided, withdrawSent, returnToStamp, returnToEditFeatures } = useQuotation();
+  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided, withdrawSent, returnToStamp, returnToEditFeatures, isLeadFrozen } = useQuotation();
+  const leadFrozen = isLeadFrozen(quote.id);
   const navigate = useNavigate();
   const [rejectVisible, setRejectVisible] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
   const [voidVisible, setVoidVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  const [documentSource, setDocumentSource] = useState<'generated' | 'scan'>('generated');
+  const [previewVisible, setPreviewVisible] = useState(false);
 
-  const auditor = ROLE_TO_AUDITOR[currentRole] ?? null;
+  const auditor = quote.auditNodes.find((node) => node.quoteRole === currentRole)?.auditorName
+    ?? ({ sales_manager: '黄奕', tech: '罗总', decision: '闵总' } as Partial<Record<typeof currentRole, string>>)[currentRole]
+    ?? null;
   const isAuditor = Boolean(auditor);
-  const isStamper = currentRole === 'assistant';
+  const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant');
   const isSales = currentRole === 'sales';
   const breakdown = useMemo(() => computeAmountBreakdown(quote), [quote]);
   const roleTotals = useMemo(() => sumEvalDaysByRole(quote.evalSheet), [quote.evalSheet]);
@@ -85,6 +81,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       state: { dealQuotePrefill: buildDealQuotePrefill(quote) },
     });
   };
+  const linkedContractId = quote.isSupplement ? quote.generatedContractId : quote.contractId;
 
   const handleVoid = () => {
     if (!voidReason.trim()) { Message.warning('请填写作废原因'); return; }
@@ -238,11 +235,11 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
                           )}
                           <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
                           {evalSheet.activeRoles.map((r: EvalRole) => (
-                            <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: 'monospace' }}>
+                            <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
                               {unit && (unit.manualWorkload[r.key] ?? 0) > 0 ? (unit.manualWorkload[r.key] ?? 0).toFixed(1) : '-'}
                             </td>
                           ))}
-                          <td style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: 'monospace', fontWeight: 500 }}>
+                          <td style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
                             {totalDays > 0 ? totalDays.toFixed(1) : '-'}
                           </td>
                           <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>
@@ -354,7 +351,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
             </div>
             <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--color-primary-6), #4F46E5)', borderRadius: 8, color: 'white' }}>
               <Text type="secondary" style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>项目总价</Text>
-              <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: 'monospace' }}>{money(breakdown.grandTotal)}</div>
+              <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.grandTotal)}</div>
             </div>
           </div>
         </div>
@@ -365,40 +362,40 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
           <thead>
             <tr style={{ background: 'var(--color-fill-1)' }}>
               <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>费用项</th>
-              <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
               <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>说明</th>
+              <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
             </tr>
           </thead>
           <tbody>
             <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
               <td style={{ padding: '8px 12px', fontWeight: 500 }}>技术人力成本</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.techLaborCost)}</td>
               <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{evalSheet?.activeRoles.length || 0} 个岗位 × {breakdown.techDays.toFixed(1)} 人天</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.techLaborCost)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
               <td style={{ padding: '8px 12px', fontWeight: 500 }}>销售增项成本</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.addedCost)}</td>
               <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{quote.salesAddedRoles.length > 0 ? quote.salesAddedRoles.map((r) => r.roleName || '未命名').join('、') : '无增项'}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.addedCost)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
               <td style={{ padding: '8px 12px', fontWeight: 500 }}>差旅费用</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.travelSubtotal)}</td>
               <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableTravel ? `${travelOnsite.travelDetails.length} 个出差地点` : '未开启'}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.travelSubtotal)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
               <td style={{ padding: '8px 12px', fontWeight: 500 }}>驻场费用</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.onsiteSubtotal)}</td>
               <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableOnsite ? `${travelOnsite.onsiteDetails.length} 个驻场地点` : '未开启'}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.onsiteSubtotal)}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
               <td style={{ padding: '8px 12px', fontWeight: 500 }}>自费项目（不计入报价）</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.selfPaidSubtotal)}</td>
               <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{quote.otherCosts.length > 0 ? quote.otherCosts.map((c) => c.name || '未命名').join('、') : '无自费项目'}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.selfPaidSubtotal)}</td>
             </tr>
             <tr style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
               <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }}>合计</td>
-              <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: 'monospace', fontSize: 16, color: 'var(--color-danger-6)' }}>{money(breakdown.grandTotal)}</td>
               <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }} />
+              <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 14, color: 'var(--color-danger-6)' }}>{money(breakdown.grandTotal)}</td>
             </tr>
           </tbody>
         </table>
@@ -435,7 +432,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       {/* 操作区 */}
       {!readonly && isAuditor && quote.status === 'auditing' && (
         <Space>
-          <Button type="primary" icon={<IconCheck />} onClick={handleApprove}>同意并通过</Button>
+          <Button type="primary" icon={<IconCheck />} disabled={leadFrozen} onClick={handleApprove}>同意并通过</Button>
           <Button status="danger" icon={<IconClose />} onClick={() => setRejectVisible(!rejectVisible)}>驳回报价</Button>
         </Space>
       )}
@@ -454,12 +451,29 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       )}
 
       {!readonly && isStamper && quote.status === 'pending_stamp' && (
-        <Button type="primary" icon={<IconStamp />} onClick={handleStamp}>确认加盖公章</Button>
+        <Card size="small" title="报价文件" style={{ marginTop: 12 }}>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Radio.Group value={documentSource} onChange={setDocumentSource}>
+              <Radio value="generated">系统生成 PDF</Radio>
+              <Radio value="scan">盖章扫描件</Radio>
+            </Radio.Group>
+            <Space>
+              <Button icon={<IconEye />} onClick={() => setPreviewVisible(true)}>预览系统报价单</Button>
+              <Button icon={<IconDownload />} onClick={handleDownloadPDF}>下载 PDF</Button>
+              <Upload showUploadList={false} accept=".pdf,.jpg,.jpeg,.png" onChange={() => { setDocumentSource('scan'); Message.success('扫描件已上传'); }}>
+                <Button type="primary" icon={<IconUpload />}>上传扫描件</Button>
+              </Upload>
+              <Button type="primary" disabled={leadFrozen} onClick={handleStamp}>确认使用所选文件</Button>
+            </Space>
+          </Space>
+        </Card>
       )}
+
+      <DocumentViewerModal visible={previewVisible} title={`${quote.quoteNo}_报价单.pdf`} content={<div ref={printRef}>软件项目报价单 · {quote.basicInfo.projectName}<br />总报价：{money(breakdown.grandTotal)}</div>} onClose={() => setPreviewVisible(false)} onDownload={handleDownloadPDF} />
 
       {!readonly && isSales && quote.status === 'stamped' && (
         <Space>
-          <Button type="primary" icon={<IconSend />} onClick={handleSend}>发送客户</Button>
+          <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSend}>发送客户</Button>
           <Button icon={<IconDownload />} onClick={() => Message.info('下载正式 PDF 报价单（盖章版，占位）')}>下载盖章版 PDF</Button>
           {!quote.sentAt && <Button onClick={handleReturnToStamp}>退回盖章</Button>}
         </Space>
@@ -467,8 +481,8 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
 
       {!readonly && isSales && quote.status === 'sent' && (
         <Space>
-          <Button type="primary" status="success" icon={<IconCheckCircle />} onClick={handleConfirmed}>确认成交</Button>
-          <Button status="danger" icon={<IconCloseCircle />} onClick={() => setVoidVisible(true)}>客户放弃，作废</Button>
+          <Button type="primary" status="success" icon={<IconCheckCircle />} disabled={leadFrozen} onClick={handleConfirmed}>确认成交</Button>
+          <Button status="danger" icon={<IconCloseCircle />} disabled={leadFrozen} onClick={() => setVoidVisible(true)}>客户放弃，作废</Button>
           <Button onClick={handleWithdrawSent}>撤回发出</Button>
         </Space>
       )}
@@ -484,13 +498,13 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
           <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
             <Space>
               <Text>该报价已确认。</Text>
-              {quote.contractId ? (
-                <Button type="primary" size="small" onClick={() => navigate('/contracts/' + quote.contractId)}>
-                  查看主合同
+              {linkedContractId ? (
+                <Button type="primary" size="small" onClick={() => navigate('/contracts/' + linkedContractId)}>
+                  查看{quote.isSupplement ? '补充合同' : '主合同'}
                 </Button>
               ) : (
                 <Button type="primary" size="small" icon={<IconCheck />} onClick={handleGenerateContract}>
-                  生成主合同
+                  生成{quote.isSupplement ? '补充合同' : '主合同'}
                 </Button>
               )}
             </Space>

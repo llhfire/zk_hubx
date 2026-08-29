@@ -1,148 +1,279 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import {
-  Card, Button, Tag, Tabs, Table, Space, Typography, Grid,
-  Message, Progress, Descriptions, Dropdown, Menu,
+  Button,
+  Card,
+  Descriptions,
+  Dropdown,
+  Menu,
+  Message,
+  Result,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
 } from '@arco-design/web-react';
 import {
-  IconLeft, IconDownload, IconPrinter, IconSettings,
-  IconUp, IconDown, IconCheckCircle, IconExclamationCircle,
+  IconCheckCircle,
+  IconDownload,
+  IconExclamationCircle,
+  IconPrinter,
+  IconSettings,
 } from '@arco-design/web-react/icon';
 import {
-  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import {
-  mockCases, mockCostItems, mockPostMortems,
-  quotationStatusMap, CaseStatus, caseStatusMap,
-} from '../mockData';
+  PageShell,
+  ProcessMetricGrid,
+  ProcessOverview,
+  ProcessWorkspace,
+  ProcessWorkspaceAside,
+  ProcessWorkspaceMain,
+} from '@/app/components/ui';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { useContracts } from '../../contracts/ContractsContext';
 import {
-  deriveTotalCost, deriveEac, deriveLifecycleMargin, deriveCollectedMargin,
-  deriveWip, deriveHealth, deriveCostStructure, deriveTrend, deriveContractAmount,
-  canTransit, CASE_STATUS_TRANSITIONS, assembleCaseMetrics,
+  assembleCaseMetrics,
+  buildLifecycleTrack,
+  canTransit,
+  CASE_STATUS_TRANSITIONS,
+  deriveTrend,
 } from '../calc';
-import { getContract, totalCollected, getPaymentPlans, getCollections, getSupplementSummaries } from '../contractSeam';
-import { getQuoteSummaries, getEvalSummaries } from '../quoteSeam';
-import { StatusTrack } from './detail/StatusTrack';
-import { ManageParamsModal } from './detail/ManageParamsModal';
-import { buildBriefRows, toCsv, downloadCsv } from './detail/briefExport';
+import { getCollections, getContract, getPaymentPlans, getSupplementSummaries } from '../contractSeam';
+import { caseStatusMap, mockCases, mockCostItems, mockPostMortems, quotationStatusMap } from '../mockData';
+import { getEvalSummaries, getQuoteSummaries } from '../quoteSeam';
 import type { SupplementContractSummary } from '../types';
+import { CaseStatus } from '../types';
+import { buildBriefRows, downloadCsv, toCsv } from './detail/briefExport';
+import { ManageParamsModal } from './detail/ManageParamsModal';
+import './caseDetail.css';
 
 const { Text, Title } = Typography;
-const { Row, Col } = Grid;
 const { TabPane } = Tabs;
 
-const STATUS_COLORS: Record<string, string> = {
-  drafting: 'gray', quoting: 'blue', negotiating: 'blue', signed: 'green',
-  in_progress: 'green', suspended: 'orange', accepting: 'cyan',
-  collecting: 'purple', completed: 'green', terminated: 'red',
+const STATUS_COLORS: Record<CaseStatus, string> = {
+  drafting: 'gray',
+  quoting: 'blue',
+  negotiating: 'blue',
+  signed: 'green',
+  in_progress: 'green',
+  suspended: 'orange',
+  accepting: 'cyan',
+  collecting: 'purple',
+  completed: 'green',
+  terminated: 'red',
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  pm_days: '产品经理', ui_days: 'UI 设计', fe_days: '前端开发', be_days: '后端开发',
-  qa_days: '测试', arch_days: '架构', algo_days: '算法', embed_days: '嵌入式',
-  dba_days: 'DBA', ops_days: '运维',
+  pm_days: '产品经理',
+  ui_days: 'UI 设计',
+  fe_days: '前端开发',
+  be_days: '后端开发',
+  qa_days: '测试',
+  arch_days: '架构',
+  algo_days: '算法',
+  embed_days: '嵌入式',
+  dba_days: 'DBA',
+  ops_days: '运维',
 };
+
+const TAB_LABELS: Record<string, string> = {
+  overview: '经营概览',
+  eval: '工时评估',
+  quotation: '报价单',
+  costs: '成本归集',
+  'post-mortem': '项目决算',
+};
+
+const STATUS_TASKS: Record<CaseStatus, string> = {
+  drafting: '完善业务对象与经营参数，确认后进入报价。',
+  quoting: '核对工时评估与报价单，形成可供商务协商的报价依据。',
+  negotiating: '跟进客户协商结果，确认范围、金额与合同条件。',
+  signed: '确认主合同与补充合同，准备进入项目交付。',
+  in_progress: '持续关注成本、EAC、回款与 WIP，及时处理经营风险。',
+  suspended: '记录挂起原因与恢复条件，控制新增成本。',
+  accepting: '推进成果验收，核对待收款期次与剩余成本。',
+  collecting: '跟进逾期或待收款项，完成项目经营收口。',
+  completed: '业务单已完结，可查看项目决算与经验沉淀。',
+  terminated: '业务单已终止，仅保留过程数据与经营记录。',
+};
+
+const HEALTH_CONFIG = {
+  green: { label: '健康', color: 'green', icon: <IconCheckCircle />, tone: 'success' as const },
+  yellow: { label: '预警', color: 'orange', icon: <IconExclamationCircle />, tone: 'warning' as const },
+  red: { label: '风险', color: 'red', icon: <IconExclamationCircle />, tone: 'danger' as const },
+};
+
+const COST_COLORS: Record<string, string> = {
+  labor: '#1e40af',
+  travel: '#06b6d4',
+  promotion: '#8b5cf6',
+  commercial: '#3b82f6',
+  third_party: '#93c5fd',
+};
+
+const COST_LABELS: Record<string, string> = {
+  labor: '人工',
+  travel: '差旅',
+  promotion: '推广',
+  commercial: '商务',
+  third_party: '第三方',
+};
+
+interface CaseParams {
+  targetMargin: number;
+  budgetCap: number;
+  commercialCap: number;
+}
+
+function money(value: number): string {
+  return `¥${value.toLocaleString('zh-CN')}`;
+}
+
+function percent(value: number | null): string {
+  return value === null ? '-' : `${(value * 100).toFixed(1)}%`;
+}
 
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { contracts } = useContracts();
+  const { collections: ledgerEntries } = useCollections();
+  const [activeTab, setActiveTab] = useState('overview');
   const [expandedFeatureLists, setExpandedFeatureLists] = useState<Set<string>>(new Set());
   const [expandedQuotations, setExpandedQuotations] = useState<Set<string>>(new Set());
   const [costStructureView, setCostStructureView] = useState<'actual' | 'forecast'>('actual');
   const [paramsVisible, setParamsVisible] = useState(false);
+  const [statusOverrides, setStatusOverrides] = useState<Partial<Record<string, CaseStatus>>>({});
+  const [parameterOverrides, setParameterOverrides] = useState<Record<string, CaseParams>>({});
 
-  // Case 数据
   const caseData = useMemo(() => mockCases.find((item) => item.id === id), [id]);
+  const currentStatus = (id && statusOverrides[id]) ?? caseData?.status ?? CaseStatus.DRAFTING;
+  const currentParams = (id && parameterOverrides[id]) ?? {
+    targetMargin: caseData?.targetMargin ?? 30,
+    budgetCap: caseData?.budgetCap ?? 0,
+    commercialCap: caseData?.commercialCap ?? 0,
+  };
 
-  // 补充合同摘要
   const supplements: SupplementContractSummary[] = useMemo(
-    () => caseData?.extraContractIds ? getSupplementSummaries(caseData.extraContractIds) : [],
-    [caseData],
+    () => caseData?.extraContractIds ? getSupplementSummaries(caseData.extraContractIds, contracts) : [],
+    [caseData, contracts],
   );
-
-  // 成本项
   const costItems = useMemo(() => mockCostItems.filter((item) => item.caseId === id), [id]);
-
-  // 回款数据
   const collections = useMemo(
-    () => caseData?.contractId ? getCollections(caseData.contractId) : [],
-    [caseData],
+    () => caseData?.contractId ? getCollections(caseData.contractId, ledgerEntries) : [],
+    [caseData, ledgerEntries],
   );
   const paymentPlans = useMemo(
-    () => caseData?.contractId ? getPaymentPlans(caseData.contractId) : [],
-    [caseData],
+    () => caseData?.contractId ? getPaymentPlans(caseData.contractId, contracts) : [],
+    [caseData, contracts],
   );
-
-  // 主合同金额
   const mainAmount = useMemo(() => {
     if (!caseData?.contractId) return 0;
-    const contract = getContract(caseData.contractId) as any;
-    return contract?.totalAmount ?? 0;
-  }, [caseData]);
-
-  // 汇总指标
+    const contract = getContract(caseData.contractId, contracts) as { current?: { totalAmount?: number }; totalAmount?: number } | undefined;
+    return contract?.current?.totalAmount ?? contract?.totalAmount ?? 0;
+  }, [caseData, contracts]);
   const metrics = useMemo(() => {
     if (!caseData) return null;
-    const today = new Date().toISOString().slice(0, 10);
-    return assembleCaseMetrics(caseData, costItems, mainAmount, supplements, collections, paymentPlans, today);
-  }, [caseData, costItems, mainAmount, supplements, collections, paymentPlans]);
+    return assembleCaseMetrics(
+      { ...caseData, ...currentParams, status: currentStatus },
+      costItems,
+      mainAmount,
+      supplements,
+      collections,
+      paymentPlans,
+      new Date().toISOString().slice(0, 10),
+    );
+  }, [caseData, collections, costItems, currentParams, currentStatus, mainAmount, paymentPlans, supplements]);
 
-  // 工时评估/报价/事后总结
   const evalSummaries = useMemo(() => getEvalSummaries(), []);
   const quotations = useMemo(() => getQuoteSummaries(), []);
   const postMortem = useMemo(() => mockPostMortems.find((item) => item.caseId === id), [id]);
-
-  // 成本趋势
-  const costTrends = useMemo(() => {
-    if (!caseData?.contractId) return [];
-    return deriveTrend(paymentPlans, collections, costItems);
-  }, [caseData, paymentPlans, collections, costItems]);
-
-  // 成本结构图表数据
+  const costTrends = useMemo(
+    () => caseData?.contractId ? deriveTrend(paymentPlans, collections, costItems) : [],
+    [caseData, collections, costItems, paymentPlans],
+  );
+  const lifecycleNodes = useMemo(
+    () => buildLifecycleTrack(currentStatus, supplements),
+    [currentStatus, supplements],
+  );
   const costStructureData = useMemo(() => {
     if (!metrics) return { actual: [], forecast: [] };
-    const COLORS: Record<string, string> = {
-      labor: '#1e40af', travel: '#06b6d4', promotion: '#8b5cf6',
-      commercial: '#3b82f6', third_party: '#93c5fd',
-    };
-    const LABELS: Record<string, string> = {
-      labor: '人工', travel: '差旅', promotion: '推广',
-      commercial: '商务', third_party: '第三方',
-    };
-    const toChart = (entries: [string, { actual: number; forecast: number }][], key: 'actual' | 'forecast') => {
-      const total = entries.reduce((s, [, v]) => s + v[key], 0);
-      return entries.filter(([, v]) => v[key] > 0).map(([cat, v]) => ({
-        category: LABELS[cat] ?? cat,
-        amount: v[key],
-        percentage: total > 0 ? Math.round((v[key] / total) * 1000) / 10 : 0,
-        color: COLORS[cat] ?? '#ccc',
-      }));
-    };
     const entries = Object.entries(metrics.costStructure);
-    return { actual: toChart(entries, 'actual'), forecast: toChart(entries, 'forecast') };
+    const toChart = (key: 'actual' | 'forecast') => {
+      const total = entries.reduce((sum, [, value]) => sum + value[key], 0);
+      return entries
+        .filter(([, value]) => value[key] > 0)
+        .map(([category, value]) => ({
+          category: COST_LABELS[category] ?? category,
+          amount: value[key],
+          percentage: total > 0 ? Math.round((value[key] / total) * 1000) / 10 : 0,
+          color: COST_COLORS[category] ?? '#86909c',
+        }));
+    };
+    return { actual: toChart('actual'), forecast: toChart('forecast') };
   }, [metrics]);
 
-  // === Guard ===
-  if (!caseData) {
+  if (!caseData || !metrics) {
     return (
-      <div style={{ padding: 24, textAlign: 'center' }}>
-        <Title heading={4}>未找到业务单</Title>
-        <Button style={{ marginTop: 16 }} onClick={() => navigate('/financial-delivery/cases')}>返回列表</Button>
-      </div>
+      <PageShell
+        className="case-detail"
+        breadcrumbs={[
+          { label: '精益交付' },
+          { label: '业务单管理', to: '/financial-delivery/cases' },
+          { label: '未找到' },
+        ]}
+      >
+        <Card className="case-detail__state">
+          <Result
+            status="404"
+            title="未找到业务单"
+            subTitle="该业务单不存在或已被移除。"
+            extra={<Button type="primary" onClick={() => navigate('/financial-delivery/cases')}>返回业务单列表</Button>}
+          />
+        </Card>
+      </PageShell>
     );
   }
 
-  // 状态推进
-  const transitions = CASE_STATUS_TRANSITIONS[caseData.status] ?? [];
+  const transitions = CASE_STATUS_TRANSITIONS[currentStatus] ?? [];
+  const currentStep = Math.max(0, lifecycleNodes.findIndex((node) => node.current));
+  const health = HEALTH_CONFIG[metrics.health];
+  const targetMarginRatio = currentParams.targetMargin / 100;
+  const costBudgetOverrun = currentParams.budgetCap > 0 && metrics.eac > currentParams.budgetCap;
 
-  const handleStatusChange = async (target: CaseStatus) => {
+  const handleStatusChange = (target: CaseStatus) => {
+    if (!canTransit(currentStatus, target)) {
+      Message.error('当前状态不能执行该推进');
+      return;
+    }
+    caseData.status = target;
+    setStatusOverrides((current) => ({ ...current, [caseData.id]: target }));
     Message.success(`状态已推进至：${caseStatusMap[target]?.label ?? target}`);
   };
 
-  // CSV 导出
+  const handleSaveParams = (params: CaseParams) => {
+    caseData.targetMargin = params.targetMargin;
+    caseData.budgetCap = params.budgetCap;
+    caseData.commercialCap = params.commercialCap;
+    setParameterOverrides((current) => ({ ...current, [caseData.id]: params }));
+    setParamsVisible(false);
+    Message.success('管理参数已保存');
+  };
+
   const handleExport = () => {
-    if (!metrics) return;
     const rows = buildBriefRows({
       caseNo: caseData.caseNo,
       contractAmount: metrics.contractAmount,
@@ -156,233 +287,377 @@ export default function CaseDetail() {
       commercialActual: metrics.commercialOverrun.commercialActual,
       commercialCap: metrics.commercialOverrun.cap,
     });
-    const csv = toCsv(rows);
-    downloadCsv(`经营简报-${caseData.caseNo}.csv`, csv);
+    downloadCsv(`经营简报-${caseData.caseNo}.csv`, toCsv(rows));
   };
 
-  const toggleExpand = (set: Set<string>, id: string, setter: (s: Set<string>) => void) => {
+  const toggleExpand = (set: Set<string>, targetId: string, setter: (value: Set<string>) => void) => {
     const next = new Set(set);
-    next.has(id) ? next.delete(id) : next.add(id);
+    next.has(targetId) ? next.delete(targetId) : next.add(targetId);
     setter(next);
   };
 
+  const statusAction = transitions.length > 0 ? (
+    <Dropdown
+      droplist={(
+        <Menu onClickMenuItem={(key) => handleStatusChange(key as CaseStatus)}>
+          {transitions.map((target) => (
+            <Menu.Item key={target}>{caseStatusMap[target]?.label ?? target}</Menu.Item>
+          ))}
+        </Menu>
+      )}
+    >
+      <Button type="primary" size="small">状态推进</Button>
+    </Dropdown>
+  ) : null;
+
   return (
-    <div style={{ padding: 0 }}>
-      {/* === 顶栏 === */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Space>
-          <Button icon={<IconLeft />} onClick={() => navigate('/financial-delivery/cases')}>返回</Button>
-          <Title heading={4} style={{ margin: 0 }}>{caseData.caseNo}</Title>
-          <Tag color={STATUS_COLORS[caseData.status] ?? 'blue'}>
-            {caseStatusMap[caseData.status]?.label ?? caseData.status}
-          </Tag>
-          {/* 健康徽标 */}
-          {metrics && (
-            <Tag
-              color={metrics.health === 'green' ? 'green' : metrics.health === 'yellow' ? 'orange' : 'red'}
-              icon={metrics.health === 'green' ? <IconCheckCircle /> : <IconExclamationCircle />}
-            >
-              {metrics.health === 'green' ? '健康' : metrics.health === 'yellow' ? '预警' : '风险'}
-            </Tag>
-          )}
-          {/* 关联计数 */}
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            报价 {quotations.length} / 合同 {1 + supplements.length} / 成本 {costItems.length}
-          </Text>
-        </Space>
-        <Space>
-          <Button icon={<IconDownload />} onClick={handleExport}>导出经营简报</Button>
-          <Button icon={<IconPrinter />} onClick={() => window.print()}>打印</Button>
-          <Button icon={<IconSettings />} onClick={() => setParamsVisible(true)}>管理参数</Button>
-          {/* 状态推进 */}
-          {transitions.length > 0 && (
-            <Dropdown
-              droplist={
-                <Menu onClickMenuItem={(key) => handleStatusChange(key as CaseStatus)}>
-                  {transitions.map((t) => (
-                    <Menu.Item key={t}>{caseStatusMap[t]?.label ?? t}</Menu.Item>
-                  ))}
-                </Menu>
-              }
-            >
-              <Button type="primary">状态推进 ▾</Button>
-            </Dropdown>
-          )}
-        </Space>
-      </div>
+    <PageShell
+      className="case-detail"
+      breadcrumbs={[
+        { label: '精益交付' },
+        { label: '业务单管理', to: '/financial-delivery/cases' },
+        { label: caseData.caseNo },
+      ]}
+    >
+      <ProcessOverview
+        identifier={caseData.caseNo}
+        title={caseData.projectName || caseData.leadName || '未命名业务单'}
+        tags={(
+          <>
+            <Tag color={STATUS_COLORS[currentStatus]}>{caseStatusMap[currentStatus]?.label ?? currentStatus}</Tag>
+            <Tag color={health.color} icon={health.icon}>{health.label}</Tag>
+            {caseData.industry && <Tag>{caseData.industry}</Tag>}
+          </>
+        )}
+        actions={(
+          <>
+            <Button size="small" icon={<IconDownload />} onClick={handleExport}>导出经营简报</Button>
+            <Button size="small" icon={<IconPrinter />} onClick={() => window.print()}>打印</Button>
+            <Button size="small" icon={<IconSettings />} onClick={() => setParamsVisible(true)}>管理参数</Button>
+            {statusAction}
+          </>
+        )}
+        steps={lifecycleNodes.map((node) => ({
+          key: node.status,
+          title: node.label,
+          description: node.supplementCount > 0 ? `${node.supplementCount} 份补充合同` : undefined,
+        }))}
+        currentStep={currentStep}
+      />
 
-      {/* === 生命周期轨迹 === */}
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <StatusTrack status={caseData.status} supplements={supplements} />
-      </Card>
+      <ProcessMetricGrid
+        items={[
+          { key: 'contract', label: '有效标的额', value: money(metrics.contractAmount), detail: `1 主 ${supplements.length} 补` },
+          { key: 'cost', label: '已发生成本', value: money(metrics.totalCost), detail: `预算 ${money(currentParams.budgetCap)}`, tone: costBudgetOverrun ? 'danger' : 'neutral' },
+          { key: 'eac', label: '完工估算 EAC', value: money(metrics.eac), detail: `预测净利润 ${money(metrics.contractAmount - metrics.eac)}`, tone: costBudgetOverrun ? 'danger' : 'warning' },
+          { key: 'revenue', label: '累计回款', value: money(metrics.revenue), detail: `实收利润率 ${percent(metrics.collectedMargin)}`, tone: metrics.revenue > 0 ? 'success' : 'neutral' },
+          { key: 'margin', label: '全周期利润率', value: percent(metrics.lifecycleMargin), detail: `目标 ${currentParams.targetMargin}%`, tone: metrics.lifecycleMargin !== null && metrics.lifecycleMargin >= targetMarginRatio ? 'success' : 'danger' },
+          { key: 'wip', label: 'WIP 资金占用', value: money(metrics.wip.value), detail: `${metrics.wip.days} 天`, tone: metrics.wip.days > 14 ? 'warning' : 'neutral' },
+        ]}
+      />
 
-      {/* === Tabs === */}
-      <Tabs defaultActiveTab="overview">
-        {/* 概览 */}
-        <TabPane key="overview" title="概览">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Card title="基本信息">
-              <Descriptions
-                column={3}
-                data={[
-                  { label: '业务单编号', value: caseData.caseNo },
-                  { label: '状态', value: <Tag color={STATUS_COLORS[caseData.status]}>{caseStatusMap[caseData.status]?.label}</Tag> },
-                  { label: '健康状态', value: metrics ? <Tag color={metrics.health === 'green' ? 'green' : metrics.health === 'yellow' ? 'orange' : 'red'}>{metrics.health === 'green' ? '健康' : metrics.health === 'yellow' ? '预警' : '风险'}</Tag> : '-' },
-                  { label: '线索名称', value: caseData.leadName || '-' },
-                  { label: '项目名称', value: caseData.projectName || '-' },
-                  { label: '标的额', value: metrics?.contractAmount ? `¥${metrics.contractAmount.toLocaleString()}` : '-' },
-                  { label: '行业', value: caseData.industry || '-' },
-                  { label: '项目类型', value: caseData.projectType || '-' },
-                  { label: '技术栈', value: caseData.techStack?.join(', ') || '-' },
-                ]}
-              />
-            </Card>
+      <ProcessWorkspace>
+        <ProcessWorkspaceMain>
+          <Card className="case-detail__tabs-card">
+            <Tabs activeTab={activeTab} onChange={setActiveTab}>
+              <TabPane key="overview" title="概览">
+                <div className="case-detail__tab-panel case-detail__content-stack">
+                  <Card title="业务档案" size="small">
+                    <Descriptions
+                      column={2}
+                      data={[
+                        { label: '线索名称', value: caseData.leadName || '-' },
+                        { label: '项目名称', value: caseData.projectName || '-' },
+                        { label: '行业', value: caseData.industry || '-' },
+                        { label: '项目类型', value: caseData.projectType || '-' },
+                        { label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
+                        { label: '技术栈', value: caseData.techStack?.join('、') || '-' },
+                      ]}
+                    />
+                  </Card>
 
-            <Card title="财务指标">
-              <Row gutter={24}>
-                <Col span={6}><div style={{ marginBottom: 4 }}><Text type="secondary">标的额</Text></div><div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{(metrics?.contractAmount ?? 0).toLocaleString()}</div></Col>
-                <Col span={6}><div style={{ marginBottom: 4 }}><Text type="secondary">已发生成本</Text></div><div style={{ fontSize: 24, fontWeight: 'bold', color: '#f53f3f' }}>¥{(metrics?.totalCost ?? 0).toLocaleString()}</div></Col>
-                <Col span={6}><div style={{ marginBottom: 4 }}><Text type="secondary">累计回款</Text></div><div style={{ fontSize: 24, fontWeight: 'bold', color: '#00b42a' }}>¥{(metrics?.contractAmount ? totalCollected(caseData.contractId ?? '') : 0).toLocaleString()}</div></Col>
-                <Col span={6}><div style={{ marginBottom: 4 }}><Text type="secondary">全周期利润率</Text></div><div style={{ fontSize: 24, fontWeight: 'bold', color: (metrics?.lifecycleMargin ?? 0) >= 0.3 ? '#00b42a' : (metrics?.lifecycleMargin ?? 0) >= 0.2 ? '#fa8c16' : '#f53f3f' }}>{metrics?.lifecycleMargin !== null && metrics?.lifecycleMargin !== undefined ? `${(metrics.lifecycleMargin * 100).toFixed(1)}%` : '-'}</div></Col>
-              </Row>
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e5e6eb' }}>
-                <Title heading={6} style={{ marginBottom: 16 }}>预测指标（EAC）</Title>
-                <Row gutter={16}>
-                  <Col span={6}><Card size="small"><div style={{ marginBottom: 4 }}><Text type="secondary">EAC</Text></div><div style={{ fontSize: 18, fontWeight: 'bold' }}>¥{(metrics?.eac ?? 0).toLocaleString()}</div></Card></Col>
-                  <Col span={6}><Card size="small"><div style={{ marginBottom: 4 }}><Text type="secondary">WIP</Text></div><div style={{ fontSize: 18, fontWeight: 'bold' }}>¥{(metrics?.wip.value ?? 0).toLocaleString()}</div><div style={{ fontSize: 12, color: '#86909c' }}>{metrics?.wip.days ?? 0} 天</div></Card></Col>
-                  <Col span={6}><Card size="small"><div style={{ marginBottom: 4 }}><Text type="secondary">预测净利润</Text></div><div style={{ fontSize: 18, fontWeight: 'bold' }}>¥{((metrics?.contractAmount ?? 0) - (metrics?.eac ?? 0)).toLocaleString()}</div></Card></Col>
-                  <Col span={6}><Card size="small"><div style={{ marginBottom: 4 }}><Text type="secondary">目标利润率</Text></div><div style={{ fontSize: 18, fontWeight: 'bold' }}>{caseData.targetMargin ?? 30}%</div></Card></Col>
-                </Row>
-              </div>
-            </Card>
+                  <Card title="经营指标拆解" size="small">
+                    <Descriptions
+                      column={2}
+                      data={[
+                        { label: '预测净利润', value: money(metrics.contractAmount - metrics.eac) },
+                        { label: '实收利润率', value: percent(metrics.collectedMargin) },
+                        { label: '目标利润率', value: `${currentParams.targetMargin}%` },
+                        { label: '成本预算上限', value: money(currentParams.budgetCap) },
+                        { label: '商务费用', value: `${money(metrics.commercialOverrun.commercialActual)} / ${money(currentParams.commercialCap)}` },
+                        { label: '经营健康度', value: <Tag color={health.color}>{health.label}</Tag> },
+                      ]}
+                    />
+                  </Card>
 
-            {/* 成本结构饼图 */}
-            {costStructureData.actual.length > 0 && (
-              <Card title="成本结构">
-                <Space style={{ marginBottom: 16 }}>
-                  <Button size="small" type={costStructureView === 'actual' ? 'primary' : 'default'} onClick={() => setCostStructureView('actual')}>已发生</Button>
-                  <Button size="small" type={costStructureView === 'forecast' ? 'primary' : 'default'} onClick={() => setCostStructureView('forecast')}>含预测</Button>
-                </Space>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <PieChart>
-                        <Pie data={costStructureData[costStructureView]} dataKey="amount" nameKey="category" cx="50%" cy="50%" outerRadius={80} label={({ category, percentage }) => `${category} ${percentage}%`}>
-                          {costStructureData[costStructureView].map((entry: any, i: number) => (
-                            <Cell key={i} fill={entry.color} />
+                  {(costStructureData.actual.length > 0 || costStructureData.forecast.length > 0) && (
+                    <Card
+                      title="成本结构"
+                      size="small"
+                      extra={(
+                        <Space>
+                          <Button size="mini" type={costStructureView === 'actual' ? 'primary' : 'default'} onClick={() => setCostStructureView('actual')}>已发生</Button>
+                          <Button size="mini" type={costStructureView === 'forecast' ? 'primary' : 'default'} onClick={() => setCostStructureView('forecast')}>含预测</Button>
+                        </Space>
+                      )}
+                    >
+                      <div className="case-detail__cost-layout">
+                        <ResponsiveContainer width="100%" height={240}>
+                          <PieChart>
+                            <Pie
+                              data={costStructureData[costStructureView]}
+                              dataKey="amount"
+                              nameKey="category"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={78}
+                              label={({ category, percentage }) => `${category} ${percentage}%`}
+                            >
+                              {costStructureData[costStructureView].map((entry) => <Cell key={entry.category} fill={entry.color} />)}
+                            </Pie>
+                            <Tooltip formatter={(value: number) => money(value)} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="case-detail__cost-legend">
+                          {costStructureData[costStructureView].map((entry) => (
+                            <div key={entry.category} className="case-detail__legend-row">
+                              <Space>
+                                <span className="case-detail__legend-swatch" style={{ background: entry.color }} />
+                                <Text>{entry.category}</Text>
+                              </Space>
+                              <Text>{money(entry.amount)}（{entry.percentage}%）</Text>
+                            </div>
                           ))}
-                        </Pie>
-                        <Tooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </Col>
-                  <Col span={12}>
-                    {costStructureData[costStructureView].map((entry: any) => (
-                      <div key={entry.category} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
-                        <Space><div style={{ width: 12, height: 12, borderRadius: 2, background: entry.color }} /><Text>{entry.category}</Text></Space>
-                        <Text>¥{entry.amount.toLocaleString()} ({entry.percentage}%)</Text>
+                        </div>
                       </div>
-                    ))}
-                  </Col>
-                </Row>
-              </Card>
-            )}
-          </div>
-        </TabPane>
+                    </Card>
+                  )}
 
-        {/* 工时评估 */}
-        <TabPane key="eval" title={`工时评估 (${evalSummaries.length})`}>
-          <Card title="工时评估（报价域 EvalSheet）" extra={<Text type="secondary">共 {evalSummaries.length} 份</Text>}>
-            {evalSummaries.length > 0 ? evalSummaries.map((ev, index) => (
-              <Card key={ev.id} size="small" style={{ marginBottom: 12, background: index === evalSummaries.length - 1 ? '#f2f3ff' : '#f7f8fa', border: index === evalSummaries.length - 1 ? '1px solid #bedaff' : '1px solid #e5e6eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => toggleExpand(expandedFeatureLists, ev.id, setExpandedFeatureLists)}>
-                  <Space><Tag color={index === 0 ? 'gray' : 'blue'}>{ev.quoteNo}</Tag><Text style={{ fontWeight: 500 }}>{ev.projectName}</Text><Text type="secondary">{ev.totalDays}天</Text></Space>
-                  <Space><Text type="secondary">{new Date(ev.createdAt).toLocaleDateString()}</Text><span>{expandedFeatureLists.has(ev.id) ? '▼' : '▶'}</span></Space>
+                  {costTrends.length > 0 && (
+                    <Card title="收入与成本趋势" size="small">
+                      <ResponsiveContainer width="100%" height={280}>
+                        <LineChart data={costTrends} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e6eb" />
+                          <XAxis dataKey="month" />
+                          <YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
+                          <Tooltip formatter={(value: number) => money(value)} />
+                          <Legend />
+                          <Line type="monotone" dataKey="receivable" name="应收" stroke="#165dff" strokeWidth={2} dot={false} />
+                          <Line type="monotone" dataKey="collected" name="实收" stroke="#00b42a" strokeWidth={2} dot={false} />
+                          <Line type="monotone" dataKey="cost" name="累计成本" stroke="#f53f3f" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </Card>
+                  )}
                 </div>
-                {expandedFeatureLists.has(ev.id) && (
-                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e6eb' }}>
-                    <Table size="small" rowKey="role" pagination={false} data={Object.entries(ev.evalDays).map(([key, days]) => ({ role: key, label: ROLE_LABELS[key] ?? key, days }))}
-                      columns={[{ title: '岗位', dataIndex: 'label', width: 120 }, { title: '人天', dataIndex: 'days', width: 80, render: (v: number) => `${v}天` }]} />
-                  </div>
-                )}
-              </Card>
-            )) : <div style={{ textAlign: 'center', padding: '40px 0', color: '#86909c' }}>暂无工时评估</div>}
-          </Card>
-        </TabPane>
+              </TabPane>
 
-        {/* 报价单 */}
-        <TabPane key="quotation" title={`报价单 (${quotations.length})`}>
-          <Card title="报价单" extra={<Text type="secondary">共 {quotations.length} 份</Text>}>
-            {quotations.length > 0 ? quotations.map((q) => (
-              <Card key={q.id} size="small" style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => toggleExpand(expandedQuotations, q.id, setExpandedQuotations)}>
-                  <Space><Tag color={quotationStatusMap[q.status]?.color}>{quotationStatusMap[q.status]?.label}</Tag><Text style={{ fontWeight: 500 }}>{q.projectName}</Text><Text type="secondary">{q.quoteNo}</Text></Space>
-                  <Space><Text type="secondary">¥{q.totalAmount.toLocaleString()}</Text><span>{expandedQuotations.has(q.id) ? '▼' : '▶'}</span></Space>
+              <TabPane key="eval" title={`工时评估 (${evalSummaries.length})`}>
+                <div className="case-detail__tab-panel">
+                  <Card title="工时评估（报价域 EvalSheet）" size="small" extra={<Text type="secondary">共 {evalSummaries.length} 份</Text>}>
+                    {evalSummaries.length > 0 ? evalSummaries.map((evaluation, index) => (
+                      <Card
+                        key={evaluation.id}
+                        size="small"
+                        className={index === evalSummaries.length - 1 ? 'case-detail__expand-card case-detail__expand-card--current' : 'case-detail__expand-card'}
+                      >
+                        <button
+                          type="button"
+                          className="case-detail__expand-trigger"
+                          onClick={() => toggleExpand(expandedFeatureLists, evaluation.id, setExpandedFeatureLists)}
+                        >
+                          <Space wrap>
+                            <Tag color={index === evalSummaries.length - 1 ? 'blue' : 'gray'}>{evaluation.quoteNo}</Tag>
+                            <Text className="case-detail__expand-title">{evaluation.projectName}</Text>
+                            <Text type="secondary">{evaluation.totalDays} 天</Text>
+                          </Space>
+                          <Space>
+                            <Text type="secondary">{new Date(evaluation.createdAt).toLocaleDateString('zh-CN')}</Text>
+                            <span>{expandedFeatureLists.has(evaluation.id) ? '▼' : '▶'}</span>
+                          </Space>
+                        </button>
+                        {expandedFeatureLists.has(evaluation.id) && (
+                          <div className="case-detail__expand-content">
+                            <Table
+                              size="small"
+                              rowKey="role"
+                              pagination={false}
+                              data={Object.entries(evaluation.evalDays).map(([role, days]) => ({ role, label: ROLE_LABELS[role] ?? role, days }))}
+                              columns={[
+                                { title: '岗位', dataIndex: 'label', width: 160 },
+                                { title: '人天', dataIndex: 'days', width: 100, render: (value: number) => `${value} 天` },
+                              ]}
+                            />
+                          </div>
+                        )}
+                      </Card>
+                    )) : <div className="case-detail__empty">暂无工时评估</div>}
+                  </Card>
                 </div>
-                {expandedQuotations.has(q.id) && (
-                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #e5e6eb' }}>
-                    <Descriptions column={3} data={[{ label: '报价单号', value: q.quoteNo }, { label: '状态', value: quotationStatusMap[q.status]?.label }, { label: '金额', value: `¥${q.totalAmount.toLocaleString()}` }]} />
-                  </div>
-                )}
-              </Card>
-            )) : <div style={{ textAlign: 'center', padding: '40px 0', color: '#86909c' }}>暂无报价单</div>}
-          </Card>
-        </TabPane>
+              </TabPane>
 
-        {/* 成本归集 */}
-        <TabPane key="costs" title={`成本归集 (${costItems.length})`}>
-          <Card title="成本明细">
-            <Table
-              size="small"
-              rowKey="id"
-              pagination={{ pageSize: 20 }}
-              data={costItems}
-              columns={[
-                { title: '分类', dataIndex: 'costCategory', width: 80, render: (v: string) => ({ labor: '人工', travel: '差旅', promotion: '推广', commercial: '商务', third_party: '第三方' })[v] ?? v },
-                { title: '类型', dataIndex: 'costType', width: 120 },
-                { title: '金额', dataIndex: 'amount', width: 100, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
-                { title: '状态', dataIndex: 'status', width: 80, render: (v: string) => <Tag color={v === 'actual' ? 'green' : 'blue'}>{v === 'actual' ? '已发生' : '预测'}</Tag> },
-                { title: '日期', dataIndex: 'date', width: 100 },
-                { title: '描述', dataIndex: 'description' },
+              <TabPane key="quotation" title={`报价单 (${quotations.length})`}>
+                <div className="case-detail__tab-panel">
+                  <Card title="报价单" size="small" extra={<Text type="secondary">共 {quotations.length} 份</Text>}>
+                    {quotations.length > 0 ? quotations.map((quotation) => (
+                      <Card key={quotation.id} size="small" className="case-detail__expand-card">
+                        <button
+                          type="button"
+                          className="case-detail__expand-trigger"
+                          onClick={() => toggleExpand(expandedQuotations, quotation.id, setExpandedQuotations)}
+                        >
+                          <Space wrap>
+                            <Tag color={quotationStatusMap[quotation.status]?.color}>{quotationStatusMap[quotation.status]?.label}</Tag>
+                            <Text className="case-detail__expand-title">{quotation.projectName}</Text>
+                            <Text type="secondary">{quotation.quoteNo}</Text>
+                          </Space>
+                          <Space>
+                            <Text type="secondary">{money(quotation.totalAmount)}</Text>
+                            <span>{expandedQuotations.has(quotation.id) ? '▼' : '▶'}</span>
+                          </Space>
+                        </button>
+                        {expandedQuotations.has(quotation.id) && (
+                          <div className="case-detail__expand-content">
+                            <Descriptions column={3} data={[
+                              { label: '报价单号', value: quotation.quoteNo },
+                              { label: '状态', value: quotationStatusMap[quotation.status]?.label },
+                              { label: '金额', value: money(quotation.totalAmount) },
+                            ]} />
+                          </div>
+                        )}
+                      </Card>
+                    )) : <div className="case-detail__empty">暂无报价单</div>}
+                  </Card>
+                </div>
+              </TabPane>
+
+              <TabPane key="costs" title={`成本归集 (${costItems.length})`}>
+                <div className="case-detail__tab-panel">
+                  <Card title="成本明细" size="small">
+                    <Table
+                      size="small"
+                      rowKey="id"
+                      pagination={{ pageSize: 20 }}
+                      data={costItems}
+                      scroll={{ x: 720 }}
+                      columns={[
+                        { title: '分类', dataIndex: 'costCategory', width: 90, render: (value: string) => COST_LABELS[value] ?? value },
+                        { title: '类型', dataIndex: 'costType', width: 120 },
+                        { title: '金额', dataIndex: 'amount', width: 110, align: 'right', render: (value: number) => money(value) },
+                        { title: '状态', dataIndex: 'status', width: 90, render: (value: string) => <Tag color={value === 'actual' ? 'green' : 'blue'}>{value === 'actual' ? '已发生' : '预测'}</Tag> },
+                        { title: '日期', dataIndex: 'date', width: 110 },
+                        { title: '描述', dataIndex: 'description', width: 220 },
+                      ]}
+                    />
+                  </Card>
+                </div>
+              </TabPane>
+
+              <TabPane key="post-mortem" title="项目决算">
+                <div className="case-detail__tab-panel">
+                  <Card title="项目决算" size="small">
+                    {postMortem ? (
+                      <div>
+                        <Title heading={6} className="case-detail__section-title">根因分析</Title>
+                        <Table
+                          size="small"
+                          pagination={false}
+                          className="case-detail__root-cause-table"
+                          data={postMortem.rootCauses}
+                          rowKey="description"
+                          columns={[
+                            { title: '类别', dataIndex: 'category', width: 110, render: (value: string) => <Tag>{value === 'scope_creep' ? '需求变更' : value === 'quality_issue' ? '质量问题' : value === 'efficiency' ? '效率问题' : value}</Tag> },
+                            { title: '描述', dataIndex: 'description' },
+                            { title: '影响金额', dataIndex: 'impact', width: 120, align: 'right', render: (value: number) => money(value) },
+                            { title: '置信度', dataIndex: 'confidence', width: 100, render: (value: number) => `${(value * 100).toFixed(0)}%` },
+                          ]}
+                        />
+                        <Title heading={6} className="case-detail__section-title">经验教训</Title>
+                        <ul className="case-detail__lessons">
+                          {postMortem.lessonsLearned.map((lesson) => <li key={lesson}>{lesson}</li>)}
+                        </ul>
+                      </div>
+                    ) : <div className="case-detail__empty">暂无决算数据</div>}
+                  </Card>
+                </div>
+              </TabPane>
+            </Tabs>
+          </Card>
+        </ProcessWorkspaceMain>
+
+        <ProcessWorkspaceAside>
+          <Card title="当前处理" size="small">
+            <Space direction="vertical" size={12} className="case-detail__aside-stack">
+              <div>
+                <Text type="secondary">当前阶段</Text>
+                <div className="case-detail__aside-value">
+                  <Tag color={STATUS_COLORS[currentStatus]}>{caseStatusMap[currentStatus]?.label ?? currentStatus}</Tag>
+                </div>
+              </div>
+              <Text>{STATUS_TASKS[currentStatus]}</Text>
+              <div>
+                <Text type="secondary">当前工作区</Text>
+                <div className="case-detail__aside-value">{TAB_LABELS[activeTab]}</div>
+              </div>
+              {transitions.length > 0 && (
+                <div>
+                  <Text type="secondary">可推进至</Text>
+                  <div className="case-detail__tag-list">
+                    {transitions.map((target) => <Tag key={target}>{caseStatusMap[target]?.label ?? target}</Tag>)}
+                  </div>
+                </div>
+              )}
+            </Space>
+          </Card>
+
+          <Card title="业务关联" size="small">
+            <Descriptions
+              column={1}
+              data={[
+                { label: '线索', value: caseData.leadName || '-' },
+                { label: '项目', value: caseData.projectName || '尚未立项' },
+                { label: '报价', value: `${quotations.length} 份` },
+                { label: '合同', value: `${caseData.contractId ? 1 : 0} 主 ${supplements.length} 补` },
+                { label: '成本流水', value: `${costItems.length} 条` },
               ]}
             />
           </Card>
-        </TabPane>
 
-        {/* 项目决算 */}
-        <TabPane key="post-mortem" title="项目决算">
-          <Card title="项目决算">
-            {postMortem ? (
-              <div>
-                <Title heading={6} style={{ marginBottom: 12 }}>根因分析</Title>
-                <Table size="small" pagination={false} style={{ marginBottom: 24 }} data={postMortem.rootCauses} rowKey="description"
-                  columns={[
-                    { title: '类别', dataIndex: 'category', width: 100, render: (v: string) => <Tag>{v === 'scope_creep' ? '需求变更' : v === 'quality_issue' ? '质量问题' : v === 'efficiency' ? '效率问题' : v}</Tag> },
-                    { title: '描述', dataIndex: 'description' },
-                    { title: '影响金额', dataIndex: 'impact', width: 120, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
-                    { title: '置信度', dataIndex: 'confidence', width: 100, render: (v: number) => `${(v * 100).toFixed(0)}%` },
-                  ]} />
-                <Title heading={6} style={{ marginBottom: 12 }}>经验教训</Title>
-                <ul style={{ paddingLeft: 20, marginBottom: 24 }}>
-                  {postMortem.lessonsLearned.map((lesson, i) => <li key={i} style={{ marginBottom: 8 }}>{lesson}</li>)}
-                </ul>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: '#86909c' }}>暂无决算数据</div>
-            )}
+          <Card title="风险与参数" size="small" extra={<Button type="text" size="mini" onClick={() => setParamsVisible(true)}>调整</Button>}>
+            <Descriptions
+              column={1}
+              data={[
+                { label: '健康状态', value: <Tag color={health.color}>{health.label}</Tag> },
+                { label: '目标利润率', value: `${currentParams.targetMargin}%` },
+                { label: '预算上限', value: money(currentParams.budgetCap) },
+                { label: '商务费用上限', value: money(currentParams.commercialCap) },
+                { label: '商务费用使用', value: <Tag color={metrics.commercialOverrun.overrun ? 'red' : 'green'}>{money(metrics.commercialOverrun.commercialActual)}</Tag> },
+                { label: 'WIP 账龄', value: `${metrics.wip.days} 天` },
+              ]}
+            />
           </Card>
-        </TabPane>
-      </Tabs>
 
-      {/* 管理参数 Modal */}
+          <Card title="时间信息" size="small">
+            <Descriptions
+              column={1}
+              data={[
+                { label: '创建时间', value: new Date(caseData.createdAt).toLocaleDateString('zh-CN') },
+                { label: '最近更新', value: new Date(caseData.updatedAt).toLocaleDateString('zh-CN') },
+                { label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
+              ]}
+            />
+          </Card>
+        </ProcessWorkspaceAside>
+      </ProcessWorkspace>
+
       <ManageParamsModal
         visible={paramsVisible}
-        targetMargin={caseData.targetMargin ?? 30}
-        budgetCap={caseData.budgetCap ?? 0}
-        commercialCap={caseData.commercialCap ?? 0}
-        onSave={(p) => { setParamsVisible(false); Message.success('参数已保存'); }}
+        targetMargin={currentParams.targetMargin}
+        budgetCap={currentParams.budgetCap}
+        commercialCap={currentParams.commercialCap}
+        onSave={handleSaveParams}
         onCancel={() => setParamsVisible(false)}
       />
-    </div>
+    </PageShell>
   );
 }

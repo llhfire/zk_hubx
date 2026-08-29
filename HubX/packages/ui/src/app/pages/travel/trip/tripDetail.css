@@ -1,0 +1,36 @@
+.trip-detail__state {
+  display: flex;
+  min-height: 300px;
+  align-items: center;
+  justify-content: center;
+}
+
+.trip-detail__tabs-card .arco-card-body {
+  padding: 0;
+}
+
+.trip-detail__tabs-card .arco-tabs-header {
+  padding-inline: 16px;
+}
+
+.trip-detail__aside-stack {
+  width: 100%;
+  line-height: 22px;
+}
+
+.trip-detail__purpose {
+  margin: 0;
+  color: var(--color-text-2);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.trip-detail .hubx-process-workspace__main > .trip-detail__tabs-card {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .trip-detail__tabs-card .arco-tabs-header-nav {
+    overflow-x: auto;
+  }
+}

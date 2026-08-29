@@ -22,10 +22,7 @@ import {
   mockOutsourceCosts,
   mockOtherCosts,
   mockSalaryData,
-  getHourlyOpCost,
-  mockMonthlyOpExpenses,
-  ACTIVE_EMPLOYEE_COUNT,
-  STANDARD_MONTHLY_HOURS,
+  getHourlyOpSnapshot,
   type RDCostDetail,
   type BusinessCostRecord,
   type OutsourceCostRecord,
@@ -60,20 +57,23 @@ export function ContractCostDetail() {
   const rdDetails = hasProjects
     ? buildRDCostDetails(cid, CURRENT_MONTH, mockSalaryData, useActual)
     : [];
-  const bizDetails = mockBusinessCosts.filter((r) => r.contractId === cid && r.month === CURRENT_MONTH);
+  const directDetails = mockBusinessCosts.filter((r) => r.contractId === cid && r.month === CURRENT_MONTH);
+  const travelDetails = directDetails.filter((r) => r.costCategory === 'travel');
+  const bizDetails = directDetails.filter((r) => r.costCategory === 'commercial');
   const outsourceDetails = mockOutsourceCosts.filter((r) => r.contractId === cid && r.month === CURRENT_MONTH);
   const otherDetails = mockOtherCosts.filter((r) => r.contractId === cid && r.month === CURRENT_MONTH);
   const opDetails = hasProjects ? buildOpCostDetails(cid, CURRENT_MONTH) : [];
 
   const rdTotal = rdDetails.reduce((s, r) => s + r.cost, 0);
+  const travelTotal = travelDetails.reduce((s, r) => s + r.amount, 0);
   const bizTotal = bizDetails.reduce((s, r) => s + r.amount, 0);
   const outsourceTotal = outsourceDetails.reduce((s, r) => s + r.amount, 0);
   const otherTotal = otherDetails.reduce((s, r) => s + r.amount, 0);
   const opTotal = opDetails.reduce((s, r) => s + r.cost, 0);
 
   // ─── 运营费用计算参数 ─────────────────────────────────────
-  const monthlyOpExpense = mockMonthlyOpExpenses[CURRENT_MONTH] ?? 0;
-  const hourlyOpCost = getHourlyOpCost(CURRENT_MONTH);
+  const overheadSnapshot = getHourlyOpSnapshot(CURRENT_MONTH);
+  const hourlyOpCost = overheadSnapshot.rate;
 
   // ─── 科研成本表格列 ───────────────────────────────────────
   const rdColumns = [
@@ -132,6 +132,7 @@ export function ContractCostDetail() {
   // ─── 概览卡片数据 ────────────────────────────────────────
   const summaryCards = [
     { label: '科研成本', value: rdTotal, color: 'var(--primary)' },
+    { label: '差旅成本', value: travelTotal, color: 'var(--warning-600)' },
     { label: '商务成本', value: bizTotal, color: '#0fc6c2' },
     { label: '外包成本', value: outsourceTotal, color: 'var(--warning-500)' },
     { label: '其他成本', value: otherTotal, color: '#7816ff' },
@@ -210,7 +211,7 @@ export function ContractCostDetail() {
       </div>
 
       {/* ── 5 张概览卡片 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 16, marginBottom: 24 }}>
         {summaryCards.map((card) => (
           <Card key={card.label} style={{ textAlign: 'center' }}>
             <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>{card.label}</Text>
@@ -234,6 +235,17 @@ export function ContractCostDetail() {
               scroll={{ x: 580 }}
             />
             {renderRDSummary()}
+          </TabPane>
+
+          {/* ── 差旅成本 ── */}
+          <TabPane key="travel" title="差旅成本">
+            <Table<BusinessCostRecord>
+              columns={bizColumns}
+              data={travelDetails}
+              rowKey="id"
+              pagination={false}
+            />
+            {travelDetails.length > 0 && renderAmountSummary(travelTotal)}
           </TabPane>
 
           {/* ── 商务成本 ── */}
@@ -276,21 +288,21 @@ export function ContractCostDetail() {
               style={{ marginBottom: 16, backgroundColor: 'var(--color-fill-1)' }}
               bordered={false}
             >
-              <Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>运营成本分摊计算</Title>
+              <Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>公摊费率计算</Title>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                 <div>
                   <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>
-                    {CURRENT_MONTH} 运营总费用
+                    {CURRENT_MONTH} 公共运营池
                   </Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>¥{fmt(monthlyOpExpense)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>¥{fmt(overheadSnapshot.pool)}</div>
                 </div>
                 <div>
                   <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>在职员工数</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>{ACTIVE_EMPLOYEE_COUNT} 人</div>
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>{overheadSnapshot.activeEmployeeCount} 人</div>
                 </div>
                 <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>标准月工时</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>{STANDARD_MONTHLY_HOURS} h</div>
+                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>编制工时</Text>
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>{overheadSnapshot.capacityHours} h</div>
                 </div>
                 <div>
                   <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>每小时运营成本</Text>
@@ -300,8 +312,8 @@ export function ContractCostDetail() {
                 </div>
               </div>
               <Text style={{ color: 'var(--color-text-3)', fontSize: 12, marginTop: 8, display: 'block' }}>
-                计算公式：每小时运营成本 = 运营总费用 ÷ 在职员工数 ÷ 标准月工时
-                = ¥{fmt(monthlyOpExpense)} ÷ {ACTIVE_EMPLOYEE_COUNT} ÷ {STANDARD_MONTHLY_HOURS}
+                计算公式：R_hour = 当月公共运营池 ÷ 全公司在职编制工时
+                = ¥{fmt(overheadSnapshot.pool)} ÷ {overheadSnapshot.capacityHours}h
                 = ¥{fmt(hourlyOpCost)}/h
               </Text>
             </Card>

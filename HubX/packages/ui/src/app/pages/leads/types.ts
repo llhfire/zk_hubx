@@ -329,6 +329,10 @@ export interface LeadListItem {
   transformStatus: boolean;
   /** 是否标红（超期未跟进） — 保留兼容，优先用倒计时胶囊 */
   isOverdue: boolean;
+  /** α 版线索原始附件；详情页与编辑弹窗共用 */
+  attachments?: Attachment[];
+  /** 软删除标记；普通线索池不展示 */
+  deleted?: boolean;
 
   // --- 线索派发字段（lead-dispatch-dev-plan.md 阶段 A） ---
   /** 业务线 */

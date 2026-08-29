@@ -20,7 +20,7 @@ export interface LedgerEntry {
 export interface CostItem {
   sourceType: 'reimbursement';
   sourceId: string;
-  costCategory: 'commercial';
+  costCategory: 'travel';
   costType: '差旅';
   amount: number;
   date: string;
@@ -59,7 +59,7 @@ export function emitCostItem(reimb: Reimbursement, trip: Trip): CostItem {
   const item: CostItem = {
     sourceType: 'reimbursement',
     sourceId: reimb.id,
-    costCategory: 'commercial',
+    costCategory: 'travel',
     costType: '差旅',
     amount: reimb.netAmount,
     date: reimb.createDate,

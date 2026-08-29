@@ -241,6 +241,13 @@ describe('金额汇总', () => {
     expect(b.grandTotal).toBe(6000 + 4000);
   });
 
+  it('本单岗位日成本覆盖会进入唯一总价口径', () => {
+    const quote = buildQuote({ roleDailyCosts: { pm_days: 1000, fe_days: 800, be_days: 500 } });
+    const breakdown = computeAmountBreakdown(quote);
+    expect(breakdown.techLaborCost).toBe(1.5 * 1000 + 3.5 * 800 + 5 * 500);
+    expect(breakdown.grandTotal).toBe(breakdown.techLaborCost + breakdown.addedCost);
+  });
+
   it('未开启差旅时不计入总价', () => {
     const quote = buildQuote({
       travelOnsite: { enableTravel: false, travelSubtotal: 5000, enableOnsite: false, onsiteSubtotal: 3000 },
@@ -332,6 +339,19 @@ describe('提交审批前硬校验', () => {
   it('总报价为 0 时拦截', () => {
     const quote = buildQuote({ evalSheet: undefined, salesAddedRoles: [], otherCosts: [] });
     expect(validateBeforeAudit(quote).some((i) => i.code === 'no_price')).toBe(true);
+  });
+
+  it('补充报价允许 0 元或负向调整语义，不触发主报价 no_price', () => {
+    const quote = buildQuote({ isSupplement: true, evalSheet: undefined, salesAddedRoles: [], otherCosts: [] });
+    expect(validateBeforeAudit(quote).some((i) => i.code === 'no_price')).toBe(false);
+  });
+
+  it('数字一致性问题为 warning，步骤缺失为 error', () => {
+    const warningQuote = buildQuote();
+    warningQuote.summary!.paymentTerms = [{ stage: '首付', percent: 90, amount: 0 }];
+    expect(validateBeforeAudit(warningQuote).find((i) => i.code === 'payment_percent')?.severity).toBe('warning');
+    const errorQuote = buildQuote({ evalSheet: undefined, salesAddedRoles: [], otherCosts: [] });
+    expect(validateBeforeAudit(errorQuote).find((i) => i.code === 'no_eval')?.severity).toBe('error');
   });
 });
 

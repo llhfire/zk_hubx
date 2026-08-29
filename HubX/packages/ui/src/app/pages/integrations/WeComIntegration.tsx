@@ -13,7 +13,6 @@ import {
   Modal,
   Select,
   Space,
-  Statistic,
   Switch,
   Table,
   Tabs,
@@ -24,6 +23,8 @@ import {
 import { IconRefresh, IconSafe, IconSync, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { SyncDiff, SyncPolicy, WeComConfig } from '@/app/integrations/types';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../systemConfigConsistency.css';
 
 const FormItem = Form.Item;
 const Row = Grid.Row;
@@ -104,22 +105,21 @@ export function WeComIntegration() {
       title: '操作',
       width: 100,
       render: (_: unknown, record: SyncDiff) => record.action === 'conflict'
-        ? <Tooltip content="处理冲突"><Button type="text" size="small" icon={<IconEdit />} onClick={() => Message.info('正式接入时可选择匹配员工或创建新员工')} /></Tooltip>
+        ? <Tooltip content="处理冲突"><Button type="text" size="small" icon={<IconEdit />} aria-label={`处理${record.name}的同步冲突`} onClick={() => Message.info('正式接入时可选择匹配员工或创建新员工')} /></Tooltip>
         : <Text type="secondary">自动处理</Text>,
     },
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <Text type="secondary">统一维护员工通讯录同步、绑定状态和数据边界。</Text>
-        </div>
-        <Space>
+    <PageShell className="system-config-page" breadcrumbs={[{ label: '系统管理' }, { label: '企业微信集成' }]}>
+      <PageHeader
+        title="企业微信集成"
+        description="统一维护员工通讯录同步、绑定状态和数据边界。"
+        actions={<Space>
           <Tag color="orange">模拟模式</Tag>
           <Tag color="gray">自建应用未连接</Tag>
-        </Space>
-      </div>
+        </Space>}
+      />
 
       <Alert
         type="info"
@@ -127,27 +127,17 @@ export function WeComIntegration() {
         content="当前不会连接真实企业微信。你可以先通过预检同步体验新增、更新、停用和冲突处理流程。"
       />
 
-      <Card bordered={false} bodyStyle={{ padding: '16px 24px' }}>
-        <Row gutter={24}>
-          <Col span={6}>
-            <Statistic title="连接状态" value="未连接" valueStyle={{ fontSize: 20, color: 'rgb(var(--orange-6))' }} />
-          </Col>
-          <Col span={6}>
-            <Statistic title="运行模式" value="模拟" valueStyle={{ fontSize: 20 }} />
-          </Col>
-          <Col span={6}>
-            <Statistic title="自动同步" value={wecomConfig.autoSync ? wecomConfig.syncTime : '已关闭'} valueStyle={{ fontSize: 20 }} />
-          </Col>
-          <Col span={6}>
-            <Statistic title="已绑定员工" value={bindings.filter((item) => item.bindingStatus === 'bound').length} suffix="人" valueStyle={{ fontSize: 20 }} />
-          </Col>
-        </Row>
-      </Card>
+      <ProcessMetricGrid items={[
+        { key: 'connection', label: '连接状态', value: '未连接', detail: '等待自建应用凭证', tone: 'warning' },
+        { key: 'mode', label: '运行模式', value: '模拟', detail: '不会访问真实企业微信' },
+        { key: 'sync', label: '自动同步', value: wecomConfig.autoSync ? wecomConfig.syncTime : '已关闭', detail: '可在连接设置中调整' },
+        { key: 'bindings', label: '已绑定员工', value: bindings.filter((item) => item.bindingStatus === 'bound').length, detail: `共 ${bindings.length} 条绑定记录`, tone: 'success' },
+      ]} />
 
-      <Card bordered={false} bodyStyle={{ paddingTop: 4 }}>
+      <Card className="system-config-card" title="集成配置" bordered={false} bodyStyle={{ paddingTop: 4 }}>
         <Tabs defaultActiveTab="sync">
           <Tabs.TabPane key="sync" title="通讯录同步">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+            <div className="system-config-section-toolbar">
               <div>
                 <Text bold>同步差异预检</Text>
                 <div><Text type="secondary">先查看变更清单，确认后再应用；冲突员工不会自动合并。</Text></div>
@@ -158,19 +148,12 @@ export function WeComIntegration() {
               </Space>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 20 }}>
-              {[
-                { label: '待新增', value: stats.create, color: 'rgb(var(--green-6))' },
-                { label: '待更新', value: stats.update, color: 'rgb(var(--arcoblue-6))' },
-                { label: '待停用', value: stats.disable, color: 'rgb(var(--orange-6))' },
-                { label: '待处理冲突', value: stats.conflict, color: 'rgb(var(--red-6))' },
-              ].map((item) => (
-                <div key={item.label} style={{ padding: '14px 16px', borderRadius: 8, background: 'var(--color-fill-1)', border: '1px solid var(--color-border-1)' }}>
-                  <Text type="secondary">{item.label}</Text>
-                  <div style={{ marginTop: 4, fontSize: 24, fontWeight: 600, color: item.value ? item.color : 'var(--color-text-1)' }}>{item.value}</div>
-                </div>
-              ))}
-            </div>
+            <ProcessMetricGrid items={[
+              { key: 'create', label: '待新增', value: stats.create, tone: stats.create ? 'success' : 'neutral' },
+              { key: 'update', label: '待更新', value: stats.update },
+              { key: 'disable', label: '待停用', value: stats.disable, tone: stats.disable ? 'warning' : 'neutral' },
+              { key: 'conflict', label: '待处理冲突', value: stats.conflict, tone: stats.conflict ? 'danger' : 'neutral' },
+            ]} />
 
             <Table rowKey="id" columns={columns} data={syncPreview} pagination={false} noDataElement="暂无差异，点击右上角“预检同步”开始检查" />
           </Tabs.TabPane>
@@ -201,7 +184,7 @@ export function WeComIntegration() {
           </Tabs.TabPane>
 
           <Tabs.TabPane key="rules" title="同步规则">
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
+            <div className="system-config-section-toolbar">
               <div>
                 <Text bold>员工同步策略</Text>
                 <div><Text type="secondary">配置同步触发方式、身份匹配和异常员工处理方式。</Text></div>
@@ -326,6 +309,6 @@ export function WeComIntegration() {
           </Tabs.TabPane>
         </Tabs>
       </Card>
-    </Space>
+    </PageShell>
   );
 }

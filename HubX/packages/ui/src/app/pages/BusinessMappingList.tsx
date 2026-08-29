@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router';
 import {
   Button,
   Card,
@@ -16,6 +17,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconEdit, IconEye, IconPlus } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell } from '@/app/components/ui';
 import {
   loadBusinessApprovals,
   loadWorkflowTemplates,
@@ -59,6 +61,8 @@ function hasAssignee(value: string | string[]) {
 }
 
 export function BusinessMappingList() {
+  const location = useLocation();
+  const isSystemEntry = location.pathname.startsWith('/system/');
   const [businessApprovals, setBusinessApprovals] = useState<BusinessApprovalDefinition[]>(() => (
     loadBusinessApprovals().map((approval) => ({
       ...approval,
@@ -210,10 +214,10 @@ export function BusinessMappingList() {
       render: (_: unknown, record: BusinessApprovalDefinition) => (
         <Space size={4}>
           <Tooltip content="配置">
-            <Button type="text" size="small" icon={<IconEdit />} onClick={() => openConfig(record)} />
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`配置${record.bizName}`} icon={<IconEdit />} onClick={() => openConfig(record)} />
           </Tooltip>
           <Tooltip content="预览">
-            <Button type="text" size="small" icon={<IconEye />} onClick={() => openPreview(record)} />
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`预览${record.bizName}审批链路`} icon={<IconEye />} onClick={() => openPreview(record)} />
           </Tooltip>
         </Space>
       ),
@@ -221,16 +225,18 @@ export function BusinessMappingList() {
   ];
 
   return (
-    <div>
-      <div className="flex items-start justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <Text type="secondary">新增 HubX 业务审批，绑定审批模板，并为每个节点配置审批人。</Text>
-        </div>
-        <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增业务审批</Button>
-      </div>
+    <PageShell breadcrumbs={isSystemEntry
+      ? [{ label: '系统管理', to: '/system/config' }, { label: '系统配置', to: '/system/config' }, { label: '业务审批配置' }]
+      : [{ label: '审批管理', to: '/approvals' }, { label: '审批中心', to: '/approvals' }, { label: '业务审批配置' }]}
+    >
+      <PageHeader
+        title="业务审批配置"
+        description="新增 HubX 业务审批，绑定审批模板，并为每个节点配置审批人。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增业务审批</Button>}
+      />
 
       <Card bordered={false}>
-        <Table rowKey="key" columns={columns} data={businessApprovals} pagination={false} />
+        <Table rowKey="key" columns={columns} data={businessApprovals} pagination={false} scroll={{ x: 900 }} />
       </Card>
 
       <Modal
@@ -351,6 +357,6 @@ export function BusinessMappingList() {
           </Space>
         ) : null}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

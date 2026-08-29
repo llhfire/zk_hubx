@@ -23,6 +23,7 @@ import {
   CaseStatus, HealthStatus, FeatureListStatus, FeatureCategory,
   QuotationStatus, ServiceCategory,
 } from './types';
+import { getAlphaOverheadAmount, getAlphaOverheadSnapshot } from '../finance-shared/alphaOverhead';
 
 
 // Mock 数据：成本趋势（按周）
@@ -158,8 +159,9 @@ export const mockFinancialModels: Record<string, FinancialModel> = {
 
 **1. 成本分类的合理性**
 - **人力成本**：软件外包的核心成本，占比通常60-80%
+- **差旅成本**：交通、住宿与出差补贴，按项目或线索直接归集
+- **推广成本**：获客投流与公共运营分摊
 - **商务成本**：售前阶段必要支出，但需严格控制
-- **运营成本**：公司运营的必要分摊，确保成本完整性
 - **第三方成本**：客户承担的外部服务，需单独列示
 
 **2. 运营成本分摊的设计**
@@ -173,7 +175,7 @@ export const mockFinancialModels: Record<string, FinancialModel> = {
 - **WIP资金占用**：促使项目快速交付`,
     calculationFormula: `**计算公式：**
 
-**总成本 = 人力成本 + 商务成本 + 运营成本 + 第三方成本**
+**总成本 = 人力成本 + 差旅成本 + 推广成本 + 商务成本 + 第三方成本**
 
 **人力成本：**
 \`\`\`
@@ -185,19 +187,21 @@ export const mockFinancialModels: Record<string, FinancialModel> = {
          + 测试人天 × 测试日薪
 \`\`\`
 
+**差旅成本：**
+\`\`\`
+差旅成本 = 交通费 + 住宿费 + 出差补贴
+\`\`\`
+
 **商务成本：**
 \`\`\`
-商务成本 = 差旅费 + 招待费 + 礼品费
-         ≤ 商务费用上限（由报价时设定）
+商务成本 = 招待费 + 礼品费 + 商务返点
+         ≤ 商务费用上限（不含差旅）
 \`\`\`
 
-**运营成本（分摊）：**
+**推广成本中的公共运营分摊：**
 \`\`\`
-运营成本 = 场地分摊 + 人力分摊 + 设备分摊 + 软件分摊 + 财务分摊 + 保险分摊 + 行政分摊
-
-场地分摊 = (办公室租金 + 水电物业) × 项目人天 / 公司总人天
-人力分摊 = 社保公积金 × 项目人数
-宿舍分摊 = 宿舍租金 × 住宿人数
+R_hour = 当月公共运营池 ÷ 全公司在职编制工时
+项目运营分摊 = 项目工天 × 8 × 当月 R_hour
 \`\`\`
 
 **第三方成本：**
@@ -207,7 +211,7 @@ export const mockFinancialModels: Record<string, FinancialModel> = {
 \`\`\``,
     assumptions: [
       '日薪基于职级标准薪资，不含加班费和奖金',
-      '运营成本按月度核算，按人天比例分摊',
+      '公共运营池按月核算，并按项目工天和动态 R_hour 分摊',
       '商务成本按实际发生核算，有上限控制',
       '返工成本单独核算，用于质量分析',
       '第三方成本通常由客户承担，不计入项目利润计算',
@@ -814,19 +818,19 @@ export const mockCostItems: CaseCostItem[] = [
     description: 'GPT-4 API调用（代码生成）',
     createdAt: '2026-08-01T10:00:00Z',
   },
-  // 运营分摊（OVERHEAD_RATE=35 元/工时，人力 quantityDays × 8 × 35）
+  // 运营分摊：项目工天 × 8 × 当月动态 R_hour
   {
     id: 'cost-oh-001',
     caseId: 'case-001',
     sourceType: 'overhead',
     costCategory: 'promotion',
     costType: '运营分摊',
-    amount: 12320, // (25+15+30)天 × 8h × 35元
+    amount: getAlphaOverheadAmount('2026-06', 70),
     quantityDays: 70,
     date: '2026-06-01',
     endDate: '2026-06-30',
     status: 'actual',
-    description: '6月运营分摊（70天 × 8h × ¥35/h）',
+    description: `6月运营分摊（70天 × 8h × ¥${getAlphaOverheadSnapshot('2026-06').rate.toFixed(2)}/h）`,
     createdAt: '2026-07-01T10:00:00Z',
   },
   {
@@ -835,12 +839,12 @@ export const mockCostItems: CaseCostItem[] = [
     sourceType: 'overhead',
     costCategory: 'promotion',
     costType: '运营分摊',
-    amount: 23520, // (28+25+20+7+4)天 × 8h × 35元
+    amount: getAlphaOverheadAmount('2026-07', 84),
     quantityDays: 84,
     date: '2026-07-01',
     endDate: '2026-07-31',
     status: 'actual',
-    description: '7月运营分摊（84天 × 8h × ¥35/h）',
+    description: `7月运营分摊（84天 × 8h × ¥${getAlphaOverheadSnapshot('2026-07').rate.toFixed(2)}/h）`,
     createdAt: '2026-08-01T10:00:00Z',
   },
   // ===== 未发生的成本（预测） =====
@@ -905,18 +909,19 @@ export const mockCostItems: CaseCostItem[] = [
     createdAt: '2026-08-01T10:00:00Z',
     employeeName: '测试工程师-刘洋',
   },
-  // 运营成本-未发生（预计8-9月）
+  // 运营分摊-未发生（预计8月）
   {
     id: 'cost-f005',
     caseId: 'case-001',
-    sourceType: 'manual',
+    sourceType: 'overhead',
     costCategory: 'promotion',
-    costType: '办公室租金分摊',
-    amount: 1800,
+    costType: '运营分摊',
+    amount: getAlphaOverheadAmount('2026-08', 21),
+    quantityDays: 21,
     date: '2026-08-01',
     endDate: '2026-08-31',
     status: 'forecast',
-    description: '8月份办公室租金分摊（预测）',
+    description: `8月运营分摊预测（21天 × 8h × ¥${getAlphaOverheadSnapshot('2026-08').rate.toFixed(2)}/h）`,
     createdAt: '2026-08-01T10:00:00Z',
   },
   {
@@ -1192,4 +1197,3 @@ export const defaultRolePrices: Record<string, number> = {
   test: 600,
   other: 800,
 };
-

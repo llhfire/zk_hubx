@@ -41,6 +41,41 @@ export function shouldSpawnUnconfirmedProject(input: {
   return hasEnteredSigning(input.leadStatus, input.contracts);
 }
 
+/** 统一线索身份：`9` 与 `lead-9` 视为同一条线索。 */
+export function normalizeLeadIdentity(leadId: string): string {
+  return leadId.trim().replace(/^lead-/, '');
+}
+
+export function isSameLeadIdentity(left: string | undefined, right: string | undefined): boolean {
+  if (!left || !right) return false;
+  return normalizeLeadIdentity(left) === normalizeLeadIdentity(right);
+}
+
+/**
+ * 未确认项目唯一 ID：有线索时以线索为稳定主键；无线索合同才回退合同 ID。
+ * 这样“先洽谈、后建合同”不会生成第二个项目。
+ */
+export function unconfirmedProjectId(input: {
+  leadId?: string;
+  contractId?: string;
+}): string {
+  if (input.leadId) return `ap-lead-${normalizeLeadIdentity(input.leadId)}`;
+  if (input.contractId) return `ap-${input.contractId}`;
+  throw new Error('生成未确认项目 ID 至少需要线索 ID 或合同 ID');
+}
+
+/** 线索从非签约态进入合同洽谈/已签单时产生一次签约开启事件。 */
+export function signingLeadTransitions(
+  previous: Record<string, string> | null,
+  leads: Array<{ id: string; status: string }>,
+): Array<{ id: string; status: string }> {
+  if (!previous) return [];
+  return leads.filter(lead => (
+    (SIGNING_LEAD_STATUSES as readonly string[]).includes(lead.status)
+    && !(SIGNING_LEAD_STATUSES as readonly string[]).includes(previous[lead.id] ?? '')
+  ));
+}
+
 export function spawnUnconfirmedProject(input: {
   caseId: string;
   leadId: string;

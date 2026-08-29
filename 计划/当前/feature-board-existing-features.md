@@ -13,16 +13,21 @@
 ```ts
 interface ExistingFeature {
   name: string;       // 功能名（显示为文字块）
-  description: string; // 点击弹出的详细说明（需求+流程+说明，纯文本多行）
+  description: string; // 功能说明
+  usage?: string;      // 使用流程，可按条目维护
+  referencePath?: string; // 需求文档或原型文档的仓库相对地址
 }
 ```
+
+旧条目缺少新增字段时，详情弹窗按功能类型生成简短使用流程，并按模块关联现有 PRD/原型；条目显式维护的内容始终优先。
 
 ## 实现步骤
 1. `featureBoardModel.ts`：新增 `ExistingFeature` 类型，`FeatureBoardModule` 加 `features` 字段，`normalizeFeatureBoard` 兼容旧数据（scope 降级为空 features），`isValidFeatureBoard` 不强制要求 features（向后兼容）
 2. `featureBoard.config.json`：每个模块填充已有功能列表种子数据（Claude 根据代码库知识生成描述）
 3. `VersionCompareModal.tsx`：
    - 「覆盖范围」列 → 「已有功能」列：渲染为小文字块（Tag 样式），点击打开详情弹窗
-   - 新增功能详情弹窗：展示功能名 + 描述（多行文本，清晰展示原始需求、功能流程、功能说明）
+   - 功能详情弹窗依次展示功能说明、使用流程、需求/原型相对地址
+   - 弹窗底部的页面场景、功能流程、UX 优化三个检查项固定横排
    - 「功能列表」列名 → 「待设计功能」
 4. `versionCompareModal.css`：新增文字块矩阵样式、详情弹窗样式
 5. CLAUDE.md 补充：已有功能描述随代码变更/新功能上线时由 Claude 更新
@@ -37,6 +42,6 @@ interface ExistingFeature {
 - `packages/ui/src/app/version/__tests__/featureBoardModel.test.ts`
 
 ## 验证
-- `npx vitest run` version 相关
-- `npm run build` prototype/web
-- Chrome 无头实测：文字块渲染、点击弹出详情、功能列表改名
+- `npx vitest run packages/ui/src/app/version/__tests__/featureBoardModel.test.ts`：17 项通过
+- `npm run build`：α 版构建通过
+- 浏览器实测：已有说明与空说明条目均展示完整；三个检查项横排；本地页面无控制台错误

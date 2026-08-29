@@ -6,6 +6,7 @@ import {
   confirmProject,
   reassignProductManager,
   canReassignProject,
+  isSameLeadIdentity,
 } from '../app/business-case/caseUtils';
 import type { Project, ProjectStatus } from '../app/pages/project-management/mockData';
 
@@ -22,6 +23,34 @@ export const PROJECT_ADVANCE: Record<ProjectStatus, ProjectStatus[]> = {
 
 export function generateProjectId(): string {
   return `p-${Date.now()}`;
+}
+
+/** 按项目 ID、线索身份或合同 ID 判断是否是同一笔交付项目。 */
+export function findSigningProject(
+  projects: Project[],
+  candidate: Pick<Project, 'id' | 'leadId' | 'contractId'>,
+): Project | undefined {
+  return projects.find(project => (
+    project.id === candidate.id
+    || isSameLeadIdentity(project.leadId, candidate.leadId)
+    || Boolean(project.contractId && candidate.contractId && project.contractId === candidate.contractId)
+  ));
+}
+
+/**
+ * 签约开启幂等合并：保留既有项目 ID/状态/人员，只补齐线索、合同和合同侧展示信息。
+ */
+export function mergeSigningProject(existing: Project, incoming: Project): Project {
+  const bindContract = !existing.contractId && Boolean(incoming.contractId);
+  return {
+    ...existing,
+    leadId: existing.leadId ?? incoming.leadId,
+    contractId: existing.contractId ?? incoming.contractId,
+    name: bindContract ? incoming.name : existing.name,
+    entity: bindContract ? incoming.entity : existing.entity,
+    latestProgress: bindContract ? incoming.latestProgress : existing.latestProgress,
+    remark: bindContract ? incoming.remark : existing.remark,
+  };
 }
 
 export function nowProjectString(): string {

@@ -7,16 +7,34 @@
 
 import { Message } from '@arco-design/web-react';
 import { initialProjects, type Project, type ProjectStatus } from '@/app/pages/project-management/mockData';
+import { buildInitialContracts } from '@/app/pages/contracts/mockData';
+import type { Contract } from '@/app/pages/contracts/types';
+import type { CollectionLedgerEntry } from './collectionMutations';
 import {
   applyAdvanceStatus,
   applyConfirmAssign,
   applyReassignPm,
+  findSigningProject,
   generateProjectId,
+  mergeSigningProject,
 } from './projectMutations';
+
+/** 项目详情复合数据（β 阶段 2：/api/projects/:id/detail） */
+export interface ProjectDetail {
+  project: Project;
+  /** 关联合同（按 contractId / leadId 匹配） */
+  contracts: Contract[];
+  /** 项目实收记录 */
+  collections: CollectionLedgerEntry[];
+  /** 活动事件（doc 内嵌若有） */
+  activities: unknown[];
+}
 
 export interface ProjectService {
   list(): Promise<Project[]>;
   getById(id: string | undefined): Promise<Project | undefined>;
+  /** 详情复合数据（详情页 360 用；阶段 3 切换渲染） */
+  getDetail(id: string | undefined): Promise<ProjectDetail | null>;
   /** 新建（内部项目 / α 签约桥 addProject）；id 可预分配（spawn 幂等） */
   create(project: Project): Promise<string>;
   updateProject(id: string, updater: (p: Project) => Project): Promise<void>;
@@ -41,10 +59,27 @@ export function createMockProjectService(): ProjectService {
     list: async () => projects,
     getById: async (id) => findOne(id),
 
+    getDetail: async (id) => {
+      const project = findOne(id);
+      if (!project) return null;
+      // mock 组装与 Workers /api/projects/:id/detail 同口径：contractId/leadId 双路匹配合同
+      const contracts = buildInitialContracts().filter(
+        (ct) => ct.id === project.contractId || (project.leadId && ct.leadId === project.leadId),
+      );
+      return { project, contracts, collections: [], activities: [] };
+    },
+
     create: async (project) => {
       const id = project.id || generateProjectId();
-      if (projects.some((p) => p.id === id)) return id;
-      projects = [{ ...project, id }, ...projects];
+      const candidate = { ...project, id };
+      const existing = findSigningProject(projects, candidate);
+      if (existing) {
+        projects = projects.map(current => (
+          current.id === existing.id ? mergeSigningProject(current, candidate) : current
+        ));
+        return existing.id;
+      }
+      projects = [candidate, ...projects];
       return id;
     },
 
@@ -118,6 +153,18 @@ export function createHttpProjectService(baseUrl: string, opts?: { actor?: strin
   return {
     list: getList,
     getById: async (id) => getOne(id),
+
+    getDetail: async (id) => {
+      if (!id) return null;
+      try {
+        const r = await fetch(api(`/api/projects/${id}/detail`));
+        if (!r.ok) return null;
+        const d = (await r.json()) as ProjectDetail;
+        return d;
+      } catch {
+        return null;
+      }
+    },
 
     create: async (project) => {
       const r = await fetch(api('/api/projects'), {

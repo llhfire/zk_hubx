@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import {
   Card,
+  Empty,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
@@ -17,19 +17,18 @@ import {
   Message,
   Dropdown,
   Menu,
-  Tree,
   Tooltip,
 } from '@arco-design/web-react';
 import {
-  IconBranch,
   IconPlus,
   IconSearch,
   IconUser,
-  IconUserGroup,
-  IconCalendar,
   IconMore,
   IconUpload,
   IconDownload,
+  IconEye,
+  IconEdit,
+  IconRefresh,
 } from '@arco-design/web-react/icon';
 import { useEmployee } from './EmployeeContext';
 import {
@@ -42,67 +41,10 @@ import {
 } from './mockData';
 import type { Employee, EmploymentStatus, JobLevel } from './mockData';
 import { useIntegration } from '../../integrations/IntegrationContext';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './employeeAdminConsistency.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const FormItem = Form.Item;
-
-const ORGANIZATION_TREE = [
-  {
-    key: 'company',
-    title: '总公司',
-    children: [
-      {
-        key: 'technology',
-        title: '技术部',
-        children: [
-          { key: 'frontend', title: '前端组' },
-          { key: 'backend', title: '后端组' },
-        ],
-      },
-      {
-        key: 'sales',
-        title: '销售部',
-        children: [
-          { key: 'east', title: '华东区' },
-          { key: 'north', title: '华北区' },
-        ],
-      },
-      { key: 'product', title: '产品部' },
-      { key: 'administration', title: '行政部' },
-      { key: 'hr', title: '人事部' },
-      { key: 'finance', title: '财务部' },
-    ],
-  },
-];
-
-const ORGANIZATION_DEPARTMENT_SCOPE: Record<string, string[]> = {
-  company: DEPARTMENTS,
-  technology: ['技术部', '前端组', '后端组'],
-  frontend: ['前端组'],
-  backend: ['后端组'],
-  sales: ['销售部', '华东区', '华北区'],
-  east: ['华东区'],
-  north: ['华北区'],
-  product: ['产品部'],
-  administration: ['行政部'],
-  hr: ['人事部'],
-  finance: ['财务部'],
-};
-
-const ORGANIZATION_LABELS: Record<string, string> = {
-  company: '总公司',
-  technology: '技术部',
-  frontend: '前端组',
-  backend: '后端组',
-  sales: '销售部',
-  east: '华东区',
-  north: '华北区',
-  product: '产品部',
-  administration: '行政部',
-  hr: '人事部',
-  finance: '财务部',
-};
 
 const EMPLOYEE_IMPORT_HEADERS = ['用户名', '姓名', '所属部门', '职位', '职级', '在职状态', '手机号', '邮箱', '入职日期', '转正时间', '合同到期日', '标准时薪', '试用期工资', '转正工资', '社保', '公积金', '每月工天'];
 
@@ -118,7 +60,7 @@ export function EmployeeList() {
   const [filterPosition, setFilterPosition] = useState<string>('');
   const [filterLevel, setFilterLevel] = useState<JobLevel | ''>('');
   const [filterStatus, setFilterStatus] = useState<EmploymentStatus | ''>('');
-  const [selectedOrganization, setSelectedOrganization] = useState('company');
+  const [filterDepartments, setFilterDepartments] = useState<string[]>([]);
 
   // 弹窗
   const [modalVisible, setModalVisible] = useState(false);
@@ -134,7 +76,6 @@ export function EmployeeList() {
 
   // 筛选后数据
   const filteredEmployees = useMemo(() => {
-    const departmentScope = ORGANIZATION_DEPARTMENT_SCOPE[selectedOrganization] || DEPARTMENTS;
     return employees.filter(e => {
       if (keyword) {
         const kw = keyword.toLowerCase();
@@ -143,10 +84,17 @@ export function EmployeeList() {
       if (filterPosition && e.position !== filterPosition) return false;
       if (filterLevel && e.level !== filterLevel) return false;
       if (filterStatus && e.employmentStatus !== filterStatus) return false;
-      if (!departmentScope.includes(e.department)) return false;
+      if (filterDepartments.length > 0 && !filterDepartments.includes(e.department)) return false;
       return true;
     });
-  }, [employees, keyword, filterPosition, filterLevel, filterStatus, selectedOrganization]);
+  }, [employees, keyword, filterPosition, filterLevel, filterStatus, filterDepartments]);
+  const filtersActive = Boolean(
+    keyword.trim()
+    || filterPosition
+    || filterLevel
+    || filterStatus
+    || filterDepartments.length,
+  );
 
   // 摘要统计
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -171,6 +119,14 @@ export function EmployeeList() {
       monthlyWorkdays: 22,
     });
     setModalVisible(true);
+  };
+
+  const resetFilters = () => {
+    setKeyword('');
+    setFilterDepartments([]);
+    setFilterPosition('');
+    setFilterLevel('');
+    setFilterStatus('');
   };
 
   const handleEdit = (emp: Employee) => {
@@ -449,12 +405,26 @@ export function EmployeeList() {
       fixed: 'right' as const,
       render: (_: unknown, record: Employee) => (
         <Space>
-          <Button type="text" size="small" onClick={() => setDetailEmployee(record)}>
-            查看
-          </Button>
-          <Button type="text" size="small" onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
+          <Tooltip content="查看员工详情">
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              icon={<IconEye />}
+              aria-label={`查看员工${record.name}详情`}
+              onClick={() => setDetailEmployee(record)}
+            />
+          </Tooltip>
+          <Tooltip content="编辑员工">
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              icon={<IconEdit />}
+              aria-label={`编辑员工${record.name}`}
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
           <Dropdown
             droplist={
               <Menu>
@@ -468,7 +438,15 @@ export function EmployeeList() {
             }
             position="br"
           >
-            <Button type="text" size="small" icon={<IconMore />} />
+            <Tooltip content="更多员工操作">
+              <Button
+                className="hubx-icon-action"
+                type="text"
+                size="small"
+                icon={<IconMore />}
+                aria-label={`打开员工${record.name}更多操作`}
+              />
+            </Tooltip>
           </Dropdown>
         </Space>
       ),
@@ -477,114 +455,56 @@ export function EmployeeList() {
 
   return (
     <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(200px, 2fr) minmax(0, 8fr)',
-          gap: 16,
-          alignItems: 'start',
-        }}
-      >
-        <Card
-          title={
-            <Space size={8}>
-              <IconBranch />
-              <span>组织架构</span>
-            </Space>
-          }
-          style={{ position: 'sticky', top: 16 }}
-          bodyStyle={{ padding: 12 }}
-        >
-          <Tree
-            blockNode
-            defaultExpandAll
-            selectedKeys={[selectedOrganization]}
-            treeData={ORGANIZATION_TREE}
-            onSelect={(selectedKeys) => {
-              if (selectedKeys[0]) setSelectedOrganization(selectedKeys[0]);
-            }}
-            renderTitle={(node) => {
-              const nodeKey = String(node.key);
-              const departmentScope = ORGANIZATION_DEPARTMENT_SCOPE[nodeKey] || [];
-              const employeeCount = employees.filter(employee => (
-                departmentScope.includes(employee.department)
-              )).length;
-              return (
-                <span
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    width: '100%',
-                  }}
-                >
-                  <span>{node.title}</span>
-                  {employeeCount > 0 && (
-                    <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
-                      {employeeCount}
-                    </span>
-                  )}
-                </span>
-              );
-            }}
-          />
-        </Card>
+      <PageShell className="employee-admin-page">
+        <PageHeader
+          title="员工管理"
+          description="维护员工档案、组织归属、薪酬基础信息及企业微信绑定状态。"
+          actions={(
+            <>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".xlsx"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setImportVisible(true);
+                    void readEmployeeFile(file);
+                  }
+                  event.target.value = '';
+                }}
+              />
+              <Button icon={<IconUpload />} onClick={() => importFileRef.current?.click()}>
+                导入
+              </Button>
+              <Button icon={<IconDownload />} onClick={() => void handleExport()}>
+                导出
+              </Button>
+              <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>
+                新增员工
+              </Button>
+            </>
+          )}
+        />
 
-        <Space direction="vertical" size={16} style={{ width: '100%', minWidth: 0 }}>
-          {/* 摘要栏 */}
-          <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>在职总数</span>}
-              value={stats.total}
-              prefix={<IconUser style={{ color: 'rgb(var(--primary-6))' }} />}
-              groupSeparator
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月入职</span>}
-              value={stats.thisMonthHire}
-              prefix={<IconUserGroup style={{ color: 'var(--success-500)' }} />}
-              groupSeparator
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月离职</span>}
-              value={stats.thisMonthLeave}
-              prefix={<IconUser style={{ color: 'var(--destructive-500)' }} />}
-              groupSeparator
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>试用期人数</span>}
-              value={stats.onTrial}
-              prefix={<IconCalendar style={{ color: 'var(--warning-500)' }} />}
-              groupSeparator
-            />
-          </Card>
-        </Col>
-          </Row>
+        <ProcessMetricGrid
+          items={[
+            { key: 'active', label: '在职员工', value: `${stats.total} 人`, detail: '不含已离职员工' },
+            { key: 'joined', label: '本月入职', value: `${stats.thisMonthHire} 人`, detail: currentMonth, tone: 'success' },
+            { key: 'left', label: '本月离职', value: `${stats.thisMonthLeave} 人`, detail: currentMonth, tone: stats.thisMonthLeave ? 'danger' : 'neutral' },
+            { key: 'trial', label: '试用期', value: `${stats.onTrial} 人`, detail: '待完成转正评估', tone: stats.onTrial ? 'warning' : 'neutral' },
+          ]}
+        />
 
-          {/* 筛选 + 表格 */}
-          <Card
-            bordered={false}
-            title="员工列表"
-            extra={<Tag color="arcoblue">{ORGANIZATION_LABELS[selectedOrganization]}</Tag>}
+        <Card bordered={false} title="员工列表" className="employee-admin-list-card">
+          <FilterBar
+            actions={filtersActive ? (
+              <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
+            ) : undefined}
           >
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
           <Input
-            style={{ width: 200 }}
+            className="employee-admin-keyword"
             placeholder="搜索姓名或用户名"
             prefix={<IconSearch />}
             allowClear
@@ -592,10 +512,19 @@ export function EmployeeList() {
             onChange={setKeyword}
           />
           <Select
-            style={{ width: 130 }}
-            placeholder="全部职位"
+            className="employee-admin-department"
+            mode="multiple"
+            placeholder="部门（全部）"
             allowClear
-            value={filterPosition}
+            value={filterDepartments.length > 0 ? filterDepartments : undefined}
+            onChange={(departments) => setFilterDepartments(departments as string[])}
+            options={DEPARTMENTS.map(department => ({ label: department, value: department }))}
+          />
+          <Select
+            className="employee-admin-select"
+            placeholder="职位（全部）"
+            allowClear
+            value={filterPosition || undefined}
             onChange={v => setFilterPosition(v || '')}
           >
             {positions.map(p => (
@@ -603,10 +532,10 @@ export function EmployeeList() {
             ))}
           </Select>
           <Select
-            style={{ width: 110 }}
-            placeholder="全部职级"
+            className="employee-admin-select"
+            placeholder="职级（全部）"
             allowClear
-            value={filterLevel}
+            value={filterLevel || undefined}
             onChange={v => setFilterLevel(v as JobLevel | '')}
           >
             {ALL_JOB_LEVELS.map(l => (
@@ -614,44 +543,22 @@ export function EmployeeList() {
             ))}
           </Select>
           <Select
-            style={{ width: 120 }}
-            placeholder="全部状态"
+            className="employee-admin-select"
+            placeholder="状态（全部）"
             allowClear
-            value={filterStatus}
+            value={filterStatus || undefined}
             onChange={v => setFilterStatus(v as EmploymentStatus | '')}
           >
             {ALL_EMPLOYMENT_STATUSES.map(s => (
               <Select.Option key={s} value={s}>{s}</Select.Option>
             ))}
           </Select>
-          <div style={{ marginLeft: 'auto' }}>
-            <input
-              ref={importFileRef}
-              type="file"
-              accept=".xlsx"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  setImportVisible(true);
-                  void readEmployeeFile(file);
-                }
-                event.target.value = '';
-              }}
-            />
-            <Space>
-              <Button icon={<IconUpload />} onClick={() => importFileRef.current?.click()}>
-                导入
-              </Button>
-              <Button icon={<IconDownload />} onClick={() => void handleExport()}>
-                导出
-              </Button>
-            <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>
-              新增员工
-            </Button>
-            </Space>
+          </FilterBar>
+
+          <div className="employee-admin-result-summary">
+            <span>共 {filteredEmployees.length} 名员工</span>
+            {filtersActive && <span>已按当前条件筛选</span>}
           </div>
-        </div>
 
         <Table
           columns={columns as any}
@@ -659,10 +566,10 @@ export function EmployeeList() {
           rowKey="id"
           pagination={{ pageSize: 12, showTotal: true, showJumper: true }}
           scroll={{ x: 1860 }}
+          noDataElement={<Empty description="没有符合当前条件的员工" />}
         />
-          </Card>
-        </Space>
-      </div>
+        </Card>
+      </PageShell>
 
       <Modal
         title={detailEmployee ? `员工详情 · ${detailEmployee.name}` : '员工详情'}

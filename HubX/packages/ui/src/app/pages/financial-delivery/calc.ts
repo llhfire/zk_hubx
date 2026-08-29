@@ -4,7 +4,6 @@
 // 页面不要直接加总，一律调这些函数
 // ========================================
 
-import { OVERHEAD_RATE } from '../finance-shared/overhead';
 import type {
   CaseStatus,
   LeanRole,
@@ -48,9 +47,6 @@ export const EVAL_ROLE_MAP: Record<string, LeanRole> = {
 
 /** WIP 预警阈值（天） */
 export const WIP_DAYS_YELLOW = 14;
-
-/** 公摊率（元/工时），从 finance-shared 引入 */
-export { OVERHEAD_RATE };
 
 // ==================== 状态机 ====================
 
@@ -364,32 +360,33 @@ export interface LifecycleNode {
   supplementCount: number;
 }
 
-/** 10 态生命周期轨迹 */
+/** 当前业务单真实路径；挂起与终止是分支，不伪装成所有业务都会经过的线性步骤。 */
 export function buildLifecycleTrack(
   status: CaseStatus,
   supplements: SupplementContractSummary[],
 ): LifecycleNode[] {
-  const allStatuses: CaseStatus[] = [
-    'drafting', 'quoting', 'negotiating', 'signed', 'in_progress',
-    'suspended', 'accepting', 'collecting', 'completed', 'terminated',
-  ];
+  const canonical: CaseStatus[] = ['drafting', 'quoting', 'negotiating', 'signed', 'in_progress', 'accepting', 'collecting', 'completed'];
+  const allStatuses: CaseStatus[] = status === 'suspended'
+    ? ['drafting', 'quoting', 'negotiating', 'signed', 'in_progress', 'suspended']
+    : status === 'terminated'
+      ? ['drafting', 'terminated']
+      : canonical;
   const labels: Record<CaseStatus, string> = {
     drafting: '草拟', quoting: '报价', negotiating: '洽谈', signed: '签约',
     in_progress: '进行中', suspended: '已挂起', accepting: '验收中',
     collecting: '催款中', completed: '已完结', terminated: '已终止',
   };
   const statusOrder = allStatuses.indexOf(status);
-  const isTerminated = status === 'terminated';
   const isSuspended = status === 'suspended';
 
   return allStatuses.map((s, i) => ({
     status: s,
     label: labels[s],
-    reached: isTerminated ? i < statusOrder : i <= statusOrder,
+    reached: i <= statusOrder,
     current: s === status,
     suspended: isSuspended && s === 'in_progress',
-    terminated: isTerminated,
-    supplementCount: supplements.filter(sup => sup.archived).length,
+    terminated: status === 'terminated' && s === 'terminated',
+    supplementCount: s === 'signed' ? supplements.filter(sup => sup.archived).length : 0,
   }));
 }
 
@@ -456,6 +453,8 @@ export interface CaseMetrics {
   totalCost: number;
   eac: number;
   contractAmount: number;
+  /** 独立实收台账汇总；列表、仪表盘与详情统一消费此字段。 */
+  revenue: number;
   lifecycleMargin: number | null;
   collectedMargin: number | null;
   wip: { value: number; days: number };
@@ -481,9 +480,11 @@ export function assembleCaseMetrics(
   const lifecycleMargin = deriveLifecycleMargin(contractAmount, eac);
   const collectedMargin = deriveCollectedMargin(revenue, totalCost);
   const wip = deriveWip(totalCost, revenue, collections.length > 0 ? collections[collections.length - 1].date : null, asOf);
-  const health = deriveHealth(lifecycleMargin, caseData.targetMargin ?? 0.2, eac, caseData.budgetCap ?? 0, wip.days);
+  const rawTargetMargin = caseData.targetMargin ?? 0.2;
+  const targetMargin = rawTargetMargin > 1 ? rawTargetMargin / 100 : rawTargetMargin;
+  const health = deriveHealth(lifecycleMargin, targetMargin, eac, caseData.budgetCap ?? 0, wip.days);
   const costStructure = deriveCostStructure(costItems);
   const commercialOverrun = deriveCommercialOverrun(costItems, caseData.commercialCap ?? 0);
 
-  return { totalCost, eac, contractAmount, lifecycleMargin, collectedMargin, wip, health, costStructure, commercialOverrun };
+  return { totalCost, eac, contractAmount, revenue, lifecycleMargin, collectedMargin, wip, health, costStructure, commercialOverrun };
 }

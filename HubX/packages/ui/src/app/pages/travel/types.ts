@@ -207,6 +207,7 @@ export interface Trip {
   endDate: string;          // 返回日期
   days: number;             // 出差天数
   transportModes: TransportMode[]; // 交通方式
+  companions?: string[];           // 同行人
   // 住宿信息
   accommodationIntent: AccommodationType; // 住宿方式意向
   estimatedAccommodationDays: number;
@@ -560,4 +561,3 @@ export interface DormitoryListParams {
   page?: number;
   pageSize?: number;
 }
-

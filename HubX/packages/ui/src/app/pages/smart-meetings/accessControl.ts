@@ -6,7 +6,7 @@ import type {
   MeetingRole,
   MinuteAction,
 } from './types';
-import { canTransition } from './minuteStateMachine';
+import { canEditFields, canTransition } from './minuteStateMachine';
 
 /** 查看者上下文 */
 export interface ViewerContext {
@@ -55,7 +55,7 @@ export function viewMinute(m: SmartMinute, viewer: ViewerContext): MinuteView {
       canSeeSourceText: true,
       canSeeContent: true,
       maskedRefs: m.refs,
-      canEdit: role === 'organizer' || role === 'admin',
+      canEdit: canEditFields(m, viewer.userId, role),
       canTransitionTo: getAvailableActions(m.status, role),
     };
   }

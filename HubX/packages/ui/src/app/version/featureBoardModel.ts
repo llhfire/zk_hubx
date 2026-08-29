@@ -29,9 +29,90 @@ export interface PlannedItem {
 export interface ExistingFeature {
   /** 功能名（显示为文字块） */
   name: string;
-  /** 详细说明：原始需求描述 + 功能流程 + 功能说明（点击弹出） */
+  /** 功能说明：默认使用这一段作为详情首屏文本 */
   description: string;
+  /** 使用流程：可选，作为详情中的“使用流程”展示 */
+  usage?: string;
+  /** 需求文档或原型文档的相对地址：可选 */
+  referencePath?: string;
   alpha: AlphaChecks;
+}
+
+export interface ExistingFeatureDetail {
+  description: string;
+  usage: string;
+  referencePath: string;
+}
+
+/** 已有功能详情的默认需求/原型来源；条目可用 referencePath 覆盖。 */
+const MODULE_REFERENCE_PATHS: Record<string, string> = {
+  '线索全流程': '文档/PRD/PRD-线索管理模块.md',
+  '报价工作台': '文档/PRD/PRD-报价流程管理.md',
+  '客户与报价基础': '文档/PRD/PRD-线索项目合同统一视图.md',
+  '合同签约': '文档/PRD/PRD-线索项目合同统一视图.md',
+  '项目管理': 'HubX/docs/prototype/ZKHubX-业务单详情全景.html',
+  '日报工时': '文档/PRD/PRD-新增日报功能.md',
+  '交付支撑': 'HubX/docs/SYSTEM-OVERVIEW.md',
+  '回款管理': '计划/当前/payment-kanban-dev-plan.md',
+  '开票管理': '文档/需求/功能清单-四域架构.md',
+  '成本核算': '文档/需求/功能清单-四域架构.md',
+  '运营费用': '文档/PRD/PRD-运营费用管理.md',
+  '精益交付': '文档/PRD/PRD-精益交付数据链路.md',
+  '差旅管理': '文档/PRD/PRD-差旅管理.md',
+  '财务视图': '文档/需求/功能清单-四域架构.md',
+  '多渠道线索接入': '文档/PRD/PRD-线索派发管理.md',
+  '线索池与初筛': '文档/PRD/PRD-线索管理模块.md',
+  '组织与权限': '文档/需求/OA需求文档.md',
+  '人资行政': '文档/需求/OA需求文档.md',
+  '工作台与审批': '文档/PRD/PRD-审批流程管理.md',
+  '智能会议': '文档/PRD/PRD-智能会议.md',
+  '基础工具': 'HubX/docs/SYSTEM-OVERVIEW.md',
+};
+
+const FEATURE_REFERENCE_PATHS: Record<string, string> = {
+  '工作台与审批::待办中心': '文档/PRD/PRD-待办提醒与消息通知.md',
+  '工作台与审批::消息提醒': '文档/PRD/PRD-待办提醒与消息通知.md',
+  '工作台与审批::功能看板切换功能架构': 'HubX/docs/ALPHA-BETA-ARCHITECTURE.md',
+  '工作台与审批::功能看板切换技术架构': 'HubX/docs/ALPHA-BETA-ARCHITECTURE.md',
+  '工作台与审批::工作记录页签': '计划/当前/feature-board-existing-features.md',
+  '基础工具::全局搜索（⌘K 六实体跨域检索直达，只读投影不做权限过滤）': '文档/PRD/PRD-全局搜索.md',
+};
+
+const AUTO_FEATURE_RE = /(自动|生成|同步|联动|接缝|状态机|派生|公式|来源|流转)/;
+const REVIEW_FEATURE_RE = /(审批|审核|派发|退回|领取|分配|归档|冲红|盖章|废止|作废|调整)/;
+const FORM_FEATURE_RE = /(申请|录入|填写|登记|新建|创建|跟进|报销|借款)/;
+const CONFIG_FEATURE_RE = /(配置|管理|模板|字典|架构|授权|标准|参数|规则)/;
+const READ_FEATURE_RE = /(列表|中心|看板|大盘|视图|面板|报表|统计|分析|台账|记录|历程|搜索)/;
+
+function defaultFeatureUsage(module: string, featureName: string): string {
+  if (AUTO_FEATURE_RE.test(featureName)) {
+    return `在「${module}」完成上游操作 → 系统自动执行“${featureName}” → 在关联对象的列表或详情中核对生成数据、状态或记录。`;
+  }
+  if (REVIEW_FEATURE_RE.test(featureName)) {
+    return `进入「${module}」 → 打开待处理对象 → 执行“${featureName}”并确认 → 返回列表或详情核对状态与操作记录。`;
+  }
+  if (FORM_FEATURE_RE.test(featureName)) {
+    return `进入「${module}」 → 打开“${featureName}” → 填写或选择必填信息并保存/提交 → 在列表或详情中查看处理结果。`;
+  }
+  if (CONFIG_FEATURE_RE.test(featureName)) {
+    return `进入「${module}」 → 打开“${featureName}” → 新增或选择配置项 → 编辑并保存 → 回到业务场景验证配置已生效。`;
+  }
+  if (READ_FEATURE_RE.test(featureName)) {
+    return `进入「${module}」 → 打开“${featureName}” → 使用筛选或搜索定位数据 → 点击条目查看详情或关联记录。`;
+  }
+  return `进入「${module}」 → 打开相关业务对象 → 使用“${featureName}”完成处理 → 在列表或详情中核对结果。`;
+}
+
+/** 为旧配置和刚迁入的 α 功能补齐详情展示，不反向伪造原始配置数据。 */
+export function resolveExistingFeatureDetail(module: string, feature: ExistingFeature): ExistingFeatureDetail {
+  const description = feature.description.trim()
+    || `“${feature.name}”是「${module}」中的 α 已有能力，用于完成对应业务处理，并在相关列表、详情或状态记录中保留结果。`;
+  const usage = feature.usage?.trim() || defaultFeatureUsage(module, feature.name);
+  const referencePath = feature.referencePath?.trim()
+    || FEATURE_REFERENCE_PATHS[`${module}::${feature.name}`]
+    || MODULE_REFERENCE_PATHS[module]
+    || '计划/当前/feature-board-existing-features.md';
+  return { description, usage, referencePath };
 }
 
 export interface BetaState {
@@ -55,6 +136,13 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   '跨域工具': 'arcoblue',
 };
 
+export interface AlphaUpdateMeta {
+  /** 该功能模块在 α 版中的累计更新次数 */
+  updateCount: number;
+  /** 最近一次 α 更新日期，格式 YYYY-MM-DD；暂无记录时为空 */
+  lastUpdatedAt: string;
+}
+
 export interface FeatureBoardModule {
   module: string;
   /** 所属领域 */
@@ -68,6 +156,8 @@ export interface FeatureBoardModule {
   /** 待设计功能（原「功能列表」，由 Claude 维护） */
   planned: PlannedItem[];
   alpha: AlphaChecks;
+  /** 当前模块独立的 α 更新记录，不与其他行共享 */
+  alphaMeta: AlphaUpdateMeta;
   beta: BetaState;
   /** 动态备注：当前特殊说明与状态说明 */
   note: string;
@@ -77,7 +167,6 @@ export type BoardChangeType = 'alpha' | 'planned' | 'beta' | 'note' | 'checklist
 
 export interface FeatureBoard {
   modules: FeatureBoardModule[];
-  alphaMeta: { updateCount: number; lastUpdatedAt: string };
 }
 
 // ---------- 种子与初值（PLAN 决策 7：如实反映现状） ----------
@@ -140,6 +229,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '五池流转', description: 'LeadList（公海/我的/全部/已成交/垃圾）：线索类型独立维度（public/assigned/trash/hightech），8态销售漏斗，快捷筛选（今日未跟进/S类/AB类/超期），标红规则。' },
     { name: '线索详情', description: 'LeadDetail360（/leads/:id）：70:30 分栏，6步生命周期+6维胶囊。右侧报价页签新建报价/进入工作台（createQuote+QuotationWorkbench 抽屉）；合同记录页签新建合同进向导（/contracts/new + leadContractPrefill）。跟进/演示/资料/出差/报销。操作：领取/分配/退回/标记垃圾。' },
     { name: '线索跟进记录', description: '跟进方式/客户状态/客户级别/跟进内容(max1000)/下次跟进时间/附件。自动同步线索状态和客户等级。4分类Tab（全部/今日待跟进/今日已跟进/超期未跟进）。' },
+    { name: '签约开启时生成未确认项目', description: '线索首次进入合同洽谈或已签单时，以 ap-lead-{leadId} 幂等生成待指派项目；后续创建合同只绑定原项目。', usage: '线索详情 → 写跟进 → 客户状态选择“合同洽谈”或“已签单” → 提交 → 项目管理的“待确认指派”查看唯一项目。', referencePath: 'HubX/docs/adr/0095-signing-open-server-linkage-does-not-move-spawn-to-approve.md' },
     { name: '线索操作规则', description: '领取(→assigned)/分配(批量+原因)/退回公海(第3次自动垃圾)/标记垃圾/软删除/转客户(自动填充+同步跟进)。重复检查(新增+修改)。' },
     { name: '线索治理', description: 'LeadGovernance：重复线索合并、线索状态批量操作、分配规则配置。' },
     { name: '售前群沟通分析', description: 'vite 中间件 wx-cli-bridge：wx CLI 导出企微售前群聊天记录，DeepSeek 做沟通总结。' },
@@ -152,24 +242,27 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '报价状态机', description: '目标：草稿/待评估/待报价/待审核/已驳回/待盖章/已盖章/已发出/已确认/已废止。' },
     { name: '角色切换器', description: 'RoleSwitcher 六角色。目标改为本单评估人/销售可改指。' },
     { name: '报价中心', description: '列表按新状态+待我处理+过期标记。' },
+    { name: '报价工作台长流程框架', description: 'QuotationWorkbench 复用统一面包屑、对象控制卡、6 维指标摘要和 70:30 主辅工作区；已到达阶段可只读回看，未到达阶段禁止进入。', usage: '报价中心 → 进入报价工作台 → 在顶部确认阶段、金额、人天与待办人 → 通过阶段导航回看历史内容 → 在当前阶段继续处理。', referencePath: 'HubX/DESIGN.md' },
   ],
   '客户与报价基础': [
     { name: '客户列表', description: 'Customers.tsx：客户基础信息管理，按行业/规模/来源筛选。' },
     { name: '客户详情', description: 'CustomerDetail.tsx：客户基本信息、关联线索/合同列表、联系人管理。' },
   ],
   '合同签约': [
-    { name: '合同创建（带入线索）', description: 'ContractWizard.tsx：新建合同自动带入线索基础信息。' },
-    { name: '合同多版本管理', description: 'ContractEditor.tsx：编辑自动生成新版本，历史版本只读对比。' },
+    { name: '合同创建（带入线索）', description: 'ContractWizard 通过统一三级面包屑进入新建或编辑合同表单，并可从线索、报价上下文带入合同基础信息。', usage: '合同管理 → 合同列表 → 新建合同；也可从线索或报价流程进入并核对预填信息后继续编辑。', referencePath: 'HubX/DESIGN.md' },
+    { name: '合同多版本管理', description: 'ContractEditor 与 ContractDocumentPreview 使用“合同管理 → 合同列表 → 当前合同 → 编辑/预览”层级；编辑自动生成新版本，历史版本只读对比。', usage: '合同列表或合同详情 → 打开合同编辑 → 调整合同与回款计划 → 进入合同预览 → 提交版本说明。', referencePath: 'HubX/DESIGN.md' },
     { name: '合同审批流', description: '总经理单节点审批（P0① 已收敛），意见留痕，审批通过→释放回款 Tab。' },
     { name: '合同归档', description: 'archiveFinalContract：审批通过后上传归档文件，支持多附件。' },
-    { name: '补充协议（将废弃）', description: '现网合同详情填变更金额。目标改为补充报价→补充合同。' },
+    { name: '补充报价发起与审批', description: '已批准主合同可发起补充报价，沿用四步报价工作台并使用独立审批配置。' },
+    { name: '多份补充报价/补充合同列表', description: '主合同详情集中展示关联的多份补充报价与补充合同，并支持进入各自详情。' },
+    { name: '需求变更闭环（补充报价→补充合同）', description: '补充报价经客户确认后由合同向导生成一对一补充合同；仅已归档未作废补充合同计入有效标的额。' },
     { name: '已确认生成主合同', description: '已确认后向导预填生成主合同；合同作废后可再生成。' },
     { name: '合同列表', description: 'ContractKanban.tsx：合同看板视图，编号自动生成（ZK-C-YYYYMMDD-NNN）。' },
-    { name: '合同付款看板', description: 'PaymentKanban.tsx / PaymentKanbanV2.tsx：回款期次可视化看板。' },
   ],
   // ========== 交付域 ==========
   '项目管理': [
     { name: '项目基础信息', description: 'ProjectDetail360（/projects/:id）：对齐线索详情 70:30 结构。头部控制台（元数据+生命周期Steps+6维指标胶囊）；左侧档案卡+主Tab（基础信息/合同信息/回款与发票/团队与工时/日报/任务管理/项目动态）；右侧次级Tab（跟进/报价/合同记录/售前历程/会议纪要/演示/资料/出差/报销）。项目列表走 ProjectService（α mock / β http）；B3 spawn 的项目不在 PROJECT_LIST 时用 deriveProjectViewMetrics 兜底。报价接 QuotationContext，合同接 ContractsContext，回款期次读合同 paymentPlans，实收台账读 CollectionService，任务/日报/会议/确认书/演示环境按 projectId 接共享台账。' },
+    { name: '交付计划长流程工作台', description: 'DeliveryPlanPage 复用统一面包屑、对象控制卡、7 步 SOP 概览、6 维指标和 70:30 主辅工作区；任务清单与甘特图保持同步滚动。', usage: '项目详情 → 打开交付计划 → 确认 SOP 阶段与风险指标 → 筛选板块 → 双击步骤编辑。', referencePath: 'HubX/DESIGN.md' },
     { name: '项目任务管理', description: 'ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。' },
     { name: '项目成本核算', description: 'ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。' },
     { name: '项目报价配置', description: 'ProjectQuotationConfigurator.tsx：项目与报价关联配置。' },
@@ -177,10 +270,10 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   ],
   '日报工时': [
     { name: '日报填写', description: 'DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。' },
-    { name: '日报列表', description: 'DailyReportList：按日期/成员/项目筛选，支持导出。' },
-    { name: '日报视图', description: 'DailyReportView：个人日报查看与编辑，工作归属选择。' },
-    { name: '项目视图', description: 'ProjectLogView：按项目维度查看团队日报汇总。' },
-    { name: '日报配置', description: 'JobWorkConfigPage.tsx：工作种类/时薪模板/日报规则配置。' },
+    { name: '日报列表', description: 'DailyReportList 复用 PageShell、PageHeader、FilterBar 和统一指标网格；展示日报总数、汇报人数、累计工时和部门数，支持按汇报人或部门关键词、部门和日期范围真实筛选，保留补录、新增、详情与评论流程。', usage: '日报 → 日报列表 → 查看摘要 → 输入汇报人或部门、选择部门或日期范围 → 打开日报详情；需要时补录或新增日报。', referencePath: 'HubX/DESIGN.md' },
+    { name: '日报视图', description: 'DailyReportView 通过统一三级面包屑进入员工日报视图，按组织与人员查看日报历史、工作归属和评论详情。', usage: '日报 → 日报列表 → 员工日报视图 → 选择员工与日期 → 展开日报并查看详情或评论。', referencePath: 'HubX/DESIGN.md' },
+    { name: '项目视图', description: 'ProjectLogView 通过统一三级面包屑进入项目日报明细，按汇报人、部门、项目、工作性质和日期检索团队日报。', usage: '日报 → 日报列表 → 项目日报明细 → 设置筛选条件 → 查询并打开日报详情。', referencePath: 'HubX/DESIGN.md' },
+    { name: '日报配置', description: 'JobWorkConfigPage 通过统一三级面包屑进入岗位与日常工作配置，维护岗位工作性质和部门日常工作规则。', usage: '日报 → 日报列表 → 岗位与日常工作配置 → 选择部门岗位或日常工作分类 → 编辑并保存配置。', referencePath: 'HubX/DESIGN.md' },
     { name: '角色模板', description: 'RoleSelectModal + SalesDaily/DevDaily/GeneralDaily/AdDeliveryDaily 四套模板。' },
   ],
   '交付支撑': [
@@ -191,28 +284,32 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   // ========== 财务域 ==========
   '回款管理': [
     { name: '期次拆分', description: 'LeadPaymentInvoicePanel.tsx：按付款比例拆分期次，金额联动校验。' },
-    { name: '回款登记', description: '财务录入实际到账款（金额/日期/方式/说明）。B4 起实收走 CollectionService（α mock 从合同 collectionRecords 抽种子 / β collections 表）；期次计划仍读合同 paymentPlans。合同详情 addCollection 仍写嵌套流水，尚未双写台账。' },
+    { name: '回款登记', description: '财务录入实际到账款（金额/日期/方式/说明）。实收以 CollectionService 为事实源；合同兼容记录与独立台账双写时沿用同一流水 ID。合同列表、详情、回款看板与预测均读取台账投影；期次计划仍读合同 paymentPlans。' },
     { name: '状态自动计算', description: 'paymentInvoiceModel.ts getPaymentPeriodMetrics：回款四态×开票三态自动计算。' },
+    { name: '回款看板', description: '首页按五个状态泳道总览回款合同，行动队列推进具体回款期次，预测页签查看未来现金流。', usage: '合同管理 → 回款管理 → 首页查看合同泳道 → 点击合同查看回款详情；需要推进节点时进入行动队列。', referencePath: '计划/当前/payment-kanban-dev-plan.md' },
     { name: '回款权限矩阵', description: 'getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。' },
   ],
   '开票管理': [
     { name: '开票申请', description: 'LeadPaymentInvoicePanel.tsx：提交开票申请（发票类别/税率/金额/客户信息）。' },
     { name: '发票冲红', description: '填写冲红原因+附件，生成新的待开票记录。' },
-    { name: '开票审核工作台', description: 'ProjectInvoicePage.tsx：Tab 切换（全部/待开票/已开票/已冲红），上传附件完成开票。' },
+    { name: '开票审核工作台', description: 'ProjectInvoicePage 复用 PageShell、PageHeader、FilterBar 和统一指标网格；展示申请总数、待开票、已开票和已冲红摘要，支持按项目编号、项目名称、客户、期次与发票类别真实检索，并保留附件上传、回款期次核对和详情查看流程。', usage: '财务管理 → 开票审核 → 查看任务摘要 → 选择状态或搜索项目/客户 → 打开申请核对回款与客户信息 → 待开票任务上传附件并确认开票。', referencePath: '文档/需求/功能清单-四域架构.md' },
   ],
   '成本核算': [
     { name: '按人员工时成本', description: 'ProjectCostPanel.tsx：工时×时薪计算人工成本，按项目/部门汇总。' },
-    { name: '差旅商务成本', description: '差旅报销、商务费用归集到项目成本。' },
+    { name: '差旅与商务独立归集', description: '差旅报销进入差旅成本，招待、礼品和返点进入商务成本；两类分别汇总。' },
+    { name: '动态运营公摊', description: '公共运营池按全公司在职编制工时计算月度 R_hour，合同成本与精益交付共用。' },
   ],
   '运营费用': [
     { name: '费用大盘 / 台账 / 周期模板 / 公摊参数', description: 'OperatingExpensePage 四 Tab 已落地：确认即入账、作废不删、固定模板即入账/浮动待确认、R_hour=池÷在职编制工时。工资只看板引用。' },
   ],
   '精益交付': [
     { name: '业务单管理', description: 'CaseList/CaseDetail：CASE- 独立编号，财务交付视角聚合（报价/合同/回款/成本/EAC）。' },
+    { name: '业务单详情长流程工作台', description: 'CaseDetail 复用统一面包屑、对象控制卡、真实生命周期轨迹、6 维经营指标和 70:30 主辅工作区；保留经营概览、工时评估、报价单、成本归集与项目决算五个业务页签。', usage: '精益交付 → 业务单管理 → 打开业务单 → 在顶部确认阶段、健康度和经营指标 → 进入对应页签查看评估、报价、成本或决算 → 调整经营参数或推进状态。', referencePath: 'HubX/DESIGN.md' },
     { name: '精益交付仪表盘', description: 'Dashboard：概览统计、健康气泡图、风险预警列表（移植自 llhfire/hubX，数据链路待收口）。' },
   ],
   '差旅管理': [
-    { name: '出差申请', description: 'TripForm/TripList/TripDetail 6 Tab：行程段、费用预估、借款意向、审批记录（移植自 llhfire/hubX）。' },
+    { name: '出差申请', description: 'TripForm 通过统一三级面包屑与 20px 页头进入新建申请，填写关联对象、行程、费用预估和借款需求；TripDetail 保留 6 Tab 流程。', usage: '差旅管理 → 出差申请 → 新建出差申请 → 填写基本信息、行程、住宿、费用与借款 → 保存草稿或提交审批。', referencePath: 'HubX/DESIGN.md' },
+    { name: '出差详情长流程工作台', description: 'TripDetail 复用统一面包屑、对象控制卡、6 步流程概览、6 维指标和 70:30 主辅工作区；保留基本信息、旅程、费用、报销、借款与补贴六个业务页签。', usage: '差旅管理 → 出差申请 → 打开出差单 → 在顶部确认当前阶段与费用摘要 → 进入对应页签处理行程、费用、报销、借款或补贴 → 按状态执行开始、结束或关闭出差。', referencePath: 'HubX/DESIGN.md' },
     { name: '报销与借款', description: 'ReimbursementList/LoanList：报销单冲抵借款、打款状态流。' },
     { name: '宿舍管理', description: 'DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。' },
     { name: '费用标准', description: 'StandardList：版本+生效期+职级×城市等级标准明细。' },
@@ -246,7 +343,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '组织架构', description: 'EmployeeContext.tsx：公司/部门/岗位树形结构管理。' },
     { name: '用户管理', description: '用户账号创建、启用/禁用，关联组织架构。' },
     { name: '角色授权', description: '角色定义，角色关联菜单权限+操作权限。' },
-    { name: '数据字典', description: '系统枚举值管理（回款方式/发票类型/线索来源等）。' },
+    { name: '数据字典', description: 'Dictionary 复用 PageShell、PageHeader、FilterBar 和统一指标网格；以“字典分类 → 当前分类项”主从列表维护系统枚举，支持分类/字典项关键词与状态真实筛选，以及 α 会话内新增、编辑、删除。', usage: '系统管理 → 数据字典 → 查看分类摘要 → 搜索或选择分类 → 检索当前字典项 → 新建、编辑或删除分类与字典项。', referencePath: '文档/需求/功能清单-四域架构.md' },
   ],
   '人资行政': [
     { name: '员工列表', description: 'EmployeeContext.tsx：员工基础信息管理。' },
@@ -262,6 +359,12 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '功能看板切换功能架构', description: '侧栏版本标识打开功能看板后，页签切「功能架构」，iframe 打开仓库根 ZK-HubX架构图.html（/architecture.html）。' },
     { name: '功能看板切换技术架构', description: '功能看板页签切「技术架构」（HubX/docs/ZK-HubX技术架构.html → /tech-architecture.html）。' },
     { name: '工作记录页签', description: '功能看板页签「工作记录」：按日期、按分类（功能/底座/设计/文档/修洞/其它）写当天一句话；事实源 workLog.config.json。' },
+  ],
+  '智能会议': [
+    { name: '纪要列表页（本月沉淀统计/搜索/多维筛选/新建入口）', description: '智能会议列表复用 PageShell、PageHeader、FilterBar 和统一指标网格，汇总本月纪要与状态；支持按主题、决议、正文、行动项、业务引用和参会人搜索，按状态筛选、新建纪要及进入详情工作台。', usage: '智能会议 → 查看本月沉淀与状态指标 → 输入关键词或选择纪要状态 → 打开目标纪要；也可点击“新建纪要”进入工作台。', referencePath: 'HubX/DESIGN.md' },
+    { name: '智能会议纪要长流程工作台', description: 'SmartMeetingWorkbench 复用统一面包屑、对象控制卡、4 步流程概览、6 维指标和 70:30 主辅工作区；保留会议来源与元信息、核心决议与正文、行动事项、版本留痕及确认归档能力。', usage: '智能会议 → 纪要列表 → 打开或新建纪要 → 整理来源与元信息 → 编写决议和正文 → 补充行动项 → 提交确认 → 确认后同步待办 → 归档。', referencePath: 'HubX/DESIGN.md' },
+    { name: '行动项TODO只读投影（actionItemId幂等同步/软取消/不重开）', description: '纪要确认后按 actionItemId 幂等同步行动项到待办中心；行动项更新会更新待办，删除只做软取消，已完成待办不被重新打开。' },
+    { name: '行政会议来源入口（一次性快照/一会议至多一当前纪要）', description: '从行政会议生成纪要时保存一次性会议快照，并限制同一会议仅保留一份当前纪要入口。' },
   ],
   // ========== 跨域工具 ==========
   '基础工具': [
@@ -286,8 +389,8 @@ const PLANNED_SEED: Record<string, string[]> = {
     '报价模板（增项/日成本/工期）',
     '责任人/通知/列表/权限按配置',
   ],
-  '线索全流程': ['签约后综合视图（销售在线索详情看项目执行）', '签约开启时生成未确认项目', '线索侧合同/回款入口（草稿即可引用）', '管理员退回线索（未确认或未开始无合同）', '线索域接缝（LeadService mock/http 双实现+服务端校验）'],
-  '合同签约': ['已确认生成主合同（词表收口）', '多份补充报价/补充合同列表', '需求变更闭环（补充报价→补充合同）', '废弃补充协议对象'],
+  '线索全流程': ['签约后综合视图（销售在线索详情看项目执行）', '线索侧合同/回款入口（草稿即可引用）', '管理员退回线索（未确认或未开始无合同）', '线索域接缝（LeadService mock/http 双实现+服务端校验）'],
+  '合同签约': ['已确认生成主合同（词表收口）', '合同模板管理'],
   '项目管理': ['未确认项目与管理员指派产品经理', '产品经理默认列表隐藏未确认/未指派', '售前历程交接包（跟进/会议/演示/资料只读）', '管理员退回线索 / 改指产品经理', '主合同作废则进行中项目搁置', '项目详情原型样式对齐（智能诊断抽屉/大事记收敛/1主多补卡片化/回款合并台账/岗位工时表/日报CSV导出）', '签约开启联动服务端化（ADR-0093，Workers 内 spawn/交付/SOP）', '项目域接缝（ProjectService mock/http 双实现）'],
   // 交付域
   '日报工时': ['跨月跨年日报（时间轴优化）'],
@@ -295,7 +398,7 @@ const PLANNED_SEED: Record<string, string[]> = {
   // 财务域
   '回款管理': ['逾期判断（预计回款日期对比，自动标记逾期）', '回款记录与实收台账接缝（collections 表，与回款看板计划合并排期）'],
   '开票管理': ['开票统计（按项目/客户/时间段汇总）'],
-  '成本核算': ['运营分摊（读取公共运营池，按全公司在职编制工时）', '异常检测（成本异常预警：超出预算/工时异常/费用异常）'],
+  '成本核算': ['异常检测（成本异常预警：超出预算/工时异常/费用异常）'],
   '运营费用': ['费用大盘（6个月滚动+工资平移）', '费用台账（确认即入账、作废不删）', '周期模板（固定即入账/浮动待确认）', '公摊参数（池÷全公司在职编制工时）', '大盘双口径与八层流式堆叠', '部门归口排行与项目直接支出排行', '运营费用异动（三条）与台账导出', '公摊公式条 + 只读公摊结果表', '科目入口 Tab（系统费用分类同一棵树）', '录入抽屉发生日与按 Tab 主操作'],
   '精益交付': ['五条数据链派生化（评估/报价/合同/回款/成本全有来源）', '跨域引用报价域+合同域（删平行 mock）', '回款口径收入+WIP/趋势双线', '模拟器敏感性+底线价、穿透看板派生化', '业务单详情原型重构（成本五类修订ADR-0091/1主多补演进脉络/10态轨迹/双口径全景/报价行级明细/状态推进+参数Modal/CSV导出/仪表盘补穿透看板与相似项目）'],
   '差旅管理': ['核心链细则（必挂项目或线索/硬软超标/单一补贴不含路途日/借款顺序冲抵）', '审批固定流+借款金额分级（阈值入配置）', '报销双出口（运营费用只读归集+成本流水）', '删除打卡模块（考勤归工时加工）', '可配置审批引擎', '票据 OCR'],
@@ -324,7 +427,7 @@ const PLANNED_SEED: Record<string, string[]> = {
   // 支撑域规划
   '人力增强': ['薪酬管理', '员工成本核算', '招聘管理', '培训管理', '绩效管理'],
   '行政后勤': ['固定资产登记与折旧', '办公物品领用与库存', '会议室预约与管理', '行政流程', '物资采购'],
-  '智能会议': ['纪要列表页（本月沉淀统计/搜索/多维筛选/新建入口）', '纪要工作台（原始文本沉淀/AI草稿/核心决议/正文/行动项/版本留痕）', '行动项TODO只读投影（actionItemId幂等同步/软取消/不重开）', '行政会议来源入口（一次性快照/一会议至多一当前纪要）', 'AI解析与润色（α确定性解析/β服务端AI接口预留）', 'β接线（D1 smart_minutes 表+服务端不变量校验+AI Secret）'],
+  '智能会议': ['AI解析与润色（α确定性解析/β服务端AI接口预留）', 'β接线（D1 smart_minutes 表+服务端不变量校验+AI Secret）'],
   // 跨域工具规划
   '管理者工具': ['经营驾驶舱', '全域报表', '组织健康度', '审批总览', '经营预警'],
   '开发者工具': ['代码生成器', '数据迁移工具'],
@@ -352,22 +455,22 @@ export function createSeedBoard(): FeatureBoard {
     { module: '跟进助手', domain: '销售域', isPlanned: true, features: [], planned: ['自动提醒', '跟进待办', '阶段建议'], note: '规划中' },
     { module: '报价与合规增强', domain: '销售域', isPlanned: true, features: [], planned: ['Excel 双向导入导出', '版本 Diff 对比', '代理/转交机制', '电子签章', '合规档案'], note: '规划中' },
     // === 交付域（优先级 2）===
-    { module: '项目管理', domain: '交付域', isPlanned: false, features: FEATURES_SEED['项目管理'] ?? [], note: '签约开启出未确认；批准只开工（ADR-0095）。B4 已接；合同 spawn 归 B5 洞 C；洽谈 spawn 归 U1' },
+    { module: '项目管理', domain: '交付域', isPlanned: false, features: FEATURES_SEED['项目管理'] ?? [], note: 'α 签约开启已统一生成唯一未确认项目，批准只开工（ADR-0095）；β Workers 持久化归 B5/U1' },
     { module: '日报工时', domain: '交付域', isPlanned: false, features: FEATURES_SEED['日报工时'] ?? [], note: '工时×时薪成本计算' },
     { module: '交付支撑', domain: '交付域', isPlanned: false, features: FEATURES_SEED['交付支撑'] ?? [], note: '合同交付跟进/变更管理/进度跟踪/知识库/会议纪要' },
     { module: '工时加工', domain: '交付域', isPlanned: true, features: [], planned: ['工时审批', '统计与分析', '加班工时'], note: '规划中' },
     { module: '交付过程', domain: '交付域', isPlanned: true, features: [], planned: ['里程碑', '验收流程', '需求变更管控'], note: '规划中' },
     // === 财务域（优先级 3）===
-    { module: '回款管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['回款管理'] ?? [], note: '期次=paymentPlans；已回读 collections。看板后于 B5 双写' },
+    { module: '回款管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['回款管理'] ?? [], note: '期次读 paymentPlans；实收以 collections 为事实源，合同兼容记录同 ID 双写；α 看板与预测已接台账投影，β 持久化仍待 B5' },
     { module: '开票管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['开票管理'] ?? [], note: '开票申请/发票冲红/开票工作台' },
-    { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅商务第三方/运营分摊读池' },
+    { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅与商务独立归集/第三方/动态运营公摊' },
     { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: 'A–E 已落地。2026-08-21 grill 收束菜单重构，计划：计划/当前/operating-expense-restyle.md。α UX 优化待编码。' },
     { module: '精益交付', domain: '财务域', isPlanned: false, features: FEATURES_SEED['精益交付'] ?? [], note: 'L1–L4 全部完成。calc.ts 纯函数层 + quoteSeam/contractSeam 接真实数据 + Dashboard/CaseList/CaseDetail 全面改造' },
     { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: 'T1–T4 全部完成。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock' },
     { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
     { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
     // === 获客域（优先级 4）===
-    { module: '多渠道线索接入', domain: '获客域', isPlanned: false, features: FEATURES_SEED['多渠道线索接入'] ?? [], note: '线索派发工作台（/lead-dispatch，PRD-线索派发管理 + ADR-0096）：录入/派发/SLA/催办/等级审核/3人3轮质检/Cohort成交率/穿透抽屉/销售侧时效。β 只留企微催办接缝' },
+    { module: '多渠道线索接入', domain: '获客域', isPlanned: false, features: FEATURES_SEED['多渠道线索接入'] ?? [], note: '线索派发工作台（/lead-dispatch，PRD-线索派发管理 + ADR-0096）：录入/派发/SLA/催办/等级审核/3人3轮质检/Cohort成交率/穿透抽屉/销售侧时效，阶段 0-E 已完成（α 已实现）。β 阶段 2：派发四动作 + 详情复合接口已接服务端（beta-realdata-dev-plan.md）。β 只留企微催办接缝' },
     { module: '线索池与初筛', domain: '获客域', isPlanned: false, features: FEATURES_SEED['线索池与初筛'] ?? [], note: '原始线索容纳/来源标记/去重/清洗分级' },
     { module: '渠道与投放', domain: '获客域', isPlanned: true, features: [], planned: ['渠道台账', '投放预算', '线索成本', '渠道 ROI', '市场活动归因'], note: '规划中' },
     // === 支撑域（优先级 5）===
@@ -376,7 +479,7 @@ export function createSeedBoard(): FeatureBoard {
     { module: '工作台与审批', domain: '支撑域', isPlanned: false, features: FEATURES_SEED['工作台与审批'] ?? [], note: '工作台/个人中心/消息提醒/待办/审批中心' },
     { module: '人力增强', domain: '支撑域', isPlanned: true, features: [], planned: ['薪酬管理', '员工成本', '社保公积金', '招聘', '培训', '绩效'], note: '规划中' },
     { module: '行政后勤', domain: '支撑域', isPlanned: true, features: [], planned: ['固定资产', '办公物品', '会议室', '行政流程', '物资采购'], note: '规划中' },
-    { module: '智能会议', domain: '支撑域', isPlanned: true, features: [], planned: PLANNED_SEED['智能会议'] ?? [], note: 'PRD+三份设计+dev-plan 已定稿（2026-08-24），未编码；β productionOn 未开不编码' },
+    { module: '智能会议', domain: '支撑域', isPlanned: false, features: FEATURES_SEED['智能会议'] ?? [], planned: PLANNED_SEED['智能会议'] ?? [], note: 'α 纪要列表、长流程工作台、TODO 投影与行政会议入口已实现；AI 服务与 β D1 接线仍待 productionOn 许可。' },
     // === 跨域工具（优先级 6）===
     { module: '基础工具', domain: '跨域工具', isPlanned: false, features: FEATURES_SEED['基础工具'] ?? [], note: '登录/权限未做。B5 收口已设计待编码；productionOn 不代开。全局搜索已设计待编码（PRD-全局搜索）' },
     { module: '管理者工具', domain: '跨域工具', isPlanned: true, features: [], planned: ['经营驾驶舱', '全域报表', '组织健康度', '审批总览', '经营预警'], note: '规划中' },
@@ -395,13 +498,13 @@ export function createSeedBoard(): FeatureBoard {
   ];
 
   return {
-    alphaMeta: { updateCount: 0, lastUpdatedAt: '' },
     modules: ALL_MODULES.map(item => ({
       ...item,
       scope: '',
       features: (FEATURES_SEED[item.module] ?? []).map(feature => ({ ...feature, alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false } })),
       planned: (PLANNED_SEED[item.module] ?? item.planned ?? []).map(name => ({ name, status: '未开始' as const })),
       alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
+      alphaMeta: { updateCount: 0, lastUpdatedAt: '' },
       beta: item.isPlanned ? { productionOn: false, devStatus: '未开始' as const } : { productionOn: false, devStatus: '未开始' as const },
     })),
   };
@@ -425,6 +528,26 @@ function asAlphaChecks(value: unknown): AlphaChecks {
   }, {} as AlphaChecks);
 }
 
+function asOptionalString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function asAlphaUpdateMeta(value: unknown): AlphaUpdateMeta {
+  const raw = value && typeof value === 'object'
+    ? value as { updateCount?: unknown; lastUpdatedAt?: unknown }
+    : {};
+  const updateCount = typeof raw.updateCount === 'number'
+    && Number.isFinite(raw.updateCount)
+    && raw.updateCount >= 0
+    ? Math.floor(raw.updateCount)
+    : 0;
+  const lastUpdatedAt = typeof raw.lastUpdatedAt === 'string'
+    && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastUpdatedAt)
+    ? raw.lastUpdatedAt
+    : '';
+  return { updateCount, lastUpdatedAt };
+}
+
 /** 容错解析：字段缺失/非法时回退默认值，单个模块坏行直接丢弃 */
 export function normalizeFeatureBoard(value: unknown): FeatureBoard {
   const raw = (value && typeof value === 'object' && Array.isArray((value as FeatureBoard).modules))
@@ -439,7 +562,9 @@ export function normalizeFeatureBoard(value: unknown): FeatureBoard {
             .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof (entry as { name?: unknown }).name === 'string')
             .map(entry => ({
               name: entry.name as string,
-              description: typeof entry.description === 'string' ? entry.description : '',
+              description: asOptionalString(entry.description),
+              usage: asOptionalString(entry.usage),
+              referencePath: asOptionalString(entry.referencePath),
               alpha: asAlphaChecks(entry.alpha),
             }))
         : [];
@@ -457,6 +582,7 @@ export function normalizeFeatureBoard(value: unknown): FeatureBoard {
               .map(entry => ({ name: entry.name as string, status: asPlannedStatus(entry.status) }))
           : [],
         alpha: asAlphaChecks(item.alpha),
+        alphaMeta: asAlphaUpdateMeta(item.alphaMeta),
         beta: {
           productionOn: (item.beta as { productionOn?: unknown } | undefined)?.productionOn === true,
           devStatus: asBetaDevStatus((item.beta as { devStatus?: unknown } | undefined)?.devStatus),
@@ -464,11 +590,7 @@ export function normalizeFeatureBoard(value: unknown): FeatureBoard {
         note: typeof item.note === 'string' ? item.note : (seed?.note ?? ''),
       } satisfies FeatureBoardModule;
     });
-  const rawMeta = value && typeof value === 'object' ? (value as { alphaMeta?: unknown }).alphaMeta : undefined;
-  const meta = rawMeta && typeof rawMeta === 'object' ? rawMeta as { updateCount?: unknown; lastUpdatedAt?: unknown } : {};
-  const updateCount = typeof meta.updateCount === 'number' && Number.isFinite(meta.updateCount) && meta.updateCount >= 0 ? Math.floor(meta.updateCount) : 0;
-  const lastUpdatedAt = typeof meta.lastUpdatedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(meta.lastUpdatedAt) ? meta.lastUpdatedAt : '';
-  return { modules, alphaMeta: { updateCount, lastUpdatedAt } };
+  return { modules };
 }
 
 export function isValidFeatureBoard(value: unknown): boolean {
@@ -476,8 +598,6 @@ export function isValidFeatureBoard(value: unknown): boolean {
   const { modules } = value as FeatureBoard;
   // 空看板视为非法：与 load 的「空则回种子」一致，防止端点把文件清零
   if (!modules.length) return false;
-  const meta = (value as FeatureBoard).alphaMeta;
-  if (!meta || !Number.isInteger(meta.updateCount) || meta.updateCount < 0 || (meta.lastUpdatedAt !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(meta.lastUpdatedAt))) return false;
   return modules.every(item =>
     typeof item?.module === 'string' && item.module.trim() !== ''
     && DOMAINS.includes(item?.domain as Domain)
@@ -486,6 +606,10 @@ export function isValidFeatureBoard(value: unknown): boolean {
     && Array.isArray(item?.planned)
     && item.planned.every(entry => typeof entry?.name === 'string' && PLANNED_STATUSES.includes(entry?.status as PlannedStatus))
     && item?.alpha && ALPHA_CHECK_KEYS.every(key => typeof item.alpha[key] === 'boolean')
+    && item?.alphaMeta
+    && Number.isInteger(item.alphaMeta.updateCount)
+    && item.alphaMeta.updateCount >= 0
+    && (item.alphaMeta.lastUpdatedAt === '' || /^\d{4}-\d{2}-\d{2}$/.test(item.alphaMeta.lastUpdatedAt))
     && Array.isArray(item.features)
     && item.features.every(feature => typeof feature.name === 'string' && typeof feature.description === 'string' && feature.alpha && ALPHA_CHECK_KEYS.every(key => typeof feature.alpha[key] === 'boolean'))
     && typeof item?.beta?.productionOn === 'boolean'
@@ -559,9 +683,15 @@ export function toggleFeatureAlphaCheck(board: FeatureBoard, module: string, fea
   return mapModule(board, module, item => ({ ...item, features: item.features.map(feature => feature.name === featureName ? { ...feature, alpha: { ...feature.alpha, [key]: !feature.alpha[key] } } : feature) }));
 }
 
-export function markAlphaUpdate(board: FeatureBoard, date: string): FeatureBoard {
+export function markAlphaUpdate(board: FeatureBoard, module: string, date: string): FeatureBoard {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return board;
-  return { ...board, alphaMeta: { updateCount: Math.max(0, Math.floor(board.alphaMeta?.updateCount ?? 0)) + 1, lastUpdatedAt: date } };
+  return mapModule(board, module, item => ({
+    ...item,
+    alphaMeta: {
+      updateCount: Math.max(0, Math.floor(item.alphaMeta?.updateCount ?? 0)) + 1,
+      lastUpdatedAt: date,
+    },
+  }));
 }
 
 export function toggleProductionSwitch(board: FeatureBoard, module: string): FeatureBoard {
@@ -619,6 +749,7 @@ export function addModule(board: FeatureBoard, module: string, scope = '', domai
       features: [],
       planned: [],
       alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
+      alphaMeta: { updateCount: 0, lastUpdatedAt: '' },
       beta: { productionOn: false, devStatus: '未开始' },
       note: '',
     }],

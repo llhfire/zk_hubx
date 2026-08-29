@@ -1,0 +1,82 @@
+.smart-meeting-workbench__state {
+  display: flex;
+  min-height: 320px;
+  align-items: center;
+  justify-content: center;
+}
+
+.smart-meeting-workbench__tabs-card > .arco-card-body {
+  padding: 0;
+}
+
+.smart-meeting-workbench__tabs-card .arco-tabs-header {
+  padding-inline: 16px;
+}
+
+.smart-meeting-workbench__tab-panel {
+  min-width: 0;
+  padding: 0 16px 16px;
+}
+
+.smart-meeting-workbench__main-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.smart-meeting-workbench__main-stack > .arco-card {
+  margin-bottom: 0 !important;
+}
+
+.smart-meeting-workbench__aside-stack {
+  width: 100%;
+  line-height: 22px;
+}
+
+.smart-meeting-workbench__aside-value {
+  margin-top: 4px;
+  color: var(--color-text-1);
+  font-weight: 500;
+}
+
+.smart-meeting-workbench__tag-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.smart-meeting-workbench__checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smart-meeting-workbench__check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.smart-meeting-workbench__source-alert {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.smart-meeting-workbench__source-alert--warning {
+  background: rgb(var(--warning-1));
+  color: rgb(var(--warning-7));
+}
+
+.smart-meeting-workbench__source-alert--danger {
+  background: rgb(var(--danger-1));
+  color: rgb(var(--danger-7));
+}
+
+@media (max-width: 768px) {
+  .smart-meeting-workbench__tabs-card .arco-tabs-header-nav {
+    overflow-x: auto;
+  }
+}

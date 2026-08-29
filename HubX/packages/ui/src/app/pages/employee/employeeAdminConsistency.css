@@ -1,0 +1,105 @@
+.employee-admin-page .arco-card-header-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.employee-admin-list-card > .arco-card-body,
+.employee-admin-rate-card > .arco-card-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.employee-admin-keyword {
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+.employee-admin-department {
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+.employee-admin-select,
+.employee-admin-month {
+  flex: 0 0 150px;
+  width: 150px;
+}
+
+.employee-admin-result-summary,
+.employee-admin-module-toolbar {
+  display: flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  color: var(--color-text-3);
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.employee-admin-result-summary > :first-child,
+.employee-admin-module-toolbar > :first-child {
+  color: var(--color-text-2);
+  font-weight: 500;
+}
+
+.employee-admin-position-tabs {
+  min-width: 0;
+}
+
+.employee-admin-position-tabs .arco-tabs-header-nav {
+  overflow-x: auto;
+}
+
+.employee-admin-performance-preview {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  background: var(--color-fill-1);
+}
+
+.employee-admin-performance-modal {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+}
+
+.employee-admin-level-modal {
+  width: 680px;
+  max-width: calc(100vw - 32px);
+}
+
+.employee-admin-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 16px;
+}
+
+@media (max-width: 768px) {
+  .employee-admin-page .hubx-filter-bar__fields,
+  .employee-admin-page .hubx-filter-bar__actions {
+    width: 100%;
+  }
+
+  .employee-admin-keyword,
+  .employee-admin-department,
+  .employee-admin-select,
+  .employee-admin-month {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .employee-admin-result-summary,
+  .employee-admin-module-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-admin-module-toolbar .arco-btn {
+    width: 100%;
+  }
+
+  .employee-admin-modal-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -9,21 +9,15 @@ import {
   Spin,
   Message,
   Progress,
+  Select,
 } from '@arco-design/web-react';
-import {
-  IconStorage,
-  IconUp,
-  IconLocation,
-  IconUser,
-  IconPublic,
-  IconHome,
-  IconExclamationCircle,
-} from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import { getPersonalTravelStats, getDepartmentTravelStats, getProjectTravelStats, getExpenseAnalysis } from '../travel-api';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Row, Col } = Grid;
 const { TabPane } = Tabs;
+const formatCurrency = (value: number) => `¥${value.toLocaleString()}`;
 
 export function TravelDashboard() {
   const [loading, setLoading] = useState(false);
@@ -31,6 +25,12 @@ export function TravelDashboard() {
   const [deptStats, setDeptStats] = useState<any>(null);
   const [projectStats, setProjectStats] = useState<any>(null);
   const [expenseAnalysis, setExpenseAnalysis] = useState<any>(null);
+  const [viewRole, setViewRole] = useState<'personal' | 'admin'>('admin');
+  const [activeTab, setActiveTab] = useState('personal');
+  const [person, setPerson] = useState('张三');
+  const [department, setDepartment] = useState('销售部');
+  const [project, setProject] = useState('中科协同平台');
+  const [period, setPeriod] = useState('2026年');
 
   useEffect(() => {
     loadStats();
@@ -64,120 +64,55 @@ export function TravelDashboard() {
     );
   }
 
-  const iconStyle = { padding: 8, background: '#e8f3ff', borderRadius: 8 };
-
   return (
-    <div style={{ padding: 16 }}>
-      <Title heading={4} style={{ marginBottom: 16 }}>差旅看板</Title>
-      <Tabs defaultActiveTab="personal">
+    <PageShell>
+      <PageHeader
+        title="差旅看板"
+        description="按角色控制数据范围，并支持人员、部门、项目和时间组合分析。"
+        actions={(
+          <Space>
+            <Text type="secondary">演示权限</Text>
+            <Select value={viewRole} style={{ width: 140 }} onChange={(value) => { setViewRole(value); if (value === 'personal') setActiveTab('personal'); }}>
+              <Select.Option value="personal">个人用户</Select.Option>
+              <Select.Option value="admin">差旅管理员</Select.Option>
+            </Select>
+          </Space>
+        )}
+      />
+      <Card size="small">
+        <Space wrap>
+          <Tag color={viewRole === 'personal' ? 'arcoblue' : 'purple'}>{viewRole === 'personal' ? '仅可查看本人数据' : '管理员：可跨人员与组织分析'}</Tag>
+          {(activeTab === 'personal' || activeTab === 'analysis') && viewRole === 'admin' && <Select value={person} style={{ width: 150 }} onChange={setPerson}><Select.Option value="张三">人员：张三</Select.Option><Select.Option value="李四">人员：李四</Select.Option><Select.Option value="全部人员">人员：全部</Select.Option></Select>}
+          {(activeTab === 'department' || activeTab === 'analysis') && <Select value={department} style={{ width: 160 }} onChange={setDepartment}><Select.Option value="销售部">部门：销售部</Select.Option><Select.Option value="交付部">部门：交付部</Select.Option><Select.Option value="全部部门">部门：全部</Select.Option></Select>}
+          {(activeTab === 'project' || activeTab === 'analysis') && <Select value={project} style={{ width: 190 }} onChange={setProject}><Select.Option value="中科协同平台">项目：中科协同平台</Select.Option><Select.Option value="数据治理平台">项目：数据治理平台</Select.Option><Select.Option value="全部项目">项目：全部</Select.Option></Select>}
+          {activeTab === 'analysis' && <Select value={period} style={{ width: 140 }} onChange={setPeriod}><Select.Option value="2026年">时间：2026年</Select.Option><Select.Option value="近90天">时间：近90天</Select.Option><Select.Option value="近30天">时间：近30天</Select.Option></Select>}
+        </Space>
+      </Card>
+      <Tabs activeTab={activeTab} onChange={setActiveTab}>
         {/* 个人看板 */}
         <TabPane key="personal" title="个人看板">
           {personalStats && (
-            <div>
-              {/* 概览卡片 */}
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={6}>
-                  <Card>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={iconStyle}>
-                        <IconPublic style={{ fontSize: 20, color: '#165dff' }} />
-                      </div>
-                      <div>
-                        <div><Text type="secondary">出差次数</Text></div>
-                        <div style={{ fontSize: 24, fontWeight: 'bold' }}>{personalStats.tripCount}</div>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={iconStyle}>
-                        <IconLocation style={{ fontSize: 20, color: '#165dff' }} />
-                      </div>
-                      <div>
-                        <div><Text type="secondary">出差天数</Text></div>
-                        <div style={{ fontSize: 24, fontWeight: 'bold' }}>{personalStats.totalDays}</div>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={iconStyle}>
-                        <IconStorage style={{ fontSize: 20, color: '#165dff' }} />
-                      </div>
-                      <div>
-                        <div><Text type="secondary">差旅费用</Text></div>
-                        <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{personalStats.totalExpense.toLocaleString()}</div>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={iconStyle}>
-                        <IconUp style={{ fontSize: 20, color: '#165dff' }} />
-                      </div>
-                      <div>
-                        <div><Text type="secondary">差旅补贴</Text></div>
-                        <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{personalStats.totalSubsidy.toLocaleString()}</div>
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-
-              {/* 待处理事项 */}
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Card title="待报销金额">
-                    <div style={{ fontSize: 32, fontWeight: 'bold', color: '#ff7d00' }}>
-                      ¥{personalStats.pendingReimbursement.toLocaleString()}
-                    </div>
-                    <div style={{ marginTop: 4 }}><Text type="secondary">请及时提交报销申请</Text></div>
-                  </Card>
-                </Col>
-                <Col span={12}>
-                  <Card title="未结清借款">
-                    <div style={{ fontSize: 32, fontWeight: 'bold', color: '#f53f3f' }}>
-                      ¥{personalStats.unsettledLoan.toLocaleString()}
-                    </div>
-                    <div style={{ marginTop: 4 }}><Text type="secondary">请尽快冲抵借款</Text></div>
-                  </Card>
-                </Col>
-              </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ProcessMetricGrid items={[
+                { key: 'trips', label: '出差次数', value: `${personalStats.tripCount} 次`, detail: `累计 ${personalStats.totalDays} 天` },
+                { key: 'expense', label: '差旅费用', value: formatCurrency(personalStats.totalExpense), detail: `补贴 ${formatCurrency(personalStats.totalSubsidy)}` },
+                { key: 'reimbursement', label: '待报销金额', value: formatCurrency(personalStats.pendingReimbursement), detail: '请及时提交报销申请', tone: personalStats.pendingReimbursement > 0 ? 'warning' : 'success' },
+                { key: 'loan', label: '未结清借款', value: formatCurrency(personalStats.unsettledLoan), detail: '请尽快完成借款冲抵', tone: personalStats.unsettledLoan > 0 ? 'danger' : 'success' },
+              ]} />
             </div>
           )}
         </TabPane>
 
         {/* 部门看板 */}
-        <TabPane key="department" title="部门看板">
+        {viewRole === 'admin' && <TabPane key="department" title="部门看板">
           {deptStats && (
-            <div>
-              {/* 概览卡片 */}
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">出差次数</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>{deptStats.tripCount}</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">差旅费用总计</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{deptStats.totalExpense.toLocaleString()}</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">人均差旅费用</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{deptStats.avgExpensePerPerson.toLocaleString()}</div>
-                  </Card>
-                </Col>
-              </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ProcessMetricGrid items={[
+                { key: 'trips', label: '出差次数', value: `${deptStats.tripCount} 次`, detail: department },
+                { key: 'expense', label: '差旅费用总计', value: formatCurrency(deptStats.totalExpense), detail: '部门统计口径' },
+                { key: 'average', label: '人均差旅费用', value: formatCurrency(deptStats.avgExpensePerPerson), detail: '用于组织横向比较' },
+                { key: 'top-type', label: '最高费用类型', value: formatCurrency(deptStats.expenseByType?.[0]?.amount ?? 0), detail: deptStats.expenseByType?.[0]?.type ?? '暂无数据' },
+              ]} />
 
               {/* 费用分布 */}
               <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -245,33 +180,18 @@ export function TravelDashboard() {
               </Card>
             </div>
           )}
-        </TabPane>
+        </TabPane>}
 
         {/* 项目看板 */}
-        <TabPane key="project" title="项目看板">
+        {viewRole === 'admin' && <TabPane key="project" title="项目看板">
           {projectStats && (
-            <div>
-              {/* 概览卡片 */}
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">差旅费用总计</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{projectStats.totalExpense.toLocaleString()}</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">占项目成本比例</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>{(projectStats.costRatio * 100).toFixed(1)}%</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">出差人次</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>{projectStats.tripCount}</div>
-                  </Card>
-                </Col>
-              </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ProcessMetricGrid items={[
+                { key: 'expense', label: '差旅费用总计', value: formatCurrency(projectStats.totalExpense), detail: project },
+                { key: 'ratio', label: '占项目成本比例', value: `${(projectStats.costRatio * 100).toFixed(1)}%`, detail: '用于判断差旅成本压力', tone: projectStats.costRatio >= 0.15 ? 'warning' : 'neutral' },
+                { key: 'trips', label: '出差人次', value: `${projectStats.tripCount} 人次`, detail: '项目统计口径' },
+                { key: 'top-person', label: '最高人员费用', value: formatCurrency(projectStats.expenseByPerson?.[0]?.amount ?? 0), detail: projectStats.expenseByPerson?.[0]?.person ?? '暂无数据' },
+              ]} />
 
               {/* 费用分布 */}
               <Row gutter={16}>
@@ -302,33 +222,18 @@ export function TravelDashboard() {
               </Row>
             </div>
           )}
-        </TabPane>
+        </TabPane>}
 
         {/* 费用分析 */}
-        <TabPane key="analysis" title="费用分析">
+        {viewRole === 'admin' && <TabPane key="analysis" title="费用分析">
           {expenseAnalysis && (
-            <div>
-              {/* 概览卡片 */}
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">总费用</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{expenseAnalysis.totalExpense.toLocaleString()}</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">平均费用</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{expenseAnalysis.avgExpense.toLocaleString()}</div>
-                  </Card>
-                </Col>
-                <Col span={8}>
-                  <Card>
-                    <div><Text type="secondary">最高费用</Text></div>
-                    <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{expenseAnalysis.maxExpense.toLocaleString()}</div>
-                  </Card>
-                </Col>
-              </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ProcessMetricGrid items={[
+                { key: 'total', label: '总费用', value: formatCurrency(expenseAnalysis.totalExpense), detail: period },
+                { key: 'average', label: '平均费用', value: formatCurrency(expenseAnalysis.avgExpense), detail: '单次平均口径' },
+                { key: 'maximum', label: '最高费用', value: formatCurrency(expenseAnalysis.maxExpense), detail: '单笔最高记录' },
+                { key: 'over-standard', label: '超标金额', value: formatCurrency(expenseAnalysis.overStandardAmount), detail: `${expenseAnalysis.overStandardCount} 次超标`, tone: expenseAnalysis.overStandardAmount > 0 ? 'danger' : 'success' },
+              ]} />
 
               {/* 交通方式分布 */}
               <Card title="交通方式分布" style={{ marginBottom: 16 }}>
@@ -390,8 +295,8 @@ export function TravelDashboard() {
               </Row>
             </div>
           )}
-        </TabPane>
+        </TabPane>}
       </Tabs>
-    </div>
+    </PageShell>
   );
 }

@@ -86,6 +86,13 @@ describe('summarizeMinutes', () => {
     expect(summaries[0].attendeeSummary).toContain('等4人');
   });
 
+  it('attendeeSummary 可投影为用户姓名', () => {
+    const viewer: ViewerContext = { userId: 'user_a', isAdmin: false, canViewBiz: alwaysCanView };
+    const names: Record<string, string> = { user_a: '张三', user_b: '李四', user_c: '王五', user_d: '陈六' };
+    const summaries = summarizeMinutes(minutes, [], viewer, id => names[id] || id);
+    expect(summaries[0].attendeeSummary).toBe('张三、李四、王五等4人');
+  });
+
   it('openTodoCount 只计 pending', () => {
     const viewer: ViewerContext = { userId: 'user_a', isAdmin: false, canViewBiz: alwaysCanView };
     const summaries = summarizeMinutes(minutes, [], viewer);
@@ -127,6 +134,11 @@ describe('filterMinutes', () => {
   it('按关键词筛选标题', () => {
     const filtered = filterMinutes(summaries, { keyword: '销售' });
     expect(filtered).toHaveLength(1);
+  });
+
+  it('按关键词筛选决议和行动项', () => {
+    expect(filterMinutes(summaries, { keyword: '决定A' })).toHaveLength(1);
+    expect(filterMinutes(summaries, { keyword: '行动1' })).toHaveLength(1);
   });
 
   it('按 hasOpenTodo 筛选', () => {

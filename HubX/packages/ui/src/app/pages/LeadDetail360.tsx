@@ -23,12 +23,14 @@ import {
   Timeline,
   Progress,
   Upload,
+  Radio,
 } from '@arco-design/web-react';
+import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import {
-  IconLeft,
   IconEdit,
   IconPlus,
   IconDelete,
+  IconStop,
   IconSwap,
   IconReply,
   IconUserAdd,
@@ -36,6 +38,11 @@ import {
   IconPhone,
   IconFile,
   IconUpload,
+  IconDownload,
+  IconFullscreen,
+  IconFullscreenExit,
+  IconArrowLeft,
+  IconArrowRight,
 } from '@arco-design/web-react/icon';
 import type { LeadDetailInfo, ClueType, FollowUpRecord } from './leads/types';
 import {
@@ -43,24 +50,73 @@ import {
   SALES_STATUS_LIST,
   INTENTION_LEVEL_LIST,
   CUSTOMER_LEVEL_LIST,
-  FOLLOWUP_METHODS,
-  FOLLOWUP_TEMPLATES,
+  LEAD_SOURCE_LIST,
+  LEAD_SOURCE_LABEL,
+  COMPANY_ENTITY_LIST,
 } from './leads/types';
 import { channelLabel } from '@/app/pages/lead-dispatch/channelDictionary';
 import { BUSINESS_LINE_LABEL, type LeadBusinessLine } from '@/app/pages/lead-dispatch/types';
 import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
 import { getLeadDetailProfile } from './leads/leadDetailProfiles';
+import {
+  applyLeadEdit,
+  findLeadByRouteId,
+  mergeLeadDetail,
+  type LeadEditValues,
+} from './leads/leadDetailEdit';
+import { initialEmployees } from './employee/mockData';
+import {
+  leadAttachmentsToUploadItems,
+  uploadItemsToLeadAttachments,
+} from './leads/leadAttachments';
+import { LeadAttachmentPanel } from './leads/components/LeadAttachmentPanel';
+import { LeadFollowUpModal, type LeadFollowUpFormValues } from './leads/components/LeadFollowUpModal';
+import { LeadFinalContractPanel } from './leads/components/LeadFinalContractPanel';
+import { WeChatIcon } from '@/app/components/ui';
+import './leads/components/NewLeadModal.css';
 import { useLeads } from '@/app/leads/LeadContext';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 import { buildLeadContextFromDetail } from './contracts/leadContextMock';
 import { useContracts } from './contracts/ContractsContext';
 import type { Contract, ContractStatus } from './contracts/types';
+import { effectiveAmount } from './contracts/paymentUtils';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { collectionsForProject, sumReceived, type CollectionLedgerEntry } from '@/services/collectionMutations';
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
 import { QuoteCard } from './quotation/QuoteCard';
+import { QUOTE_STATUS_LABELS } from './quotation/types';
+import {
+  PageShell,
+  ProcessMetricGrid,
+  ProcessOverview,
+  ProcessRecordCard,
+  ProcessWorkspace,
+  ProcessWorkspaceAside,
+  ProcessWorkspaceMain,
+} from '@/app/components/ui';
+import {
+  CollectionRecordModal,
+  ContractPaymentInvoicePanel,
+  type PaymentInvoiceRecord,
+} from './components/ContractPaymentInvoicePanel';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
 const Step = Steps.Step;
+const DEFAULT_LEAD_TAGS = ['APP', '小程序', 'B端', 'C端', '网站', '数据接口', '其他'];
+type LeadOperation = 'transfer' | 'return' | 'trash';
+
+function leadListPath(from: string) {
+  const pathBySource: Record<string, string> = {
+    public: '/leads/public',
+    all: '/leads/all',
+    closed: '/leads/closed',
+    trash: '/leads/trash',
+    my: '/leads/my',
+  };
+  return pathBySource[from] ?? '/leads/my';
+}
 
 // 6 步生命周期
 const LIFECYCLE_STEPS = [
@@ -79,6 +135,19 @@ function getLifecycleIndex(status: string): number {
 
 function money(n: number) {
   return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
+}
+
+function formDateTime(value: unknown): string | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  if (value instanceof Date) {
+    const pad = (part: number) => String(part).padStart(2, '0');
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}`;
+  }
+  if (typeof (value as { format?: unknown }).format === 'function') {
+    return (value as { format: (pattern: string) => string }).format('YYYY-MM-DD HH:mm');
+  }
+  return undefined;
 }
 
 const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
@@ -111,21 +180,67 @@ export function LeadDetail360() {
   const [activeMainTab, setActiveMainTab] = useState('basic');
   const [activeSideTab, setActiveSideTab] = useState('follow');
   const [followVisible, setFollowVisible] = useState(false);
-  const [followForm] = Form.useForm();
+  const [followSubmitting, setFollowSubmitting] = useState(false);
+  const [editLeadVisible, setEditLeadVisible] = useState(false);
+  const [editLeadSubmitting, setEditLeadSubmitting] = useState(false);
+  const [editLeadFullscreen, setEditLeadFullscreen] = useState(false);
+  const [editLeadTags, setEditLeadTags] = useState<string[]>([]);
+  const [editLeadAvailableTags, setEditLeadAvailableTags] = useState(DEFAULT_LEAD_TAGS);
+  const [addingEditLeadTag, setAddingEditLeadTag] = useState(false);
+  const [newEditLeadTag, setNewEditLeadTag] = useState('');
+  const [editLeadUploadItems, setEditLeadUploadItems] = useState<UploadItem[]>([]);
+  const [editLeadForm] = Form.useForm();
+  const [leadOperation, setLeadOperation] = useState<LeadOperation | null>(null);
+  const [leadOperationSubmitting, setLeadOperationSubmitting] = useState(false);
+  const [leadOperationForm] = Form.useForm();
+  const [leadOverride, setLeadOverride] = useState<Partial<LeadDetailInfo> | null>(null);
+  const [serviceLeadDetail, setServiceLeadDetail] = useState<LeadDetailInfo | null>(null);
   const [demoModalVisible, setDemoModalVisible] = useState(false);
   const [demoForm] = Form.useForm();
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [docForm] = Form.useForm();
+  const [docUploadItems, setDocUploadItems] = useState<UploadItem[]>([]);
   const [travelModalVisible, setTravelModalVisible] = useState(false);
   const [travelForm] = Form.useForm();
   const [reimbursementModalVisible, setReimbursementModalVisible] = useState(false);
   const [reimbursementForm] = Form.useForm();
+  const [collectionOverrides, setCollectionOverrides] = useState<Record<string, CollectionLedgerEntry>>({});
+  const [addedCollections, setAddedCollections] = useState<CollectionLedgerEntry[]>([]);
+  const [deletedCollectionIds, setDeletedCollectionIds] = useState<string[]>([]);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+  const [editingCollectionId, setEditingCollectionId] = useState<string>();
+  const [collectionForm] = Form.useForm();
+  const [invoiceRecords, setInvoiceRecords] = useState<PaymentInvoiceRecord[]>([]);
   const { createQuote, quotes } = useQuotation();
   const { contracts: allContracts } = useContracts();
-  const { leads, getFollowUps } = useLeads();
+  const { collections } = useCollections();
+  const {
+    leads,
+    getDetailInfo,
+    getFollowUps,
+    addFollowUp,
+    updateLead,
+    assignLead,
+    returnLead,
+    markTrash,
+    softDelete,
+  } = useLeads();
   const [followUps, setFollowUps] = useState<FollowUpRecord[]>([]);
   const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
   const [quotationDrawerQuoteId, setQuotationDrawerQuoteId] = useState<string | null>(null);
+  const [quoteModeVisible, setQuoteModeVisible] = useState(false);
+  const [quoteFlowMode, setQuoteFlowMode] = useState<'online' | 'file'>('online');
+  const [travelDetailId, setTravelDetailId] = useState<string | null>(null);
+  const [reimbursementDetailId, setReimbursementDetailId] = useState<string | null>(null);
+  const employeeOptions = useMemo(
+    () => initialEmployees
+      .filter((employee) => employee.employmentStatus !== '已离职')
+      .map((employee) => ({
+        value: employee.name,
+        label: `${employee.name} · ${employee.department}`,
+      })),
+    [],
+  );
 
   // Mock 数据
   const [demos, setDemos] = useState([
@@ -147,40 +262,101 @@ export function LeadDetail360() {
     { id: 'rb1', type: '商务招待', description: '商务工作餐', applicant: '阎杨', amount: 280, approvalNo: 'BX-20260819-0018', status: '已审批' },
   ]);
 
-  // 加载线索数据
-  const profile = useMemo(() => getLeadDetailProfile(id, from), [id, from]);
-  const lead = profile?.leadInfo;
+  // 列表路由使用 key，详情档案与数据服务使用真实 id，先统一解析目标线索。
+  const dispatchLead = useMemo(() => findLeadByRouteId(leads, id), [leads, id]);
+  const profileLeadId = dispatchLead?.id ?? id;
+  const profile = useMemo(() => getLeadDetailProfile(profileLeadId, from), [profileLeadId, from]);
   const { quotationHistory, useLiveContracts, demoContracts } = profile ?? {
     quotationHistory: [],
     useLiveContracts: true,
     demoContracts: [],
   };
 
-  // 派发域数据（从 LeadListItem 获取 dispatch 字段）
-  const dispatchLead = useMemo(() => leads.find((l) => l.id === id), [leads, id]);
+  const lead = useMemo(
+    () => mergeLeadDetail(serviceLeadDetail ?? profile?.leadInfo, dispatchLead, leadOverride),
+    [serviceLeadDetail, profile?.leadInfo, dispatchLead, leadOverride],
+  );
+  const serviceLeadId = dispatchLead?.id ?? id;
   const dispatchView = useMemo(() => dispatchLead ? leadDispatchView(dispatchLead, new Date()) : null, [dispatchLead]);
+
+  useEffect(() => {
+    setLeadOverride(null);
+    setEditLeadVisible(false);
+    setLeadOperation(null);
+    setCollectionOverrides({});
+    setAddedCollections([]);
+    setDeletedCollectionIds([]);
+    setInvoiceRecords([]);
+    setCollectionModalVisible(false);
+    setDocModalVisible(false);
+    setDocUploadItems([]);
+  }, [id, from]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setServiceLeadDetail(null);
+    if (profileLeadId) {
+      getDetailInfo(profileLeadId).then((detail) => {
+        if (!cancelled) setServiceLeadDetail(detail);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [profileLeadId, getDetailInfo]);
 
   const relatedContracts = useMemo<Contract[]>(() => {
     if (useLiveContracts) {
-      return allContracts.filter((contract) => contract.leadId === id);
+      return allContracts.filter((contract) => contract.leadId === id || contract.leadId === profileLeadId);
     }
     return demoContracts
       .map((demoContract) => allContracts.find((contract) => contract.id === demoContract.id))
       .filter((contract): contract is Contract => Boolean(contract));
-  }, [allContracts, demoContracts, id, useLiveContracts]);
+  }, [allContracts, demoContracts, id, profileLeadId, useLiveContracts]);
+
+  const mainContract = useMemo(
+    () => relatedContracts.find((contract) => contract.kind !== 'supplement') ?? relatedContracts[0],
+    [relatedContracts],
+  );
+  const supplementContracts = useMemo(
+    () => relatedContracts.filter((contract) => contract.kind === 'supplement' && contract.parentContractId === mainContract?.id),
+    [relatedContracts, mainContract?.id],
+  );
+  const effectiveContractIds = useMemo(
+    () => new Set([
+      mainContract?.id,
+      ...supplementContracts.filter((contract) => contract.status === 'archived').map((contract) => contract.id),
+    ].filter(Boolean)),
+    [mainContract?.id, supplementContracts],
+  );
+  const leadCollections = useMemo(
+    () => collectionsForProject(collections, {
+      projectId: mainContract?.projectId,
+      contractIds: relatedContracts.map((contract) => contract.id),
+    }).filter((record) => effectiveContractIds.has(record.contractId)),
+    [collections, effectiveContractIds, mainContract?.projectId, relatedContracts],
+  );
+  const visibleLeadCollections = useMemo(() => [
+    ...addedCollections,
+    ...leadCollections
+      .filter((record) => !deletedCollectionIds.includes(record.id))
+      .map((record) => collectionOverrides[record.id] || record),
+  ], [addedCollections, collectionOverrides, deletedCollectionIds, leadCollections]);
+  const paymentContractAmount = mainContract ? effectiveAmount(mainContract, supplementContracts) : 0;
+  const paymentReceivedAmount = sumReceived(visibleLeadCollections);
 
   // 跟进记录：统一走 LeadContext（mock/http 同构），detail 加载后异步拉取
   useEffect(() => {
     let cancelled = false;
-    if (id) {
-      getFollowUps(id).then((fs) => {
+    if (serviceLeadId) {
+      getFollowUps(serviceLeadId).then((fs) => {
         if (!cancelled) setFollowUps(fs);
       });
     }
     return () => {
       cancelled = true;
     };
-  }, [id, getFollowUps]);
+  }, [serviceLeadId, getFollowUps]);
 
   useEffect(() => {
     const state = location.state as { activeMainTab?: string; activeSideTab?: string } | null;
@@ -208,11 +384,326 @@ export function LeadDetail360() {
 
   const lifecycleIdx = getLifecycleIndex(lead.status);
 
+  const openCollectionEditor = (record?: CollectionLedgerEntry) => {
+    setEditingCollectionId(record?.id);
+    collectionForm.setFieldsValue(record || { date: '2026-08-29', method: '银行汇款', period: 'other', amount: 0, note: '' });
+    setCollectionModalVisible(true);
+  };
+
+  const saveCollection = () => {
+    collectionForm.validate().then((values) => {
+      if (!mainContract) {
+        Message.warning('当前线索暂无有效主合同');
+        return;
+      }
+      const record: CollectionLedgerEntry = {
+        id: editingCollectionId || `lead-col-${Date.now()}`,
+        contractId: mainContract.id,
+        projectId: mainContract.projectId,
+        period: values.period === 'other' ? 'other' : Number(values.period),
+        amount: Number(values.amount),
+        date: values.date,
+        method: values.method,
+        note: values.note || '',
+      };
+      if (editingCollectionId) {
+        if (addedCollections.some((item) => item.id === editingCollectionId)) {
+          setAddedCollections((items) => items.map((item) => item.id === editingCollectionId ? record : item));
+        } else {
+          setCollectionOverrides((current) => ({ ...current, [editingCollectionId]: record }));
+        }
+      } else {
+        setAddedCollections((current) => [record, ...current]);
+      }
+      setCollectionModalVisible(false);
+      Message.success(editingCollectionId ? '实收记录已更新' : '实收记录已新增');
+    });
+  };
+
+  const issueInvoice = (collection: CollectionLedgerEntry) => {
+    const serial = invoiceRecords.length + 1;
+    setInvoiceRecords((current) => [{
+      id: `lead-invoice-${Date.now()}`,
+      collectionId: collection.id,
+      invoiceNo: `INV-202608-${String(serial).padStart(3, '0')}`,
+      amount: collection.amount,
+      issuedAt: '2026-08-29',
+      status: 'valid',
+    }, ...current]);
+    Message.success('开票记录已生成');
+  };
+
+  const redInvoice = (invoice: PaymentInvoiceRecord) => {
+    setInvoiceRecords((current) => [{
+      id: `lead-invoice-red-${Date.now()}`,
+      collectionId: invoice.collectionId,
+      invoiceNo: `RED-${invoice.invoiceNo}`,
+      amount: -invoice.amount,
+      issuedAt: '2026-08-29',
+      status: 'red',
+      originalInvoiceId: invoice.id,
+    }, ...current]);
+    Message.success('红冲记录已生成并保留原发票');
+  };
+
+  const saveDocument = () => {
+    docForm.validate().then((values) => {
+      const file = docUploadItems[0];
+      if (!file) {
+        Message.warning('请选择要上传的资料文件');
+        return;
+      }
+      setDocuments((current) => [{
+        id: `doc-${Date.now()}`,
+        name: file.name || '未命名资料',
+        type: values.type,
+        source: values.source,
+        uploader: CURRENT_LOGIN_USER.name,
+        createdAt: '2026-08-29',
+      }, ...current]);
+      setDocModalVisible(false);
+      setDocUploadItems([]);
+      docForm.resetFields();
+      Message.success('资料已上传');
+    });
+  };
+
+  const openEditLead = () => {
+    const tags = lead.tags ?? [];
+    editLeadForm.setFieldsValue({
+      name: lead.name,
+      contact: lead.contact,
+      phone: lead.phone,
+      wechat: lead.wechat,
+      source: lead.source,
+      keyword: lead.keyword,
+      status: lead.status,
+      level: lead.level,
+      customerLevel: lead.customerLevel,
+      tags,
+      entity: lead.entity,
+      owner: lead.owner,
+      optimizer: lead.optimizer,
+      assistant: lead.assistant,
+      presalesGroupName: lead.presalesGroupName,
+      requirement: lead.requirement || lead.initialRequirement,
+      customerNote: lead.customerNote,
+    });
+    setEditLeadTags(tags);
+    setEditLeadAvailableTags(Array.from(new Set([...DEFAULT_LEAD_TAGS, ...tags])));
+    setAddingEditLeadTag(false);
+    setNewEditLeadTag('');
+    setEditLeadUploadItems(leadAttachmentsToUploadItems(lead.attachments ?? []));
+    setEditLeadFullscreen(false);
+    setEditLeadVisible(true);
+  };
+
+  const closeEditLead = () => {
+    setEditLeadVisible(false);
+    setEditLeadFullscreen(false);
+    setEditLeadTags([]);
+    setAddingEditLeadTag(false);
+    setNewEditLeadTag('');
+    setEditLeadUploadItems([]);
+    editLeadForm.resetFields();
+  };
+
+  const toggleEditLeadTag = (tag: string) => {
+    setEditLeadTags((current) => {
+      const next = current.includes(tag)
+        ? current.filter((item) => item !== tag)
+        : [...current, tag];
+      editLeadForm.setFieldValue('tags', next);
+      return next;
+    });
+  };
+
+  const confirmNewEditLeadTag = () => {
+    const normalized = newEditLeadTag.trim();
+    if (!normalized) return;
+    if (!editLeadAvailableTags.includes(normalized)) {
+      setEditLeadAvailableTags((current) => [...current, normalized]);
+    }
+    if (!editLeadTags.includes(normalized)) {
+      const next = [...editLeadTags, normalized];
+      setEditLeadTags(next);
+      editLeadForm.setFieldValue('tags', next);
+    }
+    setNewEditLeadTag('');
+    setAddingEditLeadTag(false);
+  };
+
+  const saveEditLead = async () => {
+    try {
+      const values = await editLeadForm.validate() as LeadEditValues;
+      const phone = String(values.phone ?? '').trim();
+      const wechat = String(values.wechat ?? '').trim();
+      if (!phone && !wechat) {
+        editLeadForm.setFields({
+          phone: { value: values.phone, error: { message: '联系电话和联系微信至少填写一项' } },
+          wechat: { value: values.wechat, error: { message: '联系电话和联系微信至少填写一项' } },
+        });
+        return;
+      }
+
+      const normalized: LeadEditValues = {
+        ...values,
+        name: String(values.name ?? '').trim(),
+        contact: String(values.contact ?? '').trim(),
+        phone,
+        wechat,
+        source: String(values.source ?? ''),
+        keyword: String(values.keyword ?? '').trim(),
+        status: String(values.status ?? ''),
+        level: String(values.level ?? ''),
+        customerLevel: values.customerLevel ? String(values.customerLevel) : undefined,
+        tags: editLeadTags,
+        entity: String(values.entity ?? ''),
+        owner: String(values.owner ?? '').trim(),
+        optimizer: String(values.optimizer ?? '').trim(),
+        assistant: String(values.assistant ?? '').trim(),
+        presalesGroupName: String(values.presalesGroupName ?? '').trim() || undefined,
+        requirement: String(values.requirement ?? '').trim(),
+        customerNote: String(values.customerNote ?? '').trim() || undefined,
+        attachments: uploadItemsToLeadAttachments(editLeadUploadItems),
+      };
+
+      setEditLeadSubmitting(true);
+      if (dispatchLead) {
+        await updateLead(dispatchLead.id, (current) => applyLeadEdit(current, normalized));
+      }
+      setLeadOverride((current) => ({
+        ...current,
+        ...normalized,
+        initialRequirement: normalized.requirement,
+        updateTime: new Date().toISOString(),
+      }));
+      Message.success('线索信息已更新');
+      closeEditLead();
+    } catch {
+      // 表单校验错误由 Arco 就地展示。
+    } finally {
+      setEditLeadSubmitting(false);
+    }
+  };
+
+  const saveFollowUp = async (values: LeadFollowUpFormValues) => {
+    if (!serviceLeadId) {
+      Message.error('未找到可跟进的线索');
+      return;
+    }
+
+    try {
+      setFollowSubmitting(true);
+      await addFollowUp(serviceLeadId, {
+        method: values.method,
+        customerStatus: values.customerStatus,
+        intentionLevel: values.intentionLevel,
+        costHours: values.costHours,
+        costMins: values.costMins,
+        content: values.content.trim(),
+        nextFollowTime: formDateTime(values.nextFollowTime),
+        attachments: uploadItemsToLeadAttachments(values.attachments),
+        creator: CURRENT_LOGIN_USER.name,
+      });
+      setFollowUps(await getFollowUps(serviceLeadId));
+      setLeadOverride((current) => ({
+        ...current,
+        status: values.customerStatus,
+        level: values.intentionLevel ?? lead.level,
+        nextFollowTime: formDateTime(values.nextFollowTime) ?? '',
+        followCount: (lead.followCount ?? 0) + 1,
+      }));
+      Message.success('跟进记录已保存');
+      setFollowVisible(false);
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '跟进记录保存失败，请重试');
+    } finally {
+      setFollowSubmitting(false);
+    }
+  };
+
+  const openLeadOperation = (operation: LeadOperation) => {
+    leadOperationForm.resetFields();
+    setLeadOperation(operation);
+  };
+
+  const closeLeadOperation = () => {
+    if (leadOperationSubmitting) return;
+    setLeadOperation(null);
+    leadOperationForm.resetFields();
+  };
+
+  const submitLeadOperation = async () => {
+    if (!leadOperation || !serviceLeadId) {
+      Message.error('未找到可操作的线索');
+      return;
+    }
+
+    try {
+      const values = await leadOperationForm.validate() as { targetOwner?: string; reason?: string };
+      const reason = String(values.reason ?? '').trim();
+      setLeadOperationSubmitting(true);
+
+      if (leadOperation === 'transfer') {
+        const targetOwner = String(values.targetOwner ?? '');
+        await assignLead(serviceLeadId, targetOwner, CURRENT_LOGIN_USER.name, reason);
+        setLeadOverride((current) => ({ ...current, owner: targetOwner, clueType: 'assigned' }));
+        Message.success(`线索已转移给 ${targetOwner}`);
+        setLeadOperation(null);
+        leadOperationForm.resetFields();
+        return;
+      }
+
+      if (leadOperation === 'return') {
+        const nextTrashCount = (lead.trashCount ?? 0) + 1;
+        const willEnterTrash = nextTrashCount >= 3;
+        await returnLead(serviceLeadId, CURRENT_LOGIN_USER.name, reason);
+        Message.success(willEnterTrash ? '该线索已达第 3 次退回，已自动进入垃圾线索' : '线索已扔回公海');
+        navigate(willEnterTrash ? '/leads/trash' : '/leads/public');
+        return;
+      }
+
+      await markTrash(serviceLeadId, CURRENT_LOGIN_USER.name, reason);
+      Message.success('线索已标记为垃圾');
+      navigate('/leads/trash');
+    } catch (error) {
+      if (error instanceof Error) {
+        Message.error(error.message || '操作失败，请重试');
+      }
+    } finally {
+      setLeadOperationSubmitting(false);
+    }
+  };
+
+  const deleteLead = () => {
+    if (!serviceLeadId) {
+      Message.error('未找到可删除的线索');
+      return;
+    }
+    Modal.confirm({
+      title: '确认删除线索？',
+      content: `删除“${lead.name}”后将从当前线索池隐藏，管理员仍可通过数据恢复。`,
+      okText: '确认删除',
+      cancelText: '取消',
+      okButtonProps: { status: 'danger' },
+      onOk: async () => {
+        try {
+          await softDelete(serviceLeadId);
+          Message.success('线索已删除');
+          navigate(leadListPath(from));
+        } catch (error) {
+          Message.error(error instanceof Error ? error.message : '删除失败，请重试');
+          throw error;
+        }
+      },
+    });
+  };
+
   // 行动栏按钮（按 clueType 过滤）
-  const showClaim = lead.clueType === 'public' || lead.clueType === 'trash' || lead.clueType === 'hightech';
   const showAssignActions = lead.clueType === 'assigned';
-  const showReturn = lead.clueType === 'assigned' && lead.trashCount < 3;
-  const showReturnWithWarning = lead.clueType === 'assigned' && lead.trashCount >= 3;
+  const showReturn = lead.clueType === 'assigned' && lead.trashCount < 2;
+  const showReturnWithWarning = lead.clueType === 'assigned' && lead.trashCount >= 2;
 
   const handleViewContractDetail = (contractId: string) => {
     navigate(`/contracts/${contractId}`, {
@@ -250,102 +741,89 @@ export function LeadDetail360() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* ========== 顶部一体化控制台 ========== */}
-      <Card bodyStyle={{ padding: '16px 20px' }}>
-        {/* 项目元数据 — 右上角操作按钮 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Button type="text" icon={<IconLeft />} onClick={() => navigate(-1)}>返回列表</Button>
-            <Divider type="vertical" />
-            <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>#{lead.name?.slice(0, 6) || id}</span>
-            <span style={{ fontSize: 18, fontWeight: 600 }}>{lead.name}</span>
+    <PageShell
+      breadcrumbs={[
+        { label: '线索管理', to: '/leads/my' },
+        { label: '我的线索', to: '/leads/my' },
+        { label: lead.name },
+      ]}
+    >
+      <ProcessOverview
+        identifier={`#${lead.name?.slice(0, 6) || id}`}
+        title={lead.name}
+        tags={(
+          <>
             <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
-            {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}级</Tag>}
+            {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}</Tag>}
             <Tag color="gray">{lead.entity}</Tag>
-            <Tag color="default">{channelLabel(lead.source)}</Tag>
-          </div>
+            <Tag color="gray" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag>
+          </>
+        )}
+        actions={(
           <Space wrap>
-            <Button size="small" icon={<IconEdit />}>编辑线索</Button>
-            {showAssignActions && <Button size="small" icon={<IconSwap />}>转移给他人</Button>}
-            {showReturn && <Button size="small" icon={<IconReply />} status="warning">扔回公海</Button>}
+            <Button size="small" icon={<IconEdit />} onClick={openEditLead}>编辑线索</Button>
+            {showAssignActions && <Button size="small" icon={<IconSwap />} onClick={() => openLeadOperation('transfer')}>转移给他人</Button>}
+            {showReturn && <Button size="small" icon={<IconReply />} status="warning" onClick={() => openLeadOperation('return')}>扔回公海</Button>}
             {showReturnWithWarning && (
-              <Tooltip content={`已退回${lead.trashCount}次，再退回将自动标记为垃圾`}>
-                <Button size="small" icon={<IconReply />} status="warning">扔回公海 ({lead.trashCount}/3)</Button>
+              <Tooltip content={`已退回 ${lead.trashCount} 次，本次退回后将自动标记为垃圾`}>
+                <Button size="small" icon={<IconReply />} status="warning" onClick={() => openLeadOperation('return')}>扔回公海 ({lead.trashCount}/3)</Button>
               </Tooltip>
             )}
-            {lead.clueType !== 'trash' && <Button size="small" icon={<IconDelete />} status="danger">标记垃圾</Button>}
-            <Button size="small" icon={<IconDelete />} status="danger">删除</Button>
+            {lead.clueType !== 'trash' && <Button size="small" icon={<IconStop />} status="warning" onClick={() => openLeadOperation('trash')}>标记垃圾</Button>}
+            <Button size="small" icon={<IconDelete />} status="danger" onClick={deleteLead}>删除</Button>
           </Space>
-        </div>
-
-        {/* 6 步生命周期步骤条 — 横向全宽 */}
-        <Steps current={lifecycleIdx} size="small" style={{ marginBottom: 16 }}>
-          {LIFECYCLE_STEPS.map((step, index) => (
-            <Step
-              key={step.key}
-              title={step.label}
-              description={
+        )}
+        currentStep={lifecycleIdx}
+        steps={LIFECYCLE_STEPS.map((step, index) => ({
+          key: step.key,
+          title: step.label,
+          description:
                 index === 4 && lead.status === '已签单' ? '进行中' :
                 index === 5 && lead.status === '已签单' ? '待完成' :
-                undefined
-              }
-            />
-          ))}
-        </Steps>
-      </Card>
+                undefined,
+        }))}
+      />
 
-      {/* 6 维指标胶囊 — 独立卡片 */}
-      <Card size="small">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>负责人</Text>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'owner',
+            label: '负责人',
+            value: <>
               <IconUserAdd style={{ color: 'rgb(var(--primary-6))' }} />
-              <Text style={{ fontWeight: 500, fontSize: 14 }}>{lead.owner || '公海'}</Text>
+              <span>{lead.owner || '公海'}</span>
               {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 12 }}>({lead.daysHeld}天)</Text>}
-            </div>
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>对接人</Text>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            </>,
+          },
+          {
+            key: 'contact',
+            label: '对接人',
+            value: <>
               <IconPhone style={{ color: 'var(--color-text-3)' }} />
-              <Text style={{ fontWeight: 500, fontSize: 14 }}>{lead.contact}</Text>
+              <span>{lead.contact}</span>
               <Tooltip content="复制电话">
                 <Button type="text" size="mini" icon={<IconCopy />} onClick={() => { navigator.clipboard.writeText(lead.phone); Message.success('已复制'); }} />
               </Tooltip>
-            </div>
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>总标的</Text>
-            <Text style={{ fontWeight: 600, fontSize: 16, color: 'rgb(var(--success-6))', marginTop: 4 }}>{lead.customerBudget || '-'}</Text>
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text>
-            <Text style={{ fontWeight: 600, fontSize: 16, marginTop: 4 }}>{lead.customerCost || '-'}</Text>
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>跟进次数</Text>
-            <Text style={{ fontWeight: 600, fontSize: 16, marginTop: 4 }}>{lead.followCount}次</Text>
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>下次跟进</Text>
-            <Text style={{ fontWeight: 600, fontSize: 14, marginTop: 4 }}>{lead.nextFollowTime ? lead.nextFollowTime.slice(0, 16) : '-'}</Text>
-          </div>
-        </div>
-      </Card>
+            </>,
+          },
+          { key: 'amount', label: '总标的', value: <Text style={{ color: 'rgb(var(--success-6))' }}>{lead.customerBudget || '-'}</Text> },
+          { key: 'cost', label: '客资成本', value: lead.customerCost || '-' },
+          { key: 'follow-count', label: '跟进次数', value: `${lead.followCount}次` },
+          { key: 'next-follow', label: '下次跟进', value: lead.nextFollowTime ? lead.nextFollowTime.slice(0, 16) : '-' },
+        ]}
+      />
 
       {/* ========== 主体区域：70:30 分栏 ========== */}
-      <div style={{ display: 'flex', gap: 16 }}>
+      <ProcessWorkspace>
         {/* 左侧主区域 (70%) */}
-        <div style={{ flex: 7, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <ProcessWorkspaceMain>
           {/* 关键信息档案卡 */}
           <Card size="small" bodyStyle={{ padding: '12px 16px' }}>
             <div style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 16, fontWeight: 600 }}>{lead.name}</span>
             </div>
             <Grid.Row gutter={[8, 4]}>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="default" size="small">{channelLabel(lead.source)}</Tag></Grid.Col>
+              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="gray" size="small" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text> <Text style={{ fontSize: 14 }}>{lead.customerCost || '-'}</Text></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客户称呼</Text> <Text style={{ fontSize: 14 }}>{lead.customerTitle || '-'}</Text></Grid.Col>
               <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>电话</Text> <Text style={{ fontSize: 14 }}>{lead.phone || '-'}</Text></Grid.Col>
@@ -361,6 +839,11 @@ export function LeadDetail360() {
               <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{lead.requirement || lead.initialRequirement || '-'}</div>
             </div>
           </Card>
+
+          <LeadAttachmentPanel
+            attachments={lead.attachments ?? []}
+            onManage={openEditLead}
+          />
 
           {/* 左侧 3 个 Tab */}
           <Card size="small">
@@ -384,11 +867,9 @@ export function LeadDetail360() {
                     { label: '客户预算', value: lead.customerBudget || '-' },
                     { label: '客户主体', value: lead.customer },
                     { label: '售前群名称', value: lead.presalesGroupName || '-' },
-                    { label: '原型图链接', value: lead.prototypeLink ? <a href={lead.prototypeLink} target="_blank" rel="noreferrer">查看原型</a> : '-' },
                     { label: '威客任务号', value: lead.witkeyTaskNo || '-' },
                     { label: '推广关键词', value: lead.keyword || '-' },
                     { label: '意向标签', value: lead.tags?.join('、') || '-' },
-                    { label: '客户信息备注', value: lead.customerNote || '-' },
                     // 派发信息
                     { label: '业务线', value: dispatchLead?.businessLine ? BUSINESS_LINE_LABEL[dispatchLead.businessLine as LeadBusinessLine] || dispatchLead.businessLine : '-' },
                     { label: '渠道计划', value: dispatchLead?.channelPlan || '-' },
@@ -396,6 +877,8 @@ export function LeadDetail360() {
                     { label: '派发目标', value: dispatchLead?.dispatchTarget === 'sales' ? '指派销售' : dispatchLead?.dispatchTarget === 'pool' ? '公海' : '-' },
                     { label: '派发时效', value: dispatchView ? <Tag color={dispatchView.dispatchSla.status === 'overdue' ? 'red' : dispatchView.dispatchSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.dispatchSla.label}</Tag> : '-' },
                     { label: '首联时效', value: dispatchView ? <Tag color={dispatchView.firstContactSla.status === 'overdue' ? 'red' : dispatchView.firstContactSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.firstContactSla.label}</Tag> : '-' },
+                    { label: '原型图链接', span: 4, value: lead.prototypeLink ? <a href={lead.prototypeLink} target="_blank" rel="noreferrer" style={{ overflowWrap: 'anywhere' }}>{lead.prototypeLink}</a> : '-' },
+                    { label: '客户信息备注', span: 4, value: lead.customerNote || '-' },
                   ]}
                 />
               )}
@@ -404,51 +887,50 @@ export function LeadDetail360() {
               {activeMainTab === 'contracts' && (
                 <div>
                   <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
-                    <Descriptions
-                      column={4}
-                      size="small"
-                      data={[
-                        { label: '合同编号', value: profile.demoContracts?.[0]?.contractNo || '-' },
-                        { label: '标的额', value: profile.demoContracts?.[0]?.amount || '-' },
-                        { label: '签约主体', value: profile.demoContracts?.[0]?.contractEntity || '-' },
-                        { label: '状态', value: profile.demoContracts?.[0]?.status || '-' },
-                        { label: '签约日期', value: profile.demoContracts?.[0]?.signDate || '-' },
-                      ]}
-                    />
+                    {mainContract ? (
+                      <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo />
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无关联合同</div>
+                    )}
                   </Card>
-                  <Card size="small" title="补充合同">
-                    <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
+                  <Card size="small" title={`补充合同（${supplementContracts.length}）`}>
+                    {supplementContracts.length > 0 ? (
+                      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                        {supplementContracts.map((contract) => (
+                          <LeadFinalContractPanel key={contract.id} contract={contract} projectLayout />
+                        ))}
+                      </Space>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
+                    )}
                   </Card>
                 </div>
               )}
 
               {/* 回款与发票 */}
               {activeMainTab === 'payments' && (
-                <div>
-                  <Grid.Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>有效总标的</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{lead.customerBudget || '-'}</div>
-                      </div>
-                    </Grid.Col>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>已到账</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4, color: 'rgb(var(--success-6))' }}>-</div>
-                      </div>
-                    </Grid.Col>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>待回款</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>-</div>
-                      </div>
-                    </Grid.Col>
-                  </Grid.Row>
-                  <Card size="small" title="回款期次台账">
-                    <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无回款记录</div>
-                  </Card>
-                </div>
+                <ContractPaymentInvoicePanel
+                  mainContract={mainContract}
+                  supplementContracts={supplementContracts}
+                  contractAmount={paymentContractAmount}
+                  receivedAmount={paymentReceivedAmount}
+                  collections={visibleLeadCollections}
+                  invoiceRecords={invoiceRecords}
+                  onAddCollection={() => openCollectionEditor()}
+                  onEditCollection={openCollectionEditor}
+                  onDeleteCollection={(record) => {
+                    if (addedCollections.some((item) => item.id === record.id)) {
+                      setAddedCollections((items) => items.filter((item) => item.id !== record.id));
+                    } else {
+                      setDeletedCollectionIds((items) => [...items, record.id]);
+                    }
+                    Message.success('实收记录已删除');
+                  }}
+                  onIssueInvoice={issueInvoice}
+                  onRedInvoice={redInvoice}
+                  onCorrectInvoice={(invoice) => setInvoiceRecords((items) => items.map((item) => item.id === invoice.id ? { ...item, invoiceNo: `${item.invoiceNo}-更正` } : item))}
+                  onDeleteInvoice={(invoice) => setInvoiceRecords((items) => items.filter((item) => item.id !== invoice.id))}
+                />
               )}
             </div>
           </Card>
@@ -496,15 +978,15 @@ export function LeadDetail360() {
               </Grid.Col>
             </Grid.Row>
           </Card>
-        </div>
+        </ProcessWorkspaceMain>
 
         {/* 右侧业务过程 (30%) */}
-        <div style={{ flex: 3, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <ProcessWorkspaceAside>
           {/* 售前聊天群分析（独立板块） */}
           {lead.presalesGroupName && (
             <Card size="small" title="售前聊天群分析">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ color: '#07C160', fontSize: 16 }}>💬</span>
+                <WeChatIcon />
                 <Text style={{ fontWeight: 500 }}>{lead.presalesGroupName}</Text>
               </div>
               <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14, color: 'var(--color-text-2)' }}>
@@ -521,7 +1003,7 @@ export function LeadDetail360() {
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
               <TabPane key="follow" title="跟进" />
               <TabPane key="quotation" title="报价" />
-              <TabPane key="contract-records" title="合同记录" />
+              <TabPane key="contract-records" title="合同" />
               <TabPane key="demo" title="演示" />
               <TabPane key="documents" title="资料" />
               <TabPane key="travel" title="出差" />
@@ -533,7 +1015,7 @@ export function LeadDetail360() {
               {activeSideTab === 'follow' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowVisible(true); }}>写跟进</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => setFollowVisible(true)}>写跟进</Button>
                   </div>
                   <Timeline>
                     {followUps.filter((r) => r.leadId === id || r.leadId === '5940').map((record, index) => (
@@ -563,16 +1045,7 @@ export function LeadDetail360() {
                       type="primary"
                       size="small"
                       icon={<IconPlus />}
-                      onClick={async () => {
-                        const newId = await createQuote(id ?? '', [], {
-                          projectName: lead.name,
-                          customerName: lead.customer,
-                          customerContact: lead.contact,
-                          customerPhone: lead.phone,
-                        });
-                        setQuotationDrawerQuoteId(newId);
-                        setQuotationDrawerVisible(true);
-                      }}
+                      onClick={() => setQuoteModeVisible(true)}
                     >
                       新建报价
                     </Button>
@@ -601,17 +1074,19 @@ export function LeadDetail360() {
                             <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '12px 0' }} />
                             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</Text>
                             {voided.map((q) => (
-                              <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 8, opacity: 0.5, background: 'var(--color-fill-1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                                  <Text style={{ fontWeight: 600, textDecoration: 'line-through' }}>{q.basicInfo.projectName}</Text>
+                              <ProcessRecordCard
+                                key={q.id}
+                                muted
+                                title={<span style={{ textDecoration: 'line-through' }}>{q.basicInfo.projectName}</span>}
+                                tags={(
+                                  <>
                                   <Tag color="arcoblue" size="small">{q.version}</Tag>
                                   <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
-                                </div>
-                                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{q.quoteNo}</div>
-                                <div style={{ fontSize: 12, color: 'rgb(var(--red-6))', background: 'rgb(var(--red-1))', padding: '4px 8px', borderRadius: 4, marginTop: 4 }}>
-                                  作废原因：{q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}
-                                </div>
-                              </div>
+                                  </>
+                                )}
+                                identifier={q.quoteNo}
+                                notice={`作废原因：${q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}`}
+                              />
                             ))}
                           </>
                         )}
@@ -628,47 +1103,41 @@ export function LeadDetail360() {
                     <Button type="primary" size="small" icon={<IconPlus />} onClick={handleCreateContract}>新建合同</Button>
                   </div>
                   {relatedContracts.map((c) => (
-                    <Card
+                    <ProcessRecordCard
                       key={c.id}
-                      size="small"
-                      hoverable
-                      style={{ marginBottom: 8, cursor: 'pointer' }}
+                      title={c.current.contractName}
+                      tags={<Tag color={CONTRACT_STATUS_COLORS[c.status]} size="small">{CONTRACT_STATUS_LABELS[c.status]}</Tag>}
+                      actions={<Tooltip content="查看合同详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
+                      identifier={c.contractNo}
                       onClick={() => handleViewContractDetail(c.id)}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{c.current.contractName}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.current.signingEntity}</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>{money(c.current.totalAmount)}</div>
-                          <Tag color={CONTRACT_STATUS_COLORS[c.status]} size="small">{CONTRACT_STATUS_LABELS[c.status]}</Tag>
-                        </div>
-                      </div>
-                    </Card>
+                      ariaLabel={`查看合同${c.current.contractName}详情`}
+                      summary={(
+                        <>
+                          <span>签约主体 <strong>{c.current.signingEntity}</strong></span>
+                          <span>合同金额 <strong>{money(c.current.totalAmount)}</strong></span>
+                        </>
+                      )}
+                    />
                   ))}
                   {relatedContracts.length === 0 && profile.demoContracts?.map((c) => {
                     const contractStatusColor = c.status === '已归档' || c.status === '已盖章' ? 'green' : c.status === '审批通过' ? 'blue' : 'orange';
                     const liveMatch = allContracts.find((contract) => contract.id === c.id);
                     return (
-                      <Card
+                      <ProcessRecordCard
                         key={c.id}
-                        size="small"
-                        hoverable={Boolean(liveMatch)}
-                        style={{ marginBottom: 8, cursor: liveMatch ? 'pointer' : 'default' }}
+                        title={c.name}
+                        tags={<Tag color={contractStatusColor} size="small">{c.status}</Tag>}
+                        actions={liveMatch ? <Tooltip content="查看合同详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip> : undefined}
+                        identifier={c.contractNo}
                         onClick={liveMatch ? () => handleViewContractDetail(liveMatch.id) : undefined}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <Text style={{ fontWeight: 500 }}>{c.name}</Text>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.contractEntity}</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: 16, fontWeight: 600 }}>¥{c.amount}</div>
-                            <Tag color={contractStatusColor} size="small">{c.status}</Tag>
-                          </div>
-                        </div>
-                      </Card>
+                        ariaLabel={liveMatch ? `查看合同${c.name}详情` : undefined}
+                        summary={(
+                          <>
+                            <span>签约主体 <strong>{c.contractEntity}</strong></span>
+                            <span>合同金额 <strong>¥{c.amount}</strong></span>
+                          </>
+                        )}
+                      />
                     );
                   })}
                   {relatedContracts.length === 0 && (!profile.demoContracts || profile.demoContracts.length === 0) && (
@@ -681,22 +1150,34 @@ export function LeadDetail360() {
               {activeSideTab === 'demo' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>
                   </div>
                   {demos.map((demo) => (
-                    <Card key={demo.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Tag color="blue" size="small">{demo.type}</Tag>
-                          <Text style={{ marginLeft: 8 }}>{demo.description}</Text>
-                        </div>
-                        <Space>
-                          <Button type="text" size="small" onClick={() => { navigator.clipboard.writeText(demo.url); Message.success('已复制链接'); }}>复制链接</Button>
-                          <Button type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDemos(demos.filter((d) => d.id !== demo.id)); Message.success('已删除'); }} />
-                        </Space>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{demo.url}</div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={demo.id}
+                      leading={<Tag color="blue" size="small">{demo.type}</Tag>}
+                      title={demo.description}
+                      identifier={(
+                        <span className="hubx-process-record-card__identifier-line">
+                          <span>{demo.url}</span>
+                          <Tooltip content="复制链接">
+                            <Button
+                              className="hubx-icon-action"
+                              type="text"
+                              size="mini"
+                              aria-label={`复制${demo.description}链接`}
+                              icon={<IconCopy />}
+                              onClick={() => { navigator.clipboard.writeText(demo.url); Message.success('已复制链接'); }}
+                            />
+                          </Tooltip>
+                        </span>
+                      )}
+                      actions={(
+                        <Tooltip content="删除环境">
+                          <Button className="hubx-icon-action" aria-label={`删除${demo.description}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDemos(demos.filter((d) => d.id !== demo.id)); Message.success('已删除'); }} />
+                        </Tooltip>
+                      )}
+                    />
                   ))}
                   {demos.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无演示环境</div>}
                 </div>
@@ -706,26 +1187,22 @@ export function LeadDetail360() {
               {activeSideTab === 'documents' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconUpload />}>上传资料</Button>
+                    <Button type="primary" size="small" icon={<IconUpload />} onClick={() => { docForm.resetFields(); setDocUploadItems([]); setDocModalVisible(true); }}>上传资料</Button>
                   </div>
                   {documents.map((doc) => (
-                    <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--color-border-1)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <IconFile style={{ color: 'var(--color-text-3)' }} />
-                        <div>
-                          <Text style={{ fontSize: 14 }}>{doc.name}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                            <Tag size="small" color="gray">{doc.type}</Tag>
-                            <Tag size="small" color="default">{doc.source}</Tag>
-                            {doc.uploader} · {doc.createdAt}
-                          </div>
-                        </div>
-                      </div>
-                      <Space>
-                        <Button type="text" size="small">下载</Button>
-                        <Button type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDocuments(documents.filter((d) => d.id !== doc.id)); Message.success('已删除'); }} />
-                      </Space>
-                    </div>
+                    <ProcessRecordCard
+                      key={doc.id}
+                      leading={<IconFile />}
+                      title={doc.name}
+                      tags={<><Tag size="small" color="gray">{doc.type}</Tag><Tag size="small" color="arcoblue">{doc.source}</Tag></>}
+                      identifier={`${doc.uploader} · ${doc.createdAt}`}
+                      actions={(
+                        <Space size={4}>
+                        <Tooltip content="下载"><Button className="hubx-icon-action" type="text" size="small" aria-label={`下载 ${doc.name}`} icon={<IconDownload />} onClick={() => Message.success(`开始下载 ${doc.name}`)} /></Tooltip>
+                          <Tooltip content="删除资料"><Button className="hubx-icon-action" aria-label={`删除 ${doc.name}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDocuments(documents.filter((d) => d.id !== doc.id)); Message.success('已删除'); }} /></Tooltip>
+                        </Space>
+                      )}
+                    />
                   ))}
                   {documents.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无资料</div>}
                 </div>
@@ -735,23 +1212,25 @@ export function LeadDetail360() {
               {activeSideTab === 'travel' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>
                   </div>
                   {travels.map((travel) => (
-                    <Card key={travel.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{travel.destination} - {travel.purpose}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
-                            {travel.applicant} · {travel.startDate} ~ {travel.endDate} · ¥{travel.amount}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <Tag color="green" size="small">{travel.status}</Tag>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {travel.approvalNo}</div>
-                        </div>
-                      </div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={travel.id}
+                      title={`${travel.destination} · ${travel.purpose}`}
+                      tags={<Tag color="green" size="small">{travel.status}</Tag>}
+                      actions={<Tooltip content="展开出差详情"><span className="hubx-process-record-card__indicator"><IconArrowLeft /></span></Tooltip>}
+                      identifier={`审批号 ${travel.approvalNo}`}
+                      onClick={() => setTravelDetailId(travel.id)}
+                      ariaLabel={`展开${travel.destination}出差详情`}
+                      summary={(
+                        <>
+                          <span>申请人 <strong>{travel.applicant}</strong></span>
+                          <span>{travel.startDate} 至 {travel.endDate}</span>
+                          <span>费用 <strong>{money(travel.amount)}</strong></span>
+                        </>
+                      )}
+                    />
                   ))}
                   {travels.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无出差记录</div>}
                 </div>
@@ -761,96 +1240,297 @@ export function LeadDetail360() {
               {activeSideTab === 'reimbursement' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>
                   </div>
                   {reimbursements.map((rb) => (
-                    <Card key={rb.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{rb.type} - {rb.description}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
-                            {rb.applicant} · ¥{rb.amount}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <Tag color="green" size="small">{rb.status}</Tag>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {rb.approvalNo}</div>
-                        </div>
-                      </div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={rb.id}
+                      title={`${rb.type} · ${rb.description}`}
+                      tags={<Tag color="green" size="small">{rb.status}</Tag>}
+                      actions={<Tooltip content="展开报销详情"><span className="hubx-process-record-card__indicator"><IconArrowLeft /></span></Tooltip>}
+                      identifier={`审批号 ${rb.approvalNo}`}
+                      onClick={() => setReimbursementDetailId(rb.id)}
+                      ariaLabel={`展开${rb.type}报销详情`}
+                      summary={(
+                        <>
+                          <span>申请人 <strong>{rb.applicant}</strong></span>
+                          <span>报销金额 <strong>{money(rb.amount)}</strong></span>
+                        </>
+                      )}
+                    />
                   ))}
                   {reimbursements.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报销记录</div>}
                 </div>
               )}
             </div>
           </Card>
-        </div>
-      </div>
+        </ProcessWorkspaceAside>
+      </ProcessWorkspace>
 
-      {/* 新增跟进 Modal */}
       <Modal
-        title="登记跟进"
-        visible={followVisible}
-        onOk={() => {
-          followForm.validate().then(() => {
-            Message.success('跟进记录已保存');
-            setFollowVisible(false);
-          });
-        }}
-        onCancel={() => setFollowVisible(false)}
-        style={{ width: 620 }}
+        title={leadOperation === 'transfer' ? '转移给他人' : leadOperation === 'return' ? '扔回公海' : '标记为垃圾'}
+        visible={Boolean(leadOperation)}
+        onOk={submitLeadOperation}
+        onCancel={closeLeadOperation}
+        confirmLoading={leadOperationSubmitting}
+        okText={leadOperation === 'transfer' ? '确认转移' : leadOperation === 'return' ? '确认退回' : '确认标记'}
+        cancelText="取消"
+        okButtonProps={leadOperation === 'trash' ? { status: 'danger' } : leadOperation === 'return' ? { status: 'warning' } : undefined}
+        maskClosable={!leadOperationSubmitting}
+        unmountOnExit
+        style={{ width: 520 }}
       >
-        <Form form={followForm} layout="vertical">
-          <Form.Item label="跟进方式" field="method" rules={[{ required: true }]}>
-            <Select placeholder="请选择">
-              {FOLLOWUP_METHODS.map((m) => <Select.Option key={m} value={m}>{m}</Select.Option>)}
-            </Select>
+        <Form form={leadOperationForm} layout="vertical">
+          {leadOperation === 'transfer' && (
+            <Form.Item label="新负责人" field="targetOwner" rules={[{ required: true, message: '请选择新负责人' }]}>
+              <Select
+                placeholder="选择要转移给的人员"
+                options={employeeOptions.filter((option) => option.value !== lead.owner)}
+                showSearch
+              />
+            </Form.Item>
+          )}
+          <Form.Item
+            label={leadOperation === 'transfer' ? '转移原因' : leadOperation === 'return' ? '退回原因' : '垃圾原因'}
+            field="reason"
+            rules={[{ required: true, message: '请填写操作原因' }, { maxLength: 200, message: '最多输入 200 个字符' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              maxLength={200}
+              showWordLimit
+              placeholder={leadOperation === 'transfer' ? '说明转移背景，便于新负责人接手' : leadOperation === 'return' ? '说明退回公海的原因' : '说明判定为垃圾线索的原因'}
+            />
           </Form.Item>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <Form.Item label="客户状态" field="status" rules={[{ required: true }]}>
-                <Select placeholder="请选择">
-                  {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
-                </Select>
-              </Form.Item>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <Form.Item label="客户等级" field="customerLevel">
-                <Select placeholder="可选" allowClear>
-                  {CUSTOMER_LEVEL_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
-                </Select>
-              </Form.Item>
-            </Grid.Col>
-          </Grid.Row>
-          <Form.Item label="跟进内容" field="content" rules={[{ required: true }]}>
-            <Input.TextArea rows={4} maxLength={1000} showWordLimit placeholder="请记录跟进内容" />
-          </Form.Item>
-          <Form.Item label="快捷话术">
-            <Space wrap>
-              {FOLLOWUP_TEMPLATES.map((t) => (
-                <Tag key={t.label} size="small" color="arcoblue" style={{ cursor: 'pointer' }} onClick={() => followForm.setFieldValue('content', t.content)}>
-                  {t.label}
-                </Tag>
-              ))}
-            </Space>
-          </Form.Item>
-          <Form.Item label="下次跟进时间" field="nextFollowTime">
-            <Space>
-              <DatePicker showTime style={{ width: 220 }} />
-              <Tag size="small" style={{ cursor: 'pointer' }} onClick={() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(10, 0, 0); followForm.setFieldValue('nextFollowTime', d); }}>明天10:00</Tag>
-              <Tag size="small" style={{ cursor: 'pointer' }} onClick={() => { const d = new Date(); d.setDate(d.getDate() + 3); d.setHours(10, 0, 0); followForm.setFieldValue('nextFollowTime', d); }}>3天后</Tag>
-            </Space>
-          </Form.Item>
-          <Form.Item label="附件">
-            <Upload accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple drag>
-              <div style={{ padding: '16px 0', textAlign: 'center' }}>
-                <IconUpload style={{ fontSize: 24, color: 'var(--color-text-3)' }} />
-                <div style={{ marginTop: 8, color: 'var(--color-text-2)' }}>点击或拖拽上传</div>
-              </div>
-            </Upload>
-          </Form.Item>
+          {leadOperation === 'return' && (
+            <div style={{ color: lead.trashCount >= 2 ? 'rgb(var(--danger-6))' : 'var(--color-text-3)', fontSize: 13, lineHeight: '20px' }}>
+              当前已退回 {lead.trashCount} 次；第 3 次退回将自动进入垃圾线索。
+            </div>
+          )}
         </Form>
       </Modal>
+
+      <Modal
+        className={`new-lead-modal${editLeadFullscreen ? ' new-lead-modal--fullscreen' : ''}`}
+        title={(
+          <div className="new-lead-modal__header">
+            <div className="new-lead-modal__heading">
+              <span className="new-lead-modal__title">编辑线索</span>
+              <span className="new-lead-modal__subtitle">更新客户资料与跟进状态，保存后同步至线索列表</span>
+            </div>
+            <Tooltip content={editLeadFullscreen ? '退出全屏' : '全屏填写'}>
+              <Button
+                className="new-lead-modal__fullscreen"
+                type="text"
+                htmlType="button"
+                aria-label={editLeadFullscreen ? '退出全屏' : '全屏填写'}
+                icon={editLeadFullscreen ? <IconFullscreenExit /> : <IconFullscreen />}
+                onClick={() => setEditLeadFullscreen((value) => !value)}
+              />
+            </Tooltip>
+          </div>
+        )}
+        visible={editLeadVisible}
+        onOk={saveEditLead}
+        onCancel={closeEditLead}
+        confirmLoading={editLeadSubmitting}
+        okText="保存修改"
+        cancelText="取消"
+        maskClosable={false}
+        alignCenter
+        unmountOnExit
+        style={editLeadFullscreen ? undefined : { width: 'calc(100vw - 32px)', maxWidth: 1040 }}
+        footer={(cancelButtonNode, okButtonNode) => (
+          <div className="new-lead-modal__footer">
+            {cancelButtonNode}
+            {okButtonNode}
+          </div>
+        )}
+      >
+        <Form form={editLeadForm} layout="vertical" className="new-lead-form">
+          <div className="new-lead-form__notice" role="note">
+            <div>
+              <strong>编辑提示</strong>
+              <span>带 * 的字段为必填项；联系电话和联系微信至少填写一项。</span>
+            </div>
+            <span className="new-lead-form__destination">更新当前线索</span>
+          </div>
+
+          <section className="new-lead-form__section">
+            <div className="new-lead-form__section-heading">
+              <span>01</span>
+              <div><h3>基本信息</h3><p>维护线索名称、来源渠道和承接主体</p></div>
+            </div>
+            <div className="new-lead-form__grid">
+              <Form.Item className="new-lead-form__span-2" label="线索名称" field="name" required rules={[{ required: true, message: '请输入线索名称' }, { maxLength: 30, message: '最多输入 30 个字符' }]}>
+                <Input autoFocus placeholder="如：华东零售门店小程序升级" maxLength={30} showWordLimit allowClear />
+              </Form.Item>
+              <Form.Item label="线索来源" field="source" required rules={[{ required: true, message: '请选择线索来源' }]}>
+                <Select placeholder="选择来源渠道" allowClear>
+                  {LEAD_SOURCE_LIST.map((source) => <Select.Option key={source} value={source}>{LEAD_SOURCE_LABEL[source]}</Select.Option>)}
+                </Select>
+              </Form.Item>
+              <Form.Item label="对接主体" field="entity" required rules={[{ required: true, message: '请选择对接主体' }]}>
+                <Select placeholder="选择承接主体" allowClear>
+                  {COMPANY_ENTITY_LIST.map((entity) => <Select.Option key={entity} value={entity}>{entity}</Select.Option>)}
+                </Select>
+              </Form.Item>
+            </div>
+          </section>
+
+          <section className="new-lead-form__section">
+            <div className="new-lead-form__section-heading">
+              <span>02</span>
+              <div><h3>联系人信息</h3><p>维护客户对接人和有效触达方式</p></div>
+            </div>
+            <div className="new-lead-form__grid new-lead-form__grid--three">
+              <Form.Item label="联系人" field="contact" required rules={[{ required: true, message: '请输入联系人' }]}>
+                <Input placeholder="联系人姓名或称呼" allowClear />
+              </Form.Item>
+              <Form.Item label="联系电话" field="phone" rules={[{ match: /^$|^1(?:\d{10}|\d{2}\*{4}\d{4})$/, message: '请输入正确的 11 位手机号' }]}>
+                <Input placeholder="11 位手机号" maxLength={11} allowClear />
+              </Form.Item>
+              <Form.Item label="联系微信" field="wechat">
+                <Input placeholder="微信号或绑定手机号" allowClear />
+              </Form.Item>
+            </div>
+          </section>
+
+          <section className="new-lead-form__section">
+            <div className="new-lead-form__section-heading">
+              <span>03</span>
+              <div><h3>状态与责任</h3><p>更新销售阶段、客户分级和协作人员</p></div>
+            </div>
+            <div className="new-lead-form__grid new-lead-form__grid--three">
+              <Form.Item label="线索状态" field="status" required rules={[{ required: true, message: '请选择线索状态' }]}>
+                <Select placeholder="选择线索状态" options={SALES_STATUS_LIST.map((value) => ({ label: value, value }))} />
+              </Form.Item>
+              <Form.Item label="意向等级" field="level" required rules={[{ required: true, message: '请选择意向等级' }]}>
+                <Select placeholder="选择意向等级" options={INTENTION_LEVEL_LIST.map((value) => ({ label: value, value }))} />
+              </Form.Item>
+              <Form.Item label="客户等级" field="customerLevel">
+                <Select placeholder="选择客户等级" allowClear options={CUSTOMER_LEVEL_LIST.map((value) => ({ label: value, value }))} />
+              </Form.Item>
+              <Form.Item label="优化师" field="optimizer">
+                <Select placeholder="选择优化师" options={employeeOptions} showSearch allowClear />
+              </Form.Item>
+              <Form.Item label="归属人" field="owner">
+                <Select placeholder="选择归属人" options={employeeOptions} showSearch allowClear />
+              </Form.Item>
+              <Form.Item label="协助人" field="assistant">
+                <Select placeholder="选择协助人" options={employeeOptions} showSearch allowClear />
+              </Form.Item>
+            </div>
+          </section>
+
+          <section className="new-lead-form__section">
+            <div className="new-lead-form__section-heading">
+              <span>04</span>
+              <div><h3>需求与投放</h3><p>补充需求记录、渠道索引和售前协作信息</p></div>
+            </div>
+            <div className="new-lead-form__grid">
+              <Form.Item label="推广关键词" field="keyword">
+                <Input placeholder="如：小程序定制" allowClear />
+              </Form.Item>
+              <Form.Item label="售前群名称" field="presalesGroupName">
+                <Input placeholder="请输入售前群名称" allowClear />
+              </Form.Item>
+              <Form.Item className="new-lead-form__span-all new-lead-form__tags" label="意向标签" field="tags">
+                <div className="new-lead-form__tag-list">
+                  {editLeadAvailableTags.map((tag) => (
+                    <Tag key={tag} checkable checked={editLeadTags.includes(tag)} onCheck={() => toggleEditLeadTag(tag)}>{tag}</Tag>
+                  ))}
+                  {addingEditLeadTag ? (
+                    <Input
+                      className="new-lead-form__tag-input"
+                      size="mini"
+                      autoFocus
+                      value={newEditLeadTag}
+                      maxLength={10}
+                      placeholder="标签名称"
+                      onChange={setNewEditLeadTag}
+                      onPressEnter={confirmNewEditLeadTag}
+                      onBlur={confirmNewEditLeadTag}
+                    />
+                  ) : (
+                    <Button size="mini" type="dashed" icon={<IconPlus />} onClick={() => setAddingEditLeadTag(true)}>添加标签</Button>
+                  )}
+                </div>
+              </Form.Item>
+              <Form.Item className="new-lead-form__span-all new-lead-form__textarea" label="客户需求" field="requirement" required rules={[{ required: true, message: '请输入客户需求' }, { maxLength: 500, message: '最多输入 500 个字符' }]}>
+                <Input.TextArea rows={4} maxLength={500} showWordLimit placeholder="请简要记录业务背景、目标功能、预算或期望交付时间" />
+              </Form.Item>
+              <Form.Item className="new-lead-form__span-all new-lead-form__textarea" label="客户其他备注" field="customerNote" rules={[{ maxLength: 500, message: '最多输入 500 个字符' }]}>
+                <Input.TextArea rows={3} maxLength={500} showWordLimit placeholder="补充沟通偏好、特殊事项或其他背景" />
+              </Form.Item>
+              <Form.Item className="new-lead-form__span-all new-lead-form__upload" label={`附件管理（${editLeadUploadItems.length}/10）`}>
+                <Upload
+                  accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                  multiple
+                  limit={10}
+                  drag
+                  autoUpload={false}
+                  fileList={editLeadUploadItems}
+                  onChange={setEditLeadUploadItems}
+                  onRemove={(file) => {
+                    setEditLeadUploadItems((current) => current.filter((item) => item.uid !== file.uid));
+                    return false;
+                  }}
+                  onPreview={(file) => {
+                    if (file.url) window.open(file.url, '_blank', 'noopener,noreferrer');
+                  }}
+                  onExceedLimit={() => Message.warning('线索附件最多上传 10 个')}
+                >
+                  <div className="new-lead-form__upload-content">
+                    <IconUpload />
+                    <div>点击或拖拽文件到此处上传</div>
+                    <span>支持图片、PDF、Word、Excel；点击文件列表删除图标可移除附件，保存后生效</span>
+                  </div>
+                </Upload>
+              </Form.Item>
+            </div>
+          </section>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="选择报价工作台"
+        visible={quoteModeVisible}
+        onCancel={() => setQuoteModeVisible(false)}
+        onOk={async () => {
+          const newId = await createQuote(id ?? '', [], {
+            projectName: lead.name,
+            customerName: lead.customer,
+            customerContact: lead.contact,
+            customerPhone: lead.phone,
+          }, { flowMode: quoteFlowMode });
+          setQuoteModeVisible(false);
+          setQuotationDrawerQuoteId(newId);
+          setQuotationDrawerVisible(true);
+        }}
+        okText="进入报价流程"
+        style={{ width: 620 }}
+      >
+        <Radio.Group value={quoteFlowMode} onChange={setQuoteFlowMode} style={{ width: '100%' }}>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Radio value="file">
+              <div><b>文件流转方式</b><div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>使用 Excel 文件流转功能清单和工时评估。</div></div>
+            </Radio>
+            <Radio value="online">
+              <div><b>在线表单方式</b><div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>各角色在工作台内协作处理结构化表单数据。</div></div>
+            </Radio>
+          </Space>
+        </Radio.Group>
+      </Modal>
+
+      <LeadFollowUpModal
+        visible={followVisible}
+        submitting={followSubmitting}
+        defaultStatus={lead.status}
+        defaultIntention={lead.level}
+        onCancel={() => setFollowVisible(false)}
+        onSubmit={saveFollowUp}
+      />
 
       {/* 新增演示环境 Modal */}
       <Modal title="新增演示环境" visible={demoModalVisible} onOk={() => { demoForm.validate().then((values) => { setDemos([...demos, { id: `dm${Date.now()}`, ...values }]); Message.success('已添加'); setDemoModalVisible(false); }); }} onCancel={() => setDemoModalVisible(false)} style={{ width: 480 }}>
@@ -858,6 +1538,63 @@ export function LeadDetail360() {
           <Form.Item label="环境类型" field="type" rules={[{ required: true }]}><Select placeholder="请选择"><Select.Option value="原型演示">原型演示</Select.Option><Select.Option value="测试环境">测试环境</Select.Option><Select.Option value="预发布环境">预发布环境</Select.Option><Select.Option value="正式环境">正式环境</Select.Option></Select></Form.Item>
           <Form.Item label="访问地址" field="url" rules={[{ required: true }]}><Input placeholder="请输入 URL" /></Form.Item>
           <Form.Item label="说明" field="description"><Input placeholder="可选" /></Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="上传资料"
+        visible={docModalVisible}
+        onOk={saveDocument}
+        onCancel={() => { setDocModalVisible(false); setDocUploadItems([]); docForm.resetFields(); }}
+        okText="确认上传"
+        cancelText="取消"
+        style={{ width: 560 }}
+      >
+        <Form form={docForm} layout="vertical">
+          <Grid.Row gutter={16}>
+            <Grid.Col span={12}>
+              <Form.Item label="资料类型" field="type" rules={[{ required: true, message: '请选择资料类型' }]}>
+                <Select placeholder="请选择">
+                  <Select.Option value="确认书">确认书</Select.Option>
+                  <Select.Option value="需求文档">需求文档</Select.Option>
+                  <Select.Option value="报价单">报价单</Select.Option>
+                  <Select.Option value="原型文件">原型文件</Select.Option>
+                  <Select.Option value="其他">其他</Select.Option>
+                </Select>
+              </Form.Item>
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <Form.Item label="资料来源" field="source" rules={[{ required: true, message: '请选择资料来源' }]}>
+                <Select placeholder="请选择">
+                  <Select.Option value="客户签署">客户签署</Select.Option>
+                  <Select.Option value="客户提供">客户提供</Select.Option>
+                  <Select.Option value="内部上传">内部上传</Select.Option>
+                  <Select.Option value="报价模块">报价模块</Select.Option>
+                </Select>
+              </Form.Item>
+            </Grid.Col>
+          </Grid.Row>
+          <Form.Item label="资料文件" required>
+            <Upload
+              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip"
+              limit={1}
+              drag
+              autoUpload={false}
+              fileList={docUploadItems}
+              onChange={(files) => setDocUploadItems(files.slice(-1))}
+              onRemove={(file) => {
+                setDocUploadItems((current) => current.filter((item) => item.uid !== file.uid));
+                return false;
+              }}
+              onExceedLimit={() => Message.warning('每次只能上传一个资料文件')}
+            >
+              <div style={{ padding: '16px 0', textAlign: 'center' }}>
+                <IconUpload style={{ fontSize: 28, color: 'rgb(var(--primary-6))' }} />
+                <div style={{ marginTop: 8 }}>点击或拖拽资料文件到此处</div>
+                <Text type="secondary" style={{ fontSize: 12 }}>支持图片、PDF、Word、Excel 和 ZIP</Text>
+              </div>
+            </Upload>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -885,6 +1622,14 @@ export function LeadDetail360() {
         </Form>
       </Modal>
 
+      <CollectionRecordModal
+        visible={collectionModalVisible}
+        editing={Boolean(editingCollectionId)}
+        form={collectionForm}
+        onOk={saveCollection}
+        onCancel={() => setCollectionModalVisible(false)}
+      />
+
       <Drawer
         title="报价工作台"
         visible={quotationDrawerVisible}
@@ -902,6 +1647,12 @@ export function LeadDetail360() {
           />
         )}
       </Drawer>
-    </div>
+      <Drawer title="出差详情与审批流" width={520} visible={Boolean(travelDetailId)} onCancel={() => setTravelDetailId(null)} footer={null}>
+        {travels.filter((item) => item.id === travelDetailId).map((item) => <div key={item.id}><Descriptions column={1} data={[{ label: '目的地', value: item.destination }, { label: '事由', value: item.purpose }, { label: '申请人', value: item.applicant }, { label: '日期', value: `${item.startDate} ~ ${item.endDate}` }, { label: '金额', value: money(item.amount) }, { label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交申请 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">部门负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
+      </Drawer>
+      <Drawer title="报销详情与审批流" width={520} visible={Boolean(reimbursementDetailId)} onCancel={() => setReimbursementDetailId(null)} footer={null}>
+        {reimbursements.filter((item) => item.id === reimbursementDetailId).map((item) => <div key={item.id}><Descriptions column={1} data={[{ label: '报销类型', value: item.type }, { label: '说明', value: item.description }, { label: '申请人', value: item.applicant }, { label: '金额', value: money(item.amount) }, { label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交报销 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">直属负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
+      </Drawer>
+    </PageShell>
   );
 }

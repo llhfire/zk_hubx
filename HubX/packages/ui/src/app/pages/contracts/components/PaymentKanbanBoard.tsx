@@ -1,6 +1,4 @@
 import { useMemo } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import type { Contract, PaymentStatus } from '../types';
 import { computePaymentStatus } from '../paymentUtils';
 import { PaymentKanbanCard } from './PaymentKanbanCard';
@@ -13,20 +11,6 @@ const COLUMNS: { status: PaymentStatus; label: string; color: string; bg: string
   { status: 'settled', label: '已结清', color: 'var(--success-500)', bg: 'var(--success-50)' },
 ];
 
-function DraggableCard({ contract, onClick }: { contract: Contract; onClick: (c: Contract) => void }) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'CONTRACT_CARD',
-    item: { id: contract.id },
-    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
-  }));
-
-  return (
-    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1 }}>
-      <PaymentKanbanCard contract={contract} onClick={onClick} />
-    </div>
-  );
-}
-
 function KanbanColumn({
   status,
   label,
@@ -34,7 +18,6 @@ function KanbanColumn({
   bg,
   contracts,
   onCardClick,
-  onDrop,
 }: {
   status: PaymentStatus;
   label: string;
@@ -42,16 +25,9 @@ function KanbanColumn({
   bg: string;
   contracts: Contract[];
   onCardClick: (c: Contract) => void;
-  onDrop: (contractId: string) => void;
 }) {
-  const [, drop] = useDrop(() => ({
-    accept: 'CONTRACT_CARD',
-    drop: (item: { id: string }) => onDrop(item.id),
-  }));
-
   return (
     <div
-      ref={drop}
       style={{
         flex: 1,
         minWidth: 220,
@@ -88,11 +64,11 @@ function KanbanColumn({
       </div>
       <div style={{ flex: 1, overflow: 'auto' }}>
         {contracts.map((c) => (
-          <DraggableCard key={c.id} contract={c} onClick={onCardClick} />
+          <PaymentKanbanCard key={c.id} contract={c} onClick={onCardClick} />
         ))}
         {contracts.length === 0 && (
           <div style={{ textAlign: 'center', color: 'var(--grey-400)', fontSize: 12, padding: 24 }}>
-            拖拽合同到此列
+            暂无合同
           </div>
         )}
       </div>
@@ -103,10 +79,9 @@ function KanbanColumn({
 interface Props {
   contracts: Contract[];
   onCardClick: (contract: Contract) => void;
-  onCardDrop: (contractId: string, newStatus: PaymentStatus) => void;
 }
 
-export function PaymentKanbanBoard({ contracts, onCardClick, onCardDrop }: Props) {
+export function PaymentKanbanBoard({ contracts, onCardClick }: Props) {
   const grouped = useMemo(() => {
     const map: Record<PaymentStatus, Contract[]> = {
       normal: [],
@@ -124,21 +99,18 @@ export function PaymentKanbanBoard({ contracts, onCardClick, onCardDrop }: Props
   }, [contracts]);
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div style={{ display: 'flex', gap: 12, overflow: 'auto', paddingBottom: 16 }}>
-        {COLUMNS.map((col) => (
-          <KanbanColumn
-            key={col.status}
-            status={col.status}
-            label={col.label}
-            color={col.color}
-            bg={col.bg}
-            contracts={grouped[col.status]}
-            onCardClick={onCardClick}
-            onDrop={(contractId) => onCardDrop(contractId, col.status)}
-          />
-        ))}
-      </div>
-    </DndProvider>
+    <div style={{ display: 'flex', gap: 12, overflow: 'auto', paddingBottom: 16 }}>
+      {COLUMNS.map((col) => (
+        <KanbanColumn
+          key={col.status}
+          status={col.status}
+          label={col.label}
+          color={col.color}
+          bg={col.bg}
+          contracts={grouped[col.status]}
+          onCardClick={onCardClick}
+        />
+      ))}
+    </div>
   );
 }

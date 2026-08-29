@@ -214,7 +214,7 @@ export function ContractModificationPanel({
             rules={[{ required: true, message: '请填写修改说明' }]}
           >
             <Input.TextArea
-              placeholder="请详细记录本次合同修改内容，如条款变更、金额调整、补充协议等"
+              placeholder="请详细记录本次合同修改内容，如条款变更、金额调整、补充合同附件更新等"
               rows={5}
               maxLength={2000}
               showWordLimit

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Select, Space, Table, Typography } from '@arco-design/web-react';
-import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
+import { Button, Card, DatePicker, Select, Space, Table, Tooltip, Typography } from '@arco-design/web-react';
+import { IconEye, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
 import { DailyReportDetail } from './daily-report/DailyReportDetail';
 import { mockDailyReports } from './daily-report/mockData';
 import {
@@ -10,6 +10,7 @@ import {
   SalesReportContent,
   WORK_KIND_LABELS,
 } from './daily-report/types';
+import { PageShell } from '@/app/components/ui';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -173,15 +174,22 @@ export function ProjectLogView() {
       width: 100,
       fixed: 'right' as const,
       render: (_: unknown, record: ProjectReportRow) => (
-        <Button type="text" size="small" onClick={() => handleViewReport(record.report)}>
-          查看日报
-        </Button>
+        <Tooltip content="查看日报">
+          <Button
+            type="text"
+            size="small"
+            className="hubx-icon-action"
+            aria-label="查看日报"
+            icon={<IconEye />}
+            onClick={() => handleViewReport(record.report)}
+          />
+        </Tooltip>
       ),
     },
   ];
 
   return (
-    <div>
+    <PageShell breadcrumbs={[{ label: '日报', to: '/dailyreport/list' }, { label: '日报列表', to: '/dailyreport/list' }, { label: '项目日报明细' }]}>
       <Card style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
           <div>
@@ -272,6 +280,6 @@ export function ProjectLogView() {
         onAddComment={handleAddComment}
         currentUserId="user-sales-zhangsan"
       />
-    </div>
+    </PageShell>
   );
 }

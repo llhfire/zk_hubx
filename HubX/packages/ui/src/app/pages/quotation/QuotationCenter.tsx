@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Button, Card, Checkbox, Empty, Input, Select, Space, Table, Tag, Typography,
+  Button, Card, Checkbox, Empty, Input, Select, Space, Table, Tag, Tabs, Tooltip, Typography,
 } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconRight, IconUser } from '@arco-design/web-react/icon';
+import { IconSearch } from '@arco-design/web-react/icon';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useQuotation } from './QuotationContext';
 import { computeAmountBreakdown, getPendingOwner, getPendingRoles, isExpired } from './quoteFlow';
-import { canViewQuote, canCreateQuote } from './quoteAccess';
+import { canViewQuote } from './quoteAccess';
 import { loadQuotePermission } from './quotePermissionStore';
 import {
   QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, QUOTE_STAGE_NAMES,
@@ -55,7 +56,7 @@ export function QuotationCenter() {
   }, [quotes, keyword, statusFilter, stageFilter, mineOnly, currentRole, currentViewer, isAdmin]);
 
   const columns = [
-    { title: '报价编号', dataIndex: 'quoteNo', width: 150, render: (v: string) => <Text bold>{v}</Text> },
+    { title: '报价编号', dataIndex: 'quoteNo', width: 170, render: (v: string) => <Text bold style={{ whiteSpace: 'nowrap' }}>{v}</Text> },
     { title: '版本', dataIndex: 'version', width: 70, render: (v: string) => <Tag>{v}</Tag> },
     { title: '项目', dataIndex: 'projectName', width: 200, render: (_: unknown, r: Quote) => r.basicInfo.projectName },
     { title: '客户', dataIndex: 'customerName', width: 180, render: (_: unknown, r: Quote) => r.basicInfo.customerName || '-' },
@@ -85,13 +86,20 @@ export function QuotationCenter() {
         return <Text bold>{b.grandTotal > 0 ? money(b.grandTotal) : '-'}</Text>;
       },
     },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 140 },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 160, render: (v: string) => <span style={{ whiteSpace: 'nowrap' }}>{v}</span> },
     {
       title: '操作', dataIndex: 'op', width: 100, fixed: 'right' as const,
       render: (_: unknown, r: Quote) => (
-        <Button type="text" size="small" onClick={() => navigate(`/quotation/${r.id}`)}>
-          进入工作台 <IconRight />
-        </Button>
+        <Tooltip content="进入报价工作台">
+          <Button
+            className="hubx-icon-action"
+            type="text"
+            size="small"
+            aria-label={`进入 ${r.quoteNo} 报价工作台`}
+            icon={<ArrowSquareOut size={18} weight="regular" />}
+            onClick={() => navigate(`/quotation/${r.id}`)}
+          />
+        </Tooltip>
       ),
     },
   ];
@@ -100,21 +108,15 @@ export function QuotationCenter() {
     <div>
       <Card style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <Title heading={5} style={{ margin: 0 }}>报价管理</Title>
-            <Text type="secondary">一个工作台贯穿：功能清单 → 人天评估 → 报价配置 → 审批盖章</Text>
-          </div>
-          <Space wrap>
-            {([1, 2, 3, 4] as QuoteStage[]).map((s) => (
-              <Tag key={s} color="arcoblue" style={{ padding: '4px 10px' }}>
-                {QUOTE_STAGE_NAMES[s]} · {stats[s]}
-              </Tag>
-            ))}
-          </Space>
+          <Title heading={5} style={{ margin: 0 }}>报价管理</Title>
         </div>
       </Card>
 
       <Card>
+        <Tabs type="card" size="small" activeTab={stageFilter || 'all'} onChange={(value) => setStageFilter(value === 'all' ? '' : Number(value) as QuoteStage)} style={{ marginBottom: 12 }}>
+          <Tabs.TabPane key="all" title={`全部 · ${quotes.length}`} />
+          {([1, 2, 3, 4] as QuoteStage[]).map((stage) => <Tabs.TabPane key={stage} title={`${QUOTE_STAGE_NAMES[stage]} · ${stats[stage]}`} />)}
+        </Tabs>
         <Space style={{ marginBottom: 12 }} wrap>
           <Input
             style={{ width: 240 }}
@@ -154,18 +156,6 @@ export function QuotationCenter() {
             pagination={{ total: filtered.length, pageSize: 10, showTotal: true, sizeCanChange: true }}
           />
         )}
-
-        <Space style={{ marginTop: 12 }}>
-          {canCreateQuote(currentViewer, permission) && (
-            <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/leads')}>
-              从线索发起报价
-            </Button>
-          )}
-          <Text type="secondary">
-            <IconUser style={{ marginRight: 4 }} />
-            报价由线索详情页「发起工时评估」创建，进入对应阶段的工作台处理
-          </Text>
-        </Space>
       </Card>
     </div>
   );

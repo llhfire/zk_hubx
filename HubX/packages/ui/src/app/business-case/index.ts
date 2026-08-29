@@ -18,11 +18,15 @@ export {
   filterProjectsForViewer,
   hasEnteredSigning,
   isActiveContract,
+  isSameLeadIdentity,
   isVisibleToProductManager,
   leadProjectBanner,
+  normalizeLeadIdentity,
   shouldSpawnUnconfirmedProject,
+  signingLeadTransitions,
   spawnUnconfirmedProject,
   startDelivery,
+  unconfirmedProjectId,
 } from './caseUtils';
 export type { DeliveryStartPatch } from './caseUtils';
 export { initialBusinessCases } from './mockCases';

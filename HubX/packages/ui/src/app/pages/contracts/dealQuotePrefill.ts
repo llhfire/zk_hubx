@@ -5,6 +5,7 @@
 
 import type { Quote, QuoteSummary } from '../quotation/types';
 import type { ContractFormData, PaymentPlanItem, PaymentPlanPeriodName } from './types';
+import { addWorkdays } from '../quotation/quotePricing';
 
 export interface DealQuotePrefill {
   quoteId: string;
@@ -21,6 +22,9 @@ export interface DealQuotePrefill {
   customerName: string;
   customerContact: string;
   customerPhone: string;
+  kind: 'main' | 'supplement';
+  parentContractId?: string;
+  invoiceType?: '专票' | '普票';
 }
 
 function periodNameForStage(stage: string, index: number): PaymentPlanPeriodName | undefined {
@@ -64,16 +68,10 @@ export function buildDealQuotePrefill(quote: Quote): DealQuotePrefill {
     customerName: quote.basicInfo.customerName,
     customerContact: quote.basicInfo.customerContact,
     customerPhone: quote.basicInfo.customerPhone,
+    kind: quote.isSupplement ? 'supplement' : 'main',
+    parentContractId: quote.isSupplement ? quote.contractId : undefined,
+    invoiceType: quote.summary?.invoiceType,
   };
-}
-
-function addDaysStr(base: string, days: number): string {
-  const d = new Date(base);
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + day;
 }
 
 /**
@@ -84,7 +82,7 @@ function addDaysStr(base: string, days: number): string {
  */
 export function applyDealQuotePrefill(base: ContractFormData, prefill: DealQuotePrefill): ContractFormData {
   const endDate = prefill.projectWorkDays && prefill.projectWorkDays > 0
-    ? addDaysStr(base.effectiveDate, prefill.projectWorkDays)
+    ? addWorkdays(base.effectiveDate, prefill.projectWorkDays)
     : base.endDate;
 
   const warrantyText = prefill.warrantyYears && prefill.warrantyYears > 0
@@ -97,8 +95,9 @@ export function applyDealQuotePrefill(base: ContractFormData, prefill: DealQuote
     customerName: base.customerName || prefill.customerName,
     customerContact: base.customerContact || prefill.customerContact,
     customerPhone: base.customerPhone || prefill.customerPhone,
-    totalAmount: prefill.totalAmount > 0 ? prefill.totalAmount : base.totalAmount,
+    totalAmount: prefill.kind === 'supplement' ? prefill.totalAmount : (prefill.totalAmount > 0 ? prefill.totalAmount : base.totalAmount),
     paymentPlans: prefill.paymentPlans.length > 0 ? prefill.paymentPlans : base.paymentPlans,
+    invoiceType: prefill.invoiceType ?? base.invoiceType,
     endDate,
     contractContent: warrantyText
       ? '乙方按甲方需求规格说明书完成系统设计、开发、测试、部署及培训，' + warrantyText + '。'

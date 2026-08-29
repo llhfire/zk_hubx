@@ -15,6 +15,7 @@ function makeSummary(): QuoteSummary {
     ],
     taxIncluded: true,
     warrantyYears: 2,
+    invoiceType: '专票',
   };
 }
 
@@ -125,9 +126,22 @@ describe('applyDealQuotePrefill', () => {
     expect(result.customerName).toBe('智慧园区科技公司');
     expect(result.totalAmount).toBe(300000);
     expect(result.paymentPlans).toHaveLength(3);
-    // 生效日 2026-08-19 + 90 天
-    expect(result.endDate).toBe('2026-11-17');
+    // 生效日 2026-08-19 + 90 个工作日
+    expect(result.endDate).toBe('2026-12-23');
     expect(result.contractContent).toContain('2 年免费质保');
+    expect(result.invoiceType).toBe('专票');
+  });
+
+  it('减额补充报价保留负金额并标记父合同', () => {
+    const quote = makeQuote();
+    quote.isSupplement = true;
+    quote.contractId = 'contract-main-1';
+    quote.summary = { ...makeSummary(), grandTotalPrice: -5000 };
+    const prefill = buildDealQuotePrefill(quote);
+    const result = applyDealQuotePrefill(makeBaseForm(), prefill);
+    expect(prefill.kind).toBe('supplement');
+    expect(prefill.parentContractId).toBe('contract-main-1');
+    expect(result.totalAmount).toBe(-5000);
   });
 
   it('线索已有的客户信息优先（不为空不覆盖）', () => {

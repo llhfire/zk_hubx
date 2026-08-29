@@ -12,10 +12,10 @@ export const PROJECT_STATUS_LIST: ProjectStatus[] = [
 export const PROJECT_STATUS_COLOR: Record<ProjectStatus, string> = {
   '未确认': 'orange',
   '未开始': 'blue',
-  '进行中': 'processing',
+  '进行中': 'arcoblue',
   '验收中': 'purple',
   '催款中': 'gold',
-  '已完成': 'success',
+  '已完成': 'green',
   '搁置': 'gray',
   '延迟': 'red',
 };

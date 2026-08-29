@@ -1,7 +1,6 @@
 // src/app/pages/delivery-plan/GanttChart.tsx
 
 import React, { useMemo } from 'react';
-import { Radio } from '@arco-design/web-react';
 import type { DeliveryPlan, SopStep, GanttZoomLevel } from './types';
 import { PHASE_COLORS, PHASE_COLORS_LIGHT } from './constants';
 import { isStepOverdue } from './utils';
@@ -23,7 +22,6 @@ import {
 export interface GanttChartProps {
   plan: DeliveryPlan;
   zoomLevel: GanttZoomLevel;
-  onZoomLevelChange: (level: GanttZoomLevel) => void;
   scrollRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -37,12 +35,6 @@ const PX_PER_DAY: Record<GanttZoomLevel, number> = {
   week: 20,
   month: 8,
 };
-
-const ZOOM_OPTIONS: { label: string; value: GanttZoomLevel }[] = [
-  { label: '日', value: 'day' },
-  { label: '周', value: 'week' },
-  { label: '月', value: 'month' },
-];
 
 /* ---------- Milestones within a phase date range ---------- */
 
@@ -104,7 +96,6 @@ function buildRowItems(plan: DeliveryPlan): RowItem[] {
 const GanttChart: React.FC<GanttChartProps> = ({
   plan,
   zoomLevel,
-  onZoomLevelChange,
   scrollRef,
 }) => {
   const pxPerDay = PX_PER_DAY[zoomLevel];
@@ -218,30 +209,6 @@ const GanttChart: React.FC<GanttChartProps> = ({
         background: '#fff',
       }}
     >
-      {/* Zoom buttons */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--grey-200)',
-          flexShrink: 0,
-        }}
-      >
-        <Radio.Group
-          type="button"
-          value={zoomLevel}
-          onChange={(val) => onZoomLevelChange(val as GanttZoomLevel)}
-          size="small"
-        >
-          {ZOOM_OPTIONS.map((opt) => (
-            <Radio key={opt.value} value={opt.value}>
-              {opt.label}
-            </Radio>
-          ))}
-        </Radio.Group>
-      </div>
-
       {/* Scrollable area */}
       <div
         ref={scrollRef}

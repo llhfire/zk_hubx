@@ -22,6 +22,8 @@ import {
 import { IconPlus, IconSend, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { MessageChannel, NotificationRule, SmsConfig } from '@/app/integrations/types';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../systemConfigConsistency.css';
 
 const FormItem = Form.Item;
 const Row = Grid.Row;
@@ -94,10 +96,10 @@ export function NotificationSettings() {
       render: (_: unknown, rule: NotificationRule) => (
         <Space>
           <Tooltip content="编辑">
-            <Button type="text" size="small" icon={<IconEdit />} onClick={() => editRule(rule)} />
+            <Button type="text" size="small" icon={<IconEdit />} aria-label={`编辑${rule.name}`} onClick={() => editRule(rule)} />
           </Tooltip>
           <Tooltip content="测试">
-            <Button type="text" size="small" icon={<IconSend />} onClick={() => { simulateRule(rule); Message.success('已生成模拟投递记录'); }} />
+            <Button type="text" size="small" icon={<IconSend />} aria-label={`测试${rule.name}`} onClick={() => { simulateRule(rule); Message.success('已生成模拟投递记录'); }} />
           </Tooltip>
         </Space>
       ),
@@ -105,19 +107,29 @@ export function NotificationSettings() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div>
-        <Text type="secondary">员工参与的业务事件统一在这里配置接收人、通道和升级策略。</Text>
-      </div>
+    <PageShell className="system-config-page" breadcrumbs={[{ label: '系统管理' }, { label: '通知设置' }]}>
+      <PageHeader
+        title="通知设置"
+        description="统一配置业务事件的接收人、发送通道和超时升级策略。"
+      />
       <Alert type="info" showIcon content="当前企业微信和阿里云短信均为模拟投递；站内信会真实写入当前浏览器的消息中心。" />
-      <Card bordered={false}>
+      <ProcessMetricGrid items={[
+        { key: 'rules', label: '消息规则', value: rules.length, detail: '覆盖各业务模块' },
+        { key: 'enabled', label: '已启用', value: rules.filter((rule) => rule.enabled).length, detail: `停用 ${rules.filter((rule) => !rule.enabled).length} 条`, tone: 'success' },
+        { key: 'high', label: '高优先级', value: rules.filter((rule) => rule.priority === 'high').length, detail: '支持超时升级', tone: 'warning' },
+        { key: 'channels', label: '发送通道', value: 3, detail: '站内信 / 企业微信 / 短信' },
+      ]} />
+      <Card className="system-config-card" title="通知与模板" bordered={false}>
         <Tabs defaultActiveTab="rules">
           <Tabs.TabPane key="rules" title="消息规则">
-            <div style={{ textAlign: 'right', marginBottom: 16 }}><Button type="primary" icon={<IconPlus />} onClick={() => editRule()}>新增规则</Button></div>
+            <div className="system-config-section-toolbar">
+              <span>共 {rules.length} 条规则，启用后按优先级和通道执行。</span>
+              <Button type="primary" icon={<IconPlus />} onClick={() => editRule()}>新增规则</Button>
+            </div>
             <Table rowKey="id" columns={columns} data={rules} pagination={{ pageSize: 8 }} scroll={{ x: 1280 }} />
           </Tabs.TabPane>
           <Tabs.TabPane key="sms" title="阿里云短信">
-            <Form form={smsForm} layout="vertical" style={{ maxWidth: 900 }}>
+            <Form className="system-config-form" form={smsForm} layout="vertical">
               <Row gutter={16}>
                 <Col span={8}><FormItem label="启用短信" field="enabled" triggerPropName="checked"><Switch /></FormItem></Col>
                 <Col span={8}><FormItem label="模拟模式" field="mockMode" triggerPropName="checked"><Switch disabled /></FormItem></Col>
@@ -152,7 +164,7 @@ export function NotificationSettings() {
         </Tabs>
       </Card>
 
-      <Modal title="消息规则" visible={visible} onCancel={() => setVisible(false)} onOk={saveRule} style={{ width: 720 }}>
+      <Modal title="消息规则" visible={visible} onCancel={() => setVisible(false)} onOk={saveRule} style={{ width: 720, maxWidth: 'calc(100vw - 32px)' }}>
         <Form form={ruleForm} layout="vertical">
           <FormItem field="id" hidden><Input /></FormItem>
           <Row gutter={16}>
@@ -167,7 +179,6 @@ export function NotificationSettings() {
           </Row>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }
-

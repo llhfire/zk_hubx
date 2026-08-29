@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router';
 import {
   Button,
   Card,
@@ -17,6 +18,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconArrowRight, IconCopy, IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell } from '@/app/components/ui';
 import {
   loadBusinessApprovals,
   loadWorkflowTemplates,
@@ -51,6 +53,8 @@ function FlowPreview({ nodes }: { nodes: ApprovalNode[] }) {
 }
 
 export function WorkflowTemplateList() {
+  const location = useLocation();
+  const isSystemEntry = location.pathname.startsWith('/system/');
   const [templates, setTemplates] = useState<WorkflowTemplateDefinition[]>(loadWorkflowTemplates);
   const [visible, setVisible] = useState(false);
   const [editing, setEditing] = useState<WorkflowTemplateDefinition | null>(null);
@@ -174,14 +178,14 @@ export function WorkflowTemplateList() {
       render: (_: unknown, template: WorkflowTemplateDefinition) => (
         <Space size={4}>
           <Tooltip content="编辑">
-            <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEdit(template)} />
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑${template.name}模板`} icon={<IconEdit />} onClick={() => openEdit(template)} />
           </Tooltip>
           <Tooltip content="复制">
-            <Button type="text" size="small" icon={<IconCopy />} onClick={() => openCopy(template)} />
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`复制${template.name}模板`} icon={<IconCopy />} onClick={() => openCopy(template)} />
           </Tooltip>
           <Tooltip content="删除">
             <Popconfirm title="确认删除该模板？" onOk={() => deleteTemplate(template)}>
-              <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+              <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除${template.name}模板`} icon={<IconDelete />} />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -190,16 +194,18 @@ export function WorkflowTemplateList() {
   ];
 
   return (
-    <div>
-      <div className="flex items-start justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <Text type="secondary">模板只定义审批节点和通过策略，具体审批人由业务审批配置决定。</Text>
-        </div>
-        <Button type="primary" icon={<IconPlus />} onClick={openCreate}>新建审批模板</Button>
-      </div>
+    <PageShell breadcrumbs={isSystemEntry
+      ? [{ label: '系统管理', to: '/system/config' }, { label: '系统配置', to: '/system/config' }, { label: '审批模板' }]
+      : [{ label: '审批管理', to: '/approvals' }, { label: '审批中心', to: '/approvals' }, { label: '审批模板' }]}
+    >
+      <PageHeader
+        title="审批模板"
+        description="模板只定义审批节点和通过策略，具体审批人由业务审批配置决定。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={openCreate}>新建审批模板</Button>}
+      />
 
       <Card bordered={false}>
-        <Table rowKey="id" columns={columns} data={templates} pagination={false} />
+        <Table rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 960 }} />
       </Card>
 
       <Modal
@@ -265,6 +271,6 @@ export function WorkflowTemplateList() {
           </Button>
         </Space>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

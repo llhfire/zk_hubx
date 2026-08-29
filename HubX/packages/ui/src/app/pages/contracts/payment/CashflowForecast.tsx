@@ -43,9 +43,9 @@ export function CashflowForecast({ contracts, overrides = [], projectDelayMap = 
   }, [contracts, months, overrides, projectDelayMap]);
 
   return (
-    <Card title="现金流预测" style={{ marginBottom: 'var(--space-5)' }}>
+    <Card title="现金流预测">
       {/* 控制栏 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+      <div className="payment-forecast-toolbar">
         <Space>
           <Text type="secondary" style={{ fontSize: 'var(--text-sm)' }}>周期:</Text>
           <Select value={period} onChange={setPeriod} style={{ width: 120 }}>
@@ -67,29 +67,22 @@ export function CashflowForecast({ contracts, overrides = [], projectDelayMap = 
             labelFormatter={(label: string) => `${label}`}
           />
           <Legend />
-          <Bar dataKey="高确信" stackId="a" fill="#22c55e" />
-          <Bar dataKey="正常履约" stackId="a" fill="#3b82f6" />
-          <Bar dataKey="风险受阻" stackId="a" fill="#f59e0b" />
-          <Bar dataKey="卡点停滞" stackId="a" fill="#ef4444" />
+          <Bar dataKey="高确信" stackId="a" fill="rgb(var(--success-6))" />
+          <Bar dataKey="正常履约" stackId="a" fill="rgb(var(--blue-6))" />
+          <Bar dataKey="风险受阻" stackId="a" fill="rgb(var(--warning-6))" />
+          <Bar dataKey="卡点停滞" stackId="a" fill="rgb(var(--danger-6))" />
         </BarChart>
       </ResponsiveContainer>
 
       {/* 汇总文字 */}
-      <div style={{
-        display: 'flex',
-        gap: 'var(--space-5)',
-        marginTop: 'var(--space-4)',
-        padding: 'var(--space-3)',
-        background: 'var(--color-fill-1)',
-        borderRadius: 'var(--radius-md)',
-      }}>
+      <div className="payment-forecast-summary">
         {data.map(d => (
           <div key={d.monthFull} style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontWeight: 'var(--font-weight-semibold)', fontSize: 'var(--text-sm)' }}>{d.month}</div>
             <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
               预测: ¥{d.forecastTotal}万
             </div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--success-500)' }}>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--success-6))' }}>
               实收: ¥{d.receivedTotal}万
             </div>
           </div>

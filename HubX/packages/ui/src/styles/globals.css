@@ -18,6 +18,19 @@
   vertical-align: baseline;
 }
 
+/* 全站禁止低对比度的灰底白字标签。
+ * 优先使用 Arco 的 gray 预设；同时兜底旧页面中的 grey/muted 自定义色与无效颜色值。 */
+.arco-tag-custom-color:not([style*='background-color']),
+.arco-tag-custom-color[style*='--grey-'],
+.arco-tag-custom-color[style*='--gray-'],
+.arco-tag-custom-color[style*='--muted-foreground'],
+.arco-tag-custom-color[style*='background-color: gray'],
+.arco-tag-custom-color[style*='background-color: grey'] {
+  border-color: var(--color-border-2) !important;
+  background-color: var(--color-fill-2) !important;
+  color: var(--color-text-2) !important;
+}
+
 .lead-detail-layout {
   display: grid;
   grid-template-columns: minmax(0, 6fr) minmax(280px, 4fr);

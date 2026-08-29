@@ -11,8 +11,11 @@ import {
   Space,
   Message,
   Divider,
+  Popconfirm,
 } from '@arco-design/web-react';
 import { IconSave } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
@@ -90,11 +93,26 @@ export function SystemConfig() {
   };
 
   return (
-    <div>
-      <Card bordered={false}>
+    <PageShell
+      className="system-config-page"
+      breadcrumbs={[{ label: '系统管理' }, { label: '通用配置' }]}
+    >
+      <PageHeader
+        title="系统通用配置"
+        description="集中维护消息渠道、备份策略和跨业务提醒参数。"
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'channels', label: '消息渠道', value: '3 类', detail: '企业微信、邮件、短信' },
+        { key: 'backup', label: '自动备份', value: '每日 02:00', detail: '保留 30 天', tone: 'success' },
+        { key: 'lead', label: '线索回收', value: '7 天', detail: '未跟进自动回收' },
+        { key: 'contract', label: '合同提醒', value: '提前 30 天', detail: '到期提醒窗口' },
+      ]} />
+
+      <Card bordered={false} title="配置分组" className="system-config-card system-config-form-card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="message" title="消息渠道配置">
-            <Form form={messageForm} layout="vertical" style={{ maxWidth: 800 }}>
+            <Form form={messageForm} layout="vertical" className="system-config-form">
               <Divider orientation="left">企业微信通知</Divider>
               <FormItem label="启用企业微信通知" field="enableWechat" triggerPropName="checked">
                 <Switch />
@@ -147,7 +165,7 @@ export function SystemConfig() {
           </TabPane>
 
           <TabPane key="backup" title="备份与恢复">
-            <Form form={backupForm} layout="vertical" style={{ maxWidth: 800 }}>
+            <Form form={backupForm} layout="vertical" className="system-config-form">
               <Divider orientation="left">自动备份配置</Divider>
               <FormItem label="启用自动备份" field="enableAutoBackup" triggerPropName="checked">
                 <Switch />
@@ -175,16 +193,16 @@ export function SystemConfig() {
                     保存配置
                   </Button>
                   <Button key="backup" onClick={handleBackupNow}>立即备份</Button>
-                  <Button key="restore" status="warning" onClick={handleRestore}>
-                    数据恢复
-                  </Button>
+                  <Popconfirm title="数据恢复属于高风险操作，确认查看处理提示？" onOk={handleRestore}>
+                    <Button key="restore" status="warning">数据恢复</Button>
+                  </Popconfirm>
                 </Space>
               </FormItem>
             </Form>
           </TabPane>
 
           <TabPane key="business" title="业务参数配置">
-            <Form form={businessForm} layout="vertical" style={{ maxWidth: 800 }}>
+            <Form form={businessForm} layout="vertical" className="system-config-form">
               <Divider orientation="left">线索管理</Divider>
               <FormItem
                 label="线索自动回收天数"
@@ -234,6 +252,6 @@ export function SystemConfig() {
           </TabPane>
         </Tabs>
       </Card>
-    </div>
+    </PageShell>
   );
 }

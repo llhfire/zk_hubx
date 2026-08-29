@@ -4,6 +4,7 @@
 import { buildDefaultFeatureList } from '@/app/pages/quotation/defaultFeatures';
 import {
   buildInitialUnits,
+  computeAmountBreakdown,
   nextVersion,
   resetAuditNodes,
   resolveAuditOutcome,
@@ -50,6 +51,30 @@ function makeEvent(action: QuoteAction, role: QuoteRole, note?: string): QuoteTi
 /** 通用字段更新（保存功能清单/评估表/出差驻场等） */
 export function applyUpdate(quote: Quote, updater: (q: Quote) => Quote): Quote {
   return { ...updater(quote), updatedAt: now() };
+}
+
+/** 提交审批时把唯一计算源固化为报价汇总快照。 */
+export function buildPricingSummary(quote: Quote): NonNullable<Quote['summary']> {
+  const breakdown = computeAmountBreakdown(quote);
+  const paymentTerms = quote.summary?.paymentTerms?.length
+    ? quote.summary.paymentTerms.map((term) => ({
+        ...term,
+        amount: Math.round((breakdown.grandTotal * term.percent / 100) * 100) / 100,
+      }))
+    : [
+        { stage: '合同签订首付款', percent: 50, amount: breakdown.grandTotal * 0.5 },
+        { stage: '系统交付款', percent: 40, amount: breakdown.grandTotal * 0.4 },
+        { stage: '验收尾款', percent: 10, amount: breakdown.grandTotal * 0.1 },
+      ];
+  return {
+    totalLaborDays: breakdown.totalLaborDays,
+    projectWorkDays: quote.evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+    grandTotalPrice: breakdown.grandTotal,
+    paymentTerms,
+    taxIncluded: quote.summary?.taxIncluded ?? true,
+    warrantyYears: quote.summary?.warrantyYears ?? 1,
+    invoiceType: quote.summary?.invoiceType ?? '专票',
+  };
 }
 
 /** 通用流转：改状态 + 追加轨迹 + 可选字段 patch */
@@ -106,14 +131,14 @@ export function applyDecideAudit(
       : node,
   );
   const outcome = resolveAuditOutcome(decided);
-  const role: QuoteRole =
-    auditorName === '黄奕' ? 'sales_manager' : auditorName === '罗总' ? 'tech' : 'decision';
+  const role: QuoteRole = quote.auditNodes.find((node) => node.auditorName === auditorName)?.quoteRole
+    ?? (auditorName === '黄奕' ? 'sales_manager' : auditorName === '罗总' ? 'tech' : 'decision');
   const event = makeEvent(decision === 'approve' ? 'audit_approve' : 'audit_reject', role, comment);
 
   if (outcome === 'rejected') {
     return {
       ...quote,
-      auditNodes: resetAuditNodes(),
+      auditNodes: resetAuditNodes(decided),
       status: 'rejected' as QuoteStatus,
       timeline: [...quote.timeline, event],
       updatedAt: stamp,
@@ -162,6 +187,7 @@ export function buildNewQuote(
   featureList: FeatureModule[],
   basicInfo: Partial<Quote['basicInfo']>,
   salesOwnerName?: string,
+  flowMode: Quote['flowMode'] = 'online',
 ): Quote {
   const nowStr = now();
   return {
@@ -170,6 +196,8 @@ export function buildNewQuote(
     version: 'v1.0',
     status: 'draft',
     leadId,
+    flowMode,
+    fileFlow: { onlineDocument: { status: 'empty' }, scans: [] },
     salesOwnerName: salesOwnerName ?? '张三',
     basicInfo: {
       projectName: basicInfo.projectName ?? '未命名项目',
@@ -188,10 +216,24 @@ export function buildNewQuote(
       { id: 'ep-2', name: '管理后台', platforms: ['pcweb'] },
     ],
     salesAddedRoles: [],
+    roleDailyCosts: {},
     frontendConfig: { platforms: [] },
     backendConfig: { services: [], language: '' },
     travelOnsite: { enableTravel: false, travelSubtotal: 0, enableOnsite: false, onsiteSubtotal: 0 },
     otherCosts: [],
+    summary: {
+      totalLaborDays: 0,
+      projectWorkDays: 0,
+      grandTotalPrice: 0,
+      paymentTerms: [
+        { stage: '合同签订首付款', percent: 50, amount: 0 },
+        { stage: '系统交付款', percent: 40, amount: 0 },
+        { stage: '验收尾款', percent: 10, amount: 0 },
+      ],
+      taxIncluded: true,
+      warrantyYears: 1,
+      invoiceType: '专票',
+    },
     auditNodes: buildInitialAuditNodes(),
     stampNode: { stamperName: '黄海', status: 'LOCKED' },
     timeline: [makeEvent('create', 'pm')],
@@ -207,10 +249,10 @@ export function applyNewVersion(source: Quote, newId: string): Quote {
     ...source,
     id: newId,
     version: nextVersion(source.version),
-    status: 'pending_quote',
+    status: 'draft',
     previousQuoteId: source.id,
-    auditNodes: resetAuditNodes(),
-    stampNode: { stamperName: '黄海', status: 'LOCKED' },
+    auditNodes: resetAuditNodes(source.auditNodes),
+    stampNode: { stamperName: source.stampNode.stamperName, stamperRole: source.stampNode.stamperRole, status: 'LOCKED' },
     sentAt: undefined,
     summary: source.summary ? { ...source.summary } : undefined,
     timeline: [makeEvent('new_version', 'sales', `基于 ${source.version} 创建`)],
@@ -219,20 +261,32 @@ export function applyNewVersion(source: Quote, newId: string): Quote {
   };
 }
 
-/** 生成客户端报价 id / 编号（http 服务也用它，编号顺序以当前列表长度为准） */
+/** 生成客户端报价 id（α 版以时间戳保证本地唯一） */
 export function generateQuoteId(): string {
   return `q-${new Date().getTime()}`;
 }
 
-export function generateQuoteNo(listLength: number): string {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  return `ZK-${date}-${String(listLength + 1).padStart(3, '0')}`;
+/** QT-YYYY-序号：主/补共用当年序列，每年从 1 重新开始。 */
+export function generateQuoteNo(
+  existing: { quoteNo: string }[],
+  year = new Date().getFullYear(),
+): string {
+  const prefix = `QT-${year}-`;
+  let max = 0;
+  for (const quote of existing) {
+    if (!quote.quoteNo.startsWith(prefix)) continue;
+    const sequence = Number.parseInt(quote.quoteNo.slice(prefix.length), 10);
+    if (Number.isFinite(sequence) && sequence > max) max = sequence;
+  }
+  return `${prefix}${max + 1}`;
 }
 
 // ─── 读时迁移（13 态 → 10 态）───────────────────────────────
 
 const STATUS_MAP: Record<string, QuoteStatus> = {
   draft: 'draft',
+  pending_eval: 'pending_eval',
+  pending_quote: 'pending_quote',
   feature_confirmed: 'pending_eval',
   eval_completed: 'pending_quote',
   assigned_sales: 'pending_quote',
@@ -242,9 +296,16 @@ const STATUS_MAP: Record<string, QuoteStatus> = {
   pending_stamp: 'pending_stamp',
   stamped: 'stamped',
   sent: 'sent',
+  confirmed: 'confirmed',
   deal: 'confirmed',
   pending_followup: 'sent',
   voided: 'voided',
+};
+
+const LEGACY_AUDITOR_ROLES: Record<string, QuoteRole> = {
+  huangyi: 'sales_manager',
+  luo: 'tech',
+  min: 'decision',
 };
 
 /**
@@ -256,18 +317,86 @@ export function migrateQuote(quote: Quote): Quote {
   const mapped = STATUS_MAP[quote.status];
   if (!mapped) {
     console.warn(`[migrateQuote] 未知状态 "${quote.status}"，保留原值 (quote ${quote.id})`);
-    return quote;
   }
-  const needsStatusChange = mapped !== quote.status;
-  const needsSalesOwner = !quote.salesOwnerName;
-  if (!needsStatusChange && !needsSalesOwner) return quote;
+
+  // α 版会长期保留浏览器缓存；旧报价可能只有当时页面需要的字段。
+  // 在统一读路径补齐当前 UI 的必需结构，避免点击报价页签后才因 reduce/属性读取崩溃。
+  const basicInfo = quote.basicInfo ?? ({} as Partial<Quote['basicInfo']>);
+  const timeline = quote.timeline ?? [];
+  const auditNodes = quote.auditNodes ?? [];
+  const stampNode = quote.stampNode ?? { stamperName: '黄海', status: 'LOCKED' as const };
+
   return {
     ...quote,
-    ...(needsStatusChange ? { status: mapped } : {}),
-    ...(needsSalesOwner ? { salesOwnerName: quote.ccSalesNames?.[0] ?? '张三' } : {}),
-    timeline: quote.timeline.map((ev) =>
-      ev.action === 'mark_deal' ? { ...ev, action: 'mark_confirmed' as QuoteAction } : ev,
+    status: mapped ?? quote.status,
+    salesOwnerName: quote.salesOwnerName ?? quote.ccSalesNames?.[0] ?? '张三',
+    basicInfo: {
+      projectName: basicInfo.projectName ?? '未命名项目',
+      projectType: basicInfo.projectType ?? '其他定制',
+      creatorName: basicInfo.creatorName ?? '张产品',
+      techEvaluatorName: basicInfo.techEvaluatorName ?? '罗总',
+      requirementDesc: basicInfo.requirementDesc ?? '',
+      customerName: basicInfo.customerName ?? '',
+      customerContact: basicInfo.customerContact ?? '',
+      customerPhone: basicInfo.customerPhone ?? '',
+      quoteValidityDays: basicInfo.quoteValidityDays ?? 30,
+      ...(basicInfo.industry ? { industry: basicInfo.industry } : {}),
+    },
+    featureList: (quote.featureList ?? []).map((module) => ({
+      ...module,
+      subFeatures: module.subFeatures ?? [],
+    })),
+    endpointConfigs: (quote.endpointConfigs ?? []).map((endpoint) => ({
+      ...endpoint,
+      platforms: endpoint.platforms ?? [],
+    })),
+    ...(quote.evalSheet
+      ? {
+          evalSheet: {
+            ...quote.evalSheet,
+            activeRoles: quote.evalSheet.activeRoles ?? [],
+            evaluationUnits: quote.evalSheet.evaluationUnits ?? [],
+          },
+        }
+      : {}),
+    salesAddedRoles: quote.salesAddedRoles ?? [],
+    frontendConfig: {
+      ...(quote.frontendConfig ?? {}),
+      platforms: quote.frontendConfig?.platforms ?? [],
+    },
+    backendConfig: {
+      ...(quote.backendConfig ?? {}),
+      services: quote.backendConfig?.services ?? [],
+      language: quote.backendConfig?.language ?? '',
+    },
+    travelOnsite: {
+      ...(quote.travelOnsite ?? {}),
+      enableTravel: quote.travelOnsite?.enableTravel ?? false,
+      travelSubtotal: quote.travelOnsite?.travelSubtotal ?? 0,
+      enableOnsite: quote.travelOnsite?.enableOnsite ?? false,
+      onsiteSubtotal: quote.travelOnsite?.onsiteSubtotal ?? 0,
+      travelDetails: quote.travelOnsite?.travelDetails ?? [],
+      onsiteDetails: quote.travelOnsite?.onsiteDetails ?? [],
+    },
+    otherCosts: quote.otherCosts ?? [],
+    timeline: timeline.map((event) =>
+      event.action === 'mark_deal'
+        ? { ...event, action: 'mark_confirmed' as QuoteAction }
+        : event,
     ),
+    auditNodes: auditNodes.map((node) => ({
+      ...node,
+      quoteRole: node.quoteRole ?? LEGACY_AUDITOR_ROLES[node.auditorId],
+    })),
+    stampNode: {
+      ...stampNode,
+      stamperRole: stampNode.stamperRole
+        ?? (stampNode.stamperName === '黄海' ? 'assistant' as QuoteRole : undefined),
+    },
+    ccSalesNames: quote.ccSalesNames ?? [],
+    ...(quote.summary
+      ? { summary: { ...quote.summary, invoiceType: quote.summary.invoiceType ?? '专票' as const } }
+      : {}),
   };
 }
 
@@ -280,6 +409,12 @@ export interface TransitionRule {
 
 /** 合法迁移表：action → { from[], to }。service 层先查表再 applyTransition。 */
 export const TRANSITIONS: Record<string, TransitionRule> = {
+  submit_feature_list: { from: ['draft'], to: 'pending_eval' },
+  submit_eval: { from: ['pending_eval'], to: 'pending_quote' },
+  assign_to_sales: { from: ['pending_quote'], to: 'pending_quote' },
+  submit_for_audit: { from: ['pending_quote', 'rejected'], to: 'auditing' },
+  stamp: { from: ['pending_stamp'], to: 'stamped' },
+  mark_sent: { from: ['stamped'], to: 'sent' },
   mark_confirmed: { from: ['sent'], to: 'confirmed' },
   withdraw_sent: { from: ['sent'], to: 'stamped' },
   return_to_stamp: { from: ['stamped'], to: 'pending_stamp' },
@@ -294,16 +429,4 @@ export function canTransition(status: QuoteStatus, action: string): boolean {
   const rule = TRANSITIONS[action];
   if (!rule) return false;
   return rule.from.includes(status);
-}
-
-/** QT-YYYY-序号：主/补共用当年序列，每年从 1 重新开始 */
-export function generateQuoteNoV2(existing: { quoteNo: string }[], year: number): string {
-  const prefix = `QT-${year}-`;
-  let max = 0;
-  for (const q of existing) {
-    if (!q.quoteNo.startsWith(prefix)) continue;
-    const n = parseInt(q.quoteNo.slice(prefix.length), 10);
-    if (!isNaN(n) && n > max) max = n;
-  }
-  return `${prefix}${max + 1}`;
 }

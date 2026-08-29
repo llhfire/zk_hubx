@@ -45,11 +45,12 @@ function withinTimeRange(createTime: string, range: TimeRange, now: Date): boole
 function WorkbenchInner() {
   const { role, setRole, leads, loading, now, kpis } = useLeadDispatch();
   const { employees } = useEmployee();
-  const { createLead, updateLead, assignLead } = useLeads();
+  const { createLead, updateLead, assignLead, dispatchLead, urgeLead, adjustLevel, confirmQuality } = useLeads();
 
   const [category, setCategory] = useState<DispatchCategory>('all');
   const [businessLine, setBusinessLine] = useState<'all' | LeadBusinessLine>('all');
-  const [timeRange, setTimeRange] = useState<TimeRange>('today');
+  // 默认展示全部 mock 数据，避免演示环境因系统日期变化而落入空态。
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [sortKey, setSortKey] = useState<SortKey>('create_desc');
   const [filter, setFilter] = useState<DispatchFilterState>({ keyword: '', entity: '', channel: '', department: '', customerLevel: '' });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -112,31 +113,9 @@ function WorkbenchInner() {
     setDispatchVisible(true);
   };
   const handleDispatchConfirm = async (payload: DispatchModalPayload) => {
+    // β 阶段 2：派发走服务方法（mock 本地 / http 服务端专门端点，事件服务端生成）
     for (const id of dispatchTargetIds) {
-      if (payload.target === 'sales' && payload.assignee) {
-        await assignLead(id, payload.assignee, CURRENT_LOGIN_USER.name, '派发工作台 · 派发');
-        await updateLead(id, (l) => ({
-          ...l,
-          dispatchedAt: nowString(),
-          dispatchTarget: 'sales',
-          leadEvents: [
-            ...(l.leadEvents ?? []),
-            { id: generateEventId(), leadId: id, kind: 'dispatch_to_sales' as const, actor: CURRENT_LOGIN_USER.name, at: nowString(), assignee: payload.assignee },
-          ],
-        }));
-      } else {
-        await updateLead(id, (l) => ({
-          ...l,
-          dispatchedAt: nowString(),
-          dispatchTarget: 'pool',
-          clueType: 'public' as const,
-          owner: '',
-          leadEvents: [
-            ...(l.leadEvents ?? []),
-            { id: generateEventId(), leadId: id, kind: 'dispatch_to_pool' as const, actor: CURRENT_LOGIN_USER.name, at: nowString() },
-          ],
-        }));
-      }
+      await dispatchLead(id, { target: payload.target, assignee: payload.assignee }, CURRENT_LOGIN_USER.name);
     }
     setDispatchVisible(false);
     setSelectedIds([]);
@@ -145,13 +124,7 @@ function WorkbenchInner() {
 
   // ── 催办（阶段 C） ──
   const handleUrge = async (lead: LeadListItem) => {
-    await updateLead(lead.id, (l) => ({
-      ...l,
-      leadEvents: [
-        ...(l.leadEvents ?? []),
-        { id: generateEventId(), leadId: lead.id, kind: 'urge' as const, actor: CURRENT_LOGIN_USER.name, at: nowString(), note: `催办${l.owner ? `→${l.owner}` : ''}` },
-      ],
-    }));
+    await urgeLead(lead.id, CURRENT_LOGIN_USER.name, `催办${lead.owner ? `→${lead.owner}` : ''}`);
     Message.success(`已催办${lead.owner ? ` ${lead.owner}` : ''}`);
   };
 
@@ -161,34 +134,11 @@ function WorkbenchInner() {
   };
   const handleLevelAdjustConfirm = async (payload: LevelAdjustPayload) => {
     if (!levelAdjustLead) return;
+    // β 阶段 2：等级调整走服务方法；升级免审直接生效、降级只写事件进审核队列（纯函数单源）
+    await adjustLevel(levelAdjustLead.id, payload.from, payload.to, CURRENT_LOGIN_USER.name);
     if (payload.needsApproval) {
-      // 降级：写事件，进入审核队列（KpiCards 等级审核计数 +1）
-      await updateLead(levelAdjustLead.id, (l) => ({
-        ...l,
-        leadEvents: [
-          ...(l.leadEvents ?? []),
-          {
-            id: generateEventId(), leadId: l.id, kind: 'level_change' as const,
-            actor: CURRENT_LOGIN_USER.name, at: nowString(),
-            levelFrom: payload.from, levelTo: payload.to,
-          },
-        ],
-      }));
       Message.warning(`降级申请已提交（${payload.from} → ${payload.to}），等待管理员审核`);
     } else {
-      // 升级：直接生效
-      await updateLead(levelAdjustLead.id, (l) => ({
-        ...l,
-        customerLevel: payload.to,
-        leadEvents: [
-          ...(l.leadEvents ?? []),
-          {
-            id: generateEventId(), leadId: l.id, kind: 'level_change' as const,
-            actor: CURRENT_LOGIN_USER.name, at: nowString(),
-            levelFrom: payload.from, levelTo: payload.to,
-          },
-        ],
-      }));
       Message.success(`等级已调整：${payload.from} → ${payload.to}`);
     }
     setLevelAdjustLead(null);
@@ -197,18 +147,8 @@ function WorkbenchInner() {
   // ── 质检确认（阶段 D） ──
   const handleQualityConfirm = async (lead: LeadListItem) => {
     const actors = returnActorsOf(lead);
-    // 管理员确认：追加 level_audit_result 事件，清除质检状态
-    await updateLead(lead.id, (l) => ({
-      ...l,
-      leadEvents: [
-        ...(l.leadEvents ?? []),
-        {
-          id: generateEventId(), leadId: l.id, kind: 'level_audit_result' as const,
-          actor: CURRENT_LOGIN_USER.name, at: nowString(),
-          note: `质检确认：${actors.length} 人退回，已标记为垃圾`,
-        },
-      ],
-    }));
+    // 管理员确认：追加 level_audit_result 事件，清除质检状态（β 阶段 2 走服务方法）
+    await confirmQuality(lead.id, CURRENT_LOGIN_USER.name, `质检确认：${actors.length} 人退回，已标记为垃圾`);
     Message.info(`已确认质检（${actors.length} 人退回）`);
   };
 

@@ -1,3 +1,4 @@
+import { useCallback, type ReactNode } from 'react';
 import { RouterProvider } from 'react-router';
 import { ReminderProvider } from './reminders/ReminderContext';
 import { ContractsProvider } from './pages/contracts/ContractsContext';
@@ -20,7 +21,7 @@ import type { LeadService } from '@/services/leadService';
 import type { ProjectService } from '@/services/projectService';
 import type { CollectionService } from '@/services/collectionService';
 import type { EmployeeService } from '@/services/employeeService';
-import { LeadsProvider } from './leads/LeadContext';
+import { LeadsProvider, useLeads } from './leads/LeadContext';
 import { CollectionProvider } from './collections/CollectionContext';
 import { AppVersionProvider } from './version/AppVersionContext';
 import type { AppVersion } from './version/versionMatrix';
@@ -42,6 +43,20 @@ interface AppProps {
   appVersion?: AppVersion;
 }
 
+function QuotationWithLeadBridge({ children, service }: { children: ReactNode; service?: QuotationService }) {
+  const { getById } = useLeads();
+  const leadBriefProvider = useCallback((leadId: string) => {
+    const lead = getById(leadId);
+    return lead ? { status: lead.status, ownerName: lead.owner } : null;
+  }, [getById]);
+
+  return (
+    <QuotationProvider service={service} leadBriefProvider={leadBriefProvider}>
+      {children}
+    </QuotationProvider>
+  );
+}
+
 function App({ quotationService, contractService, leadService, projectService, collectionService, employeeService, appVersion = 'alpha' }: AppProps) {
   return (
     <AppVersionProvider version={appVersion}>
@@ -58,13 +73,13 @@ function App({ quotationService, contractService, leadService, projectService, c
                       <CollectionProvider service={collectionService}>
                       <BusinessCaseProvider>
                       <ProjectInvoiceProvider>
-                        <QuotationProvider service={quotationService}>
+                        <QuotationWithLeadBridge service={quotationService}>
                           <SmartMeetingProvider>
                           {/* 签约开启联动桥（无 UI，见 SigningOpenBridge 注释） */}
                           <SigningOpenBridge />
                           <RouterProvider router={router} />
                           </SmartMeetingProvider>
-                        </QuotationProvider>
+                        </QuotationWithLeadBridge>
                       </ProjectInvoiceProvider>
                       </BusinessCaseProvider>
                       </CollectionProvider>

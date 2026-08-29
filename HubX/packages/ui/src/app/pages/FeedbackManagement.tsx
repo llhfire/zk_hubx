@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Descriptions,
+  Empty,
   Input,
   Message,
   Modal,
@@ -13,7 +14,8 @@ import {
   Tooltip,
   Typography,
 } from '@arco-design/web-react';
-import { IconCheckCircle, IconDownload, IconEye, IconFile, IconMessage } from '@arco-design/web-react/icon';
+import { IconCheckCircle, IconDownload, IconEye, IconFile, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import {
   formatFeedbackAttachmentSize,
   getFeedbackAttachmentFile,
@@ -25,8 +27,15 @@ import {
   type FeedbackType,
   useFeedback,
 } from '../feedback/FeedbackContext';
+import {
+  calculateFeedbackMetrics,
+  EMPTY_FEEDBACK_FILTERS,
+  filterFeedbackItems,
+  hasFeedbackFilters,
+  type FeedbackManagementFilters,
+} from './feedbackManagementModel';
+import './systemAdministrationLists.css';
 
-const Title = Typography.Title;
 const Paragraph = Typography.Paragraph;
 
 function formatDateTime(value?: string): string {
@@ -36,24 +45,12 @@ function formatDateTime(value?: string): string {
 
 export function FeedbackManagement() {
   const { feedbackItems, markFeedbackProcessed } = useFeedback();
-  const [statusFilter, setStatusFilter] = useState<'all' | FeedbackStatus>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | FeedbackType>('all');
-  const [keyword, setKeyword] = useState('');
+  const [filters, setFilters] = useState<FeedbackManagementFilters>({ ...EMPTY_FEEDBACK_FILTERS });
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
   const [handleNote, setHandleNote] = useState('');
-
-  const filteredFeedbackItems = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
-    return feedbackItems.filter((item) => {
-      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-      const matchesType = typeFilter === 'all' || item.type === typeFilter;
-      const matchesKeyword = !normalizedKeyword
-        || item.content.toLowerCase().includes(normalizedKeyword)
-        || item.pagePath.toLowerCase().includes(normalizedKeyword)
-        || item.id.toLowerCase().includes(normalizedKeyword);
-      return matchesStatus && matchesType && matchesKeyword;
-    });
-  }, [feedbackItems, keyword, statusFilter, typeFilter]);
+  const filteredFeedbackItems = useMemo(() => filterFeedbackItems(feedbackItems, filters), [feedbackItems, filters]);
+  const metrics = useMemo(() => calculateFeedbackMetrics(feedbackItems), [feedbackItems]);
+  const hasFilters = hasFeedbackFilters(filters);
 
   const openDetail = (feedback: FeedbackItem) => {
     setSelectedFeedback(feedback);
@@ -131,11 +128,11 @@ export function FeedbackManagement() {
       render: (_: unknown, record: FeedbackItem) => (
         <Space size={4}>
           <Tooltip content="查看">
-            <Button type="text" size="small" icon={<IconEye />} onClick={() => openDetail(record)} />
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`查看反馈${record.id}`} icon={<IconEye />} onClick={() => openDetail(record)} />
           </Tooltip>
           {record.status === 'pending' && (
             <Tooltip content="处理">
-              <Button type="text" size="small" icon={<IconCheckCircle />} onClick={() => openDetail(record)} />
+              <Button type="text" size="small" className="hubx-icon-action" aria-label={`处理反馈${record.id}`} icon={<IconCheckCircle />} onClick={() => openDetail(record)} />
             </Tooltip>
           )}
         </Space>
@@ -144,47 +141,51 @@ export function FeedbackManagement() {
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <Title heading={4} style={{ margin: 0 }}>
-            <IconMessage style={{ marginRight: 8 }} />
-            意见反馈管理
-          </Title>
-          <div style={{ color: 'var(--color-text-3)', fontSize: 14, marginTop: 4 }}>
-            查看员工提交的使用问题和功能建议，并记录处理结果。
-          </div>
-        </div>
-      </div>
+    <PageShell className="system-admin-list feedback-management-page">
+      <PageHeader title="意见反馈管理" description="查看员工提交的使用问题和功能建议，并记录处理结果。" />
 
-      <Card bordered={false}>
-        <Space wrap style={{ marginBottom: 16 }}>
-          <Select value={statusFilter} onChange={(value) => setStatusFilter(value as 'all' | FeedbackStatus)} style={{ width: 130 }}>
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '全部反馈', value: metrics.total, detail: '当前已收集' },
+        { key: 'pending', label: '待处理', value: metrics.pending, detail: '需要跟进', tone: metrics.pending ? 'warning' : 'neutral' },
+        { key: 'processed', label: '已处理', value: metrics.processed, detail: '已完成闭环', tone: 'success' },
+        { key: 'result', label: '当前结果', value: filteredFeedbackItems.length, detail: hasFilters ? '筛选结果' : '全部反馈' },
+      ]} />
+
+      <Card bordered={false} className="system-admin-list__card">
+        <FilterBar actions={hasFilters ? (
+          <Button type="text" icon={<IconRefresh />} onClick={() => setFilters({ ...EMPTY_FEEDBACK_FILTERS })}>重置</Button>
+        ) : undefined}>
+          <Input
+            className="system-admin-list__keyword"
+            prefix={<IconSearch />}
+            value={filters.keyword}
+            onChange={(keyword) => setFilters(current => ({ ...current, keyword }))}
+            placeholder="搜索反馈编号、内容、提交人或页面"
+            allowClear
+          />
+          <Select className="system-admin-list__select" value={filters.status} onChange={(status) => setFilters(current => ({ ...current, status: status as 'all' | FeedbackStatus }))}>
             <Select.Option value="all">全部状态</Select.Option>
             <Select.Option value="pending">待处理</Select.Option>
             <Select.Option value="processed">已处理</Select.Option>
           </Select>
-          <Select value={typeFilter} onChange={(value) => setTypeFilter(value as 'all' | FeedbackType)} style={{ width: 130 }}>
+          <Select className="system-admin-list__select" value={filters.type} onChange={(type) => setFilters(current => ({ ...current, type: type as 'all' | FeedbackType }))}>
             <Select.Option value="all">全部类型</Select.Option>
             {(Object.entries(feedbackTypeLabels) as [FeedbackType, string][]).map(([value, label]) => (
               <Select.Option key={value} value={value}>{label}</Select.Option>
             ))}
           </Select>
-          <Input.Search
-            value={keyword}
-            onChange={setKeyword}
-            placeholder="搜索反馈编号、内容或页面"
-            style={{ width: 260 }}
-            allowClear
-          />
-        </Space>
+        </FilterBar>
 
-        <Table
-          columns={columns as any}
-          data={filteredFeedbackItems}
-          rowKey="id"
-          pagination={{ pageSize: 10, showTotal: true, sizeCanChange: true }}
-        />
+        <div className="system-admin-list__result-summary"><span>共 {filteredFeedbackItems.length} 条反馈</span>{hasFilters && <span>已按当前条件筛选</span>}</div>
+
+        {filteredFeedbackItems.length ? (
+          <Table columns={columns as any} data={filteredFeedbackItems} rowKey="id" pagination={{ pageSize: 10, showTotal: true, sizeCanChange: true }} scroll={{ x: 1120 }} />
+        ) : (
+          <div className="system-admin-list__empty">
+            <Empty description={feedbackItems.length ? '没有符合当前条件的反馈' : '暂无员工反馈'} />
+            {hasFilters && <Button type="text" onClick={() => setFilters({ ...EMPTY_FEEDBACK_FILTERS })}>清除筛选</Button>}
+          </div>
+        )}
       </Card>
 
       <Modal
@@ -259,6 +260,6 @@ export function FeedbackManagement() {
           </>
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

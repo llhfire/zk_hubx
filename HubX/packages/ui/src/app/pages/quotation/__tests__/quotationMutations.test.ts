@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  applyNewVersion,
+  buildNewQuote,
+  buildPricingSummary,
   migrateQuote,
   TRANSITIONS,
   canTransition,
-  generateQuoteNoV2,
+  generateQuoteNo,
 } from '@/services/quotationMutations';
+import { computeAmountBreakdown } from '../quoteFlow';
 import type { Quote, QuoteStatus } from '../types';
 
 function fakeQuote(status: QuoteStatus, extra?: Partial<Quote>): Quote {
@@ -30,10 +34,17 @@ function fakeQuote(status: QuoteStatus, extra?: Partial<Quote>): Quote {
     salesAddedRoles: [],
     frontendConfig: { platforms: [] },
     backendConfig: { services: [], language: '' },
-    travelOnsite: { enableTravel: false, travelSubtotal: 0, enableOnsite: false, onsiteSubtotal: 0 },
+    travelOnsite: {
+      enableTravel: false,
+      travelSubtotal: 0,
+      enableOnsite: false,
+      onsiteSubtotal: 0,
+      travelDetails: [],
+      onsiteDetails: [],
+    },
     otherCosts: [],
     auditNodes: [],
-    stampNode: { stamperName: '黄海', status: 'LOCKED' },
+    stampNode: { stamperName: '黄海', stamperRole: 'assistant', status: 'LOCKED' },
     timeline: [],
     ccSalesNames: [],
     createdAt: '2026-08-18 10:00',
@@ -106,13 +117,42 @@ describe('migrateQuote', () => {
     expect(migrated.timeline[1].action).toBe('mark_sent');
   });
 
-  it('已是新词表的 quote 幂等（两次调用结果相等）', () => {
-    const q = fakeQuote('confirmed');
-    const first = migrateQuote(q);
-    const second = migrateQuote(first);
-    expect(first.status).toBe('confirmed');
-    expect(second.status).toBe('confirmed');
-    expect(first).toEqual(second);
+  it('状态不变时仍迁移旧轨迹动作', () => {
+    const q = {
+      ...fakeQuote('confirmed'),
+      timeline: [
+        { id: 'tl-1', action: 'mark_deal' as Quote['timeline'][0]['action'], actorName: '张三', actorRole: '销售', time: '2026-08-18 10:00' },
+      ],
+    };
+    expect(migrateQuote(q).timeline[0].action).toBe('mark_confirmed');
+  });
+
+  it('旧审批快照补齐报价角色与盖章角色', () => {
+    const quote = fakeQuote('auditing', {
+      salesOwnerName: '张三',
+      auditNodes: [
+        { auditorId: 'huangyi', auditorName: '黄奕', role: '销售部负责人', status: 'PENDING' },
+        { auditorId: 'luo', auditorName: '罗总', role: '技术部负责人', status: 'PENDING' },
+      ],
+      stampNode: { stamperName: '黄海', status: 'LOCKED' },
+    });
+    const migrated = migrateQuote(quote);
+    expect(migrated.auditNodes.map((node) => node.quoteRole)).toEqual(['sales_manager', 'tech']);
+    expect(migrated.stampNode.stamperRole).toBe('assistant');
+  });
+
+  it('十个正式状态均幂等且不误报未知状态', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const statuses: QuoteStatus[] = [
+      'draft', 'pending_eval', 'pending_quote', 'auditing', 'rejected',
+      'pending_stamp', 'stamped', 'sent', 'confirmed', 'voided',
+    ];
+    for (const status of statuses) {
+      const quote = fakeQuote(status, { salesOwnerName: '张三' });
+      expect(migrateQuote(migrateQuote(quote))).toEqual(quote);
+    }
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('未知 status 保留原值并 console 警告', () => {
@@ -123,9 +163,54 @@ describe('migrateQuote', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('未知状态'));
     warnSpy.mockRestore();
   });
+
+  it('补齐旧缓存缺失的报价卡片必需字段', () => {
+    const legacy = {
+      id: 'q-legacy',
+      quoteNo: 'QT-2025-1',
+      version: 'v1.0',
+      status: 'draft',
+      leadId: 'lead-1',
+      basicInfo: { projectName: '旧版报价' },
+      timeline: [],
+      auditNodes: [],
+      stampNode: { stamperName: '黄海', status: 'LOCKED' },
+      createdAt: '2025-01-01 10:00',
+      updatedAt: '2025-01-01 10:00',
+    } as unknown as Quote;
+
+    const migrated = migrateQuote(legacy);
+
+    expect(migrated.salesAddedRoles).toEqual([]);
+    expect(migrated.travelOnsite).toMatchObject({
+      enableTravel: false,
+      enableOnsite: false,
+      travelDetails: [],
+      onsiteDetails: [],
+    });
+    expect(migrated.otherCosts).toEqual([]);
+    expect(migrated.basicInfo.projectType).toBe('其他定制');
+    expect(() => computeAmountBreakdown(migrated)).not.toThrow();
+  });
+});
+
+describe('buildNewQuote', () => {
+  it('创建时固化所选流转方式', () => {
+    const quote = buildNewQuote('q-file', 'QT-2026-9', 'lead-1', [], {}, '张三', 'file');
+    expect(quote.flowMode).toBe('file');
+    expect(quote.fileFlow?.onlineDocument.status).toBe('empty');
+  });
 });
 
 describe('TRANSITIONS 合法迁移矩阵', () => {
+  it('主流程前进动作按十态约束', () => {
+    expect(TRANSITIONS.submit_feature_list).toEqual({ from: ['draft'], to: 'pending_eval' });
+    expect(TRANSITIONS.submit_eval).toEqual({ from: ['pending_eval'], to: 'pending_quote' });
+    expect(TRANSITIONS.submit_for_audit).toEqual({ from: ['pending_quote', 'rejected'], to: 'auditing' });
+    expect(TRANSITIONS.stamp).toEqual({ from: ['pending_stamp'], to: 'stamped' });
+    expect(TRANSITIONS.mark_sent).toEqual({ from: ['stamped'], to: 'sent' });
+  });
+
   it('mark_confirmed: 仅 sent', () => {
     expect(TRANSITIONS.mark_confirmed.from).toEqual(['sent']);
     expect(TRANSITIONS.mark_confirmed.to).toBe('confirmed');
@@ -170,6 +255,30 @@ describe('TRANSITIONS 合法迁移矩阵', () => {
   });
 });
 
+describe('applyNewVersion', () => {
+  it('新版本从草稿重新确认，且保留旧版本关联', () => {
+    const source = fakeQuote('voided', { version: 'v1.2' });
+    const next = applyNewVersion(source, 'q-2');
+    expect(next.status).toBe('draft');
+    expect(next.version).toBe('v2.0');
+    expect(next.previousQuoteId).toBe(source.id);
+  });
+});
+
+describe('buildPricingSummary', () => {
+  it('提交审批时固化总价、付款金额、发票和质保默认值', () => {
+    const quote = fakeQuote('pending_quote', {
+      salesOwnerName: '张三',
+      salesAddedRoles: [{ id: 'r1', roleName: '实施', headcount: 1, days: 2, dailyRate: 800, subtotal: 1600, reason: '' }],
+    });
+    const summary = buildPricingSummary(quote);
+    expect(summary.grandTotalPrice).toBe(1600);
+    expect(summary.paymentTerms.reduce((sum, term) => sum + term.amount, 0)).toBe(1600);
+    expect(summary.invoiceType).toBe('专票');
+    expect(summary.warrantyYears).toBe(1);
+  });
+});
+
 describe('canTransition', () => {
   it('sent 可以 mark_confirmed', () => {
     expect(canTransition('sent', 'mark_confirmed')).toBe(true);
@@ -184,9 +293,9 @@ describe('canTransition', () => {
   });
 });
 
-describe('generateQuoteNoV2', () => {
+describe('generateQuoteNo', () => {
   it('空列表 → QT-2026-1', () => {
-    expect(generateQuoteNoV2([], 2026)).toBe('QT-2026-1');
+    expect(generateQuoteNo([], 2026)).toBe('QT-2026-1');
   });
 
   it('已有 QT-2026-1..3，下一号为 QT-2026-4', () => {
@@ -195,7 +304,7 @@ describe('generateQuoteNoV2', () => {
       { quoteNo: 'QT-2026-2' },
       { quoteNo: 'QT-2026-3' },
     ];
-    expect(generateQuoteNoV2(existing, 2026)).toBe('QT-2026-4');
+    expect(generateQuoteNo(existing, 2026)).toBe('QT-2026-4');
   });
 
   it('跨年重置：忽略他年单号', () => {
@@ -203,7 +312,7 @@ describe('generateQuoteNoV2', () => {
       { quoteNo: 'QT-2025-99' },
       { quoteNo: 'QT-2026-1' },
     ];
-    expect(generateQuoteNoV2(existing, 2026)).toBe('QT-2026-2');
+    expect(generateQuoteNo(existing, 2026)).toBe('QT-2026-2');
   });
 
   it('非常规单号（旧 ZK 格式）不参与计数', () => {
@@ -211,7 +320,7 @@ describe('generateQuoteNoV2', () => {
       { quoteNo: 'ZK-20260814-001' },
       { quoteNo: 'QT-2026-1' },
     ];
-    expect(generateQuoteNoV2(existing, 2026)).toBe('QT-2026-2');
+    expect(generateQuoteNo(existing, 2026)).toBe('QT-2026-2');
   });
 
   it('混合乱序也能正确取最大序号', () => {
@@ -220,6 +329,6 @@ describe('generateQuoteNoV2', () => {
       { quoteNo: 'QT-2026-2' },
       { quoteNo: 'QT-2026-10' },
     ];
-    expect(generateQuoteNoV2(existing, 2026)).toBe('QT-2026-11');
+    expect(generateQuoteNo(existing, 2026)).toBe('QT-2026-11');
   });
 });

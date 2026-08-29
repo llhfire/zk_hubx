@@ -9,13 +9,16 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Card, Tag, Button, Input, Select, Badge, Space, Typography, Empty, Spin } from '@arco-design/web-react';
+import { Badge, Button, Card, Empty, Input, Select, Spin, Tag, Typography } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconCalendar, IconUser, IconFile } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import { useSmartMeeting } from './SmartMeetingContext';
 import { summarizeMinutes, filterMinutes, monthDeposited, type MinuteListQuery } from './boardQueries';
+import { MOCK_USERS } from './mockData';
 import type { MinuteStatus } from './types';
+import './smartMeetingListPage.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const Option = Select.Option;
 
 const STATUS_LABEL: Record<MinuteStatus, string> = {
@@ -39,6 +42,8 @@ const DEFAULT_VIEWER = {
   canViewBiz: () => true,
 };
 
+const USER_NAME_BY_ID = new Map(MOCK_USERS.map(user => [user.id, user.name]));
+
 export function SmartMeetingListPage() {
   const navigate = useNavigate();
   const { minutes, loading } = useSmartMeeting();
@@ -53,7 +58,7 @@ export function SmartMeetingListPage() {
 
   // 列表摘要
   const summaries = useMemo(
-    () => summarizeMinutes(minutes, [], DEFAULT_VIEWER),
+    () => summarizeMinutes(minutes, [], DEFAULT_VIEWER, userId => USER_NAME_BY_ID.get(userId) || userId),
     [minutes],
   );
 
@@ -70,160 +75,157 @@ export function SmartMeetingListPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 120 }}>
-        <Spin size={40} />
-      </div>
+      <PageShell className="smart-meeting-list">
+        <PageHeader title="智能会议" description="集中沉淀会议纪要、确认记录与行动事项。" />
+        <Card className="smart-meeting-list__loading"><Spin size={40} /></Card>
+      </PageShell>
     );
   }
 
+  const depositedCount = stats.pending_review + stats.confirmed + stats.archived;
+  const hasFilters = Boolean(keyword || statusFilter.length > 0);
+
+  const openMinute = (minuteId: string) => navigate(`/smart-meetings/${minuteId}`);
+
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      {/* 页头 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Title heading={4} style={{ margin: 0 }}>智能会议</Title>
-        <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/smart-meetings/new')}>
-          新建纪要
-        </Button>
-      </div>
+    <PageShell className="smart-meeting-list">
+      <PageHeader
+        title="智能会议"
+        description="集中沉淀会议纪要、确认记录与行动事项；本页默认展示当前账号可查看的全部纪要。"
+        actions={(
+          <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/smart-meetings/new')}>
+            新建纪要
+          </Button>
+        )}
+      />
 
-      {/* MonthStatsBar */}
-      <Card size="small" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Text style={{ fontWeight: 500 }}>
-            {currentMonth.replace('-', '年')}月沉淀会议{' '}
-            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--brand-500)' }}>
-              {stats.pending_review + stats.confirmed + stats.archived}
-            </span>{' '}
-            篇
-          </Text>
-          <Space size={16}>
-            <Badge status="warning" text={`待确认 ${stats.pending_review}`} />
-            <Badge status="processing" text={`已确认 ${stats.confirmed}`} />
-            <Badge status="default" text={`已归档 ${stats.archived}`} />
-          </Space>
-        </div>
-      </Card>
+      <ProcessMetricGrid
+        items={[
+          { key: 'deposited', label: `${currentMonth.replace('-', '年')}月已沉淀`, value: `${depositedCount} 篇`, detail: '不含草稿' },
+          { key: 'pending', label: '待确认', value: `${stats.pending_review} 篇`, detail: '等待确认人处理', tone: stats.pending_review > 0 ? 'warning' : 'neutral' },
+          { key: 'confirmed', label: '已确认', value: `${stats.confirmed} 篇`, detail: '行动项可同步', tone: stats.confirmed > 0 ? 'success' : 'neutral' },
+          { key: 'archived', label: '已归档', value: `${stats.archived} 篇`, detail: '保持只读留痕' },
+        ]}
+      />
 
-      {/* FilterBar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <Input
-          prefix={<IconSearch style={{ color: 'var(--grey-400)' }} />}
-          placeholder="搜索会议主题、决议关键词、待办内容..."
-          value={keyword}
-          onChange={setKeyword}
-          style={{ flex: 1 }}
-          allowClear
-        />
-        <Select
-          mode="multiple"
-          placeholder="状态筛选"
-          value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ minWidth: 180 }}
-          maxTagCount={2}
-          allowClear
+      <Card className="smart-meeting-list__content-card">
+        <FilterBar
+          actions={hasFilters ? (
+            <Button type="text" onClick={() => { setKeyword(''); setStatusFilter([]); }}>重置筛选</Button>
+          ) : undefined}
         >
-          {(Object.keys(STATUS_LABEL) as MinuteStatus[]).map((s) => (
-            <Option key={s} value={s}>
-              <Tag color={STATUS_COLOR[s]} size="small" style={{ marginRight: 4 }}>
-                {STATUS_LABEL[s]}
-              </Tag>
-            </Option>
-          ))}
-        </Select>
-      </div>
+          <Input
+            prefix={<IconSearch />}
+            placeholder="搜索会议主题、决议关键词、待办内容"
+            value={keyword}
+            onChange={setKeyword}
+            className="smart-meeting-list__search"
+            allowClear
+          />
+          <Select
+            mode="multiple"
+            placeholder="纪要状态（全部）"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            className="smart-meeting-list__status-filter"
+            maxTagCount={2}
+            allowClear
+          >
+            {(Object.keys(STATUS_LABEL) as MinuteStatus[]).map((status) => (
+              <Option key={status} value={status}>
+                <Tag color={STATUS_COLOR[status]} size="small">{STATUS_LABEL[status]}</Tag>
+              </Option>
+            ))}
+          </Select>
+        </FilterBar>
 
-      {/* MinuteList */}
-      {filtered.length === 0 ? (
-        <Card>
-          <Empty description="暂无纪要" />
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {filtered.map((summary) => (
-            <Card
-              key={summary.id}
-              size="small"
-              hoverable
-              onClick={() => navigate(`/smart-meetings/${summary.id}`)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* 标题行 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                    <Tag color={STATUS_COLOR[summary.status]} size="small">
-                      {STATUS_LABEL[summary.status]}
-                    </Tag>
-                    <Text style={{ fontWeight: 500, fontSize: 15 }}>{summary.title}</Text>
+        <div className="smart-meeting-list__result-summary">
+          <Text type="secondary">共 {filtered.length} 篇纪要</Text>
+          {hasFilters && <Text type="secondary">已按当前搜索与状态条件筛选</Text>}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="smart-meeting-list__empty">
+            <Empty description={hasFilters ? '没有符合当前条件的纪要' : '暂无会议纪要'} />
+            {hasFilters ? (
+              <Button onClick={() => { setKeyword(''); setStatusFilter([]); }}>清除筛选</Button>
+            ) : (
+              <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/smart-meetings/new')}>新建第一篇纪要</Button>
+            )}
+          </div>
+        ) : (
+          <div className="smart-meeting-list__items">
+            {filtered.map((summary) => (
+              <article
+                key={summary.id}
+                className="smart-meeting-list__item"
+                role="link"
+                tabIndex={0}
+                aria-label={`打开纪要：${summary.title}`}
+                onClick={() => openMinute(summary.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openMinute(summary.id);
+                  }
+                }}
+              >
+                <div className="smart-meeting-list__item-main">
+                  <div className="smart-meeting-list__title-row">
+                    <Tag color={STATUS_COLOR[summary.status]} size="small">{STATUS_LABEL[summary.status]}</Tag>
+                    <span className="smart-meeting-list__item-title">{summary.title}</span>
                   </div>
 
-                  {/* 信息行 */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13, color: 'var(--grey-500)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <IconCalendar style={{ fontSize: 12 }} />
-                      {formatMeetingTime(summary.meetingTime)}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <IconUser style={{ fontSize: 12 }} />
-                      {summary.attendeeSummary}
-                    </span>
+                  <div className="smart-meeting-list__meta-row">
+                    <span><IconCalendar />{formatMeetingTime(summary.meetingTime)}</span>
+                    <span><IconUser />{summary.attendeeSummary}</span>
                     {summary.openTodoCount > 0 && (
-                      <Badge count={summary.openTodoCount} style={{ backgroundColor: 'var(--brand-500)' }}>
-                        <span style={{ fontSize: 12 }}>待办</span>
+                      <Badge count={summary.openTodoCount}>
+                        <span className="smart-meeting-list__todo-label">待办</span>
                       </Badge>
                     )}
                   </div>
 
-                  {/* 引用 chips */}
                   {summary.refChips.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
-                      {summary.refChips.map((ref, i) => (
-                        <Tag key={`${ref.kind}-${ref.id}-${i}`} size="small" color="arcoblue">
-                          {ref.displaySnapshot}
-                        </Tag>
+                    <div className="smart-meeting-list__refs">
+                      <IconFile />
+                      {summary.refChips.map((ref, index) => (
+                        <Tag key={`${ref.kind}-${ref.id}-${index}`} size="small" color="arcoblue">{ref.displaySnapshot}</Tag>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* 右侧：更新时间 */}
-                <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0, marginLeft: 12 }}>
-                  {formatUpdatedAt(summary.updatedAt)}
-                </Text>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+                <div className="smart-meeting-list__updated">
+                  <Text type="secondary">更新于 {formatUpdatedAt(summary.updatedAt)}</Text>
+                  <span className="smart-meeting-list__view-label">查看纪要</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </Card>
+    </PageShell>
   );
 }
 
 /** 格式化会议时间 */
 function formatMeetingTime(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } catch {
-    return iso;
-  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso || '-';
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 /** 格式化更新时间（简短） */
 function formatUpdatedAt(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffDays = Math.floor(diffMs / 86_400_000);
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays < 7) return `${diffDays}天前`;
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  } catch {
-    return '';
-  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '-';
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / 86_400_000);
+  if (diffDays === 0) return '今天';
+  if (diffDays === 1) return '昨天';
+  if (diffDays > 1 && diffDays < 7) return `${diffDays}天前`;
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 function pad(n: number): string {

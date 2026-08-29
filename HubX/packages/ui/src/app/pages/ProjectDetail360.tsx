@@ -9,7 +9,6 @@ import {
   Typography,
   Grid,
   Progress,
-  Steps,
   Descriptions,
   Timeline,
   Tooltip,
@@ -25,9 +24,9 @@ import {
   Drawer,
   Empty,
   Upload,
+  Pagination,
 } from '@arco-design/web-react';
 import {
-  IconLeft,
   IconEdit,
   IconCalendar,
   IconPlus,
@@ -82,19 +81,34 @@ import { getProjectTasks, type ProjectWorkTask } from './project-management/proj
 import { useProjects } from './project-management/ProjectContext';
 import { deriveProjectViewMetrics } from './project-management/projectViewMetrics';
 import { ProjectPresalesHistoryPanel } from './project-management/ProjectPresalesHistoryPanel';
+import { LeadFinalContractPanel } from './leads/components/LeadFinalContractPanel';
 import { useContracts } from './contracts/ContractsContext';
 import { useCollections } from '@/app/collections/CollectionContext';
-import { collectionsForProject, sumReceived } from '@/services/collectionMutations';
+import { collectionsForProject, sumReceived, type CollectionLedgerEntry } from '@/services/collectionMutations';
 import type { Contract, ContractStatus } from './contracts/types';
+import { effectiveAmount } from './contracts/paymentUtils';
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
 import { QuoteCard } from './quotation/QuoteCard';
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from './quotation/types';
 import { getLeadDetailProfile } from './leads/leadDetailProfiles';
+import {
+  PageShell,
+  ProcessMetricGrid,
+  ProcessOverview,
+  ProcessWorkspace,
+  ProcessWorkspaceAside,
+  ProcessWorkspaceMain,
+  type ProcessMetricItem,
+} from '@/app/components/ui';
+import {
+  CollectionRecordModal,
+  ContractPaymentInvoicePanel,
+  type PaymentInvoiceRecord,
+} from './components/ContractPaymentInvoicePanel';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
-const Step = Steps.Step;
 
 const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: '草稿',
@@ -129,6 +143,17 @@ export function ProjectDetail360() {
   const [activeMainTab, setActiveMainTab] = useState('basic');
   const [activeSideTab, setActiveSideTab] = useState('quotation');
   const [activityFilter, setActivityFilter] = useState<ActivityEventType[]>([]);
+  const [collectionOverrides, setCollectionOverrides] = useState<Record<string, CollectionLedgerEntry>>({});
+  const [addedCollections, setAddedCollections] = useState<CollectionLedgerEntry[]>([]);
+  const [deletedCollectionIds, setDeletedCollectionIds] = useState<string[]>([]);
+  const [collectionModalVisible, setCollectionModalVisible] = useState(false);
+  const [editingCollectionId, setEditingCollectionId] = useState<string>();
+  const [collectionForm] = Form.useForm();
+  const [invoiceRecords, setInvoiceRecords] = useState<PaymentInvoiceRecord[]>([]);
+  const [teamDrawerMember, setTeamDrawerMember] = useState<string>();
+  const [teamDailyKeyword, setTeamDailyKeyword] = useState('');
+  const [teamDailyRiskFilter, setTeamDailyRiskFilter] = useState<'all' | 'risk'>('all');
+  const [teamDailyPage, setTeamDailyPage] = useState(1);
 
   // 任务台账：从共享 projectTasks 初始化，页面内可编辑
   const [tasks, setTasks] = useState<ProjectWorkTask[]>(() => getProjectTasks(id ?? ''));
@@ -182,22 +207,42 @@ export function ProjectDetail360() {
     const byLead = leadId ? contracts.filter((c) => c.leadId === leadId && !direct.some((d) => d.id === c.id)) : [];
     return [...direct, ...byLead];
   }, [contracts, project, leadId]);
-  const mainContract = linkedContracts[0];
+  const mainContract = useMemo(
+    () => linkedContracts.find((contract) => contract.kind !== 'supplement') ?? linkedContracts[0],
+    [linkedContracts],
+  );
+  const supplementContracts = useMemo(
+    () => linkedContracts.filter((contract) => contract.kind === 'supplement' && contract.parentContractId === mainContract?.id),
+    [linkedContracts, mainContract?.id],
+  );
+  const effectiveSupplementContracts = useMemo(
+    () => supplementContracts.filter((contract) => contract.status === 'archived'),
+    [supplementContracts],
+  );
+  const effectiveContractIds = useMemo(
+    () => new Set([mainContract?.id, ...effectiveSupplementContracts.map((contract) => contract.id)].filter(Boolean)),
+    [mainContract?.id, effectiveSupplementContracts],
+  );
 
   const projectCollections = useMemo(
     () => collectionsForProject(collections, {
       projectId: project?.id,
       contractIds: linkedContracts.map((c) => c.id),
-    }),
-    [collections, project?.id, linkedContracts],
+    }).filter((record) => effectiveContractIds.has(record.contractId)),
+    [collections, project?.id, linkedContracts, effectiveContractIds],
   );
+  const visibleProjectCollections = useMemo(() => [
+    ...addedCollections,
+    ...projectCollections.filter((item) => !deletedCollectionIds.includes(item.id)).map((item) => collectionOverrides[item.id] || item),
+  ], [addedCollections, collectionOverrides, deletedCollectionIds, projectCollections]);
 
   const seedMetrics = useMemo(() => PROJECT_LIST.find((p) => p.id === id), [id]);
-  const derivedReceived = sumReceived(projectCollections);
-  const contractAmount = mainContract?.current.totalAmount || seedMetrics?.contractAmount || 0;
-  const receivedAmount = derivedReceived > 0
-    ? derivedReceived
-    : (mainContract?.receivedAmount ?? seedMetrics?.receivedAmount ?? 0);
+  const derivedReceived = sumReceived(visibleProjectCollections);
+  const contractAmount = mainContract
+    ? effectiveAmount(mainContract, supplementContracts)
+    : seedMetrics?.contractAmount || 0;
+  // 实收只认独立台账；无记录就是 0，禁止回退到项目或合同种子汇总。
+  const receivedAmount = derivedReceived;
   const metrics = seedMetrics ?? (project
     ? deriveProjectViewMetrics(project, {
       customerName: mainContract?.current.customerName,
@@ -238,6 +283,52 @@ export function ProjectDetail360() {
 
   // 事件类型筛选
   const eventTypes: ActivityEventType[] = ['followup', 'meeting', 'confirmation', 'milestone', 'daily_report', 'contract', 'status_change'];
+
+  const teamMembers = Array.from(new Set([
+    project.owner,
+    ...project.salesUsers, ...project.assistants, ...project.productUsers, ...project.uiUsers,
+    ...project.frontendUsers, ...project.backendUsers, ...project.opsUsers, ...project.testUsers, ...project.legalUsers,
+    ...dailyReports.map((item) => item.personName),
+  ].filter(Boolean))).map((name) => ({
+    name,
+    hours: dailyReports.filter((item) => item.personName === name).reduce((sum, item) => sum + item.hours, 0),
+    position: dailyReports.find((item) => item.personName === name)?.position || (name === project.owner ? '项目经理' : '项目成员'),
+  }));
+  const selectedMemberReports = dailyReports.filter((item) => item.personName === teamDrawerMember
+    && (!teamDailyKeyword || item.workContent.includes(teamDailyKeyword) || item.riskFeedback.includes(teamDailyKeyword))
+    && (teamDailyRiskFilter === 'all' || (item.riskFeedback && item.riskFeedback !== '无')));
+
+  const openCollectionEditor = (record?: CollectionLedgerEntry) => {
+    setEditingCollectionId(record?.id);
+    collectionForm.setFieldsValue(record || { date: '2026-08-27', method: '银行汇款', period: 'other', amount: 0, note: '' });
+    setCollectionModalVisible(true);
+  };
+
+  const saveCollection = () => {
+    collectionForm.validate().then((values) => {
+      const record: CollectionLedgerEntry = {
+        id: editingCollectionId || `project-col-${Date.now()}`,
+        contractId: mainContract?.id || '', projectId: project.id,
+        period: values.period === 'other' ? 'other' : Number(values.period),
+        amount: Number(values.amount), date: values.date, method: values.method, note: values.note || '',
+      };
+      if (editingCollectionId) setCollectionOverrides((current) => ({ ...current, [editingCollectionId]: record }));
+      else setAddedCollections((current) => [record, ...current]);
+      setCollectionModalVisible(false);
+      Message.success(editingCollectionId ? '实收记录已更新' : '实收记录已新增');
+    });
+  };
+
+  const issueInvoice = (collection: CollectionLedgerEntry) => {
+    const serial = invoiceRecords.length + 1;
+    setInvoiceRecords((current) => [{ id: `invoice-${Date.now()}`, collectionId: collection.id, invoiceNo: `INV-202608-${String(serial).padStart(3, '0')}`, amount: collection.amount, issuedAt: '2026-08-27', status: 'valid' }, ...current]);
+    Message.success('开票记录已生成');
+  };
+
+  const redInvoice = (invoice: PaymentInvoiceRecord) => {
+    setInvoiceRecords((current) => [{ id: `invoice-red-${Date.now()}`, collectionId: invoice.collectionId, invoiceNo: `RED-${invoice.invoiceNo}`, amount: -invoice.amount, issuedAt: '2026-08-27', status: 'red', originalInvoiceId: invoice.id }, ...current]);
+    Message.success('红冲记录已生成并保留原发票');
+  };
 
   const handleViewContractDetail = (contractId: string) => {
     navigate(`/contracts/${contractId}`, {
@@ -282,112 +373,107 @@ export function ProjectDetail360() {
   const activeQuotes = leadQuotes.filter((q) => q.status !== 'voided');
   const voidedQuotes = leadQuotes.filter((q) => q.status === 'voided');
 
+  const overviewMetrics: ProcessMetricItem[] = [
+    {
+      key: 'owner',
+      label: 'PM',
+      value: <><IconUser style={{ color: 'rgb(var(--primary-6))' }} />{project.owner || '待指派'}</>,
+    },
+    { key: 'customer', label: '客户', value: metrics.customerName || '-' },
+    ...(contractAmount > 0 ? [{
+      key: 'contract-amount',
+      label: '合同额',
+      value: <Text style={{ color: 'rgb(var(--success-6))', whiteSpace: 'nowrap' }}>{formatAmount(contractAmount)} · 已回 {Math.round(receivedAmount / contractAmount * 100)}%</Text>,
+    }] : []),
+    {
+      key: 'schedule',
+      label: '工期',
+      value: <><IconClockCircle />{cd.label}</>,
+      tone: cd.isOverdue ? 'danger' : 'neutral',
+    },
+    {
+      key: 'hours',
+      label: '工时',
+      value: `${formatHours(metrics.totalHours)} / ${formatHours(metrics.budgetHours)}`,
+      detail: (
+        <Progress
+          percent={metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0}
+          size="mini"
+          showText={false}
+        />
+      ),
+    },
+    {
+      key: 'bugs',
+      label: '缺陷',
+      value: `P0:${metrics.bugP0Count} P1:${metrics.bugP1Count}`,
+      tone: metrics.bugP0Count > 0 ? 'danger' : metrics.bugP1Count > 0 ? 'warning' : 'success',
+    },
+    ...(project.riskLevel && project.riskLevel !== 'none' ? [{
+      key: 'risk',
+      label: '风险',
+      value: PROJECT_RISK_LEVEL_LABEL[project.riskLevel],
+      detail: project.riskNote || undefined,
+      tone: project.riskLevel === 'high' ? 'danger' as const : project.riskLevel === 'medium' ? 'warning' as const : 'neutral' as const,
+    }] : []),
+    ...(activeBlockers.length > 0 ? [{
+      key: 'blockers',
+      label: '阻塞项',
+      value: `${activeBlockers.length} 项`,
+      tone: 'danger' as const,
+    }] : []),
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* ========== 控制台头部 ========== */}
-      <Card bodyStyle={{ padding: '16px 20px' }}>
-        {/* 顶部：返回+项目元数据 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Button type="text" icon={<IconLeft />} onClick={() => navigate('/projects')}>返回列表</Button>
-            <Divider type="vertical" />
-            <span style={{ fontFamily: 'monospace', fontSize: 14, color: 'var(--color-text-3)' }}>{project.projectNo}</span>
-            <span style={{ fontSize: 18, fontWeight: 600 }}>{project.name}</span>
+    <PageShell
+      breadcrumbs={[
+        { label: '项目管理', to: '/projects' },
+        { label: '项目列表', to: '/projects' },
+        { label: project.name },
+      ]}
+    >
+      <ProcessOverview
+        identifier={project.projectNo}
+        title={project.name}
+        tags={(
+          <>
             <Tag color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag>
             <Tag color="gray">{project.entity}</Tag>
             <Tag color={PROJECT_PRIORITY_COLOR[project.priority]}>优先级: {project.priority}</Tag>
             <Tag color={HEALTH_COLOR[metrics.healthStatus]}>
               健康度: {HEALTH_LABEL[metrics.healthStatus]}
             </Tag>
-          </div>
-          {/* 行动栏按钮 - 右上角 */}
+          </>
+        )}
+        actions={(
           <Space>
             <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { setActiveSideTab('follow'); followForm.resetFields(); setFollowModalVisible(true); }}>登记跟进</Button>
             <Button size="small" icon={<IconPlus />} onClick={() => { setActiveMainTab('tasks'); openTaskModal(); }}>新建任务</Button>
             <Button size="small" icon={<IconFile />} onClick={() => { setActiveSideTab('meetings'); meetingForm.resetFields(); setMeetingModalVisible(true); }}>录入纪要</Button>
             <Button size="small" icon={<IconCalendar />} onClick={() => navigate(`/projects/${id}/delivery`)}>甘特图</Button>
           </Space>
-        </div>
-
-        {/* 全生命周期步骤条 */}
-        <Steps current={lifecycleIndex} size="small" style={{ maxWidth: 700 }}>
-          {LIFECYCLE_STEPS.map((step, index) => (
-            <Step
-              key={step}
-              title={LIFECYCLE_STEP_LABEL[step]}
-              description={
+        )}
+        currentStep={lifecycleIndex}
+        steps={LIFECYCLE_STEPS.map((step, index) => ({
+          key: step,
+          title: LIFECYCLE_STEP_LABEL[step],
+          description:
                 index === 2 && project.status === '进行中'
                   ? `${project.progress}%`
                   : project.status === '搁置' && index === 2
                   ? '已暂停'
                   : project.status === '延迟' && index === 2
                   ? '延期中'
-                  : undefined
-              }
-            />
-          ))}
-        </Steps>
-      </Card>
+                  : undefined,
+        }))}
+      />
 
-      {/* 6 维指标胶囊 */}
-      <Card size="small">
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <IconUser style={{ color: 'rgb(var(--primary-6))' }} />
-            <Text type="secondary">PM:</Text>
-            <Text style={{ fontWeight: 500 }}>{project.owner || '待指派'}</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="secondary">客户:</Text>
-            <Text style={{ fontWeight: 500 }}>{metrics.customerName || '-'}</Text>
-          </div>
-          {contractAmount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-              <Text type="secondary">合同额:</Text>
-              <Text style={{ fontWeight: 500, color: 'rgb(var(--success-6))' }}>{formatAmount(contractAmount)}</Text>
-              {contractAmount > 0 && (
-                <Text type="secondary" style={{ fontSize: 12 }}>已回{Math.round(receivedAmount / contractAmount * 100)}%</Text>
-              )}
-            </div>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: cd.isOverdue ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <IconClockCircle style={{ color: cd.isOverdue ? 'rgb(var(--danger-6))' : 'var(--color-text-3)' }} />
-            <Text type="secondary">工期:</Text>
-            <Text style={{ fontWeight: 500, color: cd.isOverdue ? 'rgb(var(--danger-6))' : undefined }}>{cd.label}</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="secondary">工时:</Text>
-            <Text style={{ fontWeight: 500 }}>{formatHours(metrics.totalHours)} / {formatHours(metrics.budgetHours)}</Text>
-            <Progress percent={metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0} size="mini" style={{ width: 60 }} showText={false} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: metrics.bugP0Count + metrics.bugP1Count > 0 ? 'rgb(var(--danger-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-            <Text type="secondary">Bug:</Text>
-            <Text style={{ fontWeight: 500, color: metrics.bugP0Count > 0 ? 'rgb(var(--danger-6))' : metrics.bugP1Count > 0 ? 'rgb(var(--warning-6))' : 'rgb(var(--success-6))' }}>
-              P0:{metrics.bugP0Count} P1:{metrics.bugP1Count}
-            </Text>
-          </div>
-          {/* 风险等级胶囊 */}
-          {project.riskLevel && project.riskLevel !== 'none' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: project.riskLevel === 'high' ? 'rgb(var(--danger-1))' : project.riskLevel === 'medium' ? 'rgb(var(--warning-1))' : 'var(--color-fill-2)', borderRadius: 8, fontSize: 14 }}>
-              <Text type="secondary">风险:</Text>
-              <Tag color={PROJECT_RISK_LEVEL_COLOR[project.riskLevel]} size="small">{PROJECT_RISK_LEVEL_LABEL[project.riskLevel]}</Tag>
-              {project.riskNote && <Text style={{ fontSize: 12, maxWidth: 160 }} ellipsis>{project.riskNote}</Text>}
-            </div>
-          )}
-          {/* 阻塞项计数胶囊 */}
-          {activeBlockers.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'rgb(var(--danger-1))', borderRadius: 8, fontSize: 14 }}>
-              <Text type="secondary">阻塞:</Text>
-              <Text style={{ fontWeight: 500, color: 'rgb(var(--danger-6))' }}>{activeBlockers.length} 项</Text>
-            </div>
-          )}
-        </div>
-      </Card>
+      <ProcessMetricGrid items={overviewMetrics} />
 
       {/* ========== 主体区域：70:30 分栏 ========== */}
-      <div style={{ display: 'flex', gap: 16 }}>
+      <ProcessWorkspace>
         {/* 左侧主区域 (70%) */}
-        <div style={{ flex: 7, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <ProcessWorkspaceMain>
           {/* 关键信息档案卡 */}
           <Card size="small" bodyStyle={{ padding: '12px 16px' }}>
             <div style={{ marginBottom: 8 }}>
@@ -462,7 +548,6 @@ export function ProjectDetail360() {
               <TabPane key="contracts" title="合同信息" />
               <TabPane key="payments" title="回款与发票" />
               <TabPane key="team" title="团队与工时" />
-              <TabPane key="daily" title="日报" />
               <TabPane key="tasks" title="任务管理" />
               <TabPane key="activity" title="项目动态" />
             </Tabs>
@@ -500,120 +585,61 @@ export function ProjectDetail360() {
                 <div>
                   <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
                     {mainContract ? (
-                      <Descriptions
-                        column={4}
-                        size="small"
-                        data={[
-                          { label: '合同编号', value: mainContract.contractNo },
-                          { label: '标的额', value: money(mainContract.current.totalAmount) },
-                          { label: '签约主体', value: mainContract.current.signingEntity },
-                          { label: '状态', value: <Tag color={CONTRACT_STATUS_COLORS[mainContract.status]}>{CONTRACT_STATUS_LABELS[mainContract.status]}</Tag> },
-                          { label: '签约日期', value: mainContract.current.signDate || '-' },
-                          { label: '合同名称', value: mainContract.current.contractName },
-                          { label: '客户', value: mainContract.current.customerName },
-                          { label: '已回款', value: money(mainContract.receivedAmount ?? 0) },
-                        ]}
-                      />
+                      <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo />
                     ) : (
                       <Empty description="暂无关联合同" />
                     )}
                   </Card>
-                  <Card size="small" title="补充合同">
-                    {(() => {
-                      const supplementContracts = contracts.filter(
-                        (c) => c.kind === 'supplement' && c.parentContractId === mainContract?.id,
-                      );
-                      return supplementContracts.length > 0 ? (
-                        <div>{supplementContracts.length} 份补充合同</div>
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
-                      );
-                    })()}
+                  <Card size="small" title={`补充合同（${supplementContracts.length}）`}>
+                    {supplementContracts.length > 0 ? (
+                      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                        {supplementContracts.map((contract) => (
+                          <LeadFinalContractPanel key={contract.id} contract={contract} projectLayout />
+                        ))}
+                      </Space>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
+                    )}
                   </Card>
                 </div>
               )}
 
               {/* 回款与发票 */}
               {activeMainTab === 'payments' && (
-                <div>
-                  <Grid.Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>合同标的额</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{contractAmount > 0 ? money(contractAmount) : '-'}</div>
-                      </div>
-                    </Grid.Col>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>已到账</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4, color: 'rgb(var(--success-6))' }}>{receivedAmount > 0 ? money(receivedAmount) : '-'}</div>
-                      </div>
-                    </Grid.Col>
-                    <Grid.Col span={8}>
-                      <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>待回款</Text>
-                        <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{contractAmount > 0 ? money(contractAmount - receivedAmount) : '-'}</div>
-                      </div>
-                    </Grid.Col>
-                  </Grid.Row>
-                  <Card size="small" title="回款期次（计划）" style={{ marginBottom: 12 }}>
-                    {mainContract?.current.paymentPlans?.length ? (
-                      <Table
-                        columns={[
-                          { title: '期次', dataIndex: 'period', width: 80, render: (_: unknown, record: { periodName?: string; period: number }) => `${record.periodName || `第${record.period}期`}` },
-                          { title: '金额', dataIndex: 'amount', width: 120, render: (v: number) => money(v) },
-                          { title: '比例', dataIndex: 'percentage', width: 80, render: (v: number) => `${v}%` },
-                          { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
-                          { title: '触发条件', dataIndex: 'condition', width: 160 },
-                        ]}
-                        data={mainContract.current.paymentPlans}
-                        pagination={false}
-                        rowKey="period"
-                      />
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无回款期次</div>
-                    )}
-                  </Card>
-                  <Card size="small" title="实收台账">
-                    {projectCollections.length ? (
-                      <Table
-                        columns={[
-                          { title: '到账日期', dataIndex: 'date', width: 120 },
-                          { title: '金额', dataIndex: 'amount', width: 120, render: (v: number) => money(v) },
-                          { title: '方式', dataIndex: 'method', width: 120 },
-                          { title: '期次', dataIndex: 'period', width: 80, render: (v: number | 'other' | undefined) => (v === 'other' ? '其他' : v ? `第${v}期` : '-') },
-                          { title: '说明', dataIndex: 'note' },
-                        ]}
-                        data={projectCollections}
-                        pagination={false}
-                        rowKey="id"
-                      />
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无实收记录</div>
-                    )}
-                  </Card>
-                </div>
+                <ContractPaymentInvoicePanel
+                  mainContract={mainContract}
+                  supplementContracts={supplementContracts}
+                  contractAmount={contractAmount}
+                  receivedAmount={receivedAmount}
+                  collections={visibleProjectCollections}
+                  invoiceRecords={invoiceRecords}
+                  onAddCollection={() => openCollectionEditor()}
+                  onEditCollection={openCollectionEditor}
+                  onDeleteCollection={(record) => {
+                    if (addedCollections.some((item) => item.id === record.id)) {
+                      setAddedCollections((items) => items.filter((item) => item.id !== record.id));
+                    } else {
+                      setDeletedCollectionIds((items) => [...items, record.id]);
+                    }
+                    Message.success('实收记录已删除');
+                  }}
+                  onIssueInvoice={issueInvoice}
+                  onRedInvoice={redInvoice}
+                  onCorrectInvoice={(invoice) => setInvoiceRecords((items) => items.map((item) => item.id === invoice.id ? { ...item, invoiceNo: `${item.invoiceNo}-更正` } : item))}
+                  onDeleteInvoice={(invoice) => setInvoiceRecords((items) => items.filter((item) => item.id !== invoice.id))}
+                />
               )}
 
               {/* 团队与工时 */}
               {activeMainTab === 'team' && (
                 <div>
                   <Card size="small" title="团队成员与分工" style={{ marginBottom: 16 }}>
-                    <Descriptions
-                      column={2}
-                      data={[
-                        { label: '项目经理', value: project.owner || '待指派' },
-                        { label: '商务/销售', value: project.salesUsers.join('、') || '-' },
-                        { label: '协助人', value: project.assistants.join('、') || '-' },
-                        { label: '产品', value: project.productUsers.join('、') || '-' },
-                        { label: 'UI', value: project.uiUsers.join('、') || '-' },
-                        { label: '前端', value: project.frontendUsers.join('、') || '-' },
-                        { label: '后端', value: project.backendUsers.join('、') || '-' },
-                        { label: '运维', value: project.opsUsers.join('、') || '-' },
-                        { label: '测试', value: project.testUsers.join('、') || '-' },
-                        { label: '法务', value: project.legalUsers.join('、') || '-' },
-                      ].map((item) => ({ ...item, value: item.value || '-' }))}
-                    />
+                    <Table rowKey="name" pagination={false} data={teamMembers} columns={[
+                      { title: '成员', dataIndex: 'name', render: (name: string) => <Button type="text" style={{ padding: 0 }} onClick={() => { setTeamDrawerMember(name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>{name}</Button> },
+                      { title: '岗位', dataIndex: 'position' },
+                      { title: '累计工时', dataIndex: 'hours', render: (hours: number) => <Text style={{ fontWeight: 600 }}>{formatHours(hours)}</Text> },
+                      { title: '操作', width: 100, fixed: 'right' as const, render: (_: unknown, member: { name: string }) => <Button type="text" size="small" onClick={() => { setTeamDrawerMember(member.name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>查看日报</Button> },
+                    ]} />
                   </Card>
 
                   <Card size="small" title="工时统计">
@@ -663,65 +689,18 @@ export function ProjectDetail360() {
               {/* 任务管理 */}
               {activeMainTab === 'tasks' && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <Text style={{ fontSize: 16, fontWeight: 500 }}>任务管理</Text>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openTaskModal()}>新建任务</Button>
-                  </div>
-                  <Table
-                    columns={[
-                      { title: '任务名称', dataIndex: 'title', width: 200 },
-                      { title: '类型', dataIndex: 'type', width: 100, render: (v: string) => <Tag>{v || '-'}</Tag> },
-                      { title: '负责人', dataIndex: 'assignee', width: 100 },
-                      { title: '状态', dataIndex: 'status', width: 100, render: (v: string) => <Tag color={v === '已完成' ? 'green' : v === '进行中' ? 'blue' : 'default'}>{v}</Tag> },
-                      { title: '优先级', dataIndex: 'priority', width: 80, render: (v: string) => <Tag color={v === '高' ? 'red' : v === '中' ? 'orange' : 'default'}>{v || '-'}</Tag> },
-                      { title: '截止日期', dataIndex: 'plannedEndDate', width: 110 },
-                      { title: '进度', dataIndex: 'progress', width: 100, render: (v: number) => <Progress percent={v} size="small" showText={false} /> },
-                      {
-                        title: '操作', width: 120,
-                        render: (_: unknown, record: ProjectWorkTask) => (
-                          <Space>
-                            <Button type="text" size="small" icon={<IconEdit />} onClick={() => openTaskModal(record)} />
-                            <Button type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setTasks(tasks.filter((t) => t.id !== record.id)); Message.success('已删除'); }} />
-                          </Space>
-                        ),
-                      },
-                    ]}
-                    data={tasks}
-                    pagination={false}
-                    rowKey="id"
-                    locale={{ emptyText: <Empty description="暂无任务" /> }}
-                  />
-
-                  <div style={{ marginTop: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <Text style={{ fontSize: 16, fontWeight: 500 }}>缺陷跟踪 (Bug Tracker)</Text>
-                      <Button size="small" icon={<IconPlus />} onClick={() => Message.info('新建缺陷')}>新建缺陷</Button>
-                    </div>
-                    <Table
-                      columns={[
-                        { title: '标题', dataIndex: 'title', width: 200 },
-                        { title: '严重度', dataIndex: 'severity', width: 100, render: (v: string) => <Tag color={v === 'P0' ? 'red' : v === 'P1' ? 'orangered' : v === 'P2' ? 'orange' : 'blue'}>{v}</Tag> },
-                        { title: '环境', dataIndex: 'env', width: 100 },
-                        { title: '责任人', dataIndex: 'assignee', width: 100 },
-                        { title: '状态', dataIndex: 'status', width: 100, render: (v: string) => <Tag color={v === '已修复' ? 'green' : v === '处理中' ? 'blue' : 'red'}>{v}</Tag> },
-                        { title: '创建时间', dataIndex: 'createdAt', width: 150 },
-                        {
-                          title: '操作', width: 120,
-                          render: (_: unknown, record: { id: string; status: string }) => (
-                            <Space>
-                              {record.status !== '已修复' && (
-                                <Button type="text" size="small" onClick={() => { setBugs(bugs.map((b) => b.id === record.id ? { ...b, status: '已修复' } : b)); Message.success('已标记修复'); }}>修复</Button>
-                              )}
-                              <Button type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setBugs(bugs.filter((b) => b.id !== record.id)); Message.success('已删除'); }} />
-                            </Space>
-                          ),
-                        },
-                      ]}
-                      data={bugs}
-                      pagination={false}
-                      rowKey="id"
-                    />
-                  </div>
+                  <Text style={{ display: 'block', fontSize: 16, fontWeight: 600, marginBottom: 12 }}>工作项概览</Text>
+                  <Grid.Row gutter={[12, 12]}>
+                    {[
+                      { key: 'requirements', title: '需求', total: Math.max(3, tasks.filter((task) => task.type === '产品设计').length), pending: 1, tone: 'rgb(var(--primary-6))' },
+                      { key: 'tasks', title: '任务', total: tasks.length, pending: tasks.filter((task) => task.status !== '已完成').length, tone: 'rgb(var(--warning-6))' },
+                      { key: 'bugs', title: '缺陷', total: bugs.length, pending: bugs.filter((bug) => bug.status !== '已修复').length, tone: 'rgb(var(--danger-6))' },
+                    ].map((item) => <Grid.Col span={8} key={item.key}>
+                      <Card hoverable size="small" style={{ cursor: 'pointer', borderTop: `3px solid ${item.tone}` }} onClick={() => navigate(`/projects/${project.id}/work-items?tab=${item.key}`)}>
+                        <Text type="secondary">{item.title}总数</Text><div style={{ fontSize: 28, fontWeight: 700, margin: '6px 0' }}>{item.total}</div><Text type="secondary">待处理 {item.pending} 项 · 点击查看列表</Text>
+                      </Card>
+                    </Grid.Col>)}
+                  </Grid.Row>
                 </div>
               )}
 
@@ -765,78 +744,42 @@ export function ProjectDetail360() {
                     </Grid.Col>
                   </Grid.Row>
 
-                  {/* Activity Stream 时间轴 */}
+                  {/* 项目里程碑：已完成按完成时间倒序，未完成置底 */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                      <Text style={{ fontSize: 16, fontWeight: 500 }}>项目综合动态</Text>
-                      <Space size={4} wrap>
-                        <Tag
-                          color={activityFilter.length === 0 ? 'blue' : 'default'}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => setActivityFilter([])}
-                        >
-                          全部
-                        </Tag>
-                        {eventTypes.map((type) => (
-                          <Tag
-                            key={type}
-                            color={activityFilter.includes(type) ? 'blue' : 'default'}
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => {
-                              setActivityFilter((prev) =>
-                                prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-                              );
-                            }}
-                          >
-                            {ACTIVITY_EVENT_ICON[type]} {ACTIVITY_EVENT_LABEL[type]}
-                          </Tag>
-                        ))}
-                      </Space>
-                    </div>
-
-                    <Timeline style={{ marginTop: 16 }}>
-                      {filteredActivities.map((event) => (
-                        <Timeline.Item
-                          key={event.id}
-                          dotColor={
-                            event.type === 'status_change' ? 'rgb(var(--primary-6))' :
-                            event.type === 'milestone' ? 'rgb(var(--success-6))' :
-                            event.isPreSale ? 'var(--color-text-4)' :
-                            'var(--color-border-2)'
-                          }
-                        >
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <span>{ACTIVITY_EVENT_ICON[event.type]}</span>
-                              <Text style={{ fontWeight: 500, fontSize: 14 }}>{event.title}</Text>
-                              {event.isPreSale && <Tag size="small" color="gray">售前</Tag>}
-                              <Text type="secondary" style={{ fontSize: 12 }}>{event.createdAt}</Text>
+                    <Text style={{ display: 'block', fontSize: 16, fontWeight: 500, marginBottom: 12 }}>项目里程碑</Text>
+                    <Grid.Row gutter={[12, 12]}>
+                      {[
+                        { name: '合同接收', done: Boolean(mainContract), date: mainContract?.current.signDate || project.createdAt.slice(0, 10) },
+                        { name: '原型确认', done: project.progress >= 20, date: project.progress >= 20 ? '2026-06-18' : '' },
+                        { name: 'UI 确认', done: project.progress >= 40, date: project.progress >= 40 ? '2026-07-09' : '' },
+                        { name: '一期回款', done: receivedAmount > 0, date: projectCollections[0]?.date || '' },
+                        { name: '项目验收', done: project.progress >= 100, date: project.progress >= 100 ? project.expectedEndDate : '' },
+                      ].sort((left, right) => Number(right.done) - Number(left.done) || right.date.localeCompare(left.date)).map((milestone) => (
+                        <Grid.Col span={12} key={milestone.name}>
+                          <Card size="small" style={{ borderColor: milestone.done ? 'rgb(var(--success-3))' : 'var(--color-border-2)', background: milestone.done ? 'rgb(var(--success-1))' : 'var(--color-bg-2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div><Text style={{ fontWeight: 600 }}>{milestone.name}</Text><div><Text type="secondary" style={{ fontSize: 12 }}>{milestone.done ? `完成于 ${milestone.date}` : '等待前置节点完成'}</Text></div></div>
+                              <Tag color={milestone.done ? 'green' : 'gray'}>{milestone.done ? '✓ 已完成' : '未完成'}</Tag>
                             </div>
-                            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 4 }}>{event.content}</div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>操作人: {event.operator}</Text>
-                          </div>
-                        </Timeline.Item>
+                          </Card>
+                        </Grid.Col>
                       ))}
-                    </Timeline>
-
-                    {filteredActivities.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无动态记录</div>
-                    )}
+                    </Grid.Row>
                   </div>
                 </div>
               )}
             </div>
           </Card>
-        </div>
+        </ProcessWorkspaceMain>
 
         {/* 右侧业务过程 (30%) */}
-        <div style={{ flex: 3, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <ProcessWorkspaceAside>
           <Card size="small" style={{ flex: 1 }}>
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
               <TabPane key="follow" title="跟进" />
               <TabPane key="quotation" title="报价" />
-              <TabPane key="contract-records" title="合同记录" />
-              <TabPane key="presales" title="售前历程" />
+              <TabPane key="contract-records" title="合同" />
+              <TabPane key="presales" title="售前" />
               <TabPane key="meetings" title="会议纪要" />
               <TabPane key="demo" title="演示" />
               <TabPane key="documents" title="资料" />
@@ -923,9 +866,19 @@ export function ProjectDetail360() {
                 </div>
               )}
 
-              {/* 合同记录 */}
+              {/* 合同 */}
               {activeSideTab === 'contract-records' && (
                 <div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<IconPlus />}
+                      onClick={() => navigate(`/contracts/new?projectId=${project.id}`)}
+                    >
+                      新建合同
+                    </Button>
+                  </div>
                   {linkedContracts.map((c) => (
                     <Card
                       key={c.id}
@@ -947,12 +900,12 @@ export function ProjectDetail360() {
                     </Card>
                   ))}
                   {linkedContracts.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同记录</div>
+                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同</div>
                   )}
                 </div>
               )}
 
-              {/* 售前历程 */}
+              {/* 售前 */}
               {activeSideTab === 'presales' && (
                 <ProjectPresalesHistoryPanel leadId={leadId} contract={mainContract} />
               )}
@@ -1105,8 +1058,8 @@ export function ProjectDetail360() {
               )}
             </div>
           </Card>
-        </div>
-      </div>
+        </ProcessWorkspaceAside>
+      </ProcessWorkspace>
 
       {/* 新建/编辑任务 Modal */}
       <Modal
@@ -1263,6 +1216,33 @@ export function ProjectDetail360() {
         </Form>
       </Modal>
 
+      <CollectionRecordModal
+        visible={collectionModalVisible}
+        editing={Boolean(editingCollectionId)}
+        form={collectionForm}
+        onOk={saveCollection}
+        onCancel={() => setCollectionModalVisible(false)}
+      />
+
+      <Drawer title={`${teamDrawerMember || ''} · 项目日报`} visible={Boolean(teamDrawerMember)} onCancel={() => setTeamDrawerMember(undefined)} footer={null} width={720}>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Grid.Row gutter={12}>
+            <Grid.Col span={8}><Card size="small"><Text type="secondary">累计工时</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{formatHours(selectedMemberReports.reduce((sum, item) => sum + item.hours, 0))}</div></Card></Grid.Col>
+            <Grid.Col span={8}><Card size="small"><Text type="secondary">日报数量</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{selectedMemberReports.length}</div></Card></Grid.Col>
+            <Grid.Col span={8}><Card size="small"><Text type="secondary">风险记录</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{selectedMemberReports.filter((item) => item.riskFeedback && item.riskFeedback !== '无').length}</div></Card></Grid.Col>
+          </Grid.Row>
+          <Space style={{ width: '100%' }}>
+            <Input.Search allowClear placeholder="搜索工作内容或风险反馈" value={teamDailyKeyword} onChange={(value) => { setTeamDailyKeyword(value); setTeamDailyPage(1); }} style={{ flex: 1 }} />
+            <Select value={teamDailyRiskFilter} onChange={(value) => { setTeamDailyRiskFilter(value); setTeamDailyPage(1); }} style={{ width: 150 }}><Select.Option value="all">风险（全部）</Select.Option><Select.Option value="risk">仅有风险</Select.Option></Select>
+          </Space>
+          <Table rowKey="id" pagination={false} data={selectedMemberReports.slice((teamDailyPage - 1) * 5, teamDailyPage * 5)} columns={[
+            { title: '日期', dataIndex: 'date', width: 110 }, { title: '工时', dataIndex: 'hours', width: 80, render: (value: number) => `${value}h` },
+            { title: '工作内容', dataIndex: 'workContent' }, { title: '风险反馈', dataIndex: 'riskFeedback', width: 180 },
+          ]} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Pagination current={teamDailyPage} pageSize={5} total={selectedMemberReports.length} onChange={setTeamDailyPage} size="small" /></div>
+        </Space>
+      </Drawer>
+
       {/* 报价工作台全屏抽屉 */}
       <Drawer
         title="报价工作台"
@@ -1281,6 +1261,6 @@ export function ProjectDetail360() {
           />
         )}
       </Drawer>
-    </div>
+    </PageShell>
   );
 }

@@ -70,10 +70,18 @@ export function nextContractNo(signingEntity: string, seq: number): string {
 
 export function applyCreateFromWizard(input: WizardInput, id: string, contractNo: string, now: string): Contract {
   const formData = input.formData;
+  if (input.kind === 'supplement') {
+    if (!input.parentContractId) throw new Error('补充合同必须关联主合同');
+    if (!input.sourceQuoteId) throw new Error('补充合同必须来源于已确认的补充报价');
+    if (!formData.totalAmount) throw new Error('补充合同变更金额不能为 0');
+  }
   return {
     id,
     contractNo,
     status: 'draft',
+    kind: input.kind ?? 'main',
+    parentContractId: input.parentContractId,
+    sourceQuoteId: input.sourceQuoteId,
     leadId: input.leadId,
     quoteId: input.quoteId,
     projectId: input.projectId,
@@ -242,8 +250,16 @@ export function applyVoidContract(c: Contract, reason: string): Contract {
   return { ...c, status: 'voided', current: { ...c.current, contractContent: c.current.contractContent + `\n\n[作废原因] ${reason}` } };
 }
 
-export function applyAddCollection(c: Contract, record: Omit<CollectionRecord, 'id' | 'contractId'>, contractId: string): Contract {
-  const records = [...(c.collectionRecords ?? []), { ...record, id: `col-${Date.now()}`, contractId }];
+export function applyAddCollection(
+  c: Contract,
+  record: Omit<CollectionRecord, 'id' | 'contractId'> & { id?: string },
+  contractId: string,
+): Contract {
+  const id = record.id ?? `col-${Date.now()}`;
+  const current = c.collectionRecords ?? [];
+  // 双写和补偿重试必须沿用同一流水 ID；已存在时按 INSERT OR IGNORE 处理。
+  if (current.some((item) => item.id === id)) return c;
+  const records = [...current, { ...record, id, contractId }];
   return { ...c, collectionRecords: records, receivedAmount: records.reduce((s, r) => s + r.amount, 0) };
 }
 

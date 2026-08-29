@@ -21,8 +21,10 @@ import {
   IconLocation,
   IconClockCircle,
 } from '@arco-design/web-react/icon';
+import { ProcessMetricGrid } from '@/app/components/ui';
+import '../travelAdminConsistency.css';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Row, Col } = Grid;
 
 interface AuditCase {
@@ -287,7 +289,7 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
             </Col>
             <Col span={8}>
               <Card size="small">
-                <div style={{ fontSize: 12, color: '#86909c', marginBottom: 8 }}>打卡记录对比</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>打卡记录对比</div>
                 <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">应出勤</Text>
@@ -299,12 +301,12 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">匹配率</Text>
-                    <Text style={{ color: auditCase.punchData.matchRate < 80 ? '#f53f3f' : '#00b42a', fontWeight: 500 }}>
+                    <Text style={{ color: auditCase.punchData.matchRate < 80 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))', fontWeight: 500 }}>
                       {auditCase.punchData.matchRate}%
                     </Text>
                   </div>
                   {auditCase.punchData.abnormalDays > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f53f3f' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgb(var(--danger-6))' }}>
                       <Text type="secondary">异常天数</Text>
                       <Text style={{ fontWeight: 500 }}>{auditCase.punchData.abnormalDays} 天</Text>
                     </div>
@@ -314,7 +316,7 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
             </Col>
             <Col span={8}>
               <Card size="small">
-                <div style={{ fontSize: 12, color: '#86909c', marginBottom: 8 }}>报销发票对比</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>报销发票对比</div>
                 <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">提交发票</Text>
@@ -326,16 +328,16 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">匹配金额</Text>
-                    <Text style={{ color: '#00b42a' }}>¥{auditCase.invoiceData.matchedAmount}</Text>
+                    <Text style={{ color: 'rgb(var(--success-6))' }}>¥{auditCase.invoiceData.matchedAmount}</Text>
                   </div>
                   {auditCase.invoiceData.unmatchedAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ff7d00' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgb(var(--warning-6))' }}>
                       <Text type="secondary">未匹配</Text>
                       <Text style={{ fontWeight: 500 }}>¥{auditCase.invoiceData.unmatchedAmount}</Text>
                     </div>
                   )}
                   {auditCase.invoiceData.overStandardAmount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f53f3f' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgb(var(--danger-6))' }}>
                       <Text type="secondary">超标金额</Text>
                       <Text style={{ fontWeight: 500 }}>¥{auditCase.invoiceData.overStandardAmount}</Text>
                     </div>
@@ -371,48 +373,27 @@ export function FinanceAuditDashboard() {
   const rejectCount = MOCK_AUDIT_CASES.filter(c => c.aiConclusion === 'reject').length;
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Space>
-            <IconSafe style={{ color: '#165dff' }} />
-            <Title heading={5} style={{ margin: 0 }}>AI 财务审核看板</Title>
-          </Space>
-          <Text type="secondary">三方比对：出差申请 vs 打卡记录 vs 报销发票</Text>
+    <section className="travel-audit" aria-labelledby="finance-audit-title">
+      <div className="travel-audit__header">
+        <div id="finance-audit-title" className="travel-audit__title">
+          <IconSafe style={{ color: 'rgb(var(--primary-6))' }} />
+          AI 财务审核看板
         </div>
-        <Row gutter={16}>
-          <Col span={6}>
-            <Card size="small" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: '#86909c', marginBottom: 4 }}>待审核</div>
-              <div style={{ fontSize: 32, fontWeight: 'bold' }}>{MOCK_AUDIT_CASES.length}</div>
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small" style={{ textAlign: 'center', background: '#e8ffea', border: '1px solid #aff0b5' }}>
-              <div style={{ fontSize: 12, color: '#00b42a', marginBottom: 4 }}>推荐通过</div>
-              <div style={{ fontSize: 32, fontWeight: 'bold', color: '#00b42a' }}>{passCount}</div>
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small" style={{ textAlign: 'center', background: '#fff7e6', border: '1px solid #ffd591' }}>
-              <div style={{ fontSize: 12, color: '#fa8c16', marginBottom: 4 }}>部分扣减</div>
-              <div style={{ fontSize: 32, fontWeight: 'bold', color: '#fa8c16' }}>{partialCount}</div>
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small" style={{ textAlign: 'center', background: '#fff0f0', border: '1px solid #ffc9c9' }}>
-              <div style={{ fontSize: 12, color: '#f53f3f', marginBottom: 4 }}>建议拒绝</div>
-              <div style={{ fontSize: 32, fontWeight: 'bold', color: '#f53f3f' }}>{rejectCount}</div>
-            </Card>
-          </Col>
-        </Row>
-      </Card>
+        <div className="travel-audit__description">三方比对：出差申请 vs 打卡记录 vs 报销发票</div>
+      </div>
+
+      <ProcessMetricGrid items={[
+        { key: 'pending', label: '待审核', value: `${MOCK_AUDIT_CASES.length} 单`, detail: '当前 AI 稽核样本' },
+        { key: 'pass', label: '推荐通过', value: `${passCount} 单`, detail: '申请、打卡与发票匹配', tone: 'success' },
+        { key: 'partial', label: '部分扣减', value: `${partialCount} 单`, detail: '存在可修正异常', tone: 'warning' },
+        { key: 'reject', label: '建议拒绝', value: `${rejectCount} 单`, detail: '存在重大凭证或打卡异常', tone: 'danger' },
+      ]} />
 
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {MOCK_AUDIT_CASES.map((auditCase) => (
           <AuditCaseCard key={auditCase.id} auditCase={auditCase} />
         ))}
       </Space>
-    </div>
+    </section>
   );
 }

@@ -12,6 +12,9 @@ import {
   Typography,
   Message,
   Grid,
+  Drawer,
+  Timeline,
+  Tooltip,
 } from '@arco-design/web-react';
 import {
   IconSearch,
@@ -23,6 +26,7 @@ import {
 } from '@arco-design/web-react/icon';
 import type { Loan, LoanStatus } from '../types';
 import { getLoanList, approveLoan, payLoan } from '../travel-api';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -61,14 +65,14 @@ export function LoanList() {
   const [detailVisible, setDetailVisible] = useState(false);
 
   // 加载数据
-  const loadLoans = async () => {
+  const loadLoans = async (filters = searchForm) => {
     setLoading(true);
     try {
       const result = await getLoanList({
-        keyword: searchForm.keyword || undefined,
-        status: (searchForm.status as LoanStatus) || undefined,
-        startDate: searchForm.startDate || undefined,
-        endDate: searchForm.endDate || undefined,
+        keyword: filters.keyword || undefined,
+        status: (filters.status as LoanStatus) || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
       });
       setLoanList(result.list);
       setTotal(result.total);
@@ -90,8 +94,9 @@ export function LoanList() {
 
   // 重置
   const handleReset = () => {
-    setSearchForm({ keyword: '', status: '', startDate: '', endDate: '' });
-    loadLoans();
+    const emptyFilters = { keyword: '', status: '' as LoanStatus | '', startDate: '', endDate: '' };
+    setSearchForm(emptyFilters);
+    loadLoans(emptyFilters);
   };
 
   // 查看详情
@@ -133,35 +138,37 @@ export function LoanList() {
     const actions = [];
 
     actions.push(
-      <Button key="view" type="text" size="small" icon={<IconEye />} onClick={() => handleViewDetail(record)}>
-        查看
-      </Button>
+      <Tooltip key="view" content="查看详情">
+        <Button className="hubx-icon-action" type="text" size="small" aria-label={`查看借款单${record.loanNo}`} icon={<IconEye />} onClick={() => handleViewDetail(record)} />
+      </Tooltip>
     );
 
     // 待审批状态
     if (record.status === 'pending') {
       actions.push(
-        <Button
-          key="approve"
-          type="text"
-          size="small"
-          onClick={() => {
-            setSelectedLoan(record);
-            setApprovalAction('approve');
-            setApprovalVisible(true);
-          }}
-        >
-          审批
-        </Button>
+        <Tooltip key="approve" content="审批">
+          <Button
+            type="text"
+            size="small"
+            className="hubx-icon-action"
+            aria-label={`审批借款单${record.loanNo}`}
+            icon={<IconCheck />}
+            onClick={() => {
+              setSelectedLoan(record);
+              setApprovalAction('approve');
+              setApprovalVisible(true);
+            }}
+          />
+        </Tooltip>
       );
     }
 
     // 已通过状态
     if (record.status === 'approved') {
       actions.push(
-        <Button key="pay" type="text" size="small" onClick={() => handlePay(record)}>
-          打款
-        </Button>
+        <Tooltip key="pay" content="确认打款">
+          <Button className="hubx-icon-action" type="text" size="small" aria-label={`确认借款单${record.loanNo}打款`} icon={<IconStorage />} onClick={() => handlePay(record)} />
+        </Tooltip>
       );
     }
 
@@ -201,7 +208,7 @@ export function LoanList() {
       width: 120,
       render: (value: number) => (
         <Space size={4}>
-          <IconStorage style={{ color: '#86909c' }} />
+          <IconStorage style={{ color: 'var(--color-text-3)' }} />
           <span>¥{value.toLocaleString()}</span>
         </Space>
       ),
@@ -211,7 +218,7 @@ export function LoanList() {
       dataIndex: 'offsetAmount',
       width: 100,
       render: (value: number) => (
-        value > 0 ? <span style={{ color: '#00b42a' }}>¥{value.toLocaleString()}</span> : '-'
+        value > 0 ? <span style={{ color: 'rgb(var(--success-6))' }}>¥{value.toLocaleString()}</span> : '-'
       ),
     },
     {
@@ -249,11 +256,30 @@ export function LoanList() {
     },
   ];
 
+  const filtersActive = Boolean(searchForm.keyword || searchForm.status || searchForm.startDate || searchForm.endDate);
+  const pendingCount = loanList.filter((item) => item.status === 'pending').length;
+  const payableCount = loanList.filter((item) => item.status === 'approved').length;
+  const offsettingCount = loanList.filter((item) => item.status === 'paid' || item.status === 'offset').length;
+  const remainingAmount = loanList.reduce((sum, item) => sum + item.remainingAmount, 0);
+
   return (
-    <div style={{ padding: 16 }}>
+    <PageShell>
+      <PageHeader
+        title="借款管理"
+        description="集中查询借款申请、审批、打款与报销冲抵状态。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => navigate('/travel/loans/new')}>新增借款</Button>}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '借款申请', value: `${total} 单`, detail: filtersActive ? '当前查询结果' : '全部借款单' },
+        { key: 'pending', label: '待审批', value: `${pendingCount} 单`, detail: '等待审批人处理', tone: pendingCount > 0 ? 'warning' : 'success' },
+        { key: 'payable', label: '待打款', value: `${payableCount} 单`, detail: '审批通过待付款', tone: payableCount > 0 ? 'warning' : 'success' },
+        { key: 'remaining', label: '未冲抵余额', value: `¥${remainingAmount.toLocaleString()}`, detail: `冲抵处理中 ${offsettingCount} 单` },
+      ]} />
+
       {/* 搜索栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
+      <Card>
+        <FilterBar actions={filtersActive ? <Button type="text" onClick={handleReset}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {total} 条</span>}>
           <Input
             style={{ width: 200 }}
             placeholder="搜索借款单号/申请人"
@@ -290,19 +316,11 @@ export function LoanList() {
           <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>
             搜索
           </Button>
-          <Button onClick={handleReset}>重置</Button>
-        </Space>
+        </FilterBar>
       </Card>
 
       {/* 列表 */}
-      <Card
-        title="借款申请列表"
-        extra={
-          <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/travel/loans/new')}>
-            新增借款
-          </Button>
-        }
-      >
+      <Card title="借款申请列表">
         <Table
           columns={columns}
           data={loanList}
@@ -317,13 +335,13 @@ export function LoanList() {
         />
       </Card>
 
-      {/* 详情弹窗 */}
-      <Modal
+      {/* 详情抽屉 */}
+      <Drawer
         title="借款申请详情"
         visible={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={null}
-        style={{ width: 600 }}
+        width={640}
       >
         {selectedLoan && (
           <div>
@@ -348,19 +366,19 @@ export function LoanList() {
               </Grid.Col>
               <Grid.Col span={12}>
                 <div><Text type="secondary">借款金额</Text></div>
-                <div style={{ fontWeight: 500, color: '#165dff' }}>¥{selectedLoan.amount.toLocaleString()}</div>
+                <div style={{ fontWeight: 500, color: 'rgb(var(--primary-6))' }}>¥{selectedLoan.amount.toLocaleString()}</div>
               </Grid.Col>
               <Grid.Col span={12}>
                 <div><Text type="secondary">已冲抵</Text></div>
                 <div style={{ fontWeight: 500 }}>
                   {selectedLoan.offsetAmount > 0 ? (
-                    <span style={{ color: '#00b42a' }}>¥{selectedLoan.offsetAmount.toLocaleString()}</span>
+                    <span style={{ color: 'rgb(var(--success-6))' }}>¥{selectedLoan.offsetAmount.toLocaleString()}</span>
                   ) : '¥0'}
                 </div>
               </Grid.Col>
               <Grid.Col span={12}>
                 <div><Text type="secondary">剩余金额</Text></div>
-                <div style={{ fontWeight: 500, color: '#ff7d00' }}>¥{selectedLoan.remainingAmount.toLocaleString()}</div>
+                <div style={{ fontWeight: 500, color: 'rgb(var(--warning-6))' }}>¥{selectedLoan.remainingAmount.toLocaleString()}</div>
               </Grid.Col>
               <Grid.Col span={12}>
                 <div><Text type="secondary">关联出差单</Text></div>
@@ -377,6 +395,34 @@ export function LoanList() {
                 </div>
               </Grid.Col>
             </Grid.Row>
+
+            <Card title="审批流程" size="small" style={{ marginBottom: 24 }}>
+              <Tag color="arcoblue" style={{ marginBottom: 12 }}>
+                当前节点：{{
+                  draft: '草稿',
+                  pending: '部门审批',
+                  approved: '待打款',
+                  paid: '待冲抵',
+                  offset: '冲抵处理中',
+                  settled: '已结清',
+                  rejected: '已驳回',
+                  cancelled: '已取消',
+                }[selectedLoan.status]}
+              </Tag>
+              <Timeline>
+                {(selectedLoan.approvalRecords ?? []).map(record => (
+                  <Timeline.Item key={record.id} label={record.time}>
+                    <Space direction="vertical" size={2}>
+                      <strong>{record.step} · {record.approver}</strong>
+                      <span>{record.comment || statusConfig[selectedLoan.status].text}</span>
+                    </Space>
+                  </Timeline.Item>
+                ))}
+                {(selectedLoan.approvalRecords ?? []).length === 0 && (
+                  <Timeline.Item>申请已提交，等待当前节点处理。</Timeline.Item>
+                )}
+              </Timeline>
+            </Card>
 
             {/* 审批按钮 */}
             {selectedLoan.status === 'pending' && (
@@ -409,7 +455,7 @@ export function LoanList() {
             )}
           </div>
         )}
-      </Modal>
+      </Drawer>
 
       {/* 审批弹窗 */}
       <Modal
@@ -437,6 +483,6 @@ export function LoanList() {
           />
         </div>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

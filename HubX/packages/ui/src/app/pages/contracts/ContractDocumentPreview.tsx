@@ -24,6 +24,7 @@ import {
 import { initialProjects } from '../project-management/mockData';
 import { useContracts } from './ContractsContext';
 import { contractTemplates, renderContractDocument } from './templates';
+import { PageShell } from '@/app/components/ui';
 import type { ContractFormData, ContractVersionAttachment } from './types';
 
 const Title = Typography.Title;
@@ -63,12 +64,14 @@ export function ContractDocumentPreview() {
 
   if (!contract || !formData) {
     return (
+      <PageShell breadcrumbs={[{ label: '合同管理', to: '/contracts' }, { label: '合同列表', to: '/contracts' }, { label: '合同不存在' }]}>
       <Result
         status="404"
         title="合同不存在"
         subTitle="该合同可能已被删除，或链接有误。"
         extra={<Button type="primary" onClick={() => navigate('/contracts')}>返回合同列表</Button>}
       />
+      </PageShell>
     );
   }
 
@@ -150,6 +153,14 @@ export function ContractDocumentPreview() {
   };
 
   return (
+    <PageShell
+      breadcrumbs={[
+        { label: '合同管理', to: '/contracts' },
+        { label: '合同列表', to: '/contracts' },
+        { label: formData.contractName || contract.contractNo, to: `/contracts/${contract.id}` },
+        { label: '合同预览' },
+      ]}
+    >
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <Space>
@@ -262,5 +273,6 @@ export function ContractDocumentPreview() {
         </Form>
       </Modal>
     </div>
+    </PageShell>
   );
 }

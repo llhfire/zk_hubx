@@ -1,0 +1,159 @@
+.contract-kanban__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contract-kanban__section-card {
+  min-width: 0;
+}
+
+.contract-kanban__section-card .arco-card-body {
+  padding: 20px;
+}
+
+.contract-kanban__section-title {
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.contract-kanban__trend-header,
+.contract-kanban__progress-label,
+.contract-kanban__legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contract-kanban__trend-header {
+  align-items: flex-start;
+}
+
+.contract-kanban__period-chip {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(var(--primary-1));
+  color: rgb(var(--primary-6));
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.contract-kanban__trend-chart {
+  display: flex;
+  align-items: flex-end;
+  height: 260px;
+  gap: 20px;
+  overflow-x: auto;
+  padding-top: 20px;
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.contract-kanban__trend-column {
+  flex: 1 0 36px;
+  min-width: 36px;
+  text-align: center;
+}
+
+.contract-kanban__trend-value {
+  margin-bottom: 8px;
+  color: var(--color-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.contract-kanban__trend-bar {
+  width: min(44px, 100%);
+  margin: 0 auto;
+  border-radius: 8px 8px 0 0;
+  background: rgb(var(--primary-6));
+}
+
+.contract-kanban__trend-label {
+  margin-top: 10px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.contract-kanban__progress-row {
+  margin-top: 18px;
+}
+
+.contract-kanban__progress-label {
+  margin-bottom: 8px;
+  color: var(--color-text-2);
+  font-size: 14px;
+}
+
+.contract-kanban__progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-fill-2);
+}
+
+.contract-kanban__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.contract-kanban__donut-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 22px;
+}
+
+.contract-kanban__donut {
+  position: relative;
+  width: 156px;
+  height: 156px;
+  border-radius: 50%;
+}
+
+.contract-kanban__donut-center {
+  position: absolute;
+  inset: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-bg-2);
+  color: var(--color-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.contract-kanban__legend-row {
+  color: var(--color-text-2);
+  font-size: 14px;
+}
+
+.contract-kanban__legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+@media (max-width: 900px) {
+  .contract-kanban__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .contract-kanban__section-card .arco-card-body {
+    padding: 16px;
+  }
+
+  .contract-kanban__trend-chart {
+    gap: 12px;
+  }
+}

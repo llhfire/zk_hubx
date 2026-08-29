@@ -1,0 +1,174 @@
+.smart-meeting-list__loading {
+  display: flex;
+  min-height: 280px;
+  align-items: center;
+  justify-content: center;
+}
+
+.smart-meeting-list__content-card .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.smart-meeting-list__search {
+  flex: 0 0 360px;
+  width: 360px;
+}
+
+.smart-meeting-list__status-filter {
+  flex: 0 0 220px;
+  width: 220px;
+}
+
+.smart-meeting-list__result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-2);
+  font-size: 13px;
+}
+
+.smart-meeting-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smart-meeting-list__item {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-bg-2);
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.smart-meeting-list__item:hover,
+.smart-meeting-list__item:focus-visible {
+  border-color: rgb(var(--primary-4));
+  background: var(--color-fill-1);
+  outline: none;
+}
+
+.smart-meeting-list__item:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--primary-1));
+}
+
+.smart-meeting-list__item-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.smart-meeting-list__title-row,
+.smart-meeting-list__meta-row,
+.smart-meeting-list__refs,
+.smart-meeting-list__updated {
+  display: flex;
+  align-items: center;
+}
+
+.smart-meeting-list__title-row {
+  gap: 8px;
+}
+
+.smart-meeting-list__item-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-1);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.smart-meeting-list__meta-row {
+  gap: 8px 20px;
+  margin-top: 8px;
+  color: var(--color-text-3);
+  font-size: 13px;
+  line-height: 20px;
+  flex-wrap: wrap;
+}
+
+.smart-meeting-list__meta-row > span,
+.smart-meeting-list__refs > svg {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.smart-meeting-list__meta-row svg,
+.smart-meeting-list__refs > svg {
+  color: var(--color-text-4);
+  font-size: 14px;
+}
+
+.smart-meeting-list__todo-label {
+  display: inline-block;
+  padding-right: 8px;
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.smart-meeting-list__refs {
+  gap: 4px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.smart-meeting-list__updated {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.smart-meeting-list__view-label {
+  color: rgb(var(--primary-6));
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.smart-meeting-list__empty {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .smart-meeting-list .hubx-filter-bar__fields {
+    width: 100%;
+  }
+
+  .smart-meeting-list__search,
+  .smart-meeting-list__status-filter {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .smart-meeting-list__item,
+  .smart-meeting-list__result-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .smart-meeting-list__updated {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

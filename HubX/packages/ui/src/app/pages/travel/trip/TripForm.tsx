@@ -14,7 +14,6 @@ import {
   Tag,
 } from '@arco-design/web-react';
 import {
-  IconLeft,
   IconSave,
   IconSend,
   IconPlus,
@@ -23,8 +22,9 @@ import {
 import type { Trip, TransportMode, AccommodationType } from '../types';
 import { createTrip } from '../travel-api';
 import { TravelRuleEngine } from '../components/TravelRuleEngine';
+import { PageHeader, PageShell } from '@/app/components/ui';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { Row, Col } = Grid;
 
@@ -193,18 +193,8 @@ export function TripForm() {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      {/* 顶部导航 */}
-      <div style={{ marginBottom: 16 }}>
-        <Button
-          type="text"
-          icon={<IconLeft />}
-          onClick={() => navigate('/travel/trips')}
-        >
-          返回列表
-        </Button>
-        <Title heading={4} style={{ display: 'inline', marginLeft: 16 }}>新建出差申请</Title>
-      </div>
+    <PageShell breadcrumbs={[{ label: '差旅管理', to: '/travel/trips' }, { label: '出差申请', to: '/travel/trips' }, { label: '新建出差申请' }]}>
+      <PageHeader title="新建出差申请" description="填写关联对象、行程安排、费用预估与借款需求，保存草稿或提交审批。" />
 
       {/* 主体：表单左侧 + AI右侧 */}
       <Row gutter={16}>
@@ -240,7 +230,7 @@ export function TripForm() {
                     placeholder="请填写出差目的"
                     rows={3}
                     value={form.purpose}
-                    onChange={setForm({ ...form, purpose: value })}
+                    onChange={(value) => setForm({ ...form, purpose: value })}
                   />
                 </div>
                 <div>
@@ -462,7 +452,7 @@ export function TripForm() {
       </Row>
 
       {/* 借款申请 */}
-      <Card title="借款申请" style={{ marginTop: 16, maxWidth: 800 }}>
+      <Card title="借款申请" style={{ maxWidth: 800 }}>
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <Checkbox
             checked={form.needLoan}
@@ -497,7 +487,7 @@ export function TripForm() {
       </Card>
 
       {/* 操作按钮 */}
-      <div style={{ marginTop: 16, textAlign: 'right' }}>
+      <div style={{ textAlign: 'right' }}>
         <Space>
           <Button onClick={() => navigate('/travel/trips')}>取消</Button>
           <Button
@@ -517,6 +507,6 @@ export function TripForm() {
           </Button>
         </Space>
       </div>
-    </div>
+    </PageShell>
   );
 }

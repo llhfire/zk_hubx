@@ -39,6 +39,7 @@ import {
   getPaymentPlanPeriodLabel,
 } from './utils';
 import { QuoteMismatchAlert } from './components/QuoteMismatchAlert';
+import { PageShell } from '@/app/components/ui';
 import {
   contractSigningEntities,
   findCompanyEntityByName,
@@ -149,6 +150,7 @@ export function ContractEditor() {
 
   if (!contract || !formData) {
     return (
+      <PageShell breadcrumbs={[{ label: '合同管理', to: '/contracts' }, { label: '合同列表', to: '/contracts' }, { label: '合同不存在' }]}>
       <Result
         status="404"
         title="合同不存在"
@@ -159,6 +161,7 @@ export function ContractEditor() {
           </Button>
         }
       />
+      </PageShell>
     );
   }
 
@@ -541,6 +544,14 @@ export function ContractEditor() {
   ];
 
   return (
+    <PageShell
+      breadcrumbs={[
+        { label: '合同管理', to: '/contracts' },
+        { label: '合同列表', to: '/contracts' },
+        { label: formData.contractName || contract.contractNo },
+        { label: '合同编辑' },
+      ]}
+    >
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <Space>
@@ -1112,6 +1123,7 @@ export function ContractEditor() {
       </Modal>
 
     </div>
+    </PageShell>
   );
 }
 

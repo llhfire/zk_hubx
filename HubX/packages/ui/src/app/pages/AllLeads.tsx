@@ -51,6 +51,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './leads/utils';
+import { WeChatIcon } from '@/app/components/ui';
 
 export function AllLeads() {
   const navigate = useNavigate();
@@ -141,7 +142,7 @@ export function AllLeads() {
                 style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }}
                 onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}
               >
-                <span style={{ color: '#07C160' }}>💬</span> {r.presalesGroupName}
+                <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
@@ -176,7 +177,11 @@ export function AllLeads() {
       width: 100,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={4}>
-          {r.customerLevel && <Tag color={CUSTOMER_LEVEL_COLOR[r.customerLevel as keyof typeof CUSTOMER_LEVEL_COLOR]}>{r.customerLevel}</Tag>}
+          {r.customerLevel ? (
+            <Tag color={CUSTOMER_LEVEL_COLOR[r.customerLevel as keyof typeof CUSTOMER_LEVEL_COLOR]}>{r.customerLevel}</Tag>
+          ) : (
+            <Tooltip content="客户等级未定"><Tag color="gray" aria-label="客户等级未定">?</Tag></Tooltip>
+          )}
           <Tag color={INTENTION_LEVEL_COLOR[r.level as keyof typeof INTENTION_LEVEL_COLOR]}>{r.level}</Tag>
         </Space>
       ),
@@ -230,7 +235,7 @@ export function AllLeads() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
               <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.lastFollowTime.slice(5)}</span>
-              {r.owner && <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>· {r.owner}</span>}
+              {r.owner && <span style={{ fontSize: 12, color: 'var(--color-text-1)' }}>· {r.owner}</span>}
             </div>
             <Tooltip content={r.lastFollowContent || ''} disabled={!r.lastFollowContent}>
               <div style={{ fontSize: 14, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>

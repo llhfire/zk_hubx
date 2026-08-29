@@ -12,18 +12,20 @@ import {
   Grid,
   Message,
   Spin,
+  Tooltip,
+  Popconfirm,
 } from '@arco-design/web-react';
 import {
   IconPlus,
   IconEdit,
   IconDelete,
-  IconCheckCircle,
-  IconCloseCircle,
 } from '@arco-design/web-react/icon';
 import type { ExpenseStandard, StandardDetail, CityLevel, SubsidyCalcMode } from '../types';
 import { getExpenseStandardList } from '../travel-api';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../travelAdminConsistency.css';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Row, Col } = Grid;
 const { Option } = Select;
 
@@ -32,6 +34,7 @@ export function StandardList() {
   const [standards, setStandards] = useState<ExpenseStandard[]>([]);
   const [selectedStandard, setSelectedStandard] = useState<ExpenseStandard | null>(null);
   const [formVisible, setFormVisible] = useState(false);
+  const [editingStandardId, setEditingStandardId] = useState<string>();
 
   // 标准表单
   const [standardForm, setStandardForm] = useState({
@@ -78,15 +81,30 @@ export function StandardList() {
     }
   };
 
+  const openStandardForm = (standard?: ExpenseStandard) => {
+    setEditingStandardId(standard?.id);
+    setStandardForm(standard ? { name: standard.name, effectiveDate: standard.effectiveDate, expiryDate: standard.expiryDate || '' } : { name: '', effectiveDate: '', expiryDate: '' });
+    setFormVisible(true);
+  };
+
   // 保存标准
   const handleSaveStandard = () => {
     if (!standardForm.name || !standardForm.effectiveDate) {
       Message.error('请填写完整信息');
       return;
     }
-    Message.success('创建成功');
+    const previous = standards.find((item) => item.id === editingStandardId);
+    const now = '2026-08-26';
+    const record: ExpenseStandard = {
+      id: editingStandardId || `standard-${Date.now()}`,
+      status: previous?.status || 'inactive', details: previous?.details || [],
+      createDate: previous?.createDate || now, updateDate: now, ...standardForm,
+      expiryDate: standardForm.expiryDate || undefined,
+    };
+    setStandards((items) => editingStandardId ? items.map((item) => item.id === editingStandardId ? record : item) : [...items, record]);
+    setSelectedStandard(record);
+    Message.success(editingStandardId ? '标准已更新' : '标准已创建');
     setFormVisible(false);
-    loadStandards();
   };
 
   // 职级选项
@@ -172,6 +190,11 @@ export function StandardList() {
     },
   ];
 
+  const allDetails = standards.flatMap((standard) => standard.details);
+  const activeCount = standards.filter((standard) => standard.status === 'active').length;
+  const cityLevelCount = new Set(allDetails.flatMap((detail) => detail.cityLevels)).size;
+  const maxHotelLimit = allDetails.reduce((max, detail) => Math.max(max, detail.hotelLimit), 0);
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
@@ -181,36 +204,38 @@ export function StandardList() {
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title heading={4}>差旅费用标准</Title>
-        <Button type="primary" icon={<IconPlus />} onClick={() => setFormVisible(true)}>
-          新增标准
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="差旅费用标准"
+        description="按生效版本维护职级、城市等级、交通、住宿、餐饮和补贴限额。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => openStandardForm()}>新增标准</Button>}
+      />
 
-      <Row gutter={16}>
+      <ProcessMetricGrid items={[
+        { key: 'versions', label: '标准版本', value: `${standards.length} 个`, detail: `启用 ${activeCount} 个` },
+        { key: 'rules', label: '标准明细', value: `${allDetails.length} 条`, detail: '职级与城市组合规则' },
+        { key: 'cities', label: '覆盖城市等级', value: `${cityLevelCount} 级`, detail: '按当前全部版本统计' },
+        { key: 'hotel', label: '最高住宿限额', value: `¥${maxHotelLimit}/晚`, detail: '当前标准上限' },
+      ]} />
+
+      <div className="travel-admin-master-detail">
         {/* 左侧：标准列表 */}
-        <Col span={6}>
+        <div>
           <Card title="标准列表">
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               {standards.map((standard) => (
                 <div
                   key={standard.id}
-                  style={{
-                    padding: 12,
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    border: selectedStandard?.id === standard.id ? '1px solid #165dff' : '1px solid #e5e6eb',
-                    background: selectedStandard?.id === standard.id ? '#f2f3ff' : 'white',
-                  }}
+                  className={`travel-admin-selector-item${selectedStandard?.id === standard.id ? ' travel-admin-selector-item--active' : ''}`}
                   onClick={() => setSelectedStandard(standard)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="travel-admin-selector-item__head">
                     <Text style={{ fontWeight: 500 }}>{standard.name}</Text>
-                    <Tag color={standard.status === 'active' ? 'green' : 'gray'} size="small">
-                      {standard.status === 'active' ? '启用' : '禁用'}
-                    </Tag>
+                    <Space size={2} onClick={(event) => event.stopPropagation()}>
+                      <Tag color={standard.status === 'active' ? 'green' : 'gray'} size="small">{standard.status === 'active' ? '启用' : '禁用'}</Tag>
+                      <Tooltip content="编辑标准"><Button aria-label={`编辑${standard.name}`} className="hubx-icon-action" size="mini" type="text" icon={<IconEdit />} onClick={() => openStandardForm(standard)} /></Tooltip>
+                      <Popconfirm title="确认删除该标准？" onOk={() => { setStandards((items) => items.filter((item) => item.id !== standard.id)); if (selectedStandard?.id === standard.id) setSelectedStandard(null); }}><Tooltip content="删除标准"><Button aria-label={`删除${standard.name}`} className="hubx-icon-action" size="mini" type="text" status="danger" icon={<IconDelete />} /></Tooltip></Popconfirm>
+                    </Space>
                   </div>
                   <div style={{ marginTop: 4 }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>生效日期：{standard.effectiveDate}</Text>
@@ -219,15 +244,15 @@ export function StandardList() {
               ))}
             </Space>
           </Card>
-        </Col>
+        </div>
 
         {/* 右侧：标准详情 */}
-        <Col span={18}>
+        <div>
           <Card title={selectedStandard ? selectedStandard.name : '请选择标准'}>
             {selectedStandard ? (
               <div>
                 {/* 基本信息 */}
-                <div style={{ padding: 16, background: '#f7f8fa', borderRadius: 8, marginBottom: 16 }}>
+                <div className="travel-admin-detail-summary">
                   <Row gutter={16}>
                     <Col span={8}>
                       <div><Text type="secondary">标准名称</Text></div>
@@ -260,12 +285,12 @@ export function StandardList() {
               </div>
             )}
           </Card>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       {/* 新建标准弹窗 */}
       <Modal
-        title="新增费用标准"
+        title={editingStandardId ? '编辑费用标准' : '新增费用标准'}
         visible={formVisible}
         onOk={handleSaveStandard}
         onCancel={() => setFormVisible(false)}
@@ -301,6 +326,6 @@ export function StandardList() {
           </Row>
         </Space>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

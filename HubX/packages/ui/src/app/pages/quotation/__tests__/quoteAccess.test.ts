@@ -164,5 +164,6 @@ describe('quoteLeadGate', () => {
     expect(quoteLeadGate('已终止', 'return_to_stamp')).toBe(true);
     expect(quoteLeadGate('已终止', 'return_to_edit_features')).toBe(true);
     expect(quoteLeadGate('已终止', 'return_to_tech')).toBe(true);
+    expect(quoteLeadGate('已终止', 'audit_reject')).toBe(true);
   });
 });

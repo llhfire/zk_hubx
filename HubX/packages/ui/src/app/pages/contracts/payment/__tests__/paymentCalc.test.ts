@@ -181,6 +181,22 @@ describe('buildGanttNodes', () => {
     const nodes = buildGanttNodes([makeContract()], overrides);
     expect(nodes[1].forecastDate).toBe('2026-08-25');
   });
+
+  it('忽略未设置或无效日期的计划，避免甘特图生成 Invalid Date', () => {
+    const contract = makeContract({
+      paymentPlans: [
+        { periodNo: 1, planName: '首期款', amount: 30000, expectedDate: '', status: 'pending' },
+        { periodNo: 2, planName: '中期款', amount: 40000, expectedDate: '2026-02-30', status: 'pending' },
+        { periodNo: 3, planName: '尾款', amount: 30000, expectedDate: '2026-10-15', status: 'pending' },
+      ],
+    });
+
+    const nodes = buildGanttNodes([contract]);
+
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].periodIndex).toBe(3);
+    expect(Number.isNaN(new Date(nodes[0].forecastDate).getTime())).toBe(false);
+  });
 });
 
 // ==================== aggregateCashflow ====================

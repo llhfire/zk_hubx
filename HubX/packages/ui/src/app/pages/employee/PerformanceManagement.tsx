@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   Card,
+  Empty,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
@@ -17,10 +17,7 @@ import {
 } from '@arco-design/web-react';
 import {
   IconPlus,
-  IconStar,
-  IconUserGroup,
-  IconTrophy,
-  IconCalendar,
+  IconRefresh,
 } from '@arco-design/web-react/icon';
 import { useEmployee } from './EmployeeContext';
 import {
@@ -30,14 +27,14 @@ import {
   calcPerformance,
   getRankColor,
 } from './mockData';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './employeeAdminConsistency.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
 const RANK_META: Record<PerformanceRank, { color: string; label: string }> = {
-  'S': { color: '#7c3aed', label: '卓越' },
+  'S': { color: 'var(--chart-5)', label: '卓越' },
   'A': { color: 'var(--success-500)', label: '优秀' },
   'B': { color: 'var(--primary)', label: '良好' },
   'C': { color: 'var(--warning-500)', label: '合格' },
@@ -65,6 +62,7 @@ export function PerformanceManagement() {
       return true;
     });
   }, [performanceReviews, filterPeriod, filterRank]);
+  const filtersActive = Boolean(filterPeriod || filterRank);
 
   // 摘要
   const stats = useMemo(() => {
@@ -93,6 +91,11 @@ export function PerformanceManagement() {
     setKpiScore(75);
     setBehaviorScore(75);
     setModalVisible(true);
+  };
+
+  const resetFilters = () => {
+    setFilterPeriod('');
+    setFilterRank('');
   };
 
   const handleSubmit = () => {
@@ -166,69 +169,46 @@ export function PerformanceManagement() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月考核人数</span>}
-              value={stats.monthCount}
-              prefix={<IconUserGroup style={{ color: 'rgb(var(--primary-6))' }} />}
-              suffix="人"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本季度考核人数</span>}
-              value={stats.quarterCount}
-              prefix={<IconCalendar style={{ color: '#0fc6c2' }} />}
-              suffix="人"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>平均 KPI 得分</span>}
-              value={stats.avgKpi}
-              prefix={<IconStar style={{ color: 'var(--warning-500)' }} />}
-              suffix="分"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>S/A 评级占比</span>}
-              value={stats.topRate}
-              prefix={<IconTrophy style={{ color: '#7c3aed' }} />}
-              suffix="%"
-            />
-          </Card>
-        </Col>
-      </Row>
+    <PageShell
+      className="employee-admin-page"
+      breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '绩效考核' }]}
+    >
+      <PageHeader
+        title="绩效考核"
+        description="汇总月度与季度考核结果，跟踪 KPI、行为评价和绩效等级。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增考核</Button>}
+      />
 
-      {/* 筛选 + 列表 */}
-      <Card bordered={false}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+      <ProcessMetricGrid
+        items={[
+          { key: 'month', label: '本月考核', value: `${stats.monthCount} 人`, detail: '月度考核记录' },
+          { key: 'quarter', label: '本季度考核', value: `${stats.quarterCount} 人`, detail: '季度考核记录' },
+          { key: 'kpi', label: '平均 KPI', value: `${stats.avgKpi} 分`, detail: '全部考核平均值', tone: stats.avgKpi >= 80 ? 'success' : 'neutral' },
+          { key: 'top', label: 'S/A 评级占比', value: `${stats.topRate}%`, detail: '优秀及以上', tone: stats.topRate >= 50 ? 'success' : 'neutral' },
+        ]}
+      />
+
+      <Card bordered={false} title="绩效记录" className="employee-admin-list-card">
+        <FilterBar
+          actions={filtersActive ? (
+            <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
+          ) : undefined}
+        >
           <Select
-            style={{ width: 120 }}
-            placeholder="全部周期"
+            className="employee-admin-select"
+            placeholder="周期（全部）"
             allowClear
-            value={filterPeriod}
+            value={filterPeriod || undefined}
             onChange={v => setFilterPeriod(v as ReviewPeriod | '')}
           >
             <Select.Option value="月度">月度</Select.Option>
             <Select.Option value="季度">季度</Select.Option>
           </Select>
           <Select
-            style={{ width: 120 }}
-            placeholder="全部评级"
+            className="employee-admin-select"
+            placeholder="评级（全部）"
             allowClear
-            value={filterRank}
+            value={filterRank || undefined}
             onChange={v => setFilterRank(v as PerformanceRank | '')}
           >
             {(['S', 'A', 'B', 'C', 'D'] as PerformanceRank[]).map(r => (
@@ -237,17 +217,18 @@ export function PerformanceManagement() {
               </Select.Option>
             ))}
           </Select>
-          <div style={{ marginLeft: 'auto' }}>
-            <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>
-              新增考核
-            </Button>
-          </div>
+        </FilterBar>
+        <div className="employee-admin-result-summary">
+          <span>共 {filteredReviews.length} 条考核记录</span>
+          {filtersActive && <span>已按当前条件筛选</span>}
         </div>
         <Table
           columns={columns as any}
           data={filteredReviews}
           rowKey="id"
           pagination={{ pageSize: 10, showTotal: true }}
+          scroll={{ x: 1050 }}
+          noDataElement={<Empty description="没有符合当前条件的绩效记录" />}
         />
       </Card>
 
@@ -259,7 +240,7 @@ export function PerformanceManagement() {
         onCancel={() => setModalVisible(false)}
         autoFocus={false}
         focusLock={true}
-        style={{ width: 560 }}
+        className="employee-admin-performance-modal"
       >
         <Form form={form} layout="vertical">
           <FormItem label="被考核人" field="employeeId" rules={[{ required: true, message: '请选择被考核人' }]}>
@@ -329,11 +310,7 @@ export function PerformanceManagement() {
 
           {/* 预览 */}
           <Card
-            style={{
-              background: 'var(--color-fill-1)',
-              marginBottom: 16,
-              borderRadius: 8,
-            }}
+            className="employee-admin-performance-preview"
             bodyStyle={{ padding: '12px 16px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -363,6 +340,6 @@ export function PerformanceManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

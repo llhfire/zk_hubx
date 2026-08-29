@@ -76,27 +76,6 @@
   border-bottom: 1px dashed transparent;
 }
 
-.feature-board-status-entry {
-  font-size: 11px;
-  color: var(--color-text-4);
-  cursor: pointer;
-}
-
-/* 状态圆点：未开始(灰) 已调研(橙) 设计中(紫) 已设计(绿) */
-.feature-board-status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.15s;
-}
-
-.feature-board-status-dot:hover {
-  transform: scale(1.4);
-}
-
 .feature-board-planned-name:hover {
   border-bottom-color: var(--grey-400);
 }
@@ -160,14 +139,73 @@
 .feature-board-feature-chip {
   cursor: pointer;
   transition: background 0.15s;
+  display: inline-flex !important;
+  align-items: center;
 }
-
 .feature-board-feature-chip:hover {
   background: var(--color-fill-2);
 }
+.feature-board-feature-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00b42a;
+  margin-left: 3px;
+  flex-shrink: 0;
+}
+.feature-board-feature-done::after {
+  content: '✓';
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  font-style: normal;
+}
 
 /* ---- 功能详情弹窗 ---- */
+.feature-board-detail-content-paragraph {
+  margin: 0;
+}
+
+.feature-board-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-board-detail-section {
+  margin: 0;
+}
+
+.feature-board-detail-section h4 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--color-text-1);
+}
+
+.feature-board-detail-doc-path {
+  display: block;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--color-text-2);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.feature-board-alpha-checks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
 .feature-board-detail-content {
+  margin: 0;
   line-height: 1.8;
   color: var(--color-text-2);
 }

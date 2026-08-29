@@ -225,16 +225,17 @@ export interface BusinessCostRecord {
   id: string;
   contractId: string;
   month: string;
+  costCategory: 'travel' | 'commercial';
   category: string;
   description: string;
   amount: number;
 }
 
 export const mockBusinessCosts: BusinessCostRecord[] = [
-  { id: 'biz-1', contractId: '4', month: '2026-05', category: '商务招待', description: 'A公司项目客户接待晚宴', amount: 3200 },
-  { id: 'biz-2', contractId: '4', month: '2026-05', category: '差旅费', description: 'A公司驻场出差交通住宿', amount: 4800 },
-  { id: 'biz-3', contractId: '2', month: '2026-05', category: '商务招待', description: 'B公司验收阶段客户沟通', amount: 1500 },
-  { id: 'biz-4', contractId: '3', month: '2026-05', category: '培训费', description: '内部OA新流程培训材料', amount: 800 },
+  { id: 'biz-1', contractId: '4', month: '2026-05', costCategory: 'commercial', category: '商务招待', description: 'A公司项目客户接待晚宴', amount: 3200 },
+  { id: 'biz-2', contractId: '4', month: '2026-05', costCategory: 'travel', category: '交通住宿', description: 'A公司驻场出差交通住宿', amount: 4800 },
+  { id: 'biz-3', contractId: '2', month: '2026-05', costCategory: 'commercial', category: '商务招待', description: 'B公司验收阶段客户沟通', amount: 1500 },
+  { id: 'biz-4', contractId: '3', month: '2026-05', costCategory: 'commercial', category: '培训费', description: '内部OA新流程培训材料', amount: 800 },
 ];
 
 // ─── 外包成本 ────────────────────────────────────────────────
@@ -273,25 +274,15 @@ export const mockOtherCosts: OtherCostRecord[] = [
 // ─── 月运营费用 ──────────────────────────────────────────────
 
 /** 月份 → 当月总运营费用 */
-export const mockMonthlyOpExpenses: Record<string, number> = {
-  '2026-04': 52000,
-  '2026-05': 55000,
-};
+/** 合同成本与精益交付共用 α 动态公摊读模型。 */
+import { getAlphaOverheadSnapshot } from '../finance-shared/alphaOverhead';
 
-/**
- * 运营费用时薪 — 改为读运营费用模块公式
- * 阶段 D：从 operating-expense/expenseCalc.hourlyOverheadRate 取数
- * 保留 ACTIVE_EMPLOYEE_COUNT 常量供页面展示（不再用于计算）
- */
-export const ACTIVE_EMPLOYEE_COUNT = 5;
-
-import { overheadPool, capacityHours, hourlyOverheadRate } from '../operating-expense/expenseCalc';
-import { mockExpenseRecords, mockWorkdaysByMonth, mockEmployeesForOverhead } from '../operating-expense/mockData';
+export function getHourlyOpSnapshot(month: string) {
+  return getAlphaOverheadSnapshot(month);
+}
 
 export function getHourlyOpCost(month: string): number {
-  const pool = overheadPool(mockExpenseRecords, month);
-  const hours = capacityHours(mockEmployeesForOverhead, month, mockWorkdaysByMonth);
-  return hourlyOverheadRate(pool, hours);
+  return getHourlyOpSnapshot(month).rate;
 }
 
 // ─── 研发成本明细 ────────────────────────────────────────────

@@ -4,6 +4,7 @@ import {
   Checkbox,
   Dropdown,
   Input,
+  Menu,
   Modal,
   Radio,
   Switch,
@@ -29,22 +30,20 @@ import {
   markAlphaUpdate,
   removePlannedItem,
   renamePlannedItem,
+  resolveExistingFeatureDetail,
   saveFeatureBoard,
   setBetaDevStatus,
   setModuleNote,
-  setPlannedStatus,
   toggleFeatureAlphaCheck,
   toggleProductionSwitch,
   ALPHA_CHECK_KEYS,
   BETA_DEV_STATUSES,
   DOMAIN_COLORS,
-  PLANNED_STATUSES,
   type AlphaCheckKey,
   type BetaDevStatus,
   type Domain,
   type ExistingFeature,
   type FeatureBoard,
-  type PlannedStatus,
   type BoardChangeType,
 } from './featureBoardModel';
 import { WorkLogPane } from './WorkLogPane';
@@ -52,26 +51,6 @@ import { loadWorkLog, saveWorkLog, type WorkLog } from './workLogModel';
 import './versionCompareModal.css';
 
 const { Text } = Typography;
-
-/** 状态 -> Tag 颜色（计划项与β开发状态共用语义：越靠后越接近完成） */
-/** 待设计功能状态→图标颜色（小圆点） */
-const PLANNED_STATUS_DOT_COLORS: Record<PlannedStatus, string> = {
-  '未开始': 'var(--color-text-4)',
-  '已调研': 'var(--color-orange-6)',
-  '设计中': 'var(--color-purple-6)',
-  '已设计': 'var(--color-green-6)',
-};
-
-function StatusDot({ status }: { status: PlannedStatus }) {
-  return (
-    <Tooltip content={status}>
-      <span
-        className="feature-board-status-dot"
-        style={{ background: PLANNED_STATUS_DOT_COLORS[status] }}
-      />
-    </Tooltip>
-  );
-}
 
 const BETA_DEV_STATUS_COLORS: Record<BetaDevStatus, string> = {
   '未开始': 'gray',
@@ -92,13 +71,55 @@ type BoardPane = 'board' | 'architecture' | 'tech' | 'log';
 
 const FRAME_PANES: BoardPane[] = ['architecture', 'tech'];
 
+const renderTextBlock = (content: string) => (
+  <p className="feature-board-detail-content-paragraph">
+    {content}
+  </p>
+);
+
+const FeatureDetailSection = ({
+  title,
+  content,
+  isPath = false,
+}: {
+  title: string;
+  content: string;
+  isPath?: boolean;
+}) => {
+  return (
+    <section className="feature-board-detail-section">
+      <h4>{title}</h4>
+      {isPath ? (
+        <code className="feature-board-detail-doc-path">{content}</code>
+      ) : (
+        <div className="feature-board-detail-content">{renderTextBlock(content)}</div>
+      )}
+    </section>
+  );
+};
+
+const FeatureDetailContent = ({ module, feature }: { module: string; feature: ExistingFeature }) => {
+  const detail = resolveExistingFeatureDetail(module, feature);
+  return (
+    <>
+      <FeatureDetailSection title="功能说明" content={detail.description} />
+      <FeatureDetailSection title="使用流程" content={detail.usage} />
+      <FeatureDetailSection
+        title="需求文档或原型文档（相对地址）"
+        content={detail.referencePath}
+        isPath
+      />
+    </>
+  );
+};
+
 /** α/β 版本功能看板场景：点击侧边栏版本标识打开，全屏展示。
  *  页签：功能看板 / 功能架构 / 技术架构 / 工作记录。
  *  看板事实源 featureBoard.config.json；工作记录事实源 workLog.config.json。 */
 export function VersionCompareModal({ visible, onCancel }: VersionCompareModalProps) {
   const version = useAppVersion();
   const [pane, setPane] = useState<BoardPane>('board');
-  const [board, setBoard] = useState<FeatureBoard>({ modules: [], alphaMeta: { updateCount: 0, lastUpdatedAt: '' } });
+  const [board, setBoard] = useState<FeatureBoard>({ modules: [] });
   const [workLog, setWorkLog] = useState<WorkLog>({ days: [] });
   // 备注列编辑态：模块名 -> 输入值
   const [noteEditing, setNoteEditing] = useState<{ module: string; value: string } | null>(null);
@@ -136,9 +157,9 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     void loadWorkLog().then(setWorkLog);
   }, [visible]);
 
-  const update = (next: FeatureBoard, changeType: BoardChangeType = 'planned') => {
-    const persisted = changeType === 'alpha'
-      ? markAlphaUpdate(next, new Date().toISOString().slice(0, 10))
+  const update = (next: FeatureBoard, changeType: BoardChangeType = 'planned', module?: string) => {
+    const persisted = changeType === 'alpha' && module
+      ? markAlphaUpdate(next, module, new Date().toISOString().slice(0, 10))
       : next;
     setBoard(persisted);
     void saveFeatureBoard(persisted);
@@ -150,13 +171,13 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
   };
 
   const statusMenu = (current: string, statuses: readonly string[], onSelect: (status: never) => void) => (
-    <>
+    <Menu>
       {statuses.map(status => (
-        <Dropdown.Item key={status} disabled={status === current} onClick={() => onSelect(status as never)}>
+        <Menu.Item key={status} disabled={status === current} onClick={() => onSelect(status as never)}>
           {status}{status === current ? '（当前）' : ''}
-        </Dropdown.Item>
+        </Menu.Item>
       ))}
-    </>
+    </Menu>
   );
 
   const columns = [
@@ -174,7 +195,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       width: 130,
       render: (value: string, record: FeatureBoard['modules'][number]) => (
         <span>
-          <Text strong>{value}</Text>
+          <strong>{value}</strong>
           {record.isPlanned && <span className="feature-board-planned-badge">规划</span>}
         </span>
       ),
@@ -194,17 +215,23 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       width: 280,
       render: (_: unknown, record: FeatureBoard['modules'][number]) => (
         <div className="feature-board-features">
-          {record.features.length ? record.features.map(f => (
-            <Tooltip key={f.name} content="点击查看功能说明">
-              <Tag
-                size="small"
-                className="feature-board-feature-chip"
-                onClick={() => setFeatureDetail({ module: record.module, feature: f })}
-              >
-                {f.name}
-              </Tag>
-            </Tooltip>
-          )) : <Text type="secondary">-</Text>}
+          {record.features.length ? record.features.map(f => {
+            const brief = f.name.replace(/（[^）]*）/g, '').replace(/\([^)]*\)/g, '').trim();
+            return (
+              <Tooltip key={f.name} content={f.name !== brief ? f.name : '点击查看功能说明'}>
+                <Tag
+                  size="small"
+                  className="feature-board-feature-chip"
+                  onClick={() => setFeatureDetail({ module: record.module, feature: f })}
+                >
+                  {brief}
+                  {f.alpha['页面场景'] && f.alpha['功能流程'] && f.alpha['UX 优化'] && (
+                    <i className="feature-board-feature-done" />
+                  )}
+                </Tag>
+              </Tooltip>
+            );
+          }) : <Text type="secondary">-</Text>}
         </div>
       ),
     },
@@ -214,7 +241,7 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       width: 320,
       render: (_: unknown, record: FeatureBoard['modules'][number]) => (
         <div className="feature-board-planned">
-          {record.planned.map(item => (
+          {record.planned.filter(item => item.status !== 'α 已实现').map(item => (
             <div key={item.name} className="feature-board-planned-item">
               {renameEditing?.module === record.module && renameEditing.name === item.name ? (
                 <Input
@@ -242,18 +269,6 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
                   </span>
                 </Tooltip>
               )}
-              <Dropdown
-                trigger="click"
-                droplist={statusMenu(item.status, PLANNED_STATUSES, status => {
-                  update(setPlannedStatus(board, record.module, item.name, status as PlannedStatus), 'planned');
-                })}
-              >
-                {item.status === '未开始' ? (
-                  <span className="feature-board-status-entry">状态</span>
-                ) : (
-                  <StatusDot status={item.status} />
-                )}
-              </Dropdown>
               <Tooltip content="删除该功能条目">
                 <Button
                   type="text"
@@ -301,8 +316,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
       width: 150,
       render: (_: unknown, record: FeatureBoard['modules'][number]) => (
         <div className="feature-board-alpha-summary">
-          <Text>更新 {board.alphaMeta.updateCount} 次</Text>
-          <Text type="secondary">{board.alphaMeta.lastUpdatedAt ? `最近更新：${board.alphaMeta.lastUpdatedAt}` : '暂无更新记录'}</Text>
+          <Text>更新 {record.alphaMeta.updateCount} 次</Text>
+          <Text type="secondary">{record.alphaMeta.lastUpdatedAt ? `最近更新：${record.alphaMeta.lastUpdatedAt}` : '暂无更新记录'}</Text>
         </div>
       ),
     },
@@ -485,10 +500,8 @@ export function VersionCompareModal({ visible, onCancel }: VersionCompareModalPr
     >
       {featureDetail && (
         <div className="feature-board-detail">
-          <div className="feature-board-detail-content">
-            {featureDetail.feature.description.split('\n').map((line, i) => <p key={i}>{line}</p>)}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
+          <FeatureDetailContent module={featureDetail.module} feature={featureDetail.feature} />
+          <div className="feature-board-alpha-checks">
             {ALPHA_CHECK_KEYS.map(key => <Checkbox key={key} checked={featureDetail.feature.alpha[key]} onChange={() => {
               const next = toggleFeatureAlphaCheck(board, featureDetail.module, featureDetail.feature.name, key);
               setFeatureDetail({ ...featureDetail, feature: next.modules.find(m => m.module === featureDetail.module)!.features.find(f => f.name === featureDetail.feature.name)! });

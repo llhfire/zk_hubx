@@ -58,6 +58,9 @@ describe('buildSupplementQuote', () => {
     expect(result.isSupplement).toBe(true);
     expect(result.contractId).toBe('ct-1');
     expect(result.status).toBe('draft');
+    expect(result.featureList).toEqual([]);
+    expect(result.supplementChangeAmount).toBe(0);
+    expect(result.summary?.grandTotalPrice).toBe(0);
   });
 });
 

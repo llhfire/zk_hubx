@@ -12,6 +12,7 @@ import {
   WORK_ITEM_LABELS,
 } from './daily-report/mockData';
 import { WORK_ATTRIBUTION_LABELS } from './daily-report/workAttribution';
+import { PageShell } from '@/app/components/ui';
 
 const CollapseItem = Collapse.Item;
 
@@ -73,7 +74,8 @@ export function DailyReportView() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 112px)' }}>
+    <PageShell breadcrumbs={[{ label: '日报', to: '/dailyreport/list' }, { label: '日报列表', to: '/dailyreport/list' }, { label: '员工日报视图' }]}>
+    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 146px)' }}>
       <Card
         style={{ width: 320, flexShrink: 0 }}
         title="组织架构"
@@ -186,5 +188,6 @@ export function DailyReportView() {
         currentUserId="user-sales-zhangsan"
       />
     </div>
+    </PageShell>
   );
 }

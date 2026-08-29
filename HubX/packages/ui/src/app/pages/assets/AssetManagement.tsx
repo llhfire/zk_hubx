@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   Card,
+  Empty,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
@@ -14,7 +14,6 @@ import {
   Select,
   DatePicker,
   Progress,
-  Typography,
   Alert,
   Tooltip,
   Popconfirm,
@@ -30,17 +29,18 @@ import {
   IconPlus,
   IconEdit,
   IconDelete,
-  IconCheck,
   IconExclamationCircle,
   IconCalendar,
   IconCopyright,
   IconBulb,
+  IconRefresh,
+  IconSearch,
 } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import { filterAssetRecords, hasAssetFilters } from '../supportDomainListModel';
+import '../supportDomainLists.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const TabPane = Tabs.TabPane;
-const Title = Typography.Title;
 const FormItem = Form.Item;
 const SelectOption = Select.Option;
 
@@ -143,6 +143,7 @@ export function AssetManagement() {
   const [form] = Form.useForm();
   const [filterType, setFilterType] = useState<AssetType | ''>('');
   const [filterStatus, setFilterStatus] = useState<AssetStatus | ''>('');
+  const [keyword, setKeyword] = useState('');
 
   // 计算状态
   const assetsWithStatus = useMemo(() => {
@@ -157,13 +158,13 @@ export function AssetManagement() {
     return { total, expiring, expired, active: total - expiring - expired, totalValue };
   }, [assetsWithStatus]);
 
-  const filteredAssets = useMemo(() => {
-    return assetsWithStatus.filter(a => {
-      if (filterType && a.type !== filterType) return false;
-      if (filterStatus && a.status !== filterStatus) return false;
-      return true;
-    });
-  }, [assetsWithStatus, filterType, filterStatus]);
+  const filteredAssets = useMemo(() => filterAssetRecords(assetsWithStatus, {
+    keyword,
+    type: filterType,
+    status: filterStatus,
+    activeType: activeTab,
+  }), [activeTab, assetsWithStatus, filterStatus, filterType, keyword]);
+  const filtersActive = hasAssetFilters({ keyword, type: filterType, status: filterStatus, activeType: activeTab });
 
   // 按类型分组
   const assetsByType = useMemo(() => {
@@ -201,17 +202,27 @@ export function AssetManagement() {
     });
   };
 
+  const resetFilters = () => {
+    setKeyword('');
+    setFilterType('');
+    setFilterStatus('');
+    setActiveTab('all');
+  };
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="资产总数" value={summary.total} suffix="件" icon={<IconApps style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="正常使用" value={summary.active} suffix="件" icon={<IconCheck style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="即将到期" value={summary.expiring} suffix="件" prefix={<IconExclamationCircle style={{ color: 'var(--warning-500)' }} />} valueStyle={{ color: 'var(--warning-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="已到期" value={summary.expired} suffix="件" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} valueStyle={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="资产总值" value={summary.totalValue} prefix="¥" /></Card></Col>
-        <Col span={4}><Card><Statistic title="盘点次数" value={mockInventoryRecords.length} suffix="次" icon={<IconCalendar style={{ color: 'var(--chart-5)' }} />} /></Card></Col>
-      </Row>
+    <PageShell className="support-domain-list asset-management-page">
+      <PageHeader
+        title="资产管理"
+        description="统一管理数字资产、设备、许可证与知识产权，持续跟踪归属和到期风险。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增资产</Button>}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '资产总数', value: summary.total, detail: `总值 ¥${summary.totalValue.toLocaleString()}` },
+        { key: 'active', label: '正常使用', value: summary.active, detail: '当前有效资产', tone: 'success' },
+        { key: 'risk', label: '到期风险', value: summary.expiring + summary.expired, detail: `${summary.expiring} 件临期 · ${summary.expired} 件到期`, tone: summary.expiring + summary.expired ? 'warning' : 'neutral' },
+        { key: 'result', label: '当前结果', value: filteredAssets.length, detail: filtersActive ? '筛选结果' : '全部资产' },
+      ]} />
 
       {/* 到期预警 */}
       {(summary.expiring > 0 || summary.expired > 0) && (
@@ -228,7 +239,7 @@ export function AssetManagement() {
       )}
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
+      <Card bordered={false} className="support-domain-list__card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="all" title={<span><IconApps /> 全部资产</span>} />
           {Object.entries(ASSET_TYPE_LABELS).map(([key, meta]) => (
@@ -238,20 +249,20 @@ export function AssetManagement() {
 
         <div style={{ paddingTop: 16 }}>
           {/* 筛选 + 操作 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-            <Select style={{ width: 130 }} placeholder="全部类型" allowClear value={filterType} onChange={v => setFilterType(v as AssetType | '')}>
+          <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置</Button> : undefined}>
+            <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} prefix={<IconSearch />} placeholder="搜索资产、供应商、使用人或序列号" allowClear />
+            <Select className="support-domain-list__select" placeholder="全部类型" allowClear value={filterType || undefined} onChange={v => setFilterType((v || '') as AssetType | '')}>
               {Object.entries(ASSET_TYPE_LABELS).map(([k, m]) => <SelectOption key={k} value={k}>{m.icon} {m.label}</SelectOption>)}
             </Select>
-            <Select style={{ width: 130 }} placeholder="全部状态" allowClear value={filterStatus} onChange={v => setFilterStatus(v as AssetStatus | '')}>
+            <Select className="support-domain-list__select" placeholder="全部状态" allowClear value={filterStatus || undefined} onChange={v => setFilterStatus((v || '') as AssetStatus | '')}>
               {Object.entries(STATUS_LABELS).map(([k, m]) => <SelectOption key={k} value={k}>{m.label}</SelectOption>)}
             </Select>
-            <div style={{ marginLeft: 'auto' }}>
-              <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增资产</Button>
-            </div>
-          </div>
+          </FilterBar>
+
+          <div className="support-domain-list__result-summary"><span>共 {filteredAssets.length} 件资产</span>{filtersActive && <span>已按当前条件筛选</span>}</div>
 
           {/* 资产表格 */}
-          <Table
+          {filteredAssets.length ? <Table
             columns={[
               {
                 title: '名称', dataIndex: 'name', width: 180,
@@ -288,21 +299,22 @@ export function AssetManagement() {
                 render: (_: unknown, row: Asset) => (
                   <Space>
                     <Tooltip content="编辑">
-                      <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEdit(row)} />
+                      <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑资产${row.name}`} icon={<IconEdit />} onClick={() => handleEdit(row)} />
                     </Tooltip>
                     <Tooltip content="删除">
                       <Popconfirm title="确定删除该资产?" onOk={() => handleDelete(row.id)}>
-                        <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+                        <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除资产${row.name}`} icon={<IconDelete />} />
                       </Popconfirm>
                     </Tooltip>
                   </Space>
                 ),
               },
             ] as any}
-            data={activeTab === 'all' ? filteredAssets : assetsByType[activeTab as AssetType] || []}
+            data={filteredAssets}
             rowKey="id"
             pagination={{ pageSize: 10, showTotal: true }}
-          />
+            scroll={{ x: 980 }}
+          /> : <div className="support-domain-list__empty"><Empty description="没有符合当前条件的资产" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
         </div>
       </Card>
 
@@ -401,6 +413,6 @@ export function AssetManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

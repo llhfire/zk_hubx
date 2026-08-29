@@ -5,6 +5,7 @@
 
 import { Message } from '@arco-design/web-react';
 import { buildInitialContracts } from '@/app/pages/contracts/mockData';
+import { FINANCIAL_DELIVERY_COLLECTION_SEED } from '@/app/pages/financial-delivery/collectionSeed';
 import {
   buildCollectionRecord,
   generateCollectionId,
@@ -19,7 +20,10 @@ export interface CollectionService {
 }
 
 export function createMockCollectionService(): CollectionService {
-  let records: CollectionLedgerEntry[] = seedCollectionsFromContracts(buildInitialContracts());
+  let records: CollectionLedgerEntry[] = [
+    ...seedCollectionsFromContracts(buildInitialContracts()),
+    ...FINANCIAL_DELIVERY_COLLECTION_SEED.map((record) => buildCollectionRecord(record)),
+  ];
 
   return {
     list: async () => records,

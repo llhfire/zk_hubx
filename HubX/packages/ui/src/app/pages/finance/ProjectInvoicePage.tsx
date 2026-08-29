@@ -1,11 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Descriptions, Message, Modal, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
+import { Button, Card, Descriptions, Empty, Input, Message, Modal, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
 import type { UploadItem } from '@arco-design/web-react/es/Upload';
-import { IconCopy, IconEye, IconFile } from '@arco-design/web-react/icon';
+import { IconCopy, IconEye, IconFile, IconSearch } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import { useProjectInvoices, type ProjectInvoiceApplication } from './ProjectInvoiceContext';
+import {
+  calculateProjectInvoiceListMetrics,
+  EMPTY_PROJECT_INVOICE_FILTERS,
+  filterProjectInvoiceApplications,
+  hasProjectInvoiceFilters,
+  type ProjectInvoiceListStatus,
+} from './projectInvoiceListModel';
 import './ProjectInvoicePage.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function currency(value: number) {
   return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
@@ -22,14 +30,20 @@ function downloadFile(fileName: string) {
 
 export function ProjectInvoicePage() {
   const { applications, completeInvoice } = useProjectInvoices();
-  const [status, setStatus] = useState('全部');
+  const [status, setStatus] = useState<ProjectInvoiceListStatus>('全部');
+  const [keyword, setKeyword] = useState('');
   const [active, setActive] = useState<ProjectInvoiceApplication | null>(null);
   const [files, setFiles] = useState<UploadItem[]>([]);
 
-  const data = useMemo(
-    () => status === '全部' ? applications : applications.filter(item => item.status === status),
-    [applications, status],
-  );
+  const filters = useMemo(() => ({ keyword, status }), [keyword, status]);
+  const data = useMemo(() => filterProjectInvoiceApplications(applications, filters), [applications, filters]);
+  const metrics = useMemo(() => calculateProjectInvoiceListMetrics(applications), [applications]);
+  const hasFilters = hasProjectInvoiceFilters(filters);
+
+  const resetFilters = () => {
+    setKeyword(EMPTY_PROJECT_INVOICE_FILTERS.keyword);
+    setStatus(EMPTY_PROJECT_INVOICE_FILTERS.status);
+  };
 
   const openDetail = (record: ProjectInvoiceApplication) => {
     setActive(record);
@@ -70,7 +84,7 @@ export function ProjectInvoicePage() {
     { title: '项目名称', dataIndex: 'projectName', width: 220 },
     { title: '开票期数', dataIndex: 'periodLabel', width: 110 },
     { title: '客户名称', dataIndex: 'customerName', width: 200 },
-    { title: '开票金额', dataIndex: 'amount', width: 130, render: currency },
+    { title: '开票金额', dataIndex: 'amount', width: 130, align: 'right' as const, render: currency },
     { title: '回款状态', dataIndex: 'paymentStatus', width: 110, render: (value?: string) => {
       const label = value || '未回款';
       return <Tag color={label === '已回款' ? 'green' : label === '部分回款' ? 'orange' : 'gray'}>{label}</Tag>;
@@ -82,7 +96,14 @@ export function ProjectInvoicePage() {
       title: '操作', width: 110, fixed: 'right' as const,
       render: (_: unknown, record: ProjectInvoiceApplication) => (
         <Tooltip content={record.status === '开票中' ? '开票' : '详情'}>
-          <Button type="text" size="small" icon={<IconEye />} onClick={() => openDetail(record)} />
+          <Button
+            type="text"
+            size="small"
+            className="hubx-icon-action"
+            aria-label={`${record.status === '开票中' ? '处理' : '查看'}${record.projectNo}开票申请`}
+            icon={<IconEye />}
+            onClick={() => openDetail(record)}
+          />
         </Tooltip>
       ),
     },
@@ -119,18 +140,60 @@ export function ProjectInvoicePage() {
       : [];
 
   return (
-    <div className="project-invoice-page">
-      <div className="project-invoice-page-header">
-        <div><Title heading={5}>开票审核</Title><Text type="secondary">处理项目提交的开票申请并回传发票附件</Text></div>
-      </div>
-      <Card bordered={false}>
-        <Tabs activeTab={status} onChange={setStatus} style={{ marginBottom: 12 }}>
-          <Tabs.TabPane key="全部" title={`全部（${applications.length}）`} />
-          <Tabs.TabPane key="开票中" title={`待开票（${applications.filter(item => item.status === '开票中').length}）`} />
-          <Tabs.TabPane key="已开票" title={`已开票（${applications.filter(item => item.status === '已开票').length}）`} />
-          <Tabs.TabPane key="已冲红" title={`已冲红（${applications.filter(item => item.status === '已冲红').length}）`} />
+    <PageShell className="project-invoice-page">
+      <PageHeader
+        title="开票审核"
+        description="集中处理项目提交的开票申请，核对客户与回款信息，并回传发票附件。"
+      />
+
+      <ProcessMetricGrid
+        items={[
+          { key: 'applications', label: '申请总数', value: `${metrics.applicationCount} 条`, detail: '当前可查看范围' },
+          { key: 'pending', label: '待开票', value: `${metrics.pendingCount} 条`, detail: '等待财务处理', tone: metrics.pendingCount > 0 ? 'warning' : 'neutral' },
+          { key: 'completed', label: '已开票', value: `${metrics.completedCount} 条`, detail: '已回传发票附件', tone: 'success' },
+          { key: 'red-flushed', label: '已冲红', value: `${metrics.redFlushedCount} 条`, detail: '保留原记录与原因', tone: metrics.redFlushedCount > 0 ? 'danger' : 'neutral' },
+        ]}
+      />
+
+      <Card className="project-invoice-page__content-card">
+        <Tabs activeTab={status} onChange={value => setStatus(value as ProjectInvoiceListStatus)}>
+          <Tabs.TabPane key="全部" title={`全部（${metrics.applicationCount}）`} />
+          <Tabs.TabPane key="开票中" title={`待开票（${metrics.pendingCount}）`} />
+          <Tabs.TabPane key="已开票" title={`已开票（${metrics.completedCount}）`} />
+          <Tabs.TabPane key="已冲红" title={`已冲红（${metrics.redFlushedCount}）`} />
         </Tabs>
-        <Table rowKey="id" size="small" columns={columns} data={data} pagination={{ pageSize: 10 }} scroll={{ x: 1350 }} noDataElement="暂无项目开票申请" />
+
+        <FilterBar actions={hasFilters ? <Button type="text" onClick={resetFilters}>重置筛选</Button> : undefined}>
+          <Input
+            className="project-invoice-page__keyword"
+            prefix={<IconSearch />}
+            placeholder="搜索项目编号、项目名称或客户"
+            value={keyword}
+            onChange={setKeyword}
+            allowClear
+          />
+        </FilterBar>
+
+        <div className="project-invoice-page__result-summary">
+          <Text type="secondary">共 {data.length} 条开票申请</Text>
+          {hasFilters && <Text type="secondary">已按当前条件筛选</Text>}
+        </div>
+
+        {data.length === 0 ? (
+          <div className="project-invoice-page__empty">
+            <Empty description={applications.length === 0 ? '暂无项目开票申请' : '没有符合当前条件的开票申请'} />
+            {hasFilters && <Button onClick={resetFilters}>清除筛选</Button>}
+          </div>
+        ) : (
+          <Table
+            rowKey="id"
+            size="small"
+            columns={columns}
+            data={data}
+            pagination={{ pageSize: 10, total: data.length, showTotal: true, sizeCanChange: true }}
+            scroll={{ x: 1350 }}
+          />
+        )}
       </Card>
 
       <Modal
@@ -176,6 +239,6 @@ export function ProjectInvoicePage() {
           </Space>
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

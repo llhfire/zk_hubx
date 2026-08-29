@@ -6,7 +6,6 @@ import {
   Button,
   Select,
   Space,
-  Typography,
   Tag,
   Modal,
   Form,
@@ -14,11 +13,10 @@ import {
   InputNumber,
   DatePicker,
   Tabs,
-  Grid,
-  Divider,
   Message,
   Popconfirm,
 } from '@arco-design/web-react';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import { contractCostPermissions } from './contract-cost/contractCostData';
 import {
   PieChart, Pie, Cell, Tooltip as RechartTooltip, Legend,
@@ -26,9 +24,7 @@ import {
 } from 'recharts';
 import { IconPlus, IconEdit, IconDelete, IconExport } from '@arco-design/web-react/icon';
 
-const { Title, Text } = Typography;
 const { TabPane } = Tabs;
-const { Row, Col } = Grid;
 
 // ─── Mock data ───────────────────────────────────────────────────────────────
 
@@ -58,35 +54,22 @@ const trendData = [
   { month: '2026-05', 房租物业: 38000, 水电网络: 4200, 行政杂费: 1800, 设备维护: 0 },
 ];
 
-const PIE_COLORS = ['var(--primary)', '#0fc6c2', 'var(--warning-500)', '#7816ff'];
+const PIE_COLORS = [
+  'rgb(var(--primary-6))',
+  'rgb(var(--cyan-6))',
+  'rgb(var(--orange-6))',
+  'rgb(var(--purple-6))',
+];
 
 const EXPENSE_TYPES = ['房租物业', '水电网络', '行政杂费', '设备维护', '其他'];
 const ALLOCATION_OPTIONS = ['公司级', '销售部', '技术部', '行政部', '财务部'];
 const STATUS_OPTIONS = ['已支付', '未支付', '分期'];
 
-// ─── Summary card ─────────────────────────────────────────────────────────────
-
-function SummaryCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  return (
-    <div style={{
-      padding: '16px 20px',
-      border: '1px solid var(--color-border-2)',
-      borderRadius: 8,
-      background: '#fff',
-      borderTop: `3px solid ${color || 'var(--primary)'}`,
-    }}>
-      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-1)' }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{sub}</div>}
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function FinancialDashboard() {
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<'month' | 'year' | 'all'>('all');
+  const [activeTab, setActiveTab] = useState('contract');
   const [opList, setOpList] = useState(opExpenses);
   const [entryVisible, setEntryVisible] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
@@ -115,6 +98,12 @@ export function FinancialDashboard() {
   });
 
   const filteredTotal = filteredOp.reduce((s, e) => s + e.amount, 0);
+  const unpaidTotal = filteredOp
+    .filter((entry) => entry.status !== '已支付')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const periodCount = new Set(filteredOp.map((entry) => entry.period)).size;
+  const contractMargin = totalContract > 0 ? ((totalContract - totalCost) / totalContract) * 100 : 0;
+  const collectionRate = totalContract > 0 ? (totalReceived / totalContract) * 100 : 0;
 
   const openCreate = () => {
     setEditingEntry(null);
@@ -222,21 +211,29 @@ export function FinancialDashboard() {
   const periods = [...new Set(opList.map((e) => e.period))].sort().reverse();
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="财务统计"
+        description="统一查看合同回款、成本利润与运营费用，支持从汇总指标穿透到合同费用明细。"
+      />
 
-      <Tabs defaultActiveTab="contract" type="card-gutter">
+      <ProcessMetricGrid
+        items={activeTab === 'contract' ? [
+          { key: 'contract', label: '合同总额', value: `¥${(totalContract / 10000).toFixed(0)}万`, detail: `${contractData.length} 份合同` },
+          { key: 'received', label: '到账金额', value: `¥${(totalReceived / 10000).toFixed(0)}万`, detail: `回款率 ${collectionRate.toFixed(1)}%`, tone: 'success' },
+          { key: 'pending', label: '待收款', value: `¥${(totalPending / 10000).toFixed(0)}万`, detail: '需持续跟进回款计划', tone: 'warning' },
+          { key: 'cost', label: '成本总额', value: `¥${(totalCost / 10000).toFixed(0)}万`, detail: `利润率 ${contractMargin.toFixed(1)}%` },
+        ] : [
+          { key: 'entries', label: '费用记录', value: `${filteredOp.length} 条`, detail: periodFilter || typeFilter ? '当前筛选结果' : '全部运营费用' },
+          { key: 'total', label: '当前费用合计', value: `¥${filteredTotal.toLocaleString()}`, detail: `${periodCount} 个归属周期` },
+          { key: 'unpaid', label: '待支付金额', value: `¥${unpaidTotal.toLocaleString()}`, detail: unpaidTotal > 0 ? '需跟进付款状态' : '当前无待支付记录', tone: unpaidTotal > 0 ? 'warning' : 'success' },
+          { key: 'average', label: '周期平均费用', value: `¥${Math.round(periodCount > 0 ? filteredTotal / periodCount : 0).toLocaleString()}`, detail: '按当前筛选周期计算' },
+        ]}
+      />
+
+      <Tabs activeTab={activeTab} onChange={setActiveTab} type="card-gutter">
         {/* ── 合同统计 ── */}
         <TabPane key="contract" title="合同统计">
-          {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-            <SummaryCard label="合同总额" value={`¥${(totalContract / 10000).toFixed(0)}万`} color="var(--primary)" />
-            <SummaryCard label="到账金额" value={`¥${(totalReceived / 10000).toFixed(0)}万`} sub={`回款率 ${(totalReceived / totalContract * 100).toFixed(1)}%`} color="var(--success-500)" />
-            <SummaryCard label="待收款" value={`¥${(totalPending / 10000).toFixed(0)}万`} color="var(--warning-500)" />
-            <SummaryCard label="成本总额" value={`¥${(totalCost / 10000).toFixed(0)}万`} sub={`利润率 ${((totalContract - totalCost) / totalContract * 100).toFixed(1)}%`} color="#7816ff" />
-          </div>
-
           <Card
             title="合同费用明细"
             extra={<Button icon={<IconExport />} size="small">导出报表</Button>}
@@ -412,6 +409,6 @@ export function FinancialDashboard() {
           </div>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

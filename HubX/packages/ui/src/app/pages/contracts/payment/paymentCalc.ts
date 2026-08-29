@@ -145,6 +145,15 @@ export function buildGanttNodes(
       const override = contractOverrides.find(o => o.periodIndex === plan.periodNo);
       const forecastDate = override?.newForecastDate ?? plan.expectedDate;
 
+      // 未设置明确日期的付款计划不能进入时间轴。这里不虚构日期，同时避免
+      // gantt-task-react 收到 Invalid Date 后让整个预测页崩溃。
+      const parsedForecastDate = new Date(`${forecastDate}T00:00:00Z`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(forecastDate ?? '')
+        || Number.isNaN(parsedForecastDate.getTime())
+        || parsedForecastDate.toISOString().slice(0, 10) !== forecastDate) {
+        continue;
+      }
+
       nodes.push({
         nodeId: `${contract.id}-p${plan.periodNo}`,
         contractId: contract.id,

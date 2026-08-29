@@ -12,12 +12,10 @@ import {
   Message,
   Space,
   Tag,
-  Grid,
   Tooltip,
   Popover,
-  Upload,
 } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye, IconUserAdd, IconDelete, IconUpload } from '@arco-design/web-react/icon';
+import { IconSearch, IconPlus, IconEye, IconUserAdd, IconDelete } from '@arco-design/web-react/icon';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
@@ -47,6 +45,9 @@ import { useLeads } from '@/app/leads/LeadContext';
 import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
 import { LeadTransferPopover } from '@/app/leads/LeadTransferPopover';
 import { searchLeads, getCountdownCapsule, COUNTDOWN_COLOR, COUNTDOWN_BG } from './leads/utils';
+import { NewLeadModal, type NewLeadFormValues } from './leads/components/NewLeadModal';
+import { uploadItemsToLeadAttachments } from './leads/leadAttachments';
+import { WeChatIcon } from '@/app/components/ui';
 
 const FormItem = Form.Item;
 
@@ -61,29 +62,17 @@ function RichTextEditor({ value = '', onChange, ...props }: any) {
 
 export function PublicLeads() {
   const navigate = useNavigate();
-  const { leads } = useLeads();
+  const { leads, createLead } = useLeads();
   const [visible, setVisible] = useState(false);
   const [trashVisible, setTrashVisible] = useState(false);
-  const [customTagVisible, setCustomTagVisible] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState(['APP', '小程序', '管理系统', '官网', '电商系统', 'CMS', 'OA系统']);
   const [keyword, setKeyword] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [levelFilter, setLevelFilter] = useState<string>('');
   const [customerLevelFilter, setCustomerLevelFilter] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
-  const [form] = Form.useForm();
   const [trashForm] = Form.useForm();
-  const [customTagForm] = Form.useForm();
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
-
-  const customerList = [
-    { id: '1', name: '北京科技有限公司', contact: '张经理', phone: '13800138000' },
-    { id: '2', name: '上海商贸公司', contact: '李总', phone: '13900139000' },
-    { id: '3', name: '深圳电商公司', contact: '王总', phone: '13600136000' },
-    { id: '4', name: '广州金融公司', contact: '赵经理', phone: '13700137000' },
-  ];
 
   const filteredLeads = useMemo(() => {
     const pool = leads.filter((l) => l.clueType === 'public');
@@ -143,7 +132,7 @@ export function PublicLeads() {
           {r.presalesGroupName && (
             <Tooltip content="点击复制群名">
               <div style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }} onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}>
-                <span style={{ color: '#07C160' }}>💬</span> {r.presalesGroupName}
+                <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
@@ -237,24 +226,29 @@ export function PublicLeads() {
     },
   ];
 
-  const handleCreateLead = () => {
-    form.setFieldValue('tags', selectedTags);
-    form.validate().then((values) => {
-      if (!values.phone?.trim() && !values.wechat?.trim()) { Message.warning('电话和微信至少填写一个'); return; }
+  const handleCreateLead = async (values: NewLeadFormValues) => {
+    try {
+      await createLead({
+        name: values.name.trim(),
+        contact: values.customerTitle?.trim() || '未填写',
+        phone: values.phone?.trim() || '',
+        wechat: values.wechat?.trim(),
+        source: values.source,
+        keyword: values.keyword?.trim(),
+        entity: values.entity,
+        tags: values.tags,
+        initialRequirement: values.initialRequirement.trim(),
+        optimizer: values.optimizer,
+        owner: values.owner,
+        assistant: values.assistant,
+        attachments: uploadItemsToLeadAttachments(values.attachments ?? []),
+      });
       Message.success('线索创建成功');
-      setVisible(false); form.resetFields(); setSelectedTags([]);
-    });
-  };
-
-  const handleTagClick = (tag: string) => setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
-
-  const handleAddCustomTag = () => {
-    customTagForm.validate().then((values) => {
-      const newTag = values.tagName.trim();
-      if (newTag && !availableTags.includes(newTag)) { setAvailableTags([...availableTags, newTag]); setSelectedTags([...selectedTags, newTag]); Message.success('标签添加成功'); }
-      else if (availableTags.includes(newTag)) { Message.warning('标签已存在'); }
-      setCustomTagVisible(false); customTagForm.resetFields();
-    });
+      setVisible(false);
+    } catch {
+      Message.error('线索创建失败，请重试');
+      throw new Error('create lead failed');
+    }
   };
 
   return (
@@ -284,62 +278,10 @@ export function PublicLeads() {
         <Table columns={columns} data={filteredLeads} scroll={{ x: 1300 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
       </Card>
 
-      {/* 新建线索弹窗 */}
-      <Modal title="新建线索" visible={visible} onOk={handleCreateLead} onCancel={() => { setVisible(false); form.resetFields(); setSelectedTags([]); }} style={{ width: 800 }}>
-        <Form form={form} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={24}><FormItem label="线索名称" field="name" rules={[{ required: true, message: '请输入线索名称' }, { maxLength: 30, message: '最长30个字符' }]}><Input placeholder="请输入线索名称" maxLength={30} showWordLimit /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={8}><FormItem label="联系人" field="contact"><Input placeholder="请输入联系人姓名" /></FormItem></Grid.Col>
-            <Grid.Col span={8}><FormItem label="联系电话" field="phone"><Input placeholder="请输入手机号" /></FormItem></Grid.Col>
-            <Grid.Col span={8}><FormItem label="联系人微信" field="wechat"><Input placeholder="请输入微信号" /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={8}>
-              <FormItem label="线索来源" field="source" rules={[{ required: true, message: '请选择线索来源' }]}>
-                <Select placeholder="请选择">{LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}</Select>
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={8}><FormItem label="推广关键词" field="keyword"><Input placeholder="请输入推广关键词" /></FormItem></Grid.Col>
-            <Grid.Col span={8}>
-              <FormItem label="所属公司" field="customerId" rules={[{ required: true, message: '请选择所属公司' }]}>
-                <Select placeholder="请输入客户名称搜索" showSearch allowClear filterOption={(inputValue, option) => { const c = customerList.find((x) => x.id === option.props?.value); if (!c) return false; return `${c.name} ${c.contact} ${c.phone}`.toLowerCase().includes(inputValue.toLowerCase()); }}>
-                  {customerList.map((c) => <Select.Option key={c.id} value={c.id}>{c.name} - {c.contact} - {c.phone}</Select.Option>)}
-                </Select>
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={8}><FormItem label="意向等级" field="level"><Select placeholder="请选择">{INTENTION_LEVEL_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}</Select></FormItem></Grid.Col>
-            <Grid.Col span={8}><FormItem label="客户等级" field="customerLevel"><Select placeholder="请选择"><Select.Option value="S">S</Select.Option><Select.Option value="A">A</Select.Option><Select.Option value="B">B</Select.Option><Select.Option value="C">C</Select.Option></Select></FormItem></Grid.Col>
-            <Grid.Col span={8}><FormItem label="对接主体" field="entity" rules={[{ required: true, message: '请选择对接主体' }]}><Select placeholder="请选择">{COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={24}>
-              <FormItem label="意向标签" field="tags">
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {availableTags.map((tag) => <Tag key={tag} checkable checked={selectedTags.includes(tag)} onClick={() => handleTagClick(tag)} style={{ cursor: 'pointer' }}>{tag}</Tag>)}
-                  <Button size="small" type="dashed" icon={<IconPlus />} onClick={() => setCustomTagVisible(true)}>新增标签</Button>
-                </div>
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={24}><FormItem label="初始信息" field="initialRequirement" rules={[{ required: true, message: '请输入初始信息' }, { maxLength: 500, message: '最长500个字符' }]}><Input.TextArea placeholder="请输入客户需求描述" rows={4} maxLength={500} showWordLimit /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={24}><FormItem label="附件上传" field="attachments"><Upload accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple drag tip="支持上传图片、PDF、Word、Excel等文件"><div style={{ padding: '20px 0', textAlign: 'center' }}><IconUpload style={{ fontSize: 32, color: 'var(--color-text-3)' }} /><div style={{ marginTop: 8, color: 'var(--color-text-2)' }}>点击或拖拽文件到此处上传</div></div></Upload></FormItem></Grid.Col>
-          </Grid.Row>
-        </Form>
-      </Modal>
+      <NewLeadModal visible={visible} onSubmit={handleCreateLead} onCancel={() => setVisible(false)} />
 
       <Modal title="标记为垃圾" visible={trashVisible} onOk={() => { trashForm.validate().then(() => { Message.success('已标记为垃圾'); setTrashVisible(false); trashForm.resetFields(); }); }} onCancel={() => { setTrashVisible(false); trashForm.resetFields(); }} style={{ width: 480 }}>
         <Form form={trashForm} layout="vertical"><FormItem label="垃圾原因" field="reason" rules={[{ required: true, message: '请填写垃圾原因' }]}><Input.TextArea placeholder="请说明原因" rows={4} /></FormItem></Form>
-      </Modal>
-
-      <Modal title="新增标签" visible={customTagVisible} onOk={handleAddCustomTag} onCancel={() => { setCustomTagVisible(false); customTagForm.resetFields(); }} style={{ width: 400 }}>
-        <Form form={customTagForm} layout="vertical"><FormItem label="标签名称" field="tagName" rules={[{ required: true, message: '请输入标签名称' }]}><Input placeholder="请输入标签名称" maxLength={10} /></FormItem></Form>
       </Modal>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />

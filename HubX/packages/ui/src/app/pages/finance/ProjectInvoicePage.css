@@ -1,5 +1,48 @@
-.project-invoice-page { padding: 20px; }
-.project-invoice-page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.project-invoice-page-header h5 { margin: 0 0 4px; }
-.project-invoice-upload-title { margin-bottom: 10px; font-weight: 600; color: var(--color-text-1); }
-@media (max-width: 640px) { .project-invoice-page-header { align-items: stretch; flex-direction: column; } }
+.project-invoice-page__content-card > .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.project-invoice-page__content-card .arco-tabs-header {
+  margin-bottom: 0;
+}
+
+.project-invoice-page__keyword {
+  width: 320px;
+}
+
+.project-invoice-page__result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-invoice-page__empty {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.project-invoice-upload-title {
+  margin-bottom: 10px;
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .project-invoice-page__keyword,
+  .project-invoice-page .hubx-filter-bar__fields,
+  .project-invoice-page .hubx-filter-bar__fields > * {
+    width: 100%;
+  }
+
+  .project-invoice-page__result-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -1,8 +1,7 @@
-// 项目详情「售前历程」Tab：把签约前的线索信息、跟进、报价、合同聚合成只读时间线，
-// 对应销售域重构五段衔接第 5 条「售前交接包随确认带进项目」。只增不删：本 Tab 不提供任何删改操作。
+// 项目详情「售前」Tab：仅保留签约前的跟进、报价与合同时间线。
 
 import { useMemo } from 'react';
-import { Card, Descriptions, Empty, Space, Tag, Timeline, Typography } from '@arco-design/web-react';
+import { Card, Empty, Space, Tag, Timeline, Typography } from '@arco-design/web-react';
 import type { Contract } from '../contracts/types';
 import { getLeadDetailProfile } from '../leads/leadDetailProfiles';
 import {
@@ -54,11 +53,6 @@ const PRESALES_FOLLOW_MOCK: PresalesFollowRecord[] = [
   },
 ];
 
-function displayValue(value: string | number | null | undefined) {
-  if (value == null || String(value).trim() === '') return '-';
-  return value;
-}
-
 export function ProjectPresalesHistoryPanel({ leadId, contract }: { leadId?: string; contract?: Contract }) {
   const leadProfile = useMemo(() => getLeadDetailProfile(leadId, ''), [leadId]);
 
@@ -95,39 +89,8 @@ export function ProjectPresalesHistoryPanel({ leadId, contract }: { leadId?: str
     return <Empty description="当前项目未关联线索，暂无售前历程" />;
   }
 
-  const { leadInfo } = leadProfile;
-  const phoneOrWechat = Array.from(new Set(
-    [leadInfo.phone, leadInfo.wechat].filter((value) => value?.trim()),
-  )).join(' / ') || '-';
-
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="medium">
-      <Card bordered={false} title="售前交接包" size="small">
-        <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-          签约前沉淀的线索信息与售前资料，随项目确认自动带入，仅供查阅。
-        </Text>
-        <Descriptions
-          column={2}
-          labelStyle={{ width: 96 }}
-          data={[
-            { label: '线索名称', value: displayValue(leadInfo.name) },
-            { label: '客户称呼', value: displayValue(leadInfo.customerTitle || leadInfo.customer) },
-            { label: '联系电话/微信', value: phoneOrWechat },
-            { label: '线索来源', value: displayValue(leadInfo.source) },
-            { label: '归属销售', value: displayValue(leadInfo.owner) },
-            { label: '客资成本', value: displayValue(leadInfo.customerCost) },
-            { label: '售前群名称', value: displayValue(leadInfo.presalesGroupName) },
-            {
-              label: '原型图链接',
-              value: leadInfo.prototypeLink ? (
-                <a href={leadInfo.prototypeLink} target="_blank" rel="noreferrer">{leadInfo.prototypeLink}</a>
-              ) : '-',
-            },
-            { label: '初始信息及需求', value: displayValue(leadInfo.requirement || leadInfo.initialRequirement), span: 2 },
-          ]}
-        />
-      </Card>
-
       <Card bordered={false} title="售前历程" size="small">
         {events.length === 0 ? (
           <Empty description="暂无售前历程记录" />

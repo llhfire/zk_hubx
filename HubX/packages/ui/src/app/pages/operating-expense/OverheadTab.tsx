@@ -115,7 +115,7 @@ export function OverheadTab() {
           <Alert type="warning" content="项目工时合计超过编制工时，未分摊已钳制为 0；请核日报/工天。本模块不倒灌。" style={{ marginTop: 8 }} />
         )}
         <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
-          综合毛利率读取精益 deriveLifecycleMargin(合同标的, deriveEac(该 Case 成本项))。EAC 内 overhead 金额按占位 OVERHEAD_RATE=35 写入。本列「工时×本页 R_hour」与上述 35 口径不是同一笔。本模块不把现场费率写回成本项，也不用现场公摊重算毛利。
+          公摊结果与精益交付成本项共用当月 R_hour；差旅等项目直接费用不进入公共运营池。综合毛利率继续读取有效合同标的与 EAC。
         </Text>
       </Card>
 

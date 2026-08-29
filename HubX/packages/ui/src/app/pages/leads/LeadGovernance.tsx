@@ -296,7 +296,7 @@ export function LeadGovernance() {
                     <Card size="small" style={{ borderColor: rule.enabled ? 'var(--primary)' : 'var(--color-border)', borderWidth: rule.enabled ? 2 : 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <span style={{ fontWeight: 600, fontSize: 14 }}>{rule.name}</span>
-                        <Tag color={rule.enabled ? 'var(--primary)' : 'default'}>
+                        <Tag color={rule.enabled ? 'var(--primary)' : 'gray'}>
                           {rule.enabled ? '已启用' : '已禁用'}
                         </Tag>
                       </div>

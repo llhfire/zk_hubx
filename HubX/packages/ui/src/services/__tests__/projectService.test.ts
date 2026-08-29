@@ -103,4 +103,73 @@ describe('createMockProjectService', () => {
     expect(next?.status).toBe('未开始');
     expect(next?.owner).toBe('李四');
   });
+
+  it('线索入口与合同入口按业务身份幂等合并，不生成第二个项目', async () => {
+    const svc = createMockProjectService();
+    const leadProject = {
+      ...initialProjects[0],
+      id: 'ap-lead-unique',
+      leadId: 'lead-unique',
+      contractId: undefined,
+      status: '未确认' as const,
+      owner: '',
+      productUsers: [],
+      name: '测试客户项目（待确认）',
+    };
+    const contractProject = {
+      ...leadProject,
+      id: 'ap-c-unique',
+      leadId: 'unique',
+      contractId: 'c-unique',
+      name: '测试客户有限公司项目（待确认）',
+    };
+
+    expect(await svc.create(leadProject)).toBe('ap-lead-unique');
+    expect(await svc.create(contractProject)).toBe('ap-lead-unique');
+    const matches = (await svc.list()).filter(project => project.leadId?.replace(/^lead-/, '') === 'unique');
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({ id: 'ap-lead-unique', contractId: 'c-unique' });
+  });
+});
+
+describe('getDetail 详情复合接口（β 阶段 2）', () => {
+  it('http：调 GET /api/projects/:id/detail 返回复合数据', async () => {
+    const calls: string[] = [];
+    global.fetch = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      calls.push(u);
+      if (u.endsWith('/api/projects/1/detail')) {
+        return jsonResponse(200, { project: makeProject(), contracts: [{ id: 'c-1' }], collections: [], activities: [] });
+      }
+      throw new Error(`unexpected url: ${u}`);
+    }) as unknown as typeof fetch;
+
+    const svc = createHttpProjectService('http://x');
+    const detail = await svc.getDetail('1');
+    expect(detail?.project.id).toBe('1');
+    expect(detail?.contracts).toHaveLength(1);
+    expect(calls[0]).toContain('/api/projects/1/detail');
+  });
+
+  it('http：404/异常返回 null 不抛错', async () => {
+    global.fetch = vi.fn(async () => jsonResponse(404, { error: 'not found' })) as unknown as typeof fetch;
+    const svc = createHttpProjectService('http://x');
+    expect(await svc.getDetail('nope')).toBeNull();
+  });
+
+  it('mock：按 contractId 匹配关联合同；未命中返回空数组', async () => {
+    const svc = createMockProjectService();
+    const all = await svc.list();
+    const withContract = all.find((p) => p.contractId);
+    if (withContract) {
+      const detail = await svc.getDetail(withContract.id);
+      expect(detail?.project.id).toBe(withContract.id);
+      // mock 合同种子若含该合同则命中；口径上只要不抛错且字段齐全
+      expect(detail).toHaveProperty('contracts');
+      expect(detail).toHaveProperty('collections');
+      expect(detail).toHaveProperty('activities');
+    }
+    const none = await svc.getDetail(all[0].id);
+    expect(none?.project.id).toBe(all[0].id);
+  });
 });

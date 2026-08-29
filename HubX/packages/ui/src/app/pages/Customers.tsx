@@ -10,15 +10,14 @@ import {
   Form,
   Message,
   Space,
-  Typography,
   Grid,
   Tooltip,
 } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconEye, IconEdit } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
 import { CUSTOMERS } from './customers/mockData';
+import { FilterBar, PageHeader, PageShell } from '@/app/components/ui';
 
-const Title = Typography.Title;
 const Row = Grid.Row;
 const Col = Grid.Col;
 
@@ -178,51 +177,41 @@ export function Customers() {
   };
 
   return (
-    <div>
-      {/* Page label — subtle */}
-      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-400)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>
-          客户管理
-        </div>
-        <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>
-          新建客户
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="客户管理"
+        description="统一维护客户等级、合作状态、负责人和合同回款概况。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>新建客户</Button>}
+      />
 
-      <Card
-        style={{
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-xs)',
-          border: '1px solid var(--grey-200)',
-        }}
-      >
+      <Card>
         {/* Search & Filter Bar */}
-        <div className="flex gap-3" style={{ marginBottom: 16 }}>
+        <FilterBar actions={<Button type="primary" icon={<IconSearch />}>搜索</Button>}>
           <Input
             style={{ width: 240 }}
             placeholder="搜索客户名称、联系人"
             prefix={<IconSearch />}
           />
-          <Select placeholder="客户类型" style={{ width: 160 }} allowClear>
+          <Select placeholder="客户类型（全部）" style={{ width: 160 }} allowClear>
             <Select.Option value="enterprise">企业</Select.Option>
             <Select.Option value="institution">机构</Select.Option>
             <Select.Option value="individual">个人</Select.Option>
           </Select>
-          <Select placeholder="客户等级" style={{ width: 160 }} allowClear>
+          <Select placeholder="客户等级（全部）" style={{ width: 160 }} allowClear>
             <Select.Option value="S">S级</Select.Option>
             <Select.Option value="A">A级</Select.Option>
             <Select.Option value="B">B级</Select.Option>
             <Select.Option value="C">C级</Select.Option>
           </Select>
-          <Select placeholder="客户状态" style={{ width: 160 }} allowClear>
+          <Select placeholder="客户状态（全部）" style={{ width: 160 }} allowClear>
             <Select.Option value="active">合作中</Select.Option>
             <Select.Option value="following">跟进中</Select.Option>
             <Select.Option value="lost">已流失</Select.Option>
           </Select>
-          <Button type="primary">搜索</Button>
-        </div>
+        </FilterBar>
 
         <Table
+          style={{ marginTop: 16 }}
           columns={columns}
           data={customers}
           scroll={{ x: 1800 }}
@@ -328,6 +317,6 @@ export function Customers() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

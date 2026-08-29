@@ -5,23 +5,9 @@ import type {
   ActionItem,
   ActionPriority,
 } from './types';
+import type { TodoItem } from '../../todos/types';
 
-/** TODO 投影类型（复用 todos/types.ts 的结构） */
-export interface TodoItem {
-  id: string;
-  source: string;
-  sourceId: string;
-  title: string;
-  description?: string;
-  assigneeId: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'completed' | 'canceled';
-  module: string;
-  route: string;
-  deadline?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { TodoItem } from '../../todos/types';
 
 /** 同步操作 */
 export type TodoSyncOp =
@@ -85,14 +71,15 @@ export function diffActionItemsToTodo(
             source: 'smart_meeting',
             sourceId: action.actionItemId,
             title: action.content,
+            content: `来自会议纪要：${minute.title}`,
             assigneeId: action.assigneeId!,
+            assigneeName: action.assigneeName,
             priority: mapPriority(action.priority),
             status: 'pending',
             module: '智能会议',
             route: `/smart-meetings/${minute.id}`,
             deadline: action.dueDate ?? undefined,
             createdAt: now,
-            updatedAt: now,
           },
         });
       }

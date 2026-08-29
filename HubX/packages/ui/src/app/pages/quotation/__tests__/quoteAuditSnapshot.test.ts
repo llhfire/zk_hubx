@@ -21,6 +21,12 @@ describe('buildAuditSnapshotFromConfig', () => {
     expect(snapshot.auditNodes.map((n) => n.auditorName)).toEqual(['黄奕', '罗总', '闵总']);
   });
 
+  it('审批角色与盖章角色随快照固化', () => {
+    const snapshot = buildAuditSnapshotFromConfig(QUOTE_APPROVAL_BINDING, QUOTE_PARALLEL_TEMPLATE);
+    expect(snapshot.auditNodes.map((n) => n.quoteRole)).toEqual(['sales_manager', 'tech', 'decision']);
+    expect(snapshot.stampNode.stamperRole).toBe('assistant');
+  });
+
   it('auditNodes 全部 PENDING', () => {
     const snapshot = buildAuditSnapshotFromConfig(QUOTE_APPROVAL_BINDING, QUOTE_PARALLEL_TEMPLATE);
     expect(snapshot.auditNodes.every((n) => n.status === 'PENDING')).toBe(true);
@@ -72,14 +78,23 @@ describe('buildAuditSnapshotFromConfig', () => {
     expect(snapshot.auditNodes[1].auditorName).toBe('张三');
     expect(snapshot.stampNode.stamperName).toBe('黄海');
   });
+
+  it('缺少盖章节点时阻止送审', () => {
+    const template = {
+      ...QUOTE_PARALLEL_TEMPLATE,
+      nodes: QUOTE_PARALLEL_TEMPLATE.nodes.filter((node) => node.name !== '盖章'),
+    };
+    const binding = {
+      ...QUOTE_APPROVAL_BINDING,
+      assignments: QUOTE_APPROVAL_BINDING.assignments.filter((node) => node.nodeName !== '盖章'),
+    };
+    expect(() => buildAuditSnapshotFromConfig(binding, template)).toThrow('未配置盖章节点');
+  });
 });
 
 describe('getQuoteAuditSnapshot', () => {
-  it('找不到配置时回退默认三人会签', () => {
-    const snapshot = getQuoteAuditSnapshot(() => [], () => []);
-    expect(snapshot.auditNodes).toHaveLength(3);
-    expect(snapshot.auditNodes.map((n) => n.auditorName)).toEqual(['黄奕', '罗总', '闵总']);
-    expect(snapshot.stampNode.stamperName).toBe('黄海');
+  it('找不到配置时阻止送审', () => {
+    expect(() => getQuoteAuditSnapshot(() => [], () => [])).toThrow('报价审批未配置');
   });
 
   it('找到配置时用配置构建', () => {
@@ -91,22 +106,17 @@ describe('getQuoteAuditSnapshot', () => {
     expect(snapshot.auditNodes[0].auditorName).toBe('黄奕');
   });
 
-  it('配置被禁用时回退默认', () => {
+  it('配置被禁用时阻止送审', () => {
     const disabled = { ...QUOTE_APPROVAL_BINDING, enabled: false };
-    const snapshot = getQuoteAuditSnapshot(() => [disabled], () => [QUOTE_PARALLEL_TEMPLATE]);
-    expect(snapshot.auditNodes).toHaveLength(3);
-    expect(snapshot.auditNodes[0].auditorId).toBe('huangyi'); // 默认
+    expect(() => getQuoteAuditSnapshot(() => [disabled], () => [QUOTE_PARALLEL_TEMPLATE])).toThrow('报价审批未配置');
   });
 
-  it('bizCode 不匹配时回退默认', () => {
-    const snapshot = getQuoteAuditSnapshot(
+  it('bizCode 不匹配时阻止送审', () => {
+    expect(() => getQuoteAuditSnapshot(
       () => [QUOTE_APPROVAL_BINDING],
       () => [QUOTE_PARALLEL_TEMPLATE],
       'supplement-quote-approval',
-    );
-    // QUOTE_APPROVAL_BINDING 的 bizCode 是 'quote-approval'，不匹配 'supplement-quote-approval'
-    // 但 SUPPLEMENT_QUOTE_APPROVAL_BINDING 不在列表中，所以回退默认
-    expect(snapshot.auditNodes).toHaveLength(3);
+    )).toThrow('报价审批未配置');
   });
 });
 

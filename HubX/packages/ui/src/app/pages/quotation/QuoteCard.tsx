@@ -1,5 +1,7 @@
 // 报价卡片：线索详情 / 项目详情共用的报价摘要卡，进入四阶段工作台。
-import { Button, Tag, Typography } from '@arco-design/web-react';
+import { Tag, Tooltip, Typography } from '@arco-design/web-react';
+import { IconArrowRight } from '@arco-design/web-react/icon';
+import { ProcessRecordCard } from '@/app/components/ui';
 import { computeAmountBreakdown } from './quoteFlow';
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, type Quote } from './types';
 
@@ -18,20 +20,37 @@ export function QuoteCard({ quote, onOpen }: { quote: Quote; onOpen: () => void 
   const subCount = (quote.featureList || []).reduce((s, m) => s + (m.subFeatures?.length || 0), 0);
 
   return (
-    <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-        <Text style={{ fontWeight: 600 }}>{quote.basicInfo.projectName}</Text>
-        <Tag color="arcoblue" size="small">{quote.version}</Tag>
-        <Tag size="small" color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
-      </div>
-      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>{quote.quoteNo}</div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, fontSize: 12 }}>
-        {evalSheet && <span>工期 <strong>{evalSheet.manualWorkDays}</strong> 工作日</span>}
-        <span>人天 <strong>{totalDays.toFixed(1)}</strong></span>
-        <span>报价 <strong style={{ color: 'rgb(var(--red-6))' }}>{money(breakdown.grandTotal)}</strong></span>
-        <span>{epCount} 端 · {modCount} 模块 · {subCount} 功能</span>
-      </div>
-      <Button size="mini" type="primary" onClick={onOpen}>进入工作台</Button>
-    </div>
+    <ProcessRecordCard
+      leading={(
+        <Tag color={quote.flowMode === 'file' ? 'purple' : 'arcoblue'} size="small">
+          {quote.flowMode === 'file' ? '文件流转' : '数据流转'}
+        </Tag>
+      )}
+      title={quote.basicInfo.projectName}
+      tags={(
+        <>
+          <Tag color="arcoblue" size="small">{quote.version}</Tag>
+          <Tag size="small" color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
+        </>
+      )}
+      actions={(
+        <Tooltip content="进入工作台">
+          <span className="hubx-process-record-card__indicator" aria-hidden="true">
+            <IconArrowRight />
+          </span>
+        </Tooltip>
+      )}
+      onClick={onOpen}
+      ariaLabel={`进入${quote.basicInfo.projectName}报价工作台`}
+      identifier={quote.quoteNo}
+      summary={(
+        <>
+          {evalSheet && <span>工期 <strong>{evalSheet.manualWorkDays}</strong> 工作日</span>}
+          <span>人天 <strong>{totalDays.toFixed(1)}</strong></span>
+          <span>报价 <Text style={{ color: 'rgb(var(--red-6))', fontWeight: 600 }}>{money(breakdown.grandTotal)}</Text></span>
+          <span>{epCount} 端 · {modCount} 模块 · {subCount} 功能</span>
+        </>
+      )}
+    />
   );
 }

@@ -1,28 +1,41 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  Card,
-  Grid,
-  Table,
   Button,
-  Space,
-  Modal,
+  Card,
+  Empty,
   Form,
   Input,
   InputNumber,
-  Select,
   Message,
+  Modal,
   Popconfirm,
+  Select,
+  Space,
+  Table,
   Tag,
   Tooltip,
+  Typography,
 } from '@arco-design/web-react';
-import { IconPlus, IconEdit, IconDelete, IconEye } from '@arco-design/web-react/icon';
+import { IconDelete, IconEdit, IconEye, IconPlus, IconSearch } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import {
+  calculateDictionaryMetrics,
+  EMPTY_DICTIONARY_FILTERS,
+  filterDictionaryItems,
+  filterDictionaryTypes,
+  hasDictionaryFilters,
+  type DictionaryFilterStatus,
+  type DictionaryFilters,
+  type DictionaryItem,
+  type DictionaryStatus,
+  type DictionaryType,
+} from './dictionaryModel';
+import './Dictionary.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const FormItem = Form.Item;
+const { Text } = Typography;
 
-// 模拟字典分类数据
-const mockDictTypes = [
+const INITIAL_DICTIONARY_TYPES: DictionaryType[] = [
   { id: '1', code: 'customer_source', name: '客户来源', description: '客户来源渠道分类', status: '启用', createTime: '2020-01-01' },
   { id: '2', code: 'customer_level', name: '客户等级', description: '客户价值等级分类', status: '启用', createTime: '2020-01-01' },
   { id: '3', code: 'lead_status', name: '线索状态', description: '线索跟进状态分类', status: '启用', createTime: '2020-01-01' },
@@ -30,8 +43,7 @@ const mockDictTypes = [
   { id: '5', code: 'industry', name: '所属行业', description: '客户所属行业分类', status: '启用', createTime: '2020-01-01' },
 ];
 
-// 模拟字典项数据
-const mockDictItems: Record<string, any[]> = {
+const INITIAL_DICTIONARY_ITEMS: Record<string, DictionaryItem[]> = {
   '1': [
     { id: '1-1', label: '百度推广', value: 'baidu', sort: 1, status: '启用', remark: '百度搜索推广渠道' },
     { id: '1-2', label: '抖音推广', value: 'douyin', sort: 2, status: '启用', remark: '抖音信息流推广' },
@@ -71,59 +83,146 @@ const mockDictItems: Record<string, any[]> = {
   ],
 };
 
+type DictionaryTypeFormValues = Pick<DictionaryType, 'code' | 'name' | 'description' | 'status'>;
+type DictionaryItemFormValues = Pick<DictionaryItem, 'label' | 'value' | 'sort' | 'status' | 'remark'>;
+
 export function Dictionary() {
-  const [selectedDictType, setSelectedDictType] = useState<string>('1');
+  const [dictionaryTypes, setDictionaryTypes] = useState<DictionaryType[]>(INITIAL_DICTIONARY_TYPES);
+  const [dictionaryItems, setDictionaryItems] = useState<Record<string, DictionaryItem[]>>(INITIAL_DICTIONARY_ITEMS);
+  const [selectedTypeId, setSelectedTypeId] = useState('1');
+  const [typeFilters, setTypeFilters] = useState<DictionaryFilters>({ ...EMPTY_DICTIONARY_FILTERS });
+  const [itemFilters, setItemFilters] = useState<DictionaryFilters>({ ...EMPTY_DICTIONARY_FILTERS });
   const [typeModalVisible, setTypeModalVisible] = useState(false);
   const [itemModalVisible, setItemModalVisible] = useState(false);
   const [typeForm] = Form.useForm();
   const [itemForm] = Form.useForm();
-  const [editingType, setEditingType] = useState<any>(null);
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingType, setEditingType] = useState<DictionaryType | null>(null);
+  const [editingItem, setEditingItem] = useState<DictionaryItem | null>(null);
 
-  // 字典分类表格列配置
+  const currentType = dictionaryTypes.find(type => type.id === selectedTypeId) ?? null;
+  const currentItems = dictionaryItems[selectedTypeId] ?? [];
+  const filteredTypes = useMemo(() => filterDictionaryTypes(dictionaryTypes, typeFilters), [dictionaryTypes, typeFilters]);
+  const filteredItems = useMemo(() => filterDictionaryItems(currentItems, itemFilters), [currentItems, itemFilters]);
+  const metrics = useMemo(
+    () => calculateDictionaryMetrics(dictionaryTypes, dictionaryItems, selectedTypeId),
+    [dictionaryItems, dictionaryTypes, selectedTypeId],
+  );
+  const hasTypeFilters = hasDictionaryFilters(typeFilters);
+  const hasItemFilters = hasDictionaryFilters(itemFilters);
+
+  const handleAddType = () => {
+    setEditingType(null);
+    typeForm.resetFields();
+    typeForm.setFieldsValue({ status: '启用' });
+    setTypeModalVisible(true);
+  };
+
+  const handleEditType = (record: DictionaryType) => {
+    setEditingType(record);
+    typeForm.setFieldsValue(record);
+    setTypeModalVisible(true);
+  };
+
+  const handleDeleteType = (id: string) => {
+    const nextTypes = dictionaryTypes.filter(type => type.id !== id);
+    setDictionaryTypes(nextTypes);
+    setDictionaryItems(current => Object.fromEntries(Object.entries(current).filter(([typeId]) => typeId !== id)));
+    if (selectedTypeId === id) {
+      setSelectedTypeId(nextTypes[0]?.id ?? '');
+      setItemFilters({ ...EMPTY_DICTIONARY_FILTERS });
+    }
+    Message.success('字典分类已删除');
+  };
+
+  const handleSelectType = (id: string) => {
+    setSelectedTypeId(id);
+    setItemFilters({ ...EMPTY_DICTIONARY_FILTERS });
+  };
+
+  const handleTypeSubmit = () => {
+    typeForm.validate().then((values: DictionaryTypeFormValues) => {
+      const normalized = {
+        ...values,
+        description: values.description || '',
+        status: (values.status || '启用') as DictionaryStatus,
+      };
+      if (editingType) {
+        setDictionaryTypes(current => current.map(type => type.id === editingType.id ? { ...type, ...normalized } : type));
+        Message.success('字典分类已更新');
+      } else {
+        const id = `dictionary-type-${Date.now()}`;
+        const nextType: DictionaryType = { ...normalized, id, createTime: new Date().toISOString().slice(0, 10) };
+        setDictionaryTypes(current => [...current, nextType]);
+        setDictionaryItems(current => ({ ...current, [id]: [] }));
+        setSelectedTypeId(id);
+        setItemFilters({ ...EMPTY_DICTIONARY_FILTERS });
+        Message.success('字典分类已新建');
+      }
+      setTypeModalVisible(false);
+    });
+  };
+
+  const handleAddItem = () => {
+    if (!currentType) return;
+    setEditingItem(null);
+    itemForm.resetFields();
+    itemForm.setFieldsValue({ sort: currentItems.length + 1, status: '启用' });
+    setItemModalVisible(true);
+  };
+
+  const handleEditItem = (record: DictionaryItem) => {
+    setEditingItem(record);
+    itemForm.setFieldsValue(record);
+    setItemModalVisible(true);
+  };
+
+  const handleDeleteItem = (id: string) => {
+    setDictionaryItems(current => ({
+      ...current,
+      [selectedTypeId]: (current[selectedTypeId] ?? []).filter(item => item.id !== id),
+    }));
+    Message.success('字典项已删除');
+  };
+
+  const handleItemSubmit = () => {
+    if (!currentType) return;
+    itemForm.validate().then((values: DictionaryItemFormValues) => {
+      const normalized = {
+        ...values,
+        remark: values.remark || '',
+        status: (values.status || '启用') as DictionaryStatus,
+      };
+      setDictionaryItems(current => {
+        const items = current[selectedTypeId] ?? [];
+        const nextItems = editingItem
+          ? items.map(item => item.id === editingItem.id ? { ...item, ...normalized } : item)
+          : [...items, { ...normalized, id: `dictionary-item-${Date.now()}` }];
+        return { ...current, [selectedTypeId]: nextItems.sort((left, right) => left.sort - right.sort) };
+      });
+      Message.success(editingItem ? '字典项已更新' : '字典项已新建');
+      setItemModalVisible(false);
+    });
+  };
+
   const typeColumns = [
-    { title: '字典编码', dataIndex: 'code', width: 150 },
-    { title: '字典名称', dataIndex: 'name', width: 150 },
-    { title: '描述', dataIndex: 'description' },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 80,
-      render: (status: string) => (
-        <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>
-      ),
-    },
+    { title: '字典编码', dataIndex: 'code', width: 180 },
+    { title: '字典名称', dataIndex: 'name', width: 140 },
+    { title: '描述', dataIndex: 'description', ellipsis: true },
+    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <Tag color={status === '启用' ? 'green' : 'gray'}>{status}</Tag> },
     { title: '创建时间', dataIndex: 'createTime', width: 120 },
     {
-      title: '操作',
-      width: 150,
-      render: (_: any, record: any) => (
-        <Space>
-          <Tooltip content="查看项">
-            <Button
-              key="view"
-              type="text"
-              size="small"
-              icon={<IconEye />}
-              onClick={() => setSelectedDictType(record.id)}
-            />
+      title: '操作', width: 150, fixed: 'right' as const,
+      render: (_: unknown, record: DictionaryType) => (
+        <Space size={4}>
+          <Tooltip content="查看字典项">
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`查看${record.name}字典项`} icon={<IconEye />} onClick={() => handleSelectType(record.id)} />
           </Tooltip>
-          <Tooltip content="编辑">
-            <Button
-              key="edit"
-              type="text"
-              size="small"
-              icon={<IconEdit />}
-              onClick={() => handleEditType(record)}
-            />
+          <Tooltip content="编辑分类">
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑${record.name}分类`} icon={<IconEdit />} onClick={() => handleEditType(record)} />
           </Tooltip>
-          <Tooltip content="删除">
-            <Popconfirm
-              key="delete"
-              title="确定要删除该字典分类吗?"
-              onOk={() => handleDeleteType(record.id)}
-            >
-              <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+          <Tooltip content="删除分类">
+            <Popconfirm title={`确定删除“${record.name}”及其全部字典项吗？`} onOk={() => handleDeleteType(record.id)}>
+              <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除${record.name}分类`} icon={<IconDelete />} />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -131,197 +230,110 @@ export function Dictionary() {
     },
   ];
 
-  // 字典项表格列配置
   const itemColumns = [
-    { title: '标签名称', dataIndex: 'label' },
-    { title: '标签值', dataIndex: 'value' },
-    { title: '排序', dataIndex: 'sort', width: 80 },
+    { title: '标签名称', dataIndex: 'label', width: 160 },
+    { title: '标签值', dataIndex: 'value', width: 180 },
+    { title: '排序', dataIndex: 'sort', width: 80, align: 'right' as const },
+    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <Tag color={status === '启用' ? 'green' : 'gray'}>{status}</Tag> },
+    { title: '备注', dataIndex: 'remark', ellipsis: true },
     {
-      title: '状态',
-      dataIndex: 'status',
-      width: 80,
-      render: (status: string) => (
-        <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>
-      ),
-    },
-    { title: '备注', dataIndex: 'remark' },
-    {
-      title: '操作',
-      width: 120,
-      render: (_: any, record: any) => (
-        <Space>
-          <Button
-            key="edit"
-            type="text"
-            size="small"
-            icon={<IconEdit />}
-            onClick={() => handleEditItem(record)}
-          >
-            编辑
-          </Button>
-          <Popconfirm
-            key="delete"
-            title="确定要删除该字典项吗?"
-            onOk={() => handleDeleteItem(record.id)}
-          >
-            <Button type="text" size="small" status="danger" icon={<IconDelete />}>
-              删除
-            </Button>
-          </Popconfirm>
+      title: '操作', width: 110, fixed: 'right' as const,
+      render: (_: unknown, record: DictionaryItem) => (
+        <Space size={4}>
+          <Tooltip content="编辑字典项">
+            <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑${record.label}字典项`} icon={<IconEdit />} onClick={() => handleEditItem(record)} />
+          </Tooltip>
+          <Tooltip content="删除字典项">
+            <Popconfirm title={`确定删除“${record.label}”吗？`} onOk={() => handleDeleteItem(record.id)}>
+              <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除${record.label}字典项`} icon={<IconDelete />} />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
-  const handleAddType = () => {
-    setEditingType(null);
-    typeForm.resetFields();
-    setTypeModalVisible(true);
-  };
-
-  const handleEditType = (record: any) => {
-    setEditingType(record);
-    typeForm.setFieldsValue(record);
-    setTypeModalVisible(true);
-  };
-
-  const handleDeleteType = (id: string) => {
-    Message.success('删除成功');
-  };
-
-  const handleTypeSubmit = () => {
-    typeForm.validate().then(() => {
-      Message.success(editingType ? '编辑成功' : '新建成功');
-      setTypeModalVisible(false);
-    });
-  };
-
-  const handleAddItem = () => {
-    setEditingItem(null);
-    itemForm.resetFields();
-    setItemModalVisible(true);
-  };
-
-  const handleEditItem = (record: any) => {
-    setEditingItem(record);
-    itemForm.setFieldsValue(record);
-    setItemModalVisible(true);
-  };
-
-  const handleDeleteItem = (id: string) => {
-    Message.success('删除成功');
-  };
-
-  const handleItemSubmit = () => {
-    itemForm.validate().then(() => {
-      Message.success(editingItem ? '编辑成功' : '新建成功');
-      setItemModalVisible(false);
-    });
-  };
-
-  const currentDictType = mockDictTypes.find(t => t.id === selectedDictType);
-  const currentItems = mockDictItems[selectedDictType] || [];
-
   return (
-    <div>
-      <Row gutter={16}>
-        <Col span={24}>
-          <Card
-            bordered={false}
-            title="字典分类"
-            extra={
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddType}>
-                新建分类
-              </Button>
-            }
-            style={{ marginBottom: 16 }}
-          >
-            <Table
-              columns={typeColumns}
-              data={mockDictTypes}
-              rowKey="id"
-              pagination={false}
-            />
-          </Card>
-        </Col>
-        <Col span={24}>
-          <Card
-            bordered={false}
-            title={`字典项 - ${currentDictType?.name || ''}`}
-            extra={
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddItem}>
-                新建字典项
-              </Button>
-            }
-          >
-            <Table
-              columns={itemColumns}
-              data={currentItems}
-              rowKey="id"
-              pagination={false}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <PageShell className="dictionary-page">
+      <PageHeader
+        title="数据字典"
+        description="统一维护系统枚举分类与字典项；选择分类后可查看、检索和编辑对应值。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleAddType}>新建分类</Button>}
+      />
 
-      {/* 字典分类编辑弹窗 */}
-      <Modal
-        title={editingType ? '编辑字典分类' : '新建字典分类'}
-        visible={typeModalVisible}
-        onOk={handleTypeSubmit}
-        onCancel={() => setTypeModalVisible(false)}
-        autoFocus={false}
-        focusLock={true}
-      >
+      <ProcessMetricGrid
+        items={[
+          { key: 'types', label: '分类总数', value: `${metrics.typeCount} 个`, detail: '当前 α 会话' },
+          { key: 'active-types', label: '启用分类', value: `${metrics.activeTypeCount} 个`, detail: '可用于业务字段', tone: 'success' },
+          { key: 'current-items', label: '当前分类项', value: `${metrics.currentItemCount} 个`, detail: currentType?.name || '尚未选择分类' },
+          { key: 'active-items', label: '当前启用项', value: `${metrics.activeCurrentItemCount} 个`, detail: '按状态统计', tone: 'success' },
+        ]}
+      />
+
+      <Card className="dictionary-page__card" title="字典分类">
+        <FilterBar actions={hasTypeFilters ? <Button type="text" onClick={() => setTypeFilters({ ...EMPTY_DICTIONARY_FILTERS })}>重置筛选</Button> : undefined}>
+          <Input className="dictionary-page__keyword" prefix={<IconSearch />} placeholder="搜索分类编码、名称或描述" value={typeFilters.keyword} onChange={keyword => setTypeFilters(current => ({ ...current, keyword }))} allowClear />
+          <Select className="dictionary-page__status" value={typeFilters.status} onChange={status => setTypeFilters(current => ({ ...current, status: status as DictionaryFilterStatus }))}>
+            <Select.Option value="全部">全部状态</Select.Option>
+            <Select.Option value="启用">启用</Select.Option>
+            <Select.Option value="禁用">禁用</Select.Option>
+          </Select>
+        </FilterBar>
+        <div className="dictionary-page__result-summary">
+          <Text type="secondary">共 {filteredTypes.length} 个分类</Text>
+          {hasTypeFilters && <Text type="secondary">已按当前条件筛选</Text>}
+        </div>
+        {filteredTypes.length === 0 ? (
+          <div className="dictionary-page__empty">
+            <Empty description={dictionaryTypes.length === 0 ? '暂无字典分类' : '没有符合当前条件的字典分类'} />
+            {hasTypeFilters && <Button onClick={() => setTypeFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button>}
+          </div>
+        ) : (
+          <Table rowKey="id" columns={typeColumns} data={filteredTypes} scroll={{ x: 980 }} pagination={{ pageSize: 10, total: filteredTypes.length, showTotal: true, sizeCanChange: true }} rowClassName={record => record.id === selectedTypeId ? 'dictionary-page__selected-row' : ''} />
+        )}
+      </Card>
+
+      <Card className="dictionary-page__card" title={currentType ? `字典项 · ${currentType.name}` : '字典项'} extra={<Button type="primary" icon={<IconPlus />} disabled={!currentType} onClick={handleAddItem}>新建字典项</Button>}>
+        <FilterBar actions={hasItemFilters ? <Button type="text" onClick={() => setItemFilters({ ...EMPTY_DICTIONARY_FILTERS })}>重置筛选</Button> : undefined}>
+          <Input className="dictionary-page__keyword" prefix={<IconSearch />} placeholder="搜索标签名称、标签值或备注" value={itemFilters.keyword} onChange={keyword => setItemFilters(current => ({ ...current, keyword }))} allowClear disabled={!currentType} />
+          <Select className="dictionary-page__status" value={itemFilters.status} onChange={status => setItemFilters(current => ({ ...current, status: status as DictionaryFilterStatus }))} disabled={!currentType}>
+            <Select.Option value="全部">全部状态</Select.Option>
+            <Select.Option value="启用">启用</Select.Option>
+            <Select.Option value="禁用">禁用</Select.Option>
+          </Select>
+        </FilterBar>
+        <div className="dictionary-page__result-summary">
+          <Text type="secondary">共 {filteredItems.length} 个字典项</Text>
+          {hasItemFilters && <Text type="secondary">已按当前条件筛选</Text>}
+        </div>
+        {!currentType || filteredItems.length === 0 ? (
+          <div className="dictionary-page__empty">
+            <Empty description={!currentType ? '请先新建并选择字典分类' : currentItems.length === 0 ? '当前分类暂无字典项' : '没有符合当前条件的字典项'} />
+            {currentType && hasItemFilters && <Button onClick={() => setItemFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button>}
+          </div>
+        ) : (
+          <Table rowKey="id" columns={itemColumns} data={filteredItems} scroll={{ x: 820 }} pagination={{ pageSize: 10, total: filteredItems.length, showTotal: true, sizeCanChange: true }} />
+        )}
+      </Card>
+
+      <Modal title={editingType ? '编辑字典分类' : '新建字典分类'} visible={typeModalVisible} onOk={handleTypeSubmit} onCancel={() => setTypeModalVisible(false)} autoFocus={false} focusLock>
         <Form form={typeForm} layout="vertical">
-          <FormItem label="字典编码" field="code" rules={[{ required: true, message: '请输入字典编码' }]}>
-            <Input placeholder="请输入字典编码,如:customer_source" />
-          </FormItem>
-          <FormItem label="字典名称" field="name" rules={[{ required: true, message: '请输入字典名称' }]}>
-            <Input placeholder="请输入字典名称" />
-          </FormItem>
-          <FormItem label="描述" field="description">
-            <Input.TextArea placeholder="请输入描述" rows={3} />
-          </FormItem>
-          <FormItem label="状态" field="status" initialValue="启用">
-            <Select placeholder="请选择状态">
-              <Select.Option value="启用">启用</Select.Option>
-              <Select.Option value="禁用">禁用</Select.Option>
-            </Select>
-          </FormItem>
+          <FormItem label="字典编码" field="code" rules={[{ required: true, message: '请输入字典编码' }]}><Input placeholder="请输入字典编码，如 customer_source" /></FormItem>
+          <FormItem label="字典名称" field="name" rules={[{ required: true, message: '请输入字典名称' }]}><Input placeholder="请输入字典名称" /></FormItem>
+          <FormItem label="描述" field="description"><Input.TextArea placeholder="请输入描述" rows={3} /></FormItem>
+          <FormItem label="状态" field="status"><Select placeholder="请选择状态"><Select.Option value="启用">启用</Select.Option><Select.Option value="禁用">禁用</Select.Option></Select></FormItem>
         </Form>
       </Modal>
 
-      {/* 字典项编辑弹窗 */}
-      <Modal
-        title={editingItem ? '编辑字典项' : '新建字典项'}
-        visible={itemModalVisible}
-        onOk={handleItemSubmit}
-        onCancel={() => setItemModalVisible(false)}
-        autoFocus={false}
-        focusLock={true}
-      >
+      <Modal title={editingItem ? '编辑字典项' : '新建字典项'} visible={itemModalVisible} onOk={handleItemSubmit} onCancel={() => setItemModalVisible(false)} autoFocus={false} focusLock>
         <Form form={itemForm} layout="vertical">
-          <FormItem label="标签名称" field="label" rules={[{ required: true, message: '请输入标签名称' }]}>
-            <Input placeholder="请输入标签名称" />
-          </FormItem>
-          <FormItem label="标签值" field="value" rules={[{ required: true, message: '请输入标签值' }]}>
-            <Input placeholder="请输入标签值,如:baidu" />
-          </FormItem>
-          <FormItem label="排序" field="sort" initialValue={1}>
-            <InputNumber placeholder="请输入排序" min={1} style={{ width: '100%' }} />
-          </FormItem>
-          <FormItem label="备注" field="remark">
-            <Input.TextArea placeholder="请输入备注" rows={3} />
-          </FormItem>
-          <FormItem label="状态" field="status" initialValue="启用">
-            <Select placeholder="请选择状态">
-              <Select.Option value="启用">启用</Select.Option>
-              <Select.Option value="禁用">禁用</Select.Option>
-            </Select>
-          </FormItem>
+          <FormItem label="标签名称" field="label" rules={[{ required: true, message: '请输入标签名称' }]}><Input placeholder="请输入标签名称" /></FormItem>
+          <FormItem label="标签值" field="value" rules={[{ required: true, message: '请输入标签值' }]}><Input placeholder="请输入标签值，如 baidu" /></FormItem>
+          <FormItem label="排序" field="sort" rules={[{ required: true, message: '请输入排序' }]}><InputNumber placeholder="请输入排序" min={1} className="dictionary-page__form-number" /></FormItem>
+          <FormItem label="备注" field="remark"><Input.TextArea placeholder="请输入备注" rows={3} /></FormItem>
+          <FormItem label="状态" field="status"><Select placeholder="请选择状态"><Select.Option value="启用">启用</Select.Option><Select.Option value="禁用">禁用</Select.Option></Select></FormItem>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

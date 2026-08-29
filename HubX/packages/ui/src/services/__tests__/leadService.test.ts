@@ -120,6 +120,23 @@ describe('createMockLeadService 种子与流转', () => {
     expect(all.some((l) => l.id === MY_LEADS[0].id)).toBe(true);
   });
 
+  it('mock 新建线索保留附件，并可从详情读取', async () => {
+    const svc = createMockLeadService();
+    const attachment = { id: 'att-create', name: '需求说明.pdf', url: '/files/需求说明.pdf', size: 2048, type: 'application/pdf' };
+    const id = await svc.createLead({
+      name: '带附件线索',
+      contact: '李总',
+      phone: '13900139000',
+      source: 'baidu',
+      entity: '中科软齐',
+      initialRequirement: '需要开发管理系统',
+      attachments: [attachment],
+    });
+
+    expect((await svc.list()).find((lead) => lead.id === id)?.attachments).toEqual([attachment]);
+    expect((await svc.getDetailInfo(id))?.attachments).toEqual([attachment]);
+  });
+
   it('mock 认领：公海线索归属当前用户并改池子', async () => {
     const svc = createMockLeadService();
     await svc.claimLead(PUBLIC_LEADS[0].id, '张三');
@@ -144,8 +161,141 @@ describe('createMockLeadService 种子与流转', () => {
     expect(back?.clueType).toBe('trash');
   });
 
+  it('mock 软删除后从普通线索列表隐藏', async () => {
+    const svc = createMockLeadService();
+    const target = MY_LEADS[0];
+
+    await svc.softDelete(target.id);
+
+    expect((await svc.list()).some((lead) => lead.id === target.id)).toBe(false);
+  });
+
   it('seedFallback 选择公海种子（getLeadDetailInfo 未命中时兜底）', () => {
     const fb = seedFallback('5940');
     expect(fb).not.toBeNull();
+  });
+});
+
+describe('派发域（β 阶段 2）http：走专门端点，事件服务端生成', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('dispatchLead 调 POST /api/leads/:id/dispatch，带 target/assignee 与 X-Actor', async () => {
+    const calls: Call[] = [];
+    global.fetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      calls.push({ method: init?.method ?? 'GET', url: u, body: init?.body ? JSON.parse(String(init.body)) : undefined, headers: init?.headers as Record<string, string> });
+      if (u.endsWith('/api/leads/5940/dispatch')) return jsonResponse(200, { ok: true });
+      throw new Error(`unexpected url: ${u}`);
+    }) as unknown as typeof fetch;
+
+    const svc = createHttpLeadService('http://x', { actor: '张三' });
+    await svc.dispatchLead('5940', { target: 'sales', assignee: '李四' }, '张三');
+    const call = calls[0];
+    expect(call.method).toBe('POST');
+    expect(call.url).toContain('/api/leads/5940/dispatch');
+    expect(call.body).toMatchObject({ target: 'sales', assignee: '李四' });
+    expect(call.headers?.['X-Actor']).toBe('张三');
+  });
+
+  it('urgeLead / adjustLevel / confirmQuality 分别调对应端点', async () => {
+    const urls: string[] = [];
+    global.fetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      urls.push(`${init?.method ?? 'GET'} ${u}`);
+      return jsonResponse(200, { ok: true });
+    }) as unknown as typeof fetch;
+
+    const svc = createHttpLeadService('http://x', { actor: '张三' });
+    await svc.urgeLead('5940', '张三', '催办->李四');
+    await svc.adjustLevel('5940', 'A', 'S', '张三');
+    await svc.confirmQuality('5940', '管理员', '质检确认：3 人退回');
+    expect(urls).toEqual([
+      'POST http://x/api/leads/5940/urge',
+      'POST http://x/api/leads/5940/level-change',
+      'POST http://x/api/leads/5940/level-audit',
+    ]);
+  });
+
+  it('getDetailInfo 优先取服务端 detail 接口', async () => {
+    global.fetch = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.endsWith('/api/leads/5940')) return jsonResponse(200, { lead: makeLead() });
+      if (u.endsWith('/api/leads/5940/detail')) {
+        return jsonResponse(200, { detail: { name: '服务端组装详情', tags: [] } });
+      }
+      throw new Error(`unexpected url: ${u}`);
+    }) as unknown as typeof fetch;
+
+    const svc = createHttpLeadService('http://x');
+    const detail = await svc.getDetailInfo('5940');
+    expect(detail?.name).toBe('服务端组装详情');
+  });
+
+  it('detail 接口不可用时，本地按列表字段组装兜底（迁移线索不 404 白屏）', async () => {
+    global.fetch = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.endsWith('/api/leads/5940')) return jsonResponse(200, { lead: makeLead() });
+      if (u.endsWith('/api/leads/5940/detail')) return jsonResponse(404, { error: 'not found' });
+      throw new Error(`unexpected url: ${u}`);
+    }) as unknown as typeof fetch;
+
+    const svc = createHttpLeadService('http://x');
+    const detail = await svc.getDetailInfo('5940');
+    expect(detail?.name).toBe('测试线索');
+    expect(detail?.owner).toBe('阎杨');
+    expect(detail?.requirement).toBe('');
+  });
+});
+
+describe('createMockLeadService 派发域（与 Workers 端点同口径）', () => {
+  it('dispatchLead sales：assigned + owner + dispatchedAt + 事件 + 流转记录', async () => {
+    const svc = createMockLeadService();
+    const target = PUBLIC_LEADS[0];
+    await svc.dispatchLead(target.id, { target: 'sales', assignee: '李四' }, '张三');
+    const all = await svc.list();
+    const lead = all.find((l) => l.id === target.id);
+    expect(lead?.clueType).toBe('assigned');
+    expect(lead?.owner).toBe('李四');
+    expect(lead?.dispatchTarget).toBe('sales');
+    expect(lead?.dispatchedAt).toBeTruthy();
+    expect(lead?.leadEvents?.some((e) => e.kind === 'dispatch_to_sales' && e.assignee === '李四')).toBe(true);
+    const transfers = await svc.getTransferRecords(target.id);
+    expect(transfers.some((t) => t.toOwner === '李四')).toBe(true);
+  });
+
+  it('dispatchLead pool：回公海、清空 owner', async () => {
+    const svc = createMockLeadService();
+    const target = MY_LEADS[0];
+    await svc.dispatchLead(target.id, { target: 'pool' }, '张三');
+    const all = await svc.list();
+    const lead = all.find((l) => l.id === target.id);
+    expect(lead?.clueType).toBe('public');
+    expect(lead?.owner).toBe('');
+    expect(lead?.leadEvents?.some((e) => e.kind === 'dispatch_to_pool')).toBe(true);
+  });
+
+  it('adjustLevel 升级直接生效；降级只写事件不动 customerLevel', async () => {
+    const svc = createMockLeadService();
+    const target = MY_LEADS[0];
+    await svc.adjustLevel(target.id, 'C', 'A', '张三'); // 升级
+    let lead = (await svc.list()).find((l) => l.id === target.id);
+    expect(lead?.customerLevel).toBe('A');
+
+    await svc.adjustLevel(target.id, 'A', 'C', '张三'); // 降级
+    lead = (await svc.list()).find((l) => l.id === target.id);
+    expect(lead?.customerLevel).toBe('A'); // 降级待审核，等级不变
+    expect(lead?.leadEvents?.some((e) => e.kind === 'level_change' && e.levelTo === 'C')).toBe(true);
+  });
+
+  it('urgeLead / confirmQuality 追加对应事件', async () => {
+    const svc = createMockLeadService();
+    const target = MY_LEADS[0];
+    await svc.urgeLead(target.id, '张三', '催办');
+    await svc.confirmQuality(target.id, '管理员', '质检确认：3 人退回');
+    const lead = (await svc.list()).find((l) => l.id === target.id);
+    expect(lead?.leadEvents?.some((e) => e.kind === 'urge')).toBe(true);
+    expect(lead?.leadEvents?.some((e) => e.kind === 'level_audit_result')).toBe(true);
   });
 });

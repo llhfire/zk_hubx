@@ -4,7 +4,7 @@ import { Message } from '@arco-design/web-react';
 vi.mock('@arco-design/web-react', () => ({ Message: { warning: vi.fn(), success: vi.fn(), error: vi.fn() } }));
 
 import { buildInitialContracts } from '@/app/pages/contracts/mockData';
-import { collectionsForProject, seedCollectionsFromContracts, sumReceived, registerMainPaymentDualWrite } from '../collectionMutations';
+import { collectionsForProject, seedCollectionsFromContracts, sumReceived, registerMainPaymentDualWrite, withCollectionLedger } from '../collectionMutations';
 import { createMockCollectionService, createHttpCollectionService } from '../collectionService';
 
 function jsonResponse(status: number, payload: unknown) {
@@ -24,6 +24,17 @@ describe('collectionMutations', () => {
     const of1 = collectionsForProject(seeded, { contractIds: ['1'] });
     expect(of1.length).toBeGreaterThan(0);
     expect(of1.every((r) => r.contractId === '1')).toBe(true);
+  });
+
+  it('合同金额读模型只使用独立实收台账', () => {
+    const contract = buildInitialContracts()[0];
+    const projected = withCollectionLedger(
+      { ...contract, receivedAmount: 999999, collectionRecords: [] },
+      [{ id: 'ledger-1', contractId: contract.id, amount: 1200, date: '2026-08-28', method: '银行汇款', note: '' }],
+    );
+    expect(projected.receivedAmount).toBe(1200);
+    expect(projected.receivableAmount).toBe(contract.current.totalAmount - 1200);
+    expect(projected.collectionRecords?.map((item) => item.id)).toEqual(['ledger-1']);
   });
 });
 
@@ -97,6 +108,14 @@ describe('createMockCollectionService', () => {
     expect(added).toMatch(/^col-/);
     const next = await svc.listByContract('1');
     expect(next.some((r) => r.id === added)).toBe(true);
+  });
+
+  it('精益交付 α 示例也从统一台账取得实收种子', async () => {
+    const svc = createMockCollectionService();
+    const records = await svc.listByContract('contract-001');
+
+    expect(records.map((record) => record.id)).toEqual(['fd-col-1', 'fd-col-2']);
+    expect(sumReceived(records)).toBe(102500);
   });
 });
 

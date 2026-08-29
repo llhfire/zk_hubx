@@ -38,6 +38,8 @@ import {
   mockOtherCosts,
 } from './contractCostData';
 import { useContracts } from '../contracts/ContractsContext';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { withCollectionLedger } from '@/services/collectionMutations';
 import { formatCurrency } from '../employee/mockData';
 import { getPaymentPlanPeriodLabel } from '../contracts/utils';
 
@@ -60,6 +62,7 @@ interface ProjectCostRow {
   totalHours: number;
   rdCost: number;
   opCost: number;
+  travelCost: number;
   businessCost: number;
   outsourceCost: number;
   otherCost: number;
@@ -75,6 +78,7 @@ export function ProjectCostAccounting() {
   const navigate = useNavigate();
   const location = useLocation();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const [activeTab, setActiveTab] = useState('overview');
   const [filterStatus, setFilterStatus] = useState('');
   const [detailRow, setDetailRow] = useState<ProjectCostRow | null>(null);
@@ -83,11 +87,16 @@ export function ProjectCostAccounting() {
     ? '费用核算'
     : '项目成本核算';
 
+  const financialContracts = useMemo(
+    () => contracts.map((contract) => withCollectionLedger(contract, collections)),
+    [contracts, collections],
+  );
+
   const projectCostData: ProjectCostRow[] = useMemo(() => {
     return initialProjects.map((project) => {
       const contractId = project.contractId || '';
       const contractName = contractNames[contractId] || '—';
-      const contractObj = contracts.find((c) => c.id === contractId);
+      const contractObj = financialContracts.find((c) => c.id === contractId);
       const contractAmount = contractObj?.current.totalAmount || 0;
       const receivedAmount = contractObj?.receivedAmount || 0;
 
@@ -99,8 +108,12 @@ export function ProjectCostAccounting() {
       const opDetails = contractId ? buildOpCostDetails(contractId, COST_MONTH) : [];
       const opCost = opDetails.reduce((s, d) => s + d.cost, 0);
 
-      const businessCost = mockBusinessCosts
-        .filter((b) => b.contractId === contractId)
+      const directCosts = mockBusinessCosts.filter((cost) => cost.contractId === contractId);
+      const travelCost = directCosts
+        .filter((cost) => cost.costCategory === 'travel')
+        .reduce((sum, cost) => sum + cost.amount, 0);
+      const businessCost = directCosts
+        .filter((cost) => cost.costCategory === 'commercial')
         .reduce((s, b) => s + b.amount, 0);
       const outsourceCost = mockOutsourceCosts
         .filter((b) => b.contractId === contractId)
@@ -109,7 +122,7 @@ export function ProjectCostAccounting() {
         .filter((b) => b.contractId === contractId)
         .reduce((s, b) => s + b.amount, 0);
 
-      const totalCost = rdCost + opCost + businessCost + outsourceCost + otherCost;
+      const totalCost = rdCost + opCost + travelCost + businessCost + outsourceCost + otherCost;
       const profit = contractAmount - totalCost;
       const profitMargin = contractAmount > 0 ? Math.round((profit / contractAmount) * 100) : 0;
 
@@ -130,6 +143,7 @@ export function ProjectCostAccounting() {
         totalHours,
         rdCost,
         opCost,
+        travelCost,
         businessCost,
         outsourceCost,
         otherCost,
@@ -139,7 +153,7 @@ export function ProjectCostAccounting() {
         budgetAlert,
       };
     });
-  }, [contracts]);
+  }, [financialContracts]);
 
   const summary = useMemo(() => {
     const total = projectCostData.reduce(
@@ -169,7 +183,7 @@ export function ProjectCostAccounting() {
   const statusOptions = Array.from(new Set(initialProjects.map((p) => p.status)));
 
   const detailContract = detailRow
-    ? contracts.find((c) => c.id === detailRow.contractId)
+    ? financialContracts.find((c) => c.id === detailRow.contractId)
     : undefined;
 
   const columns = [
@@ -203,7 +217,7 @@ export function ProjectCostAccounting() {
           搁置: 'var(--grey-300)',
           催款中: 'var(--warning-500)',
         };
-        return <Tag color={colors[s] || 'var(--grey-400)'}>{s}</Tag>;
+        return <Tag color={colors[s] || 'gray'}>{s}</Tag>;
       },
     },
     {
@@ -240,6 +254,18 @@ export function ProjectCostAccounting() {
     {
       title: '运营分摊',
       dataIndex: 'opCost',
+      width: 100,
+      render: (v: number) => formatCurrency(v),
+    },
+    {
+      title: '差旅成本',
+      dataIndex: 'travelCost',
+      width: 100,
+      render: (v: number) => formatCurrency(v),
+    },
+    {
+      title: '商务成本',
+      dataIndex: 'businessCost',
       width: 100,
       render: (v: number) => formatCurrency(v),
     },
@@ -430,7 +456,7 @@ function ProjectIncomeExpenseDetail({
 }) {
   const rdDetails = row.contractId ? buildRDCostDetails(row.contractId, COST_MONTH) : [];
   const opDetails = row.contractId ? buildOpCostDetails(row.contractId, COST_MONTH) : [];
-  const bizDetails = mockBusinessCosts.filter((b) => b.contractId === row.contractId);
+  const directDetails = mockBusinessCosts.filter((cost) => cost.contractId === row.contractId);
   const outsourceDetails = mockOutsourceCosts.filter((b) => b.contractId === row.contractId);
   const otherDetails = mockOtherCosts.filter((b) => b.contractId === row.contractId);
   const paymentPlans = contract?.current.paymentPlans ?? [];
@@ -449,8 +475,8 @@ function ProjectIncomeExpenseDetail({
       amount: d.cost,
       remark: `${d.hours}h`,
     })),
-    ...bizDetails.map((d) => ({
-      type: '商务成本',
+    ...directDetails.map((d) => ({
+      type: d.costCategory === 'travel' ? '差旅成本' : '商务成本',
       name: d.category,
       amount: d.amount,
       remark: d.description,

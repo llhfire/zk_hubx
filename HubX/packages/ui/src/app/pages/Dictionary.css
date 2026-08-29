@@ -1,0 +1,54 @@
+.dictionary-page__card > .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dictionary-page .dictionary-page__keyword {
+  width: 300px;
+  flex: 0 0 300px;
+}
+
+.dictionary-page .dictionary-page__status {
+  width: 140px;
+  flex: 0 0 140px;
+}
+
+.dictionary-page__result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dictionary-page__empty {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dictionary-page__selected-row > .arco-table-td {
+  background: rgb(var(--primary-1));
+}
+
+.dictionary-page__form-number {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .dictionary-page .dictionary-page__keyword,
+  .dictionary-page .dictionary-page__status,
+  .dictionary-page .hubx-filter-bar__fields,
+  .dictionary-page .hubx-filter-bar__fields > * {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .dictionary-page__result-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

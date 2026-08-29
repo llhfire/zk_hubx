@@ -17,6 +17,7 @@ export function buildSupplementQuote(input: {
   contractId: string;
   newId: string;
   newQuoteNo: string;
+  flowMode?: 'online' | 'file';
 }): Quote {
   return {
     ...input.sourceQuote,
@@ -24,9 +25,29 @@ export function buildSupplementQuote(input: {
     quoteNo: input.newQuoteNo,
     version: 'v1.0',
     status: 'draft',
+    flowMode: input.flowMode ?? 'online',
     contractId: input.contractId,
     isSupplement: true,
+    supplementChangeAmount: 0,
     previousQuoteId: input.sourceQuote.id,
+    featureList: [],
+    evalSheet: undefined,
+    salesAddedRoles: [],
+    travelOnsite: { enableTravel: false, travelSubtotal: 0, enableOnsite: false, onsiteSubtotal: 0, travelDetails: [], onsiteDetails: [] },
+    otherCosts: [],
+    summary: {
+      totalLaborDays: 0,
+      projectWorkDays: 0,
+      grandTotalPrice: 0,
+      paymentTerms: input.sourceQuote.summary?.paymentTerms.map((term) => ({ ...term, amount: 0 })) ?? [],
+      taxIncluded: input.sourceQuote.summary?.taxIncluded ?? true,
+      warrantyYears: input.sourceQuote.summary?.warrantyYears ?? 1,
+      invoiceType: input.sourceQuote.summary?.invoiceType ?? '专票',
+    },
+    auditNodes: input.sourceQuote.auditNodes.map((node) => ({ ...node, status: 'PENDING', auditTime: undefined, comment: undefined })),
+    stampNode: { ...input.sourceQuote.stampNode, status: 'LOCKED', stampTime: undefined },
+    sentAt: undefined,
+    fileFlow: { onlineDocument: { status: 'empty' }, scans: [] },
     timeline: [{
       id: 'tl-sup-1',
       action: 'create',

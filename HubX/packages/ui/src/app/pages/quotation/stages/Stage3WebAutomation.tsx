@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
-  Button, Card, Empty, Input, InputNumber, Message, Space, Switch, Table, Tag, Typography,
+  Alert, Button, Card, Empty, Input, InputNumber, Message, Select, Space, Switch, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import {
   IconPlus, IconDelete, IconSend, IconApps,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
-import { computeAmountBreakdown, sumEvalDaysByRole } from '../quoteFlow';
+import { computeAmountBreakdown, sumEvalDaysByRole, TECH_DAILY_RATE, validateBeforeAudit } from '../quoteFlow';
+import { addWorkdays, computeProfitRate, DEFAULT_MIN_PROFIT_RATE } from '../quotePricing';
 import { PLATFORM_OPTIONS } from '../types';
 import type { CostItem, EvalRole, SalesAddedRole, TravelOnsiteConfig } from '../types';
 
@@ -24,13 +25,13 @@ function uid(prefix: string): string {
 // ─── 主组件 ─────────────────────────────────────────────
 
 export function Stage3WebAutomation({ quote, readonly }: StageProps) {
-  const { updateQuote, submitForAudit } = useQuotation();
+  const { updateQuote, submitForAudit, isLeadFrozen } = useQuotation();
+  const leadFrozen = isLeadFrozen(quote.id);
 
   // 从工作台一和工作台二获取的数据（只读展示）
   const endpointConfigs = quote.endpointConfigs || [];
   const featureList = quote.featureList;
   const evalSheet = quote.evalSheet;
-  const breakdown = useMemo(() => computeAmountBreakdown(quote), [quote]);
   const roleTotals = useMemo(() => sumEvalDaysByRole(evalSheet), [evalSheet]);
 
   // 本地状态 - 兼容旧数据格式
@@ -46,9 +47,10 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   const [salesAddedRoles, setSalesAddedRoles] = useState<SalesAddedRole[]>(quote.salesAddedRoles);
   // 岗位日均成本：key -> 成本
   const [roleDailyCosts, setRoleDailyCosts] = useState<Record<string, number>>(() => {
-    const costs: Record<string, number> = {};
-    const dailyCost = breakdown.techDays > 0 ? breakdown.techLaborCost / breakdown.techDays : 800;
-    evalSheet?.activeRoles.forEach((r) => { costs[r.key] = dailyCost; });
+    const costs: Record<string, number> = { ...(quote.roleDailyCosts ?? {}) };
+    evalSheet?.activeRoles.forEach((r) => {
+      if (costs[r.key] == null) costs[r.key] = TECH_DAILY_RATE;
+    });
     return costs;
   });
   const [editingCostKey, setEditingCostKey] = useState<string | null>(null);
@@ -58,19 +60,34 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     if (!evalSheet) return 0;
     return evalSheet.evaluationUnits.reduce((s, u) => s + u.totalDays, 0);
   }, [evalSheet]);
-  const grandTotalCost = useMemo(() => {
-    if (!evalSheet) return 0;
-    return evalSheet.evaluationUnits.reduce((s, u) => {
-      let cost = 0;
-      evalSheet.activeRoles.forEach((r) => {
-        cost += (u.manualWorkload[r.key] ?? 0) * (roleDailyCosts[r.key] ?? 0);
-      });
-      return s + cost;
-    }, 0);
-  }, [evalSheet, roleDailyCosts]);
+  const workingQuote = useMemo(() => ({
+    ...quote,
+    roleDailyCosts,
+    salesAddedRoles,
+    travelOnsite,
+    otherCosts,
+  }), [quote, roleDailyCosts, salesAddedRoles, travelOnsite, otherCosts]);
+  const breakdown = useMemo(() => computeAmountBreakdown(workingQuote), [workingQuote]);
+  const profitRate = useMemo(() => computeProfitRate({
+    grandTotal: breakdown.grandTotal,
+    upliftTotal: breakdown.addedCost,
+    roleCostTotal: breakdown.techLaborCost,
+  }), [breakdown]);
+  const validationIssues = useMemo(() => validateBeforeAudit(workingQuote), [workingQuote]);
+  const blockingIssues = validationIssues.filter((issue) => issue.severity === 'error');
+  const warningIssues = validationIssues.filter((issue) => issue.severity === 'warning');
+  const expectedEndDate = evalSheet?.manualWorkDays
+    ? addWorkdays(new Date().toISOString().slice(0, 10), evalSheet.manualWorkDays)
+    : null;
 
   const persist = (patch: Partial<typeof quote>) => {
     updateQuote(quote.id, (q) => ({ ...q, ...patch }));
+  };
+
+  const updateRoleDailyCost = (roleKey: string, value: number) => {
+    const next = { ...roleDailyCosts, [roleKey]: value };
+    setRoleDailyCosts(next);
+    persist({ roleDailyCosts: next });
   };
 
   // ─── 出差配置 ─────────────────────────────────────────
@@ -168,9 +185,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
   // ─── 提交审批 ─────────────────────────────────────────
 
-  const handleSubmit = () => {
-    submitForAudit(quote.id);
-    Message.success('报价已提交审批');
+  const handleSubmit = async () => {
+    try {
+      await submitForAudit(quote.id);
+      Message.success('报价已提交审批');
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '提交审批失败');
+    }
   };
 
   // ─── 渲染 ─────────────────────────────────────────────
@@ -210,7 +231,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                               size="mini"
                               min={0}
                               value={roleDailyCosts[r.key]}
-                              onChange={(v) => setRoleDailyCosts((prev) => ({ ...prev, [r.key]: v || 0 }))}
+                              onChange={(v) => updateRoleDailyCost(r.key, v || 0)}
                               onBlur={() => setEditingCostKey(null)}
                               onPressEnter={() => setEditingCostKey(null)}
                               style={{ width: 70 }}
@@ -285,11 +306,11 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                             )}
                             <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
                             {evalSheet.activeRoles.map((r: EvalRole, ri) => (
-                              <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: 'monospace' }}>
+                              <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
                                 {roleDays[ri] > 0 ? roleDays[ri].toFixed(1) : '-'}
                               </td>
                             ))}
-                            <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 500 }}>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
                               {totalDays > 0 ? totalDays.toFixed(1) : '-'}
                             </td>
                           </tr>
@@ -308,12 +329,12 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                         <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)', whiteSpace: 'nowrap' }}>合计</td>
                         <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)' }} colSpan={2} />
                         {roleTotalsData.map((rt, ri) => (
-                          <td key={ri} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: 'monospace', fontSize: 11 }}>
+                          <td key={ri} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 11 }}>
                             <div>{rt.days.toFixed(1)}</div>
                             <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>{money(rt.cost)}</div>
                           </td>
                         ))}
-                        <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: 'monospace' }}>{grandTotalDays.toFixed(1)}</td>
+                        <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{grandTotalDays.toFixed(1)}</td>
                       </tr>
                     );
                     // 添加总金额行
@@ -339,7 +360,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
         <Card size="small" title="销售增项岗位">
           {salesAddedRoles.map((role) => (
             <div key={role.id} style={{ padding: 12, border: '1px dashed var(--color-border-2)', borderRadius: 6, marginBottom: 12, background: 'var(--color-fill-1)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 120px 100px 40px', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(220px, 1.4fr) 80px 80px 120px 100px 40px', gap: 12, alignItems: 'end' }}>
                 <div>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>岗位名称</Text>
                   <Input
@@ -352,6 +373,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     placeholder="如：PMO、驻场运维"
                     disabled={readonly}
                   />
+                </div>
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>增项事由</Text>
+                  <Input value={role.reason} onChange={(v) => {
+                    const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, reason: v } : r));
+                    setSalesAddedRoles(next); persist({ salesAddedRoles: next });
+                  }} placeholder="客户要求每周现场汇报" disabled={readonly} />
                 </div>
                 <div>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>人数</Text>
@@ -409,17 +437,6 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   )}
                 </div>
               </div>
-              <Input
-                value={role.reason}
-                onChange={(v) => {
-                  const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, reason: v } : r));
-                  setSalesAddedRoles(next);
-                  persist({ salesAddedRoles: next });
-                }}
-                placeholder="增项事由，如：客户要求每周现场汇报"
-                style={{ marginTop: 8 }}
-                disabled={readonly}
-              />
             </div>
           ))}
           {/* 添加按钮 + 小计 */}
@@ -584,6 +601,40 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
         {/* 第六部分：报价汇总 */}
         <Card size="small" title="报价汇总">
+          <Space wrap style={{ marginBottom: 16 }}>
+            <Text type="secondary">发票类型</Text>
+            <Select
+              size="small"
+              style={{ width: 120 }}
+              value={quote.summary?.invoiceType ?? '专票'}
+              disabled={readonly}
+              options={[{ label: '增值税专票', value: '专票' }, { label: '增值税普票', value: '普票' }]}
+              onChange={(invoiceType) => persist({
+                summary: {
+                  totalLaborDays: breakdown.totalLaborDays,
+                  projectWorkDays: evalSheet?.manualWorkDays ?? 0,
+                  grandTotalPrice: breakdown.grandTotal,
+                  paymentTerms: quote.summary?.paymentTerms ?? [],
+                  taxIncluded: quote.summary?.taxIncluded ?? true,
+                  warrantyYears: quote.summary?.warrantyYears ?? 1,
+                  invoiceType,
+                },
+              })}
+            />
+            <Tag color="arcoblue">含税人民币</Tag>
+            <Tag>质保 {quote.summary?.warrantyYears ?? 1} 年</Tag>
+          </Space>
+          {quote.isSupplement && (
+            <Space wrap style={{ marginBottom: 16 }}>
+              <Text type="secondary">本次变更金额（可为负）</Text>
+              <InputNumber
+                value={quote.supplementChangeAmount ?? 0}
+                disabled={readonly}
+                onChange={(value) => persist({ supplementChangeAmount: typeof value === 'number' ? value : 0 })}
+              />
+              <Text type="secondary">负数表示合同减额</Text>
+            </Space>
+          )}
           {/* 项目综述 */}
           <div style={{ marginBottom: 16 }}>
             <Text bold style={{ display: 'block', marginBottom: 8 }}>项目综述</Text>
@@ -595,6 +646,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>项目工期</Text>
                 <div style={{ fontWeight: 600, marginTop: 4 }}>{evalSheet?.manualWorkDays || '-'} 工作日</div>
+                {expectedEndDate && <Text type="secondary" style={{ fontSize: 11 }}>预计 {expectedEndDate} 完成</Text>}
               </div>
               <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
                 <Text type="secondary" style={{ fontSize: 12 }}>开发人天</Text>
@@ -602,7 +654,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               </div>
               <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--color-primary-6), #4F46E5)', borderRadius: 8, color: 'white' }}>
                 <Text type="secondary" style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>项目总价</Text>
-                <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: 'monospace' }}>{money(grandTotalCost)}</div>
+                <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.grandTotal)}</div>
               </div>
             </div>
           </div>
@@ -613,50 +665,63 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             <thead>
               <tr style={{ background: 'var(--color-fill-1)' }}>
                 <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>费用项</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
                 <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>说明</th>
+                <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
               </tr>
             </thead>
             <tbody>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                 <td style={{ padding: '8px 12px', fontWeight: 500 }}>技术人力成本</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.techLaborCost)}</td>
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{evalSheet?.activeRoles.length || 0} 个岗位 × {breakdown.techDays.toFixed(1)} 人天</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.techLaborCost)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                 <td style={{ padding: '8px 12px', fontWeight: 500 }}>销售增项成本</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.addedCost)}</td>
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{salesAddedRoles.length > 0 ? salesAddedRoles.map((r) => r.roleName || '未命名').join('、') : '无增项'}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.addedCost)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                 <td style={{ padding: '8px 12px', fontWeight: 500 }}>差旅费用</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.travelSubtotal)}</td>
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableTravel ? `${travelOnsite.travelDetails.length} 个出差地点` : '未开启'}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.travelSubtotal)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                 <td style={{ padding: '8px 12px', fontWeight: 500 }}>驻场费用</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.onsiteSubtotal)}</td>
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableOnsite ? `${travelOnsite.onsiteDetails.length} 个驻场地点` : '未开启'}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.onsiteSubtotal)}</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                 <td style={{ padding: '8px 12px', fontWeight: 500 }}>自费项目（不计入报价）</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{money(breakdown.selfPaidSubtotal)}</td>
                 <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{otherCosts.length > 0 ? otherCosts.map((c) => c.name || '未命名').join('、') : '无自费项目'}</td>
+                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.selfPaidSubtotal)}</td>
               </tr>
               {/* 合计行 */}
               <tr style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
                 <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }}>合计</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: 'monospace', fontSize: 16, color: 'var(--color-danger-6)' }}>{money(grandTotalCost)}</td>
                 <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }} />
+                <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 14, color: 'var(--color-danger-6)' }}>{money(breakdown.grandTotal)}</td>
               </tr>
             </tbody>
           </table>
+          <div style={{ marginTop: 12 }}>
+            <Tag color={profitRate != null && profitRate >= DEFAULT_MIN_PROFIT_RATE ? 'green' : 'orange'}>
+              开发人力毛利率：{profitRate == null ? '无法计算' : `${(profitRate * 100).toFixed(1)}%`}
+            </Tag>
+            <Text type="secondary" style={{ marginLeft: 8 }}>底线 {(DEFAULT_MIN_PROFIT_RATE * 100).toFixed(0)}%</Text>
+          </div>
         </Card>
+
+        {blockingIssues.length > 0 && (
+          <Alert type="error" title="提交条件未满足" content={blockingIssues.map((issue) => issue.message).join('；')} />
+        )}
+        {warningIssues.length > 0 && (
+          <Alert type="warning" title="请确认以下数字" content={`${warningIssues.map((issue) => issue.message).join('；')}。黄灯项不阻止提交。`} />
+        )}
 
         {/* 提交按钮 */}
         {!readonly && (
           <div style={{ textAlign: 'right' }}>
-            <Button type="primary" icon={<IconSend />} onClick={handleSubmit}>提交审批</Button>
+            <Button type="primary" icon={<IconSend />} disabled={leadFrozen || blockingIssues.length > 0} onClick={handleSubmit}>提交审批</Button>
           </div>
         )}
       </Space>

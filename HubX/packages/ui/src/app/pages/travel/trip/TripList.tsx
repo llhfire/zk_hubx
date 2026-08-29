@@ -11,16 +11,18 @@ import {
   Message,
   Space,
   Typography,
+  Tooltip,
 } from '@arco-design/web-react';
 import {
   IconSearch,
   IconPlus,
   IconLocation,
   IconCalendar,
-  IconStorage,
 } from '@arco-design/web-react/icon';
+import { CheckCircle, Eye, PaperPlaneTilt, Play, Stop, Trash } from '@phosphor-icons/react';
 import type { Trip, TripStatus } from '../types';
 import { getTripList, submitTrip, approveTrip, startTrip, endTrip, deleteTrip } from '../travel-api';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -55,14 +57,14 @@ export function TripList() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   // 加载数据
-  const loadTrips = async () => {
+  const loadTrips = async (filters = searchForm) => {
     setLoading(true);
     try {
       const result = await getTripList({
-        keyword: searchForm.keyword || undefined,
-        status: (searchForm.status as TripStatus) || undefined,
-        startDate: searchForm.startDate || undefined,
-        endDate: searchForm.endDate || undefined,
+        keyword: filters.keyword || undefined,
+        status: (filters.status as TripStatus) || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
       });
       setTripList(result.list);
       setTotal(result.total);
@@ -84,8 +86,9 @@ export function TripList() {
 
   // 重置
   const handleReset = () => {
-    setSearchForm({ keyword: '', status: '', startDate: '', endDate: '' });
-    loadTrips();
+    const emptyFilters = { keyword: '', status: '' as TripStatus | '', startDate: '', endDate: '' };
+    setSearchForm(emptyFilters);
+    loadTrips(emptyFilters);
   };
 
   // 新建出差申请
@@ -171,58 +174,60 @@ export function TripList() {
 
     // 查看详情（始终显示）
     actions.push(
-      <Button key="view" type="text" size="small" onClick={() => handleViewDetail(record)}>
-        查看详情
-      </Button>
+      <Tooltip key="view" content="查看详情">
+        <Button className="hubx-icon-action" type="text" size="small" aria-label={`查看出差单${record.tripNo}`} icon={<Eye size={18} />} onClick={() => handleViewDetail(record)} />
+      </Tooltip>
     );
 
     // 草稿状态
     if (record.status === 'draft') {
       actions.push(
-        <Button key="submit" type="text" size="small" onClick={() => handleSubmit(record)}>
-          提交
-        </Button>
+        <Tooltip key="submit" content="提交">
+          <Button className="hubx-icon-action" type="text" size="small" aria-label={`提交出差单${record.tripNo}`} icon={<PaperPlaneTilt size={18} />} onClick={() => handleSubmit(record)} />
+        </Tooltip>
       );
       actions.push(
-        <Button key="delete" type="text" size="small" status="danger" onClick={() => handleDelete(record)}>
-          删除
-        </Button>
+        <Tooltip key="delete" content="删除">
+          <Button className="hubx-icon-action" type="text" size="small" status="danger" aria-label={`删除出差单${record.tripNo}`} icon={<Trash size={18} />} onClick={() => handleDelete(record)} />
+        </Tooltip>
       );
     }
 
     // 待审批状态（管理员/审批人视角）
     if (record.status === 'pending') {
       actions.push(
-        <Button
-          key="approve"
-          type="text"
-          size="small"
-          onClick={() => {
-            setSelectedTrip(record);
-            setApprovalAction('approve');
-            setApprovalVisible(true);
-          }}
-        >
-          审批
-        </Button>
+        <Tooltip key="approve" content="审批">
+          <Button
+            type="text"
+            size="small"
+            className="hubx-icon-action"
+            aria-label={`审批出差单${record.tripNo}`}
+            icon={<CheckCircle size={18} />}
+            onClick={() => {
+              setSelectedTrip(record);
+              setApprovalAction('approve');
+              setApprovalVisible(true);
+            }}
+          />
+        </Tooltip>
       );
     }
 
     // 已通过状态
     if (record.status === 'approved') {
       actions.push(
-        <Button key="start" type="text" size="small" onClick={() => handleStartTrip(record)}>
-          开始出差
-        </Button>
+        <Tooltip key="start" content="开始出差">
+          <Button className="hubx-icon-action" type="text" size="small" aria-label={`开始出差单${record.tripNo}`} icon={<Play size={18} />} onClick={() => handleStartTrip(record)} />
+        </Tooltip>
       );
     }
 
     // 进行中状态
     if (record.status === 'in_progress') {
       actions.push(
-        <Button key="end" type="text" size="small" onClick={() => handleEndTrip(record)}>
-          结束出差
-        </Button>
+        <Tooltip key="end" content="结束出差">
+          <Button className="hubx-icon-action" type="text" size="small" aria-label={`结束出差单${record.tripNo}`} icon={<Stop size={18} />} onClick={() => handleEndTrip(record)} />
+        </Tooltip>
       );
     }
 
@@ -252,7 +257,7 @@ export function TripList() {
       width: 150,
       render: (value: string[]) => (
         <Space size={4}>
-          <IconLocation style={{ color: '#86909c' }} />
+          <IconLocation style={{ color: 'var(--color-text-3)' }} />
           <span>{value?.join('、')}</span>
         </Space>
       ),
@@ -262,8 +267,8 @@ export function TripList() {
       dataIndex: 'startDate',
       width: 120,
       render: (value: string) => (
-        <Space size={4}>
-          <IconCalendar style={{ color: '#86909c' }} />
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
+          <IconCalendar style={{ color: 'var(--color-text-3)' }} />
           <span>{value}</span>
         </Space>
       ),
@@ -296,10 +301,7 @@ export function TripList() {
       dataIndex: 'estimatedTotalCost',
       width: 120,
       render: (value: number) => (
-        <Space size={4}>
-          <IconStorage style={{ color: '#86909c' }} />
-          <span>¥{value?.toLocaleString()}</span>
-        </Space>
+        <span style={{ whiteSpace: 'nowrap' }}>¥{value?.toLocaleString()}</span>
       ),
     },
     {
@@ -314,17 +316,37 @@ export function TripList() {
     },
     {
       title: '操作',
-      width: 200,
+      width: 112,
       fixed: 'right' as const,
       render: renderActions,
     },
   ];
 
+  const filtersActive = Boolean(searchForm.keyword || searchForm.status || searchForm.startDate || searchForm.endDate);
+  const pendingCount = tripList.filter((item) => item.status === 'pending').length;
+  const approvedCount = tripList.filter((item) => item.status === 'approved').length;
+  const activeCount = tripList.filter((item) => item.status === 'in_progress').length;
+  const reimburseCount = tripList.filter((item) => item.status === 'to_reimburse').length;
+  const estimatedAmount = tripList.reduce((sum, item) => sum + (item.estimatedTotalCost || 0), 0);
+
   return (
-    <div style={{ padding: '16px' }}>
+    <PageShell>
+      <PageHeader
+        title="出差申请"
+        description="集中查询出差计划、审批进度、执行状态与预计费用。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleCreate}>新建出差申请</Button>}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '出差申请', value: `${total} 单`, detail: filtersActive ? '当前查询结果' : '全部出差单' },
+        { key: 'pending', label: '待审批', value: `${pendingCount} 单`, detail: '等待审批人处理', tone: pendingCount > 0 ? 'warning' : 'success' },
+        { key: 'active', label: '执行中', value: `${activeCount} 单`, detail: `待出发 ${approvedCount} 单`, tone: activeCount > 0 ? 'success' : 'neutral' },
+        { key: 'amount', label: '预计费用', value: `¥${estimatedAmount.toLocaleString()}`, detail: `待报销 ${reimburseCount} 单` },
+      ]} />
+
       {/* 搜索栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
+      <Card>
+        <FilterBar actions={filtersActive ? <Button type="text" onClick={handleReset}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {total} 条</span>}>
           <Input
             style={{ width: 200 }}
             placeholder="搜索出差单号/申请人/目的地"
@@ -361,27 +383,17 @@ export function TripList() {
           <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>
             搜索
           </Button>
-          <Button onClick={handleReset}>
-            重置
-          </Button>
-        </Space>
+        </FilterBar>
       </Card>
 
       {/* 列表 */}
-      <Card
-        title="出差申请列表"
-        extra={
-          <Button type="primary" icon={<IconPlus />} onClick={handleCreate}>
-            新建出差申请
-          </Button>
-        }
-      >
+      <Card title="出差申请列表">
         <Table
           columns={columns}
           data={tripList}
           loading={loading}
           rowKey="id"
-          scroll={{ x: 1500 }}
+          scroll={{ x: 1412 }}
           pagination={{
             total,
             pageSize: 10,
@@ -403,11 +415,11 @@ export function TripList() {
         cancelText="取消"
       >
         {selectedTrip && (
-          <div style={{ padding: 12, background: '#f7f8fa', borderRadius: 4, marginBottom: 16 }}>
+          <div style={{ padding: 12, background: 'var(--color-fill-1)', borderRadius: 4, marginBottom: 16 }}>
             <div>
               <Text style={{ fontWeight: 500 }}>{selectedTrip.applicantName}</Text> 的出差申请
             </div>
-            <div style={{ color: '#86909c', marginTop: 4 }}>
+            <div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>
               目的地：{selectedTrip.destinations.join('、')} | 日期：{selectedTrip.startDate} ~ {selectedTrip.endDate}
             </div>
           </div>
@@ -426,6 +438,6 @@ export function TripList() {
           />
         </div>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

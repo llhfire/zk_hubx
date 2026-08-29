@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   Card,
+  Empty,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
@@ -14,29 +14,25 @@ import {
   InputNumber,
   Select,
   DatePicker,
-  Typography,
   Alert,
   Progress,
   Badge,
-  Popconfirm,
-  Timeline,
 } from '@arco-design/web-react';
 import {
   IconCalendar,
-  IconCheckCircle,
-  IconClockCircle,
   IconExclamationCircle,
   IconPlus,
-  IconEdit,
   IconFile,
-  IconUser,
   IconCustomerService,
+  IconRefresh,
+  IconSearch,
 } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import { filterRecordsByKeyword } from '../supportDomainListModel';
+import { loadAfterSalesHandoffs } from '../alphaFlowContinuity';
+import '../supportDomainLists.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const TabPane = Tabs.TabPane;
-const Title = Typography.Title;
 const FormItem = Form.Item;
 const SelectOption = Select.Option;
 
@@ -170,16 +166,45 @@ export function MaintenanceManagement() {
   const [costModalVisible, setCostModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [costForm] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
+  const maintenanceRecords = useMemo(() => {
+    const imported = loadAfterSalesHandoffs().map<MaintenanceRecord>((handoff) => ({
+      id: handoff.id,
+      projectName: handoff.projectName,
+      customerName: handoff.customerName,
+      contractNo: handoff.contractNo,
+      deliveryDate: handoff.handedOffAt,
+      freeMaintenanceEnd: handoff.maintenanceEnd,
+      status: 'active',
+      hasPaidContract: false,
+      salesOwner: '待指派',
+      notes: '由财务结清流程移交，已自动生成六个月维护期',
+    }));
+    const importedContracts = new Set(imported.map((record) => record.contractNo));
+    return [...imported, ...mockMaintenance.filter((record) => !importedContracts.has(record.contractNo))];
+  }, []);
 
   const summary = useMemo(() => {
-    const active = mockMaintenance.filter(m => m.status === 'active').length;
-    const expiring = mockMaintenance.filter(m => m.status === 'expiring').length;
-    const expired = mockMaintenance.filter(m => m.status === 'expired').length;
+    const active = maintenanceRecords.filter(m => m.status === 'active').length;
+    const expiring = maintenanceRecords.filter(m => m.status === 'expiring').length;
+    const expired = maintenanceRecords.filter(m => m.status === 'expired').length;
     const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'assigned' || t.status === 'processing').length;
     const criticalTickets = tickets.filter(t => t.priority === 'critical' && t.status !== 'closed' && t.status !== 'resolved').length;
-    return { active, expiring, expired, openTickets, criticalTickets, totalProjects: mockMaintenance.length };
-  }, [tickets]);
+    return { active, expiring, expired, openTickets, criticalTickets, totalProjects: maintenanceRecords.length };
+  }, [maintenanceRecords, tickets]);
   const totalCostAmount = costRecords.reduce((sum, item) => sum + item.amount, 0);
+  const filteredMaintenance = useMemo(() => filterRecordsByKeyword(maintenanceRecords, keyword, item => [item.projectName, item.customerName, item.contractNo, item.salesOwner]), [keyword, maintenanceRecords]);
+  const filteredTickets = useMemo(() => filterRecordsByKeyword(tickets, keyword, item => [item.title, item.customerName, item.projectName, item.assignee, item.description]), [keyword, tickets]);
+  const filteredRenewals = useMemo(() => filterRecordsByKeyword(mockRenewalContracts, keyword, item => [item.projectName, item.customerName, item.contractNo, item.salesOwner]), [keyword]);
+  const filteredCosts = useMemo(() => filterRecordsByKeyword(costRecords, keyword, item => [item.projectName, item.customerName, item.costType, item.handler, item.description]), [costRecords, keyword]);
+  const currentCount = activeTab === 'maintenance'
+    ? filteredMaintenance.length
+    : activeTab === 'tickets'
+      ? filteredTickets.length
+      : activeTab === 'renewal'
+        ? filteredRenewals.length
+        : filteredCosts.length;
+  const filtersActive = Boolean(keyword.trim());
 
   const handleAddTicket = () => {
     form.resetFields();
@@ -210,7 +235,7 @@ export function MaintenanceManagement() {
 
   const handleSubmitCostRecord = () => {
     costForm.validate().then(values => {
-      const project = mockMaintenance.find(item => item.projectName === values.projectName);
+      const project = maintenanceRecords.find(item => item.projectName === values.projectName);
       const newRecord: CostRecord = {
         id: `cost-${Date.now()}`,
         projectName: values.projectName,
@@ -227,17 +252,26 @@ export function MaintenanceManagement() {
     });
   };
 
+  const pageAction = activeTab === 'tickets'
+    ? <Button type="primary" icon={<IconPlus />} onClick={handleAddTicket}>新建工单</Button>
+    : activeTab === 'costs'
+      ? <Button type="primary" icon={<IconPlus />} onClick={handleAddCostRecord}>新增费用</Button>
+      : undefined;
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="维护期项目" value={summary.active} suffix="个" icon={<IconCheckCircle style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="即将到期" value={summary.expiring} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--warning-500)' }} />} valueStyle={{ color: 'var(--warning-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="已到期" value={summary.expired} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} valueStyle={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="待处理工单" value={summary.openTickets} suffix="个" icon={<IconCustomerService style={{ color: 'rgb(var(--primary-6))' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="紧急工单" value={summary.criticalTickets} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} valueStyle={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="续签合同" value={mockRenewalContracts.length} suffix="个" icon={<IconFile style={{ color: 'var(--primary)' }} />} /></Card></Col>
-      </Row>
+    <PageShell className="support-domain-list maintenance-management-page">
+      <PageHeader
+        title="售后运维"
+        description="集中跟踪维护期、客户工单、续费合同和售后成本，优先处理到期与 SLA 风险。"
+        actions={pageAction}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'projects', label: '维护项目', value: summary.totalProjects, detail: `${summary.active} 个维护期中` },
+        { key: 'expiry', label: '到期风险', value: summary.expiring + summary.expired, detail: `${summary.expiring} 个临期 · ${summary.expired} 个到期`, tone: summary.expiring + summary.expired ? 'warning' : 'neutral' },
+        { key: 'tickets', label: '待处理工单', value: summary.openTickets, detail: `${summary.criticalTickets} 个紧急`, tone: summary.criticalTickets ? 'danger' : 'neutral' },
+        { key: 'result', label: '当前结果', value: currentCount, detail: filtersActive ? '关键词筛选结果' : '当前页签记录' },
+      ]} />
 
       {/* 到期预警 */}
       {(summary.expiring > 0 || summary.expired > 0) && (
@@ -257,7 +291,7 @@ export function MaintenanceManagement() {
       )}
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
+      <Card bordered={false} className="support-domain-list__card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="maintenance" title={<span><IconCalendar /> 维护期跟踪</span>} />
           <TabPane key="tickets" title={<span><IconCustomerService /> 客户工单 <Badge count={summary.openTickets} color="arcoblue" /></span>} />
@@ -265,7 +299,15 @@ export function MaintenanceManagement() {
           <TabPane key="costs" title={<span><IconFile /> 费用成本记录</span>} />
         </Tabs>
 
-        <div style={{ paddingTop: 16 }}>
+        <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={() => setKeyword('')}>重置</Button> : undefined}>
+          <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} prefix={<IconSearch />} placeholder="搜索项目、客户、合同、工单或经办人" allowClear />
+        </FilterBar>
+        <div className="support-domain-list__result-summary"><span>当前页签共 {currentCount} 条记录</span>{filtersActive && <span>已按关键词筛选</span>}</div>
+
+        <div>
+          {currentCount === 0 ? (
+            <div className="support-domain-list__empty"><Empty description="当前页签没有符合条件的记录" /><Button type="text" onClick={() => setKeyword('')}>清除筛选</Button></div>
+          ) : <>
           {/* 维护期跟踪 Tab */}
           {activeTab === 'maintenance' && (
             <Table
@@ -298,18 +340,16 @@ export function MaintenanceManagement() {
                 { title: '付费合同', dataIndex: 'hasPaidContract', width: 80, render: (v: boolean) => v ? <Tag color="var(--success-500)">有</Tag> : <Tag>无</Tag> },
                 { title: '销售负责人', dataIndex: 'salesOwner', width: 90 },
               ] as any}
-              data={mockMaintenance}
+              data={filteredMaintenance}
               rowKey="id"
               pagination={false}
+              scroll={{ x: 1040 }}
             />
           )}
 
           {/* 客户工单 Tab */}
           {activeTab === 'tickets' && (
             <div>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="primary" icon={<IconPlus />} onClick={handleAddTicket}>新建工单</Button>
-              </div>
               <Table
                 columns={[
                   {
@@ -336,9 +376,10 @@ export function MaintenanceManagement() {
                     },
                   },
                 ] as any}
-                data={tickets}
+                data={filteredTickets}
                 rowKey="id"
                 pagination={false}
+                scroll={{ x: 950 }}
               />
             </div>
           )}
@@ -355,9 +396,10 @@ export function MaintenanceManagement() {
                 { title: '合同金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
                 { title: '销售负责人', dataIndex: 'salesOwner', width: 90 },
               ] as any}
-              data={mockRenewalContracts}
+              data={filteredRenewals}
               rowKey="id"
               pagination={false}
+              scroll={{ x: 820 }}
             />
           )}
 
@@ -369,7 +411,6 @@ export function MaintenanceManagement() {
                   <Tag color="var(--primary)">记录 {costRecords.length} 条</Tag>
                   <Tag color="var(--warning-500)">总成本 ¥{totalCostAmount.toLocaleString()}</Tag>
                 </Space>
-                <Button type="primary" icon={<IconPlus />} onClick={handleAddCostRecord}>新增</Button>
               </div>
               <Table
                 columns={[
@@ -385,12 +426,14 @@ export function MaintenanceManagement() {
                   },
                   { title: '费用说明', dataIndex: 'description', width: 220 },
                 ] as any}
-                data={costRecords}
+                data={filteredCosts}
                 rowKey="id"
                 pagination={false}
+                scroll={{ x: 980 }}
               />
             </div>
           )}
+          </>}
         </div>
       </Card>
 
@@ -457,11 +500,11 @@ export function MaintenanceManagement() {
                 <Select
                   placeholder="选择归属项目"
                   onChange={(projectName) => {
-                    const project = mockMaintenance.find(item => item.projectName === projectName);
+                    const project = maintenanceRecords.find(item => item.projectName === projectName);
                     costForm.setFieldsValue({ customerName: project?.customerName || '' });
                   }}
                 >
-                  {mockMaintenance.map(item => <SelectOption key={item.id} value={item.projectName}>{item.projectName}</SelectOption>)}
+                  {maintenanceRecords.map(item => <SelectOption key={item.id} value={item.projectName}>{item.projectName}</SelectOption>)}
                 </Select>
               </FormItem>
             </Grid.Col>
@@ -505,6 +548,6 @@ export function MaintenanceManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

@@ -12,14 +12,7 @@ import {
   Statistic,
   Message,
 } from '@arco-design/web-react';
-import {
-  IconUp,
-  IconDown,
-  IconExclamationCircle,
-  IconCheckCircle,
-  IconClockCircle,
-  IconDashboard,
-} from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import {
   mockCases,
   mockCostItems,
@@ -35,14 +28,18 @@ import {
   simulateSensitivity,
   assembleCaseMetrics,
 } from '../calc';
-import { getContract, totalCollected, getCollections, getSupplementSummaries } from '../contractSeam';
+import { getContract, getCollections, getPaymentPlans, getSupplementSummaries } from '../contractSeam';
 import type { SupplementContractSummary } from '../types';
+import { useContracts } from '../../contracts/ContractsContext';
+import { useCollections } from '@/app/collections/CollectionContext';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Row, Col } = Grid;
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { contracts } = useContracts();
+  const { collections } = useCollections();
 
   // 模拟器状态
   const [scopePct, setScopePct] = useState(100);
@@ -53,16 +50,17 @@ export default function Dashboard() {
   const caseMetrics = useMemo(() => {
     return mockCases.map(c => {
       const caseItems = mockCostItems.filter(i => i.caseId === c.id);
-      const mainAmount = c.contractId ? ((getContract(c.contractId) as any)?.totalAmount ?? 0) : 0;
+      const contract = c.contractId ? getContract(c.contractId, contracts) as any : null;
+      const mainAmount = contract?.current?.totalAmount ?? contract?.totalAmount ?? 0;
       const supplements: SupplementContractSummary[] = c.extraContractIds
-        ? getSupplementSummaries(c.extraContractIds)
+        ? getSupplementSummaries(c.extraContractIds, contracts)
         : [];
-      const colls = c.contractId ? getCollections(c.contractId) : [];
-      const plans = c.contractId ? [] : []; // 期次由 contractSeam 提供
+      const colls = c.contractId ? getCollections(c.contractId, collections) : [];
+      const plans = c.contractId ? getPaymentPlans(c.contractId, contracts) : [];
       const m = assembleCaseMetrics(c, caseItems, mainAmount, supplements, colls, plans, today);
       return { ...c, ...m };
     });
-  }, [today]);
+  }, [today, contracts, collections]);
 
   // 统计
   const statistics = useMemo(() => {
@@ -129,65 +127,47 @@ export default function Dashboard() {
   ];
 
   return (
-    <div style={{ padding: 'var(--space-5)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-5)' }}>
-        <Title heading={3}>精益交付仪表盘</Title>
-        <Space>
-          <Button onClick={() => navigate('/financial-delivery/cases')}>业务单管理</Button>
-          <Button type="primary" onClick={() => Message.info('业务单由线索签约链路生成，不支持手工创建')}>新建业务单</Button>
-        </Space>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="精益交付仪表盘"
+        description="以全周期口径监控业务单健康度、回款、成本与利润，并支持穿透到风险和业务单明细。"
+        actions={(
+          <>
+            <Button onClick={() => Message.info('业务单由线索签约链路生成，不支持手工创建')}>新建业务单</Button>
+            <Button type="primary" onClick={() => navigate('/financial-delivery/cases')}>业务单管理</Button>
+          </>
+        )}
+      />
 
-      {/* 概览统计 */}
-      <div className="lean-dashboard-kpi">
-        <Card hoverable onClick={() => navigate('/financial-delivery/cases')} className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>总业务单数</Text><IconDashboard style={{ color: 'var(--color-text-3)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--brand-500)' }}>{statistics.totalCases}</div>
-        </Card>
-        <Card hoverable onClick={() => navigate('/financial-delivery/cases')} className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>进行中</Text><IconClockCircle style={{ color: 'var(--color-text-3)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--success-500)' }}>{statistics.inProgress}</div>
-        </Card>
-        <Card hoverable onClick={() => navigate('/financial-delivery/cases')} className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>已完结</Text><IconCheckCircle style={{ color: 'var(--color-text-3)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--info-500)' }}>{statistics.completed}</div>
-        </Card>
-        <Card hoverable onClick={() => navigate('/financial-delivery/cases')} className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>预警数</Text><IconExclamationCircle style={{ color: 'var(--color-text-3)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--warning-500)' }}>{statistics.alerts}</div>
-        </Card>
-      </div>
-
-      {/* 财务指标（全周期口径） */}
-      <div className="expense-overhead-summary" style={{ marginBottom: 'var(--space-5)' }}>
-        <Card className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>累计回款</Text><IconUp style={{ color: 'var(--success-500)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--success-500)' }}>¥{statistics.totalRevenue.toLocaleString()}</div>
-        </Card>
-        <Card className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>总成本</Text><IconDown style={{ color: 'var(--destructive-500)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--destructive-500)' }}>¥{statistics.totalCost.toLocaleString()}</div>
-        </Card>
-        <Card className="lean-kpi-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-            <Text>总利润</Text><IconUp style={{ color: 'var(--success-500)' }} />
-          </div>
-          <div className="lean-kpi-value" style={{ color: 'var(--success-500)' }}>¥{statistics.totalProfit.toLocaleString()}</div>
-          <div className="expense-kpi-hint">利润率: {statistics.margin.toFixed(1)}%</div>
-        </Card>
-      </div>
+      <ProcessMetricGrid items={[
+        {
+          key: 'cases',
+          label: '业务单总数',
+          value: `${statistics.totalCases} 单`,
+          detail: `进行中 ${statistics.inProgress} · 已完结 ${statistics.completed}`,
+        },
+        {
+          key: 'alerts',
+          label: '风险预警',
+          value: `${statistics.alerts} 单`,
+          detail: statistics.alerts > 0 ? '需优先处理利润率或 WIP 异常' : '当前无风险预警',
+          tone: statistics.alerts > 0 ? 'warning' : 'success',
+        },
+        {
+          key: 'revenue',
+          label: '累计回款',
+          value: `¥${statistics.totalRevenue.toLocaleString()}`,
+          detail: `总成本 ¥${statistics.totalCost.toLocaleString()}`,
+          tone: 'success',
+        },
+        {
+          key: 'profit',
+          label: '总利润',
+          value: `¥${statistics.totalProfit.toLocaleString()}`,
+          detail: `利润率 ${statistics.margin.toFixed(1)}%`,
+          tone: statistics.totalProfit >= 0 ? 'success' : 'danger',
+        },
+      ]} />
 
       {/* 气泡图（全周期利润率 vs WIP） */}
       <Card title="项目健康度（全周期口径）" style={{ marginBottom: 'var(--space-5)' }}>
@@ -324,6 +304,6 @@ export default function Dashboard() {
           />
         </Card>
       )}
-    </div>
+    </PageShell>
   );
 }

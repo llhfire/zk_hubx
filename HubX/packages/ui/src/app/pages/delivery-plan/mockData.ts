@@ -1,7 +1,13 @@
 // src/app/pages/delivery-plan/mockData.ts
 
 import type { DeliveryPlan } from './types';
-import { generateDeliveryPlan } from './utils';
+import { derivePhaseStatus, generateDeliveryPlan } from './utils';
+
+function syncPhaseStatuses(plan: DeliveryPlan): void {
+  for (const phase of plan.phases) {
+    phase.status = derivePhaseStatus(plan.steps.filter((step) => step.phaseId === phase.id));
+  }
+}
 
 // ──────────────────────────────────────
 // Project 1：A公司CRM系统开发
@@ -62,6 +68,7 @@ for (const milestone of plan1.milestones) {
     milestone.completed = true;
   }
 }
+syncPhaseStatuses(plan1);
 
 // ──────────────────────────────────────
 // Project 2：B公司小程序定制开发
@@ -116,6 +123,7 @@ for (const step of plan2.steps) {
     step.status = 'completed';
   }
 }
+syncPhaseStatuses(plan2);
 
 // ──────────────────────────────────────
 // Project 3：华信科技内部OA流程优化
@@ -174,6 +182,7 @@ const project3TechnicalDesignStep = plan3.steps.find(step => step.stepNo === '3.
 if (project3TechnicalDesignStep) {
   project3TechnicalDesignStep.dueDate = '2026-07-25';
 }
+syncPhaseStatuses(plan3);
 
 // ──────────────────────────────────────
 // 导出

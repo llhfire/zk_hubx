@@ -240,6 +240,6 @@ type TemplateKind = 'fixed' | 'variable';
 7. **`HrExpenseManagement.tsx`**：阶段 A 末改为 `<Navigate to="/finance/expenses" replace />`，文件可留一回合再删，避免书签 404。人资菜单组只有这一项，删后整组去掉。
 8. **Context**：`OperatingExpenseContext` 只包 `OperatingExpensePage`，不进 `App.tsx`。
 9. **权限**：阶段 A 不做矩阵（ADR-0084 留阶段 E），页面可开即可。
-10. **公摊常量接缝**：与精益交付共用 `pages/finance-shared/overhead.ts` 的 `OVERHEAD_RATE`（占位 35 元/工时）。阶段 A 的 `hourlyOverheadRate` 落地后，该文件改为转调本模块公式。阶段 A **仍不改** `contractCostData.getHourlyOpCost`。
+10. **公摊动态接缝（2026-08-28 已完成）**：`pages/finance-shared/overhead.ts` 已成为唯一公式源；运营费用、合同成本与精益交付统一按当月公共运营池和全公司在职编制工时计算。
 11. **单测工作目录**：`HubX/apps/prototype`。
 12. **看板**：编码完成再把 4 条 planned 从「已设计」改为「α 已实现」。

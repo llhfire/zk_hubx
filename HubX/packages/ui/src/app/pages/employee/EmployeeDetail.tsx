@@ -16,7 +16,6 @@ import {
   Tooltip,
 } from '@arco-design/web-react';
 import {
-  IconLeft,
   IconUser,
   IconIdcard,
   IconCalendar,
@@ -46,6 +45,7 @@ import {
   DISCProfile,
   EnneagramProfile,
 } from './mockData';
+import { PageShell } from '@/app/components/ui';
 
 const TabPane = Tabs.TabPane;
 const Row = Grid.Row;
@@ -108,9 +108,8 @@ function SkillCard({ skill, empScore }: { skill: SkillNode; empScore: number }) 
     <div style={{
       padding: '10px 14px',
       borderRadius: 8,
-      border: `1px solid ${unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : 'var(--color-border)'}`,
-      borderLeft: `3px solid ${unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : 'var(--grey-300)'}`,
-      background: unlocked ? '#fff' : 'var(--color-fill-1)',
+      border: '1px solid var(--color-border-2)',
+      background: unlocked ? 'var(--color-bg-2)' : 'var(--color-fill-1)',
       opacity: unlocked ? 1 : 0.5,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -139,9 +138,11 @@ export function EmployeeDetail() {
 
   if (!employee) {
     return (
+      <PageShell breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '员工列表', to: '/employees' }, { label: '员工不存在' }]}>
       <Card>
         <Typography.Paragraph style={{ textAlign: 'center', color: 'var(--color-text-3)' }}>员工不存在</Typography.Paragraph>
       </Card>
+      </PageShell>
     );
   }
 
@@ -150,13 +151,12 @@ export function EmployeeDetail() {
   const cap = employee.capability;
 
   return (
+    <PageShell breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '员工列表', to: '/employees' }, { label: employee.name }]}>
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 顶部栏 */}
       <Card bordered={false}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Space>
-            <Button icon={<IconLeft />} type="text" onClick={() => navigate('/employees')}>返回</Button>
-            <Divider type="vertical" style={{ height: 24 }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: '50%',
@@ -189,7 +189,7 @@ export function EmployeeDetail() {
         <Col span={4}><Card><Statistic title="最近评级" value={latestPerf ? latestPerf.rank : '—'} valueStyle={{ color: latestPerf ? getRankColor(latestPerf.rank) : undefined }} /></Card></Col>
         <Col span={4}><Card><Statistic title="加权总分" value={cap ? cap.weightedScore : '—'} suffix="分" prefix={<IconTrophy style={{ color: 'var(--warning-500)' }} />} /></Card></Col>
         <Col span={4}><Card><Statistic title="已解锁技能" value={cap ? cap.skills.filter(s => s.status === 'unlocked').length : '—'} suffix="个" prefix={<IconCheck style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="累计经验" value={cap ? cap.totalXP : '—'} suffix="XP" prefix={<IconExperiment style={{ color: '#7c3aed' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title="累计经验" value={cap ? cap.totalXP : '—'} suffix="XP" prefix={<IconExperiment style={{ color: 'rgb(var(--purple-6))' }} />} /></Card></Col>
       </Row>
 
       {/* Tab */}
@@ -197,7 +197,7 @@ export function EmployeeDetail() {
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="profile" title="档案" />
           <TabPane key="capability" title={<span><IconTrophy style={{ color: 'var(--warning-500)' }} /> 能力</span>} />
-          <TabPane key="personality" title={<span><IconStar style={{ color: '#7c3aed' }} /> 性格测评</span>} />
+          <TabPane key="personality" title={<span><IconStar style={{ color: 'rgb(var(--purple-6))' }} /> 性格测评</span>} />
           <TabPane key="attendance" title="考勤" />
           <TabPane key="performance" title="绩效" />
         </Tabs>
@@ -276,7 +276,7 @@ export function EmployeeDetail() {
               </Row>
 
               {/* 技能树 */}
-              <Title heading={6} style={{ marginBottom: 12 }}><Space><IconExperiment style={{ color: '#7c3aed' }} /> 技能树</Space></Title>
+              <Title heading={6} style={{ marginBottom: 12 }}><Space><IconExperiment style={{ color: 'rgb(var(--purple-6))' }} /> 技能树</Space></Title>
               <Tabs type="card-gutter" defaultActiveTab="tech">
                 {(['tech', 'biz', 'mgmt', 'tool', 'domain'] as AbilityDimension[]).map(domain => (
                   <TabPane key={domain} title={
@@ -288,7 +288,7 @@ export function EmployeeDetail() {
                         return (
                           <Col span={8} key={layer}>
                             <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <Tag color={layer === 1 ? 'var(--success-500)' : layer === 2 ? 'var(--primary)' : '#7c3aed'}>
+                              <Tag color={layer === 1 ? 'var(--success-500)' : layer === 2 ? 'var(--primary)' : 'purple'}>
                                 {layer === 1 ? '基础' : layer === 2 ? '进阶' : '专家'}
                               </Tag>
                             </div>
@@ -370,6 +370,7 @@ export function EmployeeDetail() {
         </div>
       </Card>
     </Space>
+    </PageShell>
   );
 }
 

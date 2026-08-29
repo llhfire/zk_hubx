@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { diffContractEvents, prevSnapshotForWrite, shouldEnsureUnconfirmedProject, type ContractSnapshotEntry } from '../signingOpenEvents';
+import { diffContractEvents, getSigningOpenBridgeIssue, prevSnapshotForWrite, shouldEnsureUnconfirmedProject, type ContractSnapshotEntry } from '../signingOpenEvents';
+
+describe('getSigningOpenBridgeIssue', () => {
+  it('正常签约联动保持静默，避免与业务操作 Toast 重复堆叠', () => {
+    expect(getSigningOpenBridgeIssue('lead_project_created')).toBeNull();
+    expect(getSigningOpenBridgeIssue('contract_project_created', 'HT-001')).toBeNull();
+    expect(getSigningOpenBridgeIssue('contract_delivery_started', 'HT-001')).toBeNull();
+    expect(getSigningOpenBridgeIssue('contract_waiting_assignment', 'HT-001')).toBeNull();
+    expect(getSigningOpenBridgeIssue('contract_relation_updated', 'HT-001')).toBeNull();
+  });
+
+  it('只有阻断联动的异常返回一次可见提示', () => {
+    expect(getSigningOpenBridgeIssue('contract_missing_project', 'HT-001'))
+      .toBe('合同 HT-001 审批通过，但线索下无项目，请先创建项目');
+  });
+});
 import type { Contract } from '../types';
 
 function fakeContract(id: string, extra?: Partial<Contract>): Contract {

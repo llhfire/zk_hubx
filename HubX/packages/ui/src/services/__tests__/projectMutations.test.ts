@@ -5,6 +5,8 @@ import {
   applyConfirmAssign,
   applyReassignPm,
   canAdvanceStatus,
+  findSigningProject,
+  mergeSigningProject,
   validateProjectStatusWrite,
 } from '../projectMutations';
 
@@ -69,5 +71,24 @@ describe('projectMutations', () => {
     expect(validateProjectStatusWrite('未确认', '未开始', '李四')).toBeNull();
     expect(validateProjectStatusWrite('进行中', '验收中', '李四')).toBeNull();
     expect(validateProjectStatusWrite('已完成', '进行中', '李四')).toMatch(/不允许/);
+  });
+
+  it('按线索别名找到同一项目，并在合同创建时只补绑定信息', () => {
+    const existing = makeProject({ id: 'ap-lead-9', leadId: '9' });
+    const incoming = makeProject({
+      id: 'ap-c-9',
+      leadId: 'lead-9',
+      contractId: 'c-9',
+      name: '华信科技项目（待确认）',
+      entity: '软艺信息',
+      latestProgress: '主合同已创建，等待管理员确认并指派产品经理。',
+    });
+
+    expect(findSigningProject([existing], incoming)?.id).toBe('ap-lead-9');
+    const merged = mergeSigningProject(existing, incoming);
+    expect(merged.id).toBe('ap-lead-9');
+    expect(merged.contractId).toBe('c-9');
+    expect(merged.name).toBe('华信科技项目（待确认）');
+    expect(merged.status).toBe('未确认');
   });
 });

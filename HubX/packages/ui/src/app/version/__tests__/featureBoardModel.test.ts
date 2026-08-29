@@ -11,6 +11,7 @@ import {
   PLANNED_STATUSES,
   removePlannedItem,
   renamePlannedItem,
+  resolveExistingFeatureDetail,
   setBetaDevStatus,
   setModuleNote,
   setPlannedStatus,
@@ -23,16 +24,46 @@ import { VERSION_URLS } from '../versionMatrix';
 import type { Domain, ExistingFeature } from '../featureBoardModel';
 
 describe('featureBoardModel', () => {
-  it('每个已有功能拥有独立 alpha 检查项与版本级 alpha 元数据', () => {
+  it('每个已有功能拥有独立 alpha 检查项，每个模块拥有独立 alpha 更新元数据', () => {
     const board = createSeedBoard();
     const feature = board.modules.find(m => m.features.length > 0)!.features[0];
     expect(feature.alpha).toEqual({ '页面场景': false, '功能流程': false, 'UX 优化': false });
-    expect(board.alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
+    expect(board.modules.every(module => module.alphaMeta.updateCount === 0)).toBe(true);
+    expect(board.modules.every(module => module.alphaMeta.lastUpdatedAt === '')).toBe(true);
   });
 
-  it('normalize migrates old module alpha and missing feature/meta fields', () => {
-    const normalized = normalizeFeatureBoard({ modules: [{ module: '报价工作台', alpha: { '页面场景': true, '功能流程': false, 'UX 优化': true }, features: [{ name: 'Stage1 功能清单', description: '说明' }], planned: [], beta: { productionOn: false, devStatus: '未开始' } }] });
-    expect(normalized.alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
+  it('已有功能详情能补齐说明、使用流程和仓库相对文档地址', () => {
+    const detail = resolveExistingFeatureDetail('工作台与审批', {
+      name: '消息提醒',
+      description: '',
+      alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
+    });
+    expect(detail.description).toContain('消息提醒');
+    expect(detail.usage).toContain('工作台与审批');
+    expect(detail.referencePath).toBe('文档/PRD/PRD-待办提醒与消息通知.md');
+  });
+
+  it('已有功能详情优先使用条目维护的结构化内容', () => {
+    const feature: ExistingFeature = {
+      name: '自定义能力',
+      description: '自定义说明',
+      usage: '步骤一 → 步骤二',
+      referencePath: '文档/PRD/custom.md',
+      alpha: { '页面场景': false, '功能流程': false, 'UX 优化': false },
+    };
+    expect(resolveExistingFeatureDetail('基础工具', feature)).toEqual({
+      description: '自定义说明',
+      usage: '步骤一 → 步骤二',
+      referencePath: '文档/PRD/custom.md',
+    });
+  });
+
+  it('normalize migrates old board-level alpha metadata to empty module-level records without false attribution', () => {
+    const normalized = normalizeFeatureBoard({
+      modules: [{ module: '报价工作台', alpha: { '页面场景': true, '功能流程': false, 'UX 优化': true }, features: [{ name: 'Stage1 功能清单', description: '说明' }], planned: [], beta: { productionOn: false, devStatus: '未开始' } }],
+      alphaMeta: { updateCount: 13, lastUpdatedAt: '2026-08-28' },
+    });
+    expect(normalized.modules[0].alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
     expect(normalized.modules[0].features[0].alpha).toEqual({ '页面场景': false, '功能流程': false, 'UX 优化': false });
     expect(isValidFeatureBoard(normalized)).toBe(true);
   });
@@ -51,11 +82,18 @@ describe('featureBoardModel', () => {
     expect(next.modules.find(m => m.module === module.module)!.features[1].alpha.页面场景).toBe(false);
   });
 
-  it('marks alpha update explicitly and leaves checklist updates uncounted', () => {
+  it('marks only the target module alpha update and leaves other rows unchanged', () => {
     const board = createSeedBoard();
-    const counted = markAlphaUpdate(board, '2026-08-24');
-    expect(counted.alphaMeta).toEqual({ updateCount: 1, lastUpdatedAt: '2026-08-24' });
-    expect(counted.alphaMeta.updateCount).toBe(1);
+    const target = board.modules[0].module;
+    const untouched = board.modules[1].module;
+    const counted = markAlphaUpdate(board, target, '2026-08-24');
+    expect(counted.modules.find(module => module.module === target)?.alphaMeta).toEqual({ updateCount: 1, lastUpdatedAt: '2026-08-24' });
+    expect(counted.modules.find(module => module.module === untouched)?.alphaMeta).toEqual({ updateCount: 0, lastUpdatedAt: '' });
+  });
+
+  it('ignores an invalid alpha update date', () => {
+    const board = createSeedBoard();
+    expect(markAlphaUpdate(board, board.modules[0].module, '2026/08/24')).toBe(board);
   });
   it('seed board has 40 modules across 8 domains in priority order', () => {
     const board = createSeedBoard();
@@ -100,6 +138,15 @@ describe('featureBoardModel', () => {
         expect(f.description.trim()).not.toBe('');
       }
     }
+  });
+
+  it('智能会议种子如实区分 α 已有功能与后续接线', () => {
+    const module = createSeedBoard().modules.find(item => item.module === '智能会议')!;
+    const workbench = module.features.find(feature => feature.name === '智能会议纪要长流程工作台')!;
+    expect(module.isPlanned).toBe(false);
+    expect(workbench.usage).toContain('提交确认');
+    expect(workbench.referencePath).toBe('HubX/DESIGN.md');
+    expect(module.planned.map(item => item.name)).toContain('β接线（D1 smart_minutes 表+服务端不变量校验+AI Secret）');
   });
 
   it('planned item pure functions: add/rename/remove/status are immutable and idempotent-safe', () => {

@@ -1,19 +1,24 @@
 import { useState, useMemo } from 'react';
 import { useContracts } from './ContractsContext';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { withCollectionLedger } from '@/services/collectionMutations';
 import { PaymentKanbanSummaryBar } from './components/PaymentKanbanSummaryBar';
 import { PaymentKanbanBoard } from './components/PaymentKanbanBoard';
 import { PaymentKanbanSideDrawer } from './components/PaymentKanbanSideDrawer';
 import { computeKanbanSummary } from './paymentUtils';
-import type { Contract, PaymentStatus } from './types';
+import type { Contract } from './types';
 
 export default function PaymentKanban() {
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   const kanbanContracts = useMemo(
-    () => contracts.filter(c => c.status !== 'voided' && c.status !== 'draft'),
-    [contracts],
+    () => contracts
+      .filter(c => c.status !== 'voided' && c.status !== 'draft')
+      .map(contract => withCollectionLedger(contract, collections)),
+    [collections, contracts],
   );
 
   const summary = useMemo(() => computeKanbanSummary(kanbanContracts), [kanbanContracts]);
@@ -23,16 +28,12 @@ export default function PaymentKanban() {
     setDrawerVisible(true);
   };
 
-  const handleCardDrop = (_contractId: string, _newStatus: PaymentStatus) => {
-    // 拖拽切换列——后续版本可扩展为实际状态变更逻辑
-  };
-
   return (
-    <div style={{ padding: 0 }}>
-      <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>合同回款看板</h2>
-        <p style={{ margin: '4px 0 0', color: 'var(--grey-400)', fontSize: 14 }}>
-          拖拽合同卡片切换回款状态，点击卡片查看回款详情
+    <div className="payment-lane-board">
+      <div>
+        <h2 className="payment-lane-board__title">回款合同泳道</h2>
+        <p className="payment-lane-board__description">
+          按正常、到期、逾期、阻塞和结清状态总览合同，点击卡片查看回款详情。
         </p>
       </div>
 
@@ -41,7 +42,6 @@ export default function PaymentKanban() {
       <PaymentKanbanBoard
         contracts={kanbanContracts}
         onCardClick={handleCardClick}
-        onCardDrop={handleCardDrop}
       />
 
       <PaymentKanbanSideDrawer

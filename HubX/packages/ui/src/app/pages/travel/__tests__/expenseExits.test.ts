@@ -50,7 +50,7 @@ describe('emitCostItem', () => {
   it('生成成本流水', () => {
     const item = emitCostItem(reimb, trip);
     expect(item.sourceType).toBe('reimbursement');
-    expect(item.costCategory).toBe('commercial');
+    expect(item.costCategory).toBe('travel');
     expect(item.costType).toBe('差旅');
     expect(item.caseBinding.projectId).toBe('project-001');
   });

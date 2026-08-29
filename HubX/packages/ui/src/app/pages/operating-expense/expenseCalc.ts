@@ -5,81 +5,16 @@
 import type {
   ExpenseRecord,
   RecurringExpenseTemplate,
-  WorkdaysByMonth,
-  EmployeeForOverhead,
 } from './types';
 
-/**
- * 在职工天折算：在职区间与该月相交的自然日比例 × workdayCount
- * 阶段 A 近似；阶段 C 换日期表后签名不变
- */
-export function workdaysInRange(
-  month: string,            // YYYY-MM
-  hireDate: string,
-  leaveDate: string | undefined,
-  workdayCount: number,
-): number {
-  const monthStart = new Date(`${month}-01`);
-  const monthEnd = new Date(monthStart);
-  monthEnd.setMonth(monthEnd.getMonth() + 1);
-  monthEnd.setDate(monthEnd.getDate() - 1);
-
-  const hire = new Date(hireDate);
-  const leave = leaveDate ? new Date(leaveDate) : new Date('2099-12-31');
-
-  // 在职区间与该月相交
-  const effectiveStart = hire > monthStart ? hire : monthStart;
-  const effectiveEnd = leave < monthEnd ? leave : monthEnd;
-
-  if (effectiveStart > effectiveEnd) return 0;
-
-  const daysInMonth = monthEnd.getDate();
-  const effectiveDays = effectiveEnd.getDate() - effectiveStart.getDate() + 1;
-  const ratio = effectiveDays / daysInMonth;
-
-  return Math.round(workdayCount * ratio);
-}
-
-/**
- * 编制工时 = Σ 工天 × 8
- */
-export function capacityHours(
-  employees: EmployeeForOverhead[],
-  month: string,
-  workdays: WorkdaysByMonth,
-): number {
-  const wd = workdays[month] ?? 0;
-  let total = 0;
-  for (const emp of employees) {
-    if (emp.employmentStatus === '已离职' && emp.leaveDate && emp.leaveDate < `${month}-01`) continue;
-    total += workdaysInRange(month, emp.hireDate, emp.leaveDate, wd) * 8;
-  }
-  return total;
-}
-
-/**
- * 费用池 = 非作废、归属 pool、该月的 posted 记录金额合计
- */
-export function overheadPool(
-  records: ExpenseRecord[],
-  month: string,
-): number {
-  return records
-    .filter(r =>
-      r.status !== 'voided' &&
-      r.attribution === 'pool' &&
-      r.billingMonth === month &&
-      r.status === 'posted',
-    )
-    .reduce((sum, r) => sum + r.amount, 0);
-}
-
-/**
- * R_hour = 当月池 ÷ 编制工时；hours=0 则 0
- */
-export function hourlyOverheadRate(pool: number, hours: number): number {
-  return hours > 0 ? pool / hours : 0;
-}
+export {
+  workdaysInRange,
+  capacityHours,
+  overheadPool,
+  hourlyOverheadRate,
+  buildOverheadSnapshot,
+  overheadAmount,
+} from '../finance-shared/overhead';
 
 /**
  * WMA 加权移动平均（0.5/0.3/0.2）

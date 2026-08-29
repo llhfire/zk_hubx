@@ -2,6 +2,7 @@
 // 报价数据存 D1（SQLite），data 列存整条 Quote 的 JSON。与前端 QuotationService 的 list/upsert 对应。
 
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { cors } from 'hono/cors';
 
 // B3 签约联动（ADR-0093）：单源导入 packages/ui 纯函数，禁止复制
@@ -14,6 +15,16 @@ import {
 } from '../../../packages/ui/src/app/business-case/caseUtils';
 import { validateProjectStatusWrite } from '../../../packages/ui/src/services/projectMutations';
 import { buildCollectionRecord } from '../../../packages/ui/src/services/collectionMutations';
+// β 阶段 2：线索详情组装与派发域四动作（纯函数单源，类型导入会被 esbuild 剥离）
+import {
+  applyDispatchLead,
+  applyLevelChange,
+  applyQualityConfirm,
+  applyUrge,
+  buildLeadDetailInfo,
+} from '../../../packages/ui/src/services/leadMutations';
+import type { LeadListItem, CustomerLevel } from '../../../packages/ui/src/app/pages/leads/types';
+import type { DispatchInput } from '../../../packages/ui/src/services/leadMutations';
 
 type Env = {
   DB: D1Database;
@@ -394,6 +405,36 @@ app.get('/api/projects/:id', async (c) => {
   return row ? c.json({ project: withVersion(JSON.parse(row.data), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
 });
 
+// 项目详情复合接口（β 阶段 2）：项目 + 关联合同（contractId / leadId 两路匹配）+ 项目实收 + 活动事件（doc 内嵌若有）
+app.get('/api/projects/:id/detail', async (c) => {
+  const id = c.req.param('id');
+  const row = await c.env.DB.prepare('SELECT data, version FROM projects WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  if (!row) return c.json({ error: 'not found' }, 404);
+  const project = withVersion(JSON.parse(row.data), row.version ?? 0) as Record<string, unknown> & { contractId?: string; leadId?: string; activities?: unknown[] };
+
+  const contractId = project.contractId || '';
+  const leadId = project.leadId || '';
+  const { results: contractRows } = await c.env.DB
+    .prepare("SELECT data FROM contracts WHERE id = ? OR (? != '' AND json_extract(data, '$.leadId') = ?)")
+    .bind(contractId, leadId, leadId)
+    .all<{ data: string }>();
+  const contracts = (contractRows ?? []).map((r) => JSON.parse(r.data));
+  const contractIds = contracts.map((ct) => String(ct.id ?? ''));
+
+  const { results: collectionRows } = await c.env.DB
+    .prepare("SELECT data FROM collections WHERE json_extract(data, '$.projectId') = ? OR json_extract(data, '$.contractId') IN (SELECT value FROM json_each(?))")
+    .bind(id, JSON.stringify(contractIds))
+    .all<{ data: string }>();
+  const collections = (collectionRows ?? []).map((r) => JSON.parse(r.data));
+
+  return c.json({
+    project,
+    contracts,
+    collections,
+    activities: project.activities ?? [],
+  });
+});
+
 app.post('/api/projects', async (c) => {
   const body = (await c.req.json()) as Record<string, unknown>;
   const id = (typeof body.id === 'string' && body.id) ? body.id : `p-${Date.now()}`;
@@ -647,6 +688,98 @@ app.get('/api/leads/:id/transfers', async (c) => {
     .bind(c.req.param('id'))
     .all<{ data: string }>();
   return c.json({ transfers: (results ?? []).map((r) => JSON.parse(r.data)) });
+});
+
+// ── 线索详情复合接口（β 阶段 2）：迁移线索无 α 静态 profile，服务端按列表字段组装 ──
+app.get('/api/leads/:id/detail', async (c) => {
+  const row = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
+  if (!row) return c.json({ error: 'not found' }, 404);
+  const lead = JSON.parse(row.data) as LeadListItem & { leadEvents?: unknown[] };
+  return c.json({
+    detail: buildLeadDetailInfo(lead),
+    events: lead.leadEvents ?? [],
+    version: row.version ?? 0,
+  });
+});
+
+// ── 派发域写端点（β 阶段 2；事件 id/时间服务端生成，actor 取 X-Actor；单请求原子写 doc）──
+
+/** 派发域共用：读 doc -> 纯函数 -> 原子写回（version+1），可选同事务写流转记录 */
+async function appendLeadAction(
+  c: Context<{ Bindings: Env }>,
+  id: string,
+  build: (lead: LeadListItem, actor: string, now: string, eventId: string) => { lead: LeadListItem; transfer: { id: string } | null },
+) {
+  const row = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  if (!row) return c.json({ error: 'not found' }, 404);
+  const actor = c.req.header('X-Actor') ?? '';
+  const now = domainNow();
+  const eventId = `evt-${Date.now()}-${id}`;
+  const lead = JSON.parse(row.data) as LeadListItem;
+  const { lead: updated, transfer } = build(lead, actor, now, eventId);
+
+  const statements = [
+    c.env.DB.prepare('INSERT OR REPLACE INTO leads (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
+      .bind(id, JSON.stringify({ ...updated, updatedAt: now }), new Date().toISOString(), (row.version ?? 0) + 1),
+  ];
+  if (transfer) {
+    statements.push(
+      c.env.DB.prepare('INSERT OR REPLACE INTO lead_transfers (id, lead_id, data, updated_at) VALUES (?, ?, ?, ?)')
+        .bind(transfer.id, id, JSON.stringify(transfer), new Date().toISOString()),
+    );
+  }
+  await c.env.DB.batch(statements);
+  return c.json({ ok: true, id, version: (row.version ?? 0) + 1, serverUpdatedAt: now });
+}
+
+app.post('/api/leads/:id/dispatch', async (c) => {
+  const body = (await c.req.json()) as { target?: string; assignee?: string; reason?: string };
+  if (body.target !== 'sales' && body.target !== 'pool') {
+    return c.json({ error: 'target 必须是 sales 或 pool' }, 400);
+  }
+  if (body.target === 'sales' && !body.assignee) {
+    return c.json({ error: '派发给销售必须指定 assignee' }, 400);
+  }
+  const input: DispatchInput = { target: body.target, assignee: body.assignee, reason: body.reason };
+  return appendLeadAction(c, c.req.param('id'), (lead, actor, now, eventId) =>
+    applyDispatchLead(lead, input, actor, now, eventId));
+});
+
+app.post('/api/leads/:id/urge', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { note?: string };
+  return appendLeadAction(c, c.req.param('id'), (lead, actor, now, eventId) => ({
+    lead: applyUrge(lead, actor, body.note ?? '', now, eventId),
+    transfer: null,
+  }));
+});
+
+app.post('/api/leads/:id/level-change', async (c) => {
+  const body = (await c.req.json()) as { from?: string; to?: string };
+  const from = body.from as CustomerLevel | undefined;
+  const to = body.to as CustomerLevel | undefined;
+  if (!from || !to || !['S', 'A', 'B', 'C'].includes(from) || !['S', 'A', 'B', 'C'].includes(to)) {
+    return c.json({ error: 'from/to 必须是 S/A/B/C' }, 400);
+  }
+  return appendLeadAction(c, c.req.param('id'), (lead, actor, now, eventId) => ({
+    lead: applyLevelChange(lead, from, to, actor, now, eventId),
+    transfer: null,
+  }));
+});
+
+app.post('/api/leads/:id/level-audit', async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { note?: string };
+  return appendLeadAction(c, c.req.param('id'), (lead, actor, now, eventId) => ({
+    lead: applyQualityConfirm(lead, actor, body.note ?? '', now, eventId),
+    transfer: null,
+  }));
+});
+
+// 线索事件时间线（doc 内嵌 leadEvents，只增不删）
+app.get('/api/leads/:id/events', async (c) => {
+  const row = await c.env.DB.prepare('SELECT data FROM leads WHERE id = ?').bind(c.req.param('id')).first<{ data: string }>();
+  if (!row) return c.json({ error: 'not found' }, 404);
+  const lead = JSON.parse(row.data) as LeadListItem & { leadEvents?: unknown[] };
+  return c.json({ events: lead.leadEvents ?? [] });
 });
 
 // ── 员工/用户域（B5，β 前端 EmployeeContext 数据源）──

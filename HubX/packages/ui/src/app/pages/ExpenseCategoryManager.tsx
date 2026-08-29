@@ -5,7 +5,6 @@ import {
   Switch,
   Tag,
   Space,
-  Typography,
   Tooltip,
   Modal,
   Form,
@@ -16,8 +15,9 @@ import {
   Message,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './systemConfigConsistency.css';
 
-const { Title, Text } = Typography;
 const RadioGroup = Radio.Group;
 
 interface ExpenseCategory {
@@ -48,9 +48,8 @@ const initialCategories: ExpenseCategory[] = [
   { id: 'PROMOTION04', name: '视频号', code: 'PROMOTION04', parentId: 'PROMOTION', level: 2, status: true, remark: '', order: 4 },
   { id: 'PROMOTION05', name: '其他投流', code: 'PROMOTION05', parentId: 'PROMOTION', level: 2, status: true, remark: '', order: 5 },
   { id: 'BUSINESS', name: '商务成本', code: 'BUSINESS', parentId: null, level: 1, status: true, remark: '项目商务活动费用', order: 4 },
-  { id: 'BUSINESS01', name: '商务差旅', code: 'BUSINESS01', parentId: 'BUSINESS', level: 2, status: true, remark: '', order: 1 },
-  { id: 'BUSINESS02', name: '商务接待', code: 'BUSINESS02', parentId: 'BUSINESS', level: 2, status: true, remark: '', order: 2 },
-  { id: 'BUSINESS03', name: '商务返点', code: 'BUSINESS03', parentId: 'BUSINESS', level: 2, status: true, remark: '', order: 3 },
+  { id: 'BUSINESS02', name: '商务接待', code: 'BUSINESS02', parentId: 'BUSINESS', level: 2, status: true, remark: '', order: 1 },
+  { id: 'BUSINESS03', name: '商务返点', code: 'BUSINESS03', parentId: 'BUSINESS', level: 2, status: true, remark: '', order: 2 },
   { id: 'THIRD_PARTY', name: '第三方费用', code: 'THIRD_PARTY', parentId: null, level: 1, status: true, remark: '项目第三方服务费用', order: 5 },
   { id: 'THIRD_PARTY01', name: '服务器', code: 'THIRD_PARTY01', parentId: 'THIRD_PARTY', level: 2, status: true, remark: '', order: 1 },
   { id: 'THIRD_PARTY02', name: '云服务', code: 'THIRD_PARTY02', parentId: 'THIRD_PARTY', level: 2, status: true, remark: '', order: 2 },
@@ -80,6 +79,7 @@ export function ExpenseCategoryManager() {
 
   const selectedParent = tree.find((parent) => parent.id === selectedParentId);
   const displayList = selectedParent?.children || [];
+  const enabledCount = categories.filter((category) => category.status).length;
 
   const openCreate = (level: 1 | 2, parentId?: string) => {
     setEditing(null);
@@ -169,50 +169,52 @@ export function ExpenseCategoryManager() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div>
-          <Text type="secondary">维护项目成本核算使用的一级分类和费用小项</Text>
-        </div>
-        <Button type="primary" icon={<IconPlus />} onClick={() => openCreate(1)}>新增一级分类</Button>
-      </div>
+    <PageShell
+      className="system-config-page"
+      breadcrumbs={[{ label: '系统管理' }, { label: '费用分类' }]}
+    >
+      <PageHeader
+        title="费用分类"
+        description="维护项目成本核算使用的一级分类和费用小项。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => openCreate(1)}>新增一级分类</Button>}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
-        <Card title="一级分类" bodyStyle={{ padding: 8 }}>
-          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+      <ProcessMetricGrid items={[
+        { key: 'parents', label: '一级分类', value: tree.length, detail: '成本归集主类' },
+        { key: 'children', label: '二级分类', value: categories.filter((category) => category.level === 2).length, detail: '费用核算小项' },
+        { key: 'enabled', label: '已启用', value: enabledCount, detail: `共 ${categories.length} 项`, tone: 'success' },
+        { key: 'locked', label: '系统内置', value: 1, detail: '人力成本不可删除' },
+      ]} />
+
+      <div className="system-config-master-detail">
+        <Card className="system-config-card" title="一级分类" bodyStyle={{ padding: 8 }}>
+          <div className="system-config-master-list">
             {tree.map((parent) => {
               const isLocked = parent.id === LABOR_CATEGORY_ID;
               const isSelected = parent.id === selectedParentId;
               return (
-                <div
+                <button
+                  type="button"
                   key={parent.id}
+                  disabled={isLocked}
                   onClick={() => !isLocked && setSelectedParentId(parent.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    padding: '10px 12px',
-                    borderRadius: 4,
-                    cursor: isLocked ? 'not-allowed' : 'pointer',
-                    background: isLocked ? 'var(--color-fill-2)' : isSelected ? 'rgb(var(--primary-1))' : 'transparent',
-                    color: isLocked ? 'var(--color-text-4)' : isSelected ? 'rgb(var(--primary-6))' : 'var(--color-text-1)',
-                    fontWeight: isSelected ? 600 : 400,
-                  }}
+                  className={`system-config-master-item${isSelected ? ' is-selected' : ''}`}
+                  aria-pressed={isSelected}
                 >
                   <span>{parent.name}</span>
                   <Space size={4}>
                     {isLocked && <Tag size="small" color="gray">系统</Tag>}
                     {!parent.status && <Tag size="small" color="gray">停用</Tag>}
-                    <Text type="secondary">{parent.children.length}</Text>
+                    <span>{parent.children.length}</span>
                   </Space>
-                </div>
+                </button>
               );
             })}
-          </Space>
+          </div>
         </Card>
 
         <Card
+          className="system-config-card"
           title={selectedParent ? `${selectedParent.name} · 二级分类` : '二级分类'}
           extra={selectedParent && (
             <Space>
@@ -222,7 +224,7 @@ export function ExpenseCategoryManager() {
                   title={`该分类下有 ${selectedParent.children.length} 个子分类，确认删除？`}
                   onOk={() => handleDelete(selectedParent)}
                 >
-                  <Button size="small" status="danger" icon={<IconDelete />} />
+                <Button size="small" status="danger" icon={<IconDelete />} aria-label="删除一级分类" />
                 </Popconfirm>
               </Tooltip>
               <Button size="small" type="primary" icon={<IconPlus />} onClick={() => openCreate(2, selectedParent.id)}>
@@ -231,11 +233,16 @@ export function ExpenseCategoryManager() {
             </Space>
           )}
         >
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <div className="system-config-result-summary">
+            <span>当前共 {displayList.length} 个二级分类</span>
+            <span>{selectedParent?.status ? '一级分类已启用' : '一级分类已停用'}</span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+          <table className="system-config-category-table">
             <thead>
-              <tr style={{ background: 'var(--color-fill-2)', borderBottom: '1px solid var(--color-border-2)' }}>
+              <tr>
                 {['分类名称', '编码', '状态', '操作'].map((h) => (
-                  <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 500, color: 'var(--color-text-2)' }}>
+                  <th key={h}>
                     {h}
                   </th>
                 ))}
@@ -244,31 +251,28 @@ export function ExpenseCategoryManager() {
             <tbody>
               {displayList.map((item) => {
                 return (
-                  <tr
-                    key={item.id}
-                    style={{ borderBottom: '1px solid var(--color-border-2)' }}
-                  >
-                    <td style={{ padding: '10px 12px' }}>
-                      <span style={{ fontWeight: 500 }}>{item.name}</span>
+                  <tr key={item.id}>
+                    <td>
+                      <strong>{item.name}</strong>
                     </td>
-                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--color-text-2)' }}>
+                    <td className="system-config-category-table__code">
                       {item.code}
                     </td>
-                    <td style={{ padding: '10px 12px' }}>
+                    <td>
                       <Switch
                         checked={item.status}
                         size="small"
                         onChange={(v) => handleToggleStatus(item.id, v)}
                       />
                     </td>
-                    <td style={{ padding: '10px 12px' }}>
+                    <td>
                       <Space>
                         <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEdit(item)}>编辑</Button>
                         <Popconfirm
                           title="确认删除该分类？"
                           onOk={() => handleDelete(item)}
                         >
-                          <Button type="text" size="small" icon={<IconDelete />} status="danger" />
+                          <Button type="text" size="small" icon={<IconDelete />} status="danger" aria-label={`删除${item.name}`} />
                         </Popconfirm>
                       </Space>
                     </td>
@@ -277,13 +281,14 @@ export function ExpenseCategoryManager() {
               })}
               {displayList.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: 'var(--color-text-3)' }}>
+                  <td colSpan={4} className="system-config-category-empty">
                     暂无数据
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
         </Card>
       </div>
 
@@ -314,7 +319,7 @@ export function ExpenseCategoryManager() {
             </Form.Item>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
+          <div className="system-config-modal-grid">
             <Form.Item label="分类名称" field="name" rules={[{ required: true, message: '请输入分类名称' }]}>
               <Input placeholder="如：差旅费" />
             </Form.Item>
@@ -328,6 +333,6 @@ export function ExpenseCategoryManager() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

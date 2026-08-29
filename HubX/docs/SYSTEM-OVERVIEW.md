@@ -267,9 +267,11 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 - `computeKanbanSummary`：排除 voided，算应收/本月已回/卡点/逾期/预计下月回款。
 - 回款比例模板 `PAYMENT_RATIO_OPTIONS`：`3:3:3:1 → [30,30,30,10]`、`4:5:1 → [40,50,10]`。
 
-### 补充协议（Supplementary Agreement）
-- 状态：`draft → approving → approved → archived`，任一非 voided 可作废 → voided；复用合同 5 步审批流。
-- **金额计入规则**：仅 `status==='archived'` 的补充协议计入合同总额；`totalAmount = 合同额 + Σ(已归档补充协议 amountChange)`；`receivableAmount = max(0, totalAmount - receivedAmount)`；作废即回滚（不计入）。
+### 补充报价与补充合同
+- 需求或金额变更必须走“补充报价四步工作台 → 客户确认 → 合同向导生成补充合同”，不允许在主合同下直接登记变更金额。
+- 补充合同使用 `Contract.kind='supplement'`，以 `parentContractId` 关联主合同、`sourceQuoteId` 关联唯一来源补充报价；审批、盖章、归档与作废复用合同状态机。
+- **有效标的额**：主合同金额 + Σ（已归档且未作废的补充合同变更额）。补充合同可正向增额或负向减额，草稿、审批中和已作废记录不计入。
+- 合同详情、项目 360、回款发票与精益交付均从补充合同投影金额、回款期次和实收，不维护第二套变更对象。
 
 ### 页面
 `Contracts`（列表，仅展示已关联项目的合同）/ `ContractDetail`（基础/甲方画像/款项/文件/跟进记录）/ `ContractWizard`（新建，从 leadContext 恢复线索上下文，`periodToDays` 解析工期）/ `ContractEditor`（字段+付款+回款计划编辑，模板 contentEditable）/ `ContractDocumentPreview`（A4 正文编辑+模板切换）/ `ContractKanban`（统计看板）/ `PaymentKanban` + `PaymentKanbanV2`（回款拖拽看板 + 里程碑）/ `PaymentForecast`（现金流预测 + 甘特图）。
@@ -280,9 +282,14 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 ## 3.6 项目管理
 
 ### 数据模型（`project-management/mockData.ts`）
-- `ProjectStatus` 7 态：`未开始/进行中/已完成/验收中/搁置/延迟/催款中`；`BusinessLine = 外包/自研/自运营`。
+- `ProjectStatus` 8 态：`未确认/未开始/进行中/已完成/验收中/搁置/延迟/催款中`；`BusinessLine = 外包/自研/自运营`。
 - `Project` 含各角色成员数组、`progress`、`leadId?/contractId?`。
-- `initialProjects` 3 条：项目1 A公司CRM（contractId='4'）、项目2 B公司小程序（contractId='2'）、项目3 内部OA（leadId='lead-9' 无合同）。
+- `initialProjects` 由 `projectMockData.ts` 的 `PROJECT_LIST` 统一映射，当前为 14 条种子数据（8 条原演示项目 + 6 条进度汇报项目）。
+
+### 签约开启与唯一项目
+- α 在 `SigningOpenBridge` 监测线索首次进入“合同洽谈/已签单”，幂等生成“未确认”项目；合同后建时只补绑 `contractId`。
+- 有线索的项目 ID 统一为 `ap-lead-{normalizeLeadIdentity(leadId)}`；无线索合同才使用 `ap-{contractId}`。`9` 与 `lead-9` 视为同一线索。
+- `ProjectService.create` 按项目 ID、线索别名或合同 ID 幂等合并，保留原项目状态和成员，防止“先洽谈、后建合同”产生重复项目。
 
 ### 项目详情 `ProjectDetail.tsx` + `ProjectDetailWorkspace.tsx`（1807 行）
 - 4 张摘要卡 `buildProjectSummaryCards`（交付进度/负责人/交付时间/总工时），风险分级 `严重/预警/注意/正常`。
@@ -294,7 +301,8 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 - **任务** `projectTasks.ts`：`TASK_NEXT_STATUSES` 状态机（未开始→[进行中,已搁置,已取消] 等）；流转「已完成」强制进度 100。
 - **质量** `projectQuality.ts`：`BugStatus = 新建/修复中/待验证/已关闭`；`BUG_NEXT_STATUSES`（新建→[修复中] 等）；存在未关闭 P0/P1 → 预警。
 - **报价成本** `projectQuotationConfigModel.ts`：`laborItemCost = 人数×天数×日薪`；`travelItemCost = 交通×2×人数×趟 + 住宿×天数×人数×趟 + (餐补+补贴)×天数×人数×趟`；`onsiteItemCost = 住宿/月×人数×月 + 餐补×天数×人数 + 交通/月×人数×月`；`totalAmount = labor + travel + onsite + other`。
-- **成本面板** `ProjectCostPanel.tsx`：成本大类 差旅/推广/商务/第三方 + 人工；预计人工 `hours=workdays×8×allocation/100`、`cost=hours×standardHourlyRate`；项目利润 `contractAmount - totalCost`；支持导出 CSV。
+- **成本面板** `ProjectCostPanel.tsx`：成本大类 差旅/推广/商务/第三方 + 人工；差旅与商务独立归集；预计人工 `hours=workdays×8×allocation/100`、`cost=hours×standardHourlyRate`；项目利润 `contractAmount - totalCost`；支持导出 CSV。
+- **公摊费率** `finance-shared/overhead.ts`：唯一口径为 `R_hour = 当月公共运营池 ÷ 全公司在职编制工时`；运营费用、合同成本与精益交付共同使用，项目公摊金额为 `项目工天 × 8 × R_hour`。
 
 ## 3.7 交付计划（`delivery-plan/`）
 

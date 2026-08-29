@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, getLatestDunning } from '../paymentUtils';
+import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning } from '../paymentUtils';
 import type { Contract } from '../types';
 
 function makeContract(overrides: Partial<Contract> = {}): Contract {
@@ -111,6 +111,30 @@ describe('computeKanbanSummary', () => {
     expect(summary.totalReceivable).toBe(300000);
     expect(summary.monthlyCollected).toBe(100000);
     expect(summary.upcomingMonthEstimate).toBe(200000);
+  });
+});
+
+describe('effectiveAmount', () => {
+  it('只把已归档补充合同计入有效标的额，并支持负向变更', () => {
+    const main = makeContract();
+    const archivedIncrease = makeContract({
+      id: 'supplement-1', kind: 'supplement', parentContractId: main.id,
+      current: { ...main.current, totalAmount: 20_000 },
+    });
+    const archivedDecrease = makeContract({
+      id: 'supplement-2', kind: 'supplement', parentContractId: main.id,
+      current: { ...main.current, totalAmount: -5_000 },
+    });
+    const draft = makeContract({
+      id: 'supplement-3', kind: 'supplement', parentContractId: main.id, status: 'draft',
+      current: { ...main.current, totalAmount: 30_000 },
+    });
+    const voided = makeContract({
+      id: 'supplement-4', kind: 'supplement', parentContractId: main.id, status: 'voided',
+      current: { ...main.current, totalAmount: 40_000 },
+    });
+
+    expect(effectiveAmount(main, [archivedIncrease, archivedDecrease, draft, voided])).toBe(115_000);
   });
 });
 

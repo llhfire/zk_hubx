@@ -11,6 +11,7 @@ import {
   mockPostMortems,
 } from '../mockData';
 import type { Case, CaseCostItem, CasePostMortem } from '../types';
+import { getAlphaOverheadAmount } from '../../finance-shared/alphaOverhead';
 
 describe('mockCases 类型兼容', () => {
   it('mockCases 可赋给 Case[]', () => {
@@ -63,10 +64,19 @@ describe('mockCostItems 类型兼容', () => {
     expect(overheadItems.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('出差补贴 costCategory 为 commercial', () => {
-    const travelItems = mockCostItems.filter(i => i.costType === '差旅');
+  it('所有差旅费用独立归入 travel', () => {
+    const travelItems = mockCostItems.filter(i => i.costType.includes('差旅'));
+    expect(travelItems.length).toBeGreaterThanOrEqual(1);
     for (const item of travelItems) {
-      expect(item.costCategory).toBe('commercial');
+      expect(item.costCategory).toBe('travel');
+    }
+  });
+
+  it('所有公摊成本按所属月动态费率计算', () => {
+    const overheadItems = mockCostItems.filter(i => i.sourceType === 'overhead');
+    for (const item of overheadItems) {
+      expect(item.quantityDays).toBeDefined();
+      expect(item.amount).toBe(getAlphaOverheadAmount(item.date.slice(0, 7), item.quantityDays ?? 0));
     }
   });
 });

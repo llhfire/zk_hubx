@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
-  Button, Card, Dropdown, Empty, Input, InputNumber, Menu, Message, Select, Space, Table, Tag, Typography,
+  Button, Card, Dropdown, Empty, Input, InputNumber, Menu, Message, Modal, Select, Space, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import {
   IconPlus, IconClose, IconSend, IconLink, IconScissor, IconCopy, IconMenu, IconApps,
@@ -157,7 +157,7 @@ function NumericInput({ value, unitId, roleKey, hasError, isRemainder, fillRef, 
         border: `1px solid ${hasError || isRemainder ? 'rgb(var(--red-5))' : 'var(--color-border-2)'}`,
         borderRadius: 4,
         fontSize: 13,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Inter Variable', Arial, sans-serif",
         outline: 'none',
         boxShadow: hasError || isRemainder ? '0 0 0 1px rgb(var(--red-3))' : undefined,
       }}
@@ -170,7 +170,8 @@ function uid(prefix: string): string {
 }
 
 export function Stage2EvalSheet({ quote, readonly }: StageProps) {
-  const { saveEvalSheet, submitEval } = useQuotation();
+  const { saveEvalSheet, submitEval, isLeadFrozen } = useQuotation();
+  const leadFrozen = isLeadFrozen(quote.id);
   // 编辑态用本地草稿，避免每次按键都写全局
   const [draft, setDraft] = useState(quote.evalSheet);
   const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
@@ -178,6 +179,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const fillRef = useRef<{ unitId: string; roleKey: string; value: number } | null>(null);
   // 验证：记录未填写的格子 set<string> = "unitId-roleKey"
   const [emptyCells, setEmptyCells] = useState<Set<string>>(new Set());
+  const [customRoleVisible, setCustomRoleVisible] = useState(false);
+  const [customRoleName, setCustomRoleName] = useState('');
 
   const endpointConfigs = quote.endpointConfigs || [];
   const evalSheet = readonly ? quote.evalSheet : draft;
@@ -216,9 +219,14 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   };
 
   const addCustomRole = () => {
-    const name = `自定义岗位${evalSheet.activeRoles.length + 1}`;
+    const name = customRoleName.trim();
+    if (!name) { Message.warning('请输入岗位名称'); return; }
+    if (evalSheet.activeRoles.some((role) => role.name === name)) { Message.warning('岗位名称不能重复'); return; }
+    if (name.length > 20) { Message.warning('岗位名称不能超过 20 个字'); return; }
     const key = `custom_${Math.random().toString(36).slice(2, 6)}`;
     persist({ ...evalSheet, activeRoles: [...evalSheet.activeRoles, { key, name }] });
+    setCustomRoleName('');
+    setCustomRoleVisible(false);
   };
 
   // ─── 工时录入 ───────────────────────────────
@@ -544,6 +552,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   ];
 
   return (
+    <>
     <Card
       title={<Title heading={6} style={{ margin: 0 }}>工作台二 · 罗总成本与技术人天评估</Title>}
     >
@@ -563,7 +572,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                 .map((r) => ({ label: r.name, value: r.key }))}
               showSearch
             />
-            <Button size="small" icon={<IconPlus />} onClick={addCustomRole}>自定义岗位</Button>
+            <Button size="small" icon={<IconPlus />} onClick={() => setCustomRoleVisible(true)}>自定义岗位</Button>
             <Text bold style={{ marginLeft: 8 }}>切片操作：</Text>
             <Button size="small" icon={<IconMenu />} onClick={() => {
               // 按模块批量打包：一次性对所有模块执行整模块打包
@@ -596,7 +605,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
             }}>按子功能</Button>
             <Select
               size="small"
-              placeholder="📦 整模块打包"
+              placeholder="整模块打包"
               style={{ width: 160 }}
               onChange={(v) => v && handlePackModule(v)}
               value={undefined}
@@ -957,8 +966,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                           {group.modules.map((m) => (
                             <tr key={m.name} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                               <td style={{ padding: '4px 8px', paddingLeft: 16 }}>{m.name}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgb(var(--arcoblue-6))' }}>{m.total.toFixed(1)}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace' }}>{roleTotal > 0 ? ((m.total / roleTotal) * 100).toFixed(0) : 0}%</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{m.total.toFixed(1)}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{roleTotal > 0 ? ((m.total / roleTotal) * 100).toFixed(0) : 0}%</td>
                             </tr>
                           ))}
                         </React.Fragment>
@@ -982,7 +991,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                 return (
                   <div key={r.key} style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{r.name}</span>
-                    <span style={{ fontFamily: 'monospace', color: 'rgb(var(--arcoblue-6))' }}>{roleTotal.toFixed(1)} ({totalDays > 0 ? ((roleTotal / totalDays) * 100).toFixed(0) : 0}%)</span>
+                    <span style={{ fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{roleTotal.toFixed(1)} ({totalDays > 0 ? ((roleTotal / totalDays) * 100).toFixed(0) : 0}%)</span>
                   </div>
                 );
               })}
@@ -1027,8 +1036,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                           return (
                             <tr key={r.key} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                               <td style={{ padding: '4px 8px' }}>{r.name}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace', color: 'rgb(var(--arcoblue-6))' }}>{roleVal.toFixed(1)}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace' }}>{val > 0 ? ((roleVal / val) * 100).toFixed(0) : 0}%</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{roleVal.toFixed(1)}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{val > 0 ? ((roleVal / val) * 100).toFixed(0) : 0}%</td>
                             </tr>
                           );
                         })}
@@ -1054,9 +1063,13 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
         </Space>
 
         {!readonly && (
-          <Button type="primary" icon={<IconSend />} onClick={handleSubmit}>评估完成</Button>
+          <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSubmit}>评估完成</Button>
         )}
       </div>
     </Card>
+    <Modal title="新增自定义岗位" visible={customRoleVisible} onCancel={() => setCustomRoleVisible(false)} onOk={addCustomRole} okText="新增岗位">
+      <Input value={customRoleName} onChange={setCustomRoleName} placeholder="请输入岗位名称" maxLength={20} showWordLimit autoFocus />
+    </Modal>
+    </>
   );
 }

@@ -1,0 +1,78 @@
+.travel-admin-master-detail {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.travel-admin-master-detail > * {
+  min-width: 0;
+}
+
+.travel-admin-selector-item {
+  padding: 12px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-bg-2);
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.travel-admin-selector-item:hover {
+  border-color: rgb(var(--primary-3));
+  background: var(--color-fill-1);
+}
+
+.travel-admin-selector-item--active {
+  border-color: rgb(var(--primary-5));
+  background: rgb(var(--primary-1));
+}
+
+.travel-admin-selector-item__head,
+.travel-audit__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.travel-admin-detail-summary {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--color-fill-1);
+}
+
+.travel-audit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.travel-audit__header {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.travel-audit__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.travel-audit__description {
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+@media (max-width: 900px) {
+  .travel-admin-master-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

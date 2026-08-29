@@ -13,16 +13,26 @@ import { resetAuditNodes } from '@/app/pages/quotation/quoteFlow';
 import {
   applyDecideAudit,
   applyNewVersion,
+  applyReassign,
   applySubmitFeatureList,
   applyTransition,
   applyUpdate,
   buildNewQuote,
+  buildPricingSummary,
   generateQuoteId,
   generateQuoteNo,
   migrateQuote,
   now,
+  canTransition,
 } from './quotationMutations';
+import { canDeleteQuote, isTerminalStatus } from '@/app/pages/quotation/quoteAccess';
 import type { EvalSheet, FeatureModule, Quote } from '@/app/pages/quotation/types';
+import { buildSupplementQuote } from '@/app/pages/quotation/supplementQuote';
+
+export interface CreateQuoteOptions {
+  flowMode?: Quote['flowMode'];
+  salesOwnerName?: string;
+}
 
 export interface QuotationService {
   list(): Promise<Quote[]>;
@@ -30,7 +40,13 @@ export interface QuotationService {
   /** 通用客户端更新（仅本地便利；接后端时改为具体字段 PATCH） */
   updateQuote(id: string, updater: (q: Quote) => Quote): Promise<void>;
 
-  createQuote(leadId: string, featureList: FeatureModule[], basicInfo: Partial<Quote['basicInfo']>): Promise<string>;
+  createQuote(
+    leadId: string,
+    featureList: FeatureModule[],
+    basicInfo: Partial<Quote['basicInfo']>,
+    options?: CreateQuoteOptions,
+  ): Promise<string>;
+  createSupplementQuote(sourceQuoteId: string, contractId: string, flowMode: 'online' | 'file'): Promise<string>;
 
   // ── 阶段一：产品经理功能清单 ──
   saveFeatureList(quoteId: string, featureList: FeatureModule[]): Promise<void>;
@@ -96,81 +112,150 @@ export function createMockQuotationService(): QuotationService {
     persist();
   }
 
+  function requireTransition(quote: Quote, action: string) {
+    if (!canTransition(quote.status, action)) {
+      throw new Error(`报价状态 ${quote.status} 不允许执行 ${action}`);
+    }
+  }
+
   return {
     list: async () => quotes,
     getById: async (id) => quotes.find((q) => q.id === id),
 
-    updateQuote: async (id, updater) => mapOne(id, (q) => applyUpdate(q, updater)),
-    createQuote: async (leadId, featureList, basicInfo) => {
+    updateQuote: async (id, updater) => mapOne(id, (q) => applyUpdate(q, (current) => {
+      const updated = updater(current);
+      return updated.flowMode === q.flowMode ? updated : { ...updated, flowMode: q.flowMode };
+    })),
+    createQuote: async (leadId, featureList, basicInfo, options) => {
       const id = generateQuoteId();
-      const quoteNo = generateQuoteNo(quotes.length);
-      quotes = [...quotes, buildNewQuote(id, quoteNo, leadId, featureList, basicInfo)];
+      const quoteNo = generateQuoteNo(quotes);
+      quotes = [...quotes, buildNewQuote(
+        id,
+        quoteNo,
+        leadId,
+        featureList,
+        basicInfo,
+        options?.salesOwnerName,
+        options?.flowMode,
+      )];
+      persist();
+      return id;
+    },
+    createSupplementQuote: async (sourceQuoteId, contractId, flowMode) => {
+      const source = quotes.find((quote) => quote.id === sourceQuoteId);
+      if (!source) throw new Error('未找到主报价，无法创建补充报价');
+      const id = generateQuoteId();
+      const quoteNo = generateQuoteNo(quotes);
+      quotes = [...quotes, buildSupplementQuote({ sourceQuote: source, contractId, newId: id, newQuoteNo: quoteNo, flowMode })];
       persist();
       return id;
     },
 
     saveFeatureList: async (id, featureList) => mapOne(id, (q) => applyUpdate(q, (x) => ({ ...x, featureList }))),
     setDeadline: async (id, deadline, ccSalesNames) => mapOne(id, (q) => applyUpdate(q, (x) => ({ ...x, deadline, ccSalesNames }))),
-    submitFeatureList: async (id) => mapOne(id, applySubmitFeatureList),
+    submitFeatureList: async (id) => mapOne(id, (q) => {
+      requireTransition(q, 'submit_feature_list');
+      return applySubmitFeatureList(q);
+    }),
 
     saveEvalSheet: async (id, evalSheet) => mapOne(id, (q) => applyUpdate(q, (x) => ({ ...x, evalSheet }))),
-    submitEval: async (id) => mapOne(id, (q) => applyTransition(q, 'submit_eval', 'tech', 'pending_quote')),
-    assignToSales: async (id) => mapOne(id, (q) => applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote')),
+    submitEval: async (id) => mapOne(id, (q) => {
+      requireTransition(q, 'submit_eval');
+      return applyTransition(q, 'submit_eval', 'tech', 'pending_quote');
+    }),
+    assignToSales: async (id) => mapOne(id, (q) => {
+      requireTransition(q, 'assign_to_sales');
+      return applyTransition(q, 'assign_to_sales', 'pm', 'pending_quote');
+    }),
 
-    returnToTech: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason)),
+    returnToTech: async (id, reason) => mapOne(id, (q) => {
+      requireTransition(q, 'return_to_tech');
+      return applyTransition(q, 'return_to_tech', 'sales', 'pending_eval', reason);
+    }),
     submitForAudit: async (id, snapshot) =>
-      mapOne(id, (q) =>
-        applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
-          auditNodes: snapshot?.auditNodes ?? resetAuditNodes(),
-          stampNode: snapshot?.stampNode ?? { stamperName: '黄海', status: 'LOCKED' as const },
-        })),
-      ),
+      mapOne(id, (q) => {
+        requireTransition(q, 'submit_for_audit');
+        return applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
+          auditNodes: snapshot?.auditNodes ?? (() => { throw new Error('报价审批未配置，请联系管理员'); })(),
+          stampNode: snapshot?.stampNode ?? (() => { throw new Error('报价审批未配置盖章人，请联系管理员'); })(),
+          summary: buildPricingSummary(q),
+        }));
+      }),
     withdrawAudit: async (id, reason) =>
-      mapOne(id, (q) =>
-        applyTransition(q, 'withdraw_audit', 'sales', 'pending_quote', reason, () => ({
-          auditNodes: resetAuditNodes(),
-        })),
-      ),
+      mapOne(id, (q) => {
+        requireTransition(q, 'withdraw_audit');
+        return applyTransition(q, 'withdraw_audit', 'sales', 'pending_quote', reason, () => ({
+          auditNodes: resetAuditNodes(q.auditNodes),
+        }));
+      }),
 
     decideAudit: async (id, auditorName, decision, comment) =>
-      mapOne(id, (q) => applyDecideAudit(q, auditorName, decision, comment)),
+      mapOne(id, (q) => {
+        if (q.status !== 'auditing') throw new Error(`报价状态 ${q.status} 不允许审批`);
+        return applyDecideAudit(q, auditorName, decision, comment);
+      }),
     stampQuote: async (id) =>
-      mapOne(id, (q) =>
-        applyTransition(q, 'stamp', 'assistant', 'stamped', undefined, (x) => ({
+      mapOne(id, (q) => {
+        requireTransition(q, 'stamp');
+        return applyTransition(q, 'stamp', 'assistant', 'stamped', undefined, (x) => ({
           stampNode: { ...x.stampNode, status: 'COMPLETED' as const, stampTime: now() },
-        })),
-      ),
+          ...(x.flowMode === 'file' && x.fileFlow
+            ? { fileFlow: { ...x.fileFlow, onlineDocument: { ...x.fileFlow.onlineDocument, status: 'finalized' as const } } }
+            : {}),
+        }));
+      }),
     markSent: async (id) =>
-      mapOne(id, (q) => applyTransition(q, 'mark_sent', 'sales', 'sent', undefined, () => ({ sentAt: now() }))),
-    markConfirmed: async (id) => mapOne(id, (q) => applyTransition(q, 'mark_confirmed', 'sales', 'confirmed')),
-    markVoided: async (id, reason) => mapOne(id, (q) => applyTransition(q, 'mark_voided', 'sales', 'voided', reason)),
+      mapOne(id, (q) => {
+        requireTransition(q, 'mark_sent');
+        return applyTransition(q, 'mark_sent', 'sales', 'sent', undefined, () => ({ sentAt: now() }));
+      }),
+    markConfirmed: async (id) => mapOne(id, (q) => {
+      requireTransition(q, 'mark_confirmed');
+      return applyTransition(q, 'mark_confirmed', 'sales', 'confirmed');
+    }),
+    markVoided: async (id, reason) => mapOne(id, (q) => {
+      requireTransition(q, 'mark_voided');
+      return applyTransition(q, 'mark_voided', 'sales', 'voided', reason);
+    }),
     createNewVersion: async (id) => {
       const source = quotes.find((q) => q.id === id);
       if (!source) return id;
+      requireTransition(source, 'new_version');
       const newId = generateQuoteId();
       quotes = [...quotes, applyNewVersion(source, newId)];
       persist();
       return newId;
     },
     withdrawSent: async (id) =>
-      mapOne(id, (q) => applyTransition(q, 'withdraw_sent', 'sales', 'stamped', undefined, () => ({ sentAt: undefined }))),
+      mapOne(id, (q) => {
+        requireTransition(q, 'withdraw_sent');
+        return applyTransition(q, 'withdraw_sent', 'sales', 'stamped', undefined, () => ({ sentAt: undefined }));
+      }),
     returnToStamp: async (id) =>
       mapOne(id, (q) => {
+        requireTransition(q, 'return_to_stamp');
         if (q.sentAt) throw new Error('已发出的报价不能退回盖章');
         return applyTransition(q, 'return_to_stamp', 'assistant', 'pending_stamp');
       }),
     returnToEditFeatures: async (id) =>
-      mapOne(id, (q) => applyTransition(q, 'return_to_edit_features', 'sales', 'draft')),
+      mapOne(id, (q) => {
+        requireTransition(q, 'return_to_edit_features');
+        return applyTransition(q, 'return_to_edit_features', 'sales', 'draft', undefined, (current) => ({
+          ...(current.flowMode === 'file' && current.fileFlow
+            ? { fileFlow: { ...current.fileFlow, onlineDocument: { status: 'draft' as const } } }
+            : {}),
+        }));
+      }),
     deleteQuote: async (id) => {
+      const quote = quotes.find((q) => q.id === id);
+      if (!quote || !canDeleteQuote(quote)) throw new Error('仅可删除从未提交过的草稿报价');
       quotes = quotes.filter((q) => q.id !== id);
       persist();
     },
     reassignOwner: async (id, field, value) =>
       mapOne(id, (q) => {
-        if (field === 'salesOwnerName') {
-          return { ...q, salesOwnerName: value, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_sales' as const, actorName: value, actorRole: 'sales', time: now(), note: `销售改指为 ${value}` }], updatedAt: now() };
-        }
-        return { ...q, basicInfo: { ...q.basicInfo, techEvaluatorName: value }, timeline: [...q.timeline, { id: `ev-${Date.now()}`, action: 'reassign_evaluator' as const, actorName: value, actorRole: 'tech', time: now(), note: `评估人改指为 ${value}` }], updatedAt: now() };
+        if (isTerminalStatus(q.status)) throw new Error('已确认或已废止的报价不能改指');
+        return applyReassign(q, field, value, '当前操作人');
       }),
   };
 }
@@ -216,12 +301,29 @@ export function createHttpQuotationService(baseUrl: string, opts?: { actor?: str
     getById: getOne,
 
     updateQuote: async (id, updater) => mutate(id, (q) => applyUpdate(q, updater)),
-    createQuote: async (leadId, featureList, basicInfo) => {
+    createQuote: async (leadId, featureList, basicInfo, options) => {
       const list = await getList();
       const id = generateQuoteId();
-      const quoteNo = generateQuoteNo(list.length);
-      await saveOne(buildNewQuote(id, quoteNo, leadId, featureList, basicInfo));
+      const quoteNo = generateQuoteNo(list);
+      await saveOne(buildNewQuote(
+        id,
+        quoteNo,
+        leadId,
+        featureList,
+        basicInfo,
+        options?.salesOwnerName,
+        options?.flowMode,
+      ));
       return id;
+    },
+    createSupplementQuote: async (sourceQuoteId, contractId, flowMode) => {
+      const list = await getList();
+      const source = list.find((quote) => quote.id === sourceQuoteId);
+      if (!source) throw new Error('未找到主报价，无法创建补充报价');
+      const id = generateQuoteId();
+      const quoteNo = generateQuoteNo(list);
+      const saved = await saveOne(buildSupplementQuote({ sourceQuote: source, contractId, newId: id, newQuoteNo: quoteNo, flowMode }));
+      return saved ? id : sourceQuoteId;
     },
 
     saveFeatureList: async (id, featureList) => mutate(id, (q) => applyUpdate(q, (x) => ({ ...x, featureList }))),
@@ -238,6 +340,7 @@ export function createHttpQuotationService(baseUrl: string, opts?: { actor?: str
         applyTransition(q, 'submit_for_audit', 'sales', 'auditing', undefined, () => ({
           auditNodes: snapshot?.auditNodes ?? resetAuditNodes(),
           stampNode: snapshot?.stampNode ?? { stamperName: '黄海', status: 'LOCKED' as const },
+          summary: buildPricingSummary(q),
         })),
       ),
     withdrawAudit: async (id, reason) =>

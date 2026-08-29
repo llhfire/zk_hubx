@@ -9,6 +9,8 @@ import {
   type CompanyEntityRecord,
   updateMockCompanyEntity,
 } from './company-entity/companyEntityData';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './systemConfigConsistency.css';
 
 export function CompanyEntity() {
   const [companyEntities, setCompanyEntities] = useState<CompanyEntityRecord[]>(mockCompanyEntities);
@@ -42,18 +44,18 @@ export function CompanyEntity() {
         <Space>
           {companyEntityPermissions.view && (
             <Tooltip content="查看">
-              <Button type="text" size="small" icon={<IconEye />} onClick={() => openModal('view', record)} />
+              <Button className="hubx-icon-action" type="text" size="small" icon={<IconEye />} aria-label={`查看公司主体${record.name}`} onClick={() => openModal('view', record)} />
             </Tooltip>
           )}
           {companyEntityPermissions.edit && (
             <Tooltip content="编辑">
-              <Button type="text" size="small" icon={<IconEdit />} onClick={() => openModal('edit', record)} />
+              <Button className="hubx-icon-action" type="text" size="small" icon={<IconEdit />} aria-label={`编辑公司主体${record.name}`} onClick={() => openModal('edit', record)} />
             </Tooltip>
           )}
           {companyEntityPermissions.delete && (
             <Tooltip content="删除">
               <Popconfirm title="确定要删除该主体吗?" onOk={() => Message.success('删除成功')}>
-                <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+                <Button className="hubx-icon-action" type="text" size="small" status="danger" icon={<IconDelete />} aria-label={`删除公司主体${record.name}`} />
               </Popconfirm>
             </Tooltip>
           )}
@@ -63,19 +65,32 @@ export function CompanyEntity() {
   ];
 
   return (
-    <div>
+    <PageShell
+      className="system-config-page"
+      breadcrumbs={[{ label: '系统管理' }, { label: '公司主体' }]}
+    >
+      <PageHeader
+        title="公司主体"
+        description="维护签约、开票和收付款使用的公司主体及资料。"
+        actions={companyEntityPermissions.create ? (
+          <Button type="primary" icon={<IconPlus />} onClick={() => openModal('edit', null)}>新建主体</Button>
+        ) : undefined}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '主体总数', value: `${companyEntities.length} 家`, detail: '当前主体台账' },
+        { key: 'active', label: '启用主体', value: `${companyEntities.filter(item => item.status === '启用').length} 家`, detail: '可用于业务单据', tone: 'success' },
+        { key: 'accounts', label: '对公账户', value: `${companyEntities.reduce((sum, item) => sum + item.publicAccounts.length, 0)} 个`, detail: '全部主体账户' },
+        { key: 'files', label: '主体资料', value: `${companyEntities.reduce((sum, item) => sum + item.files.length, 0)} 份`, detail: '资质与合同模板' },
+      ]} />
+
       <Card
         bordered={false}
-        title="本公司主体管理"
-        extra={
-          companyEntityPermissions.create ? (
-            <Button type="primary" icon={<IconPlus />} onClick={() => openModal('edit', null)}>
-              新建主体
-            </Button>
-          ) : null
-        }
+        title="主体列表"
+        className="system-config-card"
       >
-        <Table columns={columns} data={companyEntities} rowKey="id" pagination={{ pageSize: 10 }} />
+        <div className="system-config-result-summary">共 {companyEntities.length} 家公司主体</div>
+        <Table columns={columns} data={companyEntities} rowKey="id" pagination={{ pageSize: 10 }} scroll={{ x: 1350 }} />
       </Card>
 
       <CompanyEntityInfoModal
@@ -124,6 +139,6 @@ export function CompanyEntity() {
         }}
         onCancel={() => setModalVisible(false)}
       />
-    </div>
+    </PageShell>
   );
 }

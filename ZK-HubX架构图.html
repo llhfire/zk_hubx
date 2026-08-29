@@ -42,8 +42,8 @@
 <body>
 
 <div class="title">ZK HubX 功能架构</div>
-<div class="subtitle">中科集团内部运营管理系统 · 按业务价值链规划 · 8 域 · 现有模块 18 + 新增规划 19 = 37 模块</div>
-<div class="note">基于需求底稿 + 交付 SOP 重构 · 现有 = 已实现 / 规划 = 有业务依据、待落地（区分当下与下一步）</div>
+<div class="subtitle">中科集团内部运营管理系统 · 按业务价值链划分 · 8 个业务域 · 40 个功能模块</div>
+<div class="note">本图只说明各模块提供的业务功能</div>
 
 <div class="arch">
 
@@ -53,217 +53,205 @@
 
     <!-- 获客域（拓客引流） -->
     <div class="domain">
-      <div class="domain-header">获客域（拓客引流）<span class="sub">现有 2 + 规划 1 模块</span></div>
+      <div class="domain-header">获客域（拓客引流）</div>
       <div class="module">
         <div class="module-name">多渠道线索接入</div>
-        <div class="module-items">线索派发工作台（录入·派发SLA·首联SLA·催办·等级审核·3人3轮质检·Cohort成交率·穿透抽屉） · 官网表单 · 渠道合作 · 售前群</div>
+        <div class="module-items">集中接收官网、渠道合作和售前群等来源的线索，并完成录入、派发、首次联系提醒、等级审核、退回质检和成交分析。</div>
       </div>
       <div class="module">
         <div class="module-name">线索池与初筛</div>
-        <div class="module-items">原始线索容纳 · 来源标记 · 去重 · 清洗分级</div>
+        <div class="module-items">统一收纳新线索，记录来源，识别重复信息，完成清洗和初步分级。</div>
       </div>
       <div class="module">
-        <div class="module-name">渠道与投放规划<span class="tag plan">规划</span></div>
-        <div class="module-items">渠道台账 · 投放预算 · 线索成本 · 渠道ROI · 市场活动归因</div>
+        <div class="module-name">渠道与投放</div>
+        <div class="module-items">管理获客渠道、投放预算和线索成本，分析各渠道的投入产出和市场活动效果。</div>
       </div>
     </div>
 
     <!-- 线索域（跟进到签约） -->
     <div class="domain">
-      <div class="domain-header">销售域（跟进→签约）<span class="sub">现有 4 + 规划 2 模块</span></div>
+      <div class="domain-header">销售域（跟进到签约）</div>
       <div class="module">
         <div class="module-name">线索全流程</div>
-        <div class="module-items">认领 · 分配 · 跟进记录 · 线索流转 · 生命周期 · 公海回收 · 360详情 · 报价工作台入口 · 合同向导 · 签约开启出未确认项目 · 线索侧合同/回款引用 · 项目执行综合视图 · β接缝（LeadService mock/http）</div>
+        <div class="module-items">管理线索从认领、分配、跟进、报价到签约的全过程，并集中查看客户资料、附件、合同、回款和后续项目进展。</div>
       </div>
       <div class="module">
         <div class="module-name">报价工作台</div>
-        <div class="module-items">两级功能清单 · 人天评估 · 增项报价 · 数据/文件双来源 · 审批配置会签 · 标准件客户报价单 · 已确认生成合同</div>
+        <div class="module-items">梳理客户需求，评估工期和人力，形成报价单，完成审核、盖章、发送和客户确认，并可据此创建合同。</div>
       </div>
       <div class="module">
         <div class="module-name">客户与报价基础</div>
-        <div class="module-items">客户档案 · 联系人 · 关系视图 · 开票信息</div>
+        <div class="module-items">维护客户档案、联系人、合作关系和开票资料，集中查看客户相关线索、报价与合同。</div>
       </div>
       <div class="module">
         <div class="module-name">合同签约</div>
-        <div class="module-items">合同创建 · 模板管理 · 版本管理 · 合同审批 · 合同归档 · 已确认生成主合同 · 补充报价→补充合同 · 批准触发交付启动</div>
+        <div class="module-items">创建和编辑合同，管理合同模板、版本、审批、归档与补充合同，并在合同生效后启动项目交付。</div>
       </div>
       <div class="module">
-        <div class="module-name">跟进助手规划<span class="tag plan">规划</span></div>
-        <div class="module-items">自动提醒 · 跟进待办 · 阶段建议</div>
+        <div class="module-name">跟进助手</div>
+        <div class="module-items">根据跟进计划提供提醒和待办，并为下一步销售动作提供阶段建议。</div>
       </div>
       <div class="module">
-        <div class="module-name">报价与合规增强规划<span class="tag plan">规划</span></div>
-        <div class="module-items">版本Diff · 代理转交 · 电子签章 · 合规档案（Excel 双源已收口进报价工作台文件流转）</div>
+        <div class="module-name">报价与合规管理</div>
+        <div class="module-items">对比报价版本，支持工作转交、电子签章和合规资料归档，保留完整报价记录。</div>
       </div>
     </div>
     <!-- 交付域 -->
     <div class="domain">
-      <div class="domain-header">交付域（执行）<span class="sub">现有 3 + 规划 2 模块</span></div>
+      <div class="domain-header">交付域（项目执行）</div>
       <div class="module">
         <div class="module-name">项目管理</div>
-        <div class="module-items">项目360详情 · 未确认/指派/退回 · 改指产品经理 · 售前历程 · 报价合同联动 · 回款期次 · 任务日报成本 · 会议纪要/确认书/演示 · 合同批准开工 · 主合同作废则搁置 · 智能诊断抽屉 · 大事记收敛 · β联动服务端化（ADR-0093） · β接缝（ProjectService）</div>
+        <div class="module-items">管理项目负责人、计划、任务、进度、日报、成本、会议、资料和风险，并关联售前、报价、合同与回款信息。</div>
       </div>
       <div class="module">
         <div class="module-name">日报工时</div>
-        <div class="module-items">统一入口 · 各岗日报 · 日报配置 · 评论 · 快捷填充 · 工时×时薪成本</div>
+        <div class="module-items">支持不同岗位填写日报和工时，进行评论、补录、查询与汇总，并计算人员投入成本。</div>
       </div>
       <div class="module">
         <div class="module-name">交付支撑</div>
-        <div class="module-items">合同交付跟进 · 变更管理 · 进度跟踪 · 知识库 · 会议纪要 · 演示上传 · SOP 交付计划自动生成</div>
+        <div class="module-items">跟踪合同交付、需求变更和项目进度，管理知识、会议纪要与演示资料，并形成标准交付计划。</div>
       </div>
       <div class="module">
-        <div class="module-name">工时加工规划<span class="tag plan">规划</span></div>
-        <div class="module-items">工时审批 · 统计与分析 · 加班工时</div>
+        <div class="module-name">工时管理</div>
+        <div class="module-items">审批和统计项目工时，分析人员投入，并记录加班工时。</div>
       </div>
       <div class="module">
-        <div class="module-name">交付过程规划<span class="tag plan">规划</span></div>
-        <div class="module-items">里程碑 · 验收流程 · 需求变更管控</div>
-      </div>
-    </div>
-
-    <!-- 资源域（新增·核心） -->
-    <div class="domain">
-      <div class="domain-header">资源域（新增）<span class="sub">规划 5 模块（新增）</span></div>
-      <div class="module">
-        <div class="module-name">资源台账<span class="tag plan">规划</span></div>
-        <div class="module-items">SSL证书 · 域名 · 云资源 · 大模型Token · 第三方接口 · 应用商店</div>
-      </div>
-      <div class="module">
-        <div class="module-name">到期预警与续费<span class="tag plan">规划</span></div>
-        <div class="module-items">到期前30天提醒 · 续费 · 额度监控 · 扩容</div>
-      </div>
-      <div class="module">
-        <div class="module-name">资质与上架档案<span class="tag plan">规划</span></div>
-        <div class="module-items">ICP备案 · 小程序备案 · APP上架 · 软著</div>
-      </div>
-      <div class="module">
-        <div class="module-name">机密凭据库<span class="tag plan">规划</span></div>
-        <div class="module-items">密钥 · Token · 证书 · 账号 加密归档（最高密级）</div>
-      </div>
-      <div class="module">
-        <div class="module-name">月度巡检<span class="tag plan">规划</span></div>
-        <div class="module-items">资源巡检 · 异常报告 · 零关停保障</div>
+        <div class="module-name">交付过程管理</div>
+        <div class="module-items">管理项目里程碑、客户验收和需求变更，确保交付过程可跟踪。</div>
       </div>
     </div>
 
-    <!-- 运维域（新增） -->
+    <!-- 资源域 -->
     <div class="domain">
-      <div class="domain-header">运维域（新增）<span class="sub">规划 4 模块（新增）</span></div>
+      <div class="domain-header">资源域</div>
       <div class="module">
-        <div class="module-name">运维工单<span class="tag plan">规划</span></div>
-        <div class="module-items">故障上报 · 处理流转 · SLA响应 · 工单记录</div>
+        <div class="module-name">资源台账</div>
+        <div class="module-items">统一登记证书、域名、云资源、智能服务额度、第三方服务和应用商店账号。</div>
       </div>
       <div class="module">
-        <div class="module-name">版本迭代支持<span class="tag plan">规划</span></div>
-        <div class="module-items">迭代需求 · 版本管理 · 重新提审 · 资源配置更新</div>
+        <div class="module-name">到期预警与续费</div>
+        <div class="module-items">监控资源有效期和使用额度，提供到期提醒、续费和扩容管理。</div>
       </div>
       <div class="module">
-        <div class="module-name">售后与培训<span class="tag plan">规划</span></div>
-        <div class="module-items">客户培训 · 操作手册 · 运维手册 · 满意度调研</div>
+        <div class="module-name">资质与上架档案</div>
+        <div class="module-items">管理网站和小程序备案、应用上架及软件著作权等资质资料。</div>
       </div>
       <div class="module">
-        <div class="module-name">项目复盘<span class="tag plan">规划</span></div>
-        <div class="module-items">交付复盘 · 知识沉淀 · 功能复用库 · 避坑手册</div>
+        <div class="module-name">机密凭据库</div>
+        <div class="module-items">集中保管密钥、证书和重要账号，控制访问权限并记录使用情况。</div>
+      </div>
+      <div class="module">
+        <div class="module-name">月度巡检</div>
+        <div class="module-items">定期检查资源状态，记录异常并跟踪处理，降低服务中断风险。</div>
+      </div>
+    </div>
+
+    <!-- 运维域 -->
+    <div class="domain">
+      <div class="domain-header">运维域</div>
+      <div class="module">
+        <div class="module-name">运维工单</div>
+        <div class="module-items">受理故障和服务请求，分派处理人员，跟踪响应时限并保留处理记录。</div>
+      </div>
+      <div class="module">
+        <div class="module-name">版本迭代支持</div>
+        <div class="module-items">收集迭代需求，管理版本发布、重新审核和相关资源调整。</div>
+      </div>
+      <div class="module">
+        <div class="module-name">售后与培训</div>
+        <div class="module-items">安排客户培训，管理操作与维护手册，并收集客户满意度反馈。</div>
+      </div>
+      <div class="module">
+        <div class="module-name">项目复盘</div>
+        <div class="module-items">总结项目经验和问题，沉淀知识、可复用功能与风险防范建议。</div>
       </div>
     </div>
 
     <!-- 财务域 -->
     <div class="domain">
-      <div class="domain-header">财务域<span class="sub">现有 7 + 规划 1 模块</span></div>
+      <div class="domain-header">财务域</div>
       <div class="module">
         <div class="module-name">回款管理</div>
-        <div class="module-items">期次拆分 · 实际回款 · 状态自动计算 · 权限矩阵 · 逾期判断 · 合同回款Tab · β接缝（实收台账collections）</div>
+        <div class="module-items">按合同拆分回款计划，登记实际到账，识别待收、部分到账和逾期状态，并跟踪催收。</div>
       </div>
       <div class="module">
         <div class="module-name">开票管理</div>
-        <div class="module-items">开票登记 · 发票冲红 · 开票工作台 · 开票统计</div>
+        <div class="module-items">管理开票申请、发票登记和冲红处理，并统计开票进度与金额。</div>
       </div>
       <div class="module">
         <div class="module-name">成本核算</div>
-        <div class="module-items">按人员工时成本 · 差旅/商务/第三方 · 运营分摊（读公共运营池） · 异常检测</div>
+        <div class="module-items">归集人工、差旅、商务、第三方和公共运营费用，核算项目成本并识别异常。</div>
       </div>
       <div class="module">
         <div class="module-name">运营费用</div>
-        <div class="module-items">费用大盘（双口径/八层堆叠/部门与项目直接排行/三条异动） · 费用台账（导出/发生日） · 周期模板 · 公摊参数（公式条/只读结果表） · 科目入口（同一棵树） · 公共运营池 · 工资平移预测</div>
+        <div class="module-items">管理运营费用台账、周期费用、公共费用分摊和费用科目，分析部门与项目支出趋势。</div>
       </div>
       <div class="module">
         <div class="module-name">财务视图</div>
-        <div class="module-items">财务审批 · 财务报表 · 合同统计 · 项目成本 · 回款开票报表</div>
+        <div class="module-items">集中处理财务审批，查看收入、支出、合同、项目成本、回款和开票报表。</div>
       </div>
       <div class="module">
         <div class="module-name">精益交付</div>
-        <div class="module-items">业务单（财务交付视角） · 仪表盘气泡图 · EAC/利润/WIP · 敏感性模拟器 · 事后总结 · 五链派生化（引用报价域/合同域） · 1主多补演进脉络 · 穿透看板 · 成本五类（人工/差旅/推广/商务/第三方）</div>
+        <div class="module-items">从财务视角查看业务单的收入、成本、预计完工成本和利润，识别在制项目风险并支持经营分析。</div>
       </div>
       <div class="module">
         <div class="module-name">差旅管理</div>
-        <div class="module-items">出差申请（必挂项目或线索） · 报销/借款冲抵 · 硬软超标 · 单一补贴 · 宿舍（费用唯一写入方） · 费用标准 · 差旅看板 · 报销双出口（运营费用归集+成本流水）</div>
+        <div class="module-items">管理出差申请、借款、报销、补贴、住宿和费用标准，并将差旅费用归集到相关项目或线索。</div>
       </div>
       <div class="module">
-        <div class="module-name">全期次视图规划<span class="tag plan">规划</span></div>
-        <div class="module-items">一屏查看项目全期次回款与开票</div>
+        <div class="module-name">全期次视图</div>
+        <div class="module-items">集中查看项目全部回款期次、到账情况和开票进度。</div>
       </div>
     </div>
 
     <!-- 支撑域（含人资行政） -->
     <div class="domain">
-      <div class="domain-header">支撑域（人资行政）<span class="sub">现有 3 + 规划 3 模块</span></div>
+      <div class="domain-header">支撑域（人资行政）</div>
       <div class="module">
         <div class="module-name">组织与权限</div>
-        <div class="module-items">用户 · 部门 · 职位 · 职位管理 · 角色授权 · 菜单路由 · 数据字典 · 逐人权限</div>
+        <div class="module-items">管理用户、部门、职位、角色和个人权限，并维护全系统通用业务字典。</div>
       </div>
       <div class="module">
         <div class="module-name">人资行政</div>
-        <div class="module-items">员工列表 · 岗位 · 工资 · 调整记录 · 考勤请假 · 员工档案</div>
+        <div class="module-items">管理员工档案、岗位、薪资调整、考勤和请假信息。</div>
       </div>
       <div class="module">
         <div class="module-name">工作台与审批</div>
-        <div class="module-items">工作台 · 个人中心 · 站内信 · 短信通知 · 待办中心 · 数据看板 · 审批中心 · 功能看板页签（功能架构/技术架构/工作记录）</div>
+        <div class="module-items">集中展示个人任务、提醒、消息、数据概览和审批事项，并提供系统功能全景查看入口。</div>
       </div>
       <div class="module">
-        <div class="module-name">人力增强规划<span class="tag plan">规划</span></div>
-        <div class="module-items">薪酬管理 · 员工成本 · 社保公积金 · 招聘 · 培训 · 绩效</div>
+        <div class="module-name">人力资源管理</div>
+        <div class="module-items">管理薪酬、员工成本、社保公积金、招聘、培训和绩效。</div>
       </div>
       <div class="module">
-        <div class="module-name">行政后勤规划<span class="tag plan">规划</span></div>
-        <div class="module-items">固定资产 · 办公物品 · 会议室 · 行政流程 · 物资采购</div>
+        <div class="module-name">行政后勤</div>
+        <div class="module-items">管理固定资产、办公物品、会议室、行政事务和物资采购。</div>
       </div>
       <div class="module">
-        <div class="module-name">智能会议<span class="tag progress">阶段A完成</span></div>
-        <div class="module-items">纪要列表（本月沉淀/搜索/筛选） · 纪要工作台（原始文本/AI草稿/核心决议/正文/行动项/版本留痕） · 行动项TODO只读投影（幂等同步） · 行政会议来源入口（一次性快照） · AI解析与润色（α确定性/β服务端） · β接线（D1 smart_minutes）</div>
+        <div class="module-name">智能会议</div>
+        <div class="module-items">整理会议原始记录，生成和编辑纪要、决议与行动事项，保留版本记录并同步个人待办。</div>
       </div>
     </div>
 
-    <!-- 跨域工具（基础能力 + 管理者 + 开发） -->
+    <!-- 跨域工具 -->
     <div class="domain">
-      <div class="domain-header">跨域工具<span class="sub">现有 5 + 规划 2 模块</span></div>
+      <div class="domain-header">跨域工具</div>
       <div class="module">
         <div class="module-name">基础工具</div>
-        <div class="module-items">登录 · 操作日志 · 权限拦截 · 工天配置（大小周） · 企微集成 · β数据底座（乐观锁/actor/时钟服务端可信 ADR-0094） · 全局搜索（⌘K 六实体检索直达）</div>
+        <div class="module-items">提供企业微信协同、全局搜索、数据报表、资产、供应商、登录安全、操作记录和全链路投入产出分析。</div>
       </div>
       <div class="module">
-        <div class="module-name">管理者工具<span class="tag plan">规划</span></div>
-        <div class="module-items">经营驾驶舱 · 全域报表 · 组织健康度 · 审批总览 · 经营预警</div>
+        <div class="module-name">管理者工具</div>
+        <div class="module-items">为管理者提供经营概览、综合报表、组织健康度、审批总览和经营风险预警。</div>
       </div>
       <div class="module">
-        <div class="module-name">开发者工具规划<span class="tag plan">规划</span></div>
-        <div class="module-items">代码生成器 · 数据迁移工具</div>
+        <div class="module-name">系统维护工具</div>
+        <div class="module-items">辅助系统管理员批量配置功能、整理业务数据和完成历史数据迁移。</div>
       </div>
     </div>
 
   </div>
 
-  <div class="bottom-bar">
-    <div class="domain-header" style="border-bottom:1px solid #ddd;">
-      业务全景图例
-      <span class="sub" style="display:inline; margin-left:8px;">现有 = 已实现 · 规划 = 有业务依据、待落地</span>
-    </div>
-  </div>
-
-</div>
-
-<div class="legend">
-  <span><i style="background:#666;"></i> 现有（已实现 / 当前交付）</span>
-  <span><i style="background:#ccc;"></i> 规划（有业务依据、待落地）</span>
 </div>
 
 <div class="stats">
@@ -272,10 +260,10 @@
   <div class="stat"><div class="num">5</div><div class="label">交付域</div></div>
   <div class="stat"><div class="num">5</div><div class="label">资源域</div></div>
   <div class="stat"><div class="num">4</div><div class="label">运维域</div></div>
-  <div class="stat"><div class="num">6</div><div class="label">财务域</div></div>
-  <div class="stat"><div class="num">5</div><div class="label">支撑域</div></div>
+  <div class="stat"><div class="num">8</div><div class="label">财务域</div></div>
+  <div class="stat"><div class="num">6</div><div class="label">支撑域</div></div>
   <div class="stat"><div class="num">3</div><div class="label">跨域工具</div></div>
-  <div class="stat"><div class="num">37</div><div class="label">模块合计（现18规19）</div></div>
+  <div class="stat"><div class="num">40</div><div class="label">功能模块合计</div></div>
 </div>
 
 </body>

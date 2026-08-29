@@ -1,0 +1,57 @@
+.daily-report-list__content-card .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.daily-report-list__keyword {
+  flex: 0 0 260px;
+  width: 260px;
+}
+
+.daily-report-list__department {
+  flex: 0 0 180px;
+  width: 180px;
+}
+
+.daily-report-list__date-range {
+  flex: 0 0 280px;
+  width: 280px;
+}
+
+.daily-report-list__result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-2);
+  font-size: 13px;
+}
+
+.daily-report-list__empty {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .daily-report-list .hubx-filter-bar__fields {
+    width: 100%;
+  }
+
+  .daily-report-list__keyword,
+  .daily-report-list__department,
+  .daily-report-list__date-range {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .daily-report-list__result-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

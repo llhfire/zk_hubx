@@ -23,7 +23,8 @@ function uid(prefix: string): string {
 }
 
 export function Stage1FeatureList({ quote, readonly }: StageProps) {
-  const { saveFeatureList, submitFeatureList, setDeadline, updateQuote } = useQuotation();
+  const { saveFeatureList, submitFeatureList, setDeadline, updateQuote, isLeadFrozen } = useQuotation();
+  const leadFrozen = isLeadFrozen(quote.id);
   const [localList, setLocalList] = useState<FeatureModule[]>(quote.featureList);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [editingEndpoint, setEditingEndpoint] = useState<string | null>(null);
@@ -676,7 +677,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
           <Text type="secondary" style={{ fontSize: 12 }}>
             提交后功能清单锁定，技术评估阶段将基于此生成人天评估表
           </Text>
-          <Button type="primary" icon={<IconSend />} onClick={handleSubmit}>校验并提交工时评估</Button>
+          <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSubmit}>校验并提交工时评估</Button>
         </Space>
       )}
     </div>

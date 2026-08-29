@@ -32,6 +32,7 @@ export interface MinuteListSummary {
   openTodoCount: number;
   refChips: BusinessRef[];
   updatedAt: string;
+  searchText: string;
 }
 
 /** 月度沉淀统计 */
@@ -46,6 +47,7 @@ export function summarizeMinutes(
   all: SmartMinute[],
   todos: TodoItem[],
   viewer: ViewerContext,
+  resolveUserName: (userId: string) => string = (userId) => userId,
 ): MinuteListSummary[] {
   return all
     .map(m => {
@@ -65,34 +67,31 @@ export function summarizeMinutes(
         return true;
       });
 
+      const attendeeNames = m.attendeeIds.map(resolveUserName);
+
       return {
         id: m.id,
         title: m.title,
         meetingTime: m.meetingTime,
         status: m.status,
-        attendeeSummary: m.attendeeIds.length > 3
-          ? `${m.attendeeIds.slice(0, 3).join('、')}等${m.attendeeIds.length}人`
-          : m.attendeeIds.join('、'),
+        attendeeSummary: attendeeNames.length > 3
+          ? `${attendeeNames.slice(0, 3).join('、')}等${attendeeNames.length}人`
+          : attendeeNames.join('、'),
         openTodoCount,
         refChips,
         updatedAt: m.updatedAt,
+        searchText: [
+          m.title,
+          ...m.coreDecisions,
+          m.contentMarkdown,
+          ...m.actionItems.map(action => action.content),
+          ...refChips.map(ref => ref.displaySnapshot),
+          ...attendeeNames,
+          ...m.attendeeIds,
+        ].join('\n').toLowerCase(),
       };
     })
     .filter((s): s is MinuteListSummary => s !== null);
-}
-
-/** 关键词匹配：标题/决议/正文/行动项/可见引用/参会人 */
-function matchesKeyword(m: SmartMinute, keyword: string): boolean {
-  const lower = keyword.toLowerCase();
-
-  if (m.title.toLowerCase().includes(lower)) return true;
-  if (m.coreDecisions.some(d => d.toLowerCase().includes(lower))) return true;
-  if (m.contentMarkdown.toLowerCase().includes(lower)) return true;
-  if (m.actionItems.some(a => a.content.toLowerCase().includes(lower))) return true;
-  if (m.refs.some(r => r.displaySnapshot.toLowerCase().includes(lower))) return true;
-  if (m.attendeeIds.some(id => id.toLowerCase().includes(lower))) return true;
-
-  return false;
 }
 
 /** 筛选列表摘要 */
@@ -102,12 +101,7 @@ export function filterMinutes(
 ): MinuteListSummary[] {
   return summaries.filter(s => {
     if (q.keyword) {
-      // 从摘要中匹配（简化版，完整版需回源 SmartMinute）
-      const lower = q.keyword.toLowerCase();
-      if (!s.title.toLowerCase().includes(lower) &&
-          !s.refChips.some(r => r.displaySnapshot.toLowerCase().includes(lower))) {
-        return false;
-      }
+      if (!s.searchText.includes(q.keyword.trim().toLowerCase())) return false;
     }
 
     if (q.status && q.status.length > 0 && !q.status.includes(s.status)) return false;

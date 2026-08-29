@@ -3,6 +3,8 @@ import { Button, Card, Input, Message, Modal, Select, Space, Table, Tag, Tooltip
 import { IconRefresh, IconSearch, IconDelete } from '@arco-design/web-react/icon';
 import { useIntegration } from '@/app/integrations/IntegrationContext';
 import type { DeliveryLog, MessageChannel } from '@/app/integrations/types';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../systemConfigConsistency.css';
 
 const Text = Typography.Text;
 const channelLabels: Record<MessageChannel, string> = { in_app: '站内信', wecom: '企业微信', sms: '阿里云短信' };
@@ -95,6 +97,7 @@ export function MessageCenter() {
             status="danger"
             size="small"
             icon={<IconDelete />}
+            aria-label={`删除消息：${record.title}`}
             onClick={() => confirmDelete([record.id])}
           />
         </Tooltip>
@@ -103,12 +106,19 @@ export function MessageCenter() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div>
-        <Text type="secondary">统一查看站内信、企业微信和阿里云短信的模拟投递结果。</Text>
-      </div>
-      <Card bordered={false}>
-        <div style={{ marginBottom: 16 }}>
+    <PageShell className="system-config-page" breadcrumbs={[{ label: '系统管理' }, { label: '消息中心' }]}>
+      <PageHeader
+        title="消息中心"
+        description="统一查看站内信、企业微信和阿里云短信的模拟投递结果。"
+      />
+      <ProcessMetricGrid items={[
+        { key: 'all', label: '全部消息', value: logs.length, detail: '当前浏览器投递记录' },
+        { key: 'success', label: '投递成功', value: logs.filter((log) => log.status === 'success').length, detail: '已送达目标通道', tone: 'success' },
+        { key: 'failed', label: '投递失败', value: logs.filter((log) => log.status === 'failed').length, detail: '需要检查通道配置', tone: logs.some((log) => log.status === 'failed') ? 'danger' : 'neutral' },
+        { key: 'unread', label: '站内未读', value: logs.filter((log) => log.channel === 'in_app' && !log.read).length, detail: '等待当前用户查看', tone: 'warning' },
+      ]} />
+      <Card className="system-config-card" title="投递记录" bordered={false}>
+        <div className="system-config-section-toolbar">
           <Space wrap>
             <Input
               prefix={<IconSearch />}
@@ -123,10 +133,16 @@ export function MessageCenter() {
             <Select placeholder="发送通道" allowClear style={{ width: 150 }} value={channel || undefined} onChange={(value) => setChannel(value || '')} options={Object.entries(channelLabels).map(([value, label]) => ({ value, label }))} />
             <Select placeholder="投递状态" allowClear style={{ width: 130 }} value={status || undefined} onChange={(value) => setStatus(value || '')} options={[{ label: '成功', value: 'success' }, { label: '失败', value: 'failed' }, { label: '未触发', value: 'skipped' }]} />
             <Button icon={<IconRefresh />} onClick={resetFilters}>重置</Button>
+          </Space>
+          <Space>
             <Button status="danger" disabled={selectedRowKeys.length === 0} onClick={() => confirmDelete(selectedRowKeys)}>
               批量删除{selectedRowKeys.length > 0 ? `（${selectedRowKeys.length}）` : ''}
             </Button>
           </Space>
+        </div>
+        <div className="system-config-result-summary">
+          <span>筛选结果 {data.length} 条</span>
+          <span>{selectedRowKeys.length > 0 ? `已选择 ${selectedRowKeys.length} 条` : '可勾选记录后批量删除'}</span>
         </div>
         <Table
           rowKey="id"
@@ -141,6 +157,6 @@ export function MessageCenter() {
           scroll={{ x: 1450 }}
         />
       </Card>
-    </Space>
+    </PageShell>
   );
 }

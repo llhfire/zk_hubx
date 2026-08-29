@@ -8,15 +8,40 @@ import {
   customerPartyMismatch,
   filterProjectsForViewer,
   isInternalProject,
+  isSameLeadIdentity,
   isVisibleToProductManager,
   leadProjectBanner,
   projectBudgetAlert,
   reassignProductManager,
   shelveProject,
   shouldSpawnUnconfirmedProject,
+  signingLeadTransitions,
   spawnUnconfirmedProject,
   startDelivery,
+  unconfirmedProjectId,
 } from '../caseUtils';
+
+describe('未确认项目身份', () => {
+  it('有线索时统一使用规范化线索 ID，无线索时回退合同 ID', () => {
+    expect(unconfirmedProjectId({ leadId: 'lead-9', contractId: 'c-9' })).toBe('ap-lead-9');
+    expect(unconfirmedProjectId({ leadId: '5945' })).toBe('ap-lead-5945');
+    expect(unconfirmedProjectId({ contractId: 'c-9' })).toBe('ap-c-9');
+    expect(() => unconfirmedProjectId({})).toThrow(/至少需要/);
+  });
+
+  it('数字线索 ID 与 lead- 前缀别名视为同一身份', () => {
+    expect(isSameLeadIdentity('9', 'lead-9')).toBe(true);
+    expect(isSameLeadIdentity('lead-9', 'lead-10')).toBe(false);
+  });
+
+  it('只在状态首次进入签约阶段时产生事件，首帧不批量生成', () => {
+    expect(signingLeadTransitions(null, [{ id: '9', status: '合同洽谈' }])).toEqual([]);
+    expect(signingLeadTransitions(
+      { '9': '方案报价', '10': '合同洽谈' },
+      [{ id: '9', status: '合同洽谈' }, { id: '10', status: '已签单' }],
+    )).toEqual([{ id: '9', status: '合同洽谈' }]);
+  });
+});
 
 describe('shouldSpawnUnconfirmedProject', () => {
   it('未到签约且没有合同，不建项目', () => {

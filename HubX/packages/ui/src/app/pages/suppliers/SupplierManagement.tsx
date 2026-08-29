@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   Card,
+  Empty,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
@@ -12,15 +12,9 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
-  InputNumber,
-  TextArea,
-  Typography,
   Rate,
   Avatar,
-  Descriptions,
   Divider,
-  Progress,
   Popconfirm,
 } from '@arco-design/web-react';
 import {
@@ -29,16 +23,17 @@ import {
   IconPlus,
   IconEdit,
   IconDelete,
-  IconStar,
   IconCalendar,
-  IconExperiment,
-  IconCheckCircle,
+  IconRefresh,
+  IconSearch,
 } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import { filterSupplierRecords, hasSupplierFilters } from '../supportDomainListModel';
+import '../supportDomainLists.css';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
 const TabPane = Tabs.TabPane;
-const Title = Typography.Title;
 const FormItem = Form.Item;
 const SelectOption = Select.Option;
 
@@ -122,6 +117,8 @@ export function SupplierManagement() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [form] = Form.useForm();
+  const [keyword, setKeyword] = useState('');
+  const [supplierType, setSupplierType] = useState<SupplierType | ''>('');
 
   const summary = useMemo(() => {
     const totalSuppliers = suppliers.length;
@@ -130,6 +127,9 @@ export function SupplierManagement() {
     const unpaidAmount = mockPayments.filter(p => p.status === 'unpaid').reduce((s, p) => s + p.amount, 0);
     return { totalSuppliers, totalContracts, totalAmount, unpaidAmount, paidAmount: totalAmount - unpaidAmount };
   }, [suppliers]);
+  const filteredSuppliers = useMemo(() => filterSupplierRecords(suppliers, { keyword, type: supplierType }), [keyword, supplierType, suppliers]);
+  const filtersActive = hasSupplierFilters({ keyword, type: supplierType });
+  const currentCount = activeTab === 'suppliers' ? filteredSuppliers.length : activeTab === 'contracts' ? mockSubcontracts.length : mockPayments.length;
 
   const handleAdd = () => {
     setEditingSupplier(null);
@@ -165,20 +165,28 @@ export function SupplierManagement() {
     });
   };
 
+  const resetFilters = () => {
+    setKeyword('');
+    setSupplierType('');
+  };
+
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="供应商数" value={summary.totalSuppliers} suffix="家" icon={<IconUser style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="分包合同" value={summary.totalContracts} suffix="个" icon={<IconFile style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="合同总额" value={summary.totalAmount} prefix="¥" /></Card></Col>
-        <Col span={4}><Card><Statistic title="已付金额" value={summary.paidAmount} prefix="¥" icon={<IconCheckCircle style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="未付金额" value={summary.unpaidAmount} prefix="¥" icon={<IconCalendar style={{ color: 'var(--destructive-500)' }} />} valueStyle={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="合作评级" value={(suppliers.reduce((s, sup) => s + sup.rating, 0) / Math.max(suppliers.length, 1)).toFixed(1)} suffix="★" icon={<IconStar style={{ color: 'var(--warning-300)' }} />} /></Card></Col>
-      </Row>
+    <PageShell className="support-domain-list supplier-management-page">
+      <PageHeader
+        title="供应商管理"
+        description="统一维护供应商能力、分包合同与付款进度，支持快速筛选合作资源。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增供应商</Button>}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'suppliers', label: '供应商', value: summary.totalSuppliers, detail: `平均评级 ${(suppliers.reduce((sum, supplier) => sum + supplier.rating, 0) / Math.max(suppliers.length, 1)).toFixed(1)} ★` },
+        { key: 'contracts', label: '分包合同', value: summary.totalContracts, detail: `总额 ¥${summary.totalAmount.toLocaleString()}` },
+        { key: 'unpaid', label: '待付金额', value: `¥${summary.unpaidAmount.toLocaleString()}`, detail: '未付款计划', tone: summary.unpaidAmount ? 'warning' : 'neutral' },
+        { key: 'result', label: '当前结果', value: currentCount, detail: activeTab === 'suppliers' && filtersActive ? '供应商筛选结果' : '当前页签记录' },
+      ]} />
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
+      <Card bordered={false} className="support-domain-list__card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="suppliers" title={<span><IconUser /> 供应商档案</span>} />
           <TabPane key="contracts" title={<span><IconFile /> 分包合同</span>} />
@@ -188,21 +196,26 @@ export function SupplierManagement() {
         <div style={{ paddingTop: 16 }}>
           {/* 供应商档案 Tab */}
           {activeTab === 'suppliers' && (
-            <div>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增供应商</Button>
-              </div>
-              <Row gutter={16}>
-                {suppliers.map(supplier => (
-                  <Col span={8} key={supplier.id} style={{ marginBottom: 16 }}>
+            <div className="support-domain-list__panel">
+              <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置</Button> : undefined}>
+                <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} prefix={<IconSearch />} placeholder="搜索供应商、联系人、电话或技能" allowClear />
+                <Select className="support-domain-list__select" value={supplierType || undefined} placeholder="全部类型" allowClear onChange={(value) => setSupplierType((value || '') as SupplierType | '')}>
+                  <SelectOption value="company">企业</SelectOption>
+                  <SelectOption value="individual">个人</SelectOption>
+                </Select>
+              </FilterBar>
+              <div className="support-domain-list__result-summary"><span>共 {filteredSuppliers.length} 家供应商</span>{filtersActive && <span>已按当前条件筛选</span>}</div>
+              {filteredSuppliers.length ? <Row gutter={16}>
+                {filteredSuppliers.map(supplier => (
+                  <Col span={8} key={supplier.id} className="support-supplier-card" style={{ marginBottom: 16 }}>
                     <Card
                       size="small"
                       style={{ borderRadius: 8 }}
                       extra={
                         <Space>
-                          <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEdit(supplier)} />
+                          <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑供应商${supplier.name}`} icon={<IconEdit />} onClick={() => handleEdit(supplier)} />
                           <Popconfirm title="确定删除?" onOk={() => handleDelete(supplier.id)}>
-                            <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+                            <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除供应商${supplier.name}`} icon={<IconDelete />} />
                           </Popconfirm>
                         </Space>
                       }
@@ -240,13 +253,13 @@ export function SupplierManagement() {
                     </Card>
                   </Col>
                 ))}
-              </Row>
+              </Row> : <div className="support-domain-list__empty"><Empty description="没有符合当前条件的供应商" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
             </div>
           )}
 
           {/* 分包合同 Tab */}
           {activeTab === 'contracts' && (
-            <Table
+            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockSubcontracts.length} 份分包合同</span><span>合同总额 ¥{summary.totalAmount.toLocaleString()}</span></div><Table
               columns={[
                 { title: '合同编号', dataIndex: 'contractNo', width: 130 },
                 { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
@@ -266,12 +279,13 @@ export function SupplierManagement() {
               data={mockSubcontracts}
               rowKey="id"
               pagination={false}
-            />
+              scroll={{ x: 860 }}
+            /></div>
           )}
 
           {/* 付款记录 Tab */}
           {activeTab === 'payments' && (
-            <Table
+            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockPayments.length} 条付款计划</span><span>待付 ¥{summary.unpaidAmount.toLocaleString()}</span></div><Table
               columns={[
                 { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '项目', dataIndex: 'projectName', width: 160 },
@@ -292,7 +306,8 @@ export function SupplierManagement() {
               data={mockPayments}
               rowKey="id"
               pagination={false}
-            />
+              scroll={{ x: 880 }}
+            /></div>
           )}
         </div>
       </Card>
@@ -355,6 +370,6 @@ export function SupplierManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

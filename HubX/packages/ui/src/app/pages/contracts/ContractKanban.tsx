@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, Card, Space, Typography } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import { useContracts } from './ContractsContext';
 import { computeKanbanSummary, getReceivedAmount } from './paymentUtils';
 import type { Contract } from './types';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { withCollectionLedger } from '@/services/collectionMutations';
+import './ContractKanban.css';
 
-const Title = Typography.Title;
 const Text = Typography.Text;
 
 type DateFilter = 'all' | 'current' | '3m' | '6m' | '1y';
@@ -57,30 +60,16 @@ function trendMonths(filter: DateFilter, now: Date) {
   return Array.from({ length: count }, (_, index) => addMonths(now, index - count + 1));
 }
 
-function cardStyle() {
-  return { borderRadius: 18, boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)' };
-}
-
-function metric(label: string, value: string, hint: string, color: string) {
-  return (
-    <Card bordered={false} style={{ borderRadius: 14, boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)' }}>
-      <Text type="secondary">{label}</Text>
-      <div style={{ fontSize: 24, fontWeight: 700, color, marginTop: 8 }}>{value}</div>
-      <Text type="secondary" style={{ fontSize: 12 }}>{hint}</Text>
-    </Card>
-  );
-}
-
 function progressRow(label: string, value: number, max: number, color: string) {
   const width = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
   return (
-    <div style={{ marginTop: 26 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, marginBottom: 10 }}>
+    <div className="contract-kanban__progress-row">
+      <div className="contract-kanban__progress-label">
         <span>{label}</span>
         <strong>{money(value)}</strong>
       </div>
-      <div style={{ height: 10, background: 'var(--grey-100)', borderRadius: 999, overflow: 'hidden' }}>
-        <div style={{ width: `${width}%`, height: '100%', background: color, borderRadius: 999 }} />
+      <div className="contract-kanban__progress-track">
+        <div className="contract-kanban__progress-fill" style={{ width: `${width}%`, background: color }} />
       </div>
     </div>
   );
@@ -101,13 +90,13 @@ function donutGradient(items: Array<{ color: string; value: number }>) {
 function barListRow(label: string, value: number, max: number) {
   const width = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
   return (
-    <div style={{ marginTop: 22 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, marginBottom: 10 }}>
+    <div className="contract-kanban__progress-row">
+      <div className="contract-kanban__progress-label">
         <span>{label}</span>
         <strong>{value} 个</strong>
       </div>
-      <div style={{ height: 10, background: 'var(--grey-100)', borderRadius: 999, overflow: 'hidden' }}>
-        <div style={{ width: `${width}%`, height: '100%', background: 'var(--brand-600)', borderRadius: 999 }} />
+      <div className="contract-kanban__progress-track">
+        <div className="contract-kanban__progress-fill" style={{ width: `${width}%`, background: 'var(--brand-600)' }} />
       </div>
     </div>
   );
@@ -116,12 +105,17 @@ function barListRow(label: string, value: number, max: number) {
 export function ContractKanban() {
   const navigate = useNavigate();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const financialContracts = useMemo(
+    () => contracts.map((contract) => withCollectionLedger(contract, collections)),
+    [contracts, collections],
+  );
 
   const data = useMemo(() => {
     const now = new Date();
     const range = rangeFor(dateFilter, now);
-    const activeContracts = contracts.filter(c => c.status !== 'voided');
+    const activeContracts = financialContracts.filter(c => c.status !== 'voided');
     const filteredContracts = range
       ? activeContracts.filter(c => {
         const signDate = new Date(c.current.signDate);
@@ -149,7 +143,7 @@ export function ContractKanban() {
       executing: filteredContracts.filter(c => c.status !== 'draft' && c.status !== 'voided' && c.executionStatus !== '已完成').length,
       completed: filteredContracts.filter(c => c.executionStatus === '已完成').length,
       paused: filteredContracts.filter(c => c.status === 'draft').length,
-      ended: contracts.filter(c => c.status === 'voided').length,
+      ended: financialContracts.filter(c => c.status === 'voided').length,
     };
     const stageCounts = {
       '需求调研': filteredContracts.filter(c => c.status === 'draft').length,
@@ -159,7 +153,7 @@ export function ContractKanban() {
       '待验收': filteredContracts.filter(c => c.status === 'archived' && c.executionStatus !== '已完成').length,
     };
     return { monthAmounts, monthDue, monthReceived, monthOverdue, next30, statusCounts, stageCounts, summary, total, received };
-  }, [contracts, dateFilter]);
+  }, [financialContracts, dateFilter]);
 
   const maxMonthAmount = Math.max(...data.monthAmounts.map(item => item.value), 1);
   const paymentMax = Math.max(data.monthDue, data.monthReceived, data.monthOverdue, data.next30, 1);
@@ -168,64 +162,69 @@ export function ContractKanban() {
   const collectionRate = data.total > 0 ? Math.round((data.received / data.total) * 100) : 0;
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Space size={16}>
-          <Space size={6}>
-            {filters.map(filter => (
-              <Button
-                key={filter.key}
-                size="small"
-                type={dateFilter === filter.key ? 'primary' : 'secondary'}
-                onClick={() => setDateFilter(filter.key)}
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </Space>
-        </Space>
-        <Space>
+    <PageShell className="contract-kanban">
+      <PageHeader
+        title="合同看板"
+        description="按签约周期查看合同金额、回款进度、风险卡点和交付阶段分布。"
+        actions={(
+          <>
           <Button onClick={() => navigate('/contracts')}>合同列表</Button>
           <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>
             新建合同
           </Button>
+          </>
+        )}
+      />
+
+      <FilterBar>
+        <Space size={6} wrap>
+          {filters.map(filter => (
+            <Button
+              key={filter.key}
+              size="small"
+              type={dateFilter === filter.key ? 'primary' : 'secondary'}
+              onClick={() => setDateFilter(filter.key)}
+            >
+              {filter.label}
+            </Button>
+          ))}
         </Space>
-      </div>
+      </FilterBar>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
-        {metric('合同总额', money(data.total), `${data.summary.totalContracts} 份有效合同`, 'var(--brand-700)')}
-        {metric('已回款', money(data.received), `回款率 ${collectionRate}%`, 'var(--success-600)')}
-        {metric('待回款', money(Math.max(0, data.total - data.received)), `未来 30 天 ${money(data.next30)}`, 'var(--warning-600)')}
-        {metric('风险合同', `${data.summary.blockedCount} 个`, `卡点金额 ${money(data.summary.blockedAmount)}`, 'var(--destructive-600)')}
-      </div>
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '合同总额', value: money(data.total), detail: `${data.summary.totalContracts} 份有效合同` },
+        { key: 'received', label: '已回款', value: money(data.received), detail: `回款率 ${collectionRate}%`, tone: 'success' },
+        { key: 'pending', label: '待回款', value: money(Math.max(0, data.total - data.received)), detail: `未来 30 天 ${money(data.next30)}`, tone: 'warning' },
+        { key: 'risk', label: '风险合同', value: `${data.summary.blockedCount} 个`, detail: `卡点金额 ${money(data.summary.blockedAmount)}`, tone: data.summary.blockedCount > 0 ? 'danger' : 'success' },
+      ]} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <Card bordered={false} style={cardStyle()}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className="contract-kanban__grid">
+        <Card className="contract-kanban__section-card">
+          <div className="contract-kanban__trend-header">
             <div>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>月度新签合同金额趋势</div>
+              <div className="contract-kanban__section-title">月度新签合同金额趋势</div>
               <Text type="secondary">单位：万元</Text>
             </div>
-            <div style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: 999, background: 'var(--brand-100)', color: 'var(--brand-600)', fontWeight: 700 }}>
+            <div className="contract-kanban__period-chip">
               {dateFilter === 'all' ? '近 6 个月' : filters.find(f => f.key === dateFilter)?.label}
             </div>
           </div>
-          <div style={{ height: 300, display: 'flex', alignItems: 'flex-end', gap: 28, borderBottom: '1px solid var(--grey-200)', padding: '20px 0 0' }}>
+          <div className="contract-kanban__trend-chart">
             {data.monthAmounts.map(item => {
-              const height = Math.max(24, Math.round((item.value / maxMonthAmount) * 230));
+              const height = Math.max(20, Math.round((item.value / maxMonthAmount) * 190));
               return (
-                <div key={item.label} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontWeight: 700, marginBottom: 10 }}>{Math.round(item.value / 10000)}</div>
-                  <div style={{ height, maxWidth: 52, margin: '0 auto', borderRadius: '12px 12px 0 0', background: 'linear-gradient(180deg, var(--brand-400), var(--brand-600))' }} />
-                  <div style={{ marginTop: 12, color: 'var(--grey-500)' }}>{item.label}</div>
+                <div key={item.label} className="contract-kanban__trend-column">
+                  <div className="contract-kanban__trend-value">{Math.round(item.value / 10000)}</div>
+                  <div className="contract-kanban__trend-bar" style={{ height }} />
+                  <div className="contract-kanban__trend-label">{item.label}</div>
                 </div>
               );
             })}
           </div>
         </Card>
 
-        <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>本月回款完成情况</div>
+        <Card className="contract-kanban__section-card">
+          <div className="contract-kanban__section-title">本月回款完成情况</div>
           <Text type="secondary">应收 / 实收 / 逾期</Text>
           {progressRow('本月应收', data.monthDue, paymentMax, 'var(--brand-600)')}
           {progressRow('本月实收', data.monthReceived, paymentMax, 'var(--success-500)')}
@@ -234,31 +233,31 @@ export function ContractKanban() {
         </Card>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 18 }}>合同状态分布</div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 26 }}>
-            <div style={{ width: 170, height: 170, borderRadius: '50%', background: donutGradient(donutItems), position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 48, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--grey-500)', fontWeight: 700 }}>
+      <div className="contract-kanban__grid">
+        <Card className="contract-kanban__section-card">
+          <div className="contract-kanban__section-title">合同状态分布</div>
+          <div className="contract-kanban__donut-wrap">
+            <div className="contract-kanban__donut" style={{ background: donutGradient(donutItems) }}>
+              <div className="contract-kanban__donut-center">
                 合同状态
               </div>
             </div>
           </div>
-          <Space direction="vertical" size={14} style={{ width: '100%' }}>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
             {donutItems.map(item => (
-              <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 16 }}>
-                <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: item.color, marginRight: 10 }} />{item.label}</span>
+              <div key={item.key} className="contract-kanban__legend-row">
+                <span><span className="contract-kanban__legend-dot" style={{ background: item.color }} />{item.label}</span>
                 <strong>{item.value} 个</strong>
               </div>
             ))}
           </Space>
         </Card>
 
-        <Card bordered={false} style={cardStyle()}>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 24 }}>项目阶段分布</div>
+        <Card className="contract-kanban__section-card">
+          <div className="contract-kanban__section-title">项目阶段分布</div>
           {stageItems.map(item => barListRow(item, data.stageCounts[item as keyof typeof data.stageCounts], stageMax))}
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -109,13 +109,11 @@
 }
 
 .lead-payment-detail-section.is-payment .lead-payment-detail-header {
-  border-left: 3px solid rgb(var(--success-6));
-  background: rgba(var(--success-1), 0.8);
+  background: rgb(var(--success-1));
 }
 
 .lead-payment-detail-section.is-invoice .lead-payment-detail-header {
-  border-left: 3px solid rgb(var(--arcoblue-6));
-  background: rgba(var(--arcoblue-1), 0.8);
+  background: rgb(var(--arcoblue-1));
 }
 
 .lead-payment-detail-heading,
@@ -546,7 +544,8 @@
 .project-invoice-form-tip {
   margin-bottom: 8px;
   padding: 10px 12px;
-  border-left: 3px solid rgb(var(--arcoblue-5));
+  border: 1px solid rgb(var(--arcoblue-3));
+  border-radius: 6px;
   background: rgb(var(--arcoblue-1));
   color: var(--color-text-2);
   font-size: 12px;
@@ -555,6 +554,13 @@
 
 .project-invoice-application-form .arco-form-item {
   margin-bottom: 16px;
+}
+
+/* 统一为完整边框提示块，覆盖旧版用于装饰的彩色左边条。 */
+.project-period-detail-condition {
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  background: var(--color-fill-1);
 }
 
 .project-invoice-application-form > .arco-row {

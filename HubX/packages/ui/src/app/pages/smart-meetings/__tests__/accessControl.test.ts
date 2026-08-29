@@ -32,13 +32,13 @@ const alwaysCanView: ViewerContext['canViewBiz'] = () => true;
 const neverCanView: ViewerContext['canViewBiz'] = () => false;
 
 describe('viewMinute', () => {
-  it('organizer 整篇可见（含原始文本）', () => {
+  it('organizer 对已确认纪要整篇可见但不可编辑', () => {
     const viewer: ViewerContext = { userId: 'user_organizer', isAdmin: false, canViewBiz: alwaysCanView };
     const view = viewMinute(baseMinute, viewer);
     expect(view.visible).toBe(true);
     expect(view.canSeeSourceText).toBe(true);
     expect(view.canSeeContent).toBe(true);
-    expect(view.canEdit).toBe(true);
+    expect(view.canEdit).toBe(false);
     expect(view.maskedRefs).toHaveLength(2);
   });
 
@@ -50,12 +50,18 @@ describe('viewMinute', () => {
     expect(view.canEdit).toBe(false);
   });
 
-  it('admin 整篇可见（含原始文本）', () => {
+  it('admin 对已确认纪要整篇可见但不可编辑', () => {
     const viewer: ViewerContext = { userId: 'user_admin', isAdmin: true, canViewBiz: alwaysCanView };
     const view = viewMinute(baseMinute, viewer);
     expect(view.visible).toBe(true);
     expect(view.canSeeSourceText).toBe(true);
-    expect(view.canEdit).toBe(true);
+    expect(view.canEdit).toBe(false);
+  });
+
+  it('admin 在草稿和待确认状态可编辑', () => {
+    const viewer: ViewerContext = { userId: 'user_admin', isAdmin: true, canViewBiz: alwaysCanView };
+    expect(viewMinute({ ...baseMinute, status: 'draft' }, viewer).canEdit).toBe(true);
+    expect(viewMinute({ ...baseMinute, status: 'pending_review' }, viewer).canEdit).toBe(true);
   });
 
   it('attendee 可见正文，无原始文本', () => {

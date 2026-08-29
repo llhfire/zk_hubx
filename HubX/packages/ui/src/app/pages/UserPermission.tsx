@@ -18,6 +18,8 @@ import {
   Tooltip,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete, IconLock } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
@@ -366,33 +368,47 @@ export function UserPermission() {
   };
 
   return (
-    <div>
-      <Card bordered={false}>
+    <PageShell
+      className="system-config-page"
+      breadcrumbs={[{ label: '系统管理' }, { label: '用户权限' }]}
+    >
+      <PageHeader
+        title="用户权限"
+        description="维护系统账号、角色、功能权限和数据访问范围。"
+        actions={activeTab === 'user' ? (
+          <Button type="primary" icon={<IconPlus />} onClick={handleAddUser}>新建用户</Button>
+        ) : (
+          <Button type="primary" icon={<IconPlus />} onClick={handleAddRole}>新建角色</Button>
+        )}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'users', label: '系统用户', value: `${mockUsers.length} 人`, detail: '当前账号目录' },
+        { key: 'active', label: '启用账号', value: `${mockUsers.filter(item => item.status === '启用').length} 人`, detail: '允许登录', tone: 'success' },
+        { key: 'roles', label: '角色数量', value: `${mockRoles.length} 个`, detail: '权限组合' },
+        { key: 'disabled', label: '禁用账号', value: `${mockUsers.filter(item => item.status === '禁用').length} 人`, detail: '需要定期复核', tone: mockUsers.some(item => item.status === '禁用') ? 'warning' : 'neutral' },
+      ]} />
+
+      <Card bordered={false} title="账号与角色" className="system-config-card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="user" title="用户管理">
-            <div style={{ marginBottom: 16 }}>
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddUser}>
-                新建用户
-              </Button>
-            </div>
+            <div className="system-config-result-summary">共 {mockUsers.length} 个账号</div>
             <Table
               columns={userColumns}
               data={mockUsers}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 980 }}
             />
           </TabPane>
           <TabPane key="role" title="角色管理">
-            <div style={{ marginBottom: 16 }}>
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddRole}>
-                新建角色
-              </Button>
-            </div>
+            <div className="system-config-result-summary">共 {mockRoles.length} 个角色</div>
             <Table
               columns={roleColumns}
               data={mockRoles}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 900 }}
             />
           </TabPane>
         </Tabs>
@@ -501,6 +517,6 @@ export function UserPermission() {
           </div>
         </div>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

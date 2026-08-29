@@ -6,6 +6,7 @@
  */
 
 import { Tag, Tooltip } from '@arco-design/web-react';
+import { IconClose, IconPause } from '@arco-design/web-react/icon';
 import { buildLifecycleTrack, type LifecycleNode } from '../../calc';
 import type { SupplementContractSummary } from '../../types';
 
@@ -73,8 +74,8 @@ export function StatusTrack({ status, supplements }: StatusTrackProps) {
                 opacity: node.terminated && !node.current ? 0.5 : 1,
               }}
             >
-              {node.suspended && <span style={{ color: 'var(--orange-500)' }}>⏸</span>}
-              {node.terminated && node.current && <span>✕</span>}
+              {node.suspended && <IconPause style={{ color: 'var(--orange-500)' }} />}
+              {node.terminated && node.current && <IconClose />}
               <span>{node.label}</span>
               {node.supplementCount > 0 && (
                 <span style={{ fontSize: 10, color: 'var(--brand-500)' }}>+{node.supplementCount}</span>

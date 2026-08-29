@@ -63,7 +63,7 @@ export function quoteLeadGate(
   if (leadStatus !== '已终止') return true;
   // 线索已终止：回退类动作不受限
   const rollbackActions: QuoteAction[] = [
-    'withdraw_audit', 'withdraw_sent', 'return_to_stamp', 'return_to_edit_features', 'return_to_tech',
+    'withdraw_audit', 'withdraw_sent', 'return_to_stamp', 'return_to_edit_features', 'return_to_tech', 'audit_reject',
   ];
   if (rollbackActions.includes(action)) return true;
   // 线索已终止：前进类动作冻结

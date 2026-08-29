@@ -1,3 +1,5 @@
+import type { QuoteRole } from '@/app/pages/quotation/types';
+
 export type ApproveStrategy = '单人审批' | '或签' | '会签';
 export type RejectPolicy = '驳回至发起人';
 export type AssigneeType = '具体人员' | '上一节点负责人';
@@ -23,6 +25,8 @@ export interface NodeAssignment {
   strategy: ApproveStrategy;
   assigneeType: AssigneeType;
   assigneeValue: string | string[];
+  /** 报价域提交时固化到审批快照；其他业务可不填。 */
+  quoteRole?: QuoteRole;
   skipIfEmpty: boolean;
 }
 

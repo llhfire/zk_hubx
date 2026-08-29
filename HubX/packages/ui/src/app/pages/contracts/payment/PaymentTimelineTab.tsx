@@ -49,7 +49,7 @@ export function PaymentTimelineTab({ contract }: Props) {
               {/* 期次标题 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
                 <Text style={{ fontWeight: 'var(--font-weight-semibold)' }}>
-                  [{plan.planName}] ¥{plan.amount.toLocaleString} ({contract.totalAmount > 0 ? Math.round(plan.amount / contract.totalAmount * 100) : 0}%)
+                  [{plan.planName}] ¥{plan.amount.toLocaleString()} ({contract.totalAmount > 0 ? Math.round(plan.amount / contract.totalAmount * 100) : 0}%)
                 </Text>
                 <Tag color={isSettled ? 'green' : hasBlocker ? 'red' : 'blue'} size="small">
                   {isSettled ? '已结清' : hasBlocker ? '阻塞中' : isCurrent ? '待收款' : '待触发'}
@@ -81,7 +81,7 @@ export function PaymentTimelineTab({ contract }: Props) {
                   fontSize: 'var(--text-sm)',
                 }}>
                   <div style={{ color: 'var(--destructive-500)', fontWeight: 'var(--font-weight-medium)' }}>
-                    🛑 当前卡点: [{b.type === 'acceptance_stuck' ? '验收卡住' : b.type}] {b.description}
+                    当前卡点：[{b.type === 'acceptance_stuck' ? '验收卡住' : b.type}] {b.description}
                   </div>
                 </div>
               ))}

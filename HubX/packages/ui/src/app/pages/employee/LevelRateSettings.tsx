@@ -10,19 +10,19 @@ import {
   Table,
   Tabs,
   Tag,
-  Typography,
   Tooltip,
 } from '@arco-design/web-react';
-import { IconPlus, IconSave, IconUserGroup } from '@arco-design/web-react/icon';
+import { IconEdit, IconPlus } from '@arco-design/web-react/icon';
 import { useEmployee } from './EmployeeContext';
 import {
   type LevelRateConfig,
   formatCurrency,
   getLevelColor,
 } from './mockData';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './employeeAdminConsistency.css';
 
 const TabPane = Tabs.TabPane;
-const Title = Typography.Title;
 
 interface LevelRateDraft {
   level: string;
@@ -57,6 +57,9 @@ export function LevelRateSettings() {
     () => levelRates.filter(rate => rate.position === activePosition),
     [levelRates, activePosition],
   );
+  const averageRate = positionRates.length > 0
+    ? positionRates.reduce((sum, rate) => sum + rate.standardRate, 0) / positionRates.length
+    : 0;
 
   const handleEdit = (record: LevelRateConfig) => {
     setEditingKey(`${record.level}-${record.position}`);
@@ -178,7 +181,14 @@ export function LevelRateSettings() {
         if (editingKey === `${record.level}-${record.position}`) return null;
         return (
           <Tooltip content="编辑时薪">
-            <Button type="text" size="small" icon={<IconSave />} onClick={() => handleEdit(record)} />
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              icon={<IconEdit />}
+              aria-label={`编辑${record.position}${record.level}时薪`}
+              onClick={() => handleEdit(record)}
+            />
           </Tooltip>
         );
       },
@@ -186,19 +196,33 @@ export function LevelRateSettings() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card bordered={false}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Title heading={5} style={{ margin: 0 }}>
-            <IconUserGroup style={{ marginRight: 8 }} />
-            职级时薪设置
-          </Title>
+    <PageShell
+      className="employee-admin-page"
+      breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '职位管理' }]}
+    >
+      <PageHeader
+        title="职位与职级"
+        description="按职位维护职级结构与标准时薪，费率调整会同步到匹配的员工档案。"
+        actions={(
           <Button type="primary" icon={<IconPlus />} onClick={() => setPositionModalVisible(true)}>
             新增职位
           </Button>
-        </div>
+        )}
+      />
+
+      <ProcessMetricGrid
+        items={[
+          { key: 'positions', label: '职位总数', value: `${positions.length} 个`, detail: '当前职位目录' },
+          { key: 'active', label: '当前职位', value: activePosition, detail: '正在维护' },
+          { key: 'levels', label: '已配置职级', value: `${positionRates.length} 个`, detail: '当前职位' },
+          { key: 'rate', label: '平均标准时薪', value: `${formatCurrency(averageRate)}/h`, detail: '当前职位费率均值' },
+        ]}
+      />
+
+      <Card bordered={false} title="职级费率矩阵" className="employee-admin-rate-card">
 
         <Tabs
+          className="employee-admin-position-tabs"
           activeTab={activePosition}
           onChange={key => setActivePosition(String(key))}
           type="card-gutter"
@@ -206,7 +230,8 @@ export function LevelRateSettings() {
           {positions.map(position => <TabPane key={position} title={position} />)}
         </Tabs>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '12px 0' }}>
+        <div className="employee-admin-module-toolbar">
+          <span>当前职位共 {positionRates.length} 个职级</span>
           <Button icon={<IconPlus />} onClick={openAddLevel}>新增职级</Button>
         </div>
 
@@ -215,6 +240,7 @@ export function LevelRateSettings() {
           data={positionRates}
           rowKey={record => `${record.level}-${record.position}`}
           pagination={false}
+          scroll={{ x: 720 }}
         />
       </Card>
 
@@ -240,9 +266,9 @@ export function LevelRateSettings() {
         onCancel={() => setLevelModalVisible(false)}
         onOk={saveLevelRate}
         okText="保存"
-        style={{ width: 680 }}
+        className="employee-admin-level-modal"
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '18px 16px' }}>
+        <div className="employee-admin-modal-grid">
           <div>
             <div style={{ marginBottom: 8, fontWeight: 600 }}><span style={{ color: 'rgb(var(--red-6))', marginRight: 4 }}>*</span>职级名称</div>
             <Input
@@ -276,6 +302,6 @@ export function LevelRateSettings() {
           </div>
         </div>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

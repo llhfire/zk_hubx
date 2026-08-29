@@ -37,7 +37,7 @@ const COST_CATEGORIES: CostCategory[] = ['差旅成本', '推广成本', '商务
 const COST_SUBCATEGORIES: Record<CostCategory, string[]> = {
   差旅成本: ['交通', '高速', '油费', '住宿', '出差补贴'],
   推广成本: ['百度', '抖音', '小红书', '视频号', '其他投流'],
-  商务成本: ['商务差旅', '商务接待', '商务返点'],
+  商务成本: ['商务接待', '商务返点'],
   第三方费用: ['服务器', '云服务', 'Token', '第三方软件', '其他'],
 };
 const SAMPLE_COST_ITEMS: ProjectCostItem[] = [
@@ -51,7 +51,7 @@ const SAMPLE_COST_ITEMS: ProjectCostItem[] = [
   { id: 'sample-travel-hotel-shanghai', category: '差旅成本', subcategory: '住宿', name: '上海项目驻场住宿费', amount: 4360, expenseDate: '2026-05-22', handler: '赵六', status: '已核算', remark: '7 晚', attachments: [] },
   { id: 'sample-travel-subsidy', category: '差旅成本', subcategory: '出差补贴', name: '出差餐补及补贴', amount: 960, expenseDate: '2026-05-11', handler: '王五', status: '已核算', remark: '', attachments: [] },
   { id: 'sample-business-dinner', category: '商务成本', subcategory: '商务接待', name: '客户需求沟通晚宴', amount: 3200, expenseDate: '2026-05-15', handler: '王五', status: '已核算', remark: '客户 4 人', attachments: [] },
-  { id: 'sample-business-reception', category: '商务成本', subcategory: '商务差旅', name: '客户接待及茶歇', amount: 1280, expenseDate: '2026-05-16', handler: '李四', status: '已核算', remark: '', attachments: [] },
+  { id: 'sample-business-reception', category: '商务成本', subcategory: '商务接待', name: '客户接待及茶歇', amount: 1280, expenseDate: '2026-05-16', handler: '李四', status: '已核算', remark: '', attachments: [] },
   { id: 'sample-business-negotiation', category: '商务成本', subcategory: '商务返点', name: '合同谈判场地及资料', amount: 860, expenseDate: '2026-05-20', handler: '李四', status: '已核算', remark: '', attachments: [] },
   { id: 'sample-business-rebate-channel', category: '商务成本', subcategory: '商务返点', name: '渠道合作返点', amount: 5200, expenseDate: '2026-05-23', handler: '钱七', status: '已核算', remark: '按阶段回款核算', attachments: [] },
   { id: 'sample-business-rebate-partner', category: '商务成本', subcategory: '商务返点', name: '合作伙伴项目返点', amount: 3600, expenseDate: '2026-05-28', handler: '钱七', status: '已核算', remark: '项目签约返点', attachments: [] },

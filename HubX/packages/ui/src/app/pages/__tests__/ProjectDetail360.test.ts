@@ -48,16 +48,17 @@ function renderProjectDetail360Markup(path = '/projects/1') {
 }
 
 describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
-  test('A公司项目渲染头部控制台、指标胶囊与 70:30 主体结构', () => {
+  test('A公司项目渲染统一流程概览、指标网格与 70:30 主体结构', () => {
     const markup = renderProjectDetail360Markup('/projects/1')
 
     // 头部控制台
     expect(markup).toContain('A公司CRM系统开发')
     expect(markup).toContain('PRJ202605001')
-    // 指标胶囊
-    expect(markup).toContain('客户:')
+    // 统一指标网格
+    expect(markup).toContain('hubx-process-metrics__grid')
+    expect(markup).toContain('客户')
     expect(markup).toContain('A公司')
-    expect(markup).toContain('工时:')
+    expect(markup).toContain('工时')
     // 档案卡
     expect(markup).toContain('最新进展')
     // 主 Tab（域 3/4/1：团队与工时、回款与发票、项目动态等）
@@ -65,14 +66,14 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
     expect(markup).toContain('合同信息')
     expect(markup).toContain('回款与发票')
     expect(markup).toContain('团队与工时')
-    expect(markup).toContain('日报')
+    expect(markup).not.toContain('项目日报')
     expect(markup).toContain('任务管理')
     expect(markup).toContain('项目动态')
-    // 右侧次级 Tab（域 2/4/5：报价、合同记录、售前历程、会议纪要、演示、资料等）
+    // 右侧次级 Tab：合同与售前采用紧凑名称，具体信息在页签内容呈现
     expect(markup).toContain('跟进')
     expect(markup).toContain('报价')
-    expect(markup).toContain('合同记录')
-    expect(markup).toContain('售前历程')
+    expect(markup).toContain('合同')
+    expect(markup).toContain('售前')
     expect(markup).toContain('会议纪要')
     expect(markup).toContain('演示')
     expect(markup).toContain('资料')

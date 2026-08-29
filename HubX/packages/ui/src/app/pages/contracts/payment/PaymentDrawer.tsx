@@ -5,6 +5,7 @@ import { PaymentTimelineTab } from './PaymentTimelineTab';
 import { BlockerDunningTab } from './BlockerDunningTab';
 import { ContractSnapshotTab } from './ContractSnapshotTab';
 import type { Contract } from '../types';
+import { CurrencyCircleDollar, Plus, WarningCircle } from '@phosphor-icons/react';
 
 const { Text, Title } = Typography;
 const TabPane = Tabs.TabPane;
@@ -42,9 +43,9 @@ export function PaymentDrawer({ visible, contract, onClose, onRecordCollection, 
           <Button onClick={onClose}>关闭</Button>
           {status !== 'settled' && (
             <>
-              <Button type="outline" status="warning" onClick={onReportBlocker}>⚠️ 上报/编辑卡点</Button>
-              <Button type="outline" onClick={onRecordDunning}>+ 记录催款</Button>
-              <Button type="primary" onClick={onRecordCollection}>💰 录入到账</Button>
+              <Button type="outline" status="warning" icon={<WarningCircle size={18} />} onClick={onReportBlocker}>上报/编辑卡点</Button>
+              <Button type="outline" icon={<Plus size={18} />} onClick={onRecordDunning}>记录催款</Button>
+              <Button type="primary" icon={<CurrencyCircleDollar size={18} />} onClick={onRecordCollection}>录入到账</Button>
             </>
           )}
         </div>
@@ -80,9 +81,9 @@ export function PaymentDrawer({ visible, contract, onClose, onRecordCollection, 
 
       {/* 快捷按钮 */}
       <Space style={{ marginBottom: 'var(--space-4)' }}>
-        <Button size="small" type="outline" onClick={onRecordDunning}>+ 记录催款</Button>
-        <Button size="small" type="outline" status="warning" onClick={onReportBlocker}>⚠️ 上报/编辑卡点</Button>
-        <Button size="small" type="outline" onClick={onRecordCollection}>💰 录入到账</Button>
+        <Button size="small" type="outline" icon={<Plus size={18} />} onClick={onRecordDunning}>记录催款</Button>
+        <Button size="small" type="outline" status="warning" icon={<WarningCircle size={18} />} onClick={onReportBlocker}>上报/编辑卡点</Button>
+        <Button size="small" type="outline" icon={<CurrencyCircleDollar size={18} />} onClick={onRecordCollection}>录入到账</Button>
         <Button size="small" type="outline" onClick={() => Message.info('查看项目功能开发中')}>查看项目</Button>
       </Space>
 

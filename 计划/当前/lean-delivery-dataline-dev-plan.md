@@ -38,7 +38,7 @@
 |---|---|---|
 | 1 | `pages/financial-delivery/types.ts` | **新建**。从 `mockData.ts` 搬出类型。`Case` 去掉 `totalCost/totalRevenue/currentMargin/eac/wipValue/wipDays/healthStatus`；加 `quoteIds: string[]`；`PnLSnapshot` 改双字段；`CaseCostItem.sourceType` 增 `'overhead'`，加可选 `quantityDays?: number` |
 | 2 | `pages/financial-delivery/calc.ts` | **新建**。常量 + 派生 + 状态机规则 |
-| 3 | `pages/finance-shared/overhead.ts` | **新建**（若运营费用 A / S0 已有则 import）。`OVERHEAD_RATE = 35`（元/工时），注释：运营费用 `hourlyOverheadRate(month)` 落地后改为转调 |
+| 3 | `pages/finance-shared/overhead.ts` | **已收口**。导出公共运营池、编制工时、动态 R_hour 与公摊金额的唯一公式 |
 | 4 | `pages/financial-delivery/__tests__/calc.test.ts` | **新建**。夹具见 §4 |
 | 5 | `mockData.ts` | L1 只改 import 路径（类型迁走）；数据大瘦身留 L2 |
 | 6 | `dashboard/Dashboard.tsx`、`cases/*.tsx` | L1 若类型字段删除导致编译失败：页面暂从派生函数取数的最小补丁（用 `mockCostItems` + 空回款），或 L1 先把汇总数改成 optional 过渡、L2 再删。**优先**：L1 把字段标 optional，页面继续跑；L2 删除字段并改页面读 calc |
@@ -62,7 +62,7 @@ ROLE_PRICES    = { product:1000, design:800, frontend:1200, backend:1200, test:6
 EVAL_ROLE_MAP  = { pm_days:'product', ui_days:'design', fe_days:'frontend', be_days:'backend', qa_days:'test' }
 # 其余 eval key（arch/algo/embed/dba/ops 及未知）→ other
 WIP_DAYS_YELLOW = 14
-OVERHEAD_RATE 从 finance-shared 引入
+R_hour 从 finance-shared 动态公摊读模型取得
 CASE_STATUS_TRANSITIONS: Record<CaseStatus, CaseStatus[]>
 ```
 
@@ -154,7 +154,7 @@ industry, projectType, techStack, durationDays, dates, 展示名
 
 - 删所有 `dr-xxx` / `reimb-xxx`
 - 出差补贴：`costCategory:'commercial'`, `costType:'差旅'`（不是 labor）
-- 运营分摊：`sourceType:'overhead'`，amount = 人力 `quantityDays` × 8 × `OVERHEAD_RATE`
+- 运营分摊：`sourceType:'overhead'`，amount = 人力 `quantityDays` × 8 × 当月动态 `R_hour`
 - 报销通道：差旅 T3 前全部 `sourceType:'manual'`，注释「待 travel.emitCostItem」
 - 日报通道：**不改** `pages/daily-report/`。现网项目工时挂的是项目 `'1'`（A公司CRM），与阿里巴巴 Case 对不上 → labor 也降级 `manual`，description 写「α 无对应日报」
 - 保留 actual+forecast 混合，保证模拟器有可缩的 forecast 人力

@@ -154,26 +154,6 @@
   flex: 0 0 auto;
 }
 
-.lead-final-contract-preview {
-  max-height: calc(100vh - 190px);
-  overflow: auto;
-  padding: 20px;
-  background: var(--color-fill-2);
-}
-
-.lead-final-contract-preview-document {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 760px;
-  min-height: 480px;
-  margin: 0 auto;
-  padding: 32px 40px;
-  background: #fff;
-  color: #1d2129;
-  font-size: 13px;
-  line-height: 1.8;
-}
-
 @media (max-width: 720px) {
   .lead-final-contract-info-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -194,13 +174,6 @@
     align-self: flex-end;
   }
 
-  .lead-final-contract-preview {
-    padding: 8px;
-  }
-
-  .lead-final-contract-preview-document {
-    padding: 20px 16px;
-  }
 }
 
 @media (max-width: 480px) {

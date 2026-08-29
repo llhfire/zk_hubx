@@ -374,6 +374,8 @@ export interface QuoteSummary {
   paymentTerms: PaymentTerm[];
   taxIncluded: boolean;
   warrantyYears: number;
+  /** 发票类型，默认增值税专用发票。 */
+  invoiceType?: '专票' | '普票';
 }
 
 // ─── 审批（三人并行会签 + 盖章）────────────────────────────
@@ -384,6 +386,8 @@ export interface AuditNode {
   auditorId: string;
   auditorName: string;
   role: string;              // 销售部负责人 / 技术部负责人 / 企业决策层
+  /** 提交审批时从配置固化，待办与操作权限以此为准。 */
+  quoteRole?: QuoteRole;
   status: AuditDecision;
   auditTime?: string;
   comment?: string;
@@ -393,6 +397,8 @@ export type StampStatus = 'LOCKED' | 'PENDING_STAMP' | 'COMPLETED';
 
 export interface StampNode {
   stamperName: string;       // 黄海（董助）
+  /** 盖章人的报价角色，旧数据缺失时按 assistant 兼容。 */
+  stamperRole?: QuoteRole;
   status: StampStatus;
   stampTime?: string;
 }
@@ -400,9 +406,9 @@ export interface StampNode {
 /** 会签三人的初始节点，提交审批时重置也复用它 */
 export function buildInitialAuditNodes(): AuditNode[] {
   return [
-    { auditorId: 'huangyi', auditorName: '黄奕', role: '销售部负责人', status: 'PENDING' },
-    { auditorId: 'luo', auditorName: '罗总', role: '技术部负责人', status: 'PENDING' },
-    { auditorId: 'min', auditorName: '闵总', role: '企业决策层', status: 'PENDING' },
+    { auditorId: 'huangyi', auditorName: '黄奕', role: '销售部负责人', quoteRole: 'sales_manager', status: 'PENDING' },
+    { auditorId: 'luo', auditorName: '罗总', role: '技术部负责人', quoteRole: 'tech', status: 'PENDING' },
+    { auditorId: 'min', auditorName: '闵总', role: '企业决策层', quoteRole: 'decision', status: 'PENDING' },
   ];
 }
 
@@ -428,10 +434,32 @@ export interface Quote {
   version: string;            // v1.0
   status: QuoteStatus;
   leadId: string;
+  /** 报价数据的流转载体：在线数据表单或 Excel 文件。 */
+  flowMode?: 'online' | 'file';
+  /** 文件流转专属状态；创建后 flowMode 不再修改。 */
+  fileFlow?: {
+    evaluationFileName?: string;
+    evaluationWorkDays?: number;
+    evaluationTotalDays?: number;
+    quoteWorkDays?: number;
+    quoteAmount?: number;
+    onlineDocument: {
+      status: 'empty' | 'draft' | 'saved' | 'finalized';
+      savedAt?: string;
+      content?: string;
+    };
+    scans: Array<{ id: string; name: string; url: string; uploadedAt: string }>;
+  };
   contractId?: string;
+  /** 由本报价实际生成的合同；补充报价的 contractId 保留指向主合同。 */
+  generatedContractId?: string;
   /** 是否为补充报价（4.7） */
   isSupplement?: boolean;
+  /** 补充报价变更额，可为负；在线流转用此字段作为总价。 */
+  supplementChangeAmount?: number;
   salesOwnerName: string;     // 报价销售责任人（4.2）
+  /** 本报价岗位日成本覆盖；未配置岗位按 600 元/天兜底。 */
+  roleDailyCosts?: Record<string, number>;
   basicInfo: QuoteBasicInfo;
   endpointConfigs: EndpointConfig[];  // 端+平台配置
   featureList: FeatureModule[];

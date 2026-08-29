@@ -41,7 +41,6 @@ import {
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_LABEL,
   COMPANY_ENTITY_LIST,
-  GROUP_TYPE_ICON,
   TRANSFER_ACTION_LABEL,
   TRANSFER_ACTION_COLOR,
   QUICK_FILTER_LABEL,
@@ -60,6 +59,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './leads/utils';
+import { WeChatIcon } from '@/app/components/ui';
 
 const TabPane = Tabs.TabPane;
 
@@ -173,7 +173,7 @@ export function MyLeads() {
                 style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }}
                 onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}
               >
-                <span style={{ color: '#07C160' }}>💬</span> {r.presalesGroupName}
+                <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
@@ -203,7 +203,7 @@ export function MyLeads() {
     },
     {
       title: <span style={{ whiteSpace: 'nowrap' }}>等级+意向</span>,
-      width: 100,
+      width: 132,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={4}>
           {r.customerLevel && <Tag color={CUSTOMER_LEVEL_COLOR[r.customerLevel as keyof typeof CUSTOMER_LEVEL_COLOR]}>{r.customerLevel}</Tag>}
@@ -282,10 +282,11 @@ export function MyLeads() {
     },
     {
       title: '操作',
-      width: 100,
+      width: 120,
+      align: 'center' as const,
       fixed: 'right' as const,
       render: (_: unknown, r: LeadListItem) => (
-        <Space size="small">
+        <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}`, { state: { from: 'my' } })} /></Tooltip>
           <Tooltip content="添加跟进"><Button type="text" icon={<IconEdit />} size="small" /></Tooltip>
           <Tooltip content="标记垃圾"><Button type="text" icon={<IconDelete />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
@@ -294,16 +295,21 @@ export function MyLeads() {
     },
   ];
 
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const myCount = myPool.length;
   const createdCount = myPool.filter((l) => l.optimizer === currentUser).length;
   const assistedCount = myPool.filter((l) => l.assistant === currentUser).length;
 
   return (
     <div>
-      {banner && (
-        <Alert type="warning" closable={false} showIcon
+      {banner && !bannerDismissed && (
+        <Alert type="warning" closable showIcon
           content={`当前有 ${banner.count} 条线索已超时未跟进，请尽快处理。`}
           style={{ marginBottom: 16, cursor: banner.firstTargetPath ? 'pointer' : 'default' }}
+          onClose={(event) => {
+            event?.stopPropagation?.();
+            setBannerDismissed(true);
+          }}
           onClick={() => banner.firstTargetPath && navigate(banner.firstTargetPath, { state: { from: 'my' } })}
         />
       )}
@@ -327,7 +333,7 @@ export function MyLeads() {
 
         <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
           <Input style={{ width: 280 }} placeholder="搜索线索名称、电话、联系人" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="线索状态" style={{ width: 130 }} allowClear value={statusFilter} onChange={setStatusFilter}>
+          <Select placeholder="当前步骤（全部）" style={{ width: 156 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
             {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
           <Select placeholder="线索来源" style={{ width: 130 }} allowClear>
@@ -338,7 +344,13 @@ export function MyLeads() {
           </Select>
         </div>
 
-        <Table columns={columns} data={filteredLeads} scroll={{ x: 1500 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
+        <Table
+          rowKey="key"
+          columns={columns}
+          data={filteredLeads}
+          scroll={{ x: 1600 }}
+          pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }}
+        />
       </Card>
 
       <Modal title="标记为垃圾" visible={trashVisible} onOk={() => { trashForm.validate().then(() => { Message.success('已标记为垃圾'); setTrashVisible(false); trashForm.resetFields(); }); }} onCancel={() => { setTrashVisible(false); trashForm.resetFields(); }} style={{ width: 480 }}>

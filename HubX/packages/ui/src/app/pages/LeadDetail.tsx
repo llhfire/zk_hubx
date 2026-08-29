@@ -55,7 +55,7 @@ import { leadProjectBanner } from '@/app/business-case';
 import { useProjects } from '@/app/pages/project-management/ProjectContext';
 import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
 import { SIGNING_LEAD_STATUSES } from '@/app/business-case/types';
-import { spawnUnconfirmedProject, buildUnconfirmedProject } from '@/app/business-case/caseUtils';
+import { spawnUnconfirmedProject, buildUnconfirmedProject, unconfirmedProjectId } from '@/app/business-case/caseUtils';
 import {
   IconLeft,
   IconEdit,
@@ -436,7 +436,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
           (SIGNING_LEAD_STATUSES as readonly string[]).includes(newStatus) &&
           !getProjectByLeadId(id)
         ) {
-          const projectId = 'lead-spawn-' + id;
+          const projectId = unconfirmedProjectId({ leadId: id });
           const spawned = spawnUnconfirmedProject({
             caseId: 'case-' + id,
             leadId: id,

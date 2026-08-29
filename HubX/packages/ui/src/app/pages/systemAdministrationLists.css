@@ -1,0 +1,64 @@
+.system-admin-list__card > .arco-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.system-admin-list__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.system-admin-list .system-admin-list__keyword {
+  flex: 0 0 300px;
+  width: 300px;
+}
+
+.system-admin-list .system-admin-list__select {
+  flex: 0 0 140px;
+  width: 140px;
+}
+
+.system-admin-list .system-admin-list__date {
+  flex: 0 0 260px;
+  width: 260px;
+}
+
+.system-admin-list__result-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 22px;
+  color: var(--color-text-3);
+  font-size: 13px;
+}
+
+.system-admin-list__result-summary > :first-child {
+  color: var(--color-text-2);
+  font-weight: 500;
+}
+
+.system-admin-list__empty {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+@media (max-width: 768px) {
+  .system-admin-list .system-admin-list__keyword,
+  .system-admin-list .system-admin-list__select,
+  .system-admin-list .system-admin-list__date {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .system-admin-list__result-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

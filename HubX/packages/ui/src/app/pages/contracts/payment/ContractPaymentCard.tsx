@@ -126,7 +126,7 @@ export function ContractPaymentCard({ contract, today, onClick, onRecordCollecti
         <div style={{ marginBottom: 'var(--space-2)' }}>
           {blockers.map(b => (
             <Tag key={b.id} color="red" size="small">
-              🛑 {BLOCKER_TYPE_LABELS[b.type] ?? b.type} · {blockerDays}天
+              {BLOCKER_TYPE_LABELS[b.type] ?? b.type} · {blockerDays}天
             </Tag>
           ))}
         </div>

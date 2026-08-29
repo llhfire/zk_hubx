@@ -1,22 +1,30 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import {
   Card,
   Descriptions,
   Badge,
   Button,
-  Typography,
   Space,
   Table,
   Tabs,
+  Timeline,
+  Tag,
   Modal,
   Form,
   Input,
   Message,
 } from '@arco-design/web-react';
-import { IconLeft, IconEdit, IconPlus } from '@arco-design/web-react/icon';
+import { NotePencil, Plus } from '@phosphor-icons/react';
+import {
+  PageShell,
+  ProcessMetricGrid,
+  ProcessOverview,
+  ProcessWorkspace,
+  ProcessWorkspaceAside,
+  ProcessWorkspaceMain,
+} from '../components/ui';
 
-const Title = Typography.Title;
 const TabPane = Tabs.TabPane;
 
 export function CustomerDetail() {
@@ -133,8 +141,8 @@ export function CustomerDetail() {
     { title: '姓名', dataIndex: 'name' },
     { title: '职位', dataIndex: 'position' },
     { title: '手机号', dataIndex: 'phone' },
-    { title: '微信', dataIndex: 'wechat' },
-    { title: '邮箱', dataIndex: 'email' },
+    { title: '微信', dataIndex: 'wechat', width: 150, render: (value: string) => <span style={{ whiteSpace: 'nowrap' }}>{value}</span> },
+    { title: '邮箱', dataIndex: 'email', width: 190, render: (value: string) => <span style={{ whiteSpace: 'nowrap' }}>{value}</span> },
     {
       title: '默认联系人',
       dataIndex: 'isDefault',
@@ -161,7 +169,7 @@ export function CustomerDetail() {
       title: '线索名称',
       dataIndex: 'name',
       render: (name: string, record: any) => (
-        <a style={{ color: 'rgb(var(--primary-6))' }}>{name}</a>
+        <a style={{ color: 'rgb(var(--primary-6))', cursor: 'pointer' }} onClick={() => navigate(`/leads/${record.key}`, { state: { from: 'customer', customerId: id } })}>{name}</a>
       ),
     },
     {
@@ -184,7 +192,7 @@ export function CustomerDetail() {
     {
       title: '合同名称',
       dataIndex: 'name',
-      render: (name: string) => <a style={{ color: 'rgb(var(--primary-6))' }}>{name}</a>,
+      render: (name: string, record: { key: string }) => <a style={{ color: 'rgb(var(--primary-6))', cursor: 'pointer' }} onClick={() => navigate(`/contracts/${record.key}`, { state: { contractDetailReturn: { pathname: `/customers/${id}`, state: { activeTab: 'contracts' } } } })}>{name}</a>,
     },
     { title: '合同金额', dataIndex: 'amount' },
     { title: '签订日期', dataIndex: 'signDate' },
@@ -197,123 +205,182 @@ export function CustomerDetail() {
     { title: '待收款', dataIndex: 'receivable' },
   ];
 
+  const activityRecords = [
+    { key: 'a1', date: '2026-03-15 10:20', type: '线索', color: 'arcoblue', content: '创建“数据分析平台”线索，当前处于跟进中。', operator: '张三' },
+    { key: 'a2', date: '2026-02-10 16:40', type: '签约', color: 'green', content: '小程序开发项目完成签约，合同金额 35 万。', operator: '张三' },
+    { key: 'a3', date: '2025-10-05 14:10', type: '签约', color: 'green', content: '管理系统升级项目完成签约，合同金额 50 万。', operator: '张三' },
+    { key: 'a4', date: '2025-06-15 09:30', type: '建档', color: 'gray', content: '客户资料建档，来源为百度推广。', operator: '张三' },
+  ];
+
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <div className="flex items-center gap-3">
-          <Button type="text" icon={<IconLeft />} onClick={() => navigate('/customers')}>
-            返回
-          </Button>
-          <Title heading={4} style={{ margin: 0 }}>
-            {customerInfo.name}
-          </Title>
-          <Badge
-            status={customerInfo.level === 'A级' ? 'warning' : 'success'}
-            text={customerInfo.level}
-          />
-        </div>
-        <Space>
-          <Button icon={<IconEdit />}>编辑客户</Button>
-          <Button type="primary" icon={<IconPlus />}>
-            新建线索
-          </Button>
-        </Space>
-      </div>
+    <PageShell
+      breadcrumbs={[
+        { label: '客户管理', to: '/customers' },
+        { label: '客户列表', to: '/customers' },
+        { label: customerInfo.name },
+      ]}
+    >
+      <ProcessOverview
+        identifier={`KH-${id ?? '001'}`}
+        title={customerInfo.name}
+        tags={(
+          <>
+            <Tag color="orange">{customerInfo.level}</Tag>
+            <Tag color="green">{customerInfo.status}</Tag>
+            <Tag>{customerInfo.industry}</Tag>
+          </>
+        )}
+        actions={(
+          <Space wrap>
+            <Button size="small" style={{ minWidth: 96, whiteSpace: 'nowrap' }} icon={<NotePencil size={18} weight="regular" />}>编辑客户</Button>
+            <Button type="primary" size="small" style={{ minWidth: 96, whiteSpace: 'nowrap' }} icon={<Plus size={18} weight="regular" />}>新建线索</Button>
+          </Space>
+        )}
+        currentStep={2}
+        steps={[
+          { key: 'profile', title: '客户建档', description: customerInfo.createTime },
+          { key: 'follow', title: '需求跟进', description: '4 条线索' },
+          { key: 'cooperation', title: '签约合作', description: '3 份合同' },
+          { key: 'operation', title: '持续经营', description: '回款率 81.8%' },
+        ]}
+      />
 
-      <Tabs defaultActiveTab="info">
-        <TabPane key="info" title="客户信息">
-          <Card title="基础信息" style={{ marginBottom: 16 }}>
-            <Descriptions
-              column={3}
-              data={[
-                { label: '客户名称', value: customerInfo.name },
-                { label: '客户类型', value: customerInfo.type },
-                { label: '所属行业', value: customerInfo.industry },
-                { label: '企业规模', value: customerInfo.scale },
-                { label: '注册资本', value: customerInfo.registeredCapital },
-                { label: '统一社会信用代码', value: customerInfo.creditCode },
-                { label: '客户地址', value: customerInfo.address, span: 3 },
-                {
-                  label: '客户等级',
-                  value: (
-                    <Badge
-                      status={customerInfo.level === 'A级' ? 'warning' : 'success'}
-                      text={customerInfo.level}
+      <ProcessMetricGrid
+        items={[
+          { key: 'owner', label: '客户负责人', value: customerInfo.owner },
+          { key: 'source', label: '客户来源', value: customerInfo.source },
+          { key: 'contacts', label: '联系人', value: `${contacts.length} 人` },
+          { key: 'leads', label: '关联线索', value: `${leads.length} 条` },
+          { key: 'contract-total', label: '累计合同金额', value: '165 万' },
+          { key: 'received', label: '已收款', value: '135 万', tone: 'success' },
+          { key: 'receivable', label: '待收款', value: '30 万', tone: 'warning' },
+        ]}
+      />
+
+      <ProcessWorkspace>
+        <ProcessWorkspaceMain>
+          <Card>
+            <Tabs defaultActiveTab="info">
+              <TabPane key="info" title="客户信息">
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Card title="基础信息" size="small">
+                    <Descriptions
+                      column={3}
+                      data={[
+                        { label: '客户名称', value: customerInfo.name },
+                        { label: '客户类型', value: customerInfo.type },
+                        { label: '所属行业', value: customerInfo.industry },
+                        { label: '企业规模', value: customerInfo.scale },
+                        { label: '注册资本', value: customerInfo.registeredCapital },
+                        { label: '统一社会信用代码', value: customerInfo.creditCode },
+                        { label: '客户地址', value: customerInfo.address, span: 3 },
+                        { label: '客户等级', value: <Badge status="warning" text={customerInfo.level} /> },
+                        { label: '客户状态', value: <Badge status="success" text={customerInfo.status} /> },
+                        { label: '创建时间', value: customerInfo.createTime },
+                        { label: '负责人', value: customerInfo.owner },
+                      ]}
                     />
-                  ),
-                },
-                {
-                  label: '客户状态',
-                  value: <Badge status="success" text={customerInfo.status} />,
-                },
-                { label: '创建时间', value: customerInfo.createTime },
-                { label: '负责人', value: customerInfo.owner },
-              ]}
-            />
-          </Card>
+                  </Card>
 
-          <Card
-            title="联系人信息"
-            extra={
-              <Button type="text" icon={<IconPlus />} size="small">
-                添加联系人
-              </Button>
-            }
-          >
-            <Table columns={contactColumns} data={contacts} pagination={false} />
-          </Card>
-        </TabPane>
+                  <Card
+                    title="联系人信息"
+                    size="small"
+                    extra={<Button type="text" icon={<Plus size={18} weight="regular" />} size="small" style={{ minWidth: 104, whiteSpace: 'nowrap' }}>添加联系人</Button>}
+                  >
+                    <Table columns={contactColumns} data={contacts} pagination={false} scroll={{ x: 920 }} />
+                  </Card>
+                </Space>
+              </TabPane>
 
-        <TabPane key="leads" title={`线索记录 (${leads.length})`}>
-          <Card>
-            <Table columns={leadColumns} data={leads} pagination={false} />
-          </Card>
-        </TabPane>
+              <TabPane key="leads" title={`线索记录 (${leads.length})`}>
+                <Table columns={leadColumns} data={leads} pagination={false} scroll={{ x: 720 }} />
+              </TabPane>
 
-        <TabPane key="contracts" title={`合同记录 (${contracts.length})`}>
-          <Card>
-            <Table columns={contractColumns} data={contracts} pagination={false} />
-          </Card>
-        </TabPane>
+              <TabPane key="contracts" title={`合同记录 (${contracts.length})`}>
+                <Table columns={contractColumns} data={contracts} pagination={false} scroll={{ x: 900 }} />
+              </TabPane>
 
-        <TabPane key="finance" title="财务信息">
-          <Card
-            title="开票信息"
-            style={{ marginBottom: 16 }}
-            extra={
-              <Button
-                type="text"
-                size="small"
-                icon={<IconEdit />}
-                onClick={() => setInvoiceVisible(true)}
-              >
-                编辑
-              </Button>
-            }
-          >
-            <Descriptions
-              column={2}
-              data={[
-                { label: '开票抬头', value: customerInfo.name },
-                { label: '纳税人识别号', value: customerInfo.creditCode },
-                { label: '开户银行', value: '中国工商银行XX支行' },
-                { label: '银行账号', value: '6222 **** **** 1234' },
-                { label: '开票地址', value: customerInfo.address },
-                { label: '开票电话', value: '010-12345678' },
-              ]}
-            />
-          </Card>
+              <TabPane key="finance" title="财务信息">
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Card
+                    title="开票信息"
+                    size="small"
+                    extra={(
+                      <Button type="text" size="small" icon={<NotePencil size={18} weight="regular" />} onClick={() => setInvoiceVisible(true)}>
+                        编辑
+                      </Button>
+                    )}
+                  >
+                    <Descriptions
+                      column={2}
+                      data={[
+                        { label: '开票抬头', value: customerInfo.name },
+                        { label: '纳税人识别号', value: customerInfo.creditCode },
+                        { label: '开户银行', value: '中国工商银行XX支行' },
+                        { label: '银行账号', value: '6222 **** **** 1234' },
+                        { label: '开票地址', value: customerInfo.address },
+                        { label: '开票电话', value: '010-12345678' },
+                      ]}
+                    />
+                  </Card>
 
-          <Card title="收款信息">
-            <div style={{ lineHeight: 2 }}>
-              <div>累计合同金额：165万</div>
-              <div>已收款金额：135万</div>
-              <div>待收款金额：30万</div>
-              <div>回款率：81.8%</div>
-            </div>
+                  <Card title="收款信息" size="small">
+                    <Descriptions
+                      column={2}
+                      data={[
+                        { label: '累计合同金额', value: '165 万' },
+                        { label: '已收款金额', value: '135 万' },
+                        { label: '待收款金额', value: '30 万' },
+                        { label: '回款率', value: '81.8%' },
+                      ]}
+                    />
+                  </Card>
+                </Space>
+              </TabPane>
+            </Tabs>
           </Card>
-        </TabPane>
-      </Tabs>
+        </ProcessWorkspaceMain>
+
+        <ProcessWorkspaceAside>
+          <Card title="客户动态" style={{ height: '100%' }}>
+            <Tabs defaultActiveTab="activity" size="small">
+              <TabPane key="activity" title="业务动态">
+                <Timeline style={{ marginTop: 12 }}>
+                  {activityRecords.map((record) => (
+                    <Timeline.Item key={record.key}>
+                      <Space direction="vertical" size={4}>
+                        <Space size={6} wrap>
+                          <Tag color={record.color} size="small">{record.type}</Tag>
+                          <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{record.date}</span>
+                        </Space>
+                        <span>{record.content}</span>
+                        <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>操作人：{record.operator}</span>
+                      </Space>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </TabPane>
+              <TabPane key="contacts" title="关键联系人">
+                <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 12 }}>
+                  {contacts.map((contact) => (
+                    <Card key={contact.key} size="small">
+                      <Space direction="vertical" size={3}>
+                        <Space size={6} wrap>
+                          <strong>{contact.name}</strong>
+                          {contact.isDefault && <Tag color="green" size="small">默认联系人</Tag>}
+                        </Space>
+                        <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{contact.position}</span>
+                        <span>{contact.phone}</span>
+                        <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{contact.email}</span>
+                      </Space>
+                    </Card>
+                  ))}
+                </Space>
+              </TabPane>
+            </Tabs>
+          </Card>
+        </ProcessWorkspaceAside>
+      </ProcessWorkspace>
 
       <Modal
         title="编辑开票信息"
@@ -382,6 +449,6 @@ export function CustomerDetail() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

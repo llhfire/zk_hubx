@@ -29,8 +29,11 @@ import {
   IconFile,
   IconFolder,
   IconPlus,
+  IconRefresh,
   IconSearch,
 } from '@arco-design/web-react/icon';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../supportDomainLists.css';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -194,6 +197,8 @@ export function KnowledgeBase() {
       documents.filter((document) => scope.includes(document.department)).length,
     ]),
   ), [documents]);
+  const publicDocuments = useMemo(() => documents.filter(document => document.permission === 'all').length, [documents]);
+  const filtersActive = Boolean(keyword.trim() || activeCategory !== 'all' || selectedOrganization !== 'company');
 
   const openUpload = () => {
     setEditingDoc(null);
@@ -356,11 +361,11 @@ export function KnowledgeBase() {
         return canManage ? (
           <Space size={4}>
             <Tooltip content="编辑">
-              <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEdit(document)} />
+              <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑文档${document.title}`} icon={<IconEdit />} onClick={() => openEdit(document)} />
             </Tooltip>
             <Tooltip content="删除">
               <Popconfirm title="确定删除该文档吗？" onOk={() => setDocuments((current) => current.filter((item) => item.id !== document.id))}>
-                <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+                <Button type="text" size="small" status="danger" className="hubx-icon-action" aria-label={`删除文档${document.title}`} icon={<IconDelete />} />
               </Popconfirm>
             </Tooltip>
           </Space>
@@ -369,16 +374,30 @@ export function KnowledgeBase() {
     },
   ];
 
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <div>
-          <Text type="secondary" style={{ display: 'block', marginTop: 7 }}>按组织沉淀和管理业务文档，权限以文档归属组织为边界。</Text>
-        </div>
-      </div>
+  const resetFilters = () => {
+    setKeyword('');
+    setActiveCategory('all');
+    setSelectedOrganization('company');
+  };
 
-      <div style={{ display: 'grid', gridTemplateColumns: '240px minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
+  return (
+    <PageShell className="support-domain-list knowledge-base-page">
+      <PageHeader
+        title="知识库"
+        description="按组织沉淀和管理业务文档，权限以文档归属组织为边界。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={openUpload}>上传至{selectedLabel}</Button>}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '全部文档', value: documents.length, detail: '当前知识资产' },
+        { key: 'organization', label: '当前组织', value: departmentDocuments.length, detail: selectedLabel },
+        { key: 'public', label: '全员可见', value: publicDocuments, detail: '跨组织共享文档', tone: 'success' },
+        { key: 'result', label: '当前结果', value: filteredDocuments.length, detail: filtersActive ? '筛选结果' : '全部文档' },
+      ]} />
+
+      <div className="knowledge-base__layout">
         <Card
+          className="knowledge-base__organization-card"
           title={<Space><IconBranch /><span>组织架构</span></Space>}
           style={{ position: 'sticky', top: 16, borderRadius: 'var(--radius-lg)' }}
           bodyStyle={{ padding: 12 }}
@@ -426,20 +445,10 @@ export function KnowledgeBase() {
             bodyStyle={{ padding: 0 }}
           >
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border-2)' }}>
-              <div className="flex items-center justify-between" style={{ gap: 12 }}>
-                <Space wrap>
-                  <Input
-                    value={keyword}
-                    onChange={setKeyword}
-                    allowClear
-                    prefix={<IconSearch />}
-                    placeholder="搜索文档名称或文件名"
-                    style={{ width: 230 }}
-                  />
-                </Space>
-                <Button type="primary" icon={<IconPlus />} onClick={openUpload}>上传至{selectedLabel}</Button>
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置</Button> : undefined}>
+                <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} allowClear prefix={<IconSearch />} placeholder="搜索文档名称或文件名" />
+              </FilterBar>
+              <div className="knowledge-base__categories" style={{ display: 'flex', gap: 8, marginTop: 14 }}>
                 {(['all', 'tech', 'sop', 'template', 'review', 'other'] as const).map((category) => (
                   <Button
                     key={category}
@@ -453,8 +462,10 @@ export function KnowledgeBase() {
               </div>
             </div>
 
+            <div className="support-domain-list__result-summary" style={{ padding: '12px 20px 0' }}><span>{selectedLabel}共 {filteredDocuments.length} 份文档</span>{filtersActive && <span>已按组织、分类或关键词筛选</span>}</div>
+
             {filteredDocuments.length === 0 ? (
-              <Empty description="当前条件下暂无文档" style={{ padding: 48 }} />
+              <div className="support-domain-list__empty"><Empty description="当前条件下暂无文档" />{filtersActive && <Button type="text" onClick={resetFilters}>清除筛选</Button>}</div>
             ) : (
               <Table
                 columns={columns}
@@ -462,6 +473,7 @@ export function KnowledgeBase() {
                 rowKey="id"
                 pagination={{ pageSize: 8, showTotal: true }}
                 borderCell={false}
+                scroll={{ x: 900 }}
               />
             )}
           </Card>
@@ -612,6 +624,6 @@ export function KnowledgeBase() {
           </Space>
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

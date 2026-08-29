@@ -4,6 +4,7 @@
 
 import {
   type AuditNode,
+  type QuoteRole,
   type StampNode,
 } from './types';
 import type {
@@ -13,7 +14,7 @@ import type {
 } from '@/app/approvals/configStore';
 
 /** 报价审批角色映射：人名 → 报价角色 key */
-const NAME_TO_QUOTE_ROLE: Record<string, string> = {
+const NAME_TO_QUOTE_ROLE: Record<string, QuoteRole> = {
   '黄奕': 'sales_manager',
   '罗总': 'tech',
   '闵总': 'decision',
@@ -23,13 +24,24 @@ const NAME_TO_QUOTE_ROLE: Record<string, string> = {
   '赵六': 'sales_manager',
 };
 
+const NODE_NAME_TO_QUOTE_ROLE: Record<string, QuoteRole> = {
+  '销售部负责人': 'sales_manager',
+  '技术部负责人': 'tech',
+  '企业决策层': 'decision',
+  '盖章': 'assistant',
+};
+
 /** 从人名推断报价角色（assignment 携带 quoteRole 时优先用它） */
-function resolveQuoteRole(assignment: NodeAssignment): string {
-  if ('quoteRole' in assignment && (assignment as any).quoteRole) {
-    return (assignment as any).quoteRole;
+function resolveQuoteRole(assignment: NodeAssignment): QuoteRole {
+  if (assignment.quoteRole) {
+    return assignment.quoteRole;
   }
+  const nodeRole = NODE_NAME_TO_QUOTE_ROLE[assignment.nodeName];
+  if (nodeRole) return nodeRole;
   const name = Array.isArray(assignment.assigneeValue) ? assignment.assigneeValue[0] : assignment.assigneeValue;
-  return NAME_TO_QUOTE_ROLE[name] ?? 'unknown';
+  const role = NAME_TO_QUOTE_ROLE[name];
+  if (!role) throw new Error(`审批节点“${assignment.nodeName}”未配置报价角色`);
+  return role;
 }
 
 /** 盖章节点识别约定：模板中 name === '盖章' 的节点即 stamp 节点 */
@@ -52,7 +64,7 @@ export function buildAuditSnapshotFromConfig(
   templateDef: WorkflowTemplateDefinition,
 ): AuditSnapshot {
   const auditNodes: AuditNode[] = [];
-  let stampNode: StampNode = { stamperName: '黄海', status: 'LOCKED' };
+  let stampNode: StampNode | null = null;
 
   for (const assignment of businessDef.assignments) {
     const templateNode = templateDef.nodes.find((n) => n.id === assignment.nodeId);
@@ -63,23 +75,26 @@ export function buildAuditSnapshotFromConfig(
       : assignment.assigneeValue;
 
     if (isStampNode(templateNode.name) || isStampNode(assignment.nodeName)) {
-      stampNode = { stamperName: name, status: 'LOCKED' };
+      stampNode = { stamperName: name, stamperRole: resolveQuoteRole(assignment), status: 'LOCKED' };
     } else {
       auditNodes.push({
         auditorId: assignment.nodeId,
         auditorName: name,
         role: templateNode.name,
+        quoteRole: resolveQuoteRole(assignment),
         status: 'PENDING',
       });
     }
   }
 
+  if (auditNodes.length === 0) throw new Error('报价审批未配置有效的审批节点');
+  if (!stampNode) throw new Error('报价审批未配置盖章节点');
   return { auditNodes, stampNode };
 }
 
 /**
  * 从当前配置获取报价审批快照。
- * 如果找不到配置，回退到默认三人会签（向后兼容）。
+ * 配置缺失时阻止送审，避免“配置驱动”退化为写死人名。
  */
 export function getQuoteAuditSnapshot(
   loadBusinessApprovals: () => BusinessApprovalDefinition[],
@@ -91,27 +106,12 @@ export function getQuoteAuditSnapshot(
 
   const businessDef = businesses.find((b) => b.bizCode === bizCode && b.enabled);
   if (!businessDef || !businessDef.templateId) {
-    // 回退默认：三人并行会签 + 盖章
-    return {
-      auditNodes: [
-        { auditorId: 'huangyi', auditorName: '黄奕', role: '销售部负责人', status: 'PENDING' },
-        { auditorId: 'luo', auditorName: '罗总', role: '技术部负责人', status: 'PENDING' },
-        { auditorId: 'min', auditorName: '闵总', role: '企业决策层', status: 'PENDING' },
-      ],
-      stampNode: { stamperName: '黄海', status: 'LOCKED' },
-    };
+    throw new Error('报价审批未配置，请联系管理员');
   }
 
   const templateDef = templates.find((t) => t.id === businessDef.templateId);
   if (!templateDef) {
-    return {
-      auditNodes: [
-        { auditorId: 'huangyi', auditorName: '黄奕', role: '销售部负责人', status: 'PENDING' },
-        { auditorId: 'luo', auditorName: '罗总', role: '技术部负责人', status: 'PENDING' },
-        { auditorId: 'min', auditorName: '闵总', role: '企业决策层', status: 'PENDING' },
-      ],
-      stampNode: { stamperName: '黄海', status: 'LOCKED' },
-    };
+    throw new Error('报价审批模板不存在，请联系管理员');
   }
 
   return buildAuditSnapshotFromConfig(businessDef, templateDef);
@@ -142,10 +142,10 @@ export const QUOTE_APPROVAL_BINDING: BusinessApprovalDefinition = {
   templateId: 'T-QUOTE-PARALLEL',
   templateName: '报价审批并行会签模板',
   assignments: [
-    { nodeId: 'quote-sm', nodeName: '销售部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '黄奕', skipIfEmpty: false },
-    { nodeId: 'quote-tech', nodeName: '技术部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '罗总', skipIfEmpty: false },
-    { nodeId: 'quote-decision', nodeName: '企业决策层', strategy: '会签', assigneeType: '具体人员', assigneeValue: '闵总', skipIfEmpty: false },
-    { nodeId: 'quote-stamp', nodeName: '盖章', strategy: '单人审批', assigneeType: '具体人员', assigneeValue: '黄海', skipIfEmpty: false },
+    { nodeId: 'quote-sm', nodeName: '销售部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '黄奕', quoteRole: 'sales_manager', skipIfEmpty: false },
+    { nodeId: 'quote-tech', nodeName: '技术部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '罗总', quoteRole: 'tech', skipIfEmpty: false },
+    { nodeId: 'quote-decision', nodeName: '企业决策层', strategy: '会签', assigneeType: '具体人员', assigneeValue: '闵总', quoteRole: 'decision', skipIfEmpty: false },
+    { nodeId: 'quote-stamp', nodeName: '盖章', strategy: '单人审批', assigneeType: '具体人员', assigneeValue: '黄海', quoteRole: 'assistant', skipIfEmpty: false },
   ],
   enabled: true,
   updatedAt: '2026-08-21',
@@ -159,10 +159,10 @@ export const SUPPLEMENT_QUOTE_APPROVAL_BINDING: BusinessApprovalDefinition = {
   templateId: 'T-QUOTE-PARALLEL',
   templateName: '报价审批并行会签模板',
   assignments: [
-    { nodeId: 'quote-sm', nodeName: '销售部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '黄奕', skipIfEmpty: false },
-    { nodeId: 'quote-tech', nodeName: '技术部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '罗总', skipIfEmpty: false },
-    { nodeId: 'quote-decision', nodeName: '企业决策层', strategy: '会签', assigneeType: '具体人员', assigneeValue: '闵总', skipIfEmpty: false },
-    { nodeId: 'quote-stamp', nodeName: '盖章', strategy: '单人审批', assigneeType: '具体人员', assigneeValue: '黄海', skipIfEmpty: false },
+    { nodeId: 'quote-sm', nodeName: '销售部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '黄奕', quoteRole: 'sales_manager', skipIfEmpty: false },
+    { nodeId: 'quote-tech', nodeName: '技术部负责人', strategy: '会签', assigneeType: '具体人员', assigneeValue: '罗总', quoteRole: 'tech', skipIfEmpty: false },
+    { nodeId: 'quote-decision', nodeName: '企业决策层', strategy: '会签', assigneeType: '具体人员', assigneeValue: '闵总', quoteRole: 'decision', skipIfEmpty: false },
+    { nodeId: 'quote-stamp', nodeName: '盖章', strategy: '单人审批', assigneeType: '具体人员', assigneeValue: '黄海', quoteRole: 'assistant', skipIfEmpty: false },
   ],
   enabled: true,
   updatedAt: '2026-08-21',

@@ -4,6 +4,8 @@
 // ========================================
 
 import { buildInitialContracts } from '../contracts/mockData';
+import type { Contract } from '../contracts/types';
+import type { CollectionLedgerEntry } from '@/services/collectionMutations';
 
 /**
  * 精益交付追加的合同（L2）
@@ -22,10 +24,6 @@ const FD_CONTRACTS: Record<string, any> = {
       { id: 'pp-4', contractId: 'contract-001', planNo: 4, planName: '中期款3', amount: 41000, dueDate: '2026-09-15', status: 'pending' },
       { id: 'pp-5', contractId: 'contract-001', planNo: 5, planName: '尾款', amount: 20500, dueDate: '2026-10-15', status: 'pending' },
     ],
-    collectionRecords: [
-      { id: 'cr-1', contractId: 'contract-001', amount: 61500, collectionDate: '2026-06-20', method: '银行转账' },
-      { id: 'cr-2', contractId: 'contract-001', amount: 41000, collectionDate: '2026-07-20', method: '银行转账' },
-    ],
   },
   // 补充合同 BC01（已归档生效，+¥35k）
   'contract-001-bc01': {
@@ -34,7 +32,6 @@ const FD_CONTRACTS: Record<string, any> = {
     status: 'archived', signingDate: '2026-07-15',
     sourceQuoteId: 'quot-001-supp1',
     paymentPlans: [],
-    collectionRecords: [],
   },
   // 补充合同 BC02（审批中，+¥20k）
   'contract-001-bc02': {
@@ -43,7 +40,6 @@ const FD_CONTRACTS: Record<string, any> = {
     status: 'pending_approval', signingDate: undefined,
     sourceQuoteId: 'quot-001-supp2',
     paymentPlans: [],
-    collectionRecords: [],
   },
   'contract-003': {
     id: 'contract-003', contractNo: 'HT-2026-003', name: '字节跳动-在线教育平台',
@@ -53,11 +49,6 @@ const FD_CONTRACTS: Record<string, any> = {
       { id: 'pp-6', contractId: 'contract-003', planNo: 1, planName: '签约款', amount: 75000, dueDate: '2026-06-25', status: 'received' },
       { id: 'pp-7', contractId: 'contract-003', planNo: 2, planName: '中期款', amount: 100000, dueDate: '2026-07-10', status: 'received' },
       { id: 'pp-8', contractId: 'contract-003', planNo: 3, planName: '尾款', amount: 75000, dueDate: '2026-07-25', status: 'received' },
-    ],
-    collectionRecords: [
-      { id: 'cr-3', contractId: 'contract-003', amount: 75000, collectionDate: '2026-06-28', method: '银行转账' },
-      { id: 'cr-4', contractId: 'contract-003', amount: 100000, collectionDate: '2026-07-12', method: '银行转账' },
-      { id: 'cr-5', contractId: 'contract-003', amount: 75000, collectionDate: '2026-07-28', method: '银行转账' },
     ],
   },
   'contract-005': {
@@ -69,67 +60,72 @@ const FD_CONTRACTS: Record<string, any> = {
       { id: 'pp-10', contractId: 'contract-005', planNo: 2, planName: '中期款', amount: 72000, dueDate: '2026-07-20', status: 'overdue' },
       { id: 'pp-11', contractId: 'contract-005', planNo: 3, planName: '尾款', amount: 54000, dueDate: '2026-08-20', status: 'pending' },
     ],
-    collectionRecords: [
-      { id: 'cr-6', contractId: 'contract-005', amount: 54000, collectionDate: '2026-06-15', method: '银行转账' },
-    ],
   },
 };
 
 /** 根据 contractId 获取合同（先查精益追加，再查合同域 mock） */
-export function getContract(contractId: string) {
+export function getContract(contractId: string, contracts: Contract[] = []) {
+  const currentContract = contracts.find((contract) => contract.id === contractId);
+  if (currentContract) return currentContract;
   // 精益追加的合同
   if (FD_CONTRACTS[contractId]) return FD_CONTRACTS[contractId];
   // 合同域 mock
-  const contracts = buildInitialContracts();
-  return contracts.find(c => c.id === contractId) ?? null;
+  const seedContracts = buildInitialContracts();
+  return seedContracts.find(c => c.id === contractId) ?? null;
 }
 
 /** 有效标的额 = 主合同额 */
 export function effectiveAmount(contract: any): number {
-  return contract?.totalAmount ?? contract?.amount ?? 0;
+  return contract?.current?.totalAmount ?? contract?.totalAmount ?? contract?.amount ?? 0;
 }
 
-/** 获取合同的回款记录 */
-export function getCollections(contractId: string): { amount: number; date: string }[] {
-  const contract = getContract(contractId);
-  if (!contract?.collectionRecords) return [];
-  return contract.collectionRecords.map((r: any) => ({
-    amount: r.amount ?? 0,
-    date: r.collectionDate ?? r.date ?? '',
-  }));
+/** 从独立实收台账获取合同回款；禁止回退到合同嵌套记录。 */
+export function getCollections(
+  contractId: string,
+  collections: CollectionLedgerEntry[],
+): { amount: number; date: string }[] {
+  return collections
+    .filter((record) => record.contractId === contractId)
+    .map((record) => ({ amount: record.amount, date: record.date }));
 }
 
 /** 获取合同的付款计划 */
-export function getPaymentPlans(contractId: string): { dueDate: string; amount: number }[] {
-  const contract = getContract(contractId);
-  if (!contract?.paymentPlans) return [];
-  return contract.paymentPlans.map((p: any) => ({
-    dueDate: p.dueDate ?? '',
+export function getPaymentPlans(contractId: string, contracts: Contract[] = []): { dueDate: string; amount: number }[] {
+  const contract = getContract(contractId, contracts) as any;
+  const plans = contract?.current?.paymentPlans ?? contract?.paymentPlans ?? [];
+  return plans.map((p: any) => ({
+    dueDate: p.expectedDate ?? p.dueDate ?? '',
     amount: p.amount ?? 0,
   }));
 }
 
 /** 累计回款金额 */
-export function totalCollected(contractId: string): number {
-  return getCollections(contractId).reduce((s, c) => s + c.amount, 0);
+export function totalCollected(contractId: string, collections: CollectionLedgerEntry[]): number {
+  return getCollections(contractId, collections).reduce((s, c) => s + c.amount, 0);
 }
 
 /** 补充合同摘要（用于 Case 补充合同列表与标的额演进） */
-export function getSupplementSummaries(extraContractIds: string[]): import('./types').SupplementContractSummary[] {
+export function getSupplementSummaries(
+  extraContractIds: string[],
+  contracts: Contract[] = [],
+): import('./types').SupplementContractSummary[] {
   return extraContractIds.map(id => {
-    const contract = FD_CONTRACTS[id];
+    const contract = getContract(id, contracts) as any;
     if (!contract) return null;
+    const amount = effectiveAmount(contract);
+    const name = contract.current?.contractName ?? contract.name ?? '';
+    const signingDate = contract.current?.signDate ?? contract.signingDate;
     return {
       id: contract.id,
       contractNo: contract.contractNo,
-      name: contract.name ?? '',
-      amount: contract.totalAmount ?? 0,
+      name,
+      amount,
       status: contract.status === 'archived' ? 'archived' as const
         : contract.status === 'pending_approval' ? 'pending_approval' as const
         : 'voided' as const,
       archived: contract.status === 'archived',
       voided: contract.status === 'voided',
-      signingDate: contract.signingDate,
+      signingDate,
       sourceQuoteId: contract.sourceQuoteId,
     };
   }).filter((s): s is import('./types').SupplementContractSummary => s !== null);

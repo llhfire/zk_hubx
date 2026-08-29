@@ -4,6 +4,7 @@ import { buildGanttNodes } from './paymentCalc';
 import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
 import type { Contract } from '../types';
 import type { ForecastNode, ForecastOverride, ForecastCertaintyLevel } from './types';
+import { FilterBar } from '@/app/components/ui';
 
 const { Text } = Typography;
 
@@ -74,7 +75,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
         const isChanged = v !== r.plannedDate;
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Text style={{ fontSize: 'var(--text-sm)', color: isChanged ? 'var(--warning-500)' : undefined }}>{v}</Text>
+            <Text style={{ fontSize: 'var(--text-sm)', color: isChanged ? 'rgb(var(--warning-6))' : undefined }}>{v}</Text>
             {isChanged && <Tag size="small" color="orange">已调期</Tag>}
           </div>
         );
@@ -84,9 +85,9 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
       title: '交付进度', width: 100,
       render: (_: unknown, r: ForecastNode) => {
         if (r.deliveryDelayDays && r.deliveryDelayDays > 0) {
-          return <Text style={{ fontSize: 'var(--text-sm)', color: 'var(--destructive-500)' }}>延期 {r.deliveryDelayDays} 天</Text>;
+          return <Text style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--danger-6))' }}>延期 {r.deliveryDelayDays} 天</Text>;
         }
-        return <Text style={{ fontSize: 'var(--text-sm)', color: 'var(--success-500)' }}>正常</Text>;
+        return <Text style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--success-6))' }}>正常</Text>;
       },
     },
     {
@@ -119,7 +120,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
     <Card title="单合同预测明细">
       {/* 筛选 */}
       <div style={{ marginBottom: 'var(--space-4)' }}>
-        <Space>
+        <FilterBar>
           <Text type="secondary" style={{ fontSize: 'var(--text-sm)' }}>确定性:</Text>
           <Select value={certaintyFilter} onChange={setCertaintyFilter} style={{ width: 120 }}>
             <Select.Option value="all">全部等级</Select.Option>
@@ -128,7 +129,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
             <Select.Option value="low">风险受阻</Select.Option>
             <Select.Option value="blocked">卡点阻滞</Select.Option>
           </Select>
-        </Space>
+        </FilterBar>
       </div>
 
       <Table
@@ -137,6 +138,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
         columns={columns}
         pagination={{ pageSize: 20 }}
         size="small"
+        scroll={{ x: 900 }}
       />
 
       {/* 调期确认弹窗 */}

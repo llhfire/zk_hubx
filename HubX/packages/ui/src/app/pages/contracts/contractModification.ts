@@ -22,7 +22,7 @@ export const CONTRACT_CHANGE_TYPE_OPTIONS = [
   '条款修改',
   '金额调整',
   '主体变更',
-  '补充协议',
+  '补充合同附件更新',
   '附件更新',
   '合同归档',
   '其他',

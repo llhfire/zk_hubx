@@ -16,6 +16,8 @@ import {
   Tooltip,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
@@ -159,6 +161,7 @@ export function Organization() {
               type="text"
               size="small"
               icon={<IconEdit />}
+              aria-label={`编辑部门${record.name}`}
               onClick={() => handleEditDepartment(record)}
             />
           </Tooltip>
@@ -168,7 +171,7 @@ export function Organization() {
               title="确定要删除该部门吗?"
               onOk={() => handleDeleteDepartment(record.id)}
             >
-              <Button type="text" size="small" status="danger" icon={<IconDelete />} />
+              <Button type="text" size="small" status="danger" icon={<IconDelete />} aria-label={`删除部门${record.name}`} />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -201,18 +204,15 @@ export function Organization() {
             type="text"
             size="small"
             icon={<IconEdit />}
+            aria-label={`编辑人员${record.name}`}
             onClick={() => handleEditEmployee(record)}
-          >
-            编辑
-          </Button>
+          />
           <Popconfirm
             key="delete"
             title="确定要删除该员工吗?"
             onOk={() => handleDeleteEmployee(record.id)}
           >
-            <Button type="text" size="small" status="danger" icon={<IconDelete />}>
-              删除
-            </Button>
+            <Button type="text" size="small" status="danger" icon={<IconDelete />} aria-label={`删除人员${record.name}`} />
           </Popconfirm>
         </Space>
       ),
@@ -266,33 +266,47 @@ export function Organization() {
   };
 
   return (
-    <div>
-      <Card bordered={false}>
+    <PageShell
+      className="system-config-page"
+      breadcrumbs={[{ label: '系统管理' }, { label: '组织架构' }]}
+    >
+      <PageHeader
+        title="组织架构"
+        description="维护部门层级、负责人及组织人员基础信息。"
+        actions={activeTab === 'department' ? (
+          <Button type="primary" icon={<IconPlus />} onClick={handleAddDepartment}>新建部门</Button>
+        ) : (
+          <Button type="primary" icon={<IconPlus />} onClick={handleAddEmployee}>新增人员</Button>
+        )}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'departments', label: '部门节点', value: `${mockDepartments.length} 个`, detail: '含总公司与下属组织' },
+        { key: 'enabled', label: '启用部门', value: `${mockDepartments.filter(item => item.status === '启用').length} 个`, detail: '当前有效组织', tone: 'success' },
+        { key: 'members', label: '组织编制', value: `${mockDepartments[0]?.memberCount ?? 0} 人`, detail: '总公司统计口径' },
+        { key: 'records', label: '人员样本', value: `${mockEmployees.length} 人`, detail: '当前 α 组织台账' },
+      ]} />
+
+      <Card bordered={false} title="组织与人员" className="system-config-card">
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
           <TabPane key="department" title="部门管理">
-            <div style={{ marginBottom: 16 }}>
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddDepartment}>
-                新建部门
-              </Button>
-            </div>
+            <div className="system-config-result-summary">共 {mockDepartments.length} 个部门节点</div>
             <Table
               columns={departmentColumns}
               data={mockDepartments}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 900 }}
             />
           </TabPane>
           <TabPane key="employee" title="人员管理">
-            <div style={{ marginBottom: 16 }}>
-              <Button type="primary" icon={<IconPlus />} onClick={handleAddEmployee}>
-                新增员工
-              </Button>
-            </div>
+            <div className="system-config-result-summary">共 {mockEmployees.length} 名组织人员</div>
             <Table
               columns={employeeColumns}
               data={mockEmployees}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 1050 }}
             />
           </TabPane>
         </Tabs>
@@ -372,6 +386,6 @@ export function Organization() {
           </FormItem>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

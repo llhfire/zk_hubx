@@ -59,7 +59,7 @@ export function BasicInfoTab({ trip }: BasicInfoTabProps) {
       <Row gutter={16}>
         {/* 申请信息 */}
         <Col span={8}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <IconUser style={{ color: '#86909c' }} />
               <Text style={{ fontWeight: 600, color: '#1d2129' }}>申请信息</Text>
@@ -94,7 +94,7 @@ export function BasicInfoTab({ trip }: BasicInfoTabProps) {
 
         {/* 行程信息 */}
         <Col span={8}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <IconLocation style={{ color: '#86909c' }} />
               <Text style={{ fontWeight: 600, color: '#1d2129' }}>行程信息</Text>
@@ -124,7 +124,7 @@ export function BasicInfoTab({ trip }: BasicInfoTabProps) {
 
         {/* 费用预估 */}
         <Col span={8}>
-          <Card size="small">
+          <Card size="small" style={{ height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <IconStorage style={{ color: '#86909c' }} />
               <Text style={{ fontWeight: 600, color: '#1d2129' }}>费用预估</Text>

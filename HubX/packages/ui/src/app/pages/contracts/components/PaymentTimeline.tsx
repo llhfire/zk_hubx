@@ -58,17 +58,17 @@ export function PaymentTimeline({ contract }: Props) {
             付款 ¥{(plan.amount / 10000).toFixed(1)}万（{plan.percentage}%）
             {isPaid && planCols.length > 0 && (
               <div style={{ color: 'var(--success-500)', fontSize: 12 }}>
-                ✅ 实际到账 ¥{(planReceived / 10000).toFixed(0)}万
+                实际到账 ¥{(planReceived / 10000).toFixed(0)}万
               </div>
             )}
             {isOverdue && (
               <div style={{ color: 'var(--destructive-500)', fontSize: 12 }}>
-                ⚠️ 逾期 {Math.floor((Date.now() - new Date(plan.expectedDate).getTime()) / 86400000)} 天
+                逾期 {Math.floor((Date.now() - new Date(plan.expectedDate).getTime()) / 86400000)} 天
               </div>
             )}
             {relatedBlockers.map(b => (
               <div key={b.id} style={{ color: 'var(--destructive-600)', fontSize: 12, marginTop: 2 }}>
-                🔴 {BLOCKER_TYPE_LABELS[b.type]}：{b.title}
+                卡点：{BLOCKER_TYPE_LABELS[b.type]}：{b.title}
               </div>
             ))}
           </TimelineItem>

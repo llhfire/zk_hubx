@@ -74,6 +74,9 @@ export function ItineraryTab({ trip, onUpdate }: ItineraryTabProps) {
   });
 
   const segments = trip.itinerarySegments || [];
+  const currentSegmentIndex = trip.status === 'in_progress'
+    ? Math.max(0, segments.findIndex((segment) => segment.departureDate <= new Date().toISOString().slice(0, 10) && segment.arrivalDate >= new Date().toISOString().slice(0, 10)))
+    : trip.status === 'to_reimburse' || trip.status === 'closed' ? Math.max(0, segments.length - 1) : 0;
 
   // 打开新建表单
   const handleCreate = () => {
@@ -314,11 +317,11 @@ export function ItineraryTab({ trip, onUpdate }: ItineraryTabProps) {
                       left: 0,
                       top: 8,
                       transform: 'translateX(-50%)',
-                      width: 16,
-                      height: 16,
+                      width: index === currentSegmentIndex ? 18 : 10,
+                      height: index === currentSegmentIndex ? 18 : 10,
                       borderRadius: '50%',
-                      background: '#165dff',
-                      border: '2px solid white',
+                      background: index === currentSegmentIndex ? '#165dff' : '#fff',
+                      border: `2px solid ${index <= currentSegmentIndex ? '#165dff' : '#c9cdd4'}`,
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                     }}
                   />

@@ -11,9 +11,9 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import type { FollowUpRecord, LeadDetailInfo, LeadListItem, TransferRecord } from '@/app/pages/leads/types';
+import type { FollowUpRecord, LeadDetailInfo, LeadListItem, TransferRecord, CustomerLevel } from '@/app/pages/leads/types';
 import { createMockLeadService, type LeadService } from '@/services/leadService';
-import type { LeadCreateInput, FollowUpInput } from '@/services/leadMutations';
+import type { LeadCreateInput, FollowUpInput, DispatchInput } from '@/services/leadMutations';
 
 interface LeadsContextValue {
   leads: LeadListItem[];
@@ -32,6 +32,11 @@ interface LeadsContextValue {
   transformToCustomer: (id: string) => Promise<void>;
   addFollowUp: (id: string, input: FollowUpInput) => Promise<void>;
   updateLead: (id: string, updater: (lead: LeadListItem) => LeadListItem) => Promise<void>;
+  // 派发域（β 阶段 2）：动作走服务端专门端点，事件服务端生成
+  dispatchLead: (id: string, input: DispatchInput, operator: string) => Promise<void>;
+  urgeLead: (id: string, operator: string, note?: string) => Promise<void>;
+  adjustLevel: (id: string, from: CustomerLevel, to: CustomerLevel, operator: string) => Promise<void>;
+  confirmQuality: (id: string, operator: string, note: string) => Promise<void>;
 }
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -80,13 +85,19 @@ export function LeadsProvider({ children, service }: LeadsProviderProps) {
   const transformToCustomer = useCallback(async (id: string) => { await svc.transformToCustomer(id); await refresh(); }, [svc, refresh]);
   const addFollowUp = useCallback(async (id: string, input: FollowUpInput) => { await svc.addFollowUp(id, input); await refresh(); }, [svc, refresh]);
   const updateLead = useCallback(async (id: string, updater: (lead: LeadListItem) => LeadListItem) => { await svc.updateLead(id, updater); await refresh(); }, [svc, refresh]);
+  const dispatchLead = useCallback(async (id: string, input: DispatchInput, operator: string) => { await svc.dispatchLead(id, input, operator); await refresh(); }, [svc, refresh]);
+  const urgeLead = useCallback(async (id: string, operator: string, note?: string) => { await svc.urgeLead(id, operator, note); await refresh(); }, [svc, refresh]);
+  const adjustLevel = useCallback(async (id: string, from: CustomerLevel, to: CustomerLevel, operator: string) => { await svc.adjustLevel(id, from, to, operator); await refresh(); }, [svc, refresh]);
+  const confirmQuality = useCallback(async (id: string, operator: string, note: string) => { await svc.confirmQuality(id, operator, note); await refresh(); }, [svc, refresh]);
 
   const value = useMemo<LeadsContextValue>(() => ({
     leads, loading, getById, getDetailInfo, getFollowUps, getTransferRecords, refresh,
     createLead, claimLead, assignLead, returnLead, markTrash, softDelete, transformToCustomer, addFollowUp, updateLead,
+    dispatchLead, urgeLead, adjustLevel, confirmQuality,
   }), [
     leads, loading, getById, getDetailInfo, getFollowUps, getTransferRecords, refresh,
     createLead, claimLead, assignLead, returnLead, markTrash, softDelete, transformToCustomer, addFollowUp, updateLead,
+    dispatchLead, urgeLead, adjustLevel, confirmQuality,
   ]);
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

@@ -31,6 +31,7 @@ import {
   IconLayout,
   IconFilter,
 } from '@arco-design/web-react/icon';
+import { ChatCircleText, UserSwitch } from '@phosphor-icons/react';
 import type {
   ProjectListItem,
   ProjectStatus,
@@ -66,9 +67,25 @@ import {
   formatHours,
   formatAmount,
 } from './project-management/utils';
+import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
+
+const CUSTOMER_LEVEL_BY_NAME: Record<string, 'S' | 'A' | 'B' | 'C'> = {
+  A公司: 'A',
+  B公司: 'B',
+  D公司: 'B',
+  E平台: 'A',
+  G公司: 'S',
+  H教育: 'B',
+};
+
+const CUSTOMER_LEVEL_COLOR = { S: 'red', A: 'orange', B: 'blue', C: 'gray' } as const;
+
+function shortProjectNo(projectNo: string) {
+  return `P${projectNo.slice(-6)}`;
+}
 
 export function ProjectList() {
   const navigate = useNavigate();
@@ -198,7 +215,17 @@ export function ProjectList() {
 
   // 复合列定义
   const columns = [
-    { title: '编号', dataIndex: 'projectNo', width: 100, fixed: 'left' as const, render: (v: string) => <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{v}</span> },
+    {
+      title: '编号',
+      dataIndex: 'projectNo',
+      width: 96,
+      fixed: 'left' as const,
+      render: (v: string) => (
+        <Tooltip content={v}>
+          <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{shortProjectNo(v)}</span>
+        </Tooltip>
+      ),
+    },
     {
       title: '项目名称',
       width: 220,
@@ -214,14 +241,26 @@ export function ProjectList() {
       ),
     },
     {
-      title: '负责人+优先级',
-      width: 120,
+      title: '负责人',
+      width: 100,
       render: (_: unknown, r: ProjectListItem) => (
-        <div>
-          <div style={{ fontSize: 12 }}>{r.owner || <span style={{ color: 'var(--color-text-4)' }}>待指派</span>}</div>
-          <Tag color={PROJECT_PRIORITY_COLOR[r.priority]} size="small">{r.priority}</Tag>
-        </div>
+        <span>{r.owner || <span style={{ color: 'var(--color-text-4)' }}>待指派</span>}</span>
       ),
+    },
+    {
+      title: '分级 / 优先级',
+      width: 126,
+      render: (_: unknown, r: ProjectListItem) => {
+        const customerLevel = r.customerName ? CUSTOMER_LEVEL_BY_NAME[r.customerName] : undefined;
+        return (
+          <Space size={4}>
+            <Tag color={customerLevel ? CUSTOMER_LEVEL_COLOR[customerLevel] : 'gray'} size="small">
+              {customerLevel ?? '未分级'}
+            </Tag>
+            <Tag color={PROJECT_PRIORITY_COLOR[r.priority]} size="small">{r.priority}</Tag>
+          </Space>
+        );
+      },
     },
     {
       title: '状态',
@@ -229,12 +268,12 @@ export function ProjectList() {
       render: (_: unknown, r: ProjectListItem) => {
         const health = r.healthStatus;
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <Tag color={PROJECT_STATUS_COLOR[r.status]}>{r.status}</Tag>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+            <Tag color={PROJECT_STATUS_COLOR[r.status]} size="small">{r.status}</Tag>
             {health !== 'normal' && (
-              <span style={{ fontSize: 12, color: health === 'danger' ? 'rgb(var(--danger-6))' : 'rgb(var(--warning-6))' }}>
-                {health === 'danger' ? '⚠ 预警' : '⚡ 关注'}
-              </span>
+              <Tag size="small" color={health === 'danger' ? 'red' : 'orange'}>
+                {health === 'danger' ? '项目预警' : '需要关注'}
+              </Tag>
             )}
           </div>
         );
@@ -272,19 +311,40 @@ export function ProjectList() {
       render: (_: unknown, r: ProjectListItem) => {
         const cd = getProjectCountdown(r.startDate, r.expectedEndDate);
         if (!r.expectedEndDate) return <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>;
+        const tone = cd.isOverdue ? 'danger' : cd.daysRemaining <= 7 ? 'warning' : 'normal';
         return (
-          <span style={{ fontSize: 12, color: cd.isOverdue ? 'rgb(var(--danger-6))' : cd.daysRemaining <= 7 ? 'rgb(var(--warning-6))' : 'var(--color-text-2)' }}>
-            {cd.label}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
+            <span style={{
+              padding: '2px 8px',
+              borderRadius: 999,
+              border: `1px solid ${tone === 'danger' ? 'rgb(var(--danger-3))' : tone === 'warning' ? 'rgb(var(--warning-3))' : 'var(--color-border-2)'}`,
+              background: tone === 'danger' ? 'rgb(var(--danger-1))' : tone === 'warning' ? 'rgb(var(--warning-1))' : 'var(--color-fill-2)',
+              color: tone === 'danger' ? 'rgb(var(--danger-6))' : tone === 'warning' ? 'rgb(var(--warning-6))' : 'var(--color-text-2)',
+              fontSize: 12,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}>
+              {cd.isOverdue ? `逾期${Math.abs(cd.daysRemaining)}天` : `余${cd.daysRemaining}天`}
+            </span>
+            <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{r.expectedEndDate}</span>
+          </div>
         );
       },
     },
     {
-      title: '累计工时',
-      width: 110,
-      render: (_: unknown, r: ProjectListItem) => (
-        <span style={{ fontSize: 12 }}>{formatHours(r.totalHours)} / {formatHours(r.budgetHours)}</span>
-      ),
+      title: '累计 / 预计工时',
+      width: 132,
+      render: (_: unknown, r: ProjectListItem) => {
+        const ratio = r.budgetHours > 0 ? r.totalHours / r.budgetHours : 0;
+        return (
+          <span style={{ fontSize: 12, color: 'var(--color-text-1)' }}>
+            <strong style={{ color: ratio > 1 ? 'rgb(var(--danger-6))' : ratio >= 0.9 ? 'rgb(var(--warning-6))' : 'var(--color-text-2)', fontWeight: ratio >= 0.9 ? 600 : 400 }}>
+              {formatHours(r.totalHours)}
+            </strong>
+            {' / '}{formatHours(r.budgetHours)}
+          </span>
+        );
+      },
     },
     {
       title: '最新进展',
@@ -302,15 +362,15 @@ export function ProjectList() {
       width: 150,
       fixed: 'right' as const,
       render: (_: unknown, r: ProjectListItem) => (
-        <Space size="small">
+        <Space size={2}>
           {r.status === '未确认' && (
             <Tooltip content="指派PM">
-              <Button type="text" size="small" onClick={() => openAssignModal(r)}>指派</Button>
+              <Button type="text" className="hubx-icon-action" aria-label="指派项目经理" icon={<UserSwitch size={18} />} size="small" onClick={() => openAssignModal(r)} />
             </Tooltip>
           )}
-          <Tooltip content="详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/projects/${r.id}`)} /></Tooltip>
-          <Tooltip content="跟进"><Button type="text" size="small" onClick={() => openFollowModal(r)}>跟进</Button></Tooltip>
-          <Tooltip content="编辑"><Button type="text" icon={<IconEdit />} size="small" onClick={() => openEditDrawer(r)} /></Tooltip>
+          <Tooltip content="查看详情"><Button type="text" className="hubx-icon-action" aria-label="查看项目详情" icon={<IconEye />} size="small" onClick={() => navigate(`/projects/${r.id}`)} /></Tooltip>
+          <Tooltip content="添加跟进"><Button type="text" className="hubx-icon-action" aria-label="添加项目跟进" icon={<ChatCircleText size={18} />} size="small" onClick={() => openFollowModal(r)} /></Tooltip>
+          <Tooltip content="编辑项目"><Button type="text" className="hubx-icon-action" aria-label="编辑项目" icon={<IconEdit />} size="small" onClick={() => openEditDrawer(r)} /></Tooltip>
         </Space>
       ),
     },
@@ -321,7 +381,7 @@ export function ProjectList() {
     <div style={{ width: 240, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>签约主体</div>
-        <Select placeholder="不限主体" style={{ width: '100%' }} allowClear value={entityFilter} onChange={setEntityFilter}>
+        <Select placeholder="签约主体（全部）" style={{ width: '100%' }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
           {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
         </Select>
       </div>
@@ -361,40 +421,43 @@ export function ProjectList() {
   };
 
   return (
-    <div>
-      {/* 1. 指标驾驶舱 */}
-      <Grid.Row gutter={16} style={{ marginBottom: 16 }}>
-        <Grid.Col span={6}>
-          <Card>
-            <Text type="secondary">活跃项目总数</Text>
-            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: 'rgb(var(--primary-6))' }}>{metrics.activeCount}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
-              外包 {metrics.activeByLine['外包']} · 自研 {metrics.activeByLine['自研']} · 自运营 {metrics.activeByLine['自运营']}
-            </div>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={6}>
-          <Card>
-            <Text type="secondary">健康度预警</Text>
-            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: metrics.warningCount > 0 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))' }}>{metrics.warningCount}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>工期延期或缺陷积压</div>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={6}>
-          <Card>
-            <Text type="secondary">待确认指派</Text>
-            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: metrics.pendingConfirmCount > 0 ? 'rgb(var(--warning-6))' : 'var(--color-text-3)' }}>{metrics.pendingConfirmCount}</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>等待指派项目经理</div>
-          </Card>
-        </Grid.Col>
-        <Grid.Col span={6}>
-          <Card>
-            <Text type="secondary">本月工时投入</Text>
-            <div style={{ fontSize: 30, fontWeight: 700, marginTop: 8, color: 'rgb(var(--success-6))' }}>{metrics.monthlyHours}h</div>
-            <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>全员有效工时</div>
-          </Card>
-        </Grid.Col>
-      </Grid.Row>
+    <PageShell>
+      <PageHeader
+        title="项目管理"
+        description="集中查看项目交付状态、工期风险、累计工时和最新进展。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => setDrawerVisible(true)}>新建项目</Button>}
+      />
+
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'active',
+            label: '活跃项目',
+            value: `${metrics.activeCount} 个`,
+            detail: `外包 ${metrics.activeByLine['外包']} · 自研 ${metrics.activeByLine['自研']} · 自运营 ${metrics.activeByLine['自运营']}`,
+          },
+          {
+            key: 'warning',
+            label: '健康度预警',
+            value: `${metrics.warningCount} 个`,
+            detail: '工期延期或缺陷积压',
+            tone: metrics.warningCount > 0 ? 'danger' : 'success',
+          },
+          {
+            key: 'assign',
+            label: '待确认指派',
+            value: `${metrics.pendingConfirmCount} 个`,
+            detail: '等待指派项目经理',
+            tone: metrics.pendingConfirmCount > 0 ? 'warning' : 'neutral',
+          },
+          {
+            key: 'hours',
+            label: '本月工时投入',
+            value: `${metrics.monthlyHours}h`,
+            detail: '全员有效工时',
+          },
+        ]}
+      />
 
       {/* 2. 快捷分栏 */}
       <div style={{ marginBottom: 12 }}>
@@ -409,19 +472,19 @@ export function ProjectList() {
         {/* 3. 搜索栏 */}
         <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
           <Input style={{ width: 280 }} placeholder="搜索编号、名称、客户" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="全部状态" style={{ width: 130 }} allowClear value={statusFilter} onChange={setStatusFilter}>
+          <Select placeholder="项目状态（全部）" style={{ width: 150 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
             {PROJECT_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
-          <Select placeholder="负责人" style={{ width: 120 }} allowClear>
+          <Select placeholder="负责人（全部）" style={{ width: 140 }} allowClear>
             <Select.Option value="李四">李四</Select.Option>
             <Select.Option value="王五">王五</Select.Option>
             <Select.Option value="赵六">赵六</Select.Option>
             <Select.Option value="孙七">孙七</Select.Option>
           </Select>
-          <Select placeholder="业务线" style={{ width: 120 }} allowClear value={lineFilter} onChange={setLineFilter}>
+          <Select placeholder="业务线（全部）" style={{ width: 140 }} allowClear value={lineFilter || undefined} onChange={setLineFilter}>
             {BUSINESS_LINE_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
           </Select>
-          <Select placeholder="优先级" style={{ width: 110 }} allowClear value={priorityFilter} onChange={setPriorityFilter}>
+          <Select placeholder="优先级（全部）" style={{ width: 140 }} allowClear value={priorityFilter || undefined} onChange={setPriorityFilter}>
             {PROJECT_PRIORITY_LIST.map((p) => <Select.Option key={p} value={p}>{p}</Select.Option>)}
           </Select>
           <Popover content={advancedFilterContent} trigger="click">
@@ -435,7 +498,6 @@ export function ProjectList() {
             <Button icon={<IconList />} type={viewMode === 'table' ? 'primary' : 'default'} onClick={() => setViewMode('table')}>表格</Button>
             <Button icon={<IconLayout />} type={viewMode === 'kanban' ? 'primary' : 'default'} onClick={() => setViewMode('kanban')}>看板</Button>
           </Space>
-          <Button type="primary" icon={<IconPlus />} onClick={() => setDrawerVisible(true)}>新建项目</Button>
         </div>
 
         {/* 4. 双视图 */}
@@ -443,7 +505,7 @@ export function ProjectList() {
           <Table
             columns={columns}
             data={filteredProjects}
-            scroll={{ x: 1400 }}
+            scroll={{ x: 1600 }}
             rowClassName={(r: ProjectListItem) => r.isOverdue ? 'arco-table-row-warning' : ''}
             pagination={{ total: filteredProjects.length, pageSize: 10, showTotal: true, showJumper: true }}
           />
@@ -585,6 +647,6 @@ export function ProjectList() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

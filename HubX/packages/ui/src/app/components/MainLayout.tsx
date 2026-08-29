@@ -87,7 +87,6 @@ export function MainLayout() {
         { key: '/leads/closed', label: '已成交线索' },
         { key: '/leads/trash', label: '垃圾线索' },
         { key: '/leads/governance', label: '线索治理' },
-        { key: '/lead-dispatch', label: '线索派发' },
       ],
     },
     {
@@ -99,6 +98,7 @@ export function MainLayout() {
         { key: '/lead-cost/daily', label: '投放日报' },
         { key: '/lead-cost/recharge', label: '充值记录' },
         { key: '/lead-cost/analysis', label: '渠道分析' },
+        { key: '/lead-dispatch', label: '线索派发' },
       ],
     },
     { key: '/customers', icon: <IconUser />, label: '客户管理' },
@@ -109,8 +109,7 @@ export function MainLayout() {
       label: '合同管理',
       children: [
         { key: '/contracts', label: '合同列表' },
-        { key: '/contracts/payments', label: '回款看板' },
-        { key: '/contracts/forecast', label: '回款预测' },
+        { key: '/contracts/payments', label: '回款管理' },
       ],
     },
     { key: '/projects', icon: <IconApps />, label: '项目管理' },
@@ -208,6 +207,7 @@ export function MainLayout() {
         { key: '/system/feedback', label: '意见反馈管理' },
       ],
     },
+    { key: '/ui-library', icon: <IconApps />, label: 'UI 组件库' },
   ];
 
   const handleMenuClick = (key: string) => {
@@ -239,6 +239,9 @@ export function MainLayout() {
     }
     if (path === '/quotation' || path.startsWith('/quotation/')) {
       return ['/quotation'];
+    }
+    if (path === '/contracts/payments' || path === '/contracts/forecast') {
+      return ['/contracts/payments'];
     }
     if (path === '/contracts' || path.startsWith('/contracts/')) {
       return ['/contracts'];

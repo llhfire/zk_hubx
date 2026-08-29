@@ -25,17 +25,25 @@ import {
   applyAssignLead,
   applyClaimLead,
   applyCreateLead,
+  applyDispatchLead,
+  applyLevelChange,
   applyMarkTrash,
+  applyQualityConfirm,
   applyReturnLead,
   applySoftDelete,
   applyTransformToCustomer,
+  applyUrge,
+  buildLeadDetailInfo,
   buildTransferRecord,
   canClaimLead,
   canReturnLead,
   nowString,
   type LeadCreateInput,
   type FollowUpInput,
+  type DispatchInput,
 } from './leadMutations';
+import type { CustomerLevel } from '@/app/pages/leads/types';
+import { generateEventId } from '@/app/pages/lead-dispatch/eventLog';
 
 export interface LeadService {
   /** 全部线索（含各池；UI 按 clueType 切片） */
@@ -63,6 +71,16 @@ export interface LeadService {
   addFollowUp(id: string, input: FollowUpInput): Promise<void>;
   /** 更新字段（通用；编辑表单） */
   updateLead(id: string, updater: (lead: LeadListItem) => LeadListItem): Promise<void>;
+
+  // ── 派发域（β 阶段 2；事件时间/ID：mock 本地、http 服务端生成）──
+  /** 派发：指派销售或派到公海（写 dispatchedAt/dispatchTarget + 事件 + 流转记录） */
+  dispatchLead(id: string, input: DispatchInput, operator: string): Promise<void>;
+  /** 催办（只追加事件） */
+  urgeLead(id: string, operator: string, note?: string): Promise<void>;
+  /** 等级调整：升级免审直接生效；降级只写事件进审核队列 */
+  adjustLevel(id: string, from: CustomerLevel, to: CustomerLevel, operator: string): Promise<void>;
+  /** 质检确认（管理员）：追加 level_audit_result 事件 */
+  confirmQuality(id: string, operator: string, note: string): Promise<void>;
 }
 
 /** 全部池子：公海 + 我的 + 垃圾 + 已成交（含种子内去重） */
@@ -97,51 +115,15 @@ export function createMockLeadService(): LeadService {
   }
 
   return {
-    list: async () => leads,
+    list: async () => leads.filter((lead) => !lead.deleted),
     getById: async (id) => findOne(id),
     getDetailInfo: async (id) => {
       const detail = getLeadDetailInfo(id);
       if (detail) return detail;
-      // 兜底：从列表切片（新增/流转的线索 detail 未在 seed 时用列表字段组装）
+      // 兜底：从列表切片组装（新增/迁移线索无 α 静态 profile 时用列表字段组装）
       const lead = leads.find((l) => l.id === id);
       if (!lead) return null;
-      return {
-        name: lead.name,
-        customer: lead.customer,
-        contact: lead.contact,
-        phone: lead.phone,
-        wechat: lead.wechat,
-        source: lead.source,
-        keyword: lead.keyword,
-        tags: lead.tags,
-        requirement: lead.remark ?? '',
-        initialRequirement: lead.remark ?? lead.name,
-        level: lead.level,
-        customerLevel: lead.customerLevel,
-        status: lead.status,
-        clueType: lead.clueType,
-        transformStatus: lead.transformStatus,
-        trashCount: lead.trashCount,
-        trashReason: lead.trashReason,
-        createTime: lead.createTime,
-        updateTime: lead.createTime,
-        claimTime: '',
-        lastFollowTime: lead.lastFollowTime,
-        nextFollowTime: lead.nextFollowTime,
-        creator: lead.owner || lead.optimizer || '',
-        owner: lead.owner,
-        optimizer: lead.optimizer,
-        assistant: lead.assistant,
-        customerTitle: lead.contact,
-        customerCost: '',
-        entity: lead.entity,
-        agent: lead.optimizer,
-        presalesGroupName: lead.presalesGroupName,
-        prototypeLink: lead.prototypeLink,
-        followCount: lead.followCount,
-        daysHeld: lead.daysHeld,
-        attachments: [],
-      };
+      return buildLeadDetailInfo(lead);
     },
     getFollowUps: async (leadId) => followUps.filter((r) => r.leadId === leadId),
     getTransferRecords: async (leadId) => transfers.filter((r) => r.leadId === leadId),
@@ -211,6 +193,33 @@ export function createMockLeadService(): LeadService {
     },
 
     updateLead: async (id, updater) => mapOne(id, updater),
+
+    // ── 派发域（β 阶段 2）：纯函数口径与 Workers /api/leads/:id/dispatch 等端点单源 ──
+    dispatchLead: async (id, input, operator) => {
+      const lead = findOne(id);
+      if (!lead) return;
+      const { lead: updated, transfer } = applyDispatchLead(lead, input, operator, nowString(), generateEventId());
+      if (transfer) transfers.push(transfer);
+      mapOne(id, () => updated);
+    },
+
+    urgeLead: async (id, operator, note) => {
+      const lead = findOne(id);
+      if (!lead) return;
+      mapOne(id, (l) => applyUrge(l, operator, note ?? `催办${l.owner ? `->${l.owner}` : ''}`, nowString(), generateEventId()));
+    },
+
+    adjustLevel: async (id, from, to, operator) => {
+      const lead = findOne(id);
+      if (!lead) return;
+      mapOne(id, (l) => applyLevelChange(l, from, to, operator, nowString(), generateEventId()));
+    },
+
+    confirmQuality: async (id, operator, note) => {
+      const lead = findOne(id);
+      if (!lead) return;
+      mapOne(id, (l) => applyQualityConfirm(l, operator, note, nowString(), generateEventId()));
+    },
   };
 }
 
@@ -254,6 +263,20 @@ export function createHttpLeadService(baseUrl: string, opts?: { actor?: string }
     if (saved) onChange?.(updated, lead as LeadListItem);
   }
 
+  // 派发域写端点（服务端单请求原子写 doc + 事件；operator 冗余携带，服务端以 X-Actor 为准）
+  async function postAction(path: string, body: Record<string, unknown>): Promise<void> {
+    try {
+      const r = await fetch(api(path), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(opts?.actor ? { 'X-Actor': opts.actor } : {}) },
+        body: JSON.stringify(body),
+      });
+      if (r.status === 409) Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
+    } catch {
+      Message.error('网络异常，操作未完成，请重试');
+    }
+  }
+
   return {
     list: getList,
     getById: async (id) => getOne(id),
@@ -261,7 +284,17 @@ export function createHttpLeadService(baseUrl: string, opts?: { actor?: string }
       // β：从列表取该线索精简字段 → detail 由服务端明细接口提供（当前缺省用种子兜底）
       const lead = await getOne(id);
       if (!lead) return null;
-      return seedFallback(lead.id);
+      // β：服务端明细接口组装（迁移线索无 α 静态 profile）；失败时本地按列表字段兜底
+      try {
+        const r = await fetch(api(`/api/leads/${id}/detail`));
+        if (r.ok) {
+          const d = (await r.json()) as { detail?: LeadDetailInfo };
+          if (d.detail) return d.detail;
+        }
+      } catch {
+        // 网络异常走本地组装兜底
+      }
+      return buildLeadDetailInfo(lead);
     },
 
     getFollowUps: async (leadId) => {
@@ -304,5 +337,15 @@ export function createHttpLeadService(baseUrl: string, opts?: { actor?: string }
       if (r.status === 409) Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
     },
     updateLead: async (id, updater) => mutate(id, updater),
+
+    // ── 派发域（β 阶段 2）：走服务端专门端点，事件时间/ID/actor 服务端生成 ──
+    dispatchLead: (id, input, operator) =>
+      postAction(`/api/leads/${id}/dispatch`, { ...input, operator }),
+    urgeLead: (id, operator, note) =>
+      postAction(`/api/leads/${id}/urge`, { operator, note }),
+    adjustLevel: (id, from, to, operator) =>
+      postAction(`/api/leads/${id}/level-change`, { from, to, operator }),
+    confirmQuality: (id, operator, note) =>
+      postAction(`/api/leads/${id}/level-audit`, { operator, note }),
   };
 }

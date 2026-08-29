@@ -34,6 +34,7 @@ import {
   type DepartmentRoutineConfig,
   findJobPosition,
 } from './jobWorkConfigData';
+import { PageShell } from '@/app/components/ui';
 import './JobWorkConfigPage.css';
 
 const { Title, Text } = Typography;
@@ -277,6 +278,7 @@ export function JobWorkConfigPage() {
   ];
 
   return (
+    <PageShell breadcrumbs={[{ label: '日报', to: '/dailyreport/list' }, { label: '日报列表', to: '/dailyreport/list' }, { label: '岗位与日常工作配置' }]}>
     <div className="job-work-config-page">
       <div className="job-work-config-header">
       </div>
@@ -505,5 +507,6 @@ export function JobWorkConfigPage() {
         </div>
       </Modal>
     </div>
+    </PageShell>
   );
 }

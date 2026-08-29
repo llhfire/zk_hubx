@@ -17,7 +17,7 @@ interface Props {
 
 export function PaymentKanbanSummaryBar({ summary }: Props) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12, marginBottom: 16 }}>
+    <div className="payment-lane-summary">
       {SUMMARY_ITEMS.map((item) => (
         <Card
           key={item.key}

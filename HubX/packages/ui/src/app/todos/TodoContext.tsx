@@ -126,6 +126,8 @@ interface TodoContextValue {
   activeTodos: TodoItem[];
   activeCount: number;
   createTodo: (todo: TodoItem) => void;
+  updateTodo: (id: string, patch: Partial<TodoItem>) => void;
+  cancelTodo: (id: string) => void;
   snoozeTodo: (id: string, until: string) => void;
   openTodo: (id: string) => void;
 }
@@ -182,6 +184,16 @@ export function TodoProvider({ children }: PropsWithChildren) {
     setTodos((current) => [todo, ...current]);
   }, []);
 
+  const updateTodo = useCallback((id: string, patch: Partial<TodoItem>) => {
+    setTodos((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item));
+  }, []);
+
+  const cancelTodo = useCallback((id: string) => {
+    setTodos((current) => current.map((item) => item.id === id && item.status !== 'completed'
+      ? { ...item, status: 'canceled', canceledAt: new Date().toISOString(), snoozedUntil: undefined }
+      : item));
+  }, []);
+
   const openTodo = useCallback((id: string) => {
     setTodos((current) => current.map((item) => item.id === id && item.status === 'pending'
       ? { ...item, status: 'in_progress' }
@@ -198,9 +210,11 @@ export function TodoProvider({ children }: PropsWithChildren) {
     activeTodos,
     activeCount: activeTodos.length,
     createTodo,
+    updateTodo,
+    cancelTodo,
     snoozeTodo,
     openTodo,
-  }), [activeTodos, createTodo, openTodo, snoozeTodo, todos]);
+  }), [activeTodos, cancelTodo, createTodo, openTodo, snoozeTodo, todos, updateTodo]);
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 }

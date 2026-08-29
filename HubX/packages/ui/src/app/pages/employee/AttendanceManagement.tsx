@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Card,
-  Grid,
-  Statistic,
+  Empty,
   Table,
   Button,
   Space,
@@ -14,16 +13,13 @@ import {
   Input,
   Radio,
   Message,
-  Typography,
   Tooltip,
 } from '@arco-design/web-react';
 import {
   IconPlus,
   IconCheck,
   IconClose,
-  IconCalendar,
-  IconClockCircle,
-  IconExclamationCircle,
+  IconRefresh,
 } from '@arco-design/web-react/icon';
 import { useEmployee } from './EmployeeContext';
 import {
@@ -31,11 +27,10 @@ import {
   LeaveType,
   AttendanceStatus,
   ALL_LEAVE_TYPES,
-  ALL_EMPLOYMENT_STATUSES,
 } from './mockData';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './employeeAdminConsistency.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const FormItem = Form.Item;
 const { MonthPicker } = DatePicker;
 
@@ -43,9 +38,9 @@ const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   '年假': 'var(--primary)',
   '事假': 'var(--warning-500)',
   '病假': 'var(--destructive-500)',
-  '调休': '#0fc6c2',
-  '婚宴': '#eb2f96',
-  '产宴': '#eb2f96',
+  '调休': 'var(--info-500)',
+  '婚宴': 'var(--chart-5)',
+  '产宴': 'var(--chart-5)',
   '丧宴': 'var(--grey-400)',
   '加班': 'var(--success-500)',
 };
@@ -63,14 +58,14 @@ function getStatusColor(s: AttendanceStatus) {
 
 export function AttendanceManagement() {
   const { attendance, employees, addAttendance, approveAttendance, rejectAttendance } = useEmployee();
+  const currentMonth = new Date().toISOString().slice(0, 7);
 
   const [filterType, setFilterType] = useState<LeaveType | ''>('');
   const [filterStatus, setFilterStatus] = useState<AttendanceStatus | ''>('');
-  const [filterMonth, setFilterMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [filterMonth, setFilterMonth] = useState(currentMonth);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
 
   // 筛选
   const filteredRecords = useMemo(() => {
@@ -84,8 +79,7 @@ export function AttendanceManagement() {
 
   // 摘要
   const stats = useMemo(() => {
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    const thisMonthRecords = attendance.filter(r => r.startDate.startsWith(thisMonth) && r.status === '已批准');
+    const thisMonthRecords = attendance.filter(r => r.startDate.startsWith(currentMonth) && r.status === '已批准');
     const totalLeaveDays = thisMonthRecords.filter(r => r.type !== '加班').reduce((sum, r) => sum + r.days, 0);
     const totalOvertimeHours = thisMonthRecords
       .filter(r => r.type === '加班')
@@ -93,12 +87,19 @@ export function AttendanceManagement() {
     const pendingCount = attendance.filter(r => r.status === '待审批').length;
     const attendedEmployees = new Set<string>(thisMonthRecords.map(r => r.employeeId));
     return { totalLeaveDays, totalOvertimeHours, pendingCount, attendedCount: attendedEmployees.size };
-  }, [attendance]);
+  }, [attendance, currentMonth]);
+
+  const filtersActive = Boolean(filterType || filterStatus || filterMonth !== currentMonth);
 
   const handleAdd = () => {
     form.resetFields();
-    setSelectedEmployeeId('');
     setModalVisible(true);
+  };
+
+  const resetFilters = () => {
+    setFilterMonth(currentMonth);
+    setFilterType('');
+    setFilterStatus('');
   };
 
   const handleSubmit = () => {
@@ -159,10 +160,26 @@ export function AttendanceManagement() {
         return (
           <Space>
             <Tooltip content="批准">
-              <Button type="text" size="small" icon={<IconCheck />} style={{ color: 'var(--success-500)' }} onClick={() => handleApprove(record.id)} />
+              <Button
+                className="hubx-icon-action"
+                type="text"
+                size="small"
+                icon={<IconCheck />}
+                style={{ color: 'var(--success-500)' }}
+                aria-label={`批准${record.employeeName}的${record.type}申请`}
+                onClick={() => handleApprove(record.id)}
+              />
             </Tooltip>
             <Tooltip content="拒绝">
-              <Button type="text" size="small" icon={<IconClose />} status="danger" onClick={() => handleReject(record.id)} />
+              <Button
+                className="hubx-icon-action"
+                type="text"
+                size="small"
+                icon={<IconClose />}
+                status="danger"
+                aria-label={`拒绝${record.employeeName}的${record.type}申请`}
+                onClick={() => handleReject(record.id)}
+              />
             </Tooltip>
           </Space>
         );
@@ -171,65 +188,42 @@ export function AttendanceManagement() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月请假天数</span>}
-              value={stats.totalLeaveDays}
-              prefix={<IconCalendar style={{ color: 'var(--warning-500)' }} />}
-              suffix="天"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月加班时长</span>}
-              value={stats.totalOvertimeHours}
-              prefix={<IconClockCircle style={{ color: 'var(--success-500)' }} />}
-              suffix="小时"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>待审批申请</span>}
-              value={stats.pendingCount}
-              prefix={<IconExclamationCircle style={{ color: 'var(--warning-500)' }} />}
-              suffix="条"
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={<span style={{ color: 'var(--color-text-2)' }}>本月有考勤记录</span>}
-              value={stats.attendedCount}
-              prefix={<IconCheck style={{ color: 'rgb(var(--primary-6))' }} />}
-              suffix="人"
-            />
-          </Card>
-        </Col>
-      </Row>
+    <PageShell
+      className="employee-admin-page"
+      breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '考勤管理' }]}
+    >
+      <PageHeader
+        title="考勤管理"
+        description="集中处理请假、加班申请及审批状态，默认查看当前月份。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增申请</Button>}
+      />
 
-      {/* 筛选 + 列表 */}
-      <Card bordered={false}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+      <ProcessMetricGrid
+        items={[
+          { key: 'leave', label: '本月请假', value: `${stats.totalLeaveDays} 天`, detail: currentMonth },
+          { key: 'overtime', label: '本月加班', value: `${stats.totalOvertimeHours} 小时`, detail: currentMonth, tone: 'success' },
+          { key: 'pending', label: '待审批申请', value: `${stats.pendingCount} 条`, detail: '需要管理员处理', tone: stats.pendingCount ? 'warning' : 'neutral' },
+          { key: 'employees', label: '涉及员工', value: `${stats.attendedCount} 人`, detail: '本月已批准记录' },
+        ]}
+      />
+
+      <Card bordered={false} title="考勤申请" className="employee-admin-list-card">
+        <FilterBar
+          actions={filtersActive ? (
+            <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
+          ) : undefined}
+        >
           <MonthPicker
-            style={{ width: 150 }}
+            className="employee-admin-month"
             placeholder="选择月份"
             value={filterMonth}
             onChange={(_, dateStr) => setFilterMonth(dateStr as string)}
           />
           <Select
-            style={{ width: 120 }}
-            placeholder="全部类型"
+            className="employee-admin-select"
+            placeholder="类型（全部）"
             allowClear
-            value={filterType}
+            value={filterType || undefined}
             onChange={v => setFilterType(v as LeaveType | '')}
           >
             {ALL_LEAVE_TYPES.map(t => (
@@ -237,27 +231,28 @@ export function AttendanceManagement() {
             ))}
           </Select>
           <Select
-            style={{ width: 120 }}
-            placeholder="全部状态"
+            className="employee-admin-select"
+            placeholder="状态（全部）"
             allowClear
-            value={filterStatus}
+            value={filterStatus || undefined}
             onChange={v => setFilterStatus(v as AttendanceStatus | '')}
           >
             {(['已批准', '待审批', '已拒绝', '已撤销'] as AttendanceStatus[]).map(s => (
               <Select.Option key={s} value={s}>{s}</Select.Option>
             ))}
           </Select>
-          <div style={{ marginLeft: 'auto' }}>
-            <Button type="primary" icon={<IconPlus />} onClick={handleAdd}>
-              新增申请
-            </Button>
-          </div>
+        </FilterBar>
+        <div className="employee-admin-result-summary">
+          <span>共 {filteredRecords.length} 条申请</span>
+          <span>{filterMonth || '全部月份'}</span>
         </div>
         <Table
           columns={columns as any}
           data={filteredRecords}
           rowKey="id"
           pagination={{ pageSize: 10, showTotal: true }}
+          scroll={{ x: 900 }}
+          noDataElement={<Empty description="没有符合当前条件的考勤申请" />}
         />
       </Card>
 
@@ -272,7 +267,7 @@ export function AttendanceManagement() {
       >
         <Form form={form} layout="vertical">
           <FormItem label="申请人" field="employeeId" rules={[{ required: true, message: '请选择申请人' }]}>
-            <Select placeholder="请选择申请人" onChange={setSelectedEmployeeId}>
+            <Select placeholder="请选择申请人">
               {employees
                 .filter(e => e.employmentStatus !== '已离职')
                 .map(e => (
@@ -309,6 +304,6 @@ export function AttendanceManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

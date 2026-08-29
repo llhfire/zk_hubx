@@ -423,7 +423,14 @@ export function Stage3QuoteWizard({ quote, readonly }: StageProps) {
 
         {!readonly && (
           <Space>
-            <Button type="primary" icon={<IconSend />} disabled={issues.length > 0} onClick={() => { submitForAudit(quote.id); Message.success('报价已提交，进入三人并行会签'); }}>
+            <Button type="primary" icon={<IconSend />} disabled={issues.length > 0} onClick={async () => {
+              try {
+                await submitForAudit(quote.id);
+                Message.success('报价已提交，进入配置化会签');
+              } catch (error) {
+                Message.error(error instanceof Error ? error.message : '提交审批失败');
+              }
+            }}>
               校验并提交审批
             </Button>
             {quote.status === 'auditing' && (

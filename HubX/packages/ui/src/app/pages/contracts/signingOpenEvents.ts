@@ -18,6 +18,26 @@ export interface ContractEvents {
   voided: Contract[];
 }
 
+export type SigningOpenBridgeOutcome =
+  | 'lead_project_created'
+  | 'contract_project_created'
+  | 'contract_delivery_started'
+  | 'contract_waiting_assignment'
+  | 'contract_relation_updated'
+  | 'contract_missing_project';
+
+/**
+ * 签约联动桥只负责后台接缝，不重复展示业务操作已经给出的成功提示。
+ * 只有无法继续联动时才返回需要展示的异常文案。
+ */
+export function getSigningOpenBridgeIssue(
+  outcome: SigningOpenBridgeOutcome,
+  contractNo?: string,
+): string | null {
+  if (outcome !== 'contract_missing_project') return null;
+  return `合同 ${contractNo || ''} 审批通过，但线索下无项目，请先创建项目`.replace('合同  ', '合同 ');
+}
+
 /**
  * 服务端写时联动用。禁止传 null：null 是前端「首帧不触发」。
  * 首次 INSERT 必须传 {} 才能进 created。

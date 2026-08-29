@@ -22,17 +22,13 @@ import {
   ROLE_PRICES,
   EVAL_ROLE_MAP,
   WIP_DAYS_YELLOW,
-  OVERHEAD_RATE,
+  assembleCaseMetrics,
 } from '../calc';
 import type { CaseCostItem, CaseStatus, EvalSheet, QuotationAtoms } from '../types';
 
 // ==================== 常量 ====================
 
 describe('常量', () => {
-  it('OVERHEAD_RATE = 35', () => {
-    expect(OVERHEAD_RATE).toBe(35);
-  });
-
   it('WIP_DAYS_YELLOW = 14', () => {
     expect(WIP_DAYS_YELLOW).toBe(14);
   });
@@ -70,6 +66,38 @@ describe('deriveRevenue', () => {
 
   it('空数组 = 0', () => {
     expect(deriveRevenue([])).toBe(0);
+  });
+});
+
+describe('assembleCaseMetrics', () => {
+  it('把独立台账汇总写入统一 revenue 字段', () => {
+    const metrics = assembleCaseMetrics(
+      { targetMargin: 0.2, budgetCap: 0, commercialCap: 0 } as any,
+      [],
+      1000,
+      [],
+      [{ amount: 300, date: '2026-08-01' }, { amount: 200, date: '2026-08-15' }],
+      [],
+      '2026-08-28',
+    );
+
+    expect(metrics.revenue).toBe(500);
+    expect(metrics.wip.value).toBe(0);
+  });
+
+  it('兼容管理参数中的百分数利润率口径', () => {
+    const metrics = assembleCaseMetrics(
+      { targetMargin: 30, budgetCap: 0, commercialCap: 0 } as any,
+      [],
+      1000,
+      [],
+      [],
+      [],
+      '2026-08-28',
+    );
+
+    expect(metrics.lifecycleMargin).toBe(1);
+    expect(metrics.health).toBe('green');
   });
 });
 

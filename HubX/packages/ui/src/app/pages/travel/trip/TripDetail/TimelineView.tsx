@@ -104,7 +104,7 @@ export function TimelineView({ expenses, typeLabels }: TimelineViewProps) {
                 </div>
 
                 {/* 轨道 */}
-                <div style={{ flex: 1, position: 'relative', height: 32, background: '#f7f8fa', borderRadius: 4, border: '1px solid #e5e6eb' }}>
+                <div style={{ flex: 1, position: 'relative', height: 32, background: '#fff' }}>
                   {/* 轨道背景线 */}
                   <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 4, right: 4, height: 1, background: '#e5e6eb' }} />
 

@@ -12,6 +12,9 @@ import {
   Typography,
   Message,
   Grid,
+  Drawer,
+  Timeline,
+  Tooltip,
 } from '@arco-design/web-react';
 import {
   IconSearch,
@@ -26,6 +29,8 @@ import {
 import { FinanceAuditDashboard } from '../components/FinanceAuditDashboard';
 import type { Reimbursement, ReimbursementStatus } from '../types';
 import { getReimbursementList, approveReimbursement, payReimbursement } from '../travel-api';
+import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import '../travelAdminConsistency.css';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -64,14 +69,14 @@ export function ReimbursementList() {
   const [detailVisible, setDetailVisible] = useState(false);
 
   // 加载数据
-  const loadReimbursements = async () => {
+  const loadReimbursements = async (filters = searchForm) => {
     setLoading(true);
     try {
       const result = await getReimbursementList({
-        keyword: searchForm.keyword || undefined,
-        status: (searchForm.status as ReimbursementStatus) || undefined,
-        startDate: searchForm.startDate || undefined,
-        endDate: searchForm.endDate || undefined,
+        keyword: filters.keyword || undefined,
+        status: (filters.status as ReimbursementStatus) || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
       });
       setReimbursementList(result.list);
       setTotal(result.total);
@@ -93,8 +98,9 @@ export function ReimbursementList() {
 
   // 重置
   const handleReset = () => {
-    setSearchForm({ keyword: '', status: '', startDate: '', endDate: '' });
-    loadReimbursements();
+    const emptyFilters = { keyword: '', status: '' as ReimbursementStatus | '', startDate: '', endDate: '' };
+    setSearchForm(emptyFilters);
+    loadReimbursements(emptyFilters);
   };
 
   // 查看详情
@@ -136,35 +142,37 @@ export function ReimbursementList() {
     const actions = [];
 
     actions.push(
-      <Button key="view" type="text" size="small" icon={<IconEye />} onClick={() => handleViewDetail(record)}>
-        查看
-      </Button>
+      <Tooltip key="view" content="查看详情">
+        <Button className="hubx-icon-action" type="text" size="small" aria-label={`查看报销单${record.reimbursementNo}`} icon={<IconEye />} onClick={() => handleViewDetail(record)} />
+      </Tooltip>
     );
 
     // 待审批状态
     if (record.status === 'pending') {
       actions.push(
-        <Button
-          key="approve"
-          type="text"
-          size="small"
-          onClick={() => {
-            setSelectedReimbursement(record);
-            setApprovalAction('approve');
-            setApprovalVisible(true);
-          }}
-        >
-          审批
-        </Button>
+        <Tooltip key="approve" content="审批">
+          <Button
+            type="text"
+            size="small"
+            className="hubx-icon-action"
+            aria-label={`审批报销单${record.reimbursementNo}`}
+            icon={<IconCheck />}
+            onClick={() => {
+              setSelectedReimbursement(record);
+              setApprovalAction('approve');
+              setApprovalVisible(true);
+            }}
+          />
+        </Tooltip>
       );
     }
 
     // 财务已审状态
     if (record.status === 'finance_approved') {
       actions.push(
-        <Button key="pay" type="text" size="small" onClick={() => handlePay(record)}>
-          打款
-        </Button>
+        <Tooltip key="pay" content="确认打款">
+          <Button className="hubx-icon-action" type="text" size="small" aria-label={`确认报销单${record.reimbursementNo}打款`} icon={<IconStorage />} onClick={() => handlePay(record)} />
+        </Tooltip>
       );
     }
 
@@ -241,24 +249,44 @@ export function ReimbursementList() {
     },
   ];
 
+  const pendingCount = reimbursementList.filter((item) => item.status === 'pending' || item.status === 'dept_approved').length;
+  const payableCount = reimbursementList.filter((item) => item.status === 'finance_approved').length;
+  const completedCount = reimbursementList.filter((item) => item.status === 'paid' || item.status === 'completed').length;
+  const netAmount = reimbursementList.reduce((sum, item) => sum + item.netAmount, 0);
+  const filtersActive = Boolean(searchForm.keyword || searchForm.status || searchForm.startDate || searchForm.endDate);
+
   return (
-    <div style={{ padding: 16 }}>
+    <PageShell>
+      <PageHeader
+        title="报销管理"
+        description="集中查询报销申请、审批状态、借款冲抵和实际打款金额。"
+        actions={(
+          <>
+            <Button icon={<IconSafe />} onClick={() => setAuditOpen(!auditOpen)}>{auditOpen ? '收起 AI 稽核' : 'AI 稽核看板'}</Button>
+            <Button type="primary" icon={<IconPlus />} onClick={() => Message.info('请先在出差详情页的费用管理中添加费用，再提交报销')}>新增报销</Button>
+          </>
+        )}
+      />
+
+      <ProcessMetricGrid items={[
+        { key: 'total', label: '报销申请', value: `${total} 单`, detail: filtersActive ? '当前查询结果' : '全部报销单' },
+        { key: 'pending', label: '待审批', value: `${pendingCount} 单`, detail: '部门或财务审批中', tone: pendingCount > 0 ? 'warning' : 'success' },
+        { key: 'payable', label: '待打款', value: `${payableCount} 单`, detail: `已完成 ${completedCount} 单`, tone: payableCount > 0 ? 'warning' : 'success' },
+        { key: 'amount', label: '列表实付金额', value: `¥${netAmount.toLocaleString()}`, detail: '已扣除借款冲抵' },
+      ]} />
+
       {/* AI 稽核看板 */}
       {auditOpen && <FinanceAuditDashboard />}
 
       {/* 搜索栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
+      <Card>
+        <FilterBar actions={filtersActive ? <Button type="text" onClick={handleReset}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {total} 条</span>}>
           <Input
             style={{ width: 200 }}
             placeholder="搜索报销单号/申请人"
             value={searchForm.keyword}
             onChange={(value) => setSearchForm({ ...searchForm, keyword: value })}
           />
-          <Button onClick={() => setAuditOpen(!auditOpen)}>
-            <IconSafe style={{ color: '#722ed1', marginRight: 4 }} />
-            {auditOpen ? '收起' : 'AI 稽核看板'}
-          </Button>
           <Select
             style={{ width: 150 }}
             placeholder="选择状态"
@@ -289,18 +317,12 @@ export function ReimbursementList() {
           <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>
             搜索
           </Button>
-          <Button onClick={handleReset}>重置</Button>
-        </Space>
+        </FilterBar>
       </Card>
 
       {/* 列表 */}
       <Card
         title="报销申请列表"
-        extra={
-          <Button type="primary" icon={<IconPlus />} onClick={() => Message.info('请先在出差详情页的费用管理中添加费用，再提交报销')}>
-            新增报销
-          </Button>
-        }
       >
         <Table
           columns={columns}
@@ -316,13 +338,13 @@ export function ReimbursementList() {
         />
       </Card>
 
-      {/* 详情弹窗 */}
-      <Modal
+      {/* 详情抽屉 */}
+      <Drawer
         title="报销申请详情"
         visible={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={null}
-        style={{ width: 900 }}
+        width={900}
       >
         {selectedReimbursement && (
           <div>
@@ -351,13 +373,13 @@ export function ReimbursementList() {
                 <div><Text type="secondary">冲抵借款</Text></div>
                 <div style={{ fontWeight: 500 }}>
                   {selectedReimbursement.offsetAmount > 0 ? (
-                    <span style={{ color: '#ff7d00' }}>-¥{selectedReimbursement.offsetAmount.toLocaleString()}</span>
+                    <span style={{ color: 'rgb(var(--warning-6))' }}>-¥{selectedReimbursement.offsetAmount.toLocaleString()}</span>
                   ) : '¥0'}
                 </div>
               </Grid.Col>
               <Grid.Col span={6}>
                 <div><Text type="secondary">实付金额</Text></div>
-                <div style={{ fontWeight: 500, color: '#165dff' }}>¥{selectedReimbursement.netAmount.toLocaleString()}</div>
+                <div style={{ fontWeight: 500, color: 'rgb(var(--primary-6))' }}>¥{selectedReimbursement.netAmount.toLocaleString()}</div>
               </Grid.Col>
               <Grid.Col span={6}>
                 <div><Text type="secondary">状态</Text></div>
@@ -423,6 +445,33 @@ export function ReimbursementList() {
               </div>
             )}
 
+            <Card title="审批流程" size="small" style={{ marginBottom: 24 }}>
+              <Tag color="arcoblue" style={{ marginBottom: 12 }}>
+                当前节点：{{
+                  pending: '部门审批',
+                  dept_approved: '财务审批',
+                  finance_approved: '待打款',
+                  paid: '完成确认',
+                  completed: '已完成',
+                  rejected: '已驳回',
+                  draft: '草稿',
+                }[selectedReimbursement.status]}
+              </Tag>
+              <Timeline>
+                {(selectedReimbursement.approvalRecords ?? []).map(record => (
+                  <Timeline.Item key={record.id} label={record.time}>
+                    <Space direction="vertical" size={2}>
+                      <strong>{record.step} · {record.approver}</strong>
+                      <span>{record.comment || statusConfig[selectedReimbursement.status].text}</span>
+                    </Space>
+                  </Timeline.Item>
+                ))}
+                {(selectedReimbursement.approvalRecords ?? []).length === 0 && (
+                  <Timeline.Item>申请已提交，等待当前节点处理。</Timeline.Item>
+                )}
+              </Timeline>
+            </Card>
+
             {/* 审批按钮 */}
             {selectedReimbursement.status === 'pending' && (
               <div style={{ textAlign: 'center' }}>
@@ -454,7 +503,7 @@ export function ReimbursementList() {
             )}
           </div>
         )}
-      </Modal>
+      </Drawer>
 
       {/* 审批弹窗 */}
       <Modal
@@ -482,6 +531,6 @@ export function ReimbursementList() {
           />
         </div>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

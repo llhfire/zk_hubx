@@ -7,9 +7,16 @@ import type {
 } from './types';
 import { buildQuoteTodos } from './quoteFlow';
 import { getQuoteAuditSnapshot } from './quoteAuditSnapshot';
-import { createMockQuotationService, type QuotationService } from '@/services/quotationService';
+import {
+  createMockQuotationService,
+  type CreateQuoteOptions,
+  type QuotationService,
+} from '@/services/quotationService';
 import { loadBusinessApprovals, loadWorkflowTemplates } from '@/app/approvals/configStore';
 import type { TodoItem } from '@/app/todos/types';
+import { Message } from '@arco-design/web-react';
+import { quoteLeadGate } from './quoteAccess';
+import type { QuoteAction } from './types';
 
 /** 线索简况（跨域注入，不建 LeadsContext） */
 export interface LeadBrief {
@@ -28,7 +35,13 @@ interface QuotationContextValue {
   updateQuote: (id: string, updater: (q: Quote) => Quote) => Promise<void>;
 
   /** 创建报价单（从线索功能清单发起） */
-  createQuote: (leadId: string, featureList: FeatureModule[], basicInfo: Partial<Quote['basicInfo']>) => Promise<string>;
+  createQuote: (
+    leadId: string,
+    featureList: FeatureModule[],
+    basicInfo: Partial<Quote['basicInfo']>,
+    options?: CreateQuoteOptions,
+  ) => Promise<string>;
+  createSupplementQuote: (sourceQuoteId: string, contractId: string, flowMode: 'online' | 'file') => Promise<string>;
 
   // ── 阶段一：产品经理功能清单 ──
   saveFeatureList: (quoteId: string, featureList: FeatureModule[]) => Promise<void>;
@@ -65,6 +78,8 @@ interface QuotationContextValue {
   isAdmin: boolean;
   /** 线索简况注入器（α 读 mock，β 换 HTTP join） */
   leadBriefProvider?: (leadId: string) => LeadBrief | null;
+  /** 当前报价是否因线索已终止而冻结前进动作 */
+  isLeadFrozen: (quoteId: string) => boolean;
   /** 删除报价（仅从未提交评估的草稿） */
   deleteQuote: (quoteId: string) => Promise<void>;
   /** 改指销售或评估人 */
@@ -138,6 +153,19 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const getQuoteById = useCallback((id: string) => quotes.find((q) => q.id === id), [quotes]);
 
+  const canRunAction = useCallback((quoteId: string, action: QuoteAction) => {
+    const quote = quotes.find((item) => item.id === quoteId);
+    if (!quote) return false;
+    const allowed = quoteLeadGate(leadBriefProvider?.(quote.leadId)?.status, action);
+    if (!allowed) Message.warning('关联线索已终止，恢复线索后才能继续推进报价');
+    return allowed;
+  }, [quotes, leadBriefProvider]);
+
+  const isLeadFrozen = useCallback((quoteId: string) => {
+    const quote = quotes.find((item) => item.id === quoteId);
+    return Boolean(quote && leadBriefProvider?.(quote.leadId)?.status === '已终止');
+  }, [quotes, leadBriefProvider]);
+
   const updateQuote = useCallback(
     async (id: string, updater: (q: Quote) => Quote) => {
       await svc.updateQuote(id, updater);
@@ -147,8 +175,26 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
   );
 
   const createQuote = useCallback(
-    async (leadId: string, featureList: FeatureModule[], basicInfo: Partial<Quote['basicInfo']>): Promise<string> => {
-      const id = await svc.createQuote(leadId, featureList, basicInfo);
+    async (
+      leadId: string,
+      featureList: FeatureModule[],
+      basicInfo: Partial<Quote['basicInfo']>,
+      options?: CreateQuoteOptions,
+    ): Promise<string> => {
+      const leadOwnerName = leadBriefProvider?.(leadId)?.ownerName;
+      const id = await svc.createQuote(leadId, featureList, basicInfo, {
+        ...options,
+        salesOwnerName: options?.salesOwnerName ?? leadOwnerName,
+      });
+      await refresh();
+      return id;
+    },
+    [svc, refresh, leadBriefProvider],
+  );
+
+  const createSupplementQuote = useCallback(
+    async (sourceQuoteId: string, contractId: string, flowMode: 'online' | 'file') => {
+      const id = await svc.createSupplementQuote(sourceQuoteId, contractId, flowMode);
       await refresh();
       return id;
     },
@@ -173,10 +219,11 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const submitFeatureList = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'submit_feature_list')) return;
       await svc.submitFeatureList(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const saveEvalSheet = useCallback(
@@ -189,18 +236,20 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const submitEval = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'submit_eval')) return;
       await svc.submitEval(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const assignToSales = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'assign_to_sales')) return;
       await svc.assignToSales(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const returnToTech = useCallback(
@@ -213,12 +262,18 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const submitForAudit = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'submit_for_audit')) return;
       // 提交时拍配置快照（ADR 0049）
-      const snapshot = getQuoteAuditSnapshot(loadBusinessApprovals, loadWorkflowTemplates);
+      const quote = quotes.find((item) => item.id === quoteId);
+      const snapshot = getQuoteAuditSnapshot(
+        loadBusinessApprovals,
+        loadWorkflowTemplates,
+        quote?.isSupplement ? 'supplement-quote-approval' : 'quote-approval',
+      );
       await svc.submitForAudit(quoteId, snapshot);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction, quotes],
   );
 
   const withdrawAudit = useCallback(
@@ -231,51 +286,57 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
 
   const decideAudit = useCallback(
     async (quoteId: string, auditorName: string, decision: 'approve' | 'reject', comment?: string) => {
+      if (!canRunAction(quoteId, decision === 'approve' ? 'audit_approve' : 'audit_reject')) return;
       await svc.decideAudit(quoteId, auditorName, decision, comment);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const stampQuote = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'stamp')) return;
       await svc.stampQuote(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const markSent = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'mark_sent')) return;
       await svc.markSent(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const markConfirmed = useCallback(
     async (quoteId: string) => {
+      if (!canRunAction(quoteId, 'mark_confirmed')) return;
       await svc.markConfirmed(quoteId);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const markVoided = useCallback(
     async (quoteId: string, reason: string) => {
+      if (!canRunAction(quoteId, 'mark_voided')) return;
       await svc.markVoided(quoteId, reason);
       await refresh();
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const createNewVersion = useCallback(
     async (quoteId: string): Promise<string> => {
+      if (!canRunAction(quoteId, 'new_version')) return quoteId;
       const id = await svc.createNewVersion(quoteId);
       await refresh();
       return id;
     },
-    [svc, refresh],
+    [svc, refresh, canRunAction],
   );
 
   const withdrawSent = useCallback(
@@ -330,6 +391,7 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
     getQuoteById,
     updateQuote,
     createQuote,
+    createSupplementQuote,
     saveFeatureList,
     setDeadline,
     submitFeatureList,
@@ -351,16 +413,17 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
     currentViewer,
     isAdmin,
     leadBriefProvider,
+    isLeadFrozen,
     deleteQuote,
     reassignOwner,
   }), [
-    quotes, loading, currentRole, myQuoteTodos, getQuoteById, updateQuote, createQuote,
+    quotes, loading, currentRole, myQuoteTodos, getQuoteById, updateQuote, createQuote, createSupplementQuote,
     saveFeatureList, setDeadline, submitFeatureList,
     saveEvalSheet, submitEval, assignToSales,
     returnToTech, submitForAudit, withdrawAudit,
     decideAudit, stampQuote, markSent, markConfirmed, markVoided, createNewVersion,
     withdrawSent, returnToStamp, returnToEditFeatures,
-    currentViewer, isAdmin, leadBriefProvider, deleteQuote, reassignOwner,
+    currentViewer, isAdmin, leadBriefProvider, isLeadFrozen, deleteQuote, reassignOwner,
   ]);
 
   return <QuotationContext.Provider value={value}>{children}</QuotationContext.Provider>;

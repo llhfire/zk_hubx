@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Empty,
   Message,
-  Modal,
   Space,
   Tag,
 } from '@arco-design/web-react';
@@ -14,6 +12,8 @@ import {
 } from '@arco-design/web-react/icon';
 import type { Contract, ContractVersion } from '../../contracts/types';
 import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../../contracts/utils';
+import { renderContractDocument } from '../../contracts/templates';
+import { DocumentViewerModal } from '@/app/components/ui';
 import './LeadFinalContractPanel.css';
 
 interface LeadFinalContractPanelProps {
@@ -27,10 +27,20 @@ function formatCurrency(value: number) {
   return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
-function getFinalVersion(contract: Contract): ContractVersion | undefined {
-  return contract.versionHistory.find(
+function getFinalVersion(contract: Contract): ContractVersion {
+  const savedVersion = contract.versionHistory.find(
     version => version.versionNo === contract.approvedVersionNo,
   ) ?? contract.versionHistory[contract.versionHistory.length - 1];
+  if (savedVersion) return savedVersion;
+
+  return {
+    versionNo: '当前版',
+    formData: contract.current,
+    renderedHtml: contract.current.customContractHtml || renderContractDocument(contract.current),
+    label: '当前合同内容',
+    createdAt: contract.updatedAt,
+    createdBy: contract.createdBy,
+  };
 }
 
 function getExecutionStatusColor(contract: Contract) {
@@ -74,10 +84,6 @@ export function LeadFinalContractPanel({
   const [previewVisible, setPreviewVisible] = useState(false);
   const finalVersion = useMemo(() => getFinalVersion(contract), [contract]);
 
-  if (!finalVersion) {
-    return <Empty description="该合同暂无可用的最终版本" />;
-  }
-
   const data = finalVersion.formData;
   const versionLabel = contract.approvedVersionNo ? '已审批最终版' : '最新版本';
   const onlineFileName = `${sanitizeFileName(data.contractName || contract.contractNo)}-${finalVersion.versionNo}.doc`;
@@ -87,6 +93,15 @@ export function LeadFinalContractPanel({
   const uploadedWord = contract.uploadedWordContract;
   const fileName = uploadedWord?.fileName || onlineFileName;
   const downloadHref = uploadedWord?.blobUrl || onlineDownloadHref;
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = downloadHref;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    Message.success('合同文件已开始下载');
+  };
   const infoItems = [
     { label: '合同编号', value: contract.contractNo },
     { label: '合同金额', value: formatCurrency(data.totalAmount) },
@@ -215,33 +230,23 @@ export function LeadFinalContractPanel({
           </div>
         </div>
         <Space size="small" className="lead-final-contract-file-actions">
-          {!uploadedWord ? <Button icon={<IconEye />} onClick={() => setPreviewVisible(true)}>在线预览</Button> : null}
+          <Button type="primary" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>在线查看合同</Button>
           <Button
-            type="primary"
             icon={<IconDownload />}
-            href={downloadHref}
-            anchorProps={{ download: fileName }}
-            onClick={() => Message.success('最终版合同已下载')}
+            onClick={handleDownload}
           >
-            下载
+            下载合同
           </Button>
         </Space>
       </div>
 
-      <Modal
-        title={`合同预览·${contract.contractNo}`}
+      <DocumentViewerModal
         visible={previewVisible}
-        footer={null}
-        onCancel={() => setPreviewVisible(false)}
-        style={{ width: 920, maxWidth: 'calc(100vw - 32px)' }}
-      >
-        <div className="lead-final-contract-preview">
-          <div
-            className="lead-final-contract-preview-document"
-            dangerouslySetInnerHTML={{ __html: finalVersion.renderedHtml }}
-          />
-        </div>
-      </Modal>
+        title={`${data.contractName || contract.contractNo} · ${finalVersion.versionNo}`}
+        html={finalVersion.renderedHtml}
+        onClose={() => setPreviewVisible(false)}
+        onDownload={handleDownload}
+      />
     </div>
   );
 }

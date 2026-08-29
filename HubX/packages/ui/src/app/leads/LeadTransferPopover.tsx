@@ -68,8 +68,9 @@ export function LeadTransferPopover({ leadId, followCount, daysHeld, historyOwne
         </div>
       }
     >
-      <span style={{ fontSize: 12, cursor: 'pointer', color: 'var(--primary-6)' }}>
-        {followCount}次 · {daysHeld}天{budget ? ` · ¥${budget.toLocaleString()}` : ''}
+      <span style={{ fontSize: 12, cursor: 'pointer', color: 'var(--primary-6)', display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ whiteSpace: 'nowrap' }}>{followCount}次 · {daysHeld}天</span>
+        <span style={{ whiteSpace: 'nowrap', color: 'var(--color-text-1)' }}>{budget == null ? '—' : `¥${budget.toLocaleString()}`}</span>
       </span>
     </Popover>
   );

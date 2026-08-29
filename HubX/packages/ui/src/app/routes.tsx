@@ -17,6 +17,7 @@ import { ContractDocumentPreview } from "./pages/contracts/ContractDocumentPrevi
 import { Projects } from "./pages/Projects";
 import { ProjectList } from "./pages/ProjectList";
 import { ProjectDetail360 } from "./pages/ProjectDetail360";
+import { ProjectWorkItemsPage } from "./pages/project-management/ProjectWorkItemsPage";
 import { LeadDetail360 } from "./pages/LeadDetail360";
 import { ProjectDetail } from "./pages/ProjectDetail";
 import { Reports } from "./pages/Reports";
@@ -46,12 +47,9 @@ import { SalaryPage } from "./pages/contract-cost/SalaryPage";
 import { ContractCostDetail } from "./pages/contract-cost/ContractCostDetail";
 import { ProjectCostAccounting } from "./pages/contract-cost/ProjectCostAccounting";
 import DeliveryPlanPage from "./pages/delivery-plan/DeliveryPlanPage";
-import PaymentKanban from "./pages/contracts/PaymentKanban";
-import { PaymentKanbanV2 } from "./pages/contracts/PaymentKanbanV2";
 import { ContractKanban } from "./pages/contracts/ContractKanban";
 import { PaymentForecast } from "./pages/contracts/forecast/PaymentForecast";
 import PaymentDashboard from "./pages/contracts/payment/PaymentDashboard";
-import PaymentForecastPage from "./pages/contracts/payment/PaymentForecastPage";
 import { EmployeeList } from "./pages/employee";
 import { EmployeeDetail } from "./pages/employee";
 import { AttendanceManagement } from "./pages/employee";
@@ -91,6 +89,7 @@ import CaseList from "./pages/financial-delivery/cases/CaseList";
 import CaseDetail from "./pages/financial-delivery/cases/CaseDetail";
 import { SmartMeetingListPage } from "./pages/smart-meetings/SmartMeetingListPage";
 import { SmartMeetingWorkbench } from "./pages/smart-meetings/SmartMeetingWorkbench";
+import { UiComponentLibraryPage } from "./pages/ui-library/UiComponentLibraryPage";
 
 export const router = createBrowserRouter([
   {
@@ -120,11 +119,12 @@ export const router = createBrowserRouter([
       { path: "contracts/:id/edit", Component: ContractEditor },
       { path: "contracts/:id/preview", Component: ContractDocumentPreview },
       { path: "contracts/payments", Component: PaymentDashboard },
-      { path: "contracts/payments-v2", Component: PaymentKanbanV2 },
-      { path: "contracts/forecast", Component: PaymentForecastPage },
+      { path: "contracts/payments-v2", loader: () => redirect("/contracts/payments") },
+      { path: "contracts/forecast", loader: () => redirect("/contracts/payments?tab=forecast") },
       { path: "contracts/:id", Component: ContractDetail },
       { path: "projects", Component: ProjectList },
       { path: "projects/:id", Component: ProjectDetail360 },
+      { path: "projects/:id/work-items", Component: ProjectWorkItemsPage },
       { path: "projects/:id/delivery", Component: DeliveryPlanPage },
       { path: "project-cost-accounting", Component: ProjectCostPage },
       { path: "dailyreport/list", Component: DailyReportList },
@@ -193,6 +193,7 @@ export const router = createBrowserRouter([
       { path: "financial-delivery/cases", Component: CaseList },
       { path: "financial-delivery/cases/:id", Component: CaseDetail },
       { path: "financial-delivery/post-mortems/:id", Component: () => <div>项目决算详情</div> },
+      { path: "ui-library", Component: UiComponentLibraryPage },
     ],
   },
 ]);

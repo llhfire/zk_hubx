@@ -31,6 +31,7 @@ import { findLatestApprovedQuote } from './utils';
 import { applyDealQuotePrefill, type DealQuotePrefill } from './dealQuotePrefill';
 import { useQuotation } from '../quotation/QuotationContext';
 import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
+import { PageShell } from '@/app/components/ui';
 import type { ContractFormData, QuotationRecord } from './types';
 
 const Title = Typography.Title;
@@ -270,8 +271,8 @@ export function ContractWizard() {
       Message.error(`请填写${missingField[0]}`);
       return;
     }
-    if (!formData.totalAmount || formData.totalAmount <= 0) {
-      Message.error('请输入有效的合同金额');
+    if (!formData.totalAmount || (dealQuotePrefill?.kind !== 'supplement' && formData.totalAmount <= 0)) {
+      Message.error(dealQuotePrefill?.kind === 'supplement' ? '补充合同变更金额不能为 0' : '请输入有效的合同金额');
       return;
     }
 
@@ -279,6 +280,9 @@ export function ContractWizard() {
       leadId: selectedLeadId ?? leadIdParam ?? undefined,
       quoteId: selectedQuoteId ?? undefined,
       projectId,
+      kind: dealQuotePrefill?.kind ?? 'main',
+      parentContractId: dealQuotePrefill?.parentContractId,
+      sourceQuoteId: dealQuotePrefill?.kind === 'supplement' ? dealQuotePrefill.quoteId : undefined,
       formData,
     });
     Message.success(`合同 ${created.contractNo} 已创建草稿`);
@@ -286,7 +290,9 @@ export function ContractWizard() {
     // 阶段 3：成交报价生成主合同后，回写报价关联 + 维护商机（quoteIds / contractId）
     if (dealQuotePrefill?.quoteId) {
       const dealQuoteId = dealQuotePrefill.quoteId;
-      await updateQuote(dealQuoteId, (q) => ({ ...q, contractId: created.id }));
+      await updateQuote(dealQuoteId, (q) => q.isSupplement
+        ? { ...q, generatedContractId: created.id }
+        : { ...q, contractId: created.id });
       const existingCase = getCaseByLeadId(dealQuotePrefill.leadId);
       if (existingCase) {
         upsertCase({
@@ -337,6 +343,13 @@ export function ContractWizard() {
   // ====== 渲染 ======
 
   return (
+    <PageShell
+      breadcrumbs={[
+        { label: '合同管理', to: '/contracts' },
+        { label: '合同列表', to: '/contracts' },
+        { label: contractEditPrefill ? '编辑合同' : '新建合同' },
+      ]}
+    >
     <div>
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <Space>
@@ -367,6 +380,7 @@ export function ContractWizard() {
         <Button type="primary" onClick={finish}>下一步</Button>
       </div>
     </div>
+    </PageShell>
   );
 }
 

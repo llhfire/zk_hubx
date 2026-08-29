@@ -8,7 +8,6 @@ import {
   Message,
   Select,
   Space,
-  Typography,
   Tabs,
   Tag,
   Tooltip,
@@ -19,8 +18,10 @@ import { ContractStatusBadge } from './contracts/components/ContractStatusBadge'
 import { CONTRACT_STATUS_LABEL } from './contracts/utils';
 import type { Contract, ContractStatus } from './contracts/types';
 import { initialProjects } from './project-management/mockData';
+import { FilterBar, PageHeader, PageShell } from '@/app/components/ui';
+import { useCollections } from '@/app/collections/CollectionContext';
+import { withCollectionLedger } from '@/services/collectionMutations';
 
-const Title = Typography.Title;
 const TabPane = Tabs.TabPane;
 
 // "履行中" 是 archived + executionStatus === '履行中' 的组合伪状态。
@@ -35,12 +36,15 @@ function findLinkedProject(contract: Contract) {
 export function Contracts() {
   const navigate = useNavigate();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const [filter, setFilter] = useState<ListFilter>('all');
   const [keyword, setKeyword] = useState('');
 
   const projectContracts = useMemo(
-    () => contracts.filter((contract) => Boolean(findLinkedProject(contract))),
-    [contracts],
+    () => contracts
+      .map((contract) => withCollectionLedger(contract, collections))
+      .filter((contract) => Boolean(findLinkedProject(contract))),
+    [contracts, collections],
   );
   const counts = useMemo(() => countByStatus(projectContracts), [projectContracts]);
   const executingCount = projectContracts.filter(
@@ -93,10 +97,16 @@ export function Contracts() {
       render: (_: unknown, c: Contract) => c.current.customerName,
     },
     {
-      title: '合同金额',
-      width: 120,
-      render: (_: unknown, c: Contract) =>
-        `¥${(c.current.totalAmount / 10000).toFixed(0)}万`,
+      title: '合同 / 回款金额',
+      width: 190,
+      render: (_: unknown, c: Contract) => (
+        <Space direction="vertical" size={2}>
+          <b>合同 ¥{(c.current.totalAmount / 10000).toFixed(0)}万</b>
+          <span style={{ color: 'var(--color-text-2)', whiteSpace: 'nowrap' }}>
+            已收 {c.receivedAmount !== undefined ? `¥${(c.receivedAmount / 10000).toFixed(0)}万` : '—'} · 待收 {c.receivableAmount !== undefined ? `¥${(c.receivableAmount / 10000).toFixed(0)}万` : '—'}
+          </span>
+        </Space>
+      ),
     },
     {
       title: '形成状态',
@@ -131,18 +141,6 @@ export function Contracts() {
         ),
     },
     {
-      title: '已收款',
-      width: 100,
-      render: (_: unknown, c: Contract) =>
-        c.receivedAmount !== undefined ? `¥${(c.receivedAmount / 10000).toFixed(0)}万` : '—',
-    },
-    {
-      title: '待收款',
-      width: 100,
-      render: (_: unknown, c: Contract) =>
-        c.receivableAmount !== undefined ? `¥${(c.receivableAmount / 10000).toFixed(0)}万` : '—',
-    },
-    {
       title: '操作',
       width: 100,
       fixed: 'right' as const,
@@ -165,46 +163,39 @@ export function Contracts() {
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>
-          新建合同
-        </Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="合同管理"
+        description="查看合同审批、归档、履行与回款状态，并进入合同详情处理后续工作。"
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>新建合同</Button>}
+      />
 
       <Card>
-        <div className="flex items-center justify-between" style={{ gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-          <div className="flex items-center" style={{ gap: 8 }}>
-            <Input
-              style={{ width: 280 }}
-              placeholder="搜索合同编号、名称、客户"
-              prefix={<IconSearch />}
-              value={keyword}
-              onChange={setKeyword}
-              allowClear
-            />
-            <Button type="primary" icon={<IconSearch />}>
-              搜索
-            </Button>
-          </div>
-          <Tabs
-            activeTab={filter}
-            onChange={(k) => setFilter(k as ListFilter)}
-            style={{ marginLeft: 'auto' }}
-          >
-            <TabPane key="all" title={`全部 (${projectContracts.length})`} />
-            <TabPane key="draft" title={`${CONTRACT_STATUS_LABEL.draft} (${counts.draft})`} />
-            <TabPane key="approving" title={`${CONTRACT_STATUS_LABEL.approving} (${counts.approving})`} />
-            <TabPane key="executing" title={`履行中 (${executingCount})`} />
-            <TabPane key="archived" title={`${CONTRACT_STATUS_LABEL.archived} (${counts.archived})`} />
-          </Tabs>
-        </div>
+        <Tabs activeTab={filter} onChange={(k) => setFilter(k as ListFilter)} style={{ marginBottom: 12 }}>
+          <TabPane key="all" title={`全部 (${projectContracts.length})`} />
+          <TabPane key="draft" title={`${CONTRACT_STATUS_LABEL.draft} (${counts.draft})`} />
+          <TabPane key="approving" title={`${CONTRACT_STATUS_LABEL.approving} (${counts.approving})`} />
+          <TabPane key="executing" title={`履行中 (${executingCount})`} />
+          <TabPane key="archived" title={`${CONTRACT_STATUS_LABEL.archived} (${counts.archived})`} />
+        </Tabs>
+
+        <FilterBar actions={<Button type="primary" icon={<IconSearch />}>搜索</Button>}>
+          <Input
+            style={{ width: 280 }}
+            placeholder="搜索合同编号、名称或客户"
+            prefix={<IconSearch />}
+            value={keyword}
+            onChange={setKeyword}
+            allowClear
+          />
+        </FilterBar>
 
         <Table
+          style={{ marginTop: 16 }}
           columns={columns}
           data={filtered}
           rowKey="id"
-          scroll={{ x: 1700 }}
+          scroll={{ x: 1480 }}
           pagination={{
             pageSize: 10,
             showTotal: true,
@@ -212,6 +203,6 @@ export function Contracts() {
           }}
         />
       </Card>
-    </div>
+    </PageShell>
   );
 }

@@ -22,7 +22,7 @@ interface ProjectContextValue {
   getProjectByLeadId: (leadId: string | undefined) => Project | null;
   refresh: () => Promise<void>;
   updateProject: (next: Project) => Promise<void>;
-  addProject: (project: Project) => Promise<void>;
+  addProject: (project: Project) => Promise<string>;
   removeProject: (projectId: string) => Promise<void>;
   confirmAssign: (id: string, productManager: string) => Promise<void>;
   reassignPm: (id: string, productManager: string) => Promise<void>;
@@ -65,11 +65,8 @@ export function ProjectProvider({ children, service }: ProjectProviderProps) {
   const getProjectByLeadId = useCallback(
     (leadId: string | undefined) => {
       if (!leadId) return null;
-      const aliases = [
-        leadId,
-        leadId.startsWith('lead-') ? leadId : `lead-${leadId}`,
-      ];
-      return projects.find((project) => project.leadId && aliases.includes(project.leadId)) ?? null;
+      const normalized = leadId.replace(/^lead-/, '');
+      return projects.find((project) => project.leadId?.replace(/^lead-/, '') === normalized) ?? null;
     },
     [projects],
   );
@@ -80,8 +77,9 @@ export function ProjectProvider({ children, service }: ProjectProviderProps) {
   }, [svc, refresh]);
 
   const addProject = useCallback(async (project: Project) => {
-    await svc.create(project);
+    const id = await svc.create(project);
     await refresh();
+    return id;
   }, [svc, refresh]);
 
   const removeProject = useCallback(async (projectId: string) => {

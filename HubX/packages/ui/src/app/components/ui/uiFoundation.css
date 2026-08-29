@@ -1,0 +1,433 @@
+.hubx-page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hubx-page-shell__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.hubx-page-breadcrumb {
+  min-height: 22px;
+  color: var(--color-text-3);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hubx-page-breadcrumb__link {
+  color: var(--color-text-3);
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.hubx-page-breadcrumb__link:hover,
+.hubx-page-breadcrumb__link:focus-visible {
+  color: rgb(var(--primary-6));
+  text-decoration: underline;
+}
+
+.hubx-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.hubx-page-header__main {
+  min-width: 0;
+}
+
+.hubx-page-header__title {
+  margin: 0;
+  color: var(--color-text-1);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.hubx-page-header__description {
+  max-width: 75ch;
+  margin: 4px 0 0;
+  color: var(--color-text-3);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.hubx-page-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hubx-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.hubx-filter-bar__fields,
+.hubx-filter-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hubx-icon-action {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hubx-icon-action:active {
+  transform: scale(0.96);
+}
+
+.hubx-wechat-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  vertical-align: -0.125em;
+}
+
+.hubx-process-overview .arco-card-body {
+  padding: 16px 20px;
+}
+
+.hubx-process-overview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.hubx-process-overview__identity {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.hubx-process-overview__identifier {
+  color: var(--color-text-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.hubx-process-overview__title {
+  min-width: 0;
+  color: var(--color-text-1);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.hubx-process-overview__tags,
+.hubx-process-overview__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hubx-process-overview__actions {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+
+.hubx-process-overview__steps {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.hubx-horizontal-rail {
+  display: flex;
+  width: 100%;
+}
+
+.hubx-horizontal-rail .arco-radio-button {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hubx-process-overview__steps .arco-steps {
+  min-width: 720px;
+}
+
+.hubx-process-metrics .arco-card-body {
+  padding: 12px 16px;
+}
+
+.hubx-process-metrics__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.hubx-process-metric {
+  display: flex;
+  min-width: 0;
+  min-height: 62px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-fill-2);
+  text-align: center;
+}
+
+.hubx-process-metric--success {
+  background: rgb(var(--success-1));
+}
+
+.hubx-process-metric--warning {
+  background: rgb(var(--warning-1));
+}
+
+.hubx-process-metric--danger {
+  background: rgb(var(--danger-1));
+}
+
+.hubx-process-metric__label {
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hubx-process-metric__value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.hubx-process-metric__detail {
+  width: 100%;
+  margin-top: 4px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hubx-process-workspace {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  min-width: 0;
+}
+
+.hubx-process-workspace__main,
+.hubx-process-workspace__aside {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hubx-process-workspace__main {
+  flex: 7 1 0;
+}
+
+.hubx-process-workspace__aside {
+  flex: 3 1 0;
+}
+
+.hubx-process-record-card {
+  min-width: 0;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-bg-2);
+}
+
+.hubx-process-record-card--interactive {
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.hubx-process-record-card--interactive:hover {
+  border-color: rgb(var(--primary-3));
+  background: rgb(var(--primary-1));
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.08);
+}
+
+.hubx-process-record-card--interactive:focus-visible {
+  border-color: rgb(var(--primary-6));
+  box-shadow: 0 0 0 2px rgb(var(--primary-2));
+}
+
+.hubx-process-record-card--muted {
+  background: var(--color-fill-1);
+  opacity: 0.62;
+}
+
+.hubx-process-record-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hubx-process-record-card__identity,
+.hubx-process-record-card__tags,
+.hubx-process-record-card__actions,
+.hubx-process-record-card__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hubx-process-record-card__identity {
+  min-width: 0;
+}
+
+.hubx-process-record-card__leading {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--color-text-3);
+}
+
+.hubx-process-record-card__title {
+  min-width: 0;
+  color: var(--color-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.hubx-process-record-card__actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.hubx-process-record-card__indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-3);
+  font-size: 16px;
+}
+
+.hubx-process-record-card--interactive:hover .hubx-process-record-card__indicator {
+  color: rgb(var(--primary-6));
+}
+
+.hubx-process-record-card__identifier {
+  margin-top: 4px;
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.hubx-process-record-card__identifier-line {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  gap: 4px;
+}
+
+.hubx-process-record-card__identifier-line > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.hubx-process-record-card__summary {
+  gap: 4px 12px;
+  margin-top: 8px;
+  color: var(--color-text-2);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hubx-process-record-card__summary strong {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.hubx-process-record-card__notice {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--color-fill-1);
+  color: var(--color-text-2);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.hubx-process-record-card--muted .hubx-process-record-card__notice {
+  background: rgb(var(--danger-1));
+  color: rgb(var(--danger-6));
+}
+
+@media (max-width: 1200px) {
+  .hubx-process-overview__head,
+  .hubx-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hubx-process-overview__actions,
+  .hubx-page-header__actions {
+    justify-content: flex-start;
+  }
+
+  .hubx-process-workspace {
+    flex-direction: column;
+  }
+
+  .hubx-process-workspace__main,
+  .hubx-process-workspace__aside {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .hubx-process-overview .arco-card-body {
+    padding: 14px 16px;
+  }
+
+  .hubx-process-metrics__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hubx-process-record-card__head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hubx-process-record-card__actions {
+    justify-content: flex-start;
+  }
+}

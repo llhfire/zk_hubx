@@ -55,6 +55,24 @@ export function collectionsForProject(
   );
 }
 
+/**
+ * 把独立实收台账投影到合同读模型。
+ * collectionRecords 仅作为旧组件兼容字段，金额事实始终来自 records。
+ */
+export function withCollectionLedger(
+  contract: Contract,
+  records: CollectionLedgerEntry[],
+): Contract {
+  const collectionRecords = records.filter((record) => record.contractId === contract.id);
+  const receivedAmount = sumReceived(collectionRecords);
+  return {
+    ...contract,
+    collectionRecords,
+    receivedAmount,
+    receivableAmount: Math.max(0, contract.current.totalAmount - receivedAmount),
+  };
+}
+
 /** 双写状态 */
 export type DualWriteStatus = 'ok' | 'contract-failed' | 'ledger-failed';
 

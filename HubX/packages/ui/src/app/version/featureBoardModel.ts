@@ -267,6 +267,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '项目成本核算', description: 'ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。' },
     { name: '项目报价配置', description: 'ProjectQuotationConfigurator.tsx：项目与报价关联配置。' },
     { name: '项目质量面板', description: 'ProjectQualityPanel.tsx：项目质量指标跟踪。' },
+    { name: '项目详情信息优先级与精选活动流', description: 'ProjectDetail360 保留 70:30 结构，默认聚焦项目动态与跟进；六项执行指标、阶段说明、紧凑档案、大事记筛选和右栏吸顶已落地。项目动态依 ADR-0097 从合同、回款、确认书、会议、任务和项目自有事件生成只读精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/当前/project-detail-360-prototype-restyle.md' },
   ],
   '日报工时': [
     { name: '日报填写', description: 'DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。' },
@@ -391,7 +392,7 @@ const PLANNED_SEED: Record<string, string[]> = {
   ],
   '线索全流程': ['签约后综合视图（销售在线索详情看项目执行）', '线索侧合同/回款入口（草稿即可引用）', '管理员退回线索（未确认或未开始无合同）', '线索域接缝（LeadService mock/http 双实现+服务端校验）'],
   '合同签约': ['已确认生成主合同（词表收口）', '合同模板管理'],
-  '项目管理': ['未确认项目与管理员指派产品经理', '产品经理默认列表隐藏未确认/未指派', '售前历程交接包（跟进/会议/演示/资料只读）', '管理员退回线索 / 改指产品经理', '主合同作废则进行中项目搁置', '项目详情原型样式对齐（智能诊断抽屉/大事记收敛/1主多补卡片化/回款合并台账/岗位工时表/日报CSV导出）', '签约开启联动服务端化（ADR-0093，Workers 内 spawn/交付/SOP）', '项目域接缝（ProjectService mock/http 双实现）'],
+  '项目管理': ['未确认项目与管理员指派产品经理', '产品经理默认列表隐藏未确认/未指派', '售前历程交接包（跟进/会议/演示/资料只读）', '管理员退回线索 / 改指产品经理', '主合同作废则进行中项目搁置', '签约开启联动服务端化（ADR-0093，Workers 内 spawn/交付/SOP）', '项目域接缝（ProjectService mock/http 双实现）'],
   // 交付域
   '日报工时': ['跨月跨年日报（时间轴优化）'],
   '交付支撑': ['合同交付跟进（里程碑节点管理）', '变更管理（需求变更记录/影响评估/审批）', '演示上传（线索详情中的演示记录管理）'],
@@ -455,7 +456,7 @@ export function createSeedBoard(): FeatureBoard {
     { module: '跟进助手', domain: '销售域', isPlanned: true, features: [], planned: ['自动提醒', '跟进待办', '阶段建议'], note: '规划中' },
     { module: '报价与合规增强', domain: '销售域', isPlanned: true, features: [], planned: ['Excel 双向导入导出', '版本 Diff 对比', '代理/转交机制', '电子签章', '合规档案'], note: '规划中' },
     // === 交付域（优先级 2）===
-    { module: '项目管理', domain: '交付域', isPlanned: false, features: FEATURES_SEED['项目管理'] ?? [], note: 'α 签约开启已统一生成唯一未确认项目，批准只开工（ADR-0095）；β Workers 持久化归 B5/U1' },
+    { module: '项目管理', domain: '交付域', isPlanned: false, features: FEATURES_SEED['项目管理'] ?? [], note: 'α 签约开启已统一生成唯一未确认项目，批准只开工（ADR-0095）；项目详情信息优先级与精选活动流已完成 α 编码与实页验收（ADR-0097）；β Workers 持久化归 B5/U1' },
     { module: '日报工时', domain: '交付域', isPlanned: false, features: FEATURES_SEED['日报工时'] ?? [], note: '工时×时薪成本计算' },
     { module: '交付支撑', domain: '交付域', isPlanned: false, features: FEATURES_SEED['交付支撑'] ?? [], note: '合同交付跟进/变更管理/进度跟踪/知识库/会议纪要' },
     { module: '工时加工', domain: '交付域', isPlanned: true, features: [], planned: ['工时审批', '统计与分析', '加班工时'], note: '规划中' },

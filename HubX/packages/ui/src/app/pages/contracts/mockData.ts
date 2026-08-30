@@ -703,5 +703,190 @@ export function buildInitialContracts(): Contract[] {
     paymentBlockers: [], dunningRecords: [], paymentStatus: 'overdue' as PaymentStatus,
   };
 
-  return [contract1, contract2, contract3, contract4, contract5, contract9, contract6, contract7, contract8, contract10, contract11, contract12, contract13, contract14, contract15];
+  // 帕奇宠 C 端一期：生产项目 112 的详情页关联演示合同
+  const pawkeyContractForm = buildFormData({
+    contractName: '帕奇宠C端需求调研及原型设计',
+    customerName: '重庆绮算法科技有限公司',
+    customerContact: '甲方产品负责人',
+    customerPhone: '138****5942',
+    customerEmail: 'product@pawkey-demo.example.com',
+    customerAddress: '重庆市渝北区数字产业园（演示地址）',
+    customerTaxNo: '91500100DEMO05942X',
+    productCategory: '产品设计与系统架构设计',
+    contractContent: '乙方完成帕奇宠 C 端一期需求调研、产品方案、交互原型、UI 视觉规范、系统架构设计及终验交付材料。',
+    totalAmount: 100000,
+    signDate: '2026-06-01',
+    effectiveDate: '2026-06-01',
+    endDate: '2026-08-28',
+    paymentPlans: [
+      { period: 1, periodName: '首期款', amount: 50000, percentage: 50, expectedDate: '2026-06-05', expectedDateType: 'fixed', condition: '合同签订并生效' },
+      { period: 2, periodName: '二期款', amount: 30000, percentage: 30, expectedDate: '2026-07-10', expectedDateType: 'fixed', condition: '核心体验原型确认' },
+      { period: 3, periodName: '三期款', amount: 10000, percentage: 10, expectedDate: '2026-07-31', expectedDateType: 'fixed', condition: 'UI 与系统架构设计确认' },
+      { period: 4, periodName: '尾款', amount: 10000, percentage: 10, expectedDate: '2026-08-28', expectedDateType: 'fixed', condition: '一期终验单签署' },
+    ],
+    templateId: 'software_sales',
+  });
+  const pawkeyContract: Contract = {
+    id: 'pawkey-c1',
+    contractNo: 'ZKRTHT-20260819001',
+    status: 'archived',
+    kind: 'main',
+    leadId: 'pawkey-lead-5942',
+    quoteId: 'pawkey-q1',
+    projectId: 'prod-112',
+    current: pawkeyContractForm,
+    versionHistory: [
+      buildVersionFromForm('V1', pawkeyContractForm, '首次保存草稿', '2026-05-25 10:00', '黄奕'),
+      buildVersionFromForm('V2', pawkeyContractForm, '按甲方确认范围修订并提交审批', '2026-05-29 16:20', '黄奕'),
+    ],
+    approvalFlow: [
+      approved('发起申请', '黄奕', '2026-05-29 16:20', '提交帕奇宠 C 端一期合同审批'),
+      approved('总经理审批', '总经理', '2026-05-31 11:00'),
+    ],
+    approvedVersionNo: 'V2',
+    approvedAt: '2026-05-31 11:00',
+    mailedAt: '2026-05-31 16:00',
+    archivedScans: [buildScanEntry('pawkey-scan-1', '帕奇宠C端一期合同盖章件.pdf', '2026-06-03 10:20', 'V2')],
+    createdAt: '2026-05-25 10:00',
+    createdBy: '黄奕',
+    updatedAt: '2026-08-29 18:00',
+    receivedAmount: 90000,
+    receivableAmount: 10000,
+    executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'pawkey-col-1', contractId: 'pawkey-c1', projectId: 'prod-112', period: 1, amount: 50000, date: '2026-06-05', method: '银行转账', note: '合同首期款到账' },
+      { id: 'pawkey-col-2', contractId: 'pawkey-c1', projectId: 'prod-112', period: 2, amount: 30000, date: '2026-07-10', method: '银行转账', note: '核心体验原型确认款到账' },
+      { id: 'pawkey-col-3', contractId: 'pawkey-c1', projectId: 'prod-112', period: 3, amount: 10000, date: '2026-07-31', method: '银行转账', note: 'UI 与系统架构设计确认款到账' },
+    ],
+    paymentBlockers: [
+      { id: 'pawkey-payment-blocker-1', contractId: 'pawkey-c1', type: 'acceptance_stuck', title: '终验尾款待功能清单审查完成', description: '甲方尚未返回最终审查结论，终验单与 10% 尾款暂未闭环。', amountBlocked: 10000, createdAt: '2026-08-29 18:00' },
+    ],
+    dunningRecords: [
+      { id: 'pawkey-dunning-1', contractId: 'pawkey-c1', date: '2026-08-29', method: '项目群', contactPerson: '甲方产品负责人', result: '确认先完成终验功能清单审查，再安排尾款流程。', nextPlan: '9 月 3 日跟进最终审查意见与终验单签署。' },
+    ],
+    paymentStatus: 'blocked' as PaymentStatus,
+  };
+
+  const pawkeyExperienceSupplementForm = buildFormData({
+    contractName: '帕奇宠C端一期体验增强补充合同',
+    customerName: '重庆绮算法科技有限公司',
+    customerContact: '甲方产品负责人',
+    customerPhone: '138****5942',
+    customerEmail: 'product@pawkey-demo.example.com',
+    customerAddress: '重庆市渝北区数字产业园（演示地址）',
+    customerTaxNo: '91500100DEMO05942X',
+    productCategory: '交互体验与双端适配增项',
+    contractContent: '增加生命流长图分享、互动反馈细化、系统大字体适配及双端发布检查，纳入一期统一测试与验收。',
+    totalAmount: 28000,
+    signDate: '2026-07-18',
+    effectiveDate: '2026-07-18',
+    endDate: '2026-08-12',
+    paymentPlans: [
+      { period: 1, periodName: '首期款', amount: 14000, percentage: 50, expectedDate: '2026-07-22', expectedDateType: 'fixed', condition: '增补交互范围与 UI 方案确认' },
+      { period: 2, periodName: '尾款', amount: 14000, percentage: 50, expectedDate: '2026-08-12', expectedDateType: 'fixed', condition: '增补功能测试版发布' },
+    ],
+    templateId: 'software_sales',
+  });
+  const pawkeyExperienceSupplement: Contract = {
+    id: 'pawkey-c1-s1',
+    contractNo: 'ZKRTHT-20260718001-B01',
+    status: 'archived',
+    kind: 'supplement',
+    parentContractId: 'pawkey-c1',
+    sourceQuoteId: 'pawkey-sq1',
+    leadId: 'pawkey-lead-5942',
+    quoteId: 'pawkey-q1',
+    projectId: 'prod-112',
+    current: pawkeyExperienceSupplementForm,
+    versionHistory: [
+      buildVersionFromForm('V1', pawkeyExperienceSupplementForm, '体验增强增项确认稿', '2026-07-16 15:20', '何江奇'),
+    ],
+    approvalFlow: [
+      approved('发起申请', '黄奕', '2026-07-16 16:00', '提交体验增强补充合同审批'),
+      approved('总经理审批', '总经理', '2026-07-17 11:30'),
+    ],
+    approvedVersionNo: 'V1',
+    approvedAt: '2026-07-17 11:30',
+    mailedAt: '2026-07-18 10:00',
+    archivedScans: [buildScanEntry('pawkey-s1-scan-1', '帕奇宠C端一期体验增强补充合同盖章件.pdf', '2026-07-20 17:20', 'V1')],
+    createdAt: '2026-07-16 15:20',
+    createdBy: '何江奇',
+    updatedAt: '2026-08-13 15:10',
+    receivedAmount: 28000,
+    receivableAmount: 0,
+    executionStatus: '已完成',
+    collectionRecords: [
+      { id: 'pawkey-s1-col-1', contractId: 'pawkey-c1-s1', projectId: 'prod-112', period: 1, amount: 14000, date: '2026-07-22', method: '银行转账', note: '体验增强补充合同首期款到账' },
+      { id: 'pawkey-s1-col-2', contractId: 'pawkey-c1-s1', projectId: 'prod-112', period: 2, amount: 14000, date: '2026-08-13', method: '银行转账', note: '测试版发布后补充合同尾款到账' },
+    ],
+    paymentBlockers: [],
+    dunningRecords: [],
+    paymentStatus: 'settled' as PaymentStatus,
+  };
+
+  const pawkeyAiSupplementForm = buildFormData({
+    contractName: '帕奇宠C端一期AI陪伴能力接入补充合同',
+    customerName: '重庆绮算法科技有限公司',
+    customerContact: '甲方技术负责人',
+    customerPhone: '138****5942',
+    customerEmail: 'tech@pawkey-demo.example.com',
+    customerAddress: '重庆市渝北区数字产业园（演示地址）',
+    customerTaxNo: '91500100DEMO05942X',
+    productCategory: 'AI 能力接入增项',
+    contractContent: '补充 AI 陪伴能力适配层、调用降级策略、内容安全接口和甲方自有服务接入说明，随一期终验统一交付。',
+    totalAmount: 16000,
+    signDate: '2026-08-08',
+    effectiveDate: '2026-08-08',
+    endDate: '2026-09-05',
+    paymentPlans: [
+      { period: 1, periodName: '首期款', amount: 8000, percentage: 50, expectedDate: '2026-08-10', expectedDateType: 'fixed', condition: 'AI 陪伴能力接口方案确认' },
+      { period: 2, periodName: '尾款', amount: 8000, percentage: 50, expectedDate: '2026-09-05', expectedDateType: 'fixed', condition: 'AI 陪伴能力增补范围终验' },
+    ],
+    templateId: 'software_sales',
+  });
+  const pawkeyAiSupplement: Contract = {
+    id: 'pawkey-c1-s2',
+    contractNo: 'ZKRTHT-20260808001-B02',
+    status: 'archived',
+    kind: 'supplement',
+    parentContractId: 'pawkey-c1',
+    sourceQuoteId: 'pawkey-sq2',
+    leadId: 'pawkey-lead-5942',
+    quoteId: 'pawkey-q1',
+    projectId: 'prod-112',
+    current: pawkeyAiSupplementForm,
+    versionHistory: [
+      buildVersionFromForm('V1', pawkeyAiSupplementForm, 'AI 能力接入增项确认稿', '2026-08-06 14:40', '陈周伟'),
+    ],
+    approvalFlow: [
+      approved('发起申请', '黄奕', '2026-08-06 15:00', '提交 AI 能力接入补充合同审批'),
+      approved('总经理审批', '总经理', '2026-08-07 10:20'),
+    ],
+    approvedVersionNo: 'V1',
+    approvedAt: '2026-08-07 10:20',
+    mailedAt: '2026-08-08 09:30',
+    archivedScans: [buildScanEntry('pawkey-s2-scan-1', '帕奇宠C端一期AI陪伴能力接入补充合同盖章件.pdf', '2026-08-10 16:10', 'V1')],
+    createdAt: '2026-08-06 14:40',
+    createdBy: '陈周伟',
+    updatedAt: '2026-08-29 18:10',
+    receivedAmount: 8000,
+    receivableAmount: 8000,
+    executionStatus: '履行中',
+    collectionRecords: [
+      { id: 'pawkey-s2-col-1', contractId: 'pawkey-c1-s2', projectId: 'prod-112', period: 1, amount: 8000, date: '2026-08-11', method: '银行转账', note: 'AI 能力接入补充合同首期款到账' },
+    ],
+    paymentBlockers: [
+      { id: 'pawkey-s2-blocker-1', contractId: 'pawkey-c1-s2', type: 'acceptance_stuck', title: 'AI 增补尾款随一期终验支付', description: '终验单签署后进入 8000 元尾款支付流程。', amountBlocked: 8000, createdAt: '2026-08-29 18:10' },
+    ],
+    dunningRecords: [
+      { id: 'pawkey-s2-dunning-1', contractId: 'pawkey-c1-s2', date: '2026-08-29', method: '项目群', contactPerson: '甲方技术负责人', result: '确认 AI 增补范围随一期统一终验。', nextPlan: '终验单回签后提交尾款付款申请。' },
+    ],
+    paymentStatus: 'blocked' as PaymentStatus,
+  };
+
+  return [
+    contract1, contract2, contract3, contract4, contract5, contract9, contract6, contract7,
+    contract8, contract10, contract11, contract12, contract13, contract14, contract15,
+    pawkeyContract, pawkeyExperienceSupplement, pawkeyAiSupplement,
+  ];
 }

@@ -126,10 +126,12 @@ export function ContractPaymentInvoicePanel({
         <Card key={supplement.id} size="small" title={`补充合同回款计划 · ${supplement.current.contractName}`} style={{ marginBottom: 12 }}>
           <Table
             columns={[
-              { title: '期次', render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
-              { title: '金额', dataIndex: 'amount', render: (value: number) => money(value) },
-              { title: '预计日期', dataIndex: 'expectedDate' },
-              { title: '已收状态', render: (_: unknown, row: { period: number }) => { const meta = planStatus(supplement, row.period); return <Tag color={meta.color}>{meta.label}</Tag>; } },
+              { title: '期次', width: 90, render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
+              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
+              { title: '已收状态', width: 100, render: (_: unknown, row: { period: number }) => { const meta = planStatus(supplement, row.period); return <Tag color={meta.color}>{meta.label}</Tag>; } },
+              { title: '比例', dataIndex: 'percentage', width: 80, render: (value: number) => `${value}%` },
+              { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
+              { title: '触发条件', dataIndex: 'condition', width: 180 },
             ]}
             data={supplement.current.paymentPlans ?? []}
             pagination={false}

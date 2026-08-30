@@ -9,9 +9,10 @@ import type {
   ActivityEvent,
   ProjectBlocker,
 } from './types';
+import { PRODUCTION_PROJECT_LIST } from './productionProjectData';
 
-// --- 项目列表 Mock ---
-export const PROJECT_LIST: ProjectListItem[] = [
+// --- 兼容演示夹具（生产项目优先，保留未在生产站出现的跨模块联动项目） ---
+const LEGACY_PROJECT_FIXTURES: ProjectListItem[] = [
   // ── 原有演示项目（id: 1-8） ──
   {
     key: '1', id: '1', projectNo: 'PRJ202605001', name: 'A公司CRM系统开发',
@@ -194,94 +195,55 @@ export const PROJECT_LIST: ProjectListItem[] = [
     acceptanceCriteria: ['PMS系统对接完成（至少2套）', '客户验收通过'],
   },
 
-  // 3. 中铁信息化安全平台 — 即将逾期
+  // 3. 中铁信息化（生产站项目 121）
   {
-    key: '12', id: '12', projectNo: 'PRJ202606012', name: '中铁信息化安全平台',
-    status: '验收中', priority: '高', businessLine: '外包', entity: '中科软齐',
-    owner: '王进', salesUsers: [], progress: 90,
-    startDate: '2026-06-03', expectedEndDate: '2026-08-02',
-    latestProgress: '今天同王进一起研究打卡机的迁移流程，并形成文档，明天跟客户确认打卡机转移事项。',
-    remark: '项目周期60个自然日+运行2周后15个工作日结尾款，截止8月30日。即将逾期。',
-    createdAt: '2026-06-03 10:00',
+    key: '12', id: '12', projectNo: 'PRJ-121', name: '中铁信息化',
+    status: '进行中', priority: '高', businessLine: '外包', entity: '中科网联',
+    owner: '杨培豪', salesUsers: ['郭豪杰'], progress: 90,
+    startDate: '2026-06-18', expectedEndDate: '',
+    latestProgress: '考勤机已迁移到系统。',
+    remark: '生产站项目编号 121；当前以考勤机迁移和正式环境交付为主。',
+    createdAt: '2026-07-02 11:59',
     contractId: '12', customerName: '中铁客户',
-    totalHours: 480, budgetHours: 500,
-    bugP0Count: 0, bugP1Count: 1,
-    daysRemaining: -23, isOverdue: true, healthStatus: 'warning',
+    totalHours: 774, budgetHours: 500,
+    bugP0Count: 0, bugP1Count: 0,
+    daysRemaining: 0, isOverdue: false, healthStatus: 'normal',
     contractAmount: 23000, receivedAmount: 20700,
-    riskLevel: 'medium',
-    riskNote: '客户对验收不着急，每天在工地比较忙，主要由我们催着客户验收',
-    blockers: [
-      {
-        id: 'blk-12-1', projectId: '12',
-        title: '客户对验收不着急，每天在工地比较忙',
-        source: 'customer', severity: 'major',
-        owner: '王进', resolved: false, createdAt: '2026-08-25',
-      },
-      {
-        id: 'blk-12-2', projectId: '12',
-        title: '打卡设备迁移：需在不影响已有人员打卡的情况下完成迁移',
-        source: 'customer', severity: 'critical',
-        expectedResolveDate: '2026-08-27',
-        owner: '王进', resolved: false, createdAt: '2026-08-25',
-      },
-      {
-        id: 'blk-12-3', projectId: '12',
-        title: '20路摄像头视频存储到阿里云OSS，存储量太大',
-        source: 'third_party', severity: 'major',
-        owner: '王进', resolved: false, createdAt: '2026-08-25',
-      },
-    ],
-    acceptanceCriteria: [
-      '打卡设备迁移完成，不影响已有人员打卡',
-      '20路摄像头视频存储方案确认',
-      '客户签署验收单',
-    ],
+    riskLevel: 'none',
   },
 
-  // 4. 小红书插件 — 高风险
+  // 4. 小红书插件 Agent（生产站项目 126）
   {
-    key: '13', id: '13', projectNo: 'PRJ202608013', name: '小红书插件',
+    key: '13', id: '13', projectNo: 'PRJ-126', name: '小红书插件 Agent',
     status: '进行中', priority: '高', businessLine: '外包', entity: '中科软齐',
-    owner: '牛一', salesUsers: [], progress: 40,
-    startDate: '2026-08-13', expectedEndDate: '2026-09-12',
-    latestProgress: '牛一确认这周会提供一个版本供客户试用。',
-    remark: '客户反馈9月10日一定要出来，9月15号要拿去卖。合同签订后拿到账号才知道具体要做的事情，有一定风险。',
-    createdAt: '2026-08-13 10:00',
+    owner: '牛一', salesUsers: [], progress: 0,
+    startDate: '', expectedEndDate: '',
+    latestProgress: '已签合同，等待排期与首次版本计划确认。',
+    remark: '2026-08-14 接到已签合同通知。',
+    createdAt: '2026-08-14 17:57',
     contractId: '13', customerName: '小红书插件客户',
-    totalHours: 80, budgetHours: 200,
+    totalHours: 155.5, budgetHours: 200,
     bugP0Count: 0, bugP1Count: 0,
-    daysRemaining: 19, isOverdue: false, healthStatus: 'warning',
+    daysRemaining: 0, isOverdue: false, healthStatus: 'normal',
     contractAmount: 20000, receivedAmount: 10000,
-    riskLevel: 'high',
-    riskNote: '牛一确认肯定有风险，合同签订后拿到账号才知道具体要做的事情',
-    blockers: [
-      {
-        id: 'blk-13-1', projectId: '13',
-        title: '9月10日前必须交付，9月15日客户要拿去卖',
-        source: 'customer', severity: 'critical',
-        customerEta: '2026-09-10',
-        owner: '牛一', resolved: false, createdAt: '2026-08-25',
-      },
-    ],
-    acceptanceCriteria: ['功能完整可用', '9月10日前交付客户试用版本'],
+    riskLevel: 'none',
   },
 
-  // 5. 汽车配件索赔 — 验收中
+  // 5. 汽车配件索赔管理系统（生产站项目 123）
   {
-    key: '14', id: '14', projectNo: 'PRJ202607014', name: '汽车配件索赔系统',
-    status: '验收中', priority: '中', businessLine: '外包', entity: '中科软齐',
-    owner: '刘小敏', salesUsers: ['吴丹丹'], progress: 95,
-    startDate: '2026-07-30', expectedEndDate: '2026-09-03',
-    latestProgress: '刘小敏完成测试文档修改，同步信息给到销售吴丹丹。吴丹丹将在线地址发给客户，让客户进行体验并测试。',
-    remark: '项目周期25个工作日，截止9月05日。',
-    createdAt: '2026-07-30 10:00',
+    key: '14', id: '14', projectNo: 'PRJ-123', name: '汽车配件索赔管理系统',
+    status: '进行中', priority: '中', businessLine: '外包', entity: '中科软通',
+    owner: '陈孟春', salesUsers: ['吴丹丹'], progress: 0,
+    startDate: '2026-08-03', expectedEndDate: '2026-08-28',
+    latestProgress: '海外站点、多语言、分国定价与工时配置等需求已记录。',
+    remark: '生产站项目编号 123；演示只保留业务需求摘要，不保留原型链接。',
+    createdAt: '2026-08-01 18:28',
     contractId: '14', customerName: '汽车配件客户',
-    totalHours: 160, budgetHours: 180,
+    totalHours: 103.5, budgetHours: 180,
     bugP0Count: 0, bugP1Count: 0,
-    daysRemaining: 11, isOverdue: false, healthStatus: 'normal',
+    daysRemaining: -1, isOverdue: true, healthStatus: 'warning',
     contractAmount: 18000, receivedAmount: 9000,
     riskLevel: 'none',
-    acceptanceCriteria: ['客户体验测试通过', '测试文档确认无误'],
   },
 
   // 6. 重庆B端一期 — 催款中
@@ -302,6 +264,78 @@ export const PROJECT_LIST: ProjectListItem[] = [
   },
 ];
 
+const linkedLegacyProjectById = new Map(
+  LEGACY_PROJECT_FIXTURES
+    .filter((project) => ['10', '11', '12', '13', '14', '15'].includes(project.id))
+    .map((project) => [project.id, project]),
+);
+
+/**
+ * 帕奇宠 C 端一期演示档案。
+ * 项目名称、负责人、进度、工时与日期沿用生产快照；金额、客户关联、风险与验收项为详情页演示数据。
+ */
+const PAWKEY_C_PHASE_ONE_FIXTURE: Partial<ProjectListItem> = {
+  leadId: 'pawkey-lead-5942',
+  contractId: 'pawkey-c1',
+  customerName: '重庆绮算法科技有限公司',
+  budgetHours: 2240,
+  bugP0Count: 0,
+  bugP1Count: 2,
+  contractAmount: 144000,
+  receivedAmount: 126000,
+  healthStatus: 'warning',
+  riskLevel: 'medium',
+  riskNote: '一期功能清单待甲方最终审查，终验签署与尾款回收存在顺延风险。',
+  blockers: [
+    {
+      id: 'pawkey-blocker-1',
+      projectId: 'prod-112',
+      title: '终验功能清单待甲方返回最终审查结论',
+      source: 'customer',
+      severity: 'major',
+      customerEta: '2026-09-03',
+      expectedResolveDate: '2026-09-03',
+      owner: '何江奇',
+      resolved: false,
+      createdAt: '2026-08-26 10:20',
+    },
+  ],
+  acceptanceCriteria: [
+    'C 端 App 核心体验流程通过甲方功能清单验收',
+    'iOS 与 Android 交付包、部署说明及账号清单齐全',
+    '产品设计与系统架构设计文档完成归档和交接',
+    'P0 缺陷清零，P1 缺陷关闭或取得书面延期结论',
+  ],
+};
+
+/**
+ * 生产站 36 条项目作为首要数据源。
+ * 6 个已有合同/回款联动的项目沿用原本地 id，并补回跨模块关联字段；
+ * 其余 8 条旧演示项目置于末尾，避免破坏既有合同、日报和自动化测试闭环。
+ */
+export const PROJECT_LIST: ProjectListItem[] = [
+  ...PRODUCTION_PROJECT_LIST.map((project) => {
+    if (project.id === 'prod-112') {
+      return { ...project, ...PAWKEY_C_PHASE_ONE_FIXTURE };
+    }
+    const linked = linkedLegacyProjectById.get(project.id);
+    if (!linked) return project;
+
+    return {
+      ...project,
+      leadId: linked.leadId,
+      contractId: linked.contractId,
+      customerName: linked.customerName,
+      budgetHours: linked.budgetHours,
+      contractAmount: linked.contractAmount,
+      receivedAmount: linked.receivedAmount,
+      blockers: linked.blockers,
+      acceptanceCriteria: linked.acceptanceCriteria,
+    };
+  }),
+  ...LEGACY_PROJECT_FIXTURES.filter((project) => !linkedLegacyProjectById.has(project.id)),
+];
+
 // --- 指标 Mock ---
 export const PROJECT_METRICS: ProjectMetrics = {
   activeCount: PROJECT_LIST.filter((p) => p.status !== '已完成').length,
@@ -309,6 +343,7 @@ export const PROJECT_METRICS: ProjectMetrics = {
     '外包': PROJECT_LIST.filter((p) => p.businessLine === '外包' && p.status !== '已完成').length,
     '自研': PROJECT_LIST.filter((p) => p.businessLine === '自研' && p.status !== '已完成').length,
     '自运营': PROJECT_LIST.filter((p) => p.businessLine === '自运营' && p.status !== '已完成').length,
+    '未设置': PROJECT_LIST.filter((p) => p.businessLine === '未设置' && p.status !== '已完成').length,
   },
   warningCount: PROJECT_LIST.filter((p) => p.healthStatus === 'danger' || p.healthStatus === 'warning').length,
   pendingConfirmCount: PROJECT_LIST.filter((p) => p.status === '未确认').length,
@@ -343,24 +378,28 @@ export const ACTIVITY_EVENTS: ActivityEvent[] = [
   { id: 'act-11-2', projectId: '11', type: 'followup', title: '华盛系统技术沟通', content: '客户提供随州瑞彩酒店华盛系统对接群，技术沟通中。涉及系统升级和开发费用，对方需跟领导确认。', operator: '王进', createdAt: '2026-08-21 10:00' },
   { id: 'act-11-3', projectId: '11', type: 'contract', title: '合同签订', content: '智能酒店一期合同签订，¥80,000，三期回款。', operator: '严总', createdAt: '2026-04-20 10:00', isPreSale: true },
 
-  // 中铁信息化安全平台
-  { id: 'act-12-1', projectId: '12', type: 'followup', title: '打卡机迁移方案', content: '同王进一起研究打卡机迁移流程，形成文档，明天跟客户确认打卡机转移事项。', operator: '王进', createdAt: '2026-08-25 17:00' },
-  { id: 'act-12-2', projectId: '12', type: 'contract', title: '合同签订', content: '中铁信息化安全平台合同签订，¥23,000，三期回款。', operator: '王进', createdAt: '2026-06-03 10:00', isPreSale: true },
+  // 中铁信息化
+  { id: 'act-12-1', projectId: '12', type: 'milestone', title: '考勤机迁移完成', content: '考勤机已迁移到系统。', operator: '杨培豪', createdAt: '2026-08-29 17:00' },
+  { id: 'act-12-2', projectId: '12', type: 'status_change', title: '项目进入执行', content: '项目状态为进行中，当前进度 90%。', operator: '杨培豪', createdAt: '2026-07-02 11:59', isPreSale: true },
 
-  // 小红书插件
-  { id: 'act-13-1', projectId: '13', type: 'followup', title: '交付计划确认', content: '牛一确认这周会提供一个版本供客户试用。', operator: '牛一', createdAt: '2026-08-25 10:00' },
-  { id: 'act-13-2', projectId: '13', type: 'followup', title: '风险评估', content: '牛一确认肯定有风险，合同签订后拿到账号才知道具体要做的事情。', operator: '张三', createdAt: '2026-08-24 14:00' },
-  { id: 'act-13-3', projectId: '13', type: 'contract', title: '合同签订', content: '小红书插件合同签订，¥20,000，两期回款。', operator: '张三', createdAt: '2026-08-13 10:00', isPreSale: true },
+  // 小红书插件 Agent
+  { id: 'act-13-1', projectId: '13', type: 'contract', title: '收到签约通知', content: '2026-08-14 收到项目已签合同通知，等待排期。', operator: '牛一', createdAt: '2026-08-14 17:57', isPreSale: true },
 
-  // 汽车配件索赔
-  { id: 'act-14-1', projectId: '14', type: 'followup', title: '客户测试', content: '吴丹丹将在线地址发给客户，让客户体验并测试。', operator: '吴丹丹', createdAt: '2026-08-25 10:00' },
-  { id: 'act-14-2', projectId: '14', type: 'followup', title: '测试文档修改', content: '刘小敏完成测试文档修改，同步给销售吴丹丹。', operator: '刘小敏', createdAt: '2026-08-25 09:00' },
-  { id: 'act-14-3', projectId: '14', type: 'milestone', title: '开发完成', content: '刘小敏完成开发，地址提供给销售吴丹丹、周欢。', operator: '刘小敏', createdAt: '2026-08-24 18:00' },
-  { id: 'act-14-4', projectId: '14', type: 'contract', title: '合同签订', content: '汽车配件索赔合同签订，¥18,000，三期回款。', operator: '吴丹丹', createdAt: '2026-07-30 10:00', isPreSale: true },
+  // 汽车配件索赔管理系统
+  { id: 'act-14-1', projectId: '14', type: 'followup', title: '需求摘要记录', content: '已记录海外站点、多语言、分国定价、工时配置和热销排序等核心需求。', operator: '陈孟春', createdAt: '2026-08-03 10:00' },
+  { id: 'act-14-2', projectId: '14', type: 'status_change', title: '项目进入执行', content: '项目状态为进行中，销售为吴丹丹。', operator: '陈孟春', createdAt: '2026-08-01 18:28', isPreSale: true },
 
   // 重庆B端一期
   { id: 'act-15-1', projectId: '15', type: 'followup', title: '催收回款', content: '黄奕正在催收回款。', operator: '黄奕', createdAt: '2026-08-25 10:00' },
   { id: 'act-15-2', projectId: '15', type: 'followup', title: '新增功能开发', content: '新增功能预计本周完成。', operator: '黄奕', createdAt: '2026-08-25 10:00' },
+
+  // 帕奇宠 C 端一期（生产项目 112；下列为关联演示台账）
+  { id: 'pawkey-act-1', projectId: 'prod-112', type: 'status_change', title: '项目正式启动', content: '产品设计与系统架构设计一期进入执行，项目基线已确认。', operator: '何江奇', createdAt: '2026-06-08 09:30', isMajor: true },
+  { id: 'pawkey-act-2', projectId: 'prod-112', type: 'milestone', title: '核心体验原型确认', content: '甲方确认宠物档案、成长记录、陪伴互动与内容分享四条核心体验链路。', operator: '何江奇', createdAt: '2026-06-28 17:20', isMajor: true, milestoneTag: '原型确认', severity: 'success' },
+  { id: 'pawkey-act-3', projectId: 'prod-112', type: 'milestone', title: 'UI 视觉方案确认', content: 'C 端首页、宠物主页、生命流与互动玩法视觉方案完成确认。', operator: '周雨桐', createdAt: '2026-07-15 18:10', isMajor: true, milestoneTag: 'UI确认', severity: 'success' },
+  { id: 'pawkey-act-4', projectId: 'prod-112', type: 'milestone', title: '系统架构评审通过', content: '客户端、业务服务、内容服务与 AI 能力接入边界完成评审。', operator: '陈周伟', createdAt: '2026-07-20 16:40', isMajor: true, milestoneTag: '架构评审', severity: 'success' },
+  { id: 'pawkey-act-5', projectId: 'prod-112', type: 'milestone', title: '一期交付候选版本冻结', content: '核心功能清单完成度达到 98%，候选交付包与文档索引已冻结。', operator: '何江奇', createdAt: '2026-08-25 19:00', isMajor: true, milestoneTag: '交付候选', severity: 'success' },
+  { id: 'pawkey-act-6', projectId: 'prod-112', type: 'followup', title: '终验功能清单已提交', content: '已向甲方提交终验功能清单及差异说明，等待最终审查意见。', operator: '何江奇', createdAt: '2026-08-29 17:30', isMajor: true, milestoneTag: '终验审查', severity: 'warning' },
 ];
 
 /** 按项目ID获取活动事件 */
@@ -408,11 +447,31 @@ export const PROJECT_MEETINGS: ProjectMeetingMinutes[] = [
   },
   // 真实项目会议
   {
-    id: 'pm-12-1', projectId: '12', subject: '打卡机迁移方案讨论', meetingTime: '2026-08-25 14:00',
-    employeeAttendees: ['王进'],
+    id: 'pm-12-1', projectId: '12', subject: '考勤机迁移结果同步', meetingTime: '2026-08-29 14:00',
+    employeeAttendees: ['杨培豪'],
     externalAttendees: [],
-    minutes: '研究打卡机迁移流程，形成文档，明天跟客户确认打卡机转移事项。',
-    recorder: '王进',
+    minutes: '考勤机已迁移到系统，后续继续推进正式环境交付。',
+    recorder: '杨培豪',
+  },
+  {
+    id: 'pawkey-meeting-1', projectId: 'prod-112', subject: '帕奇宠 C 端一期启动会', meetingTime: '2026-06-08 10:00',
+    employeeAttendees: ['何江奇', '黄奕', '陈周伟', '周雨桐'], externalAttendees: ['甲方产品负责人', '甲方品牌负责人'],
+    minutes: '确认一期交付聚焦产品设计与系统架构设计，核心范围为宠物档案、成长记录、陪伴互动和内容分享。', recorder: '何江奇',
+  },
+  {
+    id: 'pawkey-meeting-2', projectId: 'prod-112', subject: '核心体验原型评审', meetingTime: '2026-06-24 14:30',
+    employeeAttendees: ['何江奇', '周雨桐'], externalAttendees: ['甲方产品负责人'],
+    minutes: '逐页评审首次建档、宠物主页、生命流详情与互动玩法，确认主流程并记录 12 项交互调整。', recorder: '何江奇',
+  },
+  {
+    id: 'pawkey-meeting-3', projectId: 'prod-112', subject: 'UI 与系统架构联合评审', meetingTime: '2026-07-12 15:00',
+    employeeAttendees: ['何江奇', '陈周伟', '周雨桐', '林子涵'], externalAttendees: ['甲方技术负责人', '甲方品牌负责人'],
+    minutes: '视觉规范与技术边界同步通过，明确 AI 能力、内容审核、媒体资源和账号体系的接口责任。', recorder: '陈周伟',
+  },
+  {
+    id: 'pawkey-meeting-4', projectId: 'prod-112', subject: '终验材料预审会', meetingTime: '2026-08-27 16:00',
+    employeeAttendees: ['何江奇', '黄奕', '陈周伟'], externalAttendees: ['甲方产品负责人'],
+    minutes: '交付物索引、功能清单和遗留项说明已完成预审；甲方将在 9 月 3 日前返回最终审查意见。', recorder: '何江奇',
   },
 ];
 
@@ -423,6 +482,11 @@ export const PROJECT_CONFIRMATIONS: ProjectConfirmation[] = [
   { id: 'pc-3-1', projectId: '3', type: '需求确认书', status: '已签署', signer: '周经理', signDate: '2026-07-02', attachment: '华信科技OA需求确认书V1.pdf' },
   { id: 'pc-3-2', projectId: '3', type: '原型确认书', status: '已签署', signer: '周经理', signDate: '2026-07-28', attachment: '华信科技OA原型确认稿.pdf' },
   { id: 'pc-3-3', projectId: '3', type: '阶段验收单', status: '待签署', signer: '', signDate: '', attachment: '' },
+  { id: 'pawkey-confirm-1', projectId: 'prod-112', type: '需求范围确认书', status: '已签署', signer: '甲方产品负责人', signDate: '2026-06-12', attachment: '帕奇宠C端一期需求范围确认书V1.0.pdf' },
+  { id: 'pawkey-confirm-2', projectId: 'prod-112', type: '原型确认书', status: '已签署', signer: '甲方产品负责人', signDate: '2026-06-28', attachment: '帕奇宠C端核心体验原型确认书.pdf' },
+  { id: 'pawkey-confirm-3', projectId: 'prod-112', type: 'UI 设计确认书', status: '已签署', signer: '甲方品牌负责人', signDate: '2026-07-15', attachment: '帕奇宠C端UI设计确认书.pdf' },
+  { id: 'pawkey-confirm-4', projectId: 'prod-112', type: '系统架构确认书', status: '已签署', signer: '甲方技术负责人', signDate: '2026-07-20', attachment: '帕奇宠C端系统架构确认书.pdf' },
+  { id: 'pawkey-confirm-5', projectId: 'prod-112', type: '一期终验单', status: '待签署', signer: '', signDate: '', attachment: '帕奇宠C端一期终验单-待签.pdf' },
 ];
 
 export const PROJECT_DEMO_ENVS: ProjectDemoEnv[] = [
@@ -430,8 +494,10 @@ export const PROJECT_DEMO_ENVS: ProjectDemoEnv[] = [
   { id: 'de-1-2', projectId: '1', env: '预发布环境', url: 'https://staging-crm-a.example.com', description: '客户验收用' },
   { id: 'de-2-1', projectId: '2', env: '测试环境', url: 'https://test-mp-b.example.com', description: '小程序体验版 + 后台' },
   { id: 'de-3-1', projectId: '3', env: '测试环境', url: 'https://test-oa-huaxin.example.com', description: '审批流一期联调' },
-  // 真实项目环境
-  { id: 'de-14-1', projectId: '14', env: '测试环境', url: 'https://test-claims.example.com', description: '汽车配件索赔系统在线测试地址' },
+  { id: 'pawkey-demo-1', projectId: 'prod-112', env: '原型演示', url: 'https://prototype.pawkey-c.demo.example.com', description: '一期交互原型演示（演示地址）' },
+  { id: 'pawkey-demo-2', projectId: 'prod-112', env: '测试环境', url: 'https://test.pawkey-c.demo.example.com', description: '双端功能联调（演示地址）' },
+  { id: 'pawkey-demo-3', projectId: 'prod-112', env: '预发布环境', url: 'https://staging.pawkey-c.demo.example.com', description: '甲方终验候选版本（演示地址）' },
+  { id: 'pawkey-demo-4', projectId: 'prod-112', env: '正式环境', url: 'https://app.pawkey-c.demo.example.com', description: '正式环境入口（演示地址）' },
 ];
 
 /** 按项目 ID 读取详情域台账 */

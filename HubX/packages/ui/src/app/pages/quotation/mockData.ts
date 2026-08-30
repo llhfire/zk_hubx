@@ -310,4 +310,229 @@ function buildDraftQuote(): Quote {
   };
 }
 
-export const initialQuotes: Quote[] = [buildQuote(), buildDraftQuote()];
+function buildPawkeyQuote(): Quote {
+  const base = buildQuote();
+  const featureList: FeatureModule[] = [
+    {
+      id: 'pawkey-module-1', name: '宠物档案', sort: 1, endpointId: 'pawkey-app',
+      subFeatures: [
+        { id: 'pawkey-feature-1-1', name: '首次建档', description: '引导录入宠物基础信息、照片、生日与陪伴纪念日' },
+        { id: 'pawkey-feature-1-2', name: '宠物主页', description: '集中展示宠物状态、身份标签、重要日期与快捷入口' },
+        { id: 'pawkey-feature-1-3', name: '多宠切换', description: '支持同一账号管理多只宠物并快速切换上下文' },
+      ],
+    },
+    {
+      id: 'pawkey-module-2', name: '生命流与成长记录', sort: 2, endpointId: 'pawkey-app',
+      subFeatures: [
+        { id: 'pawkey-feature-2-1', name: '生命流', description: '按时间组织照片、视频、文字和关键事件' },
+        { id: 'pawkey-feature-2-2', name: '成长节点', description: '记录体重、健康、第一次和陪伴纪念日等里程碑' },
+        { id: 'pawkey-feature-2-3', name: '回忆分享', description: '生成可保存和分享的长图或卡片' },
+      ],
+    },
+    {
+      id: 'pawkey-module-3', name: '陪伴互动', sort: 3, endpointId: 'pawkey-app',
+      subFeatures: [
+        { id: 'pawkey-feature-3-1', name: '日常互动', description: '以轻量任务和反馈增强主人与宠物的陪伴感' },
+        { id: 'pawkey-feature-3-2', name: '情绪反馈', description: '通过内容和动效呈现拟人化但克制的宠物回应' },
+        { id: 'pawkey-feature-3-3', name: '互动成就', description: '沉淀连续陪伴与共同完成事件的纪念记录' },
+      ],
+    },
+    {
+      id: 'pawkey-module-4', name: '账号与内容基础能力', sort: 4, endpointId: 'pawkey-app',
+      subFeatures: [
+        { id: 'pawkey-feature-4-1', name: '账号登录', description: '手机号与第三方授权登录、账号注销和设备管理' },
+        { id: 'pawkey-feature-4-2', name: '媒体资源', description: '图片与视频上传、压缩、存储和访问策略' },
+        { id: 'pawkey-feature-4-3', name: '内容安全', description: '敏感内容识别、举报与审核流程边界设计' },
+      ],
+    },
+  ];
+
+  return {
+    ...base,
+    id: 'pawkey-q1',
+    quoteNo: 'QT-2026-PAWKEY-01',
+    version: 'v2.0',
+    status: 'confirmed',
+    leadId: 'pawkey-lead-5942',
+    contractId: 'pawkey-c1',
+    generatedContractId: 'pawkey-c1',
+    salesOwnerName: '黄奕',
+    basicInfo: {
+      projectName: '帕奇宠C端一期',
+      projectType: '移动端产品设计与系统架构',
+      creatorName: '何江奇',
+      techEvaluatorName: '陈周伟',
+      requirementDesc: '完成帕奇宠 C 端一期的产品定义、核心体验原型、UI 视觉规范、双端适配方案与系统架构设计。',
+      customerName: '重庆绮算法科技有限公司',
+      customerContact: '甲方产品负责人',
+      customerPhone: '138****5942',
+      quoteValidityDays: 30,
+      industry: '宠物科技',
+    },
+    endpointConfigs: [{ id: 'pawkey-app', name: 'C 端 App', platforms: ['ios', 'android'] }],
+    featureList,
+    evalSheet: {
+      id: 'pawkey-eval-1', evaluator: '陈周伟',
+      activeRoles: [{ key: 'pm_days', name: '产品经理' }, { key: 'ui_days', name: 'UI设计师' }, { key: 'arch_days', name: '架构师' }],
+      evaluationUnits: featureList.map((module, index) => ({
+        id: `pawkey-eval-unit-${index + 1}`,
+        granularity: 'MODULE_PACK' as const,
+        moduleName: module.name,
+        moduleId: module.id,
+        boundSubFeatureIds: module.subFeatures.map((feature) => feature.id),
+        manualWorkload: index === 0
+          ? { pm_days: 12, ui_days: 8, arch_days: 2 }
+          : index === 1
+            ? { pm_days: 15, ui_days: 15, arch_days: 3 }
+            : index === 2
+              ? { pm_days: 10, ui_days: 12, arch_days: 5 }
+              : { pm_days: 5, ui_days: 3, arch_days: 10 },
+        totalDays: [22, 33, 27, 18][index],
+        riskLevel: index === 2 ? 'MEDIUM' as const : 'LOW' as const,
+        techRemark: index === 3 ? '明确账号、媒体资源与内容安全的技术边界' : '按一期确认范围评估',
+      })),
+      manualWorkDays: 40,
+      techSolutionNote: 'Flutter 双端方案 + 模块化业务服务 + 对象存储 + 可替换 AI 能力适配层；一期以产品与架构交付为主。',
+    },
+    salesAddedRoles: [],
+    travelOnsite: { enableTravel: true, travelSubtotal: 6000, enableOnsite: false, onsiteSubtotal: 0, travelDetails: [{ location: '重庆', headcount: 2, days: 2, transportFee: 900, hotelFeePerDay: 450, allowancePerDay: 150 }], onsiteDetails: [] },
+    otherCosts: [],
+    summary: {
+      totalLaborDays: 100,
+      projectWorkDays: 40,
+      grandTotalPrice: 100000,
+      paymentTerms: [
+        { stage: '合同签订首付款', percent: 50, amount: 50000 },
+        { stage: '核心体验原型确认款', percent: 30, amount: 30000 },
+        { stage: '设计与架构确认款', percent: 10, amount: 10000 },
+        { stage: '验收尾款', percent: 10, amount: 10000 },
+      ],
+      taxIncluded: true,
+      warrantyYears: 1,
+      invoiceType: '专票',
+    },
+    auditNodes: base.auditNodes.map((node) => ({ ...node, status: 'APPROVED' as const, auditTime: '2026-05-28 16:00', comment: '同意' })),
+    stampNode: { stamperName: '黄海', status: 'COMPLETED', stampTime: '2026-05-29 10:20' },
+    timeline: [
+      { id: 'pawkey-quote-tl-1', action: 'create', actorName: '何江奇', actorRole: '产品经理', time: '2026-05-20 10:00' },
+      { id: 'pawkey-quote-tl-2', action: 'submit_feature_list', actorName: '何江奇', actorRole: '产品经理', time: '2026-05-22 17:20' },
+      { id: 'pawkey-quote-tl-3', action: 'submit_eval', actorName: '陈周伟', actorRole: '技术负责人', time: '2026-05-25 15:30' },
+      { id: 'pawkey-quote-tl-4', action: 'submit_for_audit', actorName: '黄奕', actorRole: '销售', time: '2026-05-27 11:00' },
+      { id: 'pawkey-quote-tl-5', action: 'stamp', actorName: '黄海', actorRole: '董助', time: '2026-05-29 10:20' },
+      { id: 'pawkey-quote-tl-6', action: 'mark_sent', actorName: '黄奕', actorRole: '销售', time: '2026-05-29 14:00' },
+      { id: 'pawkey-quote-tl-7', action: 'mark_confirmed', actorName: '黄奕', actorRole: '销售', time: '2026-05-30 16:40' },
+    ],
+    ccSalesNames: ['黄奕'],
+    sentAt: '2026-05-29 14:00',
+    createdAt: '2026-05-20 10:00',
+    updatedAt: '2026-05-30 16:40',
+  };
+}
+
+function buildPawkeySupplementQuote(input: {
+  id: string;
+  quoteNo: string;
+  generatedContractId: string;
+  projectName: string;
+  requirementDesc: string;
+  changeAmount: number;
+  createdAt: string;
+  confirmedAt: string;
+  featureName: string;
+  features: Array<{ id: string; name: string; description: string }>;
+  paymentTerms: Array<{ stage: string; percent: number; amount: number }>;
+}): Quote {
+  const base = buildPawkeyQuote();
+  return {
+    ...base,
+    id: input.id,
+    quoteNo: input.quoteNo,
+    version: 'v1.0',
+    status: 'confirmed',
+    contractId: 'pawkey-c1',
+    generatedContractId: input.generatedContractId,
+    isSupplement: true,
+    supplementChangeAmount: input.changeAmount,
+    previousQuoteId: 'pawkey-q1',
+    basicInfo: {
+      ...base.basicInfo,
+      projectName: input.projectName,
+      requirementDesc: input.requirementDesc,
+    },
+    featureList: [{
+      id: `${input.id}-module-1`,
+      name: input.featureName,
+      sort: 1,
+      endpointId: 'pawkey-app',
+      subFeatures: input.features,
+    }],
+    evalSheet: undefined,
+    salesAddedRoles: [],
+    travelOnsite: { enableTravel: false, travelSubtotal: 0, enableOnsite: false, onsiteSubtotal: 0, travelDetails: [], onsiteDetails: [] },
+    otherCosts: [],
+    summary: {
+      totalLaborDays: 0,
+      projectWorkDays: 0,
+      grandTotalPrice: input.changeAmount,
+      paymentTerms: input.paymentTerms,
+      taxIncluded: true,
+      warrantyYears: 1,
+      invoiceType: '专票',
+    },
+    timeline: [
+      { id: `${input.id}-tl-1`, action: 'create', actorName: '何江奇', actorRole: '产品经理', time: input.createdAt },
+      { id: `${input.id}-tl-2`, action: 'submit_for_audit', actorName: '黄奕', actorRole: '销售', time: input.createdAt },
+      { id: `${input.id}-tl-3`, action: 'stamp', actorName: '黄海', actorRole: '董助', time: input.confirmedAt },
+      { id: `${input.id}-tl-4`, action: 'mark_confirmed', actorName: '黄奕', actorRole: '销售', time: input.confirmedAt },
+    ],
+    sentAt: input.confirmedAt,
+    createdAt: input.createdAt,
+    updatedAt: input.confirmedAt,
+  };
+}
+
+const pawkeyExperienceSupplementQuote = buildPawkeySupplementQuote({
+  id: 'pawkey-sq1',
+  quoteNo: 'QT-2026-PAWKEY-S01',
+  generatedContractId: 'pawkey-c1-s1',
+  projectName: '帕奇宠C端一期体验增强增项',
+  requirementDesc: '补充生命流长图分享、互动反馈细化、系统大字体适配及双端发布检查。',
+  changeAmount: 28000,
+  createdAt: '2026-07-14 10:20',
+  confirmedAt: '2026-07-17 11:30',
+  featureName: '体验增强增项',
+  features: [
+    { id: 'pawkey-sq1-f1', name: '生命流长图分享', description: '补充长图生成、分享预览和异常状态处理。' },
+    { id: 'pawkey-sq1-f2', name: '陪伴互动反馈细化', description: '扩展互动反馈、纪念状态和弱网重试体验。' },
+    { id: 'pawkey-sq1-f3', name: '双端无障碍适配', description: '补充系统大字体、安全区和发布前适配检查。' },
+  ],
+  paymentTerms: [
+    { stage: '增补交互与 UI 方案确认', percent: 50, amount: 14000 },
+    { stage: '增补功能测试版发布', percent: 50, amount: 14000 },
+  ],
+});
+
+const pawkeyAiSupplementQuote = buildPawkeySupplementQuote({
+  id: 'pawkey-sq2',
+  quoteNo: 'QT-2026-PAWKEY-S02',
+  generatedContractId: 'pawkey-c1-s2',
+  projectName: '帕奇宠C端一期AI陪伴能力接入增项',
+  requirementDesc: '补充 AI 陪伴能力适配层、调用降级、内容安全接口与甲方自有服务接入说明。',
+  changeAmount: 16000,
+  createdAt: '2026-08-04 14:10',
+  confirmedAt: '2026-08-07 10:20',
+  featureName: 'AI 陪伴能力接入',
+  features: [
+    { id: 'pawkey-sq2-f1', name: 'AI 能力适配层', description: '统一封装模型调用、配额与供应商替换边界。' },
+    { id: 'pawkey-sq2-f2', name: '调用降级策略', description: '补充超时、限流、失败回退和可观测性方案。' },
+    { id: 'pawkey-sq2-f3', name: '内容安全接口', description: '接入甲方审核能力并明确数据责任边界。' },
+  ],
+  paymentTerms: [
+    { stage: 'AI 陪伴能力接口方案确认', percent: 50, amount: 8000 },
+    { stage: 'AI 陪伴能力增补范围终验', percent: 50, amount: 8000 },
+  ],
+});
+
+export const initialQuotes: Quote[] = [
+  buildQuote(), buildDraftQuote(), buildPawkeyQuote(), pawkeyExperienceSupplementQuote, pawkeyAiSupplementQuote,
+];

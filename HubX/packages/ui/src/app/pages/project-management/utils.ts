@@ -67,7 +67,7 @@ export function getProjectCountdown(startDate: string, expectedEndDate: string):
 export function calculateMetrics(projects: ProjectListItem[]): ProjectMetrics {
   const active = projects.filter((p) => p.status !== '已完成');
 
-  const activeByLine: Record<BusinessLine, number> = { '外包': 0, '自研': 0, '自运营': 0 };
+  const activeByLine: Record<BusinessLine, number> = { '外包': 0, '自研': 0, '自运营': 0, '未设置': 0 };
   active.forEach((p) => { activeByLine[p.businessLine]++; });
 
   const warningCount = projects.filter((p) => p.healthStatus === 'danger' || p.healthStatus === 'warning').length;

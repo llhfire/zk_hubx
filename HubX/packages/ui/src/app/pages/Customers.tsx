@@ -216,7 +216,7 @@ export function Customers() {
           data={customers}
           scroll={{ x: 1800 }}
           pagination={{
-            total: 68,
+            total: filteredData.length,
             pageSize: 10,
             showTotal: true,
             showJumper: true,

@@ -59,6 +59,10 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
     expect(markup).toContain('客户')
     expect(markup).toContain('A公司')
     expect(markup).toContain('工时')
+    expect(markup).toContain('方案设计')
+    expect(markup).toContain('回款结项')
+    expect(markup).not.toContain('售前签约')
+    expect(markup.match(/project-stage-popover__trigger/g)).toHaveLength(5)
     // 档案卡
     expect(markup).toContain('最新进展')
     // 主 Tab（域 3/4/1：团队与工时、回款与发票、项目动态等）
@@ -69,6 +73,8 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
     expect(markup).not.toContain('项目日报')
     expect(markup).toContain('任务管理')
     expect(markup).toContain('项目动态')
+    expect(markup).toContain('精选活动')
+    expect(markup).toContain('仅看大事记')
     // 右侧次级 Tab：合同与售前采用紧凑名称，具体信息在页签内容呈现
     expect(markup).toContain('跟进')
     expect(markup).toContain('报价')
@@ -91,11 +97,45 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
     expect(markup).toContain('华信科技')
   })
 
-  test('报价 Tab 展示关联线索的报价空态（SSR 下报价域未加载）', () => {
-    const markup = renderProjectDetail360Markup('/projects/1')
+  test('基础信息使用三列摘要，并将长文本字段放在独立行', () => {
+    const markup = renderProjectDetail360Markup('/projects/prod-112?main=basic')
+
+    expect(markup).toContain('project-basic-information__grid')
+    expect(markup).toContain('arco-descriptions-layout-inline-horizontal')
+    expect(markup).toContain('project-basic-information__long-list')
+    expect(markup.match(/project-basic-information__long-row/g)).toHaveLength(4)
+    expect(markup).toContain('重庆绮算法科技有限公司')
+    expect(markup).toContain('风险备注')
+  })
+
+  test('帕奇宠 C 端一期展示完整项目口径和当前终验风险', () => {
+    const markup = renderProjectDetail360Markup('/projects/prod-112')
+
+    expect(markup).toContain('帕奇宠C端一期')
+    expect(markup).toContain('PRJ-112')
+    expect(markup).toContain('重庆绮算法科技有限公司')
+    expect(markup).toContain('2.0k / 2.2k')
+    expect(markup).toContain('P0 0 · P1 2')
+    expect(markup).toContain('终验功能清单待甲方返回最终审查结论')
+    expect(markup).toContain('甲方正在审查一期终验功能清单')
+  })
+
+  test('URL 可直接定位报价 Tab，并展示关联线索的报价空态', () => {
+    const markup = renderProjectDetail360Markup('/projects/1?side=quotation')
 
     expect(markup).toContain('新建报价')
     expect(markup).toContain('暂无报价记录')
+  })
+
+  test('默认打开项目动态、跟进和大事记，URL 可关闭大事记筛选', () => {
+    const defaultMarkup = renderProjectDetail360Markup('/projects/1')
+    const allMarkup = renderProjectDetail360Markup('/projects/1?main=activity&side=follow&major=false')
+
+    expect(defaultMarkup).toContain('精选活动')
+    expect(defaultMarkup).toContain('写跟进')
+    expect(defaultMarkup).toContain('aria-checked="true"')
+    expect(defaultMarkup).not.toContain('快速记录关键进展')
+    expect(allMarkup).toContain('aria-checked="false"')
   })
 
   test('项目不存在时输出兜底空态', () => {

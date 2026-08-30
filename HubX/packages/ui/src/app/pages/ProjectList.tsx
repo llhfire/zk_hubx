@@ -341,7 +341,7 @@ export function ProjectList() {
             <strong style={{ color: ratio > 1 ? 'rgb(var(--danger-6))' : ratio >= 0.9 ? 'rgb(var(--warning-6))' : 'var(--color-text-2)', fontWeight: ratio >= 0.9 ? 600 : 400 }}>
               {formatHours(r.totalHours)}
             </strong>
-            {' / '}{formatHours(r.budgetHours)}
+            {' / '}{r.budgetHours > 0 ? formatHours(r.budgetHours) : '未设置'}
           </span>
         );
       },

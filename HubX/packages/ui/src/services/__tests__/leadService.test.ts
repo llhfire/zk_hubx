@@ -170,8 +170,8 @@ describe('createMockLeadService 种子与流转', () => {
     expect((await svc.list()).some((lead) => lead.id === target.id)).toBe(false);
   });
 
-  it('seedFallback 选择公海种子（getLeadDetailInfo 未命中时兜底）', () => {
-    const fb = seedFallback('5940');
+  it('seedFallback 返回当前采样线索详情', () => {
+    const fb = seedFallback('5957');
     expect(fb).not.toBeNull();
   });
 });

@@ -30,9 +30,15 @@ describe('work attribution', () => {
 
   test('客户项目、内部项目和软件售前应读取对应关联对象', () => {
     expect(getWorkAttributionOptions('external-project').map(item => item.name)).toContain('A公司CRM系统开发');
-    // 内部项目：自研业务线项目（E平台数据分析看板 / H教育平台二期）
+    // 内部项目：生产站与演示夹具中的自研/自运营项目均可选
     const internalOptions = getWorkAttributionOptions('internal-project').map(item => item.name);
-    expect(internalOptions).toEqual(['E平台数据分析看板', 'H教育平台二期']);
+    expect(internalOptions).toEqual(expect.arrayContaining([
+      '中科GEO优化平台',
+      'AIGC电商平台',
+      'HubX（内部）',
+      'E平台数据分析看板',
+      'H教育平台二期',
+    ]));
     expect(getWorkAttributionOptions('presales-lead', '', undefined, 'software-presales')
       .map(item => item.name))
       .toEqual(expect.arrayContaining(['线索跟进工时汇总', 'A公司CRM系统开发']));
@@ -47,7 +53,7 @@ describe('work attribution', () => {
     });
     // 项目列表随 initialProjects 动态变化，只验证首项和长度
     expect(options.length).toBeGreaterThanOrEqual(2);
-    expect(options[1].name).toBe('A公司CRM系统开发');
+    expect(options[1].name).toBe('小红书插件Agent');
   });
 
   test('日报项目配置按工作归属返回对应子类型', () => {

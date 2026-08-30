@@ -15,15 +15,24 @@ describe('buildClosedLeadRows', () => {
       collections: seedCollectionsFromContracts(contracts),
     });
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      id: '5900',
-      contractId: '9',
-      contractNo: 'HT202606009',
-      contractAmount: 960_000,
-      receivedAmount: 384_000,
-      projectId: '3',
-      projectName: '华信科技内部OA流程优化',
+    expect(rows).toHaveLength(3);
+    expect(rows.find((row) => row.id === '5912')).toMatchObject({
+      contractId: '13',
+      contractNo: 'HT202608013',
+      contractAmount: 20_000,
+      receivedAmount: 10_000,
+      projectId: '13',
+      projectName: '小红书插件Agent',
+      projectStatus: '进行中',
+      closedStatus: '已立项',
+    });
+    expect(rows.find((row) => row.id === '5866')).toMatchObject({
+      contractId: '14',
+      contractNo: 'HT202607014',
+      contractAmount: 18_000,
+      receivedAmount: 9_000,
+      projectId: '14',
+      projectName: '汽车配件索赔管理系统',
       projectStatus: '进行中',
       closedStatus: '已立项',
     });
@@ -31,6 +40,9 @@ describe('buildClosedLeadRows', () => {
 
   it('没有共享事实时不回退到静态假合同', () => {
     const rows = buildClosedLeadRows({ leads: CLOSED_LEADS, contracts: [], projects: [], collections: [] });
-    expect(rows[0]).toMatchObject({ contractNo: '-', contractAmount: 960_000, receivedAmount: 0, projectName: '未立项' });
+    expect(rows).toHaveLength(3);
+    rows.forEach((row) => {
+      expect(row).toMatchObject({ contractNo: '-', contractAmount: 0, receivedAmount: 0, projectName: '未立项' });
+    });
   });
 });

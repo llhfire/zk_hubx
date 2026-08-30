@@ -21,25 +21,27 @@ export const PROJECT_STATUS_COLOR: Record<ProjectStatus, string> = {
 };
 
 // --- 项目优先级 ---
-export type ProjectPriority = '高' | '中' | '低';
+export type ProjectPriority = '高' | '中' | '低' | '未设置';
 
-export const PROJECT_PRIORITY_LIST: ProjectPriority[] = ['高', '中', '低'];
+export const PROJECT_PRIORITY_LIST: ProjectPriority[] = ['高', '中', '低', '未设置'];
 
 export const PROJECT_PRIORITY_COLOR: Record<ProjectPriority, string> = {
   '高': 'red',
   '中': 'orange',
   '低': 'blue',
+  '未设置': 'gray',
 };
 
 // --- 业务线 ---
-export type BusinessLine = '外包' | '自研' | '自运营';
+export type BusinessLine = '外包' | '自研' | '自运营' | '未设置';
 
-export const BUSINESS_LINE_LIST: BusinessLine[] = ['外包', '自研', '自运营'];
+export const BUSINESS_LINE_LIST: BusinessLine[] = ['外包', '自研', '自运营', '未设置'];
 
 export const BUSINESS_LINE_COLOR: Record<BusinessLine, string> = {
   '外包': 'blue',
   '自研': 'green',
   '自运营': 'purple',
+  '未设置': 'gray',
 };
 
 // --- 签约主体 ---
@@ -99,32 +101,30 @@ export const PROJECT_QUICK_FILTER_LABEL: Record<ProjectQuickFilter, string> = {
   completed: '已结项',
 };
 
-// --- 生命周期步骤 ---
-export type LifecycleStep = 'presale' | 'initiate' | 'develop' | 'accept' | 'billing';
+// --- 交付阶段（售前签约、立项指派是进入交付的前置条件，不属于交付阶段） ---
+export type ProjectDeliveryStage = 'design' | 'development' | 'testing' | 'acceptance' | 'closeout';
 
-export const LIFECYCLE_STEPS: LifecycleStep[] = ['presale', 'initiate', 'develop', 'accept', 'billing'];
+export const PROJECT_DELIVERY_STAGES: ProjectDeliveryStage[] = ['design', 'development', 'testing', 'acceptance', 'closeout'];
 
-export const LIFECYCLE_STEP_LABEL: Record<LifecycleStep, string> = {
-  presale: '售前签约',
-  initiate: '立项指派',
-  develop: '交付开发',
-  accept: '客户验收',
-  billing: '回款结项',
+export const PROJECT_DELIVERY_STAGE_LABEL: Record<ProjectDeliveryStage, string> = {
+  design: '方案设计',
+  development: '开发',
+  testing: '测试',
+  acceptance: '验收',
+  closeout: '回款结项',
 };
 
-/** 获取当前状态对应的生命周期步骤索引 */
-export function getLifecycleStepIndex(status: ProjectStatus): number {
-  const map: Record<ProjectStatus, number> = {
-    '未确认': 1,
-    '未开始': 1,
-    '进行中': 2,
-    '验收中': 3,
-    '催款中': 4,
-    '已完成': 4,
-    '搁置': 2, // 搁置停留在当前阶段
-    '延迟': 2,
-  };
-  return map[status] ?? 0;
+/** 状态决定商务末段，执行中的项目再用进度定位到具体交付阶段。 */
+export function getProjectDeliveryStage(status: ProjectStatus, progress: number): ProjectDeliveryStage {
+  if (status === '催款中' || status === '已完成') return 'closeout';
+  if (status === '验收中' || progress >= 90) return 'acceptance';
+  if (progress >= 70) return 'testing';
+  if (progress >= 30) return 'development';
+  return 'design';
+}
+
+export function getProjectDeliveryStageIndex(status: ProjectStatus, progress: number): number {
+  return PROJECT_DELIVERY_STAGES.indexOf(getProjectDeliveryStage(status, progress));
 }
 
 // --- 项目阻塞项（关键卡点 / 外部依赖） ---
@@ -194,6 +194,9 @@ export interface ProjectListItem {
   key: string;
   id: string;
   projectNo: string;
+  /** 生产站原始项目 id；纯演示夹具不设置 */
+  sourceProjectId?: number;
+  sourceSystem?: 'production' | 'demo';
   name: string;
   status: ProjectStatus;
   priority: ProjectPriority;
@@ -312,6 +315,12 @@ export interface ActivityEvent {
   createdAt: string;
   /** 关联线索的事件（售前阶段） */
   isPreSale?: boolean;
+  /** 是否是关键事件；普通跟进不投影进项目动态 */
+  isMajor?: boolean;
+  /** 跟进时选择的关键节点 */
+  milestoneTag?: string;
+  /** 项目拥有事件的强调级别 */
+  severity?: 'neutral' | 'success' | 'warning' | 'danger';
 }
 
 /** 项目会议纪要（详情域台账，按 projectId 组织） */

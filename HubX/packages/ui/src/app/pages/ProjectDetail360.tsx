@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   Card,
   Button,
@@ -11,9 +11,7 @@ import {
   Progress,
   Descriptions,
   Timeline,
-  Tooltip,
   Message,
-  Divider,
   Table,
   Modal,
   Form,
@@ -31,13 +29,11 @@ import {
   IconCalendar,
   IconPlus,
   IconFile,
-  IconClockCircle,
-  IconUser,
   IconDelete,
   IconUpload,
 } from '@arco-design/web-react/icon';
 import type {
-  ActivityEventType,
+  ActivityEvent,
   ProjectMeetingMinutes,
   ProjectDemoEnv,
 } from './project-management/types';
@@ -46,23 +42,16 @@ import {
   BUSINESS_LINE_COLOR,
   HEALTH_LABEL,
   HEALTH_COLOR,
-  LIFECYCLE_STEPS,
-  LIFECYCLE_STEP_LABEL,
-  getLifecycleStepIndex,
-  ACTIVITY_EVENT_LABEL,
-  ACTIVITY_EVENT_ICON,
-  BLOCKER_SOURCE_LABEL,
-  BLOCKER_SEVERITY_LABEL,
-  BLOCKER_SEVERITY_COLOR,
+  PROJECT_DELIVERY_STAGES,
+  PROJECT_DELIVERY_STAGE_LABEL,
+  getProjectDeliveryStageIndex,
   PROJECT_RISK_LEVEL_LABEL,
   PROJECT_RISK_LEVEL_COLOR,
-  type ProjectBlocker,
 } from './project-management/types';
 import {
   getProjectCountdown,
   formatHours,
   formatAmount,
-  filterActivities,
 } from './project-management/utils';
 import {
   PROJECT_LIST,
@@ -106,9 +95,38 @@ import {
   ContractPaymentInvoicePanel,
   type PaymentInvoiceRecord,
 } from './components/ContractPaymentInvoicePanel';
+import { ProjectArchiveSummary } from './project-management/detail/ProjectArchiveSummary';
+import { ProjectStagePopover } from './project-management/detail/ProjectStagePopover';
+import {
+  ProjectActivityFeed,
+  type ProjectMilestoneItem,
+} from './project-management/detail/ProjectActivityFeed';
+import {
+  buildProjectActivity,
+  type ProjectActivityItem,
+} from './project-management/projectActivityProjection';
+import {
+  buildContractSigningStageSummary,
+  buildProjectStageSummaries,
+  type ProjectStageCheck,
+} from './project-management/projectStageSummary';
+import './project-management/detail/projectDetail360.css';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
+
+const MAIN_TABS = ['activity', 'basic', 'contracts', 'payments', 'team', 'daily', 'tasks'] as const;
+const SIDE_TABS = ['follow', 'meetings', 'documents', 'demo', 'quotation', 'contract-records', 'presales', 'travel', 'reimbursement'] as const;
+type MainTab = typeof MAIN_TABS[number];
+type SideTab = typeof SIDE_TABS[number];
+
+function isMainTab(value: string | null): value is MainTab {
+  return MAIN_TABS.includes(value as MainTab);
+}
+
+function isSideTab(value: string | null): value is SideTab {
+  return SIDE_TABS.includes(value as SideTab);
+}
 
 const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: '草稿',
@@ -132,6 +150,44 @@ function money(n: number) {
   return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
+const PAWKEY_PROJECT_ID = 'prod-112';
+
+function getPageBugFixtures(projectId: string | undefined) {
+  if (projectId === PAWKEY_PROJECT_ID) {
+    return [
+      { id: 'pawkey-b1', title: 'Android 大字体下宠物档案信息错位', severity: 'P1', env: '预发布环境', assignee: '林子涵', status: '待验证', createdAt: '2026-08-26' },
+      { id: 'pawkey-b2', title: '拒绝相册权限后分享图引导不完整', severity: 'P1', env: 'iOS 测试环境', assignee: '林子涵', status: '处理中', createdAt: '2026-08-27' },
+      { id: 'pawkey-b3', title: '生命流长图分享底部留白异常', severity: 'P2', env: '测试环境', assignee: '林子涵', status: '已修复', createdAt: '2026-08-23' },
+      { id: 'pawkey-b4', title: '弱网下互动反馈重复出现', severity: 'P2', env: '测试环境', assignee: '陈周伟', status: '已修复', createdAt: '2026-08-22' },
+    ];
+  }
+  return [
+    { id: 'b1', title: '列表页横向滚动卡顿', severity: 'P1', env: '测试环境', assignee: '王五', status: '处理中', createdAt: '2026-08-18' },
+    { id: 'b2', title: '表单提交后未清空', severity: 'P2', env: '测试环境', assignee: '赵六', status: '待修复', createdAt: '2026-08-19' },
+  ];
+}
+
+function getTravelFixtures(projectId: string | undefined) {
+  if (projectId === PAWKEY_PROJECT_ID) {
+    return [
+      { id: 'pawkey-tr1', destination: '重庆客户现场', purpose: '需求调研与项目启动', applicant: '何江奇', startDate: '2026-06-08', endDate: '2026-06-09', approvalNo: 'SP-20260605-0594', amount: 2860, status: '已审批' },
+      { id: 'pawkey-tr2', destination: '重庆客户现场', purpose: '一期终验与交付培训', applicant: '何江奇', startDate: '2026-09-03', endDate: '2026-09-04', approvalNo: 'SP-20260829-1120', amount: 3180, status: '待审批' },
+    ];
+  }
+  return [{ id: 'tr1', destination: '客户现场', purpose: '原型演示与需求确认', applicant: '李四', startDate: '2026-08-19', endDate: '2026-08-20', approvalNo: 'SP-20260819-0042', amount: 850, status: '已审批' }];
+}
+
+function getReimbursementFixtures(projectId: string | undefined) {
+  if (projectId === PAWKEY_PROJECT_ID) {
+    return [
+      { id: 'pawkey-rb1', type: '交通费', description: '重庆启动会往返交通', applicant: '何江奇', amount: 1680, approvalNo: 'BX-20260610-0594', status: '已审批' },
+      { id: 'pawkey-rb2', type: '住宿费', description: '启动会现场调研住宿', applicant: '周雨桐', amount: 760, approvalNo: 'BX-20260610-0595', status: '已审批' },
+      { id: 'pawkey-rb3', type: '差旅费', description: '一期终验现场差旅预申请', applicant: '何江奇', amount: 3180, approvalNo: 'BX-20260829-1120', status: '待审批' },
+    ];
+  }
+  return [{ id: 'rb1', type: '商务招待', description: '客户工作餐', applicant: '张三', amount: 280, approvalNo: 'BX-20260819-0018', status: '已审批' }];
+}
+
 export function ProjectDetail360() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -139,10 +195,22 @@ export function ProjectDetail360() {
   const { contracts } = useContracts();
   const { collections } = useCollections();
   const { quotes, createQuote } = useQuotation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeMainTab, setActiveMainTab] = useState('basic');
-  const [activeSideTab, setActiveSideTab] = useState('quotation');
-  const [activityFilter, setActivityFilter] = useState<ActivityEventType[]>([]);
+  const activeMainTab: MainTab = isMainTab(searchParams.get('main')) ? searchParams.get('main') as MainTab : 'activity';
+  const activeSideTab: SideTab = isSideTab(searchParams.get('side')) ? searchParams.get('side') as SideTab : 'follow';
+  const onlyMajor = searchParams.get('major') !== 'false';
+  const updateQueryState = (key: 'main' | 'side' | 'major', value: string) => {
+    const next = new URLSearchParams(searchParams);
+    const isDefault = (key === 'main' && value === 'activity')
+      || (key === 'side' && value === 'follow')
+      || (key === 'major' && value === 'true');
+    if (isDefault) next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  };
+  const setActiveMainTab = (value: string) => isMainTab(value) && updateQueryState('main', value);
+  const setActiveSideTab = (value: string) => isSideTab(value) && updateQueryState('side', value);
   const [collectionOverrides, setCollectionOverrides] = useState<Record<string, CollectionLedgerEntry>>({});
   const [addedCollections, setAddedCollections] = useState<CollectionLedgerEntry[]>([]);
   const [deletedCollectionIds, setDeletedCollectionIds] = useState<string[]>([]);
@@ -163,6 +231,7 @@ export function ProjectDetail360() {
 
   // 项目跟进台账：从共享 initialFollowUps 初始化
   const [followUps, setFollowUps] = useState(() => initialFollowUps.filter((f) => f.projectId === id));
+  const [projectOwnedEvents, setProjectOwnedEvents] = useState<ActivityEvent[]>(() => getActivitiesByProjectId(id ?? ''));
   const [followModalVisible, setFollowModalVisible] = useState(false);
   const [followForm] = Form.useForm();
 
@@ -177,20 +246,24 @@ export function ProjectDetail360() {
   const [demoForm] = Form.useForm();
 
   // 局部演示台账（与线索详情同口径：无跨页共享层的页面级数据）
-  const [bugs, setBugs] = useState([
-    { id: 'b1', title: '列表页横向滚动卡顿', severity: 'P1', env: '测试环境', assignee: '王五', status: '处理中', createdAt: '2026-08-18' },
-    { id: 'b2', title: '表单提交后未清空', severity: 'P2', env: '测试环境', assignee: '赵六', status: '待修复', createdAt: '2026-08-19' },
-  ]);
-  const [travels, setTravels] = useState([
-    { id: 'tr1', destination: '客户现场', purpose: '原型演示与需求确认', applicant: '李四', startDate: '2026-08-19', endDate: '2026-08-20', approvalNo: 'SP-20260819-0042', amount: 850, status: '已审批' },
-  ]);
-  const [reimbursements, setReimbursements] = useState([
-    { id: 'rb1', type: '商务招待', description: '客户工作餐', applicant: '张三', amount: 280, approvalNo: 'BX-20260819-0018', status: '已审批' },
-  ]);
+  const [bugs, setBugs] = useState(() => getPageBugFixtures(id));
+  const [travels, setTravels] = useState(() => getTravelFixtures(id));
+  const [reimbursements, setReimbursements] = useState(() => getReimbursementFixtures(id));
   const [travelModalVisible, setTravelModalVisible] = useState(false);
   const [travelForm] = Form.useForm();
   const [reimbursementModalVisible, setReimbursementModalVisible] = useState(false);
   const [reimbursementForm] = Form.useForm();
+
+  useEffect(() => {
+    setTasks(getProjectTasks(id ?? ''));
+    setFollowUps(initialFollowUps.filter((item) => item.projectId === id));
+    setProjectOwnedEvents(getActivitiesByProjectId(id ?? ''));
+    setMeetings(getMeetingsByProjectId(id ?? ''));
+    setDemoEnvs(getDemoEnvsByProjectId(id ?? ''));
+    setBugs(getPageBugFixtures(id));
+    setTravels(getTravelFixtures(id));
+    setReimbursements(getReimbursementFixtures(id));
+  }, [id]);
 
   // 报价工作台抽屉
   const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
@@ -261,9 +334,36 @@ export function ProjectDetail360() {
   const confirmations = useMemo(() => getConfirmationsByProjectId(id ?? ''), [id]);
   const documents = useMemo(() => initialDocuments.filter((d) => d.projectId === id), [id]);
 
-  // Activity Stream
-  const allActivities = useMemo(() => (id ? getActivitiesByProjectId(id) : []), [id]);
-  const filteredActivities = useMemo(() => filterActivities(allActivities, activityFilter), [allActivities, activityFilter]);
+  // 项目动态是各业务域事实的只读投影，页面不复制这些台账的所有权。
+  const projectActivities = useMemo(() => project ? buildProjectActivity({
+    project,
+    contracts: linkedContracts,
+    collections: visibleProjectCollections,
+    confirmations,
+    meetings,
+    tasks,
+    ownedEvents: projectOwnedEvents,
+  }) : [], [project, linkedContracts, visibleProjectCollections, confirmations, meetings, tasks, projectOwnedEvents]);
+
+  const stageSummaries = useMemo(() => project ? buildProjectStageSummaries({
+    project,
+    contracts: linkedContracts,
+    collections: visibleProjectCollections,
+    confirmations,
+    tasks,
+    contractAmount,
+    receivedAmount,
+  }) : null, [project, linkedContracts, visibleProjectCollections, confirmations, tasks, contractAmount, receivedAmount]);
+
+  const contractSigningStageSummary = useMemo(() => project ? buildContractSigningStageSummary({
+    project,
+    contracts: linkedContracts,
+    collections: visibleProjectCollections,
+    confirmations,
+    tasks,
+    contractAmount,
+    receivedAmount,
+  }) : null, [project, linkedContracts, visibleProjectCollections, confirmations, tasks, contractAmount, receivedAmount]);
 
   if (!project || !metrics) {
     return (
@@ -279,10 +379,11 @@ export function ProjectDetail360() {
   }
 
   const cd = getProjectCountdown(project.startDate, project.expectedEndDate);
-  const lifecycleIndex = getLifecycleStepIndex(project.status);
-
-  // 事件类型筛选
-  const eventTypes: ActivityEventType[] = ['followup', 'meeting', 'confirmation', 'milestone', 'daily_report', 'contract', 'status_change'];
+  const deliveryStageIndex = getProjectDeliveryStageIndex(project.status, project.progress);
+  const budgetHoursLabel = metrics.budgetHours > 0 ? formatHours(metrics.budgetHours) : '未设置';
+  const hoursUsageLabel = metrics.budgetHours > 0
+    ? `${Math.round(metrics.totalHours / metrics.budgetHours * 100)}%`
+    : '未设置';
 
   const teamMembers = Array.from(new Set([
     project.owner,
@@ -372,60 +473,114 @@ export function ProjectDetail360() {
   const leadQuotes = projectQuotes;
   const activeQuotes = leadQuotes.filter((q) => q.status !== 'voided');
   const voidedQuotes = leadQuotes.filter((q) => q.status === 'voided');
+  const collectionPercent = contractAmount > 0 ? Math.round(receivedAmount / contractAmount * 100) : 0;
+  const timelineSteps = [
+    ...(contractSigningStageSummary ? [{ key: 'contract', label: '合同签订', summary: contractSigningStageSummary }] : []),
+    ...PROJECT_DELIVERY_STAGES.map((step) => ({
+      key: step,
+      label: PROJECT_DELIVERY_STAGE_LABEL[step],
+      summary: stageSummaries![step],
+    })),
+  ];
+  const currentTimelineIndex = deliveryStageIndex + (contractSigningStageSummary ? 1 : 0);
+  const milestones: ProjectMilestoneItem[] = [
+    { name: '方案设计', done: project.progress >= 30, date: confirmations.filter((item) => item.status === '已签署' && /原型|UI|视觉/.test(item.type)).at(-1)?.signDate },
+    { name: '开发', done: project.progress >= 70, date: tasks.filter((item) => item.type === '开发' && item.status === '已完成').at(-1)?.plannedEndDate },
+    { name: '测试', done: project.progress >= 90, date: tasks.filter((item) => item.type === '测试' && item.status === '已完成').at(-1)?.plannedEndDate },
+    { name: '验收', done: confirmations.some((item) => item.status === '已签署' && /验收|终验/.test(item.type)), date: confirmations.find((item) => item.status === '已签署' && /验收|终验/.test(item.type))?.signDate },
+    { name: '回款结项', done: project.status === '已完成' && collectionPercent >= 100, date: project.status === '已完成' ? project.expectedEndDate : undefined },
+  ];
+
+  const navigateToStageTarget = (target: NonNullable<ProjectStageCheck['target']>) => {
+    if (target.route) navigate(target.route);
+    else if (target.main && isMainTab(target.main)) setActiveMainTab(target.main);
+    else if (target.side && isSideTab(target.side)) setActiveSideTab(target.side);
+  };
+
+  const viewActivitySource = (item: ProjectActivityItem) => {
+    if (item.sourceTarget.route) {
+      navigate(item.sourceTarget.route);
+      return;
+    }
+    if (item.sourceTarget.main) setActiveMainTab(item.sourceTarget.main);
+    if (item.sourceTarget.side) setActiveSideTab(item.sourceTarget.side);
+    if (item.sourceTarget.anchor) {
+      requestAnimationFrame(() => document.getElementById(item.sourceTarget.anchor || '')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    }
+  };
+
+  const runActivityAction = (item: ProjectActivityItem) => {
+    if (item.primaryAction === 'record-collection') openCollectionEditor();
+    else if (item.primaryAction === 'open-confirmation') setActiveSideTab('documents');
+    else if (item.primaryAction === 'open-meeting') setActiveSideTab('meetings');
+    else if (item.primaryAction === 'open-task') navigate(`/projects/${project.id}/work-items?tab=tasks`);
+  };
+
+  const openQuickFollow = (content = '') => {
+    setActiveSideTab('follow');
+    followForm.resetFields();
+    followForm.setFieldsValue({ content, operator: project.owner || '李四', progress: project.progress });
+    setFollowModalVisible(true);
+  };
 
   const overviewMetrics: ProcessMetricItem[] = [
     {
-      key: 'owner',
-      label: 'PM',
-      value: <><IconUser style={{ color: 'rgb(var(--primary-6))' }} />{project.owner || '待指派'}</>,
+      key: 'progress',
+      label: '项目进度',
+      value: `${project.progress}%`,
+      onClick: () => setActiveMainTab('activity'),
+      ariaLabel: '查看项目进度与活动',
     },
-    { key: 'customer', label: '客户', value: metrics.customerName || '-' },
-    ...(contractAmount > 0 ? [{
-      key: 'contract-amount',
-      label: '合同额',
-      value: <Text style={{ color: 'rgb(var(--success-6))', whiteSpace: 'nowrap' }}>{formatAmount(contractAmount)} · 已回 {Math.round(receivedAmount / contractAmount * 100)}%</Text>,
-    }] : []),
     {
       key: 'schedule',
-      label: '工期',
-      value: <><IconClockCircle />{cd.label}</>,
+      label: cd.isOverdue ? '工期状态' : '剩余工期',
+      value: cd.label,
       tone: cd.isOverdue ? 'danger' : 'neutral',
+      onClick: () => navigate(`/projects/${id}/delivery`),
+      ariaLabel: '查看项目排期',
     },
     {
       key: 'hours',
-      label: '工时',
-      value: `${formatHours(metrics.totalHours)} / ${formatHours(metrics.budgetHours)}`,
-      detail: (
-        <Progress
-          percent={metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0}
-          size="mini"
-          showText={false}
-        />
-      ),
+      label: '工时消耗',
+      value: `${formatHours(metrics.totalHours)} / ${budgetHoursLabel}`,
+      tone: metrics.budgetHours > 0 && metrics.totalHours > metrics.budgetHours ? 'warning' : 'neutral',
+      onClick: () => setActiveMainTab('team'),
+      ariaLabel: '查看团队与工时',
+    },
+    {
+      key: 'collection',
+      label: '合同回款',
+      value: contractAmount > 0 ? `${formatAmount(receivedAmount)} / ${formatAmount(contractAmount)}` : '暂无有效合同',
+      tone: contractAmount > 0 && collectionPercent >= 100 ? 'success' : 'neutral',
+      onClick: () => setActiveMainTab('payments'),
+      ariaLabel: '查看回款与发票',
     },
     {
       key: 'bugs',
       label: '缺陷',
-      value: `P0:${metrics.bugP0Count} P1:${metrics.bugP1Count}`,
+      value: `P0 ${metrics.bugP0Count} · P1 ${metrics.bugP1Count}`,
       tone: metrics.bugP0Count > 0 ? 'danger' : metrics.bugP1Count > 0 ? 'warning' : 'success',
+      onClick: () => navigate(`/projects/${id}/work-items?tab=bugs`),
+      ariaLabel: '查看项目缺陷',
     },
-    ...(project.riskLevel && project.riskLevel !== 'none' ? [{
-      key: 'risk',
-      label: '风险',
-      value: PROJECT_RISK_LEVEL_LABEL[project.riskLevel],
-      detail: project.riskNote || undefined,
-      tone: project.riskLevel === 'high' ? 'danger' as const : project.riskLevel === 'medium' ? 'warning' as const : 'neutral' as const,
-    }] : []),
-    ...(activeBlockers.length > 0 ? [{
-      key: 'blockers',
-      label: '阻塞项',
-      value: `${activeBlockers.length} 项`,
-      tone: 'danger' as const,
-    }] : []),
+    {
+      key: 'risk-blockers',
+      label: '风险 / 阻塞',
+      value: activeBlockers.length > 0
+        ? `${PROJECT_RISK_LEVEL_LABEL[project.riskLevel || 'none']} · ${activeBlockers.length} 项阻塞`
+        : PROJECT_RISK_LEVEL_LABEL[project.riskLevel || 'none'],
+      tone: activeBlockers.length > 0 || project.riskLevel === 'high' ? 'danger' : project.riskLevel === 'medium' ? 'warning' : 'success',
+      onClick: () => {
+        setActiveMainTab('activity');
+        requestAnimationFrame(() => document.getElementById('project-risk')?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+      },
+      ariaLabel: '查看风险与阻塞',
+    },
   ];
 
   return (
     <PageShell
+      className="project-detail-360"
       breadcrumbs={[
         { label: '项目管理', to: '/projects' },
         { label: '项目列表', to: '/projects' },
@@ -447,22 +602,30 @@ export function ProjectDetail360() {
         )}
         actions={(
           <Space>
-            <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { setActiveSideTab('follow'); followForm.resetFields(); setFollowModalVisible(true); }}>登记跟进</Button>
+            <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openQuickFollow()}>登记跟进</Button>
             <Button size="small" icon={<IconPlus />} onClick={() => { setActiveMainTab('tasks'); openTaskModal(); }}>新建任务</Button>
             <Button size="small" icon={<IconFile />} onClick={() => { setActiveSideTab('meetings'); meetingForm.resetFields(); setMeetingModalVisible(true); }}>录入纪要</Button>
             <Button size="small" icon={<IconCalendar />} onClick={() => navigate(`/projects/${id}/delivery`)}>甘特图</Button>
           </Space>
         )}
-        currentStep={lifecycleIndex}
-        steps={LIFECYCLE_STEPS.map((step, index) => ({
-          key: step,
-          title: LIFECYCLE_STEP_LABEL[step],
+        currentStep={currentTimelineIndex}
+        steps={timelineSteps.map((step, index) => ({
+          key: step.key,
+          title: (
+            <ProjectStagePopover summary={step.summary} onNavigate={navigateToStageTarget}>
+              {step.label}
+            </ProjectStagePopover>
+          ),
           description:
-                index === 2 && project.status === '进行中'
+                index === currentTimelineIndex && step.key === 'development'
                   ? `${project.progress}%`
-                  : project.status === '搁置' && index === 2
+                  : index === currentTimelineIndex && step.key === 'acceptance'
+                  ? '终验中'
+                  : index === currentTimelineIndex && step.key === 'closeout'
+                  ? `回款 ${collectionPercent}%`
+                  : project.status === '搁置' && index === currentTimelineIndex
                   ? '已暂停'
-                  : project.status === '延迟' && index === 2
+                  : project.status === '延迟' && index === currentTimelineIndex
                   ? '延期中'
                   : undefined,
         }))}
@@ -474,72 +637,11 @@ export function ProjectDetail360() {
       <ProcessWorkspace>
         {/* 左侧主区域 (70%) */}
         <ProcessWorkspaceMain>
-          {/* 关键信息档案卡 */}
-          <Card size="small" bodyStyle={{ padding: '12px 16px' }}>
-            <div style={{ marginBottom: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>{project.name}</span>
-            </div>
-            <Grid.Row gutter={[8, 4]}>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客户</Text> <Text style={{ fontSize: 14 }}>{metrics.customerName || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>业务线</Text> <Tag color={BUSINESS_LINE_COLOR[project.businessLine]} size="small">{project.businessLine}</Tag></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>签约主体</Text> <Text style={{ fontSize: 14 }}>{project.entity}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>销售</Text> <Text style={{ fontSize: 14 }}>{project.salesUsers.join('、') || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>开始日期</Text> <Text style={{ fontSize: 14 }}>{project.startDate || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>预计交付</Text> <Text style={{ fontSize: 14 }}>{project.expectedEndDate || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>预算工时</Text> <Text style={{ fontSize: 14 }}>{formatHours(metrics.budgetHours)}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>创建时间</Text> <Text style={{ fontSize: 14 }}>{project.createdAt}</Text></Grid.Col>
-            </Grid.Row>
-            <Divider style={{ margin: '8px 0' }} />
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>最新进展</Text>
-              <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{project.latestProgress || '-'}</div>
-            </div>
-
-            {/* 阻塞项 */}
-            {activeBlockers.length > 0 && (
-              <>
-                <Divider style={{ margin: '8px 0' }} />
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>关键卡点（{activeBlockers.length} 项）</Text>
-                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {activeBlockers.map((b) => (
-                      <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--color-fill-2)', borderRadius: 6, fontSize: 13 }}>
-                        <Tag color={BLOCKER_SEVERITY_COLOR[b.severity]} size="small">{BLOCKER_SEVERITY_LABEL[b.severity]}</Tag>
-                        <Tag size="small" color="gray">{BLOCKER_SOURCE_LABEL[b.source]}</Tag>
-                        <Text style={{ flex: 1 }}>{b.title}</Text>
-                        {b.customerEta && <Text type="secondary" style={{ fontSize: 12 }}>客户ETA: {b.customerEta}</Text>}
-                        {b.expectedResolveDate && <Text type="secondary" style={{ fontSize: 12 }}>预计: {b.expectedResolveDate}</Text>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* 风险备注 */}
-            {project.riskNote && (
-              <>
-                <Divider style={{ margin: '8px 0' }} />
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>风险备注</Text>
-                  <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{project.riskNote}</div>
-                </div>
-              </>
-            )}
-
-            {/* 验收标准 */}
-            {project.acceptanceCriteria && project.acceptanceCriteria.length > 0 && (
-              <>
-                <Divider style={{ margin: '8px 0' }} />
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>验收标准</Text>
-                  <ul style={{ margin: '4px 0 0 16px', fontSize: 13, color: 'var(--color-text-1)' }}>
-                    {project.acceptanceCriteria.map((c, i) => <li key={i}>{c}</li>)}
-                  </ul>
-                </div>
-              </>
-            )}
-          </Card>
+          <ProjectArchiveSummary
+            project={project}
+            customerName={metrics.customerName}
+            budgetHoursLabel={budgetHoursLabel}
+          />
 
           {/* 左侧主 Tab */}
           <Card size="small">
@@ -555,29 +657,45 @@ export function ProjectDetail360() {
             <div style={{ marginTop: 16 }}>
               {/* 基础信息 */}
               {activeMainTab === 'basic' && (
-                <Descriptions
-                  column={4}
-                  size="small"
-                  data={[
-                    { label: '项目编号', value: project.projectNo },
-                    { label: '客户', value: metrics.customerName || '-' },
-                    { label: '业务线', value: project.businessLine },
-                    { label: '签约主体', value: project.entity },
-                    { label: '项目经理', value: project.owner || '待指派' },
-                    { label: '销售', value: project.salesUsers.join('、') || '-' },
-                    { label: '优先级', value: project.priority },
-                    { label: '状态', value: project.status },
-                    { label: '开始日期', value: project.startDate || '-' },
-                    { label: '预计交付', value: project.expectedEndDate || '-' },
-                    { label: '进度', value: `${project.progress}%` },
-                    { label: '预算工时', value: formatHours(metrics.budgetHours) },
-                    { label: '创建时间', value: project.createdAt },
-                    { label: '最新进展', value: project.latestProgress || '-' },
-                    { label: '风险等级', value: project.riskLevel ? <Tag color={PROJECT_RISK_LEVEL_COLOR[project.riskLevel]} size="small">{PROJECT_RISK_LEVEL_LABEL[project.riskLevel]}</Tag> : '-' },
-                    { label: '风险备注', value: project.riskNote || '-' },
-                    { label: '活跃阻塞', value: activeBlockers.length > 0 ? `${activeBlockers.length} 项` : '无' },
-                  ]}
-                />
+                <div className="project-basic-information">
+                  <Descriptions
+                    className="project-basic-information__grid"
+                    column={3}
+                    layout="inline-horizontal"
+                    size="medium"
+                    tableLayout="fixed"
+                    data={[
+                      { label: '项目编号', value: project.projectNo },
+                      { label: '业务线', value: project.businessLine },
+                      { label: '签约主体', value: project.entity },
+                      { label: '项目经理', value: project.owner || '待指派' },
+                      { label: '销售', value: project.salesUsers.join('、') || '-' },
+                      { label: '优先级', value: project.priority },
+                      { label: '状态', value: project.status },
+                      { label: '项目进度', value: `${project.progress}%` },
+                      { label: '预算工时', value: budgetHoursLabel },
+                      { label: '开始日期', value: project.startDate || '-' },
+                      { label: '预计交付', value: project.expectedEndDate || '-' },
+                      { label: '创建时间', value: project.createdAt },
+                      { label: '风险等级', value: project.riskLevel ? <Tag color={PROJECT_RISK_LEVEL_COLOR[project.riskLevel]} size="small">{PROJECT_RISK_LEVEL_LABEL[project.riskLevel]}</Tag> : '-' },
+                      { label: '活跃阻塞', value: activeBlockers.length > 0 ? `${activeBlockers.length} 项` : '无' },
+                      { label: '生产站 ID', value: project.sourceProjectId ?? '-' },
+                    ]}
+                  />
+                  <div className="project-basic-information__long-list">
+                    {[
+                      { label: '客户', value: metrics.customerName || '-' },
+                      { label: '最新进展', value: project.latestProgress || '-' },
+                      { label: '风险备注', value: project.riskNote || '-' },
+                      { label: '项目备注', value: project.remark || '-' },
+                    ].map((item) => (
+                      <div key={item.label} className="project-basic-information__long-row">
+                        <Text type="secondary">{item.label}</Text>
+                        <span>{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* 合同信息 */}
@@ -647,7 +765,7 @@ export function ProjectDetail360() {
                       <Grid.Col span={8}>
                         <div style={{ textAlign: 'center', padding: 16 }}>
                           <Text type="secondary">预算工时</Text>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{formatHours(metrics.budgetHours)}</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{budgetHoursLabel}</div>
                         </div>
                       </Grid.Col>
                       <Grid.Col span={8}>
@@ -659,7 +777,7 @@ export function ProjectDetail360() {
                       <Grid.Col span={8}>
                         <div style={{ textAlign: 'center', padding: 16 }}>
                           <Text type="secondary">消耗比例</Text>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0}%</div>
+                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{hoursUsageLabel}</div>
                         </div>
                       </Grid.Col>
                     </Grid.Row>
@@ -706,83 +824,31 @@ export function ProjectDetail360() {
 
               {/* 项目动态 */}
               {activeMainTab === 'activity' && (
-                <div>
-                  {/* 四维健康诊断 */}
-                  <Grid.Row gutter={16} style={{ marginBottom: 24 }}>
-                    <Grid.Col span={6}>
-                      <Card size="small">
-                        <Text type="secondary" style={{ fontSize: 12 }}>交付里程碑</Text>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 8 }}>{project.progress}%</div>
-                        <Progress percent={project.progress} size="small" style={{ marginTop: 8 }} showText={false} />
-                      </Card>
-                    </Grid.Col>
-                    <Grid.Col span={6}>
-                      <Card size="small">
-                        <Text type="secondary" style={{ fontSize: 12 }}>工时消耗</Text>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 8 }}>{formatHours(metrics.totalHours)}</div>
-                        <Progress percent={Math.round(metrics.totalHours / metrics.budgetHours * 100)} size="small" style={{ marginTop: 8 }} showText={false} color="rgb(var(--warning-6))" />
-                      </Card>
-                    </Grid.Col>
-                    <Grid.Col span={6}>
-                      <Card size="small">
-                        <Text type="secondary" style={{ fontSize: 12 }}>缺陷收敛</Text>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 8, color: metrics.bugP0Count + metrics.bugP1Count > 0 ? 'rgb(var(--danger-6))' : 'rgb(var(--success-6))' }}>
-                          P0:{metrics.bugP0Count} P1:{metrics.bugP1Count}
-                        </div>
-                      </Card>
-                    </Grid.Col>
-                    <Grid.Col span={6}>
-                      <Card size="small">
-                        <Text type="secondary" style={{ fontSize: 12 }}>商务回款</Text>
-                        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 8 }}>
-                          {contractAmount > 0 ? `${Math.round(receivedAmount / contractAmount * 100)}%` : '-'}
-                        </div>
-                        {contractAmount > 0 && (
-                          <Progress percent={Math.round(receivedAmount / contractAmount * 100)} size="small" style={{ marginTop: 8 }} showText={false} color="rgb(var(--success-6))" />
-                        )}
-                      </Card>
-                    </Grid.Col>
-                  </Grid.Row>
-
-                  {/* 项目里程碑：已完成按完成时间倒序，未完成置底 */}
-                  <div style={{ marginBottom: 16 }}>
-                    <Text style={{ display: 'block', fontSize: 16, fontWeight: 500, marginBottom: 12 }}>项目里程碑</Text>
-                    <Grid.Row gutter={[12, 12]}>
-                      {[
-                        { name: '合同接收', done: Boolean(mainContract), date: mainContract?.current.signDate || project.createdAt.slice(0, 10) },
-                        { name: '原型确认', done: project.progress >= 20, date: project.progress >= 20 ? '2026-06-18' : '' },
-                        { name: 'UI 确认', done: project.progress >= 40, date: project.progress >= 40 ? '2026-07-09' : '' },
-                        { name: '一期回款', done: receivedAmount > 0, date: projectCollections[0]?.date || '' },
-                        { name: '项目验收', done: project.progress >= 100, date: project.progress >= 100 ? project.expectedEndDate : '' },
-                      ].sort((left, right) => Number(right.done) - Number(left.done) || right.date.localeCompare(left.date)).map((milestone) => (
-                        <Grid.Col span={12} key={milestone.name}>
-                          <Card size="small" style={{ borderColor: milestone.done ? 'rgb(var(--success-3))' : 'var(--color-border-2)', background: milestone.done ? 'rgb(var(--success-1))' : 'var(--color-bg-2)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div><Text style={{ fontWeight: 600 }}>{milestone.name}</Text><div><Text type="secondary" style={{ fontSize: 12 }}>{milestone.done ? `完成于 ${milestone.date}` : '等待前置节点完成'}</Text></div></div>
-                              <Tag color={milestone.done ? 'green' : 'gray'}>{milestone.done ? '✓ 已完成' : '未完成'}</Tag>
-                            </div>
-                          </Card>
-                        </Grid.Col>
-                      ))}
-                    </Grid.Row>
-                  </div>
-                </div>
+                <ProjectActivityFeed
+                  items={projectActivities}
+                  milestones={milestones}
+                  progress={project.progress}
+                  onlyMajor={onlyMajor}
+                  onOnlyMajorChange={(value) => updateQueryState('major', String(value))}
+                  onViewSource={viewActivitySource}
+                  onPrimaryAction={runActivityAction}
+                />
               )}
             </div>
           </Card>
         </ProcessWorkspaceMain>
 
         {/* 右侧业务过程 (30%) */}
-        <ProcessWorkspaceAside>
+        <ProcessWorkspaceAside className="project-detail-360__aside">
           <Card size="small" style={{ flex: 1 }}>
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
               <TabPane key="follow" title="跟进" />
+              <TabPane key="meetings" title="会议纪要" />
+              <TabPane key="documents" title="资料" />
+              <TabPane key="demo" title="演示" />
               <TabPane key="quotation" title="报价" />
               <TabPane key="contract-records" title="合同" />
               <TabPane key="presales" title="售前" />
-              <TabPane key="meetings" title="会议纪要" />
-              <TabPane key="demo" title="演示" />
-              <TabPane key="documents" title="资料" />
               <TabPane key="travel" title="出差" />
               <TabPane key="reimbursement" title="报销" />
             </Tabs>
@@ -792,7 +858,7 @@ export function ProjectDetail360() {
               {activeSideTab === 'follow' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { followForm.resetFields(); setFollowModalVisible(true); }}>写跟进</Button>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openQuickFollow()}>写跟进</Button>
                   </div>
                   <Timeline>
                     {followUps.map((record) => (
@@ -1114,6 +1180,8 @@ export function ProjectDetail360() {
         visible={followModalVisible}
         onOk={() => {
           followForm.validate().then((values) => {
+            const createdAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
+            const operator = values.operator ?? '李四';
             setFollowUps([{
               id: `follow-${Date.now()}`,
               projectId: id ?? '',
@@ -1121,9 +1189,23 @@ export function ProjectDetail360() {
               progress: values.progress ?? project.progress,
               content: values.content,
               attachments: [],
-              operator: values.operator ?? '李四',
-              createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+              operator,
+              createdAt,
             }, ...followUps]);
+            if (values.milestoneTag) {
+              setProjectOwnedEvents((current) => [{
+                id: `activity-follow-${Date.now()}`,
+                projectId: id ?? '',
+                type: 'followup',
+                title: values.milestoneTag,
+                content: values.content,
+                operator,
+                createdAt,
+                isMajor: true,
+                milestoneTag: values.milestoneTag,
+                severity: 'success',
+              }, ...current]);
+            }
             Message.success('跟进记录已保存');
             setFollowModalVisible(false);
           });
@@ -1137,6 +1219,18 @@ export function ProjectDetail360() {
             <Grid.Col span={12}><Form.Item label="当前进度(%)" field="progress" initialValue={project.progress}><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item></Grid.Col>
           </Grid.Row>
           <Form.Item label="跟进内容" field="content" rules={[{ required: true }]}><Input.TextArea rows={4} maxLength={1000} showWordLimit placeholder="请记录跟进内容" /></Form.Item>
+          <Form.Item label="关键节点（选填）" field="milestoneTag" extra="选择后，该跟进会同步进入项目动态与大事记。">
+            <Select allowClear placeholder="普通跟进无需选择">
+              {[
+                '原型与交互确认书盖章',
+                'UI设计确认书盖章',
+                '需求增项确认单签署',
+                '阶段验收单签署',
+                '项目终验报告签署',
+                '关键版本交付上线',
+              ].map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}
+            </Select>
+          </Form.Item>
           <Form.Item label="附件">
             <Upload accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple drag>
               <div style={{ padding: '16px 0', textAlign: 'center' }}>

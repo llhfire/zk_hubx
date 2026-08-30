@@ -1,3 +1,5 @@
+import { ALL_LEADS } from './mockData';
+
 export interface Attachment {
   id: string;
   name: string;
@@ -281,6 +283,106 @@ export function getLeadDetailProfile(
   leadId: string | undefined,
   from: string,
 ): LeadDetailProfile {
+  if (leadId === 'pawkey-lead-5942') {
+    return {
+      leadInfo: {
+        ...DEFAULT_LEAD_INFO,
+        name: '帕奇宠 C 端产品设计与系统架构咨询',
+        customer: '重庆绮算法科技有限公司',
+        contact: '甲方产品负责人',
+        phone: '138****5942',
+        wechat: 'pawkey-product',
+        source: 'wechat',
+        keyword: '宠物 App 产品设计',
+        level: '高',
+        customerLevel: 'A',
+        intention: '强烈',
+        status: '已成交',
+        transformStatus: true,
+        tags: ['宠物科技', 'C端App', '产品设计', '系统架构'],
+        requirement: '完成帕奇宠 C 端一期产品定义、核心体验原型、UI 视觉规范与系统架构设计。',
+        initialRequirement: '宠物陪伴类 C 端 App 一期产品设计与系统架构咨询。',
+        createTime: '2026-05-18 10:20:00',
+        updateTime: '2026-05-30 16:40:00',
+        claimTime: '2026-05-18 11:00:00',
+        lastFollowTime: '2026-05-30 16:40:00',
+        nextFollowTime: '',
+        creator: '黄奕',
+        owner: '黄奕',
+        optimizer: '黄奕',
+        entity: '中科软通',
+        agent: '客户转介绍',
+        customerType: '企业客户',
+        customerBudget: '¥100,000',
+        presalesGroupName: '帕奇宠 C 端一期项目群',
+        followCount: 6,
+        daysHeld: 13,
+      },
+      quotationHistory: [
+        {
+          id: 'pawkey-q1', name: '帕奇宠 C 端一期产品与架构方案 v2.0', status: '已报价', period: '40 个工作日', operator: '黄奕', entity: '中科软通', amount: '100,000', cost: '68,000', profit: '32,000', file: '帕奇宠C端一期报价方案V2.pdf', flowStatus: '已审核', createTime: '2026-05-20 10:00',
+          approvalFlow: [
+            { step: '发起申请', approver: '黄奕', status: 'approved', time: '2026-05-27 11:00', comment: '提交报价审批' },
+            { step: '技术审核', approver: '陈周伟', status: 'approved', time: '2026-05-28 10:20', comment: '人天与技术边界合理' },
+            { step: '总经理审批', approver: '总经理', status: 'approved', time: '2026-05-28 16:00', comment: '同意' },
+          ],
+        },
+      ],
+      useLiveContracts: true,
+      demoContracts: [],
+    };
+  }
+
+  const sampledLead = ALL_LEADS.find((lead) => lead.id === leadId);
+  if (sampledLead) {
+    return {
+      leadInfo: {
+        ...DEFAULT_LEAD_INFO,
+        name: sampledLead.name,
+        customer: sampledLead.customer,
+        contact: sampledLead.contact,
+        phone: sampledLead.phone,
+        wechat: sampledLead.wechat,
+        source: sampledLead.source,
+        keyword: sampledLead.keyword,
+        level: sampledLead.level,
+        customerLevel: sampledLead.customerLevel,
+        intention: sampledLead.level === '高' ? '强烈' : sampledLead.level === '中' ? '一般' : '较弱',
+        status: sampledLead.status,
+        clueType: sampledLead.clueType,
+        transformStatus: sampledLead.transformStatus,
+        trashCount: sampledLead.trashCount,
+        trashReason: sampledLead.trashReason,
+        tags: sampledLead.tags,
+        requirement: sampledLead.remark || sampledLead.name,
+        initialRequirement: sampledLead.remark || sampledLead.name,
+        createTime: sampledLead.createTime,
+        updateTime: sampledLead.lastFollowTime || sampledLead.createTime,
+        claimTime: sampledLead.clueType === 'assigned' ? sampledLead.createTime : '',
+        lastFollowTime: sampledLead.lastFollowTime,
+        nextFollowTime: sampledLead.nextFollowTime,
+        creator: sampledLead.optimizer || '系统',
+        owner: sampledLead.owner,
+        optimizer: sampledLead.optimizer,
+        assistant: sampledLead.assistant,
+        customerTitle: sampledLead.contact,
+        customerCost: '',
+        entity: sampledLead.entity,
+        agent: sampledLead.optimizer,
+        customerType: sampledLead.customer ? '企业客户' : undefined,
+        customerBudget: sampledLead.budget ? `¥${sampledLead.budget.toLocaleString('zh-CN')}` : undefined,
+        presalesGroupName: sampledLead.presalesGroupName,
+        prototypeLink: sampledLead.prototypeLink,
+        followCount: sampledLead.followCount,
+        daysHeld: sampledLead.daysHeld,
+        attachments: sampledLead.attachments ?? [],
+      },
+      quotationHistory: [],
+      useLiveContracts: true,
+      demoContracts: [],
+    };
+  }
+
   if (leadId === 'lead-1') {
     return {
       leadInfo: {

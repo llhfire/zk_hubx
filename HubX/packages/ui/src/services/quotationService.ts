@@ -88,7 +88,11 @@ function loadQuotes(): Quote[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed.map(migrateQuote);
+      if (Array.isArray(parsed)) {
+        const cached = parsed.map(migrateQuote);
+        const missingSeeds = initialQuotes.filter((seed) => !cached.some((quote) => quote.id === seed.id));
+        return [...cached, ...missingSeeds.map(migrateQuote)];
+      }
     }
   } catch {
     // ignore

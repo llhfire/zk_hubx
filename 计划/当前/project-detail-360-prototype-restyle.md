@@ -1,230 +1,188 @@
-# 项目详情 360 原型样式对齐——详细开发计划
+# 项目详情 360 信息优先级与轻交互改版计划
 
-> 立项：2026-08-21（grill 收束 9 项边界决策，见文末附录）
-> 事实源：`research/ZK-HubX-项目管理-ArcoDesign-70-30全功能交互原型.html`（只取详情页部分）
-> 改动面：仅项目详情页；列表页（指标驾驶舱/看板）**不在本次范围**
-> 状态：**计划已完成，未写生产代码**
+> 日期：2026-08-30
+> 状态：已完成（2026-08-30，用户确认实施后完成编码、全量测试与实页验收）
+> 参考：用户提供的 `project details.jpeg`
+> 事实源：`HubX/CONTEXT.md` + `HubX/docs/adr/0097-project-activity-is-cross-domain-projection.md`
+> 改动面：仅 `packages/ui` 的项目详情共享 UI；不新增 β Service / Workers / D1 接线
 
----
+## 1. 背景与问题
 
-## 一、现有接缝盘点（UI 元素 -> 数据源映射）
+当前 `/projects/:id` 路由指向 `ProjectDetail360.tsx`，已采用顶部控制台 + 70:30 主侧栏 + 左右双 Tab 结构。本轮不更换布局，只解决三个问题：
 
-| UI 元素 | 数据源 | 现状结论 |
-|---|---|---|
-| 6 维胶囊数值 | `PROJECT_LIST`（types.ts `ProjectListItem` 计算字段：totalHours/budgetHours/bugP0Count/bugP1Count/daysRemaining/isOverdue/receivedAmount/contractAmount） | 已有，胶囊只需改样式+可点击 |
-| 工期倒计时 | `getProjectCountdown()`（utils.ts） | 已有 |
-| 生命周期步骤 | `getLifecycleStepIndex()`（types.ts） | 已有 |
-| 主合同/补充协议 | `ContractsContext` -> `supplementaryAgreements[]`（含 amountChange/status/paymentPlans/collectionRecords） | 已有，Tab 需卡片化 |
-| 回款期次 | 主合同 + 各补充协议的 `paymentPlans` + `collectionRecords` | 需新纯函数合并 |
-| 发票 | `finance/ProjectInvoiceContext`：`ProjectInvoiceApplication`（projectId+periodId 键，status 开票中/已开票/已冲红，amount） | 需确认 Provider 覆盖 /projects/:id |
-| 岗位已投入工时 | `initialDailyReports` + `buildProjectMemberHours()`（mockData.ts，已按人聚合） | 已有，需新增按岗位聚合 |
-| 岗位计划人天 | 无 | 需新增 mock（PROJECT_EXTRAS 同模式） |
-| 客户工商档案 | 线索 profile（客户名/对接人/电话）+ CustomerDetail 同口径局部 mock（信用代码/开票） | 需补 mock |
-| 技术架构档案 | 无 | 需新增 mock |
-| 大事记事件流 | `ACTIVITY_EVENTS` + `getActivitiesByProjectId()`（type: followup/meeting/confirmation/milestone/daily_report/contract/status_change，含 isPreSale） | 需新筛选纯函数 |
-| 报价 | `QuotationContext` + `QuoteCard` + `QuotationWorkbench` 抽屉 | 已接通，不动 |
+1. 首屏默认停在「基础信息 + 报价」，更像查档页，不像项目推进页。
+2. 顶部指标混入 PM、客户等静态身份信息；「项目动态」反而只有重复健康卡和里程碑卡。
+3. 代码已读取 `ACTIVITY_EVENTS`，但页面未渲染；该静态台账也与合同、回款、任务等真实来源分叉。
 
----
+## 2. 目标与非目标
 
-## 二、阶段 1：数据层 + 纯函数（先写测试）
+### 2.1 目标
 
-### 1.1 types.ts 新增类型（只增不删）
+- 保留现有信息架构，将首屏优先级改为「现在发生什么、还差什么、下一步做什么」。
+- 将项目动态建成来自现有事实源的精选时间流，不建第二套跨域台账。
+- 借鉴参考图的紧凑密度、细边框、低阴影、结构化变化摘要和可达的轻交互。
 
-```ts
-/** 技术架构档案（按 projectId，PROJECT_TECH_PROFILES 台账） */
-export interface ProjectTechProfile {
-  projectId: string;
-  frontendStack: string;   // 前端技术栈
-  backendStack: string;    // 后端与数据库
-  externalSystems: string; // 外部对接系统
-  collaborationGroup?: string; // 协同微信群名
-}
+### 2.2 非目标
 
-/** 岗位计划人天（按 projectId，PROJECT_ROLE_PLANS 台账） */
-export interface ProjectRolePlan {
-  projectId: string;
-  role: string;        // 岗位角色：产品经理/UI/前端/后端/测试/运维
-  members: string[];   // 指派成员（与 PROJECT_EXTRAS 角色名单同口径）
-  plannedDays: number; // 计划人天
-}
+- 不改 70:30 布局，不增删主/次 Tab，不改路由。
+- 不照搬参考图的黑色品牌视觉，不新建页面专属设计系统。
+- 不实施旧计划的智能诊断抽屉、新工商/技术档案 mock、岗位计划人天、新回款合并台账或日报 CSV。
+- 不开启项目管理的 β `productionOn`，不改 `apps/web`、`apps/api` 或 D1。
 
-/** 客户工商档案（页面局部 mock，与 CustomerDetail 同口径，标注待共享层） */
-export interface ProjectCustomerProfile {
-  projectId: string;
-  customerName: string;     // 取线索 profile
-  contactName?: string;     // 对接人
-  phone?: string;
-  creditCode?: string;      // 统一社会信用代码（mock）
-  invoiceTitle?: string;    // 开票抬头与信息（mock）
-}
-```
+## 3. 锁定后的信息架构
 
-### 1.2 projectMockData.ts 新增三套台账 + 读取函数（沿用现有模式）
+### 3.1 顶部控制台
 
-- `PROJECT_TECH_PROFILES: ProjectTechProfile[]`，8 个项目补齐；`getTechProfileByProjectId()`
-- `PROJECT_ROLE_PLANS: ProjectRolePlan[]`，至少项目 1/3 完整（演示链路），其余给默认值；`getRolePlansByProjectId()`
-- `PROJECT_CUSTOMER_PROFILES: ProjectCustomerProfile[]`，项目 1/2/3 有工商 mock；`getCustomerProfileByProjectId()`
+- 保留项目编号、名称、标签和现有快捷操作。
+- 生命周期仍为「售前签约 → 立项指派 → 交付开发 → 客户验收 → 回款结项」。
+- 点击当前阶段打开轻量 Popover，显示已完成项、待办项、阻塞项及对应钻取入口。
+- Popover 只解释阶段，不允许直接修改阶段；阶段仍由合同、项目状态和验收事实派生。
 
-### 1.3 新文件 `project-management/diagnosticModel.ts`（诊断派生纯函数）
+### 3.2 六项执行指标
 
-```ts
-export type DiagnosticDimension = 'pm' | 'client' | 'contract' | 'schedule' | 'hours' | 'bug';
-export type DiagnosticVerdict = 'success' | 'warning' | 'danger';
+按固定顺序展示：交付进度、剩余工期、工时消耗、合同回款、缺陷质量、风险与阻塞。PM、客户、签约主体等静态信息留在标题/档案卡。
 
-export interface DiagnosticMetric { label: string; val: string; }
-export interface DiagnosticReport {
-  dimension: DiagnosticDimension;
-  title: string;
-  verdict: DiagnosticVerdict;
-  verdictTitle: string;      // 结论一句话
-  verdictDesc: string;       // 结论描述（含插值）
-  metrics: DiagnosticMetric[];      // 2x2 指标剖析
-  blockers: string;          // 风险归因文案
-  recommendations: string[]; // 处置建议列表（1~2 条）
-  drillDownTab: string;      // 钻取目标主 Tab key
-  actionText: string;        // 采纳处置建议按钮文案
-}
-
-export function buildDiagnosticReports(input: DiagnosticInput): Record<DiagnosticDimension, DiagnosticReport>;
-export function getDimensionAlertLevel(report): 'none' | 'warning' | 'danger'; // 胶囊徽标颜色
-```
-
-**派生输入 `DiagnosticInput`**（全部来自现有 metrics/合同/台账，不新增推导数据源）：
-`project: ProjectListItem`、`countdown`（getProjectCountdown 结果）、`contracts: Contract[]`（含补充协议）、`confirmations: ProjectConfirmation[]`、`dailyReports: ProjectDailyReport[]`、`rolePlans: ProjectRolePlan[]`
-
-**六维阈值规则（v1 口径，写在代码注释与测试里）：**
-
-| 维度 | danger 条件 | warning 条件 | 钻取 Tab |
-|---|---|---|---|
-| pm（团队配置） | 岗位空缺（某 rolePlans 行 members 为空）且状态≠未确认 | 本月日报填报人 < 2 人 | team |
-| client（客户协同） | 存在待签署确认书且已过 expectedDate | 存在待签署确认书 / 补充协议 pending_return | basic |
-| contract（合同回款） | 有期次已逾期未回（expectedDate < 今天且未收全） | 回款比例 < 50% 且状态进行中/验收中 | payments |
-| schedule（交付工期） | isOverdue 或 status='延迟' | 剩余天数 < 14 且 progress < 80 | tasks |
-| hours（工时成本） | totalHours / budgetHours >= 100% | 占比 >= 75% | team |
-| bug（缺陷质量） | bugP0Count > 0 | bugP1Count > 0 | tasks |
-
-- verdictTitle/verdictDesc/blockers/recommendations 用**规则映射模板文案**（按维度 x verdict 预置模板，插值实际数值，如「工时消耗已达 {pct}%，剩余 {rest}h」）
-- pm 维不推导「负载」类无数据源指标；指标卡只放可派生项（PM 名/团队人数/本月日报条数/岗位计划人天合计）
-
-### 1.4 新文件 `project-management/paymentLedger.ts`（跨合同合并台账纯函数）
-
-```ts
-export interface PaymentLedgerRow {
-  key: string;
-  contractLabel: string;   // '主合同' | 补充协议名
-  periodName: string;
-  amount: number;
-  condition?: string;
-  expectedDate: string;
-  receivedAmount: number;  // collectionRecords 按 contractId+period 聚合
-  paymentStatus: '已收全款' | '部分回款' | '待回款' | '已逾期';
-}
-
-export function buildPaymentLedgerRows(contracts: Contract[]): PaymentLedgerRow[];
-export function getEffectiveContractAmount(mainContract): number; // 已归档主合同 + Σ(archived 补充协议 amountChange)，符合 CONTEXT.md 口径
-```
-
-- 已逾期判定：expectedDate < 今天 且 receivedAmount < amount
-- 发票状态列**不进纯函数**（页面从 `ProjectInvoiceContext.findApplication(projectId, periodId)` 查，查不到显示「待申请」）——periodId 拼法实现时对齐 ProjectInvoicePage 现有约定
-
-### 1.5 utils.ts 新增（或独立 majorEvents.ts）
-
-```ts
-/** 大事记筛选：只保留 milestone/contract/confirmation/status_change（含售前里程碑） */
-export function filterMajorEvents(events: ActivityEvent[]): ActivityEvent[];
-
-/** 日报 CSV 导出：UTF-8 BOM + csvEscape，返回 Blob */
-export function exportDailyReportsCsv(projectNo: string, reports: ProjectDailyReport[]): void;
-```
-
-### 1.6 阶段 1 测试（新增 3 个测试文件）
-
-- `__tests__/diagnosticModel.test.ts`：六维 verdict 阈值边界（76%/100%、P0=1、逾期期次、待签确认书）、模板插值正确、钻取 Tab 映射
-- `__tests__/paymentLedger.test.ts`：主合同+补充协议期次合并、部分回款/逾期判定、getEffectiveContractAmount 只算 archived
-- `__tests__/majorEvents.test.ts`：过滤规则（followup/meeting/daily_report 被排除、isPreSale 里程碑保留）、csvEscape 转义（逗号/引号/换行）、CSV 含 BOM
-
----
-
-## 三、阶段 2：页面重构（ProjectDetail360.tsx + 新抽屉组件）
-
-### 2.1 组件拆分
-
-- **新文件 `project-management/detail/ProjectDiagnosticDrawer.tsx`**（约 300 行）：720px Drawer，props `{ reports, visible, dimension, onChangeDimension, onDrillDown }`；内部结构 = 6 维切换胶囊 + verdict 结论框（success/warning/danger 三色）+ 指标 2x2 + 风险归因块 + 处置建议列表 + 底部「采纳处置建议」按钮（= 调 onDrillDown 切主 Tab 并关抽屉）+「查看完整台账」链接（同钻取）
-- **ProjectDetail360.tsx 主体改造**，其余 Tab 内容保持页面内（沿用现状风格，不进一步拆分）
-
-### 2.2 头部控制台（三合一单卡）
-
-1. 标题行：现有元数据 + 行动栏（登记跟进/新建任务/录入纪要/甘特图，按钮不变），去掉独立 Divider 布局改原型紧凑排列
-2. 生命周期 Steps：现有逻辑不动，仅调 size/样式密度
-3. **胶囊改 6 列 grid**（Grid.Row 6 Col 或 CSS grid），每格：label 行（含 ●正常 / ! 预警徽标）+ 值行；背景按 alert 级别（warning/danger 浅色底）；**onClick 打开诊断抽屉**并定位到对应维度
-4. 删除三张分离 Card，合并为一张 `Card`
-
-### 2.3 左侧 7 主 Tab 改造点
-
-| Tab | 改造 |
+| 指标 | 钻取目标 |
 |---|---|
-| 基础信息 | 双栏：左「客户工商与商务档案」表（getCustomerProfileByProjectId）+ 右「技术架构与系统对接」表（getTechProfileByProjectId）；替换现有 14 字段 Descriptions |
-| 合同信息 | 主合同大卡（编号/名称/标的/签约日/状态 Tag/已回款）+ 补充协议卡片列表（name/amountChange 正负色/状态 SUPPLEMENT_STATUS_LABELS/签约日/附件名）；右上「发起补充合同」按钮 -> `navigate('/contracts/' + mainContract.id)`；补充协议卡也点击跳合同详情 |
-| 回款与发票 | 4 指标卡（有效总标的 getEffectiveContractAmount / 已到账 / 待催收 / 已开专票-ProjectInvoiceContext 聚合）+ `buildPaymentLedgerRows` 表格 8 列（所属合同/期次/应回/触发条件/计划日期/实际到账/状态/发票状态） |
-| 团队与工时 | 左：岗位表格（rolePlans join 日报按岗位聚合的已投入工时/占比）；右：预算环（现有三卡 + Progress 改为环形/粗进度条） |
-| 日报 | 表格不变 + 右上「导出日报台账」按钮 -> `exportDailyReportsCsv` |
-| 任务管理 | 不动（Bug Tracker 已在 Tab 内） |
-| 项目动态 | **改大事记**：顶部说明横幅（Alert，文案对齐 CONTEXT.md 大事记定义）+ `filterMajorEvents(activities)` 事件卡片列表（milestone/contract 左侧色条区分）；**删除**现有四维健康诊断卡（被抽屉替代）与事件类型筛选 Tag 组 |
+| 交付进度 | `main=activity`，定位里程碑 |
+| 剩余工期 | 任务管理；辅助入口打开甘特图 |
+| 工时消耗 | `main=team` |
+| 合同回款 | `main=payments` |
+| 缺陷质量 | 任务管理的缺陷视图 |
+| 风险与阻塞 | `main=activity`，定位最新风险事件 |
 
-### 2.4 右侧 9 次 Tab 改造点
+### 3.3 主侧栏默认焦点
 
-- 跟进：时间轴节点加里程碑紫色标记（关键节点跟进显示 tag）
-- 其余 8 个 Tab：不动
+- 无查询参数时：左侧默认「项目动态」，右侧默认「跟进」。
+- 左右 Tab 选择和「只看大事记」写入 URL：`main`、`side`、`major`。
+- 档案展开、里程碑展开等临时视觉状态不写 URL。
 
-### 2.5 跟进 Modal：关键节点标记
+### 3.4 关键信息档案卡
 
-- 新增 `milestoneTag` Select（可空）：预置 6 项——原型与交互确认书盖章 / UI设计确认书盖章 / 需求增项确认单签署 / 阶段验收单签署 / 项目终验报告签署 / 关键版本交付上线（与 PROJECT_CONFIRMATIONS 的 type 口径对齐）
-- 提交时：插右侧跟进流水（现状逻辑）+ **若勾选**，同时生成 `ActivityEvent { type: 'milestone', title: 节点名 }` 追加到页面局部 activities state（与 tasks 同口径：共享台账初始化 + 页面内可增）
-- 跟进记录需要携带 milestoneTag 字段吗：**不加到 ProjectFollowUp 类型**，仅生成 milestone 事件即可（避免跟进模型膨胀），里程碑信息在大事记里
+- 保留现有位置，默认收紧为两行：客户、业务线、签约主体、销售、起止日期、最新进展。
+- 风险/阻塞存在时，收起态仍显示一行语义色提示。
+- 「展开完整档案」显示完整阻塞清单、风险备注、验收标准和项目备注。
 
----
+### 3.5 右侧业务 Tab
 
-## 四、阶段 3：验证清单
+固定顺序：跟进 → 会议纪要 → 资料 → 演示 → 报价 → 合同 → 售前 → 出差 → 报销。不随阶段动态换位。
 
-1. `npm test` 全绿（预期新增 ~20 用例，更新 ProjectDetail360.test.ts 断言：诊断抽屉打开/胶囊可点/大事记横幅/回款 4 卡/岗位表格）
-2. `npm run build` 通过（注意 Arco Descriptions data 里 `??`/`||` 混用要加括号——历史踩坑）
-3. **dev server 过页面**（type-only import 重复声明只有 dev 的 babel 报，build/测试抓不到——历史踩坑）：/projects/1（完整链路：胶囊 6 维可点、抽屉钻取、大事记、补充协议卡、回款 8 列）/projects/3（华信链路）/projects/5（无合同项目，验证空态）
-4. 发票接缝确认：ProjectDetail360 是否在 ProjectInvoiceProvider 树内；若不在，第 4 卡与发票状态列降级（显示合同域 blockers 推断值）并记录到计划的踩坑节
+只在存在明确待处理义务时显示徽标：会议纪要→待确认行动项，资料→待签确认书，合同→审批中/待寄回，出差/报销→待审批。
 
-## 五、阶段 4：文档四联动收尾
+桌面宽屏下右侧栏局部吸顶，高度不超过视口，过长内容区内滚动；窄屏按现有规则堆叠且不吸顶。
 
-- 本计划已立；CONTEXT.md「大事记」术语已加；看板/架构图已随 grill 更新
-- 编码完成后：看板 planned 条目移入 features 描述（项目基础信息 description 更新）；架构图如需再对齐
-- PRD：无需改（项目管理无专项 PRD 稿）
+## 4. 项目动态规格
 
----
+### 4.1 术语与范围
 
-## 六、风险与依赖
+- **项目动态**：有管理意义的精选项目事件流。
+- **大事记**：项目动态的关键子集，只含阶段里程碑、合同生效、成果物签署、重大版本和风险升级。
+- 活动区只提供一个「只看大事记」开关，不提供多类型 Tag 筛选。
 
-| 风险 | 缓解 |
+### 4.2 精选纳入规则
+
+纳入合同创建/生效/归档/作废、回款到账/逾期、确认书签署/逾期、会议纪要归档、任务完成/延期/阻塞/解除阻塞/P0-P1 变化、关键跟进、阶段/重大版本/风险等级变化。排除普通字段编辑、任务文字修改、普通跟进、普通日报。
+
+### 4.3 事实所有权
+
+依 ADR-0097，项目动态是只读投影：
+
+| 事件 | 事实源 |
 |---|---|
-| ProjectInvoiceProvider 未覆盖 /projects/:id 路由 | 实现前先验证；降级方案已备（第 4 卡从合同域推导） |
-| ProjectDetail360.tsx 膨胀（1170 -> 预计 ~1600 行） | 诊断抽屉独立文件；其余维持现状风格 |
-| 大事记改版破老断言 | ProjectDetail360.test.ts 属预期破坏，更新断言 |
-| collectionRecords 与期次 period 对不上（部分合同无回款记录） | receivedAmount 默认 0，状态显示「待回款」，空态合理 |
-| 诊断模板文案生硬 | 文案集中在 diagnosticModel.ts 常量，便于单独润色 |
+| 合同 | `ContractsContext` 合同记录 |
+| 回款 | `CollectionsContext` 实收台账 + 合同回款计划 |
+| 确认书 | `ProjectConfirmation` |
+| 会议 | `ProjectMeetingMinutes` /可用的行动项事实 |
+| 任务 | `ProjectWorkTask.logs` + 截止日派生逾期 |
+| 关键跟进 / 里程碑 / 版本 / 风险 | 项目事件台账 |
 
-## 七、不做（边界外，防蔓延）
+当前 `ACTIVITY_EVENTS` 仅作迁移输入和演示种子，不再是唯一事实源。
 
-列表页驾驶舱/看板；补充合同创建 Modal；PM 负载/延期预测/毛利率预测等无数据源指标；Bug/出差/报销跨页共享层；右侧 8 个次 Tab 重构。
+### 4.4 呈现与交互
 
----
+- 顶部「快速记录」单行入口只预填并打开现有「登记跟进」弹窗，不直接提交。
+- 时间严格倒序，按「今天 / 昨天 / 具体日期」分组。
+- 首次展示 20 条，「加载更多」每次追加 20 条；不用表格分页或无限滚动。
+- 风险/待处理事件只增强语义样式，不脱离时间顺序置顶或复制。
+- 事件卡只提供「查看来源」和最多一个情境主操作；不内联编辑跨域数据。
+- 项目动态内删除四张重复健康卡。里程碑默认为一行摘要，展开后才显示全部节点。
 
-## 附录：grill 收束的 9 项边界决策
+### 4.5 结构化事件卡与密度
 
-| # | 决策点 | 结论 |
-|---|---|---|
-| 1 | 替换范围 | 只替换详情页 |
-| 2 | 样式实现 | Arco 组件 + 局部样式对齐，不搬原型自定义 CSS |
-| 3 | 智能诊断抽屉 | 迁入，按规则从 metrics 派生，行动按钮=钻取 |
-| 4 | 项目动态 | 收敛大事记；跟进关键节点标记同步；砍类型筛选 |
-| 5 | 补充合同 | 卡片化展示 + 跳合同域创建 |
-| 6 | 团队与工时 | 岗位表格（日报聚合 + 新增计划人天 mock） |
-| 7 | 基础信息 | 双栏 + mock 补齐 |
-| 8 | 回款与发票 | 4 卡 + 跨合同合并台账完整对齐 |
-| 9 | 日报导出 | CSV 真导出 |
+回款卡显示应收/实收/差额/期次；合同卡显示编号/金额/状态；任务卡显示负责人/截止日/状态或进度变化；确认书卡显示文件/签署状态/日期；会议卡显示参会人/行动项数；风险卡显示等级变化/责任人。无结构化事实时才回退普通文本。
+
+主栏较宽，桌面端用 2–4 列小型数据网格利用横向空间，维持适中密度；不做巨型留白卡，不用微小字号堆满整屏。
+
+## 5. 建议代码结构
+
+| 文件 | 职责 |
+|---|---|
+| `project-management/projectActivityProjection.ts` | 统一活动投影类型、各域 adapter、纳入规则、排序、大事记筛选 |
+| `project-management/projectStageSummary.ts` | 从合同/项目/验收/阻塞派生阶段完成项和待办项 |
+| `project-management/detail/ProjectActivityFeed.tsx` | 日期分组、加载更多、大事记开关、结构化事件卡 |
+| `project-management/detail/ProjectStagePopover.tsx` | 阶段说明与钻取，不写状态 |
+| `project-management/detail/ProjectArchiveSummary.tsx` | 两行档案摘要、风险提示、展开全档 |
+| `project-management/detail/projectDetail360.css` | 页面局部密度、事件网格、右栏吸顶与断点 |
+| `ProjectDetail360.tsx` | URL 状态、事实输入、指标/事件钻取、现有 Modal 编排 |
+
+投影对象应有 `kind`、`occurredAt`、`source`、`severity`、`isMajor`、`facts`、`sourceTarget`、`primaryAction`，不得继续仅靠 `title/content` 表达所有类型。
+
+## 6. 实施分段
+
+### P0 — 纯函数与投影模型
+
+1. 建立统一活动投影类型与各事实源 adapter。
+2. 实现精选纳入、大事记子集、倒序、日期分组和去重。
+3. 实现阶段完成/待办/阻塞派生与六指标钻取映射。
+
+### P1 — 页面信息优先级
+
+1. 将默认视图改为 `activity + follow`，接入 URL 查询参数。
+2. 顶部收口六项执行指标，接入阶段 Popover、档案收紧与里程碑收紧。
+3. 重排右侧 Tab，接入待处理徽标和项目详情局部吸顶。
+
+### P2 — 活动流与轻交互
+
+1. 用 `ProjectActivityFeed` 替换项目动态内的重复健康卡与静态里程碑网格。
+2. 接入结构化事件卡、查看来源、单情境主操作。
+3. 接入快速记录 → 现有跟进 Modal 预填；关键跟进提交后立即反映到动态。
+
+### P3 — 验证与文档收尾
+
+1. 更新 `ProjectDetail360` 回归、活动投影纯函数与 URL 状态测试。
+2. 运行定向 Vitest、全量 `npm test`、`npm run build`。
+3. 实页验证完整链路、无合同项目、无工时预算项目、已完成项目与长活动流。
+4. 编码完成后再把功能看板计划项移为已有功能，并追加工作记录。
+
+## 7. 测试与验收
+
+- 各事实源正确投影且去重；普通日报/跟进/文字编辑被排除；大事记子集正确。
+- 无 URL 参数时默认显示项目动态与跟进；查询参数可恢复视图。
+- 六指标、语义色、钻取、阶段说明、档案/里程碑收紧、右 Tab 顺序/徽标正确。
+- 快速记录只预填现有跟进弹窗，不跳过校验直接提交。
+- 宽屏事件卡利用横向空间且密度适中；窄屏改为单列，右栏不吸顶。
+- 事件卡可键盘聚焦，按钮有可辨识文本，语义不只依赖颜色。
+- 长文本、缺字段、无事件、事实源缺失时有稳定降级。
+
+## 8. 文档联动
+
+- `HubX/CONTEXT.md`：已锁定「项目动态」与「大事记」口径。
+- `HubX/docs/adr/0097-project-activity-is-cross-domain-projection.md`：已锁定跨域事实所有权。
+- `文档/PRD/PRD-线索项目合同统一视图.md`：补充项目视角的呈现优先级与投影边界。
+- 功能看板 config + seed：更新「项目详情信息优先级与精选活动流」计划项，状态保持「已设计」。
+- `ZK-HubX架构图.html`：项目管理目标描述补充默认推进焦点与精选活动投影。
+- `HubX/docs/ZK-HubX技术架构.html`：**无需修改**；本轮不改 β 接线、D1、Workers 或生产进度。
+
+## 9. 已取消的旧计划内容
+
+2026-08-21 旧版本中下列未实施扩张项不进本轮：`diagnosticModel.ts` + `ProjectDiagnosticDrawer`、客户工商/技术架构档案新 mock、岗位计划人天新台账、新的跨合同回款合并台账、日报 CSV 导出。如日后仍需要，必须作为独立需求重新 grill，不得借本轮 UI 改版顺带实现。
+
+## 10. 实施结果
+
+- 已新增活动投影与阶段摘要纯函数，落实 ADR-0097 的跨域事实所有权和精选纳入规则。
+- 已新增紧凑档案、阶段 Popover、精选活动流及页面局部样式；原有 70:30、左右 Tab 和各域台账内容均保留。
+- 默认视图已调整为 `activity + follow`；`main`、`side`、`major` 可由 URL 恢复。
+- 顶部已收口为六项执行指标；快速记录仍进入原跟进 Modal，选择关键节点后才同步为大事记。
+- 1600×1100 实页测量：主栏 935px、侧栏 401px、活动卡 800px、六指标单行，无页面横向溢出；侧栏在主内容滚动 1300px 后保持吸顶。
+- 大事记实页开关将示例项目 12 条精选活动收敛为 5 条，并正确写入 `major=true`；回款指标下钻写入 `main=payments`。
+- 验证结果：`npm run build` 通过；全量 Vitest 95 个文件、1018 项测试全部通过。现存 Arco/Router SSR 提示为仓库既有告警，不影响结果。

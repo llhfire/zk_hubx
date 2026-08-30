@@ -5,10 +5,11 @@
 // ============================================================
 
 import { PROJECT_LIST } from './projectMockData';
+import type { ProjectBlocker, ProjectRiskLevel } from './types';
 
-export type ProjectPriority = '高' | '中' | '低';
+export type ProjectPriority = '高' | '中' | '低' | '未设置';
 export type ProjectStatus = '未确认' | '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
-export type BusinessLine = '外包' | '自研' | '自运营';
+export type BusinessLine = '外包' | '自研' | '自运营' | '未设置';
 
 export interface ProjectAttachment {
   id: string;
@@ -42,6 +43,19 @@ export interface Project {
   attachments: ProjectAttachment[];
   leadId?: string;
   contractId?: string;
+  customerName?: string;
+  totalHours?: number;
+  budgetHours?: number;
+  bugP0Count?: number;
+  bugP1Count?: number;
+  contractAmount?: number;
+  receivedAmount?: number;
+  blockers?: ProjectBlocker[];
+  riskLevel?: ProjectRiskLevel;
+  riskNote?: string;
+  acceptanceCriteria?: string[];
+  sourceProjectId?: number;
+  sourceSystem?: 'production' | 'demo';
   createdAt: string;
   /** 乐观锁（ADR-0094），http 读路径注入 */
   version?: number;
@@ -104,9 +118,9 @@ export interface ProjectMemberHours {
   hours: number;
 }
 
-export const projectPriorities: ProjectPriority[] = ['高', '中', '低'];
+export const projectPriorities: ProjectPriority[] = ['高', '中', '低', '未设置'];
 export const projectStatuses: ProjectStatus[] = ['未确认', '未开始', '进行中', '已完成', '验收中', '搁置', '延迟', '催款中'];
-export const businessLines: BusinessLine[] = ['外包', '自研', '自运营'];
+export const businessLines: BusinessLine[] = ['外包', '自研', '自运营', '未设置'];
 
 export const companyEntities = ['中科软艺', '软艺信息', '巴蜀文攻'];
 export const employees = ['张三', '李四', '王五', '赵六', '孙七', '周八', '钱九'];
@@ -227,6 +241,21 @@ const PROJECT_EXTRAS: Record<string, ProjectExtras> = {
     legalUsers: [],
     attachments: [],
   },
+  'prod-112': {
+    assistants: ['林子涵'],
+    productUsers: ['何江奇'],
+    uiUsers: ['周雨桐'],
+    frontendUsers: ['林子涵'],
+    backendUsers: ['陈周伟'],
+    opsUsers: ['郭启明'],
+    testUsers: ['蒋梦婷'],
+    legalUsers: ['黄奕'],
+    attachments: [
+      { id: 'pawkey-att-1', name: '帕奇宠C端一期项目章程.pdf', size: '1.4MB' },
+      { id: 'pawkey-att-2', name: '帕奇宠C端一期交付物索引.xlsx', size: '286KB' },
+      { id: 'pawkey-att-3', name: '终验遗留项说明.pdf', size: '732KB' },
+    ],
+  },
 };
 
 const EMPTY_EXTRAS: ProjectExtras = {
@@ -261,6 +290,19 @@ export const initialProjects: Project[] = PROJECT_LIST.map((item) => ({
   attachments: (PROJECT_EXTRAS[item.id] ?? EMPTY_EXTRAS).attachments,
   leadId: item.leadId,
   contractId: item.contractId,
+  customerName: item.customerName,
+  totalHours: item.totalHours,
+  budgetHours: item.budgetHours,
+  bugP0Count: item.bugP0Count,
+  bugP1Count: item.bugP1Count,
+  contractAmount: item.contractAmount,
+  receivedAmount: item.receivedAmount,
+  blockers: item.blockers,
+  riskLevel: item.riskLevel,
+  riskNote: item.riskNote,
+  acceptanceCriteria: item.acceptanceCriteria,
+  sourceProjectId: item.sourceProjectId,
+  sourceSystem: item.sourceSystem,
   createdAt: item.createdAt,
 }));
 
@@ -321,12 +363,27 @@ export const availableLeads: ProjectLeadRelation[] = [
     wechat: 'huaxin-zhou',
     leadCreatedAt: '2026-06-05 14:20',
   },
+  {
+    id: 'pawkey-lead-5942',
+    projectId: '',
+    leadNo: 'L-5942',
+    leadName: '帕奇宠 C 端产品设计与系统架构咨询',
+    owner: '黄奕',
+    preSaleGroupName: '帕奇宠 C 端一期项目群',
+    customerCategory: '企业客户',
+    source: '客户转介绍',
+    customerName: '甲方产品负责人',
+    phone: '138****5942',
+    wechat: 'pawkey-product',
+    leadCreatedAt: '2026-05-18 10:20',
+  },
 ];
 
 export const initialLeadRelations: ProjectLeadRelation[] = [
   { ...availableLeads[0], id: 'relation-1', projectId: '1' },
   { ...availableLeads[1], id: 'relation-2', projectId: '2' },
   { ...availableLeads[3], id: 'relation-3', projectId: '3' },
+  { ...availableLeads[4], id: 'pawkey-relation-1', projectId: 'prod-112' },
 ];
 
 export const initialDailyReports: ProjectDailyReport[] = [
@@ -549,6 +606,16 @@ export const initialDailyReports: ProjectDailyReport[] = [
     workContent: '验证审批提交、合同归档、角色权限和项目日报等一期主流程。',
     riskFeedback: '需补充跨部门会签与驳回后重新提交的回归用例。',
   },
+  { id: 'pawkey-daily-1', projectId: 'prod-112', date: '2026-08-25', projectName: '帕奇宠C端一期', personName: '何江奇', position: '项目经理 / 产品经理', hours: 7.5, workNature: '项目管理', workContent: '冻结一期交付候选版本，复核功能清单、交付物索引和遗留项说明。', riskFeedback: '终验时间取决于甲方功能清单审查结论。' },
+  { id: 'pawkey-daily-2', projectId: 'prod-112', date: '2026-08-25', projectName: '帕奇宠C端一期', personName: '周雨桐', position: 'UI 设计师', hours: 6, workNature: 'UI 设计', workContent: '完成生命流详情、互动玩法和分享卡片的终验走查与标注整理。', riskFeedback: '无。' },
+  { id: 'pawkey-daily-3', projectId: 'prod-112', date: '2026-08-26', projectName: '帕奇宠C端一期', personName: '林子涵', position: '客户端工程师', hours: 8, workNature: '开发', workContent: '复核 iOS 与 Android 双端适配问题，修复相册权限和小屏安全区表现。', riskFeedback: '部分 Android 机型的系统字体缩放仍需回归。' },
+  { id: 'pawkey-daily-4', projectId: 'prod-112', date: '2026-08-26', projectName: '帕奇宠C端一期', personName: '陈周伟', position: '架构师 / 后端工程师', hours: 7, workNature: '架构设计', workContent: '补充账号、内容、媒体资源与 AI 能力接入的接口边界及容灾说明。', riskFeedback: '正式 AI 服务配额由甲方后续自行采购。' },
+  { id: 'pawkey-daily-5', projectId: 'prod-112', date: '2026-08-27', projectName: '帕奇宠C端一期', personName: '蒋梦婷', position: '测试工程师', hours: 8, workNature: '测试', workContent: '执行核心体验链路全量回归，验证宠物建档、成长记录、互动玩法和分享。', riskFeedback: '记录 2 个 P1 兼容性问题，均已进入修复。' },
+  { id: 'pawkey-daily-6', projectId: 'prod-112', date: '2026-08-27', projectName: '帕奇宠C端一期', personName: '何江奇', position: '项目经理 / 产品经理', hours: 6.5, workNature: '客户沟通', workContent: '组织终验材料预审会，逐项说明功能清单状态和交付边界。', riskFeedback: '甲方将在 9 月 3 日前返回最终意见。' },
+  { id: 'pawkey-daily-7', projectId: 'prod-112', date: '2026-08-28', projectName: '帕奇宠C端一期', personName: '林子涵', position: '客户端工程师', hours: 7.5, workNature: '开发', workContent: '修复系统字体放大导致的宠物档案页布局错位，并提交测试验证。', riskFeedback: '无。' },
+  { id: 'pawkey-daily-8', projectId: 'prod-112', date: '2026-08-28', projectName: '帕奇宠C端一期', personName: '郭启明', position: '实施 / 运维工程师', hours: 5, workNature: '交付支持', workContent: '整理双端构建说明、环境变量清单、账号权限和发布检查表。', riskFeedback: '正式发布账号尚待甲方完成主体认证。' },
+  { id: 'pawkey-daily-9', projectId: 'prod-112', date: '2026-08-29', projectName: '帕奇宠C端一期', personName: '蒋梦婷', position: '测试工程师', hours: 6.5, workNature: '测试', workContent: '验证已修复兼容性问题，更新终验缺陷清单和测试结论。', riskFeedback: '剩余 2 个 P1 问题已有关闭计划，无 P0。' },
+  { id: 'pawkey-daily-10', projectId: 'prod-112', date: '2026-08-29', projectName: '帕奇宠C端一期', personName: '何江奇', position: '项目经理 / 产品经理', hours: 7, workNature: '项目管理', workContent: '提交终验功能清单及差异说明，同步尾款节点和下一步安排。', riskFeedback: '若审查意见超期，终验签署与尾款将同步顺延。' },
 ];
 
 export const initialFollowUps: ProjectFollowUp[] = [
@@ -602,6 +669,12 @@ export const initialFollowUps: ProjectFollowUp[] = [
     operator: '李四',
     createdAt: '2026-07-15 18:10',
   },
+  { id: 'pawkey-follow-1', projectId: 'prod-112', status: '进行中', progress: 98, content: '甲方正在审查一期终验功能清单，已约定 9 月 3 日前集中返回最终意见。', attachments: [{ id: 'pawkey-follow-att-1', name: '帕奇宠C端一期终验功能清单.xlsx', size: '486KB' }], operator: '何江奇', createdAt: '2026-08-29 17:30' },
+  { id: 'pawkey-follow-2', projectId: 'prod-112', status: '进行中', progress: 98, content: '终验材料预审完成，交付物索引、双端构建说明、架构设计文档均已发送甲方。', attachments: [{ id: 'pawkey-follow-att-2', name: '帕奇宠C端一期交付物索引.xlsx', size: '286KB' }], operator: '何江奇', createdAt: '2026-08-27 18:10' },
+  { id: 'pawkey-follow-3', projectId: 'prod-112', status: '进行中', progress: 96, content: '核心体验全量回归完成，无 P0，2 个 P1 兼容性问题进入修复。', attachments: [{ id: 'pawkey-follow-att-3', name: '一期候选版本测试报告.pdf', size: '1.1MB' }], operator: '蒋梦婷', createdAt: '2026-08-26 19:20' },
+  { id: 'pawkey-follow-4', projectId: 'prod-112', status: '进行中', progress: 82, content: 'UI 视觉方案与系统架构设计均已取得书面确认，进入交付材料整理阶段。', attachments: [], operator: '何江奇', createdAt: '2026-07-20 17:30' },
+  { id: 'pawkey-follow-5', projectId: 'prod-112', status: '进行中', progress: 45, content: '核心体验原型完成确认，12 项评审调整已全部纳入 UI 设计基线。', attachments: [{ id: 'pawkey-follow-att-5', name: '帕奇宠C端核心体验原型确认书.pdf', size: '824KB' }], operator: '何江奇', createdAt: '2026-06-28 17:20' },
+  { id: 'pawkey-follow-6', projectId: 'prod-112', status: '进行中', progress: 8, content: '项目启动完成，一期范围明确为产品设计和系统架构设计。', attachments: [{ id: 'pawkey-follow-att-6', name: '帕奇宠C端一期项目章程.pdf', size: '1.4MB' }], operator: '何江奇', createdAt: '2026-06-08 18:00' },
 ];
 
 export const initialDocuments: ProjectDocument[] = [
@@ -625,6 +698,12 @@ export const initialDocuments: ProjectDocument[] = [
     description: '客户确认过的页面截图。',
     createdAt: '2026-05-09 09:40',
   },
+  { id: 'pawkey-doc-1', projectId: 'prod-112', title: '一期产品需求与边界说明', onlineUrl: 'https://docs.pawkey-c.demo.example.com/requirement', owner: '何江奇', uploadedFileName: '帕奇宠C端一期产品需求与边界说明V1.2.pdf', description: '记录一期目标、核心体验范围、非目标和甲乙双方责任边界。', createdAt: '2026-06-12 18:00' },
+  { id: 'pawkey-doc-2', projectId: 'prod-112', title: 'C 端交互原型与流程说明', onlineUrl: 'https://prototype.pawkey-c.demo.example.com', owner: '何江奇', uploadedFileName: '帕奇宠C端交互流程说明.pdf', description: '覆盖宠物建档、成长记录、陪伴互动、生命流与内容分享。', createdAt: '2026-06-28 18:20' },
+  { id: 'pawkey-doc-3', projectId: 'prod-112', title: 'UI 视觉规范与组件标注', onlineUrl: 'https://design.pawkey-c.demo.example.com', owner: '周雨桐', uploadedFileName: '帕奇宠C端UI视觉规范V1.0.pdf', description: '包含色彩、字体、栅格、组件、动效和双端适配规范。', createdAt: '2026-07-15 19:00' },
+  { id: 'pawkey-doc-4', projectId: 'prod-112', title: '系统架构设计说明', onlineUrl: '', owner: '陈周伟', uploadedFileName: '帕奇宠C端系统架构设计说明V1.0.pdf', description: '描述客户端、业务服务、内容服务、媒体资源和 AI 能力的边界与部署建议。', createdAt: '2026-07-20 17:00' },
+  { id: 'pawkey-doc-5', projectId: 'prod-112', title: '一期终验功能清单', onlineUrl: '', owner: '何江奇', uploadedFileName: '帕奇宠C端一期终验功能清单.xlsx', description: '按核心体验链路列出完成状态、验收口径、证据和遗留项。', createdAt: '2026-08-29 17:20' },
+  { id: 'pawkey-doc-6', projectId: 'prod-112', title: '一期交付物索引', onlineUrl: '', owner: '郭启明', uploadedFileName: '帕奇宠C端一期交付物索引.xlsx', description: '汇总设计源文件、交付包、构建说明、账号清单、测试报告和确认书。', createdAt: '2026-08-27 15:40' },
 ];
 
 export function createProjectNo(index: number) {

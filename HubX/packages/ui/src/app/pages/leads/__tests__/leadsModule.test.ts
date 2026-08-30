@@ -117,15 +117,15 @@ describe('快捷筛选', () => {
 // --- 搜索测试 ---
 describe('搜索功能', () => {
   it('按名称搜索', () => {
-    const result = searchLeads(PUBLIC_LEADS, '公众号');
+    const result = searchLeads(PUBLIC_LEADS, '抽奖');
     expect(result.length).toBeGreaterThan(0);
     result.forEach((l) => {
-      expect(l.name).toContain('公众号');
+      expect(l.name).toContain('抽奖');
     });
   });
 
   it('按电话搜索', () => {
-    const result = searchLeads(PUBLIC_LEADS, '138');
+    const result = searchLeads(PUBLIC_LEADS, '178');
     expect(result.length).toBeGreaterThan(0);
   });
 
@@ -138,7 +138,7 @@ describe('搜索功能', () => {
 // --- 重复检查测试 ---
 describe('重复检查', () => {
   it('检测重复电话', () => {
-    const result = checkDuplicate(MY_LEADS, '138****1111', '');
+    const result = checkDuplicate(MY_LEADS, '188****8967', '');
     expect(result.isDuplicate).toBe(true);
     expect(result.duplicateFields).toContain('电话');
   });
@@ -150,7 +150,7 @@ describe('重复检查', () => {
   });
 
   it('修改时排除自身', () => {
-    const result = checkDuplicate(MY_LEADS, '138****1111', '', undefined, undefined, '5940');
+    const result = checkDuplicate(MY_LEADS, '188****8967', '', undefined, undefined, '5958');
     expect(result.isDuplicate).toBe(false);
   });
 });
@@ -237,11 +237,11 @@ describe('Mock 数据', () => {
   });
 
   it('getLeadDetailInfo 返回正确数据', () => {
-    const detail = getLeadDetailInfo('5940');
+    const detail = getLeadDetailInfo('5957');
     expect(detail).not.toBeNull();
-    expect(detail!.name).toBe('某科技公司APP开发需求');
+    expect(detail!.name).toBe('社区生鲜小程序');
     expect(detail!.clueType).toBe('assigned');
-    expect(detail!.customerLevel).toBe('S');
+    expect(detail!.customerLevel).toBe('B');
   });
 
   it('getLeadDetailInfo 不存在返回 null', () => {

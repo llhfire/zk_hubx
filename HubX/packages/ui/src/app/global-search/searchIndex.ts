@@ -3,7 +3,7 @@
  *
  * 设计规约见 global-search-design.md §0/§4：
  * - 读六域 Context，不直调 service（α 下直调会 new 第二个 mock 实例）
- * - 客户域无 Context，读模块级 mockData
+ * - 客户域读取 CustomerContext，共享同一 α 事实源
  * - 只读投影，不建数据副本
  */
 
@@ -13,7 +13,7 @@ import { useQuotation } from '@/app/pages/quotation/QuotationContext';
 import { useContracts } from '@/app/pages/contracts/ContractsContext';
 import { useProjects } from '@/app/pages/project-management/ProjectContext';
 import { useEmployee } from '@/app/pages/employee/EmployeeContext';
-import { CUSTOMERS } from '@/app/pages/customers/mockData';
+import { useCustomers } from '@/app/pages/customers/CustomerContext';
 import type { SearchItem, SearchEntityKind } from './types';
 
 /** 六域 → SearchItem[] 映射（useMemo 汇总，任一 Context 变化自动重算） */
@@ -23,6 +23,7 @@ export function useGlobalSearchIndex(): SearchItem[] {
   const { contracts } = useContracts();
   const { projects } = useProjects();
   const { employees } = useEmployee();
+  const { customers } = useCustomers();
 
   return useMemo(() => {
     const items: SearchItem[] = [];
@@ -40,15 +41,16 @@ export function useGlobalSearchIndex(): SearchItem[] {
       });
     }
 
-    // 客户（静态模块常量，不进依赖）
-    for (const c of CUSTOMERS) {
+    // 客户
+    for (const c of customers) {
+      const contact = c.contacts.find((item) => item.isPrimary && item.active);
       items.push({
         kind: 'customer',
-        route: `/customers/${c.key}`,
+        route: `/customers/${c.id}`,
         title: c.name,
-        meta: `${c.level} · ${c.status}`,
-        fields: [c.name, c.contact, c.phone, c.key],
-        sortKey: c.createTime,
+        meta: `${c.level}级 · ${c.active ? '启用' : '停用'}`,
+        fields: [c.name, c.creditCode, contact?.name, contact?.phone, c.id].filter(Boolean),
+        sortKey: c.createdAt,
       });
     }
 
@@ -101,7 +103,5 @@ export function useGlobalSearchIndex(): SearchItem[] {
     }
 
     return items;
-    // customers 是模块常量，不进依赖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leads, quotes, contracts, projects, employees]);
+  }, [leads, customers, quotes, contracts, projects, employees]);
 }

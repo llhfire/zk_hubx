@@ -130,6 +130,8 @@ interface TodoContextValue {
   cancelTodo: (id: string) => void;
   snoozeTodo: (id: string, until: string) => void;
   openTodo: (id: string) => void;
+  upsertActiveTodo: (todo: TodoItem) => void;
+  completeTodosBySource: (source: TodoItem['source'], sourceId: string, completedAt?: string) => void;
 }
 
 const TodoContext = createContext<TodoContextValue | null>(null);
@@ -200,6 +202,21 @@ export function TodoProvider({ children }: PropsWithChildren) {
       : item));
   }, []);
 
+  const upsertActiveTodo = useCallback((todo: TodoItem) => {
+    setTodos((current) => {
+      const existing = current.find((item) => item.source === todo.source && item.sourceId === todo.sourceId && (item.status === 'pending' || item.status === 'in_progress'));
+      return existing
+        ? current.map((item) => item.id === existing.id ? { ...existing, ...todo, id: existing.id } : item)
+        : [todo, ...current];
+    });
+  }, []);
+
+  const completeTodosBySource = useCallback((source: TodoItem['source'], sourceId: string, completedAt = new Date().toISOString()) => {
+    setTodos((current) => current.map((item) => item.source === source && item.sourceId === sourceId && (item.status === 'pending' || item.status === 'in_progress')
+      ? { ...item, status: 'completed', completedAt, snoozedUntil: undefined }
+      : item));
+  }, []);
+
   const activeTodos = useMemo(
     () => todos.filter((item) => item.status === 'pending' || item.status === 'in_progress'),
     [todos],
@@ -214,7 +231,9 @@ export function TodoProvider({ children }: PropsWithChildren) {
     cancelTodo,
     snoozeTodo,
     openTodo,
-  }), [activeTodos, cancelTodo, createTodo, openTodo, snoozeTodo, todos, updateTodo]);
+    upsertActiveTodo,
+    completeTodosBySource,
+  }), [activeTodos, cancelTodo, completeTodosBySource, createTodo, openTodo, snoozeTodo, todos, updateTodo, upsertActiveTodo]);
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 }
@@ -223,4 +242,8 @@ export function useTodos() {
   const context = useContext(TodoContext);
   if (!context) throw new Error('useTodos must be used within TodoProvider');
   return context;
+}
+
+export function useOptionalTodos() {
+  return useContext(TodoContext);
 }

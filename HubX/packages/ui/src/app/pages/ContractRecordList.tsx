@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Card, Table, Tooltip, Button, Input, Select, DatePicker, Space, Modal, Descriptions, Tag } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconEye } from '@arco-design/web-react/icon';
 
 const { RangePicker } = DatePicker;
 
 export function ContractRecordList() {
+  const navigate = useNavigate();
   const [searchForm, setSearchForm] = useState({
     keyword: '',
     status: '',
     dateRange: [],
   });
+  const [appliedSearch, setAppliedSearch] = useState(searchForm);
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
 
@@ -152,9 +155,19 @@ export function ContractRecordList() {
     },
   ];
 
-  const handleSearch = () => {
-    console.log('搜索条件：', searchForm);
-  };
+  const filteredData = useMemo(() => mockData.filter((contract) => {
+    const keyword = appliedSearch.keyword.trim().toLowerCase();
+    const range = appliedSearch.dateRange as unknown as Array<string | { format?: (pattern: string) => string }>;
+    const start = range?.[0] && (typeof range[0] === 'string' ? range[0] : range[0].format?.('YYYY-MM-DD'));
+    const end = range?.[1] && (typeof range[1] === 'string' ? range[1] : range[1].format?.('YYYY-MM-DD'));
+    return (!keyword || [contract.contractNo, contract.contractName, contract.leadName, contract.customerEntity]
+      .some((value) => value.toLowerCase().includes(keyword)))
+      && (!appliedSearch.status || contract.status === appliedSearch.status)
+      && (!start || contract.signDate >= start)
+      && (!end || contract.signDate <= end);
+  }), [appliedSearch]);
+
+  const handleSearch = () => setAppliedSearch(searchForm);
 
   const handleReset = () => {
     setSearchForm({
@@ -162,6 +175,7 @@ export function ContractRecordList() {
       status: '',
       dateRange: [],
     });
+    setAppliedSearch({ keyword: '', status: '', dateRange: [] });
   };
 
   const handleViewDetail = (record: any) => {
@@ -213,18 +227,18 @@ export function ContractRecordList() {
       <Card
         title="合同记录列表"
         extra={
-          <Button type="primary" icon={<IconPlus />}>
+          <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>
             新增合同
           </Button>
         }
       >
         <Table
           columns={columns}
-          data={mockData}
+          data={filteredData}
           rowKey="id"
           scroll={{ x: 1700 }}
           pagination={{
-            total: mockData.length,
+            total: filteredData.length,
             pageSize: 10,
             showTotal: true,
             sizeCanChange: true,

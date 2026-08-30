@@ -44,9 +44,9 @@ export function VersionTimeline({ contract, selectedVersionNo, onSelectVersion, 
               isSelected={v.versionNo === selectedVersionNo}
               onSelect={() => onSelectVersion(v.versionNo)}
               onCopy={() => {
-                // 把该版本作为下次编辑起点。这里简单跳到编辑页（编辑页读 contract.current，
-                // 用户实际"复制"动作通过编辑后保存为新版本完成）。
-                navigate(`/contracts/${contract.id}/edit`);
+                navigate(`/contracts/${contract.id}/edit`, {
+                  state: { baseVersionNo: v.versionNo, createNewVersion: true },
+                });
               }}
             />
           </Timeline.Item>

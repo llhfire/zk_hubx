@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import {
   Card,
   Button,
@@ -10,6 +9,14 @@ import {
   Grid,
   Message,
   Spin,
+  Drawer,
+  Descriptions,
+  Divider,
+  Timeline,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
 } from '@arco-design/web-react';
 import {
   IconPlus,
@@ -38,9 +45,11 @@ const statusConfig: Record<ReimbursementStatus, { color: string; text: string }>
 };
 
 export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [selectedReimbursement, setSelectedReimbursement] = useState<Reimbursement | null>(null);
+  const [createVisible, setCreateVisible] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     loadReimbursements();
@@ -60,12 +69,31 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
 
   // 新建报销
   const handleCreate = () => {
-    Message.info('报销单已创建，请在下方填写报销明细并提交');
+    form.resetFields();
+    setCreateVisible(true);
   };
 
   // 查看详情
   const handleViewDetail = (reimbursement: Reimbursement) => {
-    Message.info(`查看报销详情: ${reimbursement.reimbursementNo}`);
+    setSelectedReimbursement(reimbursement);
+  };
+
+  const handleSave = () => {
+    form.validate().then((values) => {
+      const now = new Date().toISOString().slice(0, 10);
+      const totalAmount = Number(values.totalAmount);
+      const reimbursement: Reimbursement = {
+        id: `reimbursement-${Date.now()}`, reimbursementNo: `BX${Date.now().toString().slice(-10)}`,
+        tripId: trip.id, tripNo: trip.tripNo, applicantId: trip.applicantId, applicantName: trip.applicantName,
+        department: trip.department, items: [], totalAmount, loanOffsets: [], offsetAmount: 0,
+        netAmount: totalAmount, attachments: [], status: 'draft', remark: values.remark?.trim() || undefined,
+        createDate: now, updateDate: now, approvalRecords: [],
+      };
+      setReimbursements((current) => [reimbursement, ...current]);
+      setCreateVisible(false);
+      onUpdate();
+      Message.success('报销单已创建');
+    });
   };
 
   // 计算汇总
@@ -178,6 +206,19 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
           noDataContent="暂无报销记录"
         />
       </Card>
+      <Modal title="新增报销" visible={createVisible} onOk={handleSave} onCancel={() => setCreateVisible(false)} okText="保存草稿">
+        <Form form={form} layout="vertical">
+          <Form.Item label="报销金额" field="totalAmount" rules={[{ required: true, message: '请输入报销金额' }]}><InputNumber min={0.01} precision={2} prefix="¥" style={{ width: '100%' }} /></Form.Item>
+          <Form.Item label="报销说明" field="remark" rules={[{ required: true, message: '请输入报销说明' }]}><Input.TextArea rows={4} placeholder="说明本次报销的费用范围" /></Form.Item>
+        </Form>
+      </Modal>
+      <Drawer title="报销详情与审批流" width={520} visible={Boolean(selectedReimbursement)} onCancel={() => setSelectedReimbursement(null)} footer={null}>
+        {selectedReimbursement && <><Descriptions column={1} data={[
+          { label: '报销单号', value: selectedReimbursement.reimbursementNo }, { label: '申请人', value: selectedReimbursement.applicantName },
+          { label: '报销金额', value: `¥${selectedReimbursement.totalAmount.toLocaleString()}` }, { label: '冲抵借款', value: `¥${selectedReimbursement.offsetAmount.toLocaleString()}` },
+          { label: '实付金额', value: `¥${selectedReimbursement.netAmount.toLocaleString()}` }, { label: '说明', value: selectedReimbursement.remark || '-' },
+        ]} /><Divider /><Timeline><Timeline.Item dotColor="green">创建报销单 · {selectedReimbursement.createDate}</Timeline.Item><Timeline.Item dotColor={selectedReimbursement.status === 'draft' ? 'gray' : 'green'}>{statusConfig[selectedReimbursement.status].text}</Timeline.Item></Timeline></>}
+      </Drawer>
     </div>
   );
 }

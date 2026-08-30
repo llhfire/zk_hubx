@@ -924,7 +924,7 @@ function ReimbursementPanel({ items, onAdd }: { items: ReimbursementApplication[
             </div>
             <div style={{ marginTop: 10 }}>
               <Text type="secondary">附件列表：</Text>
-              <Space size="mini" wrap>{item.attachments.map(file => <Button key={file.id} type="text" size="mini" onClick={() => Message.info(`下载附件: ${file.name}`)}>{file.name} ({file.size})</Button>)}</Space>
+              <Space size="mini" wrap>{item.attachments.map(file => <Tag key={file.id} icon={<IconFile />}>{file.name} ({file.size})</Tag>)}</Space>
             </div>
             <div style={{ marginTop: 12, marginBottom: 12 }}><Text type="secondary">审批流程</Text><ApprovalTimeline nodes={item.approvalFlow} /></div>
             <Text type="secondary" style={{ fontSize: 12 }}>申请时间：{item.createTime}</Text>
@@ -1262,12 +1262,17 @@ export function ProjectDetailWorkspace({
       .map(file => file.name || file.originFile?.name)
       .filter((name): name is string => Boolean(name));
     if (!names.length) return;
+    const newUrls = Object.fromEntries(files.flatMap(file => {
+      const name = file.name || file.originFile?.name;
+      return name && file.originFile ? [[name, URL.createObjectURL(file.originFile)]] : [];
+    }));
 
     setProjectQuotationHistory(current => current.map(item => {
       if (item.id !== quotation.id) return item;
       return {
         ...item,
         [field]: Array.from(new Set([...(item[field] || []), ...names])),
+        quotationFileUrls: { ...(item.quotationFileUrls || {}), ...newUrls },
       };
     }));
     Message.success('附件已添加到报价记录');
@@ -1280,9 +1285,18 @@ export function ProjectDetailWorkspace({
   ) => {
     setProjectQuotationHistory(current => current.map(item => {
       if (item.id !== quotation.id) return item;
-      return { ...item, [field]: (item[field] || []).filter(name => name !== fileName) };
+      const quotationFileUrls = { ...(item.quotationFileUrls || {}) };
+      const removedUrl = quotationFileUrls[fileName];
+      if (removedUrl?.startsWith('blob:')) URL.revokeObjectURL(removedUrl);
+      delete quotationFileUrls[fileName];
+      return { ...item, [field]: (item[field] || []).filter(name => name !== fileName), quotationFileUrls };
     }));
     Message.success(`已删除：${fileName}`);
+  };
+
+  const deleteQuotation = (quotation: LeadQuotationItem) => {
+    setProjectQuotationHistory(current => current.filter(item => item.id !== quotation.id));
+    Message.success(`已删除报价记录：${quotation.name}`);
   };
 
   const submitQuotationApproval = (quotation: LeadQuotationItem) => {
@@ -1581,7 +1595,7 @@ export function ProjectDetailWorkspace({
                 approvalOverviewAtTop
                 onCreate={openQuotationConfig}
                 onEdit={openQuotationEditor}
-                onDelete={() => Message.info('删除报价单')}
+                onDelete={deleteQuotation}
                 onSubmitApproval={submitQuotationApproval}
                 onApprovalDecision={handleQuotationApprovalDecision}
                 onUploadFiles={appendQuotationFiles}

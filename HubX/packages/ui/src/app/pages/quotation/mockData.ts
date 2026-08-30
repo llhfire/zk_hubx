@@ -453,7 +453,7 @@ function buildPawkeySupplementQuote(input: {
     generatedContractId: input.generatedContractId,
     isSupplement: true,
     supplementChangeAmount: input.changeAmount,
-    previousQuoteId: 'pawkey-q1',
+    parentQuoteId: 'pawkey-q1',
     basicInfo: {
       ...base.basicInfo,
       projectName: input.projectName,

@@ -175,6 +175,7 @@ export function CompanyEntityInfoModal({
         size: bytes ? `${Math.max(1, Math.ceil(bytes / 1024))}KB` : '—',
         updatedAt: new Date().toISOString().slice(0, 10),
         description: values.description?.trim() || '',
+        blobUrl: uploadFile.originFile ? URL.createObjectURL(uploadFile.originFile) : undefined,
       };
       setCompanyFiles((items) => category === '合同模板'
         ? [...items.filter((item) => item.category !== '合同模板'), newFile]
@@ -230,7 +231,20 @@ export function CompanyEntityInfoModal({
       render: (_: unknown, file: CompanyEntityRecord['files'][number]) => (
         <Space>
 
-          <Button size="mini" type="text" icon={<IconDownload />} onClick={() => Message.info(`下载资料：${file.name}`)}>
+          <Button
+            size="mini"
+            type="text"
+            icon={<IconDownload />}
+            disabled={!file.blobUrl}
+            title={file.blobUrl ? '下载原文件' : '演示资料仅保留元数据'}
+            onClick={() => {
+              if (!file.blobUrl) return;
+              const link = document.createElement('a');
+              link.href = file.blobUrl;
+              link.download = file.name;
+              link.click();
+            }}
+          >
             下载
           </Button>
           {permissions.files && !readonly && (

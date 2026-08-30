@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   Card,
@@ -17,7 +17,11 @@ import {
   Input,
   Message,
   Spin,
+  Alert,
+  DatePicker,
+  Upload,
 } from '@arco-design/web-react';
+import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import {
   IconEdit,
   IconCheck,
@@ -53,6 +57,10 @@ import {
 import { useQuotation } from './quotation/QuotationContext';
 import { canCreateSupplementQuote } from './quotation/supplementQuote';
 import { withCollectionLedger } from '@/services/collectionMutations';
+import { CURRENT_LOGIN_USER } from '../currentUser';
+import { compareContractVersions } from './contracts/contractVersionDiff';
+import { advanceSigningPackage } from './sales-compliance/complianceModel';
+import type { ElectronicSigningPackage, ElectronicSigningStatus } from './sales-compliance/types';
 
 const { TabPane } = Tabs;
 const { Text } = Typography;
@@ -121,7 +129,7 @@ export function ContractDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { getById, addCollection, contracts: allContracts, loading } = useContracts();
+  const { getById, addCollection, contracts: allContracts, loading, updateSigningPackage } = useContracts();
   const { quotes, createSupplementQuote } = useQuotation();
 
   const returnTarget = (
@@ -142,6 +150,9 @@ export function ContractDetail() {
   const [selectedVersionNo, setSelectedVersionNo] = useState<string>(
     contract?.approvedVersionNo || latestVersion?.versionNo || '',
   );
+  const [versionDiffTarget, setVersionDiffTarget] = useState<string>();
+  const [signingVisible, setSigningVisible] = useState(false);
+  const [signingForm] = Form.useForm();
 
   // 主合同回款登记（双写：合同嵌套流水 + 实收台账）
   const [mainPaymentModalVisible, setMainPaymentModalVisible] = useState(false);
@@ -156,8 +167,9 @@ export function ContractDetail() {
   const [followUps, setFollowUps] = useState<FollowUpRecord[]>(mockFollowUps);
   const [followUpModalVisible, setFollowUpModalVisible] = useState(false);
   const [followUpForm] = Form.useForm();
-  const [viewer, setViewer] = useState<{ title: string; html?: string } | null>(null);
+  const [viewer, setViewer] = useState<{ title: string; html?: string; url?: string } | null>(null);
   const [scanRows, setScanRows] = useState(contract?.archivedScans ?? []);
+  const scanInputRef = useRef<HTMLInputElement>(null);
   const [supplementModalVisible, setSupplementModalVisible] = useState(false);
   const [supplementFlowMode, setSupplementFlowMode] = useState<'online' | 'file'>('online');
 
@@ -166,6 +178,32 @@ export function ContractDetail() {
   }, [contract?.id, contract?.approvedVersionNo, latestVersion?.versionNo]);
 
   useEffect(() => setScanRows(contract?.archivedScans ?? []), [contract?.id, contract?.archivedScans]);
+
+  const handleScanUpload = (files: FileList | null) => {
+    if (!files?.length) return;
+    const now = new Date();
+    const uploadedAt = now.toLocaleString('zh-CN', { hour12: false }).replaceAll('/', '-');
+    const scanFiles = Array.from(files).map((file, index) => ({
+      id: `scan-${Date.now()}-${index}`,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      blobUrl: URL.createObjectURL(file),
+      uploadedAt,
+      uploadedBy: CURRENT_LOGIN_USER.name,
+    }));
+    setScanRows((rows) => [{
+      id: `scan-entry-${Date.now()}`,
+      files: scanFiles,
+      uploadedAt,
+      uploadedBy: CURRENT_LOGIN_USER.name,
+      isPrimary: rows.length === 0,
+      linkedVersionNo: contract?.approvedVersionNo || latestVersion?.versionNo || '',
+      note: '详情页上传归档',
+    }, ...rows]);
+    Message.success(`已归档 ${scanFiles.length} 个扫描文件`);
+    if (scanInputRef.current) scanInputRef.current.value = '';
+  };
 
   if (loading) {
     return (
@@ -373,6 +411,7 @@ export function ContractDetail() {
                 新建补充报价
               </Button>
             )}
+            {!['draft', 'approving', 'voided'].includes(contract.status) && <Button size="small" onClick={() => { signingForm.resetFields(); setSigningVisible(true); }}>电子签署演示</Button>}
             <Select
               aria-label="当前合同版本"
               value={selectedVersionNo}
@@ -499,16 +538,17 @@ export function ContractDetail() {
               ))}
               <TabPane key="scans" title={`扫描件归档(${scanRows.length})`}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                  <Button type="primary" icon={<IconUpload />} onClick={() => Message.info('请选择合同扫描件上传')}>上传扫描件</Button>
+                  <input ref={scanInputRef} hidden type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => handleScanUpload(event.target.files)} />
+                  <Button type="primary" icon={<IconUpload />} onClick={() => scanInputRef.current?.click()}>上传扫描件</Button>
                 </div>
                 {scanRows.length > 0 ? (
                   <Table
                     columns={[
-                      { title: '文件', dataIndex: 'fileName', render: (_: unknown, entry: { files: Array<{ fileName: string }> }) => entry.files.map((f) => <Button key={f.fileName} type="text" onClick={() => setViewer({ title: f.fileName })}>{f.fileName}</Button>) },
+                      { title: '文件', dataIndex: 'fileName', render: (_: unknown, entry: { files: Array<{ fileName: string; blobUrl?: string }> }) => entry.files.map((f) => <Button key={f.fileName} type="text" onClick={() => setViewer({ title: f.fileName, url: f.blobUrl })}>{f.fileName}</Button>) },
                       { title: '上传时间', dataIndex: 'uploadedAt' },
                       { title: '上传人', dataIndex: 'uploadedBy' },
-                      { title: '操作', width: 120, fixed: 'right' as const, render: (_: unknown, entry: { id: string; files: Array<{ fileName: string }> }) => <Space>
-                        <Button aria-label="查看扫描件" type="text" icon={<IconEye />} onClick={() => setViewer({ title: entry.files[0]?.fileName || '扫描件' })} />
+                      { title: '操作', width: 120, fixed: 'right' as const, render: (_: unknown, entry: { id: string; files: Array<{ fileName: string; blobUrl?: string }> }) => <Space>
+                        <Button aria-label="查看扫描件" type="text" icon={<IconEye />} onClick={() => setViewer({ title: entry.files[0]?.fileName || '扫描件', url: entry.files[0]?.blobUrl })} />
                         <Button aria-label="删除扫描件" type="text" status="danger" icon={<IconDelete />} onClick={() => setScanRows((rows) => rows.filter((row) => row.id !== entry.id))} />
                       </Space> },
                     ]}
@@ -631,6 +671,11 @@ export function ContractDetail() {
                           <Text>{v.label}</Text>
                         </Space>
                         <Text type="secondary" style={{ fontSize: 12 }}>{v.createdAt} · {v.createdBy}</Text>
+                        <Space size={4}>
+                          <Button type="text" size="mini" onClick={() => setSelectedVersionNo(v.versionNo)}>查看此版本</Button>
+                          <Button type="text" size="mini" onClick={() => navigate(`/contracts/${contract.id}/edit`, { state: { baseVersionNo: v.versionNo, createNewVersion: true } })}>基于此版本编辑</Button>
+                          {versions.findIndex((item) => item.versionNo === v.versionNo) > 0 && <Button type="text" size="mini" onClick={() => setVersionDiffTarget(v.versionNo)}>对比上一版</Button>}
+                        </Space>
                       </Space>
                     </Timeline.Item>
                   ))}
@@ -670,12 +715,44 @@ export function ContractDetail() {
         </ProcessWorkspaceAside>
       </ProcessWorkspace>
 
+      <Modal title={`合同版本差异 · ${versionDiffTarget ?? ''}`} visible={Boolean(versionDiffTarget)} onCancel={() => setVersionDiffTarget(undefined)} footer={<Button onClick={() => setVersionDiffTarget(undefined)}>关闭</Button>} style={{ width: 820 }}>
+        {(() => {
+          const index = versions.findIndex((item) => item.versionNo === versionDiffTarget);
+          if (index <= 0) return null;
+          const rows = compareContractVersions(versions[index - 1], versions[index]);
+          return <Table rowKey="key" pagination={false} data={rows} columns={[{ title: '字段', dataIndex: 'label', width: 120 }, { title: versions[index - 1].versionNo, dataIndex: 'before' }, { title: versions[index].versionNo, dataIndex: 'after' }, { title: '结果', width: 90, render: (_: unknown, row: typeof rows[number]) => <Tag color={row.changed ? 'orange' : 'gray'}>{row.changed ? '有变化' : '一致'}</Tag> }]} />;
+        })()}
+      </Modal>
+
+      <Modal title="合同电子签署演示" visible={signingVisible} onCancel={() => setSigningVisible(false)} onOk={contract.signingPackage ? () => setSigningVisible(false) : async () => {
+        const values = await signingForm.validate();
+        const signers = String(values.signers).split('\n').map((line, index) => { const [name, phone] = line.split(/[,，]/).map((item) => item.trim()); return { id: `contract-signer-${index + 1}`, name, phone, order: index + 1, status: 'waiting' as const }; }).filter((item) => item.name && item.phone);
+        if (!signers.length) return Message.warning('请至少填写一位签署人及手机号');
+        const now = new Date().toISOString();
+        const pkg: ElectronicSigningPackage = { id: `contract-signing-${Date.now()}`, status: 'pending', signers, deadline: values.deadline, createdAt: now, updatedAt: now, evidence: [] };
+        await updateSigningPackage(contract.id, () => pkg);
+        Message.success('合同签署演示包已创建');
+      }} okText={contract.signingPackage ? '关闭' : '创建演示包'} style={{ width: 680 }}>
+        <Alert type="warning" content="α 签署演示，不具有电子签名法律效力。系统不会生成或伪造个人签名。" showIcon />
+        {!contract.signingPackage ? <Form form={signingForm} layout="vertical"><Form.Item label="签署人（每行：姓名,手机号）" field="signers" rules={[{ required: true }]}><Input.TextArea rows={4} defaultValue={`${contract.current.customerContact},${contract.current.customerPhone}`} /></Form.Item><Form.Item label="签署截止时间" field="deadline" rules={[{ required: true }]}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></Form> : <Space direction="vertical" style={{ width: '100%' }}><Descriptions column={1} data={[{ label: '状态', value: <Tag>{contract.signingPackage.status}</Tag> }, { label: '截止时间', value: contract.signingPackage.deadline }, { label: '签署顺序', value: contract.signingPackage.signers.map((item) => `${item.order}. ${item.name} ${item.phone}`).join('；') }]} /><Space wrap>{contract.signingPackage.status === 'pending' && <Button onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'signing'))}>开始签署</Button>}{contract.signingPackage.status === 'signing' && <><Button type="primary" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'completed'))}>模拟全部完成</Button><Button status="danger" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'refused'))}>模拟拒签</Button></>}{(['pending', 'signing'] as ElectronicSigningStatus[]).includes(contract.signingPackage.status) && <Button status="warning" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'revoked'))}>撤销演示包</Button>}</Space><Upload autoUpload={false} multiple limit={5} onChange={async (files: UploadItem[]) => { const file = files.at(-1)?.originFile; if (!file) return; const evidence = { id: `contract-sign-evidence-${Date.now()}`, name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, url: URL.createObjectURL(file), uploadedAt: new Date().toISOString() }; await updateSigningPackage(contract.id, (value) => value ? { ...value, evidence: [...value.evidence, evidence] } : value); Message.success('线下签署证据已保存'); }}><Button>上传线下签署证据</Button></Upload>{contract.signingPackage.evidence.map((file) => <Space key={file.id}><span>{file.name}</span>{file.url && <Button type="text" size="mini" onClick={() => window.open(file.url, '_blank')}>预览</Button>}</Space>)}</Space>}
+      </Modal>
+
       <DocumentViewerModal
         visible={Boolean(viewer)}
         title={viewer?.title || '文件预览'}
         html={viewer?.html}
+        content={viewer?.url ? <iframe title={viewer.title} src={viewer.url} style={{ width: '100%', minHeight: 720, border: 0 }} /> : undefined}
         onClose={() => setViewer(null)}
-        onDownload={() => Message.success('已开始下载文件')}
+        onDownload={() => {
+          if (!viewer?.url) {
+            Message.warning('演示归档仅保留文件元数据，无可下载源文件');
+            return;
+          }
+          const link = document.createElement('a');
+          link.href = viewer.url;
+          link.download = viewer.title;
+          link.click();
+        }}
       />
       <Modal
         title="新建补充报价"

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import {
   Card,
   Button,
@@ -10,6 +9,15 @@ import {
   Grid,
   Message,
   Spin,
+  Drawer,
+  Descriptions,
+  Divider,
+  Timeline,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
 } from '@arco-design/web-react';
 import {
   IconPlus,
@@ -40,9 +48,11 @@ const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
 };
 
 export function LoanTab({ trip, onUpdate }: LoanTabProps) {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [createVisible, setCreateVisible] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     loadLoans();
@@ -62,12 +72,33 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
 
   // 新建借款
   const handleCreate = () => {
-    navigate(`/travel/loans/new?tripId=${trip.id}`);
+    form.resetFields();
+    form.setFieldsValue({ type: 'travel', payMethod: 'bank' });
+    setCreateVisible(true);
   };
 
   // 查看详情
   const handleViewDetail = (loan: Loan) => {
-    Message.info(`查看借款详情: ${loan.loanNo}`);
+    setSelectedLoan(loan);
+  };
+
+  const handleSave = () => {
+    form.validate().then((values) => {
+      const now = new Date().toISOString().slice(0, 10);
+      const amount = Number(values.amount);
+      const loan: Loan = {
+        id: `loan-${Date.now()}`, loanNo: `JK${Date.now().toString().slice(-10)}`,
+        applicantId: trip.applicantId, applicantName: trip.applicantName, department: trip.department,
+        tripId: trip.id, tripNo: trip.tripNo, type: values.type, amount,
+        reason: values.reason.trim(), expectedPayDate: values.expectedPayDate?.trim() || undefined,
+        payMethod: values.payMethod, status: 'draft', createDate: now, updateDate: now,
+        offsets: [], offsetAmount: 0, remainingAmount: amount, approvalRecords: [],
+      };
+      setLoans((current) => [loan, ...current]);
+      setCreateVisible(false);
+      onUpdate();
+      Message.success('借款单已创建');
+    });
   };
 
   // 计算汇总
@@ -221,6 +252,22 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
           </div>
         )}
       </Card>
+      <Modal title="新增借款" visible={createVisible} onOk={handleSave} onCancel={() => setCreateVisible(false)} okText="保存草稿">
+        <Form form={form} layout="vertical">
+          <Form.Item label="借款类型" field="type" rules={[{ required: true }]}><Select options={[{ label: '差旅借款', value: 'travel' }, { label: '备用金', value: 'petty_cash' }, { label: '其他', value: 'other' }]} /></Form.Item>
+          <Form.Item label="借款金额" field="amount" rules={[{ required: true, message: '请输入借款金额' }]}><InputNumber min={0.01} precision={2} prefix="¥" style={{ width: '100%' }} /></Form.Item>
+          <Form.Item label="借款理由" field="reason" rules={[{ required: true, message: '请输入借款理由' }]}><Input.TextArea rows={3} /></Form.Item>
+          <Form.Item label="期望打款日期" field="expectedPayDate"><Input placeholder="YYYY-MM-DD" /></Form.Item>
+          <Form.Item label="打款方式" field="payMethod" rules={[{ required: true }]}><Select options={[{ label: '银行转账', value: 'bank' }, { label: '现金', value: 'cash' }, { label: '其他', value: 'other' }]} /></Form.Item>
+        </Form>
+      </Modal>
+      <Drawer title="借款详情与审批流" width={520} visible={Boolean(selectedLoan)} onCancel={() => setSelectedLoan(null)} footer={null}>
+        {selectedLoan && <><Descriptions column={1} data={[
+          { label: '借款单号', value: selectedLoan.loanNo }, { label: '申请人', value: selectedLoan.applicantName },
+          { label: '借款金额', value: `¥${selectedLoan.amount.toLocaleString()}` }, { label: '借款理由', value: selectedLoan.reason },
+          { label: '期望打款日', value: selectedLoan.expectedPayDate || '-' }, { label: '剩余未冲抵', value: `¥${selectedLoan.remainingAmount.toLocaleString()}` },
+        ]} /><Divider /><Timeline><Timeline.Item dotColor="green">创建借款单 · {selectedLoan.createDate}</Timeline.Item><Timeline.Item dotColor={selectedLoan.status === 'draft' ? 'gray' : 'green'}>{statusConfig[selectedLoan.status].text}</Timeline.Item></Timeline></>}
+      </Drawer>
     </div>
   );
 }

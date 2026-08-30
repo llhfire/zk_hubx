@@ -128,7 +128,8 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${quote.quoteNo}_报价单.pdf`);
+      const formal = ['stamped', 'sent', 'confirmed'].includes(quote.status);
+      pdf.save(`${quote.quoteNo}_报价单${formal ? '_盖章版' : ''}.pdf`);
       Message.success('报价单已下载');
     } catch {
       Message.error('下载失败，请重试');
@@ -152,7 +153,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
           <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 6 }}>
             {quote.quoteNo} · {quote.version}
           </div>
-          {quote.status === 'stamped' && (
+          {['stamped', 'sent', 'confirmed'].includes(quote.status) && (
             <div style={{ position: 'absolute', right: 24, top: 24, transform: 'rotate(-20deg)', border: '3px solid rgb(var(--red-6))', color: 'rgb(var(--red-6))', borderRadius: 6, padding: '4px 16px', fontSize: 18, fontWeight: 700, opacity: 0.7 }}>
               中科集团公章
             </div>
@@ -474,7 +475,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       {!readonly && isSales && quote.status === 'stamped' && (
         <Space>
           <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSend}>发送客户</Button>
-          <Button icon={<IconDownload />} onClick={() => Message.info('下载正式 PDF 报价单（盖章版，占位）')}>下载盖章版 PDF</Button>
+          <Button icon={<IconDownload />} onClick={handleDownloadPDF}>下载盖章版 PDF</Button>
           {!quote.sentAt && <Button onClick={handleReturnToStamp}>退回盖章</Button>}
         </Space>
       )}

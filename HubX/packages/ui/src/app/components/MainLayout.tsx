@@ -110,6 +110,7 @@ export function MainLayout() {
       children: [
         { key: '/contracts', label: '合同列表' },
         { key: '/contracts/payments', label: '回款管理' },
+        { key: '/contracts/templates', label: '合同模板' },
       ],
     },
     { key: '/projects', icon: <IconApps />, label: '项目管理' },

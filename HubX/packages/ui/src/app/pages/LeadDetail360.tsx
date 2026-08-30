@@ -78,6 +78,9 @@ import { useLeads } from '@/app/leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 import { buildLeadContextFromDetail } from './contracts/leadContextMock';
 import { useContracts } from './contracts/ContractsContext';
+import { useTodos } from '@/app/todos/TodoContext';
+import { useCustomers } from './customers/CustomerContext';
+import { buildCustomerSnapshot } from './customers/customerModel';
 import type { Contract, ContractStatus } from './contracts/types';
 import { effectiveAmount } from './contracts/paymentUtils';
 import { useCollections } from '@/app/collections/CollectionContext';
@@ -211,8 +214,10 @@ export function LeadDetail360() {
   const [editingCollectionId, setEditingCollectionId] = useState<string>();
   const [collectionForm] = Form.useForm();
   const [invoiceRecords, setInvoiceRecords] = useState<PaymentInvoiceRecord[]>([]);
-  const { createQuote, quotes } = useQuotation();
+  const { createQuote, quotes, updateQuote } = useQuotation();
+  const { customers } = useCustomers();
   const { contracts: allContracts } = useContracts();
+  const { completeTodosBySource, upsertActiveTodo } = useTodos();
   const { collections } = useCollections();
   const {
     leads,
@@ -606,12 +611,32 @@ export function LeadDetail360() {
         attachments: uploadItemsToLeadAttachments(values.attachments),
         creator: CURRENT_LOGIN_USER.name,
       });
+      const completedAt = new Date().toISOString();
+      completeTodosBySource('lead_followup', serviceLeadId, completedAt);
+      const nextFollowTime = formDateTime(values.nextFollowTime);
+      if (nextFollowTime) {
+        upsertActiveTodo({
+          id: `todo-lead-followup-${serviceLeadId}-${Date.now()}`,
+          source: 'lead_followup',
+          sourceId: serviceLeadId,
+          module: '线索跟进',
+          title: `跟进 ${lead.name}`,
+          content: values.content.trim(),
+          assigneeId: dispatchLead?.owner || lead.owner || CURRENT_LOGIN_USER.id,
+          assigneeName: dispatchLead?.owner || lead.owner || CURRENT_LOGIN_USER.name,
+          status: 'pending',
+          priority: lead.customerLevel === 'S' ? 'high' : 'medium',
+          createdAt: completedAt,
+          deadline: nextFollowTime,
+          route: `/leads/${id}`,
+        });
+      }
       setFollowUps(await getFollowUps(serviceLeadId));
       setLeadOverride((current) => ({
         ...current,
         status: values.customerStatus,
         level: values.intentionLevel ?? lead.level,
-        nextFollowTime: formDateTime(values.nextFollowTime) ?? '',
+        nextFollowTime: nextFollowTime ?? '',
         followCount: (lead.followCount ?? 0) + 1,
       }));
       Message.success('跟进记录已保存');
@@ -1504,6 +1529,10 @@ export function LeadDetail360() {
             customerContact: lead.contact,
             customerPhone: lead.phone,
           }, { flowMode: quoteFlowMode });
+          const customer = customers.find((item) => item.id === dispatchLead?.customerId || item.name === lead.customer);
+          if (customer) {
+            await updateQuote(newId, (current) => ({ ...current, customerId: customer.id, customerSnapshot: buildCustomerSnapshot(customer) }));
+          }
           setQuoteModeVisible(false);
           setQuotationDrawerQuoteId(newId);
           setQuotationDrawerVisible(true);

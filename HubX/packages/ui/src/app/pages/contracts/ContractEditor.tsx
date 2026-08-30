@@ -52,6 +52,7 @@ import type {
   PaymentPlanItem,
   PaymentRatio,
 } from './types';
+import { findDefaultContractTemplate, loadContractTemplates } from './templateStore';
 
 const Title = Typography.Title;
 
@@ -96,8 +97,10 @@ export function ContractEditor() {
   } = useContracts();
 
   const contract = getById(id);
+  const baseVersionNo = (location.state as { baseVersionNo?: string } | null)?.baseVersionNo;
+  const baseVersion = contract?.versionHistory.find((version) => version.versionNo === baseVersionNo);
   const [formData, setFormData] = useState<ContractFormData | null>(
-    contract ? contract.current : null,
+    contract ? structuredClone(baseVersion?.formData ?? contract.current) : null,
   );
   const [paymentPlanModalVisible, setPaymentPlanModalVisible] = useState(false);
   const [editingPaymentPlanIndex, setEditingPaymentPlanIndex] = useState<number | null>(null);
@@ -109,7 +112,7 @@ export function ContractEditor() {
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateHtml, setTemplateHtml] = useState(() => (
-    contract ? renderContractDocument(contract.current) : ''
+    contract ? (baseVersion?.renderedHtml ?? renderContractDocument(contract.current)) : ''
   ));
   const templateEditorRef = useRef<HTMLDivElement>(null);
   const templateEditedRef = useRef(false);
@@ -128,11 +131,15 @@ export function ContractEditor() {
 
   useEffect(() => {
     if (!formData) return;
-    const companyTemplate = getCompanyContractTemplate(formData.signingEntity);
-    if (companyTemplate?.contractTemplateId && companyTemplate.contractTemplateId !== formData.templateId) {
+    const managedTemplates = loadContractTemplates();
+    const currentManaged = managedTemplates.find((item) => item.id === formData.templateId && item.status === 'published' && item.signingEntity === formData.signingEntity && item.productCategories.includes(formData.productCategory));
+    const defaultTemplate = findDefaultContractTemplate(formData.signingEntity, formData.productCategory);
+    if (!currentManaged && defaultTemplate) {
+      const latestVersion = defaultTemplate.versions.at(-1);
       setFormData((prev) => prev ? {
         ...prev,
-        templateId: companyTemplate.contractTemplateId!,
+        templateId: defaultTemplate.id,
+        templateVersionId: latestVersion?.id,
         customContractHtml: undefined,
       } : prev);
       return;
@@ -199,16 +206,27 @@ export function ContractEditor() {
 
   const handleSigningEntityChange = (signingEntity: string) => {
     const companyTemplate = getCompanyContractTemplate(signingEntity);
+    const defaultTemplate = findDefaultContractTemplate(signingEntity, formData.productCategory);
+    const latestVersion = defaultTemplate?.versions.at(-1);
     templateEditedRef.current = false;
     setFormData((prev) => {
       if (!prev) return prev;
       return {
         ...prev,
         signingEntity,
-        templateId: companyTemplate?.contractTemplateId ?? prev.templateId,
+        templateId: defaultTemplate?.id ?? companyTemplate?.contractTemplateId ?? prev.templateId,
+        templateVersionId: latestVersion?.id,
         customContractHtml: undefined,
       };
     });
+  };
+
+  const managedTemplateOptions = loadContractTemplates().filter((item) => item.status === 'published' && item.signingEntity === formData.signingEntity && item.productCategories.includes(formData.productCategory));
+
+  const handleContractTemplateChange = (templateId: string) => {
+    const template = managedTemplateOptions.find((item) => item.id === templateId);
+    setFormData((prev) => prev ? { ...prev, templateId, templateVersionId: template?.versions.at(-1)?.id, customContractHtml: undefined } : prev);
+    templateEditedRef.current = false;
   };
 
   const getFormDataWithTemplateEdits = (): ContractFormData => {
@@ -479,11 +497,17 @@ export function ContractEditor() {
   };
 
   const handleDownloadTemplate = () => {
-    if (!companyContractTemplate) {
-      Message.warning('当前签约主体尚未配置合同模板');
-      return;
-    }
-    Message.info(`${companyContractTemplate.name}下载功能暂未接入`);
+    const latestFormData = getFormDataWithTemplateEdits();
+    const html = renderContractDocument(latestFormData);
+    const templateName = managedTemplateOptions.find((item) => item.id === latestFormData.templateId)?.name ?? companyContractTemplate?.name ?? '合同模板';
+    const documentHtml = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>${templateName}</title></head><body>${html}</body></html>`;
+    const url = URL.createObjectURL(new Blob([documentHtml], { type: 'text/html;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${templateName.replace(/[\\/:*?"<>|]/g, '-')}.html`;
+    link.click();
+    URL.revokeObjectURL(url);
+    Message.success('合同模板已下载');
   };
 
   const paymentPlanColumns = [
@@ -900,16 +924,13 @@ export function ContractEditor() {
             <Card
               title="合同模板"
               extra={
-                companyContractTemplate ? (
-                  <Space size={8}>
-                    <Typography.Text ellipsis style={{ maxWidth: 220 }} title={companyContractTemplate.name}>
-                      {companyContractTemplate.name}
-                    </Typography.Text>
-                    <Button icon={<IconDownload />} onClick={handleDownloadTemplate} title="下载模板" />
-                  </Space>
-                ) : (
-                  <Typography.Text type="secondary">当前主体未配置合同模板</Typography.Text>
-                )
+                <Space size={8}>
+                  <Select value={formData.templateId} disabled={isReadonly} onChange={handleContractTemplateChange} style={{ width: 220 }} placeholder="选择已发布模板">
+                    {managedTemplateOptions.map((template) => <Select.Option key={template.id} value={template.id}>{template.name} · V{template.versions.at(-1)?.versionNo}</Select.Option>)}
+                    {managedTemplateOptions.length === 0 && companyContractTemplate?.contractTemplateId && <Select.Option value={companyContractTemplate.contractTemplateId}>{companyContractTemplate.name}（旧模板）</Select.Option>}
+                  </Select>
+                  <Button icon={<IconDownload />} onClick={handleDownloadTemplate} title="下载当前正文" />
+                </Space>
               }
               bodyStyle={{ padding: 0 }}
             >

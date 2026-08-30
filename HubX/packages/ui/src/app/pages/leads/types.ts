@@ -237,6 +237,8 @@ export interface LeadDetailInfo {
   // 基本信息
   name: string;
   customer: string;
+  /** 已绑定的客户主档；线索联系人后续与客户联系人独立维护。 */
+  customerId?: string;
   contact: string;
   phone: string;
   wechat: string;
@@ -333,6 +335,7 @@ export interface LeadListItem {
   attachments?: Attachment[];
   /** 软删除标记；普通线索池不展示 */
   deleted?: boolean;
+  mergedIntoLeadId?: string;
 
   // --- 线索派发字段（lead-dispatch-dev-plan.md 阶段 A） ---
   /** 业务线 */

@@ -54,6 +54,7 @@ interface ContractsContextValue {
   addBlocker: (contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>) => Promise<void>;
   resolveBlocker: (contractId: string, blockerId: string) => Promise<void>;
   addDunning: (contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>) => Promise<void>;
+  updateSigningPackage: ContractService['updateSigningPackage'];
 }
 
 const ContractsContext = createContext<ContractsContextValue | null>(null);
@@ -127,19 +128,20 @@ export function ContractsProvider({ children, service }: ContractsProviderProps)
   const addBlocker = useCallback(async (contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>) => { await svc.addBlocker(contractId, blocker); await refresh(); }, [svc, refresh]);
   const resolveBlocker = useCallback(async (contractId: string, blockerId: string) => { await svc.resolveBlocker(contractId, blockerId); await refresh(); }, [svc, refresh]);
   const addDunning = useCallback(async (contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>) => { await svc.addDunning(contractId, record); await refresh(); }, [svc, refresh]);
+  const updateSigningPackage = useCallback(async (contractId: string, updater: Parameters<ContractService['updateSigningPackage']>[1]) => { await svc.updateSigningPackage(contractId, updater); await refresh(); }, [svc, refresh]);
 
   const value = useMemo<ContractsContextValue>(() => ({
     contracts, loading, getById, getNextContractNo, createFromWizard,
     saveDraft, saveAsVersion, saveDocumentPreviewVersion, saveVersionWithDetails,
     submitForApproval, submitLatestVersionForApproval, submitVersionForApproval, withdrawApproval,
     approveStep, rejectStep, markMailed, uploadScan, archiveFinalContract, uploadWordContract,
-    setPrimaryScan, voidContract, addCollection, addBlocker, resolveBlocker, addDunning,
+    setPrimaryScan, voidContract, addCollection, addBlocker, resolveBlocker, addDunning, updateSigningPackage,
   }), [
     contracts, loading, getById, getNextContractNo, createFromWizard,
     saveDraft, saveAsVersion, saveDocumentPreviewVersion, saveVersionWithDetails,
     submitForApproval, submitLatestVersionForApproval, submitVersionForApproval, withdrawApproval,
     approveStep, rejectStep, markMailed, uploadScan, archiveFinalContract, uploadWordContract,
-    setPrimaryScan, voidContract, addCollection, addBlocker, resolveBlocker, addDunning,
+    setPrimaryScan, voidContract, addCollection, addBlocker, resolveBlocker, addDunning, updateSigningPackage,
   ]);
 
   return <ContractsContext.Provider value={value}>{children}</ContractsContext.Provider>;
@@ -149,6 +151,10 @@ export function useContracts(): ContractsContextValue {
   const ctx = useContext(ContractsContext);
   if (!ctx) throw new Error('useContracts must be used within ContractsProvider');
   return ctx;
+}
+
+export function useOptionalContracts(): ContractsContextValue | null {
+  return useContext(ContractsContext);
 }
 
 // 便捷工具：统计各状态合同数（Tab 计数用）

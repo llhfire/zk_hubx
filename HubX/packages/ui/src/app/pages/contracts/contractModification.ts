@@ -56,7 +56,7 @@ export function downloadAttachment(file: { name: string; url?: string }) {
     link.click();
     return;
   }
-  Message.info(`下载文件: ${file.name}`);
+  Message.warning(`${file.name} 仅有演示元数据，无可下载源文件`);
 }
 
 export function mapUploadFilesToAttachments(

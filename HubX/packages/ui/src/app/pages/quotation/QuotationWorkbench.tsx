@@ -27,6 +27,8 @@ import {
 } from '@/app/components/ui';
 import { useEmployee } from '@/app/pages/employee/EmployeeContext';
 import { FileFlowWorkbench } from './components/FileFlowWorkbench';
+import { QuoteGovernancePanel } from './components/QuoteGovernancePanel';
+import { useTodos } from '@/app/todos/TodoContext';
 import './quotationWorkbench.css';
 
 const { Text } = Typography;
@@ -54,6 +56,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     deleteQuote, createNewVersion, isLeadFrozen, loading,
   } = useQuotation();
   const { employees } = useEmployee();
+  const { activeTodos, updateTodo } = useTodos();
   const handleBack = onClose ?? (() => navigate('/quotation'));
   const quote = quoteId ? getQuoteById(quoteId) : undefined;
   const [viewedStage, setViewedStage] = useState<QuoteStage | null>(null);
@@ -90,6 +93,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     if (!quote) return;
     if (!reassignValue.trim()) { Message.warning('请填写目标人员姓名'); return; }
     await reassignOwner(quote.id, reassignField, reassignValue.trim());
+    activeTodos
+      .filter((todo) => todo.source === 'quotation' && todo.sourceId === quote.id)
+      .forEach((todo) => updateTodo(todo.id, { assigneeId: reassignValue.trim(), assigneeName: reassignValue.trim() }));
     setReassignVisible(false);
     setReassignValue('');
     Message.success(`已改指${reassignField === 'salesOwnerName' ? '销售' : '评估人'}为 ${reassignValue.trim()}`);
@@ -296,6 +302,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
               )}
               <Button size="small" type="text" onClick={() => setCustomerVisible(true)}>客户详情</Button>
             </Space>
+          </Card>
+          <Card title="销售协作与证据" size="small">
+            <QuoteGovernancePanel quote={quote} />
           </Card>
         </ProcessWorkspaceAside>
       </ProcessWorkspace>

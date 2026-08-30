@@ -85,6 +85,8 @@ export function applyCreateFromWizard(input: WizardInput, id: string, contractNo
     leadId: input.leadId,
     quoteId: input.quoteId,
     projectId: input.projectId,
+    customerId: input.customerId,
+    customerSnapshot: input.customerSnapshot,
     current: formData,
     versionHistory: [{ versionNo: 'V1', formData, renderedHtml: renderContractDocument(formData), label: '首次保存草稿', createdAt: now, createdBy: '张三' }],
     approvalFlow: createInitialApprovalFlow(),

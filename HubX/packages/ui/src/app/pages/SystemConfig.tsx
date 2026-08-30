@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Card,
   Tabs,
@@ -16,80 +16,115 @@ import {
 import { IconSave } from '@arco-design/web-react/icon';
 import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 import './systemConfigConsistency.css';
+import { DEFAULT_SALES_BUSINESS_CONFIG, SYSTEM_CONFIG_STORAGE_KEY } from './systemConfigStore';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
+const STORAGE_KEY = SYSTEM_CONFIG_STORAGE_KEY;
+
+const DEFAULT_CONFIG = {
+  message: {
+    enableWechat: true, wechatWebhook: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxx',
+    enableEmail: true, emailHost: 'smtp.company.com', emailPort: 465,
+    emailUser: 'noreply@company.com', emailPassword: '********', enableSMS: false,
+    smsProvider: 'aliyun', smsAccessKey: '', smsAccessSecret: '',
+  },
+  backup: { enableAutoBackup: true, backupInterval: 'daily', backupTime: '02:00', backupRetention: 30, backupPath: '/data/backups' },
+  business: DEFAULT_SALES_BUSINESS_CONFIG,
+};
+
+function downloadJson(data: unknown, fileName: string) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export function SystemConfig() {
   const [activeTab, setActiveTab] = useState('message');
   const [messageForm] = Form.useForm();
   const [backupForm] = Form.useForm();
   const [businessForm] = Form.useForm();
+  const restoreInputRef = useRef<HTMLInputElement>(null);
 
-  // 初始化表单值
-  useState(() => {
-    messageForm.setFieldsValue({
-      enableWechat: true,
-      wechatWebhook: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxx',
-      enableEmail: true,
-      emailHost: 'smtp.company.com',
-      emailPort: 465,
-      emailUser: 'noreply@company.com',
-      emailPassword: '********',
-      enableSMS: false,
-      smsProvider: 'aliyun',
-      smsAccessKey: '',
-      smsAccessSecret: '',
-    });
+  const readConfig = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return DEFAULT_CONFIG;
+      const parsed = JSON.parse(saved);
+      return {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        message: { ...DEFAULT_CONFIG.message, ...(parsed.message ?? {}) },
+        backup: { ...DEFAULT_CONFIG.backup, ...(parsed.backup ?? {}) },
+        business: { ...DEFAULT_CONFIG.business, ...(parsed.business ?? {}) },
+      };
+    } catch {
+      return DEFAULT_CONFIG;
+    }
+  };
 
-    backupForm.setFieldsValue({
-      enableAutoBackup: true,
-      backupInterval: 'daily',
-      backupTime: '02:00',
-      backupRetention: 30,
-      backupPath: '/data/backups',
-    });
+  const applyConfig = (config: typeof DEFAULT_CONFIG) => {
+    messageForm.setFieldsValue(config.message);
+    backupForm.setFieldsValue(config.backup);
+    businessForm.setFieldsValue(config.business);
+  };
 
-    businessForm.setFieldsValue({
-      leadRecycleDays: 7,
-      followRemindDays: 3,
-      contractExpireRemindDays: 30,
-      customerInactiveDays: 90,
-      enableDuplicateCheck: true,
-      enableAutoAssign: false,
-    });
-  });
+  useEffect(() => applyConfig(readConfig()), []);
+
+  const persistSection = (section: keyof typeof DEFAULT_CONFIG, values: Record<string, unknown>) => {
+    const next = { ...readConfig(), [section]: values };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  };
 
   const handleMessageSubmit = () => {
     messageForm.validate().then((values) => {
-      console.log('消息渠道配置', values);
-      Message.success('保存成功');
+      persistSection('message', values);
+      Message.success('消息渠道配置已保存');
     });
   };
 
   const handleBackupSubmit = () => {
     backupForm.validate().then((values) => {
-      console.log('备份配置', values);
-      Message.success('保存成功');
+      persistSection('backup', values);
+      Message.success('备份策略已保存');
     });
   };
 
   const handleBusinessSubmit = () => {
     businessForm.validate().then((values) => {
-      console.log('业务参数配置', values);
-      Message.success('保存成功');
+      persistSection('business', values);
+      Message.success('业务参数已保存');
     });
   };
 
   const handleBackupNow = () => {
-    Message.loading('正在备份数据...');
-    setTimeout(() => {
-      Message.success('数据备份成功');
-    }, 2000);
+    const config = readConfig();
+    downloadJson({ schemaVersion: 1, exportedAt: new Date().toISOString(), config }, `HubX-系统配置备份-${new Date().toISOString().slice(0, 10)}.json`);
+    Message.success('配置备份已下载');
   };
 
   const handleRestore = () => {
-    Message.warning('数据恢复功能需谨慎使用,请联系系统管理员');
+    restoreInputRef.current?.click();
+  };
+
+  const handleRestoreFile = async (file?: File) => {
+    if (!file) return;
+    try {
+      const payload = JSON.parse(await file.text());
+      if (payload.schemaVersion !== 1 || !payload.config?.message || !payload.config?.backup || !payload.config?.business) {
+        throw new Error('备份文件结构不匹配');
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.config));
+      applyConfig(payload.config);
+      Message.success('配置已从备份恢复');
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '备份文件解析失败');
+    } finally {
+      if (restoreInputRef.current) restoreInputRef.current.value = '';
+    }
   };
 
   return (
@@ -101,12 +136,13 @@ export function SystemConfig() {
         title="系统通用配置"
         description="集中维护消息渠道、备份策略和跨业务提醒参数。"
       />
+      <input ref={restoreInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => handleRestoreFile(event.target.files?.[0])} />
 
       <ProcessMetricGrid items={[
         { key: 'channels', label: '消息渠道', value: '3 类', detail: '企业微信、邮件、短信' },
         { key: 'backup', label: '自动备份', value: '每日 02:00', detail: '保留 30 天', tone: 'success' },
-        { key: 'lead', label: '线索回收', value: '7 天', detail: '未跟进自动回收' },
-        { key: 'contract', label: '合同提醒', value: '提前 30 天', detail: '到期提醒窗口' },
+        { key: 'lead', label: '派发 / 首联 SLA', value: '30 / 120 分钟', detail: '只告警和催办，不自动回收' },
+        { key: 'contract', label: '合同提醒', value: '30 / 7 / 1 天', detail: '统一到期提醒窗口' },
       ]} />
 
       <Card bordered={false} title="配置分组" className="system-config-card system-config-form-card">
@@ -204,13 +240,9 @@ export function SystemConfig() {
           <TabPane key="business" title="业务参数配置">
             <Form form={businessForm} layout="vertical" className="system-config-form">
               <Divider orientation="left">线索管理</Divider>
-              <FormItem
-                label="线索自动回收天数"
-                field="leadRecycleDays"
-                extra="销售认领线索后,若超过设置天数未跟进,系统将自动回收至公海线索"
-              >
-                <InputNumber placeholder="请输入天数" min={1} style={{ width: '100%' }} />
-              </FormItem>
+              <FormItem label="待派发 SLA（分钟）" field="dispatchSlaMinutes" extra="超时只标红、告警和允许催办，不自动派发或回收"><InputNumber min={1} style={{ width: '100%' }} /></FormItem>
+              <FormItem label="首联 SLA（分钟）" field="firstContactSlaMinutes" extra="派发到销售或从公海领取后开始计时"><InputNumber min={1} style={{ width: '100%' }} /></FormItem>
+              <FormItem label="首联临期提醒（分钟）" field="firstContactWarningMinutes"><InputNumber min={1} style={{ width: '100%' }} /></FormItem>
               <FormItem
                 label="跟进提醒天数"
                 field="followRemindDays"
@@ -221,11 +253,9 @@ export function SystemConfig() {
               <FormItem label="启用线索查重" field="enableDuplicateCheck" triggerPropName="checked">
                 <Switch />
               </FormItem>
-              <FormItem label="启用线索自动分配" field="enableAutoAssign" triggerPropName="checked">
-                <Switch />
-              </FormItem>
 
               <Divider orientation="left">客户管理</Divider>
+              <FormItem label="联系人生日提醒提前量" field="birthdayReminderDays" extra="逗号分隔，0 表示当天；默认 7,0"><Input placeholder="7,0" /></FormItem>
               <FormItem
                 label="客户闲置天数"
                 field="customerInactiveDays"
@@ -236,12 +266,13 @@ export function SystemConfig() {
 
               <Divider orientation="left">合同管理</Divider>
               <FormItem
-                label="合同到期提醒天数"
-                field="contractExpireRemindDays"
-                extra="合同到期前N天发送提醒通知"
+                label="合同到期提醒提前量"
+                field="contractExpireReminderDays"
+                extra="逗号分隔；默认 30,7,1"
               >
-                <InputNumber placeholder="请输入天数" min={1} style={{ width: '100%' }} />
+                <Input placeholder="30,7,1" />
               </FormItem>
+              <FormItem label="免费维护期提醒提前量" field="maintenanceExpireReminderDays" extra="逗号分隔；默认 30,7"><Input placeholder="30,7" /></FormItem>
 
               <FormItem>
                 <Button type="primary" icon={<IconSave />} onClick={handleBusinessSubmit}>

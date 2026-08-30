@@ -10,6 +10,7 @@ export interface CompanyEntityFile {
   size: string;
   updatedAt: string;
   description: string;
+  blobUrl?: string;
 }
 
 export interface CompanyPublicAccount {

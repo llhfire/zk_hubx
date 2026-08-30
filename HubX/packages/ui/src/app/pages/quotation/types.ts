@@ -1,4 +1,6 @@
 // 报价模块核心类型定义
+import type { CustomerSnapshot } from '../customers/types';
+import type { ElectronicSigningPackage } from '../sales-compliance/types';
 
 // ─── 状态机 ───────────────────────────────────────────────
 
@@ -98,7 +100,11 @@ export type QuoteAction =
   | 'return_to_edit_features'
   | 'delete_quote'
   | 'reassign_sales'
-  | 'reassign_evaluator';
+  | 'reassign_evaluator'
+  | 'create_proxy'
+  | 'revoke_proxy'
+  | 'create_signing_package'
+  | 'advance_signing';
 
 export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   create: '创建报价单',
@@ -121,6 +127,10 @@ export const QUOTE_ACTION_LABELS: Record<QuoteAction, string> = {
   delete_quote: '删除报价',
   reassign_sales: '改指销售',
   reassign_evaluator: '改指评估人',
+  create_proxy: '设置代理',
+  revoke_proxy: '撤销代理',
+  create_signing_package: '创建电子签署演示包',
+  advance_signing: '更新签署演示状态',
 };
 
 export interface QuoteTimelineEvent {
@@ -434,6 +444,8 @@ export interface Quote {
   version: string;            // v1.0
   status: QuoteStatus;
   leadId: string;
+  customerId?: string;
+  customerSnapshot?: CustomerSnapshot;
   /** 报价数据的流转载体：在线数据表单或 Excel 文件。 */
   flowMode?: 'online' | 'file';
   /** 文件流转专属状态；创建后 flowMode 不再修改。 */
@@ -482,6 +494,18 @@ export interface Quote {
   sentAt?: string;
   /** 上一版本报价单 id，重新报价时建立版本链 */
   previousQuoteId?: string;
+  /** 补充报价所属主报价；与重新报价链分立。 */
+  parentQuoteId?: string;
+  proxies?: Array<{
+    id: string;
+    responsibility: 'sales' | 'technical_evaluation';
+    principalName: string;
+    proxyName: string;
+    startAt: string;
+    endAt: string;
+    revokedAt?: string;
+  }>;
+  signingPackage?: ElectronicSigningPackage;
   createdAt: string;
   updatedAt: string;
 }

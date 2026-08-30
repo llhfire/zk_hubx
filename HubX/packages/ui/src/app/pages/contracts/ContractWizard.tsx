@@ -33,6 +33,9 @@ import { useQuotation } from '../quotation/QuotationContext';
 import { useBusinessCases } from '@/app/business-case/BusinessCaseContext';
 import { PageShell } from '@/app/components/ui';
 import type { ContractFormData, QuotationRecord } from './types';
+import { findDefaultContractTemplate } from './templateStore';
+import { useCustomers } from '../customers/CustomerContext';
+import { buildCustomerSnapshot } from '../customers/customerModel';
 
 const Title = Typography.Title;
 
@@ -167,12 +170,19 @@ function initFormDataFromContext(
   };
 }
 
+function withDefaultTemplate(formData: ContractFormData): ContractFormData {
+  const template = findDefaultContractTemplate(formData.signingEntity, formData.productCategory);
+  const version = template?.versions.at(-1);
+  return template ? { ...formData, templateId: template.id, templateVersionId: version?.id, customContractHtml: undefined } : formData;
+}
+
 export function ContractWizard() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { createFromWizard, getNextContractNo, saveDraft } = useContracts();
-  const { updateQuote } = useQuotation();
+  const { quotes, updateQuote } = useQuotation();
+  const { customers } = useCustomers();
   const { getByLeadId: getCaseByLeadId, upsertCase } = useBusinessCases();
 
   const leadIdParam = searchParams.get('leadId');
@@ -218,7 +228,7 @@ export function ContractWizard() {
   const selectedQuoteId = dealQuotePrefill?.quoteId ?? initialQuote?.id ?? null;
   const [formData, setFormData] = useState<ContractFormData>(() => {
     const base = contractEditPrefill?.formData ?? initFormDataFromContext(lead, initialQuote);
-    return dealQuotePrefill && !contractEditPrefill ? applyDealQuotePrefill(base, dealQuotePrefill) : base;
+    return withDefaultTemplate(dealQuotePrefill && !contractEditPrefill ? applyDealQuotePrefill(base, dealQuotePrefill) : base);
   });
   const previewContractNo = getNextContractNo(formData.signingEntity);
 
@@ -227,10 +237,14 @@ export function ContractWizard() {
   };
 
   const handleSigningEntityChange = (shortName: string) => {
-    setFormData((prev) => ({
+    setFormData((prev) => withDefaultTemplate({
       ...prev,
       ...buildSigningEntityFields(findCompanyEntityByName(shortName)),
     }));
+  };
+
+  const handleProductCategoryChange = (productCategory: string) => {
+    setFormData((prev) => withDefaultTemplate({ ...prev, productCategory }));
   };
 
   // 报价金额变化时，按比例重算每期金额
@@ -283,6 +297,11 @@ export function ContractWizard() {
       kind: dealQuotePrefill?.kind ?? 'main',
       parentContractId: dealQuotePrefill?.parentContractId,
       sourceQuoteId: dealQuotePrefill?.kind === 'supplement' ? dealQuotePrefill.quoteId : undefined,
+      customerId: quotes.find((item) => item.id === selectedQuoteId)?.customerId ?? customers.find((item) => item.name === formData.customerName)?.id,
+      customerSnapshot: (() => {
+        const customer = customers.find((item) => item.id === quotes.find((quote) => quote.id === selectedQuoteId)?.customerId || item.name === formData.customerName);
+        return customer ? buildCustomerSnapshot(customer) : undefined;
+      })(),
       formData,
     });
     Message.success(`合同 ${created.contractNo} 已创建草稿`);
@@ -372,6 +391,7 @@ export function ContractWizard() {
         contractNo={contractEditPrefill?.contractNo ?? previewContractNo}
         updateField={updateField}
         handleSigningEntityChange={handleSigningEntityChange}
+        handleProductCategoryChange={handleProductCategoryChange}
         handleTotalAmountChange={handleTotalAmountChange}
       />
 
@@ -389,12 +409,14 @@ function SimpleContractForm({
   contractNo,
   updateField,
   handleSigningEntityChange,
+  handleProductCategoryChange,
   handleTotalAmountChange,
 }: {
   formData: ContractFormData;
   contractNo?: string;
   updateField: <K extends keyof ContractFormData>(k: K, v: ContractFormData[K]) => void;
   handleSigningEntityChange: (shortName: string) => void;
+  handleProductCategoryChange: (productCategory: string) => void;
   handleTotalAmountChange: (v: number) => void;
 }) {
   return (
@@ -497,7 +519,7 @@ function SimpleContractForm({
               {renderSubmitField('产品类别', (
                 <Select
                   value={formData.productCategory || undefined}
-                  onChange={(value) => updateField('productCategory', value)}
+                  onChange={handleProductCategoryChange}
                   placeholder="请选择产品类别"
                   style={submitControlStyle}
                 >

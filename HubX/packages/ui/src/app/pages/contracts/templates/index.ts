@@ -5,6 +5,8 @@ import type { ContractTemplate } from '../types';
 import { cloudServiceTemplate } from './cloudService';
 import { serviceContractTemplate } from './serviceContract';
 import { softwareSalesTemplate } from './softwareSales';
+import { findPublishedTemplate } from '../templateStore';
+import { escape, wrapDocument } from './shared';
 
 export const contractTemplates: ContractTemplate[] = [
   softwareSalesTemplate,
@@ -36,7 +38,25 @@ export function renderTemplate(templateId: string, formData: Parameters<Contract
 
 // 手动编辑过模板时优先使用编辑后的正文，否则按当前表单数据实时渲染模板。
 export function renderContractDocument(formData: Parameters<ContractTemplate['render']>[0]): string {
-  return formData.customContractHtml?.trim()
-    ? formData.customContractHtml
-    : renderTemplate(formData.templateId, formData);
+  if (formData.customContractHtml?.trim()) return formData.customContractHtml;
+  const published = findPublishedTemplate(formData.templateId, formData.templateVersionId);
+  if (!published) return renderTemplate(formData.templateId, formData);
+  const values: Record<string, string | number | undefined> = {
+    contractName: formData.contractName,
+    customerName: formData.customerName,
+    customerContact: formData.customerContact,
+    customerPhone: formData.customerPhone,
+    customerTaxNo: formData.customerTaxNo,
+    signingEntity: formData.signingEntity,
+    signDate: formData.signDate,
+    effectiveDate: formData.effectiveDate,
+    endDate: formData.endDate,
+    totalAmount: formData.totalAmount.toLocaleString('zh-CN'),
+    contractContent: formData.contractContent,
+  };
+  const sanitized = published.html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*(["']).*?\1/gi, '')
+    .replace(/\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g, (_, key: string) => escape(values[key]));
+  return wrapDocument(formData, sanitized);
 }

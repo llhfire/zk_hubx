@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import {
   Button,
   Card,
@@ -149,9 +149,11 @@ function percent(value: number | null): string {
 export default function CaseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { contracts } = useContracts();
   const { collections: ledgerEntries } = useCollections();
-  const [activeTab, setActiveTab] = useState('overview');
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() => requestedTab && TAB_LABELS[requestedTab] ? requestedTab : 'overview');
   const [expandedFeatureLists, setExpandedFeatureLists] = useState<Set<string>>(new Set());
   const [expandedQuotations, setExpandedQuotations] = useState<Set<string>>(new Set());
   const [costStructureView, setCostStructureView] = useState<'actual' | 'forecast'>('actual');
@@ -359,7 +361,12 @@ export default function CaseDetail() {
       <ProcessWorkspace>
         <ProcessWorkspaceMain>
           <Card className="case-detail__tabs-card">
-            <Tabs activeTab={activeTab} onChange={setActiveTab}>
+            <Tabs activeTab={activeTab} onChange={(tab) => {
+              setActiveTab(tab);
+              const next = new URLSearchParams(searchParams);
+              if (tab === 'overview') next.delete('tab'); else next.set('tab', tab);
+              setSearchParams(next, { replace: true });
+            }}>
               <TabPane key="overview" title="概览">
                 <div className="case-detail__tab-panel case-detail__content-stack">
                   <Card title="业务档案" size="small">

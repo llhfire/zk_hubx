@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import {
-  Button, Card, Checkbox, Dropdown, Empty, Input, Menu, Message, Popover, Space, Table, Tag, Typography,
+  Button, Card, Checkbox, Dropdown, Empty, Input, Menu, Message, Modal, Popover, Space, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import {
-  IconPlusCircle, IconMinusCircle, IconImport, IconSend, IconDown, IconApps, IconDelete,
+  IconPlusCircle, IconMinusCircle, IconImport, IconSend, IconDown, IconApps, IconDelete, IconDownload,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { validateFeatureList } from '../quoteFlow';
 import { PLATFORM_OPTIONS } from '../types';
 import type { EndpointConfig, FeatureModule, FeatureSubFeature, Quote } from '../types';
+import { FeatureListUpload } from '../components/FeatureListUpload';
 
 const { Text, Title } = Typography;
 
@@ -28,6 +29,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
   const [localList, setLocalList] = useState<FeatureModule[]>(quote.featureList);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [editingEndpoint, setEditingEndpoint] = useState<string | null>(null);
+  const [importVisible, setImportVisible] = useState(false);
 
   // 编辑态以本地为准，只读态以 quote 为准
   const featureList = readonly ? quote.featureList : localList;
@@ -205,6 +207,41 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
     Message.success('功能清单已确认，转派技术评估');
   };
 
+  const handleExport = async () => {
+    if (featureList.length === 0) {
+      Message.warning('当前没有可导出的功能清单');
+      return;
+    }
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('功能清单');
+      sheet.columns = [
+        { header: '模块', key: 'module', width: 22 }, { header: '子功能', key: 'feature', width: 26 },
+        { header: '描述', key: 'description', width: 48 }, { header: '备注', key: 'remark', width: 24 },
+        { header: '端', key: 'endpoint', width: 18 },
+      ];
+      featureList.forEach((module) => {
+        const endpoint = endpointConfigs.find((item) => item.id === module.endpointId)?.name || '';
+        module.subFeatures.forEach((feature) => sheet.addRow({
+          module: module.name, feature: feature.name, description: feature.description,
+          remark: feature.remark || '', endpoint,
+        }));
+      });
+      sheet.getRow(1).font = { bold: true };
+      const buffer = await workbook.xlsx.writeBuffer();
+      const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${quote.quoteNo}_功能清单.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+      Message.success('功能清单已导出');
+    } catch {
+      Message.error('导出失败，请重试');
+    }
+  };
+
   const columns = [
     {
       title: <span style={{ whiteSpace: 'nowrap' }}>序号</span>, dataIndex: 'seq', width: 56,
@@ -363,11 +400,10 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
       <Card
         title={<Title heading={6} style={{ margin: 0 }}>工作台一 · 产品经理功能清单</Title>}
       extra={
-        !readonly && (
-          <Space>
-            <Button icon={<IconImport />} onClick={() => Message.info('Excel 导入待后端接入，本轮可手动录入')}>导入</Button>
-          </Space>
-        )
+        <Space>
+          {!readonly && <Button icon={<IconImport />} onClick={() => setImportVisible(true)}>导入</Button>}
+          <Button icon={<IconDownload />} onClick={handleExport}>导出</Button>
+        </Space>
       }
     >
       {/* 端配置区域已移至表格端列中 */}
@@ -681,6 +717,19 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
         </Space>
       )}
     </div>
+    <Modal title="导入功能清单" visible={importVisible} footer={null} onCancel={() => setImportVisible(false)} unmountOnExit style={{ width: 760 }}>
+      <FeatureListUpload
+        initialModules={featureList}
+        onParsed={(modules) => {
+          persist(modules.map((module, index) => ({
+            ...module,
+            sort: index + 1,
+            endpointId: module.endpointId || endpointConfigs[0]?.id || '',
+          })));
+          setImportVisible(false);
+        }}
+      />
+    </Modal>
     </>
   );
 }

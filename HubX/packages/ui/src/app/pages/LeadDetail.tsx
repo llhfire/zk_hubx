@@ -116,7 +116,17 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
     || 'my'
   ); // 默认为我的线索，地址参数用于刷新后保留来源。
   const leadProfile = useMemo(() => getLeadDetailProfile(id, from), [id, from]);
-  const { leadInfo, quotationHistory, useLiveContracts, demoContracts } = leadProfile;
+  const {
+    leadInfo: profileLeadInfo,
+    quotationHistory,
+    useLiveContracts,
+    demoContracts,
+  } = leadProfile;
+  const [leadOverride, setLeadOverride] = useState<Partial<typeof profileLeadInfo>>({});
+  const leadInfo = useMemo(
+    () => ({ ...profileLeadInfo, ...leadOverride }),
+    [leadOverride, profileLeadInfo],
+  );
   const { contracts: allContracts } = useContracts();
   const { employees } = useEmployee();
   const { getProjectByLeadId, addProject } = useProjects();
@@ -198,6 +208,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const [customTagVisible, setCustomTagVisible] = useState(false);
   const [trashVisible, setTrashVisible] = useState(false);
   const [returnPublicVisible, setReturnPublicVisible] = useState(false);
+  const [transferVisible, setTransferVisible] = useState(false);
   const [leadFeatureList, setLeadFeatureList] = useState<LeadBusinessEnd[]>(initialLeadBusinessEnds);
   const { createQuote, quotes } = useQuotation();
   const [quotationDrawerVisible, setQuotationDrawerVisible] = useState(false);
@@ -267,6 +278,7 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const [customTagForm] = Form.useForm();
   const [trashForm] = Form.useForm();
   const [demoForm] = Form.useForm();
+  const [transferForm] = Form.useForm();
   const [customerSearchKeyword, setCustomerSearchKeyword] = useState('');
   const followHistory = [
     {
@@ -464,7 +476,10 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
 
   const handleBindCustomer = () => {
     bindCustomerForm.validate().then((values) => {
-      console.log(values);
+      const customer = customerList.find((item) => item.id === values.customerId);
+      if (customer) {
+        setLeadOverride((previous) => ({ ...previous, customer: customer.name }));
+      }
       Message.success('客户主体绑定成功');
       setBindCustomerVisible(false);
       bindCustomerForm.resetFields();
@@ -517,8 +532,17 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   const handleEditLeadSubmit = () => {
     editLeadForm.setFieldValue('tags', selectedTags);
     editLeadForm.validate().then((values) => {
-      setPresalesGroupName(values.presalesGroupName?.trim() || '');
-      console.log(values);
+      const nextPresalesGroupName = values.presalesGroupName?.trim() || '';
+      const selectedCustomer = customerList.find((item) => item.id === values.customerId);
+      const { customerId: _customerId, presalesGroupName: _presalesGroupName, ...editableValues } = values;
+      setPresalesGroupName(nextPresalesGroupName);
+      setLeadOverride((previous) => ({
+        ...previous,
+        ...editableValues,
+        ...(selectedCustomer ? { customer: selectedCustomer.name } : {}),
+        presalesGroupName: nextPresalesGroupName,
+        tags: selectedTags,
+      }));
       Message.success('线索更新成功');
       setEditLeadVisible(false);
       editLeadForm.resetFields();
@@ -527,11 +551,29 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
   };
 
   const handleClaim = () => {
+    setLeadOverride((previous) => ({ ...previous, owner: CURRENT_LOGIN_USER.name }));
     Message.success('线索认领成功');
   };
 
   const handleTransfer = () => {
-    Message.info('转让功能开发中');
+    transferForm.setFieldsValue({
+      assigneeId: employees.find((employee) => employee.name === leadInfo.owner)?.id,
+    });
+    setTransferVisible(true);
+  };
+
+  const handleTransferSubmit = () => {
+    transferForm.validate().then((values) => {
+      const assignee = employees.find((employee) => employee.id === values.assigneeId);
+      if (!assignee) {
+        Message.error('未找到选中成员');
+        return;
+      }
+      setLeadOverride((previous) => ({ ...previous, owner: assignee.name }));
+      setTransferVisible(false);
+      transferForm.resetFields();
+      Message.success(`线索已转移给 ${assignee.name}`);
+    });
   };
 
   const handleAbandon = () => {
@@ -1012,7 +1054,8 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                                   <Button
                                     type="text"
                                     size="mini"
-                                    onClick={() => Message.info(`下载文件: ${file.name}`)}
+                                    disabled
+                                    title="演示记录仅保留文件元数据"
                                   >
                                     下载
                                   </Button>
@@ -1472,16 +1515,13 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                             {item.attachments.map((file: any) => (
                               <span
                                 key={file.id}
+                                title="演示记录仅保留文件元数据"
                                 style={{
-                                  color: 'var(--primary)',
+                                  color: 'var(--color-text-3)',
                                   fontSize: '12px',
-                                  cursor: 'pointer',
                                   padding: '2px 4px',
                                   borderRadius: 4,
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-fill-1)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                onClick={() => Message.info(`下载附件: ${file.name}`)}
                               >
                                 {file.name} ({file.size})
                               </span>
@@ -1778,6 +1818,33 @@ export function LeadDetail({ leadId, initialSideTab }: { leadId?: string; initia
                 <Select.Option key="follow-30" value="30">30天后</Select.Option>
               </Select>
             </div>
+          </FormItem>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="转移线索"
+        visible={transferVisible}
+        onOk={handleTransferSubmit}
+        onCancel={() => {
+          setTransferVisible(false);
+          transferForm.resetFields();
+        }}
+        style={{ width: 520 }}
+      >
+        <Form form={transferForm} layout="vertical">
+          <FormItem
+            label="接收人"
+            field="assigneeId"
+            rules={[{ required: true, message: '请选择接收人' }]}
+          >
+            <Select placeholder="请选择接收人" showSearch>
+              {employees.map((employee) => (
+                <Select.Option key={employee.id} value={employee.id}>
+                  {employee.name}{employee.department ? ` · ${employee.department}` : ''}
+                </Select.Option>
+              ))}
+            </Select>
           </FormItem>
         </Form>
       </Modal>

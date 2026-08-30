@@ -376,18 +376,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
     });
   };
 
-  const renderFiles = (files: string[], label: string) => files.length ? (
+  const renderFiles = (files: string[], _label: string) => files.length ? (
     <div className="lead-payment-file-list">
       {files.map(file => (
-        <Button
-          key={file}
-          type="text"
-          size="mini"
-          icon={<IconEye />}
-          onClick={() => Message.info(`查看${label}：${file}`)}
-        >
-          {file}
-        </Button>
+        <Tag key={file} icon={<IconFile />}>{file}</Tag>
       ))}
     </div>
   ) : '-';
@@ -911,23 +903,10 @@ function ProjectStatusTag({
   );
 }
 
-function downloadProjectFile(fileName: string) {
-  const content = new Blob([`附件文件：${fileName}`], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(content);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  Message.success(`已开始下载：${fileName}`);
-}
-
 function ProjectRecordFiles({
   files,
-  label,
-  downloadable = false,
+  label: _label,
+  downloadable: _downloadable = false,
 }: {
   files: string[];
   label: string;
@@ -939,25 +918,7 @@ function ProjectRecordFiles({
     <div className="project-payment-file-list">
       {files.map(file => (
         <div key={file} className="project-payment-file-item">
-          <Button
-            type="text"
-            size="mini"
-            icon={<IconEye />}
-            onClick={() => Message.info(`查看${label}：${file}`)}
-          >
-            {file}
-          </Button>
-          {downloadable && (
-            <Tooltip content={`下载${label}`}>
-              <Button
-                type="text"
-                size="mini"
-                icon={<IconDownload />}
-                aria-label={`下载${file}`}
-                onClick={() => downloadProjectFile(file)}
-              />
-            </Tooltip>
-          )}
+          <Tag icon={<IconFile />}>{file}</Tag>
         </div>
       ))}
     </div>

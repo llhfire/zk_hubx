@@ -2,6 +2,8 @@
 //
 // 合同是主体，每次修改保存为完整版本快照。审批轮次通过 versionNo
 // 归属到具体版本，approvedVersionNo 指向当前审批通过的终稿。
+import type { CustomerSnapshot } from '../customers/types';
+import type { ElectronicSigningPackage } from '../sales-compliance/types';
 
 export type ContractStatus =
   | 'draft' // 草稿
@@ -107,6 +109,7 @@ export interface ContractFormData {
   paymentPlans: PaymentPlanItem[];
   invoiceType?: '专票' | '普票';
   templateId: string;
+  templateVersionId?: string;
   customContractHtml?: string; // 在模板预览中手动编辑后的合同正文
 }
 
@@ -174,6 +177,8 @@ export interface Contract {
   leadId?: string;
   quoteId?: string;
   projectId?: string;
+  customerId?: string;
+  customerSnapshot?: CustomerSnapshot;
 
   // 当前编辑内容
   current: ContractFormData;
@@ -191,6 +196,7 @@ export interface Contract {
   mailedAt?: string;
   archivedScans: ScanArchiveEntry[];
   uploadedWordContract?: UploadedWordContract;
+  signingPackage?: ElectronicSigningPackage;
 
   // 元信息
   createdAt: string;
@@ -201,6 +207,8 @@ export interface Contract {
   receivedAmount?: number;
   receivableAmount?: number;
   executionStatus?: ExecutionStatus;
+  /** 免费维护期截止日期；用于销售机会提醒。 */
+  maintenanceEndDate?: string;
 
   // 回款看板扩展
   collectionRecords?: CollectionRecord[];
@@ -287,5 +295,7 @@ export interface WizardInput {
   kind?: 'main' | 'supplement';
   parentContractId?: string;
   sourceQuoteId?: string;
+  customerId?: string;
+  customerSnapshot?: CustomerSnapshot;
   formData: ContractFormData;
 }

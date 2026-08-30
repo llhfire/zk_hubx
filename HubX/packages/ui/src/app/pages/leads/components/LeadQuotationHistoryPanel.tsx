@@ -144,16 +144,7 @@ function downloadQuotationFile(fileName: string, fileUrl?: string) {
     link.remove();
     return;
   }
-  const blob = new Blob([`报价附件：${fileName}`], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-  Message.success(`已开始下载：${fileName}`);
+  Message.warning(`${fileName} 仅有演示元数据，无可下载源文件`);
 }
 
 function downloadQuotationReportImage(url: string, fileName: string) {
@@ -194,7 +185,7 @@ function ProjectQuotationFileBlock({
 }: {
   label: string;
   files: string[];
-  onPreview: (fileName: string) => void;
+  onPreview: (fileName: string, fileUrl?: string) => void;
   onUpload?: (files: UploadItem[]) => void;
   onRemove?: (fileName: string) => void;
   accept?: string;
@@ -219,7 +210,7 @@ function ProjectQuotationFileBlock({
       <div className="lead-quotation-history-project-file-list">
         {files.length ? files.map(file => (
           <div className="lead-quotation-history-project-file-row" key={file}>
-            <button type="button" className="lead-quotation-history-project-file-name" title={`预览 ${file}`} onClick={() => onPreview(file)}>
+            <button type="button" className="lead-quotation-history-project-file-name" title={fileUrls?.[file] ? `预览 ${file}` : '演示文件仅保留元数据'} disabled={!fileUrls?.[file]} onClick={() => onPreview(file, fileUrls?.[file])}>
               <IconFile />
               <span>{file}</span>
             </button>
@@ -242,6 +233,7 @@ function ProjectQuotationFileBlock({
                   size="mini"
                   icon={<IconDownload />}
                   aria-label={`下载${file}`}
+                  disabled={!fileUrls?.[file]}
                   onClick={() => downloadQuotationFile(file, fileUrls?.[file])}
                 />
               </Tooltip>
@@ -274,7 +266,7 @@ export function LeadQuotationHistoryPanel({
   );
   const latestQuotationId = sortedQuotations[0]?.id;
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null);
   const [flowDescriptionVisible, setFlowDescriptionVisible] = useState(false);
   const [approvalAction, setApprovalAction] = useState<{
     quotation: LeadQuotationItem;
@@ -634,17 +626,18 @@ export function LeadQuotationHistoryPanel({
                             <ProjectQuotationFileBlock
                               label="技术评估文件"
                               files={quotation.technicalEvaluationFiles}
-                              onPreview={setPreviewFile}
+                              onPreview={(name, url) => url && setPreviewFile({ name, url })}
                               onUpload={canManageFiles && onUploadFiles ? files => onUploadFiles(quotation, 'technicalEvaluationFiles', files) : undefined}
                               onRemove={canManageFiles && onRemoveFile ? fileName => onRemoveFile(quotation, 'technicalEvaluationFiles', fileName) : undefined}
                               accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+                              fileUrls={quotation.quotationFileUrls}
                             />
                           ) : null}
                           {quotationDocumentFiles.length ? (
                             <ProjectQuotationFileBlock
                               label="报价单"
                               files={quotationDocumentFiles}
-                              onPreview={setPreviewFile}
+                              onPreview={(name, url) => url && setPreviewFile({ name, url })}
                               onUpload={!hideQuotationUpload && canManageFiles && onUploadFiles ? files => onUploadFiles(quotation, 'quotationFiles', files) : undefined}
                               onRemove={canManageFiles && onRemoveFile ? fileName => onRemoveFile(quotation, 'quotationFiles', fileName) : undefined}
                               accept=".pdf,.doc,.docx,.xls,.xlsx"
@@ -707,8 +700,8 @@ export function LeadQuotationHistoryPanel({
                               size="small"
                               icon={<IconDownload />}
                               aria-label="下载报价文件"
-                              disabled={!quotation.file}
-                              onClick={() => Message.info(`下载文件: ${quotation.file}`)}
+                              disabled={!quotation.file || !quotation.quotationFileUrls?.[quotation.file]}
+                              onClick={() => quotation.file && downloadQuotationFile(quotation.file, quotation.quotationFileUrls?.[quotation.file])}
                             />
                           </Tooltip>
                         </div>
@@ -803,17 +796,13 @@ export function LeadQuotationHistoryPanel({
         </div>
       </Modal>
       <Modal
-        title={previewFile ? `文件预览 · ${previewFile}` : '文件预览'}
+        title={previewFile ? `文件预览 · ${previewFile.name}` : '文件预览'}
         visible={Boolean(previewFile)}
         footer={null}
         onCancel={() => setPreviewFile(null)}
         style={{ width: 680, maxWidth: 'calc(100vw - 32px)' }}
       >
-        <div className="lead-quotation-history-file-preview">
-          <IconFile />
-          <strong>{previewFile}</strong>
-          <span>当前原型文件暂无在线内容，可下载后查看。</span>
-        </div>
+        {previewFile && <iframe title={previewFile.name} src={previewFile.url} style={{ width: '100%', minHeight: 560, border: '1px solid var(--color-border-2)', borderRadius: 6 }} />}
       </Modal>
       <Modal
         title={approvalAction?.decision === 'approve' ? '同意报价审批' : '拒绝报价审批'}

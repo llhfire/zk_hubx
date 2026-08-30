@@ -8,10 +8,12 @@ export type ReminderType =
   | 'contract_mail_overdue'
   | 'contract_draft_stale'
   | 'lead_followup_overdue'
+  | 'customer_birthday'
+  | 'maintenance_expiring'
 
 export type ReminderPriority = 'high' | 'medium' | 'low'
 
-export type ReminderSourceType = 'daily_report' | 'approval' | 'contract' | 'lead'
+export type ReminderSourceType = 'daily_report' | 'approval' | 'contract' | 'lead' | 'customer' | 'contact' | 'maintenance'
 
 export type SnoozeOptionId = 'one_hour' | 'today_eod' | 'tomorrow_morning'
 

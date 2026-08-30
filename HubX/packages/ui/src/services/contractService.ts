@@ -42,6 +42,7 @@ import type {
 } from '@/app/pages/contracts/types';
 import { getContractNumberPrefix } from '@/app/pages/company-entity/companyEntityData';
 import { generateContractNo } from '@/app/pages/contracts/utils';
+import type { ElectronicSigningPackage } from '@/app/pages/sales-compliance/types';
 
 export interface ContractService {
   list(): Promise<Contract[]>;
@@ -68,6 +69,7 @@ export interface ContractService {
   addBlocker(contractId: string, blocker: Omit<PaymentBlocker, 'id' | 'contractId' | 'createdAt'>): Promise<void>;
   resolveBlocker(contractId: string, blockerId: string): Promise<void>;
   addDunning(contractId: string, record: Omit<DunningRecord, 'id' | 'contractId'>): Promise<void>;
+  updateSigningPackage(contractId: string, updater: (value: ElectronicSigningPackage | undefined) => ElectronicSigningPackage | undefined): Promise<void>;
 }
 
 export { createInitialApprovalFlow } from './contractMutations';
@@ -151,6 +153,7 @@ export function createMockContractService(): ContractService {
     addBlocker: async (contractId, blocker) => update(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
     resolveBlocker: async (contractId, blockerId) => update(contractId, (c) => applyResolveBlocker(c, blockerId)),
     addDunning: async (contractId, record) => update(contractId, (c) => applyAddDunning(c, record, contractId)),
+    updateSigningPackage: async (contractId, updater) => update(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })),
   };
 }
 
@@ -248,5 +251,6 @@ export function createHttpContractService(baseUrl: string, opts?: { actor?: stri
     addBlocker: async (contractId, blocker) => mutate(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
     resolveBlocker: async (contractId, blockerId) => mutate(contractId, (c) => applyResolveBlocker(c, blockerId)),
     addDunning: async (contractId, record) => mutate(contractId, (c) => applyAddDunning(c, record, contractId)),
+    updateSigningPackage: async (contractId, updater) => mutate(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })),
   };
 }

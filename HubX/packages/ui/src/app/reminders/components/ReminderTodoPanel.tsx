@@ -29,7 +29,7 @@ interface ReminderTodoPanelProps {
 
 export function ReminderTodoPanel({ onOpenDailyReport }: ReminderTodoPanelProps) {
   const navigate = useNavigate();
-  const { reminders } = useReminders();
+  const { reminders, convertReminderToTodo } = useReminders();
 
   const openReminder = (reminder: ReminderItem) => {
     if (reminder.actionTarget.kind === 'modal') {
@@ -72,6 +72,7 @@ export function ReminderTodoPanel({ onOpenDailyReport }: ReminderTodoPanelProps)
                     {reminder.actionLabel}
                   </Button>
                   <ReminderSnoozeMenu reminderId={reminder.id} buttonSize="small" />
+                  {['customer_birthday', 'contract_expiring', 'maintenance_expiring'].includes(reminder.type) && <Button size="small" onClick={() => convertReminderToTodo(reminder.id)}>转为跟进待办</Button>}
                 </Space>
               </Space>
             </Card>

@@ -31,6 +31,7 @@ const ContractDetail = lazyNamed(() => import("./pages/ContractDetail"), "Contra
 const ContractWizard = lazyNamed(() => import("./pages/contracts/ContractWizard"), "ContractWizard");
 const ContractEditor = lazyNamed(() => import("./pages/contracts/ContractEditor"), "ContractEditor");
 const ContractDocumentPreview = lazyNamed(() => import("./pages/contracts/ContractDocumentPreview"), "ContractDocumentPreview");
+const ContractTemplateManager = lazyNamed(() => import("./pages/contracts/ContractTemplateManager"), "ContractTemplateManager");
 const ProjectList = lazyNamed(() => import("./pages/ProjectList"), "ProjectList");
 const ProjectDetail360 = lazyNamed(() => import("./pages/ProjectDetail360"), "ProjectDetail360");
 const ProjectWorkItemsPage = lazyNamed(() => import("./pages/project-management/ProjectWorkItemsPage"), "ProjectWorkItemsPage");
@@ -122,6 +123,7 @@ export const router = createBrowserRouter([
       { path: "customers/:id", Component: CustomerDetail },
       { path: "contracts", Component: Contracts },
       { path: "contracts/kanban", Component: ContractKanban },
+      { path: "contracts/templates", Component: ContractTemplateManager },
       { path: "contracts/new", Component: ContractWizard },
       { path: "contracts/:id/edit", Component: ContractEditor },
       { path: "contracts/:id/preview", Component: ContractDocumentPreview },
@@ -199,7 +201,10 @@ export const router = createBrowserRouter([
       { path: "financial-delivery/dashboard", Component: DeliveryDashboard },
       { path: "financial-delivery/cases", Component: CaseList },
       { path: "financial-delivery/cases/:id", Component: CaseDetail },
-      { path: "financial-delivery/post-mortems/:id", Component: () => <div>项目决算详情</div> },
+      {
+        path: "financial-delivery/post-mortems/:id",
+        loader: ({ params }) => redirect(`/financial-delivery/cases/${params.id}?tab=post-mortem`),
+      },
       { path: "ui-library", Component: UiComponentLibraryPage },
     ],
   },

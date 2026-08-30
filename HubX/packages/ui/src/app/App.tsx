@@ -25,6 +25,7 @@ import { LeadsProvider, useLeads } from './leads/LeadContext';
 import { CollectionProvider } from './collections/CollectionContext';
 import { AppVersionProvider } from './version/AppVersionContext';
 import type { AppVersion } from './version/versionMatrix';
+import { CustomerProvider } from './pages/customers/CustomerContext';
 
 interface AppProps {
   /** 报价数据源：α版注入 mock，β版注入 http。缺省 mock。 */
@@ -64,10 +65,11 @@ function App({ quotationService, contractService, leadService, projectService, c
       <ApprovalProvider>
         <TodoProvider>
           <FeedbackProvider>
-            <ReminderProvider>
+            <CustomerProvider>
+              <ContractsProvider service={contractService}>
+              <ReminderProvider>
               <EmployeeProvider service={employeeService}>
                 <JobWorkConfigProvider>
-                  <ContractsProvider service={contractService}>
                     <LeadsProvider service={leadService}>
                     <ProjectProvider service={projectService}>
                       <CollectionProvider service={collectionService}>
@@ -85,10 +87,11 @@ function App({ quotationService, contractService, leadService, projectService, c
                       </CollectionProvider>
                     </ProjectProvider>
                     </LeadsProvider>
-                  </ContractsProvider>
                 </JobWorkConfigProvider>
               </EmployeeProvider>
             </ReminderProvider>
+            </ContractsProvider>
+            </CustomerProvider>
           </FeedbackProvider>
         </TodoProvider>
       </ApprovalProvider>

@@ -1,4 +1,5 @@
-import { Drawer, Tabs, Space, Button, Tag, Typography, Message } from '@arco-design/web-react';
+import { Drawer, Tabs, Space, Button, Tag, Typography } from '@arco-design/web-react';
+import { useNavigate } from 'react-router';
 import { deriveCollectionProgress, derivePaymentStatus } from './paymentCalc';
 import { KANBAN_COLUMNS } from './types';
 import { PaymentTimelineTab } from './PaymentTimelineTab';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function PaymentDrawer({ visible, contract, onClose, onRecordCollection, onReportBlocker, onRecordDunning }: Props) {
+  const navigate = useNavigate();
   if (!contract) return null;
 
   const status = derivePaymentStatus(contract, TODAY);
@@ -84,7 +86,19 @@ export function PaymentDrawer({ visible, contract, onClose, onRecordCollection, 
         <Button size="small" type="outline" icon={<Plus size={18} />} onClick={onRecordDunning}>记录催款</Button>
         <Button size="small" type="outline" status="warning" icon={<WarningCircle size={18} />} onClick={onReportBlocker}>上报/编辑卡点</Button>
         <Button size="small" type="outline" icon={<CurrencyCircleDollar size={18} />} onClick={onRecordCollection}>录入到账</Button>
-        <Button size="small" type="outline" onClick={() => Message.info('查看项目功能开发中')}>查看项目</Button>
+        <Button
+          size="small"
+          type="outline"
+          disabled={!contract.projectId}
+          title={contract.projectId ? '打开关联项目' : '当前合同尚未关联项目'}
+          onClick={() => {
+            if (!contract.projectId) return;
+            onClose();
+            navigate(`/projects/${contract.projectId}`);
+          }}
+        >
+          查看项目
+        </Button>
       </Space>
 
       {/* Tab */}

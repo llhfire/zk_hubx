@@ -12,6 +12,11 @@ import { buildReminders } from './buildReminders'
 import { mockReminderData, type ReminderData } from './mockData'
 import type { ReminderItem, SnoozeOptionId } from './types'
 import { resolveSnoozeUntil } from './utils'
+import { useOptionalCustomers } from '@/app/pages/customers/CustomerContext'
+import { useOptionalContracts } from '@/app/pages/contracts/ContractsContext'
+import { getSalesOpportunityReminders } from './adapters/getSalesOpportunityReminders'
+import { readSalesBusinessConfig } from '@/app/pages/systemConfigStore'
+import { useOptionalTodos } from '@/app/todos/TodoContext'
 
 interface ReminderContextValue {
   reminders: ReminderItem[]
@@ -20,11 +25,17 @@ interface ReminderContextValue {
   submitDailyReport: (report: DailyReport) => void
   snoozeReminder: (id: string, option: SnoozeOptionId) => void
   isLeadReminderActive: (leadId: string) => boolean
+  convertReminderToTodo: (id: string) => void
 }
 
 const ReminderContext = createContext<ReminderContextValue | null>(null)
 
 export function ReminderProvider({ children }: PropsWithChildren) {
+  const customersContext = useOptionalCustomers()
+  const contractsContext = useOptionalContracts()
+  const todosContext = useOptionalTodos()
+  const customers = customersContext?.customers ?? []
+  const contracts = contractsContext?.contracts ?? []
   const [data, setData] = useState<ReminderData>(mockReminderData)
   const [now, setNow] = useState(() => new Date())
 
@@ -38,7 +49,11 @@ export function ReminderProvider({ children }: PropsWithChildren) {
     }
   }, [])
 
-  const reminders = useMemo(() => buildReminders(data, now), [data, now])
+  const reminders = useMemo(() => {
+    const base = buildReminders(data, now)
+    const sales = getSalesOpportunityReminders(customers, contracts, readSalesBusinessConfig(), now).map((item) => ({ ...item, snoozedUntil: data.snoozedReminders[item.id] }))
+    return [...base, ...sales].filter((item) => !item.snoozedUntil || new Date(item.snoozedUntil) <= now)
+  }, [contracts, customers, data, now])
 
   const submitDailyReport = useCallback((report: DailyReport) => {
     setData((current) => ({
@@ -69,6 +84,27 @@ export function ReminderProvider({ children }: PropsWithChildren) {
     [reminders],
   )
 
+  const convertReminderToTodo = useCallback((id: string) => {
+    const reminder = reminders.find((item) => item.id === id)
+    if (!reminder) return
+    const route = reminder.actionTarget.kind === 'route' ? reminder.actionTarget.path : '/workbench'
+    todosContext?.upsertActiveTodo({
+      id: `todo-reminder-${id}`,
+      source: 'sales_opportunity',
+      sourceId: `reminder:${id}`,
+      module: '销售机会',
+      title: reminder.title,
+      content: reminder.content ?? '由销售机会提醒转为待办。',
+      assigneeId: 'user-sales-zhangsan',
+      assigneeName: '张三',
+      status: 'pending',
+      priority: reminder.priority,
+      createdAt: new Date().toISOString(),
+      deadline: reminder.deadline,
+      route,
+    })
+  }, [reminders, todosContext])
+
   const value = useMemo<ReminderContextValue>(
     () => ({
       reminders,
@@ -77,8 +113,9 @@ export function ReminderProvider({ children }: PropsWithChildren) {
       submitDailyReport,
       snoozeReminder,
       isLeadReminderActive,
+      convertReminderToTodo,
     }),
-    [data.dailyReports, isLeadReminderActive, reminders, snoozeReminder, submitDailyReport],
+    [convertReminderToTodo, data.dailyReports, isLeadReminderActive, reminders, snoozeReminder, submitDailyReport],
   )
 
   return <ReminderContext.Provider value={value}>{children}</ReminderContext.Provider>

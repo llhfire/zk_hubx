@@ -26,11 +26,11 @@
         },
         {
           "name": "线索跟进记录",
-          "description": "线索详情使用独立 LeadFollowUpModal 添加跟进记录：单选跟进方式、客户状态、意向等级、消耗时长、跟进详情(max2000)、附件和下次跟进提醒；保存后同步线索状态、意向等级、跟进次数与提醒时间。弹窗支持全屏、固定操作区及窄屏滚动。",
+          "description": "线索详情使用独立 LeadFollowUpModal 添加跟进记录；保存后同步状态、等级与次数。明确填写的下次跟进时间会写入统一待办，完成本次跟进时关闭当期待办，再约时间则更新下一期待办。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
@@ -44,11 +44,11 @@
         },
         {
           "name": "线索治理",
-          "description": "LeadGovernance：重复线索合并、线索状态批量操作、分配规则配置。",
+          "description": "LeadGovernance 以真实线索和系统配置呈现时效异常、重复线索、退回质检和规则概览；催办、合并与质检均需人工确认，不生成随机评分，不做自动处罚。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
@@ -120,10 +120,10 @@
         "productionOn": true,
         "devStatus": "编码中"
       },
-      "note": "三视角销售侧。立项改回签约开启 spawn（洽谈/已签单/主合同草稿），不再只挂 approvedAt。计划：计划/当前/unified-view-implementation.md；β 接入计划：计划/当前/beta-foundation-dev-plan.md；β 真实数据计划：beta-realdata-dev-plan.md（阶段 0-2 完成）",
+      "note": "α 已补齐线索跟进待办与真实治理工作台；立项仍按签约开启 spawn。治理只做人工催办、合并和质检，不做自动回收、随机评分或处罚。β 接入与持久化仍按独立计划推进。",
       "alphaMeta": {
-        "updateCount": 20,
-        "lastUpdatedAt": "2026-08-29"
+        "updateCount": 21,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
@@ -134,7 +134,7 @@
       "features": [
         {
           "name": "Stage1 功能清单",
-          "description": "两级模块+子功能（数据流转可挂端/平台）。Excel 导入导出。提交评估前至少一行。文件流转按标准五列解析。",
+          "description": "两级模块+子功能（数据流转可挂端/平台）。支持按“模块/子功能/描述/备注/端”五列导入 Excel、预览确认并写回，也可将当前清单导出为 XLSX；提交评估前至少一行。",
           "alpha": {
             "页面场景": true,
             "功能流程": true,
@@ -161,7 +161,7 @@
         },
         {
           "name": "Stage4 审批盖章",
-          "description": "提交时拍审批配置快照，会签通过→待盖章→已盖章；已确认后进入主合同或补充合同向导。",
+          "description": "提交时拍审批配置快照，会签通过→待盖章→已盖章；系统报价单可生成 PDF，已盖章/已发出/已确认状态下载带公章标识的正式版；已确认后进入主合同或补充合同向导。",
           "alpha": {
             "页面场景": true,
             "功能流程": true,
@@ -294,50 +294,50 @@
       "features": [
         {
           "name": "客户列表",
-          "description": "Customers.tsx：客户基础信息管理，按行业/规模/来源筛选。",
+          "description": "Customers.tsx：客户列表支持按名称、联系人、电话、类型、等级和合作状态组合筛选；可新建客户，并从行内编辑入口回填、更新客户资料，列表总数随筛选结果同步。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
           "name": "客户详情",
-          "description": "CustomerDetail.tsx：客户基本信息、关联线索/合同列表、联系人管理。",
+          "description": "CustomerDetail.tsx：共享客户主档、联系人主联系人/停用规则、当前开票资料及变更历史，并按线索机会聚合报价、主/补充合同、项目和回款链路。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         }
       ],
       "planned": [
         {
           "name": "联系人管理（多联系人/职位/标记主联系人）",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
           "name": "关系视图（客户→线索→报价→合同→项目链路可视化）",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
           "name": "开票信息（纳税人识别号/开户行等，合同创建时自动带入）",
-          "status": "未开始"
+          "status": "已完成"
         }
       ],
       "alpha": {
         "页面场景": true,
-        "功能流程": false,
-        "UX 优化": false
+        "功能流程": true,
+        "UX 优化": true
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "客户档案/联系人/关系视图/开票信息",
+      "note": "α 客户主档已统一到 CustomerContext/localStorage：完成强判重、相似名提示、联系人、开票历史、客户合并、业务链聚合及报价/合同快照；β 服务端持久化后置。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
@@ -348,23 +348,32 @@
       "features": [
         {
           "name": "合同创建（带入线索）",
-          "description": "ContractWizard 通过统一三级面包屑进入新建或编辑合同表单，并可从线索、报价上下文带入合同基础信息。",
+          "description": "ContractWizard 通过统一三级面包屑进入新建或编辑合同表单，并可从线索、报价上下文带入合同基础信息；合同编辑器可按当前签约主体下载真实 HTML 合同模板。",
           "usage": "合同管理 → 合同列表 → 新建合同；也可从线索或报价流程进入并核对预填信息后继续编辑。",
           "referencePath": "HubX/DESIGN.md",
           "alpha": {
             "页面场景": true,
-            "功能流程": false,
+            "功能流程": true,
             "UX 优化": true
           }
         },
         {
           "name": "合同多版本管理",
-          "description": "ContractEditor 与 ContractDocumentPreview 使用“合同管理 → 合同列表 → 当前合同 → 编辑/预览”层级；编辑自动生成新版本，历史版本只读对比。",
+          "description": "合同历史版本可只读查看、与前版比较，并以选中历史版本作为基线创建新版本；新版本记录基线与变更说明。",
           "usage": "合同列表或合同详情 → 打开合同编辑 → 调整合同与回款计划 → 进入合同预览 → 提交版本说明。",
           "referencePath": "HubX/DESIGN.md",
           "alpha": {
             "页面场景": true,
-            "功能流程": false,
+            "功能流程": true,
+            "UX 优化": true
+          }
+        },
+        {
+          "name": "合同模板管理",
+          "description": "按签约主体和产品分类维护富文本模板；草稿可编辑，发布后版本不可变，可停用、复制并设置唯一默认模板，合同保存模板版本与正文快照。",
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
             "UX 优化": true
           }
         },
@@ -379,11 +388,11 @@
         },
         {
           "name": "合同归档",
-          "description": "archiveFinalContract：审批通过后上传归档文件，支持多附件。",
+          "description": "合同详情支持一次选择多份 PDF/图片扫描件并归档，保存文件名、大小、类型、上传人、时间和版本关联；本次会话上传的源文件可在线预览、下载和删除，种子演示文件无源文件时明确禁用下载。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
@@ -399,11 +408,11 @@
         },
         {
           "name": "合同列表",
-          "description": "ContractKanban.tsx：合同看板视图，编号自动生成（ZK-C-YYYYMMDD-NNN）。",
+          "description": "合同列表/看板支持按编号、名称、线索或客户主体检索，按状态与签订日期过滤；新增合同进入真实合同向导，行内可查看合同详情。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
@@ -445,7 +454,7 @@
         },
         {
           "name": "合同模板管理",
-          "status": "未开始"
+          "status": "已完成"
         }
       ],
       "alpha": {
@@ -457,88 +466,115 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "α 已统一为一主合同 + N 补充报价/补充合同；旧直填变更对象及页面术语已退出。有效标的额、项目 360、合同详情和回款发票页按已归档未作废补充合同汇总。",
+      "note": "α 已统一一主合同 + N 补充报价/补充合同，并补齐版本化合同模板、历史版本比较/基线编辑、签署演示证据与扫描归档。有效标的额继续按已归档未作废补充合同汇总。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
       "module": "跟进助手",
       "domain": "销售域",
-      "isPlanned": true,
+      "isPlanned": false,
       "scope": "",
-      "features": [],
+      "features": [
+        {
+          "name": "跟进承诺待办",
+          "description": "线索下次跟进承诺写入统一 Todo，并按业务键更新、完成和随负责人转交。",
+          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+        },
+        {
+          "name": "销售机会提醒",
+          "description": "联系人生日、合同到期和免费维护期到期进入统一 Reminder，支持稍后提醒与人工转待办，提前量由系统配置维护。",
+          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+        }
+      ],
       "planned": [
         {
           "name": "自动提醒（跟进到期/客户生日/合同续签）",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
           "name": "跟进待办生成与分配",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
           "name": "阶段推进智能建议（基于历史转化率）",
-          "status": "未开始"
+          "status": "不纳入α"
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
+        "页面场景": true,
+        "功能流程": true,
+        "UX 优化": true
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "规划中",
+      "note": "α 复用统一待办和提醒中心，不新增销售助手一级页；智能阶段建议明确不纳入 α。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
       "module": "报价与合规增强",
       "domain": "销售域",
-      "isPlanned": true,
+      "isPlanned": false,
       "scope": "",
-      "features": [],
+      "features": [
+        {
+          "name": "报价差异与补充影响",
+          "description": "重新报价按 previousQuoteId 比较清单、人天、增值项、总价、工期、付款、质保与文件；补充报价按 parentQuoteId 独立展示相对有效合同影响。",
+          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+        },
+        {
+          "name": "报价责任协作",
+          "description": "销售/技术评估人可永久转交或设置限时代理，校验时间重叠并保留操作记录，未完成待办随责任人更新。",
+          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+        },
+        {
+          "name": "α 签署演示与合规档案",
+          "description": "明确标识无电子签名法律效力的演示状态机，可上传真实线下证据；合规档案只读投影已有证据并导出 HTML/JSON。",
+          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+        }
+      ],
       "planned": [
         {
           "name": "Excel 双向导入导出",
-          "status": "已设计"
+          "status": "已完成"
         },
         {
           "name": "版本 Diff 对比",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
           "name": "代理/转交机制",
-          "status": "未开始"
+          "status": "已完成"
         },
         {
-          "name": "电子签章",
-          "status": "未开始"
+          "name": "α 签署演示",
+          "status": "已完成"
         },
         {
           "name": "合规档案",
-          "status": "未开始"
+          "status": "已完成"
         }
       ],
       "alpha": {
-        "页面场景": false,
-        "功能流程": false,
-        "UX 优化": false
+        "页面场景": true,
+        "功能流程": true,
+        "UX 优化": true
       },
       "beta": {
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "规划中",
+      "note": "α 已完成报价 Diff、补充影响、转交/代理、签署演示及合规投影；真实电子签名供应商与生产审计不在本范围。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
@@ -1395,11 +1431,11 @@
         },
         {
           "name": "报销与借款",
-          "description": "ReimbursementList/LoanList：报销单冲抵借款、打款状态流。",
+          "description": "出差详情的报销与借款页签均支持会话内新建草稿、列表汇总和详情抽屉；详情展示金额、冲抵、状态与审批轨迹，借款仍保留报销冲抵记录。",
           "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
           }
         },
         {
@@ -1485,10 +1521,10 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "T1–T4 全部完成。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock",
+      "note": "T1–T4 全部完成；本轮补齐出差详情内报销/借款新建与详情查看闭环。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
@@ -1606,6 +1642,15 @@
           }
         },
         {
+          "name": "渠道成本分析",
+          "description": "LeadCostAnalysis 按日期范围和平台生成渠道排名、消耗/有效线索对比及四维雷达图；点击分析应用条件，当前结果可导出为带完整指标列的 XLSX。",
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
+        },
+        {
           "name": "线索录入表单",
           "description": "/lead-dispatch 录入：业务线/主体/渠道（数据字典）/channelPlan/客户信息/初始分级 S/A/B/C/初始分配（存待派发池或立即指派）。无 D 级、意向评分不落库。",
           "alpha": {
@@ -1715,10 +1760,10 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "官网表单/推广落地页/电话咨询/渠道合作/售前群 + 线索派发工作台（/lead-dispatch）。阶段 0-E 全部完成（2026-08-25）：纯函数层/渠道字典迁移/DispatchModal/LevelAdjustModal/工作台三视角/LeadDetail360 派发信息+五池 SLA。β 阶段 2（2026-08-26）：派发四动作走服务端专门端点（dispatch/urge/level-change/level-audit，事件服务端生成），详情复合接口 /api/leads/:id/detail 上线（见 beta-realdata-dev-plan.md）。β 只留企微催办接缝。",
+      "note": "官网表单/推广落地页/电话咨询/渠道合作/售前群 + 线索派发工作台（/lead-dispatch）；本轮补齐渠道成本分析筛选与真实 Excel 导出。阶段 0-E 已完成，β 只留企微催办接缝。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {
@@ -1857,6 +1902,15 @@
             "功能流程": true,
             "UX 优化": true
           }
+        },
+        {
+          "name": "系统通用配置",
+          "description": "SystemConfig 集中维护消息渠道、备份策略和业务提醒参数；三组表单保存到浏览器持久化存储，可下载带版本号的 JSON 配置备份，并校验、恢复备份文件。",
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         }
       ],
       "planned": [
@@ -1878,10 +1932,10 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "用户/部门/职位/角色授权/菜单路由/数据字典",
+      "note": "用户/部门/职位/角色授权/菜单路由/数据字典；系统通用配置已补齐本地持久化、备份与恢复闭环。",
       "alphaMeta": {
-        "updateCount": 0,
-        "lastUpdatedAt": ""
+        "updateCount": 1,
+        "lastUpdatedAt": "2026-08-31"
       }
     },
     {

@@ -14,6 +14,7 @@ import {
 import type { FollowUpRecord, LeadDetailInfo, LeadListItem, TransferRecord, CustomerLevel } from '@/app/pages/leads/types';
 import { createMockLeadService, type LeadService } from '@/services/leadService';
 import type { LeadCreateInput, FollowUpInput, DispatchInput } from '@/services/leadMutations';
+import { useOptionalCustomers } from '@/app/pages/customers/CustomerContext';
 
 interface LeadsContextValue {
   leads: LeadListItem[];
@@ -46,6 +47,8 @@ interface LeadsProviderProps extends PropsWithChildren {
 }
 
 export function LeadsProvider({ children, service }: LeadsProviderProps) {
+  const customersContext = useOptionalCustomers();
+  const customers = customersContext?.customers ?? [];
   const svc = useMemo(() => service ?? createMockLeadService(), [service]);
   const [leads, setLeads] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +85,19 @@ export function LeadsProvider({ children, service }: LeadsProviderProps) {
   const returnLead = useCallback(async (id: string, operator: string, reason?: string) => { await svc.returnLead(id, operator, reason); await refresh(); }, [svc, refresh]);
   const markTrash = useCallback(async (id: string, operator: string, reason: string) => { await svc.markTrash(id, operator, reason); await refresh(); }, [svc, refresh]);
   const softDelete = useCallback(async (id: string) => { await svc.softDelete(id); await refresh(); }, [svc, refresh]);
-  const transformToCustomer = useCallback(async (id: string) => { await svc.transformToCustomer(id); await refresh(); }, [svc, refresh]);
+  const transformToCustomer = useCallback(async (id: string) => {
+    const lead = leads.find((item) => item.id === id);
+    if (!lead) return;
+    const customerName = lead.customer || `${lead.name}客户`;
+    const existing = customers.find((item) => item.name === customerName && !item.mergedIntoId);
+    const created = existing ? { id: existing.id } : customersContext?.createCustomer({
+      kind: 'enterprise', name: customerName, source: lead.source, ownerName: lead.owner || '张三', level: (['S', 'A', 'B', 'C'].includes(lead.customerLevel ?? '') ? lead.customerLevel : 'B') as 'S' | 'A' | 'B' | 'C',
+      contact: lead.contact || lead.phone ? { name: lead.contact || '未命名联系人', phone: lead.phone || '' } : undefined,
+    });
+    await svc.transformToCustomer(id);
+    if (created?.id) await svc.updateLead(id, (current) => ({ ...current, customer: customerName, customerId: created.id, transformStatus: true }));
+    await refresh();
+  }, [customers, customersContext, leads, svc, refresh]);
   const addFollowUp = useCallback(async (id: string, input: FollowUpInput) => { await svc.addFollowUp(id, input); await refresh(); }, [svc, refresh]);
   const updateLead = useCallback(async (id: string, updater: (lead: LeadListItem) => LeadListItem) => { await svc.updateLead(id, updater); await refresh(); }, [svc, refresh]);
   const dispatchLead = useCallback(async (id: string, input: DispatchInput, operator: string) => { await svc.dispatchLead(id, input, operator); await refresh(); }, [svc, refresh]);

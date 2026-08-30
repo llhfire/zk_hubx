@@ -5,6 +5,7 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { architectureDiagramPlugin } from '../../scripts/architectureDiagramPlugin.js';
+import { sharedBuildConfig } from '../viteBuildChunks';
 
 function figmaAssetResolver() {
   return {
@@ -27,6 +28,7 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
+  build: sharedBuildConfig,
   optimizeDeps: {
     include: ['@arco-design/web-react', '@arco-design/web-react/icon'],
   },

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import logo from '@/assets/zk-hubx-logo.png';
-import { Layout, Menu, Avatar, Dropdown, Badge, Tag } from '@arco-design/web-react';
+import { Layout, Menu, Avatar, Dropdown, Badge, Spin, Tag } from '@arco-design/web-react';
 import {
   IconHome,
   IconCustomerService,
@@ -504,7 +504,9 @@ export function MainLayout() {
           }}
         >
           <div style={{ padding: 24 }}>
-            <Outlet context={{ openDailyReport: handleDailyReportOpen }} />
+            <Suspense fallback={<Spin block dot tip="页面加载中…" />}>
+              <Outlet context={{ openDailyReport: handleDailyReportOpen }} />
+            </Suspense>
           </div>
         </Content>
       </Layout>

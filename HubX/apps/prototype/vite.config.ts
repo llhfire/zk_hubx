@@ -8,6 +8,7 @@ import react from '@vitejs/plugin-react'
 import { isValidFeatureBoard } from '../../packages/ui/src/app/version/featureBoardModel'
 import { isValidWorkLog } from '../../packages/ui/src/app/version/workLogModel'
 import { architectureDiagramPlugin } from '../../scripts/architectureDiagramPlugin.js'
+import { sharedBuildConfig } from '../viteBuildChunks'
 
 const execFileAsync = promisify(execFile)
 
@@ -263,6 +264,8 @@ export default defineConfig(({ mode }) => {
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  build: sharedBuildConfig,
   
   // Optimize dependencies
   optimizeDeps: {

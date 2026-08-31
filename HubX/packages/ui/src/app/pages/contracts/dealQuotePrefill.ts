@@ -4,13 +4,16 @@
 // ContractWizard 用 applyDealQuotePrefill 覆盖默认表单 -> 创建成功后回写 quote.contractId。
 
 import type { Quote, QuoteSummary } from '../quotation/types';
-import type { ContractFormData, PaymentPlanItem, PaymentPlanPeriodName } from './types';
+import type { ContractFeatureItem, ContractFormData, PaymentPlanItem, PaymentPlanPeriodName } from './types';
 import { addWorkdays } from '../quotation/quotePricing';
+import { PLATFORM_OPTIONS } from '../quotation/types';
+import { findCompanyEntityByName } from '../company-entity/companyEntityData';
 
 export interface DealQuotePrefill {
   quoteId: string;
   quoteNo: string;
   leadId: string;
+  signingEntity?: string;
   projectName: string;
   requirementDesc: string;
   totalAmount: number;
@@ -25,6 +28,7 @@ export interface DealQuotePrefill {
   kind: 'main' | 'supplement';
   parentContractId?: string;
   invoiceType?: '专票' | '普票';
+  featureList: ContractFeatureItem[];
 }
 
 function periodNameForStage(stage: string, index: number): PaymentPlanPeriodName | undefined {
@@ -40,24 +44,45 @@ function periodNameForStage(stage: string, index: number): PaymentPlanPeriodName
 export function paymentTermsToPlans(summary: QuoteSummary | undefined): PaymentPlanItem[] {
   const terms = summary?.paymentTerms ?? [];
   const total = summary?.grandTotalPrice ?? 0;
-  return terms.map((term, index) => ({
+  let allocated = 0;
+  return terms.map((term, index) => {
+    const isLast = index === terms.length - 1;
+    const calculatedAmount = isLast
+      ? Math.round((total - allocated) * 100) / 100
+      : Math.round((total * term.percent)) / 100;
+    const amount = term.amount > 0 ? term.amount : calculatedAmount;
+    allocated = Math.round((allocated + amount) * 100) / 100;
+    return ({
     period: index + 1,
     periodName: periodNameForStage(term.stage, index),
     expectedDate: '',
     expectedDateType: 'fixed',
     expectedDays: undefined,
     condition: term.stage,
-    amount: term.amount > 0 ? term.amount : Math.round((total * term.percent) / 100),
+    amount,
     percentage: term.percent,
     amountType: 'percentage',
-  }));
+    });
+  });
 }
 
 export function buildDealQuotePrefill(quote: Quote): DealQuotePrefill {
+  const featureList = quote.featureList.flatMap((module) => {
+    const endpoint = quote.endpointConfigs.find((item) => item.id === module.endpointId);
+    const platforms = endpoint?.platforms.map((platformId) => PLATFORM_OPTIONS.find((item) => item.id === platformId)?.name ?? platformId) ?? [];
+    const endpointName = endpoint ? `${endpoint.name}${platforms.length ? `（${platforms.join('、')}）` : ''}` : '未分配端';
+    return module.subFeatures.map((feature) => ({
+      endpoint: endpointName,
+      module: module.name,
+      feature: feature.name,
+      description: feature.description || '—',
+    }));
+  });
   return {
     quoteId: quote.id,
     quoteNo: quote.quoteNo,
     leadId: quote.leadId,
+    signingEntity: quote.signingEntity,
     projectName: quote.basicInfo.projectName,
     requirementDesc: quote.basicInfo.requirementDesc,
     totalAmount: quote.summary?.grandTotalPrice ?? 0,
@@ -71,6 +96,7 @@ export function buildDealQuotePrefill(quote: Quote): DealQuotePrefill {
     kind: quote.isSupplement ? 'supplement' : 'main',
     parentContractId: quote.isSupplement ? quote.contractId : undefined,
     invoiceType: quote.summary?.invoiceType,
+    featureList,
   };
 }
 
@@ -88,9 +114,21 @@ export function applyDealQuotePrefill(base: ContractFormData, prefill: DealQuote
   const warrantyText = prefill.warrantyYears && prefill.warrantyYears > 0
     ? '提供 ' + prefill.warrantyYears + ' 年免费质保'
     : null;
+  const signingEntity = prefill.signingEntity ? findCompanyEntityByName(prefill.signingEntity) : undefined;
 
   return {
     ...base,
+    ...(signingEntity ? {
+      signingEntity: signingEntity.shortName,
+      signingEntityTaxNo: signingEntity.taxNumber,
+      signingPerson: signingEntity.legalPerson,
+      signingEntityAddress: signingEntity.address,
+      signingEntityPhone: signingEntity.contactPhone,
+      signingEntityEmail: signingEntity.email ?? '',
+      signingEntityPostalCode: signingEntity.shortName === '中科软通' ? '430000' : '',
+      signingEntityBankName: signingEntity.invoiceBankName,
+      signingEntityBankAccount: signingEntity.invoiceBankAccount,
+    } : {}),
     contractName: base.contractName || (prefill.projectName ? prefill.projectName + '合同' : ''),
     customerName: base.customerName || prefill.customerName,
     customerContact: base.customerContact || prefill.customerContact,
@@ -98,6 +136,9 @@ export function applyDealQuotePrefill(base: ContractFormData, prefill: DealQuote
     totalAmount: prefill.kind === 'supplement' ? prefill.totalAmount : (prefill.totalAmount > 0 ? prefill.totalAmount : base.totalAmount),
     paymentPlans: prefill.paymentPlans.length > 0 ? prefill.paymentPlans : base.paymentPlans,
     invoiceType: prefill.invoiceType ?? base.invoiceType,
+    projectWorkDays: prefill.projectWorkDays ?? base.projectWorkDays,
+    warrantyMonths: prefill.warrantyYears ? prefill.warrantyYears * 12 : base.warrantyMonths,
+    featureList: prefill.featureList.length > 0 ? prefill.featureList : base.featureList,
     endDate,
     contractContent: warrantyText
       ? '乙方按甲方需求规格说明书完成系统设计、开发、测试、部署及培训，' + warrantyText + '。'

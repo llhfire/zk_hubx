@@ -23,4 +23,27 @@ describe('LeadFinalContractPanel', () => {
     expect(markup).toContain('在线查看合同');
     expect(markup).toContain('下载合同');
   });
+
+  test('项目合同默认折叠时只展示关键摘要', () => {
+    const contract = buildInitialContracts()[0];
+    const markup = renderToStaticMarkup(createElement(LeadFinalContractPanel, {
+      contract,
+      projectLayout: true,
+      projectFullInfo: true,
+      defaultCollapsed: true,
+    }));
+
+    expect(markup).toContain('查看合同');
+    expect(markup).toContain('下载合同');
+    expect(markup).toContain('展开');
+    expect(markup).not.toContain('展开合同详情');
+    expect(markup.indexOf('查看合同')).toBeLessThan(markup.indexOf('展开'));
+    expect(markup.indexOf('下载合同')).toBeLessThan(markup.indexOf('展开'));
+    expect(markup).toContain('合同编号');
+    expect(markup).toContain('公司名称');
+    expect(markup).toContain('签约主体');
+    expect(markup).toContain('签约日期');
+    expect(markup).not.toContain('我方税务登记号');
+    expect(markup).not.toContain('在线查看合同');
+  });
 });

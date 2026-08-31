@@ -239,6 +239,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: 'Stage2 人天评估', description: '数据流转岗位人天；文件流转评估文件+合计。主报价完成评估人天须>0。' },
     { name: 'Stage3 销售报价', description: '增项、工作日工期、付款期次、含税总价。利润率是统计项。' },
     { name: 'Stage4 审批盖章', description: '提交拍审批配置快照；系统报价单可生成 PDF，盖章后下载带公章标识的正式版；已确认后向导生成合同。' },
+    { name: '客户报价单按中科标准件', description: '按签约主体选择中科标准报价模板，功能清单分摊技术成本，报价调整和补充影响单独列示，行金额合计等于含税总价；支持在线预览和真实 DOCX 下载。' },
     { name: '报价状态机', description: '目标：草稿/待评估/待报价/待审核/已驳回/待盖章/已盖章/已发出/已确认/已废止。' },
     { name: '角色切换器', description: 'RoleSwitcher 六角色。目标改为本单评估人/销售可改指。' },
     { name: '报价中心', description: '列表按新状态+待我处理+过期标记。' },
@@ -249,7 +250,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '客户详情', description: '共享客户主档、联系人、开票资料变更历史与按线索机会聚合的报价/合同/项目/回款业务链。' },
   ],
   '合同签约': [
-    { name: '合同创建（带入线索）', description: 'ContractWizard 通过统一三级面包屑进入新建或编辑合同表单，可从线索/报价带入基础信息，并按签约主体下载真实 HTML 合同模板。', usage: '合同管理 → 合同列表 → 新建合同；也可从线索或报价流程进入并核对预填信息后继续编辑。', referencePath: 'HubX/DESIGN.md' },
+    { name: '合同创建（带入线索）', description: 'ContractWizard 从线索/报价带入签约主体和合同基础信息，按签约主体与产品分类适配中科合同标准件，预览后可下载真实 DOCX。', usage: '合同管理 → 合同列表 → 新建合同；也可从线索或报价流程进入并核对预填信息后继续编辑。', referencePath: 'HubX/DESIGN.md' },
     { name: '合同多版本管理', description: 'ContractEditor 与 ContractDocumentPreview 使用“合同管理 → 合同列表 → 当前合同 → 编辑/预览”层级；编辑自动生成新版本，历史版本只读对比。', usage: '合同列表或合同详情 → 打开合同编辑 → 调整合同与回款计划 → 进入合同预览 → 提交版本说明。', referencePath: 'HubX/DESIGN.md' },
     { name: '合同模板管理', description: '按签约主体与产品分类维护富文本模板；发布版本不可变，支持停用、复制、唯一默认和合同正文快照。' },
     { name: '合同审批流', description: '总经理单节点审批（P0① 已收敛），意见留痕，审批通过→释放回款 Tab。' },
@@ -271,13 +272,13 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   ],
   // ========== 交付域 ==========
   '项目管理': [
-    { name: '项目基础信息', description: 'ProjectDetail360（/projects/:id）：对齐线索详情 70:30 结构。头部控制台（元数据+生命周期Steps+6维指标胶囊）；左侧档案卡+主Tab（基础信息/合同信息/回款与发票/团队与工时/日报/任务管理/项目动态）；右侧次级Tab（跟进/报价/合同记录/售前历程/会议纪要/演示/资料/出差/报销）。项目列表走 ProjectService（α mock / β http）；B3 spawn 的项目不在 PROJECT_LIST 时用 deriveProjectViewMetrics 兜底。报价接 QuotationContext，合同接 ContractsContext，回款期次读合同 paymentPlans，实收台账读 CollectionService，任务/日报/会议/确认书/演示环境按 projectId 接共享台账。' },
-    { name: '交付计划长流程工作台', description: 'DeliveryPlanPage 复用统一面包屑、对象控制卡、7 步 SOP 概览、6 维指标和 70:30 主辅工作区；任务清单与甘特图保持同步滚动。', usage: '项目详情 → 打开交付计划 → 确认 SOP 阶段与风险指标 → 筛选板块 → 双击步骤编辑。', referencePath: 'HubX/DESIGN.md' },
+    { name: '项目基础信息', description: '项目详情保留 70:30 结构；存在补充合同的项目增加独立补充协议步骤，项目进度卡可进入甘特图，六项执行指标使用里程碑、时间轴、工时方块和回款进度表达；合同默认折叠为关键字段并可查看、下载或展开。' },
+    { name: '交付计划长流程工作台', description: '交付计划以标准 SOP 为骨架，根据合同标的选择板块，并将付款、交付与验收条件生成合同节点和依据快照；页面以紧凑页头和主甘特区域为核心。', usage: '项目详情 → 点击项目进度卡或打开交付计划 → 筛选板块 → 在甘特图查看依赖 → 双击步骤编辑。', referencePath: 'HubX/DESIGN.md' },
     { name: '项目任务管理', description: 'ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。' },
     { name: '项目成本核算', description: 'ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。' },
     { name: '项目报价配置', description: 'ProjectQuotationConfigurator.tsx：项目与报价关联配置。' },
     { name: '项目质量面板', description: 'ProjectQualityPanel.tsx：项目质量指标跟踪。' },
-    { name: '项目详情信息优先级与精选活动流', description: 'ProjectDetail360 保留 70:30 结构，默认聚焦项目动态与跟进；六项执行指标、阶段说明、紧凑档案、大事记筛选和右栏吸顶已落地。项目动态依 ADR-0097 从合同、回款、确认书、会议、任务和项目自有事件生成只读精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/当前/project-detail-360-prototype-restyle.md' },
+    { name: '项目详情信息优先级与精选活动流', description: '项目详情默认聚焦项目动态与跟进；六项指标使用里程碑、时间轴、工时方块和回款进度表达，阶段弹层只展示付款节点、已完成和待完成事项；项目动态依 ADR-0097 生成精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/当前/project-detail-360-prototype-restyle.md' },
   ],
   '日报工时': [
     { name: '日报填写', description: 'DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。' },
@@ -295,7 +296,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   // ========== 财务域 ==========
   '回款管理': [
     { name: '期次拆分', description: 'LeadPaymentInvoicePanel.tsx：按付款比例拆分期次，金额联动校验。' },
-    { name: '回款登记', description: '财务录入实际到账款（金额/日期/方式/说明）。实收以 CollectionService 为事实源；合同兼容记录与独立台账双写时沿用同一流水 ID。合同列表、详情、回款看板与预测均读取台账投影；期次计划仍读合同 paymentPlans。' },
+    { name: '回款登记', description: '一次实收可选择多个未收足期次，金额按选择顺序优先冲抵，未完全冲足显示部分已收，已收足期次不再进入可选列表；实收台账与合同兼容记录同 ID 双写。' },
     { name: '状态自动计算', description: 'paymentInvoiceModel.ts getPaymentPeriodMetrics：回款四态×开票三态自动计算。' },
     { name: '回款看板', description: '首页按五个状态泳道总览回款合同，行动队列推进具体回款期次，预测页签查看未来现金流。', usage: '合同管理 → 回款管理 → 首页查看合同泳道 → 点击合同查看回款详情；需要推进节点时进入行动队列。', referencePath: '计划/当前/payment-kanban-dev-plan.md' },
     { name: '回款权限矩阵', description: 'getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。' },

@@ -1,4 +1,5 @@
 import type { Contract, PaymentPlanItem, PaymentStatus, DunningRecord } from './types';
+import { collectionAmountForPeriod, getCollectionPeriods } from '../../../services/collectionMutations';
 
 const BUFFER_DAYS = 7;
 
@@ -91,18 +92,33 @@ export interface PlanStatusRow {
 
 /**
  * 把已回款金额按期次顺序分摊，推导每一期的回款状态：
- * paid 已收足 / partial 部分到账 / overdue 逾期（超预计日期+缓冲仍未收足）/
+ * paid 已收足 / partial 部分已收 / overdue 逾期（超预计日期+缓冲仍未收足）/
  * upcoming 即将到期（7 天内）/ pending 待收。
  */
 export function computePlanStatusRows(c: Contract, now: Date = new Date()): PlanStatusRow[] {
   const plans = c.current.paymentPlans ?? [];
-  const received = getReceivedAmount(c);
   const bufferMs = BUFFER_DAYS * 24 * 60 * 60 * 1000;
+  const records = c.collectionRecords ?? [];
+  const explicitlyAllocated = new Map<number, number>();
+  let unassigned = 0;
 
-  let remaining = received;
+  records.forEach((record) => {
+    const periods = getCollectionPeriods(record);
+    if (periods.length === 0 || (periods.length > 1 && !record.periodAllocations?.length)) {
+      unassigned += Number(record.amount) || 0;
+      return;
+    }
+    plans.forEach((plan) => {
+      const amount = collectionAmountForPeriod(record, plan.period);
+      if (amount > 0) explicitlyAllocated.set(plan.period, (explicitlyAllocated.get(plan.period) ?? 0) + amount);
+    });
+  });
+
   return plans.map((plan) => {
-    const allocated = Math.max(0, Math.min(plan.amount, remaining));
-    remaining -= allocated;
+    const direct = explicitlyAllocated.get(plan.period) ?? 0;
+    const fallback = Math.min(Math.max(0, plan.amount - direct), unassigned);
+    unassigned -= fallback;
+    const allocated = Math.max(0, Math.min(plan.amount, direct + fallback));
 
     let status: PlanStatusKind;
     if (allocated >= plan.amount) {
@@ -125,7 +141,7 @@ export function computePlanStatusRows(c: Contract, now: Date = new Date()): Plan
 
 export const PLAN_STATUS_META: Record<PlanStatusKind, { label: string; color: string }> = {
   paid: { label: '已收', color: 'green' },
-  partial: { label: '部分到账', color: 'orange' },
+  partial: { label: '部分已收', color: 'orange' },
   overdue: { label: '逾期', color: 'red' },
   upcoming: { label: '即将到期', color: 'orange' },
   pending: { label: '待收', color: 'gray' },

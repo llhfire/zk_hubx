@@ -18,8 +18,6 @@ import {
 import {
   IconSearch,
   IconEye,
-  IconEdit,
-  IconDelete,
 } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
@@ -59,7 +57,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './leads/utils';
-import { WeChatIcon } from '@/app/components/ui';
+import { FollowUpIcon, TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
 
 const TabPane = Tabs.TabPane;
 
@@ -288,8 +286,8 @@ export function MyLeads() {
       render: (_: unknown, r: LeadListItem) => (
         <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}`, { state: { from: 'my' } })} /></Tooltip>
-          <Tooltip content="添加跟进"><Button type="text" icon={<IconEdit />} size="small" /></Tooltip>
-          <Tooltip content="标记垃圾"><Button type="text" icon={<IconDelete />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
+          <Tooltip content="添加跟进"><Button type="text" icon={<FollowUpIcon />} size="small" /></Tooltip>
+          <Tooltip content="标记垃圾"><Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
         </Space>
       ),
     },

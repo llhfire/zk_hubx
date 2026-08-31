@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning } from '../paymentUtils';
+import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning, PLAN_STATUS_META } from '../paymentUtils';
 import type { Contract } from '../types';
 
 function makeContract(overrides: Partial<Contract> = {}): Contract {
@@ -186,5 +186,29 @@ describe('computePlanStatusRows（阶段 3 回款 Tab）', () => {
     ];
     const rows = computePlanStatusRows(c, new Date('2026-07-01'));
     expect(rows.every((r) => r.status === 'paid')).toBe(true);
+  });
+
+  it('一笔两期合付按明确分配更新两期状态，不重复计算金额', () => {
+    const c = makeContract({
+      collectionRecords: [{
+        id: 'multi-1', contractId: 'test-1', amount: 70_000, date: '2026-04-01', method: '汇款', note: '',
+        periods: [1, 2],
+        periodAllocations: [{ period: 1, amount: 50_000 }, { period: 2, amount: 20_000 }],
+      }],
+    });
+
+    const rows = computePlanStatusRows(c, new Date('2026-04-01'));
+    expect(rows.map((row) => row.allocated)).toEqual([50_000, 20_000]);
+    expect(rows.map((row) => row.status)).toEqual(['paid', 'partial']);
+    expect(PLAN_STATUS_META.partial.label).toBe('部分已收');
+  });
+
+  it('指定第二期的实收不会错误冲抵第一期', () => {
+    const c = makeContract({
+      collectionRecords: [{ id: 'period-2', contractId: 'test-1', period: 2, amount: 50_000, date: '2026-06-01', method: '汇款', note: '' }],
+    });
+
+    const rows = computePlanStatusRows(c, new Date('2026-04-01'));
+    expect(rows.map((row) => row.allocated)).toEqual([0, 50_000]);
   });
 });

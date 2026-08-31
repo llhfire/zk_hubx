@@ -1,9 +1,16 @@
 // src/app/pages/delivery-plan/GanttChart.tsx
 
 import React, { useMemo } from 'react';
-import type { DeliveryPlan, SopStep, GanttZoomLevel } from './types';
+import type { DeliveryPlan, GanttZoomLevel } from './types';
 import { PHASE_COLORS, PHASE_COLORS_LIGHT } from './constants';
 import { isStepOverdue } from './utils';
+import {
+  GANTT_HEADER_HEIGHT,
+  GANTT_ROW_HEIGHT,
+  buildGanttRowItems,
+  getGanttRowsHeight,
+  positionGanttRows,
+} from './ganttLayout';
 import {
   parseISO,
   differenceInDays,
@@ -23,12 +30,12 @@ export interface GanttChartProps {
   plan: DeliveryPlan;
   zoomLevel: GanttZoomLevel;
   scrollRef: React.RefObject<HTMLDivElement>;
+  expandedPhaseIds: string[];
+  expandedStepIds: string[];
 }
 
 /* ---------- Constants ---------- */
 
-const ROW_HEIGHT = 40;
-const HEADER_HEIGHT = 40;
 const BUFFER_DAYS = 7;
 const PX_PER_DAY: Record<GanttZoomLevel, number> = {
   day: 40,
@@ -36,67 +43,14 @@ const PX_PER_DAY: Record<GanttZoomLevel, number> = {
   month: 8,
 };
 
-/* ---------- Milestones within a phase date range ---------- */
-
-function milestonesInPhase(
-  milestones: DeliveryPlan['milestones'],
-  phaseStart: string,
-  phaseEnd: string,
-): DeliveryPlan['milestones'] {
-  const start = new Date(phaseStart).getTime();
-  const end = new Date(phaseEnd).getTime();
-  return milestones.filter((m) => {
-    const t = new Date(m.date).getTime();
-    return t >= start && t <= end;
-  });
-}
-
-/* ---------- Row items (mirrors TaskList order) ---------- */
-
-type RowItem =
-  | { kind: 'phase'; phaseNo: number; phaseName: string; id: string; startDate: string; dueDate: string; status: string }
-  | { kind: 'step'; step: SopStep; phaseNo: number }
-  | { kind: 'milestone'; milestone: DeliveryPlan['milestones'][number]; phaseNo: number };
-
-function buildRowItems(plan: DeliveryPlan): RowItem[] {
-  const { phases, steps, milestones } = plan;
-  const sortedPhases = [...phases].sort((a, b) => a.phaseNo - b.phaseNo);
-  const rows: RowItem[] = [];
-
-  for (const phase of sortedPhases) {
-    rows.push({
-      kind: 'phase',
-      phaseNo: phase.phaseNo,
-      phaseName: phase.phaseName,
-      id: phase.id,
-      startDate: phase.startDate,
-      dueDate: phase.dueDate,
-      status: phase.status,
-    });
-
-    const phaseSteps = steps
-      .filter((s) => s.phaseId === phase.id)
-      .sort((a, b) => a.stepNo.localeCompare(b.stepNo, undefined, { numeric: true }));
-
-    for (const step of phaseSteps) {
-      rows.push({ kind: 'step', step, phaseNo: phase.phaseNo });
-    }
-
-    const phaseMilestones = milestonesInPhase(milestones, phase.startDate, phase.dueDate);
-    for (const milestone of phaseMilestones) {
-      rows.push({ kind: 'milestone', milestone, phaseNo: phase.phaseNo });
-    }
-  }
-
-  return rows;
-}
-
 /* ---------- Main component ---------- */
 
 const GanttChart: React.FC<GanttChartProps> = ({
   plan,
   zoomLevel,
   scrollRef,
+  expandedPhaseIds,
+  expandedStepIds,
 }) => {
   const pxPerDay = PX_PER_DAY[zoomLevel];
 
@@ -129,7 +83,12 @@ const GanttChart: React.FC<GanttChartProps> = ({
   const totalWidth = totalDays * pxPerDay;
 
   /* ---- Row items ---- */
-  const rowItems = useMemo(() => buildRowItems(plan), [plan]);
+  const rowItems = useMemo(
+    () => buildGanttRowItems(plan, expandedPhaseIds, expandedStepIds),
+    [expandedPhaseIds, expandedStepIds, plan],
+  );
+  const positionedRows = useMemo(() => positionGanttRows(rowItems), [rowItems]);
+  const rowsHeight = getGanttRowsHeight(positionedRows);
 
   /* ---- Today line position ---- */
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -226,7 +185,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
               position: 'sticky',
               top: 0,
               zIndex: 10,
-              height: HEADER_HEIGHT,
+              height: GANTT_HEADER_HEIGHT,
               background: 'var(--grey-50)',
               borderBottom: '1px solid var(--grey-200)',
               display: 'flex',
@@ -246,7 +205,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                   paddingBottom: 6,
                   borderRight: '1px solid var(--grey-100)',
                   background: col.weekend ? 'var(--grey-100)' : 'var(--grey-50)',
-                  height: HEADER_HEIGHT,
+                  height: GANTT_HEADER_HEIGHT,
                   display: 'flex',
                   alignItems: 'flex-end',
                   justifyContent: 'center',
@@ -276,7 +235,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                 <span
                   style={{
                     position: 'absolute',
-                    top: -HEADER_HEIGHT + 4,
+                    top: -GANTT_HEADER_HEIGHT + 4,
                     left: 4,
                     fontSize: 12,
                     color: 'rgb(var(--red-6))',
@@ -290,9 +249,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
             )}
 
             {/* Rows */}
-            {rowItems.map((item, rowIdx) => {
-              const top = rowIdx * ROW_HEIGHT;
-
+            {positionedRows.map(({ item, top, height }) => {
               if (item.kind === 'phase') {
                 const barLeft = dateToOffset(item.startDate);
                 const barWidth = dateToWidth(item.startDate, item.dueDate);
@@ -306,7 +263,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       top,
                       left: 0,
                       right: 0,
-                      height: ROW_HEIGHT,
+                      height,
                       background: 'var(--grey-100)',
                       borderBottom: '1px solid var(--grey-200)',
                     }}
@@ -317,7 +274,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         left: barLeft,
                         top: 6,
                         width: barWidth,
-                        height: ROW_HEIGHT - 12,
+                        height: GANTT_ROW_HEIGHT - 12,
                         background: bgColor,
                         borderRadius: 4,
                         display: 'flex',
@@ -334,6 +291,25 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       {item.phaseName}
                     </div>
                   </div>
+                );
+              }
+
+              if (item.kind === 'detail') {
+                return (
+                  <div
+                    key={`detail-${item.stepId}`}
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      top,
+                      left: 0,
+                      right: 0,
+                      height,
+                      boxSizing: 'border-box',
+                      background: 'var(--grey-50)',
+                      borderBottom: '1px solid var(--grey-100)',
+                    }}
+                  />
                 );
               }
 
@@ -361,7 +337,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       top,
                       left: 0,
                       right: 0,
-                      height: ROW_HEIGHT,
+                      height,
                       background: '#fff',
                       borderBottom: '1px solid var(--grey-100)',
                     }}
@@ -372,7 +348,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         left: barLeft,
                         top: 8,
                         width: barWidth,
-                        height: ROW_HEIGHT - 16,
+                        height: GANTT_ROW_HEIGHT - 16,
                         background: isSkipped
                           ? `${barBg}44`
                           : evergreenPattern
@@ -447,7 +423,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       top,
                       left: 0,
                       right: 0,
-                      height: ROW_HEIGHT,
+                      height,
                       background: 'var(--brand-50)',
                       borderBottom: '1px solid var(--grey-200)',
                     }}
@@ -456,7 +432,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       style={{
                         position: 'absolute',
                         left: diamondLeft - diamondSize / 2,
-                        top: (ROW_HEIGHT - diamondSize) / 2,
+                        top: (GANTT_ROW_HEIGHT - diamondSize) / 2,
                         width: diamondSize,
                         height: diamondSize,
                         background: diamondColor,
@@ -469,7 +445,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         position: 'absolute',
                         left: diamondLeft + diamondSize / 2 + 4,
                         top: 0,
-                        height: ROW_HEIGHT,
+                        height: GANTT_ROW_HEIGHT,
                         display: 'flex',
                         alignItems: 'center',
                         fontSize: 12,
@@ -487,7 +463,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
             })}
 
             {/* Bottom spacer to ensure last row is fully visible */}
-            <div style={{ height: rowItems.length * ROW_HEIGHT }} />
+            <div style={{ height: rowsHeight }} />
           </div>
         </div>
       </div>

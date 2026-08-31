@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildInitialContracts } from '../../contracts/mockData';
 import {
   buildContractSigningStageSummary,
+  buildProjectTimelineStepOrder,
   buildProjectStageSummaries,
+  buildSupplementAgreementStageSummary,
   getCurrentProjectStageSummary,
   getPaymentTimelineStep,
 } from '../projectStageSummary';
@@ -66,5 +68,58 @@ describe('projectStageSummary', () => {
     expect(getPaymentTimelineStep({ ...plan, condition: 'UI 设计确认后支付' })).toBe('design');
     expect(getPaymentTimelineStep({ ...plan, condition: '开发发布测试版后支付' })).toBe('development');
     expect(getPaymentTimelineStep({ ...plan, condition: '测试通过后支付' })).toBe('testing');
+  });
+
+  it('将补充协议及其全部回款条件收口到独立步骤', () => {
+    const contracts = buildInitialContracts().filter((item) => item.projectId === 'prod-112');
+    const mainContract = contracts.find((item) => item.kind !== 'supplement')!;
+    const input = {
+      project: { ...project, id: 'prod-112', progress: 98, blockers: [] },
+      contracts,
+      collections: contracts.flatMap((contract) => contract.collectionRecords ?? []),
+      confirmations: [],
+      tasks: [],
+      contractAmount: 144000,
+      receivedAmount: 126000,
+    };
+
+    const summaries = buildProjectStageSummaries(input);
+    const supplementStage = buildSupplementAgreementStageSummary(input);
+
+    expect(summaries.design.payments.map((item) => item.label)).toEqual(['二期款', '三期款']);
+    expect(summaries.development.payments).toEqual([]);
+    expect(summaries.acceptance.payments.map((item) => item.label)).toEqual(['尾款']);
+    expect(supplementStage?.step).toBe('supplement');
+    expect(supplementStage?.payments).toHaveLength(4);
+    expect(supplementStage?.payments.map((item) => item.amount)).toEqual([14000, 14000, 8000, 8000]);
+    expect(supplementStage?.pending.some((item) => item.id === 'supplement-collected')).toBe(true);
+    expect(mainContract.kind).toBe('main');
+  });
+
+  it('没有有效补充协议时不生成额外步骤', () => {
+    const contract = buildInitialContracts().find((item) => item.id === 'pawkey-c1-s1')!;
+    const summary = buildSupplementAgreementStageSummary({
+      project,
+      contracts: [{ ...contract, status: 'voided' }],
+      collections: [],
+      confirmations: [],
+      tasks: [],
+      contractAmount: 0,
+      receivedAmount: 0,
+    });
+
+    expect(summary).toBeNull();
+  });
+
+  it('仅在涉及补充协议时将该步骤插入回款结项之前', () => {
+    expect(buildProjectTimelineStepOrder({
+      includeContractSigning: true,
+      includeSupplementAgreement: true,
+    })).toEqual(['contract', 'design', 'development', 'testing', 'acceptance', 'supplement', 'closeout']);
+
+    expect(buildProjectTimelineStepOrder({
+      includeContractSigning: false,
+      includeSupplementAgreement: false,
+    })).toEqual(['design', 'development', 'testing', 'acceptance', 'closeout']);
   });
 });

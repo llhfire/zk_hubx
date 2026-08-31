@@ -11,6 +11,9 @@ import { computeAmountBreakdown, sumEvalDaysByRole, TECH_DAILY_RATE, validateBef
 import { addWorkdays, computeProfitRate, DEFAULT_MIN_PROFIT_RATE } from '../quotePricing';
 import { PLATFORM_OPTIONS } from '../types';
 import type { CostItem, EvalRole, SalesAddedRole, TravelOnsiteConfig } from '../types';
+import { QuoteTemplatePreviewPanel } from '../components/QuoteTemplatePreviewPanel';
+import { getQuoteTemplateMissingFields } from '../quoteDocumentTemplate';
+import { contractSigningEntities } from '../../company-entity/companyEntityData';
 
 const { Text, Title } = Typography;
 
@@ -76,12 +79,30 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   const validationIssues = useMemo(() => validateBeforeAudit(workingQuote), [workingQuote]);
   const blockingIssues = validationIssues.filter((issue) => issue.severity === 'error');
   const warningIssues = validationIssues.filter((issue) => issue.severity === 'warning');
+  const templateMissingFields = useMemo(() => getQuoteTemplateMissingFields(workingQuote), [workingQuote]);
   const expectedEndDate = evalSheet?.manualWorkDays
     ? addWorkdays(new Date().toISOString().slice(0, 10), evalSheet.manualWorkDays)
     : null;
 
   const persist = (patch: Partial<typeof quote>) => {
     updateQuote(quote.id, (q) => ({ ...q, ...patch }));
+  };
+
+  const updatePaymentTerm = (index: number, patch: { stage?: string; percent?: number }) => {
+    const paymentTerms = (quote.summary?.paymentTerms ?? []).map((term, termIndex) => (
+      termIndex === index ? { ...term, ...patch } : term
+    ));
+    persist({
+      summary: {
+        totalLaborDays: breakdown.totalLaborDays,
+        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+        grandTotalPrice: breakdown.grandTotal,
+        paymentTerms,
+        taxIncluded: quote.summary?.taxIncluded ?? true,
+        warrantyYears: quote.summary?.warrantyYears ?? 1,
+        invoiceType: quote.summary?.invoiceType ?? '专票',
+      },
+    });
   };
 
   const updateRoleDailyCost = (roleKey: string, value: number) => {
@@ -199,6 +220,20 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   return (
     <Card title="工作台三 · 报价配置">
       <Space direction="vertical" style={{ width: '100%' }} size={16}>
+
+        <Card size="small" title="报价单主体">
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 220px) minmax(240px, 1fr)', gap: 16, alignItems: 'center' }}>
+            <Text type="secondary">签约与落款主体</Text>
+            <Select
+              aria-label="报价单签约主体"
+              value={quote.signingEntity || undefined}
+              disabled={readonly}
+              placeholder="请选择签约主体"
+              options={contractSigningEntities.map((entity) => ({ label: entity.name, value: entity.shortName }))}
+              onChange={(signingEntity) => persist({ signingEntity })}
+            />
+          </div>
+        </Card>
 
         {/* 功能清单 + 工时评估（从工作台一和工作台二带入） */}
         <Card size="small" title={
@@ -624,6 +659,23 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             <Tag color="arcoblue">含税人民币</Tag>
             <Tag>质保 {quote.summary?.warrantyYears ?? 1} 年</Tag>
           </Space>
+          <div style={{ marginBottom: 18 }}>
+            <Text bold style={{ display: 'block', marginBottom: 8 }}>付款方式（写入报价模板与后续合同）</Text>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {(quote.summary?.paymentTerms ?? []).map((term, index) => (
+                <div key={`${term.stage}-${index}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) 120px', gap: 10 }}>
+                  <Input aria-label={`第 ${index + 1} 期付款节点`} value={term.stage} disabled={readonly} onChange={(stage) => updatePaymentTerm(index, { stage })} />
+                  <InputNumber aria-label={`第 ${index + 1} 期付款比例`} min={0} max={100} value={term.percent} disabled={readonly} suffix="%" onChange={(percent) => updatePaymentTerm(index, { percent: Number(percent) || 0 })} />
+                </div>
+              ))}
+            </div>
+            <Text
+              type={(quote.summary?.paymentTerms ?? []).reduce((sum, term) => sum + term.percent, 0) === 100 ? 'success' : 'error'}
+              style={{ display: 'block', marginTop: 8 }}
+            >
+              比例合计 {(quote.summary?.paymentTerms ?? []).reduce((sum, term) => sum + term.percent, 0)}%
+            </Text>
+          </div>
           {quote.isSupplement && (
             <Space wrap style={{ marginBottom: 16 }}>
               <Text type="secondary">本次变更金额（可为负）</Text>
@@ -711,17 +763,22 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
           </div>
         </Card>
 
+        <QuoteTemplatePreviewPanel quote={workingQuote} breakdown={breakdown} />
+
         {blockingIssues.length > 0 && (
           <Alert type="error" title="提交条件未满足" content={blockingIssues.map((issue) => issue.message).join('；')} />
         )}
         {warningIssues.length > 0 && (
           <Alert type="warning" title="请确认以下数字" content={`${warningIssues.map((issue) => issue.message).join('；')}。黄灯项不阻止提交。`} />
         )}
+        {templateMissingFields.length > 0 && (
+          <Alert type="error" title="客户版报价单未完整" content={`还需补齐：${templateMissingFields.join('、')}`} />
+        )}
 
         {/* 提交按钮 */}
         {!readonly && (
           <div style={{ textAlign: 'right' }}>
-            <Button type="primary" icon={<IconSend />} disabled={leadFrozen || blockingIssues.length > 0} onClick={handleSubmit}>提交审批</Button>
+            <Button type="primary" icon={<IconSend />} disabled={leadFrozen || blockingIssues.length > 0 || templateMissingFields.length > 0} onClick={handleSubmit}>提交审批</Button>
           </div>
         )}
       </Space>

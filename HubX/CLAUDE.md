@@ -56,8 +56,8 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 ## 技术栈
 
-- React 18 + Vite 6
-- React Router 7（`createBrowserRouter`）
+- React 18 + Vite 7
+- React Router 7.18（`createBrowserRouter`）
 - Arco Design 作为主要业务 UI 组件库
 - Tailwind CSS v4 + 全局主题变量
 - `packages/ui/src/app/components/ui/` 下有一套 shadcn / Radix 风格通用组件，但业务页面目前更多直接使用 Arco 组件

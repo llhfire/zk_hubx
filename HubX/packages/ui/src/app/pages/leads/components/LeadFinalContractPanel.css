@@ -70,6 +70,50 @@
   white-space: nowrap;
 }
 
+.lead-final-contract-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lead-final-contract-toggle {
+  color: var(--color-text-2);
+  white-space: nowrap;
+}
+
+.lead-final-contract-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 14px;
+}
+
+.lead-final-contract-summary-item {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.lead-final-contract-summary-item > span {
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.lead-final-contract-summary-item > strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .lead-final-contract-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -170,6 +214,19 @@
     gap: 8px;
   }
 
+  .lead-final-contract-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .lead-final-contract-header-actions .lead-final-contract-project-amount {
+    margin-right: auto;
+  }
+
+  .lead-final-contract-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .lead-final-contract-file-actions {
     align-self: flex-end;
   }
@@ -177,6 +234,10 @@
 }
 
 @media (max-width: 480px) {
+  .lead-final-contract-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .lead-final-contract-info-item {
     grid-template-columns: max-content minmax(0, 1fr);
     gap: 8px;

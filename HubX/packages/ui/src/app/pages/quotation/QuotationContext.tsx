@@ -22,6 +22,7 @@ import type { QuoteAction } from './types';
 export interface LeadBrief {
   status: string;
   ownerName?: string;
+  signingEntity?: string;
 }
 
 interface QuotationContextValue {
@@ -181,10 +182,11 @@ export function QuotationProvider({ children, service, leadBriefProvider }: Quot
       basicInfo: Partial<Quote['basicInfo']>,
       options?: CreateQuoteOptions,
     ): Promise<string> => {
-      const leadOwnerName = leadBriefProvider?.(leadId)?.ownerName;
+      const leadBrief = leadBriefProvider?.(leadId);
       const id = await svc.createQuote(leadId, featureList, basicInfo, {
         ...options,
-        salesOwnerName: options?.salesOwnerName ?? leadOwnerName,
+        salesOwnerName: options?.salesOwnerName ?? leadBrief?.ownerName,
+        signingEntity: options?.signingEntity ?? leadBrief?.signingEntity,
       });
       await refresh();
       return id;

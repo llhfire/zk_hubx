@@ -82,9 +82,16 @@ import { useTodos } from '@/app/todos/TodoContext';
 import { useCustomers } from './customers/CustomerContext';
 import { buildCustomerSnapshot } from './customers/customerModel';
 import type { Contract, ContractStatus } from './contracts/types';
-import { effectiveAmount } from './contracts/paymentUtils';
+import { computePlanStatusRows, effectiveAmount } from './contracts/paymentUtils';
 import { useCollections } from '@/app/collections/CollectionContext';
-import { collectionsForProject, sumReceived, type CollectionLedgerEntry } from '@/services/collectionMutations';
+import {
+  allocateCollectionAmount,
+  collectionsForProject,
+  getCollectionPeriods,
+  sumReceived,
+  type CollectionLedgerEntry,
+  type CollectionPeriod,
+} from '@/services/collectionMutations';
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
 import { QuoteCard } from './quotation/QuoteCard';
@@ -391,21 +398,44 @@ export function LeadDetail360() {
 
   const openCollectionEditor = (record?: CollectionLedgerEntry) => {
     setEditingCollectionId(record?.id);
-    collectionForm.setFieldsValue(record || { date: '2026-08-29', method: '银行汇款', period: 'other', amount: 0, note: '' });
+    collectionForm.resetFields();
+    collectionForm.setFieldsValue(record ? {
+      ...record,
+      periods: getCollectionPeriods(record).map(String),
+    } : {
+      date: '2026-08-29',
+      method: '银行汇款',
+      contractId: mainContract?.id,
+      periods: [],
+      amount: 0,
+      note: '',
+    });
     setCollectionModalVisible(true);
   };
 
   const saveCollection = () => {
     collectionForm.validate().then((values) => {
-      if (!mainContract) {
+      const contract = relatedContracts.find((item) => item.id === values.contractId) ?? mainContract;
+      if (!contract) {
         Message.warning('当前线索暂无有效主合同');
         return;
       }
+      const periods = ((values.periods ?? []) as string[]).map<CollectionPeriod>((value) => value === 'other' ? 'other' : Number(value));
+      const otherCollections = visibleLeadCollections.filter((item) => item.contractId === contract.id && item.id !== editingCollectionId);
+      const allocatedRows = computePlanStatusRows({ ...contract, collectionRecords: otherCollections });
+      const periodAllocations = allocateCollectionAmount({
+        periods,
+        amount: Number(values.amount),
+        plans: contract.current.paymentPlans,
+        allocatedByPeriod: new Map(allocatedRows.map((row) => [row.plan.period, row.allocated])),
+      });
       const record: CollectionLedgerEntry = {
         id: editingCollectionId || `lead-col-${Date.now()}`,
-        contractId: mainContract.id,
-        projectId: mainContract.projectId,
-        period: values.period === 'other' ? 'other' : Number(values.period),
+        contractId: contract.id,
+        projectId: contract.projectId,
+        period: periods[0],
+        periods,
+        periodAllocations,
         amount: Number(values.amount),
         date: values.date,
         method: values.method,
@@ -1655,6 +1685,9 @@ export function LeadDetail360() {
         visible={collectionModalVisible}
         editing={Boolean(editingCollectionId)}
         form={collectionForm}
+        contracts={relatedContracts.filter((contract) => contract.status !== 'voided')}
+        collections={visibleLeadCollections}
+        editingCollectionId={editingCollectionId}
         onOk={saveCollection}
         onCancel={() => setCollectionModalVisible(false)}
       />

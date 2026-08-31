@@ -11,6 +11,8 @@ import { FeatureListUpload } from './FeatureListUpload';
 import { OnlineDocumentPreview } from './OnlineDocumentPreview';
 import { ScanUpload } from './ScanUpload';
 import { Stage4Approval } from '../stages/Stage4Approval';
+import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
+import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 
 const { Text } = Typography;
 
@@ -20,13 +22,6 @@ interface Props {
   readonly: boolean;
 }
 
-const COMPANY = {
-  name: '中科集团',
-  address: '四川省成都市高新区',
-  phone: '028-00000000',
-  representative: '授权代表',
-};
-
 export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
   const {
     saveFeatureList, submitFeatureList, saveEvalSheet, submitEval,
@@ -35,6 +30,13 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
   const frozen = isLeadFrozen(quote.id);
   const state = quote.fileFlow ?? { onlineDocument: { status: 'empty' as const }, scans: [] };
   const breakdown = useMemo(() => computeAmountBreakdown(quote), [quote]);
+  const companyEntity = findCompanyEntityByName(quote.signingEntity ?? ZKRT_QUOTE_TEMPLATE.signingEntity);
+  const company = {
+    name: companyEntity?.name ?? '中科软通（武汉）科技有限公司',
+    address: companyEntity?.address ?? '',
+    phone: companyEntity?.contactPhone ?? '',
+    representative: companyEntity?.legalPerson ?? '',
+  };
 
   const patchState = (patch: Partial<NonNullable<Quote['fileFlow']>>) => updateQuote(quote.id, (current) => ({
     ...current,
@@ -117,7 +119,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             <InputNumber min={quote.isSupplement ? undefined : 0} value={state.quoteAmount} disabled={readonly} onChange={(value) => patchPricingState({ quoteAmount: typeof value === 'number' ? value : undefined })} />
           </Space>
           <OnlineDocumentPreview
-            data={{ quote, breakdown, company: COMPANY, isSupplement: quote.isSupplement }}
+            data={{ quote, breakdown, company, isSupplement: quote.isSupplement }}
             document={state.onlineDocument}
             quoteStatus={quote.status}
             onDocumentChange={(onlineDocument) => patchState({ onlineDocument })}

@@ -73,9 +73,29 @@ export type PaymentRatio = '3:3:3:1' | '4:5:1';
 
 export type ExecutionStatus = '履行中' | '已完成' | '已终止';
 
+/** 合同标的覆盖的平台；交付计划据此确定 DeliveryType。 */
+export type ContractDeliveryPlatform = '网站' | '小程序' | 'APP';
+
+/** 合同中约定的交付/验收节点。 */
+export interface ContractDeliveryCondition {
+  name: string;
+  expectedDate: string;
+  condition: string;
+  deliverables: string;
+}
+
+/** 报价功能清单带入合同附件一后的标准行。 */
+export interface ContractFeatureItem {
+  endpoint: string;
+  module: string;
+  feature: string;
+  description: string;
+}
+
 // 合同的可编辑字段集合。编辑页直接读写 contract.current；
 // 用户每次"保存为新版本/提交审批"时，会把 current 整体克隆进 versionHistory[]。
 export interface ContractFormData {
+  contractNo?: string;
   contractName: string;
   productCategory: string;
   signingEntity: string; // 我方（乙方）签约主体
@@ -85,6 +105,8 @@ export interface ContractFormData {
   signingEntityPhone?: string;
   signingEntityEmail?: string;
   signingEntityPostalCode?: string;
+  signingEntityBankName?: string;
+  signingEntityBankAccount?: string;
   customerName: string;
   customerContact: string;
   customerPhone: string;
@@ -95,6 +117,19 @@ export interface ContractFormData {
   bankName: string;
   bankAccount: string;
   contractContent: string;
+  /** Word 技术服务合同模板中的开发、确认、验收和维护参数。 */
+  projectWorkDays?: number;
+  prototypeConfirmDays?: number;
+  acceptanceDays?: number;
+  warrantyMonths?: number;
+  maintenanceAnnualRate?: number;
+  invoiceTaxRate?: number;
+  invoiceContent?: string;
+  featureList?: ContractFeatureItem[];
+  /** 合同标的的平台范围；为空时由合同名称、品类和正文保守推断。 */
+  deliveryPlatforms?: ContractDeliveryPlatform[];
+  /** 合同明确约定的交付物、交付日期及验收条件。 */
+  deliveryConditions?: ContractDeliveryCondition[];
   signDate: string;
   effectiveDate: string;
   endDate: string;
@@ -249,7 +284,12 @@ export interface CollectionRecord {
   contractId: string;
   /** 可选：挂到项目，供项目 360 实收台账切片 */
   projectId?: string;
+  /** 兼容旧数据的单一期次；新录入优先读取 periods。 */
   period?: number | 'other';
+  /** 一笔实收可同时归属多个回款期次。 */
+  periods?: Array<number | 'other'>;
+  /** 实收金额在各期次间的明确分配，避免多期次记录重复计入。 */
+  periodAllocations?: Array<{ period: number | 'other'; amount: number }>;
   amount: number;
   date: string;
   method: string;

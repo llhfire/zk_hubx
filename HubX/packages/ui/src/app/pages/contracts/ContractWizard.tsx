@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import { cloneElement, isValidElement, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
   Button,
@@ -7,6 +7,7 @@ import {
   DatePicker,
   Grid,
   Input,
+  InputNumber,
   Message,
   Select,
   Space,
@@ -25,6 +26,7 @@ import {
 import {
   contractSigningEntities,
   findCompanyEntityByName,
+  getCompanyContractTemplate,
   type CompanyEntityRecord,
 } from '../company-entity/companyEntityData';
 import { findLatestApprovedQuote } from './utils';
@@ -38,6 +40,7 @@ import { useCustomers } from '../customers/CustomerContext';
 import { buildCustomerSnapshot } from '../customers/customerModel';
 
 const Title = Typography.Title;
+const Text = Typography.Text;
 
 interface ContractEditPrefillState {
   contractId: string;
@@ -52,7 +55,7 @@ interface ContractEditPrefillState {
 const submitControlStyle = { width: '100%', height: 44 };
 const submitGridStyle = (columns = 2) => ({
   display: 'grid',
-  gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+  gridTemplateColumns: columns === 1 ? 'minmax(0, 1fr)' : 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
   columnGap: 28,
   rowGap: 24,
 });
@@ -62,6 +65,9 @@ function renderSubmitField(
   control: ReactNode,
   options: { required?: boolean; full?: boolean; textarea?: boolean } = {},
 ) {
+  const labelledControl = isValidElement(control)
+    ? cloneElement(control as ReactElement<Record<string, unknown>>, { 'aria-label': label })
+    : control;
   return (
     <div
       style={{
@@ -86,7 +92,7 @@ function renderSubmitField(
         {options.required && <span style={{ color: 'rgb(var(--red-6))', marginRight: 4 }}>*</span>}
         {label}：
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>{control}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>{labelledControl}</div>
     </div>
   );
 }
@@ -125,8 +131,10 @@ function buildSigningEntityFields(entity: CompanyEntityRecord | undefined) {
     signingPerson: entity?.legalPerson ?? '',
     signingEntityAddress: entity?.address ?? '',
     signingEntityPhone: entity?.contactPhone ?? '',
-    signingEntityEmail: '',
-    signingEntityPostalCode: '',
+    signingEntityEmail: entity?.email ?? '',
+    signingEntityPostalCode: entity?.shortName === '中科软通' ? '430000' : '',
+    signingEntityBankName: entity?.invoiceBankName ?? '',
+    signingEntityBankAccount: entity?.invoiceBankAccount ?? '',
   };
 }
 
@@ -156,6 +164,14 @@ function initFormDataFromContext(
     bankAccount: leadEntity?.invoiceBankAccount ?? '',
     contractContent:
       '乙方按甲方需求规格说明书完成系统设计、开发、测试、部署及培训，提供 12 个月免费质保。',
+    projectWorkDays: 45,
+    prototypeConfirmDays: 3,
+    acceptanceDays: 5,
+    warrantyMonths: 12,
+    maintenanceAnnualRate: 15,
+    invoiceTaxRate: 6,
+    invoiceContent: '生产生活服务*研发服务费',
+    featureList: [],
     signDate: today,
     effectiveDate: effective,
     endDate: end,
@@ -173,7 +189,11 @@ function initFormDataFromContext(
 function withDefaultTemplate(formData: ContractFormData): ContractFormData {
   const template = findDefaultContractTemplate(formData.signingEntity, formData.productCategory);
   const version = template?.versions.at(-1);
-  return template ? { ...formData, templateId: template.id, templateVersionId: version?.id, customContractHtml: undefined } : formData;
+  if (template) return { ...formData, templateId: template.id, templateVersionId: version?.id, customContractHtml: undefined };
+  const companyTemplate = getCompanyContractTemplate(formData.signingEntity);
+  return companyTemplate?.contractTemplateId
+    ? { ...formData, templateId: companyTemplate.contractTemplateId, templateVersionId: undefined, customContractHtml: undefined }
+    : formData;
 }
 
 export function ContractWizard() {
@@ -227,9 +247,12 @@ export function ContractWizard() {
 
   const selectedQuoteId = dealQuotePrefill?.quoteId ?? initialQuote?.id ?? null;
   const [formData, setFormData] = useState<ContractFormData>(() => {
-    const base = contractEditPrefill?.formData ?? initFormDataFromContext(lead, initialQuote);
+    const base = contractEditPrefill
+      ? { ...contractEditPrefill.formData, contractNo: contractEditPrefill.contractNo }
+      : initFormDataFromContext(lead, initialQuote);
     return withDefaultTemplate(dealQuotePrefill && !contractEditPrefill ? applyDealQuotePrefill(base, dealQuotePrefill) : base);
   });
+  const [submitting, setSubmitting] = useState(false);
   const previewContractNo = getNextContractNo(formData.signingEntity);
 
   const updateField = <K extends keyof ContractFormData>(key: K, value: ContractFormData[K]) => {
@@ -260,6 +283,7 @@ export function ContractWizard() {
   };
 
   const finish = async () => {
+    if (submitting) return;
     if (contractEditPrefill) {
       saveDraft(contractEditPrefill.contractId, formData);
       Message.success('合同信息已更新');
@@ -275,6 +299,7 @@ export function ContractWizard() {
     const requiredFields: Array<[string, string | undefined]> = [
       ['合同名称', formData.contractName],
       ['签约日期', formData.signDate],
+      ['签约主体', formData.signingEntity],
       ['公司名称', formData.customerName],
       ['税务登记号', formData.customerTaxNo],
       ['联系人', formData.customerContact],
@@ -289,8 +314,26 @@ export function ContractWizard() {
       Message.error(dealQuotePrefill?.kind === 'supplement' ? '补充合同变更金额不能为 0' : '请输入有效的合同金额');
       return;
     }
+    if ((formData.projectWorkDays ?? 0) <= 0 || (formData.prototypeConfirmDays ?? 0) <= 0 || (formData.acceptanceDays ?? 0) <= 0) {
+      Message.error('开发工期、原型确认时限和验收反馈时限必须大于 0');
+      return;
+    }
+    if (formData.paymentPlans.length > 0) {
+      const percentTotal = formData.paymentPlans.reduce((sum, item) => sum + item.percentage, 0);
+      if (Math.abs(percentTotal - 100) > 0.01) {
+        Message.error(`回款期次比例合计为 ${percentTotal}%，必须等于 100%`);
+        return;
+      }
+      const amountTotal = formData.paymentPlans.reduce((sum, item) => sum + item.amount, 0);
+      if (Math.abs(amountTotal - formData.totalAmount) > 0.01) {
+        Message.error('回款期次金额合计必须与合同金额一致');
+        return;
+      }
+    }
 
-    const created = await createFromWizard({
+    setSubmitting(true);
+    try {
+      const created = await createFromWizard({
       leadId: selectedLeadId ?? leadIdParam ?? undefined,
       quoteId: selectedQuoteId ?? undefined,
       projectId,
@@ -302,12 +345,12 @@ export function ContractWizard() {
         const customer = customers.find((item) => item.id === quotes.find((quote) => quote.id === selectedQuoteId)?.customerId || item.name === formData.customerName);
         return customer ? buildCustomerSnapshot(customer) : undefined;
       })(),
-      formData,
+      formData: { ...formData, contractNo: previewContractNo },
     });
-    Message.success(`合同 ${created.contractNo} 已创建草稿`);
+      Message.success(`合同 ${created.contractNo} 已创建草稿`);
 
     // 阶段 3：成交报价生成主合同后，回写报价关联 + 维护商机（quoteIds / contractId）
-    if (dealQuotePrefill?.quoteId) {
+      if (dealQuotePrefill?.quoteId) {
       const dealQuoteId = dealQuotePrefill.quoteId;
       await updateQuote(dealQuoteId, (q) => q.isSupplement
         ? { ...q, generatedContractId: created.id }
@@ -332,11 +375,11 @@ export function ContractWizard() {
         });
       }
       Message.success('已回写成交报价与商机关联');
-    }
+      }
 
-    const returnLeadId = selectedLeadId ?? leadIdParam;
-    if (returnTo === 'lead' && returnLeadId) {
-      navigate(`/contracts/${created.id}/edit`, {
+      const returnLeadId = selectedLeadId ?? leadIdParam;
+      if (returnTo === 'lead' && returnLeadId) {
+        navigate(`/contracts/${created.id}/edit`, {
         state: {
           contractEditorReturn: {
             pathname: `/leads/${returnLeadId}`,
@@ -346,13 +389,18 @@ export function ContractWizard() {
             },
           },
         },
-      });
-      return;
-    }
+        });
+        return;
+      }
 
-    navigate(`/contracts/${created.id}/edit`, {
-      state: editorReturnTarget ? { contractEditorReturn: editorReturnTarget } : undefined,
-    });
+      navigate(`/contracts/${created.id}/edit`, {
+        state: editorReturnTarget ? { contractEditorReturn: editorReturnTarget } : undefined,
+      });
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '合同创建失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const cancel = () => {
@@ -397,7 +445,7 @@ export function ContractWizard() {
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 20 }}>
         <Button onClick={cancel}>取消</Button>
-        <Button type="primary" onClick={finish}>下一步</Button>
+        <Button type="primary" loading={submitting} disabled={submitting} onClick={finish}>下一步</Button>
       </div>
     </div>
     </PageShell>
@@ -612,6 +660,43 @@ function SimpleContractForm({
           </Card>
         </Grid.Col>
       </Grid.Row>
+
+      <Card
+        title="模板关键条款"
+        extra={<Tag color="arcoblue">{formData.signingEntity === '中科软通' ? '中科软通技术服务合同 · 19 章 + 2 个附件' : `${formData.signingEntity || '签约主体'} · 软件服务合同`}</Tag>}
+        bodyStyle={{ padding: '20px 24px' }}
+        style={{ marginTop: 16 }}
+      >
+        <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
+          以下字段直接写入合同模板的项目期限、确认验收、免费维护和开票条款；成交报价的功能清单与付款节点会自动带入附件一和第七章。
+        </Text>
+        <div style={submitGridStyle(2)}>
+          {renderSubmitField('开发工期', (
+            <InputNumber min={1} value={formData.projectWorkDays} onChange={(value) => updateField('projectWorkDays', Number(value) || 0)} suffix="工作日" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('原型确认时限', (
+            <InputNumber min={1} value={formData.prototypeConfirmDays} onChange={(value) => updateField('prototypeConfirmDays', Number(value) || 0)} suffix="工作日" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('验收反馈时限', (
+            <InputNumber min={1} value={formData.acceptanceDays} onChange={(value) => updateField('acceptanceDays', Number(value) || 0)} suffix="工作日" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('免费维护期', (
+            <InputNumber min={0} value={formData.warrantyMonths} onChange={(value) => updateField('warrantyMonths', Number(value) || 0)} suffix="个月" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('续费维护比例', (
+            <InputNumber min={0} max={100} value={formData.maintenanceAnnualRate} onChange={(value) => updateField('maintenanceAnnualRate', Number(value) || 0)} suffix="%/年" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('开票税率', (
+            <InputNumber min={0} max={100} value={formData.invoiceTaxRate} onChange={(value) => updateField('invoiceTaxRate', Number(value) || 0)} suffix="%" style={submitControlStyle} />
+          ))}
+          {renderSubmitField('发票类型', (
+            <Select value={formData.invoiceType ?? '专票'} onChange={(value) => updateField('invoiceType', value)} style={submitControlStyle} options={[{ label: '增值税专用发票', value: '专票' }, { label: '增值税普通发票', value: '普票' }]} />
+          ))}
+          {renderSubmitField('开票内容', (
+            <Input value={formData.invoiceContent ?? ''} onChange={(value) => updateField('invoiceContent', value)} placeholder="如：生产生活服务*研发服务费" style={submitControlStyle} />
+          ))}
+        </div>
+      </Card>
     </>
   );
 }

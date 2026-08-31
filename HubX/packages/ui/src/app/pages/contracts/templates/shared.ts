@@ -90,23 +90,30 @@ export function renderSignatureBlock(formData: ContractFormData): string {
 
 // 把模板正文（template body）包进 A4 纸样式 + "草案"水印。
 // 所有模板都通过这个函数包装，保证视觉风格统一。
-export function wrapDocument(formData: ContractFormData, body: string, opts?: { showWatermark?: boolean }): string {
+export function wrapDocument(formData: ContractFormData, body: string, opts?: {
+  showWatermark?: boolean;
+  documentTitle?: string;
+  showMeta?: boolean;
+  showSignature?: boolean;
+}): string {
   const showWatermark = opts?.showWatermark !== false;
+  const showMeta = opts?.showMeta !== false;
+  const showSignature = opts?.showSignature !== false;
   return `<style>${A4_STYLE}</style>
   <div class="contract-doc">
     ${showWatermark ? '<div class="watermark">草案</div>' : ''}
     <div class="contract-header">
-      <h1 class="contract-title">${escape(formData.contractName || '合同名称待填')}</h1>
+      <h1 class="contract-title">${escape(opts?.documentTitle ?? formData.contractName ?? '合同名称待填')}</h1>
     </div>
-    <div class="contract-meta">
+    ${showMeta ? `<div class="contract-meta">
       <div>甲方：<strong>${escape(formData.customerName)}</strong></div>
       <div>乙方：<strong>${escape(formData.signingEntity || '北京科技有限公司')}</strong></div>
       <div>签约日期：${escape(formData.signDate || '____')}</div>
-    </div>
+    </div>` : ''}
     <div class="contract-body">
       ${body}
     </div>
-    ${renderSignatureBlock(formData)}
+    ${showSignature ? renderSignatureBlock(formData) : ''}
   </div>`;
 }
 
@@ -164,8 +171,8 @@ const A4_STYLE = `
   font-size: 16px;
   font-weight: 700;
   margin: 24px 0 12px;
-  padding-left: 8px;
-  border-left: 3px solid rgb(var(--primary-6));
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-2);
 }
 .contract-doc .contract-body ol { padding-left: 24px; margin: 0 0 12px; }
 .contract-doc .contract-body ol li { margin-bottom: 6px; }
@@ -184,6 +191,18 @@ const A4_STYLE = `
 }
 .contract-doc .payment-plan-table thead th { background: var(--color-fill-2); font-weight: 600; }
 .contract-doc .payment-plan-table tfoot { background: var(--color-fill-1); }
+.contract-doc .contract-cover-company { text-align: center; font-size: 18px; font-weight: 700; margin-top: 32px; }
+.contract-doc .contract-cover-title { text-align: center; font-size: 28px; letter-spacing: 8px; margin: 16px 0 72px; }
+.contract-doc .contract-cover-grid { width: 78%; margin: 0 auto 72px; display: grid; grid-template-columns: 92px 1fr; gap: 12px; }
+.contract-doc .contract-cover-grid > div { border-bottom: 1px solid var(--color-border-3); min-height: 28px; }
+.contract-doc .chapter-title { text-align: center; font-size: 17px; margin: 28px 0 14px; }
+.contract-doc .contract-table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 12px; }
+.contract-doc .contract-table th,
+.contract-doc .contract-table td { border: 1px solid var(--color-border-3); padding: 7px 8px; vertical-align: middle; word-break: break-word; }
+.contract-doc .contract-table th { background: var(--color-fill-2); font-weight: 600; text-align: center; }
+.contract-doc .contract-table .number { text-align: right; font-variant-numeric: tabular-nums; }
+.contract-doc .contract-signature-table td { height: 40px; vertical-align: top; }
+.contract-doc .attachment-title { text-align: center; font-size: 18px; margin: 40px 0 20px; }
 .contract-doc .signature-block {
   display: flex;
   justify-content: space-between;

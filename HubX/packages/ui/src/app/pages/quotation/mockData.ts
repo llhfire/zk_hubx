@@ -181,6 +181,8 @@ function buildQuote(): Quote {
     version: 'v1.0',
     status: 'pending_quote',
     leadId: 'lead-1',
+    quoteTemplateId: 'zkrt-standard-quote',
+    signingEntity: '中科软通',
     basicInfo: {
       projectName: 'A公司CRM系统开发',
       projectType: '企业管理',
@@ -228,8 +230,8 @@ function buildQuote(): Quote {
       projectWorkDays: 20,
       grandTotalPrice: 0,
       paymentTerms: [
-        { stage: '合同签订首付款', percent: 50, amount: 0 },
-        { stage: '系统交付款', percent: 40, amount: 0 },
+        { stage: '合同签订首付款', percent: 30, amount: 0 },
+        { stage: '项目交付款', percent: 60, amount: 0 },
         { stage: '验收尾款', percent: 10, amount: 0 },
       ],
       taxIncluded: true,
@@ -258,6 +260,8 @@ function buildDraftQuote(): Quote {
     version: 'v1.0',
     status: 'draft',
     leadId: 'lead-2',
+    quoteTemplateId: 'zkrt-standard-quote',
+    signingEntity: '中科软通',
     basicInfo: {
       projectName: 'B公司小程序定制开发',
       projectType: '小程序定制',

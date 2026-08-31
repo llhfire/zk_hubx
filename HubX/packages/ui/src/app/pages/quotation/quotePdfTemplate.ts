@@ -1,14 +1,12 @@
-// 客户报价单 PDF 模板
-// 按中科标准件版式：封面→整体报价→详细清单→自费项目→签章
-// 数据流转：盖章生成无水印正式版；文件流转在线编辑终稿+扫描件
+// 客户报价单模板：字段和版式依据《中科【软通】报价模板.docx》适配。
 
+import { buildQuoteTemplateLines, ZKRT_QUOTE_TEMPLATE } from './quoteDocumentTemplate';
 import type { Quote } from './types';
 import type { QuoteAmountBreakdown } from './quoteFlow';
 
 export interface PdfTemplateData {
   quote: Quote;
   breakdown: QuoteAmountBreakdown;
-  /** 签约主体信息 */
   company: {
     name: string;
     logo?: string;
@@ -16,139 +14,133 @@ export interface PdfTemplateData {
     phone: string;
     representative: string;
   };
-  /** 是否为补充报价 */
   isSupplement?: boolean;
-  /** 水印文字（草稿预览用，盖章后为空） */
   watermark?: string;
 }
 
-/** 生成报价单 HTML（供 html2canvas 渲染或在线预览） */
+function escape(value: string | number | undefined | null): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function money(value: number): string {
+  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function dateText(value?: string): string {
+  const parsed = value ? new Date(value.replace(' ', 'T')) : new Date();
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function paymentDescription(quote: Quote): string {
+  const terms = quote.summary?.paymentTerms ?? [];
+  if (!terms.length) return '具体付款节点以双方最终签订的合同为准。';
+  return terms.map((term) => `${term.stage}${term.percent}%`).join('，') + '。';
+}
+
+function renderQuoteRows(quote: Quote): string {
+  const lines = buildQuoteTemplateLines(quote);
+  if (!lines.length) return '<tr><td colspan="6" class="empty">暂无报价明细</td></tr>';
+  return lines.map((line, index) => {
+    const previous = lines[index - 1];
+    const endpointStart = !previous || previous.endpoint !== line.endpoint;
+    const moduleStart = !previous || previous.endpoint !== line.endpoint || previous.module !== line.module;
+    const endpointSpan = endpointStart ? lines.slice(index).findIndex((item) => item.endpoint !== line.endpoint) : 0;
+    const moduleSpan = moduleStart ? lines.slice(index).findIndex((item) => item.endpoint !== line.endpoint || item.module !== line.module) : 0;
+    const normalizedEndpointSpan = endpointSpan < 0 ? lines.length - index : endpointSpan;
+    const normalizedModuleSpan = moduleSpan < 0 ? lines.length - index : moduleSpan;
+    return `<tr>
+      ${endpointStart ? `<td rowspan="${normalizedEndpointSpan}">${escape(line.endpoint)}</td>` : ''}
+      ${moduleStart ? `<td rowspan="${normalizedModuleSpan}">${escape(line.module)}</td>` : ''}
+      <td>${escape(line.feature)}</td>
+      <td class="number">${line.days > 0 ? line.days.toFixed(1) : '—'}</td>
+      <td class="number">${money(line.amount)}</td>
+      <td class="number">${line.moduleSubtotal == null ? '—' : money(line.moduleSubtotal)}</td>
+    </tr>`;
+  }).join('');
+}
+
 export function generateQuoteHtml(data: PdfTemplateData): string {
   const { quote, breakdown, company, watermark, isSupplement } = data;
-  const today = new Date().toISOString().slice(0, 10);
+  const projectWorkDays = quote.fileFlow?.quoteWorkDays ?? quote.evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0;
+  const selfPaidRows = quote.otherCosts.map((cost) => `<tr>
+    <td>${escape(cost.name)}</td>
+    <td>${escape(cost.note || '按实际采购')}（参考金额：¥${money(cost.amount)}）</td>
+    <td>客户自费，不计入项目总价</td>
+  </tr>`).join('');
+  const invoiceType = quote.summary?.invoiceType === '普票' ? '增值税普通发票' : '增值税专用发票';
 
-  const featureRows = quote.featureList.flatMap(mod =>
-    mod.subFeatures.map(sub => `
-      <tr>
-        <td>${mod.name}</td>
-        <td>${sub.name}</td>
-        <td>${sub.description || '-'}</td>
-      </tr>
-    `)
-  ).join('');
-
-  const selfPaidRows = quote.otherCosts.map(c => `
-    <tr><td>${c.name}</td><td>¥${c.amount.toLocaleString()}</td><td>${c.note || '-'}</td></tr>
-  `).join('');
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Microsoft YaHei', sans-serif; font-size: 12px; color: #333; padding: 40px; }
-  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 60px; color: rgba(200,200,200,0.3); pointer-events: none; z-index: 999; }
-  .cover { text-align: center; padding: 80px 0; }
-  .cover h1 { font-size: 28px; margin-bottom: 20px; }
-  .cover .subtitle { font-size: 16px; color: #666; }
-  .section { margin: 30px 0; }
-  .section h2 { font-size: 16px; border-bottom: 2px solid #165DFF; padding-bottom: 8px; margin-bottom: 16px; }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  th, td { border: 1px solid #e5e5e5; padding: 8px 12px; text-align: left; }
-  th { background: #f5f5f5; font-weight: 600; }
-  .summary { background: #f0f5ff; padding: 16px; border-radius: 8px; }
-  .summary .total { font-size: 20px; color: #165DFF; font-weight: bold; }
-  .stamp-area { margin-top: 60px; display: flex; justify-content: space-between; }
-  .stamp-box { width: 200px; text-align: center; }
-  .stamp-box .line { border-bottom: 1px solid #333; height: 60px; margin-bottom: 8px; }
-</style>
-</head>
-<body>
-${watermark ? `<div class="watermark">${watermark}</div>` : ''}
-
-<div class="cover">
-  <h1>${company.name}</h1>
-  <div class="subtitle">${isSupplement ? '补充' : ''}报价单</div>
-  <div style="margin-top: 20px; color: #999;">
-    编号：${quote.quoteNo}<br>
-    日期：${today}<br>
-    客户：${quote.basicInfo.customerName}
+  return `<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><style>
+  *{box-sizing:border-box}body{margin:0;background:#eef1f5;color:#172033;font-family:SimSun,"Songti SC",serif;font-size:14px;line-height:1.7}
+  .quote-doc{width:794px;margin:0 auto;background:#fff}.page{position:relative;min-height:1123px;padding:64px 72px;page-break-after:always}.page:last-child{page-break-after:auto}
+  .watermark{position:fixed;z-index:9;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-28deg);font:700 72px/1 sans-serif;color:rgba(15,45,76,.07);pointer-events:none}
+  .brand{color:#123d68;font-family:"Microsoft YaHei",sans-serif;font-weight:700}.company-name{font-size:22px;margin-top:92px}.document-title{font-size:38px;letter-spacing:18px;margin:8px 0 12px}.brand-rule{height:1px;background:#315c83;margin-bottom:130px}
+  .recipient{display:inline-grid;grid-template-columns:auto auto;border:1px solid #172033;margin-bottom:42px}.recipient span{padding:2px 10px}.recipient span:last-child{color:#a22}.date{color:#a22;font-weight:700;margin-left:156px}
+  h2{margin:18px 0 28px;text-align:center;color:#123d68;font:700 24px/1.4 "Microsoft YaHei",sans-serif}h3{color:#123d68;margin:28px 0 10px;font-size:17px}.lead{margin:0 0 24px;text-indent:2em;text-align:justify}
+  table{width:100%;border-collapse:collapse;table-layout:fixed;margin:16px 0 28px}th,td{border:1px solid #27313e;padding:7px 8px;vertical-align:middle;word-break:break-word}th{background:#123d68;color:#fff;text-align:center;font-family:"Microsoft YaHei",sans-serif}.summary-table th{width:24%;background:#f2f4f7;color:#172033;text-align:left}.summary-table tr:last-child td{background:#fff3d2;color:#b42318;font-weight:700}.number{text-align:right;font-variant-numeric:tabular-nums}.empty{text-align:center;color:#7b8492}
+  .notes{margin:0;padding-left:22px}.notes li{margin:4px 0}.company-intro p{margin:0 0 12px;text-align:justify}.company-intro strong{display:block;margin-bottom:2px}
+  .quote-lines{font-size:12px}.quote-lines th:nth-child(1){width:18%}.quote-lines th:nth-child(2){width:17%}.quote-lines th:nth-child(3){width:25%}.quote-lines th:nth-child(n+4){width:13.33%}.quote-total td{background:#fff3d2;font-weight:700;color:#b42318}
+  .signature{margin-top:70px;text-align:right}.signature strong{font-size:16px}.signature-grid{margin-top:44px;display:grid;grid-template-columns:auto 1fr auto 1fr;gap:12px 14px;text-align:left;align-items:end}.line{border-bottom:1px solid #172033;min-height:24px}
+  @media print{body{background:#fff}.quote-doc{width:auto}.page{width:210mm;min-height:297mm;margin:0;box-shadow:none}}
+</style></head><body><div class="quote-doc">
+${watermark ? `<div class="watermark">${escape(watermark)}</div>` : ''}
+<section class="page cover">
+  <div class="brand company-name">${escape(company.name)}</div>
+  <div class="brand document-title">${isSupplement ? '补充报价单' : '报价单'}</div>
+  <div class="brand-rule"></div>
+  <div class="recipient"><span>致</span><span>${escape(quote.basicInfo.customerName || '客户')}</span></div>
+  <div class="date">日期：${dateText(quote.createdAt)}</div>
+</section>
+<section class="page">
+  <h2>项目整体报价</h2>
+  <p class="lead">贵司委托我司开发的【${escape(quote.basicInfo.projectName)}】项目，经双方沟通确认，我司已完成需求分析与技术评估。本报价覆盖已确认的端口、功能模块、实施服务与交付范围，详细内容以本报价清单及双方最终签订的合同为准。</p>
+  <table class="summary-table"><tbody>
+    <tr><th>项目名称</th><td>${escape(quote.basicInfo.projectName)}</td></tr>
+    <tr><th>项目工期</th><td>${projectWorkDays > 0 ? `${projectWorkDays} 个工作日（具体以合同签订为准）` : '待确认'}</td></tr>
+    <tr><th>开发人天</th><td>${breakdown.totalLaborDays.toFixed(1)} 人天</td></tr>
+    <tr><th>项目总价</th><td>人民币 ¥${money(breakdown.grandTotal)}</td></tr>
+  </tbody></table>
+  <h3>备注说明</h3>
+  <ol class="notes">
+    <li>以上报价为含税价格，包含${invoiceType}。</li>
+    <li>付款方式：${escape(paymentDescription(quote))}</li>
+    <li>项目交付后，提供 ${quote.summary?.warrantyYears ?? 1} 年免费维护服务。</li>
+    <li>如需增加或调整功能点，双方评估后另行计费并形成书面变更。</li>
+  </ol>
+  <div class="company-intro">
+    <h2 style="margin-top:70px">公司介绍</h2>
+    <p><strong>${escape(company.name)}</strong>成立于 2021 年，核心团队自 2018 年起持续从事软件技术服务，提供需求咨询、产品设计、技术研发、测试交付与运营维护的一站式定制开发服务。</p>
+    <p><strong>技术实力</strong>研发团队覆盖 Java、PHP、Python、Go、Vue、React、Uni-App、Flutter、微信小程序等主流技术栈，并按项目质量管理流程完成设计、开发、测试与交付。</p>
+    <p><strong>团队经验</strong>核心成员拥有 10 年以上软件研发与项目管理经验，已服务金融、医疗、教育、零售、制造等行业客户并交付百余个项目。</p>
   </div>
-</div>
-
-<div class="section">
-  <h2>项目信息</h2>
-  <table>
-    <tr><th>项目名称</th><td>${quote.basicInfo.projectName}</td><th>项目类型</th><td>${quote.basicInfo.projectType}</td></tr>
-    <tr><th>客户名称</th><td>${quote.basicInfo.customerName}</td><th>联系人</th><td>${quote.basicInfo.customerContact}</td></tr>
-    <tr><th>产品经理</th><td>${quote.basicInfo.creatorName}</td><th>技术评估</th><td>${quote.basicInfo.techEvaluatorName}</td></tr>
-  </table>
-</div>
-
-<div class="section">
-  <h2>公司介绍</h2>
-  <p style="line-height: 1.8;">
-    ${company.name} 为客户提供软件产品设计、研发实施与交付服务。本报价以双方确认的需求范围为依据，
-    由项目团队按约定流程完成设计、开发、测试与上线支持。
-  </p>
-  <table>
-    <tr><th>地址</th><td>${company.address}</td><th>联系电话</th><td>${company.phone}</td></tr>
-    <tr><th>授权代表</th><td colspan="3">${company.representative}</td></tr>
-  </table>
-</div>
-
-<div class="section">
-  <h2>功能清单</h2>
-  <table>
-    <tr><th>模块</th><th>子功能</th><th>描述</th></tr>
-    ${featureRows}
-  </table>
-</div>
-
-<div class="section">
-  <h2>费用汇总</h2>
-  <div class="summary">
-    <table>
-      <tr><th>软件开发服务费</th><td>¥${breakdown.laborSubtotal.toLocaleString()}</td></tr>
-      <tr><th>差旅驻场</th><td>¥${(breakdown.travelSubtotal + breakdown.onsiteSubtotal).toLocaleString()}</td></tr>
-      ${breakdown.selfPaidSubtotal > 0 ? `<tr><th>自费项目（不计入报价）</th><td>¥${breakdown.selfPaidSubtotal.toLocaleString()}</td></tr>` : ''}
-      <tr><th>项目总报价</th><td class="total">¥${breakdown.grandTotal.toLocaleString()}</td></tr>
-    </table>
+</section>
+<section class="page">
+  <h2>详细报价清单</h2>
+  <table class="quote-lines"><thead><tr><th>端口/平台</th><th>模块</th><th>功能</th><th>人天(天)</th><th>单价(元)</th><th>小计(元)</th></tr></thead><tbody>
+    ${renderQuoteRows(quote)}
+    <tr class="quote-total"><td colspan="5" style="text-align:right">合计</td><td class="number">${money(breakdown.grandTotal)}</td></tr>
+  </tbody></table>
+  <h3>可能涉及的其他费用（自费项目）</h3>
+  <table><thead><tr><th>费用类型</th><th>说明</th><th>备注</th></tr></thead><tbody>
+    ${selfPaidRows || '<tr><td colspan="3" class="empty">暂无客户自费项目</td></tr>'}
+  </tbody></table>
+  <div class="signature">
+    <strong>${escape(company.name)}</strong><div>（此处加盖公章）</div>
+    <div class="signature-grid"><span>授权代表：</span><span class="line">${escape(company.representative)}</span><span>日期：</span><span class="line">${dateText(quote.sentAt ?? quote.updatedAt ?? quote.createdAt)}</span><span>电话：</span><span class="line">${escape(company.phone)}</span><span>地址：</span><span class="line">${escape(company.address)}</span></div>
   </div>
-</div>
-
-${quote.otherCosts.length > 0 ? `
-<div class="section">
-  <h2>自费项目（不计入报价总价）</h2>
-  <table>
-    <tr><th>项目</th><th>金额</th><th>备注</th></tr>
-    ${selfPaidRows}
-  </table>
-</div>
-` : ''}
-
-<div class="stamp-area">
-  <div class="stamp-box">
-    <div class="line"></div>
-    <div>甲方（客户）签章</div>
-  </div>
-  <div class="stamp-box">
-    <div class="line"></div>
-    <div>乙方（${company.name}）签章</div>
-  </div>
-</div>
-
-</body>
-</html>
-  `.trim();
+</section>
+</div></body></html>`;
 }
 
-/** 生成水印文字（草稿预览用） */
 export function getDraftWatermark(status: string): string | undefined {
-  if (status === 'draft' || status === 'pending_eval' || status === 'pending_quote' || status === 'rejected') {
-    return '草稿预览';
-  }
+  if (status === 'draft' || status === 'pending_eval' || status === 'pending_quote' || status === 'rejected') return '草稿预览';
   return undefined;
 }
+
+export { ZKRT_QUOTE_TEMPLATE };

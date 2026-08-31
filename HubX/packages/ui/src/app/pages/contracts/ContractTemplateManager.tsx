@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Drawer, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Table, Tag } from '@arco-design/web-react';
 import { IconCopy, IconPlus } from '@arco-design/web-react/icon';
-import ReactQuill from 'react-quill';
-import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import { PageHeader, PageShell, ProcessMetricGrid, RichTextEditor } from '@/app/components/ui';
 import { contractSigningEntities } from '../company-entity/companyEntityData';
 import { CONTRACT_TEMPLATE_VARIABLES, loadContractTemplates, publishContractTemplate, saveContractTemplates, validateTemplateVariables, type VersionedContractTemplate } from './templateStore';
-import 'react-quill/dist/quill.snow.css';
 import './contractTemplateManager.css';
 
 const Row = Grid.Row;
@@ -87,7 +85,7 @@ export function ContractTemplateManager() {
         <Col span={12}><Form.Item label="产品分类" field="productCategories" rules={[{ required: true }]}><Select mode="multiple" allowCreate>{['软件开发', '系统集成', '技术服务', '云服务', '移民服务'].map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></Form.Item></Col>
       </Row></Form>
       <div className="contract-template-variable-bar"><span>可用变量</span><Space wrap size={4}>{CONTRACT_TEMPLATE_VARIABLES.map((variable) => <Button key={variable} size="mini" onClick={() => setHtml((value) => `${value}<span>{{${variable}}}</span>`)}>{`{{${variable}}}`}</Button>)}</Space></div>
-      <ReactQuill theme="snow" value={html} onChange={setHtml} className="contract-template-editor" modules={{ toolbar: [[{ header: [2, 3, false] }], ['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']] }} />
+      <RichTextEditor theme="snow" value={html} onChange={setHtml} className="contract-template-editor" modules={{ toolbar: [[{ header: [2, 3, false] }], ['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']] }} />
     </Drawer>
 
     <Modal title={`版本历史 · ${editing?.name ?? ''}`} visible={historyVisible} onCancel={() => setHistoryVisible(false)} footer={<Button onClick={() => setHistoryVisible(false)}>关闭</Button>}>

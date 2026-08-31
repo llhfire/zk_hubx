@@ -86,6 +86,22 @@ describe('HubX UI foundation', () => {
     expect(metrics).toContain('负责人');
   });
 
+  test('ProcessOverview can render an identity header without a progress bar', () => {
+    const markup = renderInRouter(
+      createElement(ProcessOverview, {
+        identifier: 'PRJ-002',
+        title: '交付计划',
+        actions: createElement('button', null, '重新配置'),
+      }),
+    );
+
+    expect(markup).toContain('PRJ-002');
+    expect(markup).toContain('重新配置');
+    expect(markup).toContain('hubx-process-overview--without-steps');
+    expect(markup).not.toContain('流程进度');
+    expect(markup).not.toContain('hubx-process-overview__steps');
+  });
+
   test('ProcessWorkspace exposes the shared 70:30 content regions', () => {
     const markup = renderInRouter(
       createElement(

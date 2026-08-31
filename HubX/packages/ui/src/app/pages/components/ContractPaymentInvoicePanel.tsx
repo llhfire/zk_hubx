@@ -17,7 +17,11 @@ import {
 } from '@arco-design/web-react';
 import { IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
 import type { FormInstance } from '@arco-design/web-react/es/Form';
-import type { CollectionLedgerEntry } from '@/services/collectionMutations';
+import {
+  collectionIncludesPeriod,
+  getCollectionPeriods,
+  type CollectionLedgerEntry,
+} from '../../../services/collectionMutations';
 import type { Contract } from '../contracts/types';
 import { computePlanStatusRows, PLAN_STATUS_META } from '../contracts/paymentUtils';
 
@@ -60,6 +64,30 @@ function contractWithCollections(contract: Contract, collections: CollectionLedg
   };
 }
 
+export function hasActiveInvoiceForPlan(input: {
+  contractId: string;
+  period: number;
+  collections: CollectionLedgerEntry[];
+  invoiceRecords: PaymentInvoiceRecord[];
+}): boolean {
+  const collectionIds = new Set(input.collections
+    .filter((record) => record.contractId === input.contractId && collectionIncludesPeriod(record, input.period))
+    .map((record) => record.id));
+  return input.invoiceRecords
+    .filter((invoice) => collectionIds.has(invoice.collectionId))
+    .reduce((sum, invoice) => sum + invoice.amount, 0) > 0;
+}
+
+export function getSelectablePaymentPlans(input: {
+  contract: Contract;
+  collections: CollectionLedgerEntry[];
+  editingCollectionId?: string;
+}) {
+  const collections = input.collections.filter((record) => record.id !== input.editingCollectionId);
+  return computePlanStatusRows(contractWithCollections(input.contract, collections))
+    .filter((row) => row.allocated < row.plan.amount);
+}
+
 export function ContractPaymentInvoicePanel({
   mainContract,
   supplementContracts,
@@ -79,6 +107,17 @@ export function ContractPaymentInvoicePanel({
     const status = computePlanStatusRows(contractWithCollections(contract, collections))
       .find((item) => item.plan.period === period)?.status;
     return status ? PLAN_STATUS_META[status] : PLAN_STATUS_META.pending;
+  };
+
+  const planStatusTags = (contract: Contract, period: number) => {
+    const meta = planStatus(contract, period);
+    const invoiced = hasActiveInvoiceForPlan({ contractId: contract.id, period, collections, invoiceRecords });
+    return (
+      <Space size={4} wrap>
+        <Tag color={meta.color}>{meta.label}</Tag>
+        {invoiced && <Tag color="arcoblue">已开票</Tag>}
+      </Space>
+    );
   };
 
   return (
@@ -110,7 +149,7 @@ export function ContractPaymentInvoicePanel({
             columns={[
               { title: '期次', dataIndex: 'period', width: 80, render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
               { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
-              { title: '已收状态', width: 100, render: (_: unknown, row: { period: number }) => { const meta = planStatus(mainContract, row.period); return <Tag color={meta.color}>{meta.label}</Tag>; } },
+              { title: '收款 / 开票', width: 170, render: (_: unknown, row: { period: number }) => planStatusTags(mainContract, row.period) },
               { title: '比例', dataIndex: 'percentage', width: 80, render: (value: number) => `${value}%` },
               { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
               { title: '触发条件', dataIndex: 'condition', width: 160 },
@@ -128,7 +167,7 @@ export function ContractPaymentInvoicePanel({
             columns={[
               { title: '期次', width: 90, render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
               { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
-              { title: '已收状态', width: 100, render: (_: unknown, row: { period: number }) => { const meta = planStatus(supplement, row.period); return <Tag color={meta.color}>{meta.label}</Tag>; } },
+              { title: '收款 / 开票', width: 170, render: (_: unknown, row: { period: number }) => planStatusTags(supplement, row.period) },
               { title: '比例', dataIndex: 'percentage', width: 80, render: (value: number) => `${value}%` },
               { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
               { title: '触发条件', dataIndex: 'condition', width: 180 },
@@ -152,7 +191,10 @@ export function ContractPaymentInvoicePanel({
               { title: '到账日期', dataIndex: 'date', width: 120 },
               { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
               { title: '方式', dataIndex: 'method', width: 120 },
-              { title: '期次', dataIndex: 'period', width: 80, render: (value: number | 'other' | undefined) => (value === 'other' ? '其他' : value ? `第${value}期` : '-') },
+              { title: '期次', width: 140, render: (_: unknown, record: CollectionLedgerEntry) => {
+                const periods = getCollectionPeriods(record);
+                return periods.length ? periods.map((period) => period === 'other' ? '其他' : `第${period}期`).join('、') : '-';
+              } },
               { title: '说明', dataIndex: 'note' },
               { title: '开票状态', width: 100, render: (_: unknown, record: CollectionLedgerEntry) => {
                 const records = invoiceRecords.filter((item) => item.collectionId === record.id);
@@ -208,11 +250,23 @@ interface CollectionRecordModalProps {
   visible: boolean;
   editing: boolean;
   form: FormInstance;
+  contracts?: Contract[];
+  collections?: CollectionLedgerEntry[];
+  editingCollectionId?: string;
   onOk: () => void;
   onCancel: () => void;
 }
 
-export function CollectionRecordModal({ visible, editing, form, onOk, onCancel }: CollectionRecordModalProps) {
+export function CollectionRecordModal({
+  visible,
+  editing,
+  form,
+  contracts = [],
+  collections = [],
+  editingCollectionId,
+  onOk,
+  onCancel,
+}: CollectionRecordModalProps) {
   return (
     <Modal title={editing ? '编辑实收记录' : '新增实收记录'} visible={visible} onOk={onOk} onCancel={onCancel} okText="保存" cancelText="取消" style={{ width: 560 }}>
       <Form form={form} layout="vertical">
@@ -221,9 +275,44 @@ export function CollectionRecordModal({ visible, editing, form, onOk, onCancel }
           <Grid.Col span={12}><Form.Item label="到账金额" field="amount" rules={[{ required: true }]}><InputNumber min={0.01} prefix="¥" style={{ width: '100%' }} /></Form.Item></Grid.Col>
         </Grid.Row>
         <Grid.Row gutter={16}>
-          <Grid.Col span={12}><Form.Item label="回款期次" field="period"><Select><Select.Option value="1">第1期</Select.Option><Select.Option value="2">第2期</Select.Option><Select.Option value="3">第3期</Select.Option><Select.Option value="other">其他</Select.Option></Select></Form.Item></Grid.Col>
+          <Grid.Col span={12}>
+            <Form.Item label="关联合同" field="contractId" rules={[{ required: true, message: '请选择关联合同' }]}>
+              <Select onChange={() => form.setFieldValue('periods', [])}>
+                {contracts.map((contract) => (
+                  <Select.Option key={contract.id} value={contract.id}>{contract.kind === 'supplement' ? '补充协议 · ' : ''}{contract.current.contractName}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Grid.Col>
           <Grid.Col span={12}><Form.Item label="到账方式" field="method" rules={[{ required: true }]}><Select><Select.Option value="银行汇款">银行汇款</Select.Option><Select.Option value="支付宝">支付宝</Select.Option><Select.Option value="现金">现金</Select.Option></Select></Form.Item></Grid.Col>
         </Grid.Row>
+        <Form.Item noStyle shouldUpdate={(previous, current) => previous.contractId !== current.contractId}>
+          {(values) => {
+            const contract = contracts.find((item) => item.id === values.contractId) ?? contracts[0];
+            const selectablePlans = contract ? getSelectablePaymentPlans({ contract, collections, editingCollectionId }) : [];
+            return (
+              <Form.Item label="回款期次（可多选）" field="periods" rules={[{ required: true, message: '请选择至少一个回款期次' }]}>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="可选择两期或多期合并登记"
+                  onChange={(selected) => {
+                    const next = selected as string[];
+                    if (next.at(-1) === 'other') form.setFieldValue('periods', ['other']);
+                    else if (next.includes('other')) form.setFieldValue('periods', next.filter((item) => item !== 'other'));
+                  }}
+                >
+                  {selectablePlans.map(({ plan, allocated }) => (
+                    <Select.Option key={plan.period} value={String(plan.period)}>
+                      {plan.periodName || `第${plan.period}期`} · 待收 {money(plan.amount - allocated)}
+                    </Select.Option>
+                  ))}
+                  <Select.Option value="other">其他款项</Select.Option>
+                </Select>
+              </Form.Item>
+            );
+          }}
+        </Form.Item>
         <Form.Item label="说明" field="note"><Input.TextArea placeholder="填写到账凭证或备注" /></Form.Item>
       </Form>
     </Modal>

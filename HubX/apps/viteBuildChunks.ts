@@ -1,5 +1,14 @@
+import type { LoggingFunction, RollupLog } from 'rollup';
+
 function normalizeModuleId(id: string) {
   return id.replace(/\\/g, '/');
+}
+
+function handleRollupWarning(warning: RollupLog, warn: LoggingFunction) {
+  // gantt-task-react 0.3.9 ships two misplaced PURE annotations. Rollup
+  // removes those comments safely; suppress only this known upstream notice.
+  if (warning.code === 'INVALID_ANNOTATION' && warning.id?.includes('/gantt-task-react/')) return;
+  warn(warning);
 }
 
 export function splitVendorChunk(id: string) {
@@ -46,7 +55,6 @@ export function splitVendorChunk(id: string) {
 
   if (
     moduleId.includes('/node_modules/quill/')
-    || moduleId.includes('/node_modules/react-quill/')
   ) {
     return 'vendor-editor';
   }
@@ -71,7 +79,11 @@ export function splitVendorChunk(id: string) {
 
 export const sharedBuildConfig = {
   cssCodeSplit: true,
+  // ExcelJS is already isolated behind dynamic imports and only downloaded for
+  // spreadsheet export. Keep the warning focused on unexpectedly large eager chunks.
+  chunkSizeWarningLimit: 1000,
   rollupOptions: {
+    onwarn: handleRollupWarning,
     output: {
       manualChunks: splitVendorChunk,
     },

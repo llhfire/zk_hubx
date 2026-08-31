@@ -63,23 +63,22 @@ export const mockCompanyEntities: CompanyEntityRecord[] = [
     id: '1',
     name: '中科软通（武汉）科技有限公司',
     shortName: '中科软通',
-    taxNumber: '91110000123456789A',
+    taxNumber: '91420100MA4F26KK6B',
     legalPerson: '张三',
     registeredCapital: '1000万元',
-    address: '北京市海淀区中关村大街1号',
-    contactPhone: '010-88888888',
+    address: '湖北省武汉市东湖新技术开发区光谷三路777号创星汇自贸金融大厦（产业配套科技园研发楼）5层501室141号',
+    contactPhone: '',
     contractNoPrefix: 'ZKRT',
     status: '启用',
     createTime: '2020-01-01',
     invoiceTitle: '中科软通（武汉）科技有限公司',
-    invoiceTaxNumber: '91110000123456789A',
-    invoiceBankName: '中国工商银行北京海淀支行',
-    invoiceBankAccount: '0200001234567890123',
-    invoiceAddress: '北京市海淀区中关村大街1号',
-    invoicePhone: '010-88888888',
+    invoiceTaxNumber: '91420100MA4F26KK6B',
+    invoiceBankName: '中国农业银行股份有限公司武汉鲁巷支行',
+    invoiceBankAccount: '17039401040023942',
+    invoiceAddress: '湖北省武汉市东湖新技术开发区光谷三路777号创星汇自贸金融大厦（产业配套科技园研发楼）5层501室141号',
+    invoicePhone: '',
     publicAccounts: [
-      { id: 'public-account-1', accountNo: '0200001234567890123', bankName: '中国工商银行北京海淀支行' },
-      { id: 'public-account-2', accountNo: '0200002345678901234', bankName: '中国建设银行北京朝阳支行' },
+      { id: 'public-account-1', accountNo: '17039401040023942', bankName: '中国农业银行股份有限公司武汉鲁巷支行' },
     ],
     files: [
       {
@@ -100,13 +99,13 @@ export const mockCompanyEntities: CompanyEntityRecord[] = [
       },
       {
         id: 'contract-template-1',
-        name: '中科软通合同模板.docx',
+        name: '中科软通（武汉）科技有限公司（模板）.docx',
         type: 'docx',
         category: '合同模板',
         contractTemplateId: 'software_sales',
-        size: '156KB',
-        updatedAt: '2026-07-27',
-        description: '中科软通签约主体合同模板',
+        size: '91KB',
+        updatedAt: '2026-08-31',
+        description: '中科软通技术服务合同模板（19 章 + 功能清单与需求变更附件）',
       },
     ],
   },
@@ -286,7 +285,7 @@ export const mockCompanyEntities: CompanyEntityRecord[] = [
   },
 ];
 
-const contractSigningEntityShortNames = ['武汉软艺', '中科软齐', '中科软通', '中科软盈', '中科网联'];
+const contractSigningEntityShortNames = ['中科软通', '中科软艺', '武汉软艺', '中科软齐', '中科软盈', '中科网联'];
 
 export const contractSigningEntities = contractSigningEntityShortNames.map((shortName) => (
   mockCompanyEntities.find((item) => item.shortName === shortName)!

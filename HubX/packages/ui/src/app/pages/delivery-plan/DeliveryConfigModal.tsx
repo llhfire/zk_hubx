@@ -35,6 +35,7 @@ interface DeliveryConfigModalProps {
   onConfirm: (config: DeliveryConfig) => void;
   contractId?: string;
   deliveryType?: DeliveryType;
+  contractSelectedPhases?: number[];
   projectStartDate?: string;
 }
 
@@ -44,6 +45,7 @@ export function DeliveryConfigModal({
   onConfirm,
   contractId,
   deliveryType,
+  contractSelectedPhases,
   projectStartDate,
 }: DeliveryConfigModalProps) {
   const hasContract = !!contractId;
@@ -63,13 +65,12 @@ export function DeliveryConfigModal({
     if (!visible) return;
     setSelectedDeliveryType(deliveryType);
     if (hasContract) {
-      // 有合同：默认全选
-      setSelectedPhases(SOP_PHASES.map((p) => p.phaseNo));
+      setSelectedPhases(contractSelectedPhases ?? SOP_PHASES.map((p) => p.phaseNo));
     } else {
       // 无合同：板块一禁用且不选中
       setSelectedPhases(SOP_PHASES.filter((p) => p.phaseNo !== 1).map((p) => p.phaseNo));
     }
-  }, [visible, hasContract, deliveryType]);
+  }, [visible, hasContract, deliveryType, contractSelectedPhases]);
 
   // 当前生效的交付类型
   const effectiveDeliveryType = hasContract ? deliveryType : selectedDeliveryType;

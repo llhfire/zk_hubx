@@ -230,7 +230,7 @@
       <tr>
         <td><strong>前端托管</strong></td>
         <td>Cloudflare Pages</td>
-        <td>React 18 + Vite 6 + React Router 7 + Arco Design + Tailwind v4</td>
+        <td>React 18 + Vite 7.3 + React Router 7.18 + Arco Design + Tailwind v4</td>
         <td><code>beta.zkhubx.com</code>（自定义域）<br><code>zkhubx-web.pages.dev</code>（默认域）</td>
         <td>静态 SPA，构建产物直接部署。α 前端共用同一 Pages 项目（<code>alpha.zkhubx.com</code>）。<code>VITE_API_BASE_URL</code> 构建时内联，指向 Workers。</td>
       </tr>
@@ -251,7 +251,7 @@
       <tr>
         <td><strong>部署工具</strong></td>
         <td>wrangler CLI</td>
-        <td>Node.js CLI</td>
+        <td>Wrangler 4.127（Node.js CLI）</td>
         <td>—</td>
         <td>Workers：<code>wrangler deploy</code>。Pages：<code>wrangler pages deploy</code>。D1 迁移：<code>wrangler d1 execute zkhubx-db --file=schema.sql</code>。本地开发：<code>wrangler dev</code> → :8787（本地 D1 需手动初始化）。</td>
       </tr>
@@ -590,6 +590,11 @@
       <div class="st">2026-08-29 编码完成</div>
       <b>B5</b>
       首次合同联动 · β 项目刷新 · 实收双写与重试
+    </div>
+    <div class="tl done">
+      <div class="st">2026-08-31 已验证</div>
+      <b>前端与部署工具链</b>
+      Vite 7.3 · Vitest 4.1 · Router 7.18 · Wrangler 4.127；Quill 2 按需加载，依赖审计 0 漏洞
     </div>
     <div class="tl next">
       <div class="st">下一步</div>

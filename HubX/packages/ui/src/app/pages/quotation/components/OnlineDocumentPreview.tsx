@@ -3,6 +3,7 @@ import { Button, Message, Modal, Typography } from '@arco-design/web-react';
 import { IconEye, IconSave, IconDownload } from '@arco-design/web-react/icon';
 import { generateQuoteHtml, getDraftWatermark, type PdfTemplateData } from '../quotePdfTemplate';
 import { canSubmitWithDocument, type OnlineDocument } from '../fileFlow';
+import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 
 const { Text } = Typography;
 
@@ -64,6 +65,10 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
 
   return (
     <div>
+      <div style={{ marginBottom: 10 }}>
+        <Text bold>{ZKRT_QUOTE_TEMPLATE.name}</Text>
+        <Text type="secondary" style={{ marginLeft: 8 }}>封面、整体报价、公司介绍、六列表清单、自费项目与签章已适配</Text>
+      </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <Button icon={<IconEye />} onClick={handlePreview}>预览</Button>
         <Button type="primary" icon={<IconSave />} onClick={handleSave}>

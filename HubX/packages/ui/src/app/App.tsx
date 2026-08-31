@@ -48,7 +48,7 @@ function QuotationWithLeadBridge({ children, service }: { children: ReactNode; s
   const { getById } = useLeads();
   const leadBriefProvider = useCallback((leadId: string) => {
     const lead = getById(leadId);
-    return lead ? { status: lead.status, ownerName: lead.owner } : null;
+    return lead ? { status: lead.status, ownerName: lead.owner, signingEntity: lead.entity } : null;
   }, [getById]);
 
   return (

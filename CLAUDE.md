@@ -70,4 +70,4 @@ npm run test:reminders  # 只跑提醒系统单测
 
 - HubX 是「软件外包 + 自运营投放获客」复合型公司的 CRM，核心是一条业务漏斗：广告投放 → 线索 → 客户 → 合同 → 项目 → 交付 → 利润。
 - 前端来自 Figma/Make 导出，以页面内 `useState`、模块级 `mockData`、`types`、`utils` 和少量 context 驱动，**未接真实后端**（没有 axios / fetch / React Query / Redux / Zustand）。改功能前先确认数据属于「页面局部状态」还是「业务目录下共享 mockData/types/utils」，不要默认去找 API 层。
-- 技术栈：React 18 + Vite 6 + React Router 7 + Arco Design（业务 UI）+ Tailwind v4。
+- 技术栈：React 18 + Vite 7 + React Router 7.18 + Arco Design（业务 UI）+ Tailwind v4。

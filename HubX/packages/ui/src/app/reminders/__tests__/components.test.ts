@@ -1,6 +1,4 @@
-// Mock react-quill to avoid 'document is not defined' in non-DOM test environment
 import { vi } from 'vitest'
-vi.mock('react-quill', () => ({ default: () => null }))
 vi.mock('@/app/pages/quotation/QuotationContext', () => ({
   useQuotation: () => ({ currentRole: 'pm', setCurrentRole: () => {} }),
   QuotationProvider: ({ children }: { children: any }) => children,

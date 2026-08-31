@@ -6,9 +6,11 @@ import {
   Tag,
 } from '@arco-design/web-react';
 import {
+  IconDown,
   IconDownload,
   IconEye,
   IconFile,
+  IconUp,
 } from '@arco-design/web-react/icon';
 import type { Contract, ContractVersion } from '../../contracts/types';
 import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../../contracts/utils';
@@ -21,6 +23,7 @@ interface LeadFinalContractPanelProps {
   hideInfoItems?: boolean;
   projectLayout?: boolean;
   projectFullInfo?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 function formatCurrency(value: number) {
@@ -80,8 +83,10 @@ export function LeadFinalContractPanel({
   hideInfoItems = false,
   projectLayout = false,
   projectFullInfo = false,
+  defaultCollapsed = false,
 }: LeadFinalContractPanelProps) {
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(!defaultCollapsed);
   const finalVersion = useMemo(() => getFinalVersion(contract), [contract]);
 
   const data = finalVersion.formData;
@@ -163,6 +168,13 @@ export function LeadFinalContractPanel({
       { label: '开户银行*账号', value: [data.bankName, data.bankAccount].filter(Boolean).join(' · ') || '-' },
     ],
   ];
+  const projectSummaryItems = [
+    { label: '合同编号', value: contract.contractNo },
+    { label: '公司名称', value: data.customerName || '-' },
+    { label: '签约主体', value: data.signingEntity || '-' },
+    { label: '签约日期', value: data.signDate || '-' },
+  ];
+  const detailsId = `contract-details-${contract.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   return (
     <div className="lead-final-contract">
@@ -194,51 +206,88 @@ export function LeadFinalContractPanel({
             </div>
           </div>
         </div>
-        {projectLayout ? <strong className="lead-final-contract-project-amount">{formatCurrency(data.totalAmount)}</strong> : null}
+        {projectLayout ? (
+          <div className="lead-final-contract-header-actions">
+            <strong className="lead-final-contract-project-amount">{formatCurrency(data.totalAmount)}</strong>
+            {defaultCollapsed && (
+              <>
+                <Button size="small" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>查看合同</Button>
+                <Button size="small" icon={<IconDownload />} onClick={handleDownload}>下载合同</Button>
+                <Button
+                  type="text"
+                  size="small"
+                  className="lead-final-contract-toggle"
+                  icon={detailsExpanded ? <IconUp /> : <IconDown />}
+                  aria-expanded={detailsExpanded}
+                  aria-controls={detailsId}
+                  onClick={() => setDetailsExpanded((expanded) => !expanded)}
+                >
+                  {detailsExpanded ? '收起' : '展开'}
+                </Button>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
 
-      {!hideInfoItems ? (
-        <div className={`lead-final-contract-info-grid${projectLayout ? ' is-project-layout' : ''}`}>
-          {projectLayout ? (projectFullInfo ? projectFullInfoColumns : projectInfoColumns).map((column, columnIndex) => (
-            <div className="lead-final-contract-info-column" key={columnIndex}>
-              {column.map(item => (
+      {defaultCollapsed && !detailsExpanded ? (
+        <div className="lead-final-contract-summary-grid">
+          {projectSummaryItems.map((item) => (
+            <div className="lead-final-contract-summary-item" key={item.label}>
+              <span>{item.label}</span>
+              <strong title={item.value}>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {detailsExpanded && (
+        <div id={detailsId} className="lead-final-contract-details">
+          {!hideInfoItems ? (
+            <div className={`lead-final-contract-info-grid${projectLayout ? ' is-project-layout' : ''}`}>
+              {projectLayout ? (projectFullInfo ? projectFullInfoColumns : projectInfoColumns).map((column, columnIndex) => (
+                <div className="lead-final-contract-info-column" key={columnIndex}>
+                  {column.map(item => (
+                    <div className="lead-final-contract-info-item" key={item.label}>
+                      <span className="lead-final-contract-info-label">{item.label}：</span>
+                      <span className="lead-final-contract-info-value">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )) : infoItems.map(item => (
                 <div className="lead-final-contract-info-item" key={item.label}>
                   <span className="lead-final-contract-info-label">{item.label}：</span>
                   <span className="lead-final-contract-info-value">{item.value}</span>
                 </div>
               ))}
             </div>
-          )) : infoItems.map(item => (
-            <div className="lead-final-contract-info-item" key={item.label}>
-              <span className="lead-final-contract-info-label">{item.label}：</span>
-              <span className="lead-final-contract-info-value">{item.value}</span>
+          ) : null}
+          <div className="lead-final-contract-file">
+            <div className="lead-final-contract-file-main">
+              <span className="lead-final-contract-file-icon"><IconFile /></span>
+              <div className="lead-final-contract-file-content">
+                <div className="lead-final-contract-file-name">{fileName}</div>
+                <div className="lead-final-contract-file-meta">
+                  {uploadedWord
+                    ? `Word 上传版·${uploadedWord.uploadedAt}·${uploadedWord.uploadedBy}`
+                    : `在线编辑版·${finalVersion.versionNo}·${versionLabel}`}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="lead-final-contract-file">
-        <div className="lead-final-contract-file-main">
-          <span className="lead-final-contract-file-icon"><IconFile /></span>
-          <div className="lead-final-contract-file-content">
-            <div className="lead-final-contract-file-name">{fileName}</div>
-            <div className="lead-final-contract-file-meta">
-              {uploadedWord
-                ? `Word 上传版·${uploadedWord.uploadedAt}·${uploadedWord.uploadedBy}`
-                : `在线编辑版·${finalVersion.versionNo}·${versionLabel}`}
-            </div>
+            {!defaultCollapsed && (
+              <Space size="small" className="lead-final-contract-file-actions">
+                <Button type="primary" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>在线查看合同</Button>
+                <Button
+                  icon={<IconDownload />}
+                  onClick={handleDownload}
+                >
+                  下载合同
+                </Button>
+              </Space>
+            )}
           </div>
         </div>
-        <Space size="small" className="lead-final-contract-file-actions">
-          <Button type="primary" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>在线查看合同</Button>
-          <Button
-            icon={<IconDownload />}
-            onClick={handleDownload}
-          >
-            下载合同
-          </Button>
-        </Space>
-      </div>
+      )}
 
       <DocumentViewerModal
         visible={previewVisible}

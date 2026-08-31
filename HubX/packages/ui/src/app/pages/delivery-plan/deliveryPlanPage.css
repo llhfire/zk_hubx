@@ -4,8 +4,16 @@
   text-align: center;
 }
 
+.delivery-plan .hubx-page-shell__content {
+  gap: 10px;
+}
+
+.delivery-plan .hubx-process-overview .arco-card-body {
+  padding: 8px 16px;
+}
+
 .delivery-plan__toolbar-card .arco-card-body {
-  padding: 12px 16px;
+  padding: 8px 12px;
 }
 
 .delivery-plan__toolbar {
@@ -17,8 +25,8 @@
 
 .delivery-plan__toolbar > div:first-child {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .delivery-plan__planner-card .arco-card-body {
@@ -28,7 +36,8 @@
 .delivery-plan__planner {
   display: grid;
   grid-template-columns: minmax(320px, 42%) minmax(0, 1fr);
-  height: clamp(520px, calc(100vh - 360px), 720px);
+  height: clamp(520px, calc(100vh - 288px), 780px);
+  height: clamp(520px, calc(100dvh - 288px), 780px);
   min-width: 0;
   overflow: hidden;
 }
@@ -40,92 +49,37 @@
   overflow: hidden;
 }
 
-.delivery-plan__legend {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  color: var(--color-text-2);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.delivery-plan__continuity {
-  display: flex;
-  flex-direction: column;
-}
-
-.delivery-plan__continuity > div {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-border-1);
-}
-
-.delivery-plan__continuity > div > span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--color-fill-2);
-  color: var(--color-text-2);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.delivery-plan__continuity > div > div {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.delivery-plan__continuity-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
-.delivery-plan__legend > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.delivery-plan__legend-mark {
-  display: inline-block;
-  width: 24px;
-  height: 8px;
-  border-radius: 3px;
-  background: rgb(var(--primary-6));
-}
-
-.delivery-plan__legend-mark--overdue {
-  background: rgb(var(--danger-6));
-}
-
-.delivery-plan__legend-mark--milestone {
-  width: 11px;
-  height: 11px;
-  margin-inline: 6px 7px;
-  border-radius: 2px;
-  background: rgb(var(--warning-6));
-  transform: rotate(45deg);
-}
-
 @media (max-width: 1360px) {
   .delivery-plan__planner {
     grid-template-columns: minmax(300px, 40%) minmax(0, 1fr);
   }
 }
 
+@media (min-width: 769px) and (max-width: 1200px) {
+  .delivery-plan .hubx-process-overview__head {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .delivery-plan .hubx-process-overview__actions {
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 768px) {
+  .delivery-plan .hubx-process-overview .arco-card-body {
+    padding: 10px 12px;
+  }
+
   .delivery-plan__toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .delivery-plan__toolbar > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .delivery-plan__planner {

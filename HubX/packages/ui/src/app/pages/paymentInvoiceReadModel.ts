@@ -1,5 +1,9 @@
-import type { CollectionLedgerEntry } from '../../services/collectionMutations';
-import { sumReceived } from '../../services/collectionMutations';
+import {
+  collectionAmountForPeriod,
+  collectionIncludesPeriod,
+  sumReceived,
+  type CollectionLedgerEntry,
+} from '../../services/collectionMutations';
 import type { Contract, PaymentPlanItem } from './contracts/types';
 import { effectiveAmount } from './contracts/paymentUtils';
 import type { ProjectInvoiceApplication } from './finance/ProjectInvoiceContext';
@@ -62,8 +66,8 @@ function buildPaymentRows(
   today: string,
 ): PaymentInvoicePaymentRow[] {
   return plans.map(plan => {
-    const records = collections.filter(record => record.period === plan.period);
-    const receivedAmount = sumReceived(records);
+    const records = collections.filter(record => collectionIncludesPeriod(record, plan.period));
+    const receivedAmount = records.reduce((sum, record) => sum + collectionAmountForPeriod(record, plan.period), 0);
     const overdue = Boolean(plan.expectedDate && plan.expectedDate < today && receivedAmount < plan.amount);
     return {
       key: `${contract.id}-${plan.period}`,

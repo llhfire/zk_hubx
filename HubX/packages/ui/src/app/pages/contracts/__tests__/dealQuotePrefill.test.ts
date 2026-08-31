@@ -26,6 +26,7 @@ function makeQuote(): Quote {
     version: 'v1.0',
     status: 'deal',
     leadId: 'lead-9',
+    signingEntity: '中科软通',
     basicInfo: {
       projectName: '智慧园区管理平台',
       projectType: '管理系统',
@@ -116,6 +117,7 @@ describe('buildDealQuotePrefill', () => {
     expect(prefill.projectWorkDays).toBe(90);
     expect(prefill.warrantyYears).toBe(2);
     expect(prefill.customerName).toBe('智慧园区科技公司');
+    expect(prefill.signingEntity).toBe('中科软通');
   });
 });
 
@@ -130,6 +132,19 @@ describe('applyDealQuotePrefill', () => {
     expect(result.endDate).toBe('2026-12-23');
     expect(result.contractContent).toContain('2 年免费质保');
     expect(result.invoiceType).toBe('专票');
+    expect(result.signingEntity).toBe('中科软通');
+    expect(result.signingEntityTaxNo).toBe('91420100MA4F26KK6B');
+  });
+
+  it('分期折算由最后一期吸收分位差，金额合计严格等于合同金额', () => {
+    const summary = { ...makeSummary(), grandTotalPrice: 100, paymentTerms: [
+      { stage: '一期', percent: 33.33, amount: 0 },
+      { stage: '二期', percent: 33.33, amount: 0 },
+      { stage: '尾款', percent: 33.34, amount: 0 },
+    ] };
+    const plans = paymentTermsToPlans(summary);
+    expect(plans.map((plan) => plan.amount)).toEqual([33.33, 33.33, 33.34]);
+    expect(plans.reduce((sum, plan) => sum + plan.amount, 0)).toBe(100);
   });
 
   it('减额补充报价保留负金额并标记父合同', () => {

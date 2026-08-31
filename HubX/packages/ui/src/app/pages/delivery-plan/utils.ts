@@ -306,7 +306,7 @@ export function generateDeliveryPlan(
   config: DeliveryConfig,
   project: Record<string, any>,
   contractSignDate?: string,
-  contractMilestones?: { name: string; date: string; completed: boolean }[],
+  contractMilestones?: Array<Omit<SopMilestone, 'id' | 'projectId'>>,
 ): DeliveryPlan {
   const { selectedPhases, deliveryType, contractId } = config;
   const projectId: string = project.id ?? '';
@@ -449,11 +449,9 @@ export function generateDeliveryPlan(
 
   // 生成里程碑
   const milestones: SopMilestone[] = (contractMilestones ?? []).map((m, i) => ({
+    ...m,
     id: `milestone-${i + 1}`,
     projectId,
-    name: m.name,
-    date: m.date,
-    completed: m.completed,
   }));
 
   return {

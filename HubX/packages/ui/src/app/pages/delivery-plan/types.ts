@@ -66,6 +66,39 @@ export interface SopMilestone {
   name: string;
   date: string;
   completed: boolean;
+  source?: 'contract_signing' | 'contract_payment' | 'contract_delivery' | 'manual';
+  contractId?: string;
+  condition?: string;
+  amount?: number;
+}
+
+export interface DeliveryPlanPaymentCondition {
+  period: number;
+  name: string;
+  expectedDate: string;
+  condition: string;
+  amount: number;
+  percentage: number;
+  completed: boolean;
+}
+
+export interface DeliveryPlanDeliveryCondition {
+  name: string;
+  expectedDate: string;
+  condition: string;
+  deliverables: string;
+}
+
+/** 计划生成时读取的合同快照，用于解释每一版计划的来源。 */
+export interface DeliveryPlanContractBasis {
+  contractId: string;
+  contractNo: string;
+  contractName: string;
+  signDate: string;
+  subjectCategory: string;
+  subjectContent: string;
+  paymentConditions: DeliveryPlanPaymentCondition[];
+  deliveryConditions: DeliveryPlanDeliveryCondition[];
 }
 
 /** 交付计划（一个项目的完整交付计划） */
@@ -76,6 +109,7 @@ export interface DeliveryPlan {
   milestones: SopMilestone[];
   deliveryType: DeliveryType;
   contractId?: string;
+  contractBasis?: DeliveryPlanContractBasis;
 }
 
 /** 生成配置 */

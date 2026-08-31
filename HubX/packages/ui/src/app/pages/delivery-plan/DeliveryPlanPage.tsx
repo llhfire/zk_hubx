@@ -1,54 +1,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  Alert, Badge, Button, Card, Descriptions, Message, Popconfirm,
+  Alert, Badge, Button, Card, Message, Popconfirm,
   Radio, Result, Select, Space, Tag, Typography,
 } from '@arco-design/web-react';
 import { IconDelete } from '@arco-design/web-react/icon';
-import { differenceInDays, format } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import {
-  PageShell, ProcessMetricGrid, ProcessOverview, ProcessWorkspace,
-  ProcessWorkspaceAside, ProcessWorkspaceMain,
+  PageShell, ProcessOverview, ProcessWorkspace, ProcessWorkspaceMain,
 } from '@/app/components/ui';
 import { useProjects } from '../project-management/ProjectContext';
+import { useOptionalContracts } from '../contracts/ContractsContext';
 import type { ProjectStatus } from '../project-management/mockData';
 import type { DeliveryPlan, DeliveryType, GanttZoomLevel, SopStep } from './types';
 import { SOP_PHASES } from './constants';
 import {
-  calcOverallCompletion, derivePhaseStatus, generateDeliveryPlan,
-  getDefaultZoomLevel, isStepOverdue,
+  derivePhaseStatus, generateDeliveryPlan, getDefaultZoomLevel,
 } from './utils';
 import { getDeliveryPlan, removeDeliveryPlan, saveDeliveryPlan } from './deliveryPlanStore';
 import { DeliveryConfigModal } from './DeliveryConfigModal';
-import {
-  acceptDelivery,
-  archiveDeliveryArtifacts,
-  loadDeliveryClosure,
-  saveDeliveryClosure,
-  submitDeliveryAcceptance,
-  type DeliveryClosureRecord,
-} from '../alphaFlowContinuity';
 import StepEditModal from './StepEditModal';
 import CustomStepModal from './CustomStepModal';
 import TaskList from './TaskList';
 import GanttChart from './GanttChart';
+import { deriveDeliveryConfigFromContract, generateDeliveryPlanFromContract } from './contractBasis';
 import './deliveryPlanPage.css';
 
 const { Text } = Typography;
 
 const CONTRACT_DELIVERY_TYPES: Record<string, DeliveryType> = {
   '1': '全平台', '2': '小程序', '3': '网站', '4': '网站+小程序', '5': 'APP',
+  'pawkey-c1': 'APP',
 };
 const CONTRACT_SIGN_DATES: Record<string, string> = {
   '1': '2026-03-15', '2': '2026-03-20', '3': '2026-04-01', '4': '2026-02-10', '5': '2026-03-01',
+  'pawkey-c1': '2026-06-01',
 };
 const ZOOM_OPTIONS: { label: string; value: GanttZoomLevel }[] = [
   { label: '日', value: 'day' }, { label: '周', value: 'week' }, { label: '月', value: 'month' },
 ];
-const PHASE_STATUS_LABEL = {
-  pending: '待开始', in_progress: '进行中', completed: '已完成', skipped: '已跳过',
-} as const;
-
 function clonePlan(plan: DeliveryPlan | undefined): DeliveryPlan | null {
   return plan ? JSON.parse(JSON.stringify(plan)) as DeliveryPlan : null;
 }
@@ -72,7 +62,13 @@ export default function DeliveryPlanPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getProjectById, loading } = useProjects();
+  const contractsContext = useOptionalContracts();
   const project = getProjectById(id);
+  const contract = contractsContext?.getById(project?.contractId);
+  const contractConfig = useMemo(
+    () => contract ? deriveDeliveryConfigFromContract(contract) : undefined,
+    [contract],
+  );
 
   const [plan, setPlan] = useState<DeliveryPlan | null>(() => clonePlan(getDeliveryPlan(id)));
   const [zoomLevel, setZoomLevel] = useState<GanttZoomLevel>(() => getPlanZoom(plan));
@@ -83,7 +79,6 @@ export default function DeliveryPlanPage() {
   const [editStep, setEditStep] = useState<SopStep | null>(null);
   const [customStepPhaseId, setCustomStepPhaseId] = useState<string | null>(null);
   const [customStepPhaseNo, setCustomStepPhaseNo] = useState(0);
-  const [closure, setClosure] = useState<DeliveryClosureRecord>(() => loadDeliveryClosure(id || ''));
   const listScrollRef = useRef<HTMLDivElement>(null);
   const ganttScrollRef = useRef<HTMLDivElement>(null);
   const isSyncingScroll = useRef(false);
@@ -95,7 +90,6 @@ export default function DeliveryPlanPage() {
     setPhaseFilter(null);
     setExpandedPhaseIds(nextPlan?.phases.map((phase) => phase.id) ?? []);
     setExpandedStepIds([]);
-    setClosure(loadDeliveryClosure(id || ''));
   }, [id]);
 
   useEffect(() => {
@@ -125,32 +119,6 @@ export default function DeliveryPlanPage() {
     return { ...plan, phases, steps: plan.steps.filter((step) => phaseIds.has(step.phaseId)) };
   }, [phaseFilter, plan]);
 
-  const summary = useMemo(() => {
-    if (!plan || !filteredPlan) return null;
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const dueDates = plan.steps.map((step) => step.dueDate).filter(Boolean).sort();
-    return {
-      completion: Math.round(calcOverallCompletion(plan.phases, plan.steps) * 100),
-      visibleSteps: filteredPlan.steps.length,
-      totalSteps: plan.steps.length,
-      inProgressCount: filteredPlan.steps.filter((step) => step.status === 'in_progress').length,
-      overdueCount: filteredPlan.steps.filter((step) => isStepOverdue(step, today)).length,
-      completedMilestones: plan.milestones.filter((milestone) => milestone.completed).length,
-      totalMilestones: plan.milestones.length,
-      expectedEndDate: dueDates.at(-1) ?? '—',
-    };
-  }, [filteredPlan, plan]);
-
-  const sortedPhases = useMemo(
-    () => [...(plan?.phases ?? [])].sort((a, b) => a.phaseNo - b.phaseNo),
-    [plan],
-  );
-  const activePhaseIndex = useMemo(() => {
-    const index = sortedPhases.findIndex((phase) => phase.status === 'pending' || phase.status === 'in_progress');
-    return index >= 0 ? index : Math.max(0, sortedPhases.length - 1);
-  }, [sortedPhases]);
-  const activePhase = sortedPhases[activePhaseIndex];
-
   const commitPlan = useCallback((nextPlan: DeliveryPlan) => {
     saveDeliveryPlan(nextPlan);
     setPlan(nextPlan);
@@ -159,7 +127,13 @@ export default function DeliveryPlanPage() {
   const handleConfigConfirm = useCallback((config: { selectedPhases: number[]; deliveryType: DeliveryType; contractId?: string }) => {
     if (!project) return;
     const signDate = project.contractId ? CONTRACT_SIGN_DATES[project.contractId] : undefined;
-    const nextPlan = generateDeliveryPlan(config, project as unknown as Record<string, unknown>, signDate);
+    const nextPlan = contract
+      ? generateDeliveryPlanFromContract(
+          contract,
+          project as unknown as Record<string, unknown>,
+          config.selectedPhases,
+        )
+      : generateDeliveryPlan(config, project as unknown as Record<string, unknown>, signDate);
     commitPlan(nextPlan);
     setExpandedPhaseIds(nextPlan.phases.map((phase) => phase.id));
     setExpandedStepIds([]);
@@ -167,7 +141,7 @@ export default function DeliveryPlanPage() {
     setZoomLevel(getPlanZoom(nextPlan));
     setConfigModalVisible(false);
     Message.success('交付计划已生成');
-  }, [commitPlan, project]);
+  }, [commitPlan, contract, project]);
 
   const handleStepEditSave = useCallback((stepId: string, updates: Partial<SopStep>) => {
     if (!plan) return;
@@ -217,26 +191,6 @@ export default function DeliveryPlanPage() {
     [plan],
   );
 
-  const commitClosure = useCallback((next: DeliveryClosureRecord) => {
-    saveDeliveryClosure(next);
-    setClosure(next);
-  }, []);
-
-  const archiveArtifacts = useCallback(() => {
-    commitClosure(archiveDeliveryArtifacts(closure, format(new Date(), 'yyyy-MM-dd')));
-    Message.success('交付物已确认归档');
-  }, [closure, commitClosure]);
-
-  const submitAcceptance = useCallback(() => {
-    commitClosure(submitDeliveryAcceptance(closure, format(new Date(), 'yyyy-MM-dd')));
-    Message.success('已提交客户验收');
-  }, [closure, commitClosure]);
-
-  const confirmAcceptance = useCallback(() => {
-    commitClosure(acceptDelivery(closure, format(new Date(), 'yyyy-MM-dd')));
-    Message.success('项目验收已确认，可进入财务结清与售后移交');
-  }, [closure, commitClosure]);
-
   const breadcrumbs = [
     { label: '项目管理', to: '/projects' },
     ...(project ? [{ label: project.name, to: `/projects/${project.id}` }] : []),
@@ -261,12 +215,9 @@ export default function DeliveryPlanPage() {
     frontendUsers: project.frontendUsers ?? [], backendUsers: project.backendUsers ?? [],
     opsUsers: project.opsUsers ?? [], testUsers: project.testUsers ?? [], legalUsers: project.legalUsers ?? [],
   };
-  const contractDeliveryType = project.contractId ? CONTRACT_DELIVERY_TYPES[project.contractId] : undefined;
-  const overviewSteps = plan
-    ? sortedPhases.map((phase) => ({ key: phase.id, title: phase.phaseName, description: PHASE_STATUS_LABEL[phase.status] }))
-    : SOP_PHASES.map((phase) => ({ key: String(phase.phaseNo), title: phase.phaseName, description: '待生成' }));
-
-  if (!plan || !filteredPlan || !summary) {
+  const contractDeliveryType = contractConfig?.deliveryType
+    ?? (project.contractId ? CONTRACT_DELIVERY_TYPES[project.contractId] : undefined);
+  if (!plan || !filteredPlan) {
     return (
       <PageShell breadcrumbs={breadcrumbs} className="delivery-plan">
         <ProcessOverview
@@ -274,16 +225,7 @@ export default function DeliveryPlanPage() {
           title={`${project.name} · 交付计划`}
           tags={<>{statusBadge(project.status)}<Tag color="gray">尚未生成</Tag></>}
           actions={<Button type="primary" size="small" onClick={() => setConfigModalVisible(true)}>生成交付计划</Button>}
-          steps={overviewSteps}
-          currentStep={0}
         />
-        <ProcessMetricGrid items={[
-          { key: 'owner', label: '项目负责人', value: project.owner || '—' },
-          { key: 'start', label: '计划开始', value: project.startDate || '—' },
-          { key: 'end', label: '预期完成', value: project.expectedEndDate || '—' },
-          { key: 'contract', label: '关联合同', value: project.contractId || '未关联' },
-          { key: 'type', label: '交付类型', value: contractDeliveryType || '待选择' },
-        ]} />
         <Card>
           <Result status="info" title="暂无交付计划"
             subTitle="选择交付类型与 SOP 板块后，系统将生成步骤、里程碑和甘特时间轴。"
@@ -313,18 +255,7 @@ export default function DeliveryPlanPage() {
             </Popconfirm>
           </Space>
         )}
-        steps={overviewSteps}
-        currentStep={activePhaseIndex}
       />
-
-      <ProcessMetricGrid items={[
-        { key: 'completion', label: '整体完成度', value: `${summary.completion}%`, tone: summary.completion >= 80 ? 'success' : 'neutral' },
-        { key: 'steps', label: '当前视图步骤', value: `${summary.visibleSteps}/${summary.totalSteps}`, detail: phaseFilter === null ? '全部板块' : '已按板块筛选' },
-        { key: 'doing', label: '进行中', value: summary.inProgressCount, tone: summary.inProgressCount > 0 ? 'warning' : 'neutral' },
-        { key: 'overdue', label: '逾期步骤', value: summary.overdueCount, tone: summary.overdueCount > 0 ? 'danger' : 'success' },
-        { key: 'milestone', label: '里程碑', value: `${summary.completedMilestones}/${summary.totalMilestones}` },
-        { key: 'end', label: '预计完成', value: summary.expectedEndDate },
-      ]} />
 
       <ProcessWorkspace>
         <ProcessWorkspaceMain>
@@ -355,56 +286,18 @@ export default function DeliveryPlanPage() {
                   expandedStepIds={expandedStepIds} onExpandedStepIdsChange={setExpandedStepIds} scrollRef={listScrollRef} />
               </div>
               <div className="delivery-plan__gantt-pane">
-                <GanttChart plan={filteredPlan} zoomLevel={zoomLevel} scrollRef={ganttScrollRef} />
+                <GanttChart plan={filteredPlan} zoomLevel={zoomLevel} scrollRef={ganttScrollRef}
+                  expandedPhaseIds={expandedPhaseIds} expandedStepIds={expandedStepIds} />
               </div>
             </div>
           </Card>
         </ProcessWorkspaceMain>
 
-        <ProcessWorkspaceAside>
-          <Card title="交付闭环" size="small">
-            <div className="delivery-plan__continuity">
-              <div><span>1</span><div><strong>任务执行</strong><Text type="secondary">{plan.steps.length} 个计划步骤</Text></div><Button type="text" size="mini" onClick={() => navigate(`/projects/${project.id}/work-items?tab=tasks`)}>打开</Button></div>
-              <div><span>2</span><div><strong>项目日报</strong><Text type="secondary">按项目查看投入与风险</Text></div><Button type="text" size="mini" onClick={() => navigate(`/dailyreport/list?projectId=${project.id}`)}>打开</Button></div>
-              <div><span>3</span><div><strong>交付物归档</strong><Text type="secondary">{closure.artifactArchivedAt || '等待确认'}</Text></div><Tag color={closure.artifactStatus === 'archived' ? 'green' : 'gray'}>{closure.artifactStatus === 'archived' ? '已归档' : '待归档'}</Tag></div>
-              <div><span>4</span><div><strong>客户验收</strong><Text type="secondary">{closure.acceptedAt || closure.acceptanceSubmittedAt || '等待交付物'}</Text></div><Tag color={closure.acceptanceStatus === 'accepted' ? 'green' : closure.acceptanceStatus === 'submitted' ? 'arcoblue' : 'gray'}>{closure.acceptanceStatus === 'accepted' ? '已验收' : closure.acceptanceStatus === 'submitted' ? '验收中' : '待提交'}</Tag></div>
-            </div>
-            <div className="delivery-plan__continuity-actions">
-              {closure.artifactStatus === 'pending' && <Button size="small" onClick={archiveArtifacts}>确认交付物归档</Button>}
-              {closure.artifactStatus === 'archived' && closure.acceptanceStatus === 'pending' && <Button size="small" type="primary" onClick={submitAcceptance}>提交验收</Button>}
-              {closure.acceptanceStatus === 'submitted' && <Button size="small" type="primary" onClick={confirmAcceptance}>确认验收通过</Button>}
-              {closure.acceptanceStatus === 'accepted' && <Button size="small" type="primary" onClick={() => navigate('/paymentinvoice')}>进入财务结清</Button>}
-            </div>
-          </Card>
-          <Card title="当前阶段" size="small">
-            <Descriptions column={1} data={[
-              { label: '板块', value: activePhase ? `${activePhase.phaseNo}. ${activePhase.phaseName}` : '—' },
-              { label: '状态', value: activePhase ? PHASE_STATUS_LABEL[activePhase.status] : '—' },
-              { label: '负责人', value: activePhase?.manager || '—' },
-              { label: '起止日期', value: activePhase ? `${activePhase.startDate} 至 ${activePhase.dueDate}` : '—' },
-            ]} />
-          </Card>
-          <Card title="计划上下文" size="small">
-            <Descriptions column={1} data={[
-              { label: '项目负责人', value: project.owner || '—' },
-              { label: '交付类型', value: plan.deliveryType },
-              { label: '关联合同', value: plan.contractId || project.contractId || '未关联' },
-              { label: '已选 SOP', value: `${plan.phases.length} 个板块` },
-            ]} />
-          </Card>
-          <Card title="图例与操作" size="small">
-            <div className="delivery-plan__legend">
-              <span><i className="delivery-plan__legend-mark" />正常步骤</span>
-              <span><i className="delivery-plan__legend-mark delivery-plan__legend-mark--overdue" />逾期步骤</span>
-              <span><i className="delivery-plan__legend-mark delivery-plan__legend-mark--milestone" />里程碑</span>
-              <Text type="secondary">新增自定义步骤请点击板块行右侧的“+”。</Text>
-            </div>
-          </Card>
-        </ProcessWorkspaceAside>
       </ProcessWorkspace>
 
       <DeliveryConfigModal visible={configModalVisible} onCancel={() => setConfigModalVisible(false)}
         onConfirm={handleConfigConfirm} contractId={project.contractId} deliveryType={contractDeliveryType}
+        contractSelectedPhases={contractConfig?.selectedPhases}
         projectStartDate={project.startDate} />
       <StepEditModal visible={!!editStep} step={editStep} onCancel={() => setEditStep(null)}
         onSave={handleStepEditSave} projectMembers={projectMembers} />

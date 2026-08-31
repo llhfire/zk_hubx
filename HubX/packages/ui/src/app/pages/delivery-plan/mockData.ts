@@ -1,7 +1,9 @@
 // src/app/pages/delivery-plan/mockData.ts
 
-import type { DeliveryPlan } from './types';
+import type { DeliveryPlan, SopStep } from './types';
 import { derivePhaseStatus, generateDeliveryPlan } from './utils';
+import { buildInitialContracts } from '../contracts/mockData';
+import { generateDeliveryPlanFromContract } from './contractBasis';
 
 function syncPhaseStatuses(plan: DeliveryPlan): void {
   for (const phase of plan.phases) {
@@ -185,6 +187,138 @@ if (project3TechnicalDesignStep) {
 syncPhaseStatuses(plan3);
 
 // ──────────────────────────────────────
+// 帕奇宠 C 端一期：APP 双端交付
+// ──────────────────────────────────────
+
+const pawkeyProjectData: Record<string, unknown> = {
+  id: 'prod-112',
+  startDate: '2026-06-08',
+  owner: '何江奇',
+  productUsers: ['何江奇'],
+  salesUsers: ['黄奕'],
+  uiUsers: ['周雨桐'],
+  frontendUsers: ['林子涵'],
+  backendUsers: ['陈周伟'],
+  opsUsers: ['郭启明'],
+  testUsers: ['蒋梦婷'],
+  legalUsers: ['黄奕'],
+};
+
+const pawkeyContract = buildInitialContracts().find((contract) => contract.id === 'pawkey-c1');
+if (!pawkeyContract) throw new Error('帕奇宠主合同 mock 缺失');
+
+const pawkeyPlan = generateDeliveryPlanFromContract(
+  pawkeyContract,
+  pawkeyProjectData,
+  [1, 2, 3, 5],
+);
+
+const pawkeyStepOverrides: Record<string, Partial<SopStep>> = {
+  '1.1': { status: 'completed', startDate: '2026-06-01', dueDate: '2026-06-03', assignee: '黄奕' },
+  '1.2': {
+    status: 'completed', startDate: '2026-06-02', dueDate: '2026-06-04', assignee: '何江奇',
+    userNotes: '核对主合同及两份补充协议的交付范围、付款节点与验收边界。',
+  },
+  '1.3': { status: 'completed', startDate: '2026-06-04', dueDate: '2026-06-08', assignee: '何江奇' },
+  '1.4': { status: 'completed', startDate: '2026-06-04', dueDate: '2026-06-05', assignee: '陈周伟' },
+  '1.5': { status: 'completed', startDate: '2026-06-08', dueDate: '2026-06-08', assignee: '黄奕' },
+  '2.1': { status: 'completed', startDate: '2026-06-05', dueDate: '2026-06-08', assignee: '何江奇' },
+  '2.2': { status: 'completed', startDate: '2026-06-08', dueDate: '2026-06-09', assignee: '何江奇' },
+  '2.3': {
+    status: 'completed', startDate: '2026-06-08', dueDate: '2026-06-10', assignee: '何江奇',
+    userNotes: '建立需求、设计、开发、测试、终验五类基线及变更留痕。',
+  },
+  '2.4': { status: 'completed', startDate: '2026-06-08', dueDate: '2026-06-10', assignee: '郭启明' },
+  '3.1': {
+    stepName: '一期产品需求与边界说明', status: 'completed',
+    startDate: '2026-06-08', dueDate: '2026-06-12', assignee: '何江奇',
+  },
+  '3.2': {
+    stepName: 'C 端信息架构与核心体验原型', status: 'completed',
+    startDate: '2026-06-15', dueDate: '2026-06-24', assignee: '何江奇',
+  },
+  '3.3': {
+    status: 'completed', startDate: '2026-06-24', dueDate: '2026-06-28', assignee: '何江奇',
+    userNotes: '核心体验原型已完成甲方确认并形成评审纪要。',
+  },
+  '3.4': {
+    stepName: '系统架构与接口边界设计', status: 'completed',
+    startDate: '2026-06-29', dueDate: '2026-07-20', assignee: '陈周伟',
+  },
+  '3.5': {
+    stepName: '高保真 UI 与视觉规范', status: 'completed',
+    startDate: '2026-06-29', dueDate: '2026-07-12', assignee: '周雨桐',
+  },
+  '3.6': {
+    status: 'completed', startDate: '2026-07-12', dueDate: '2026-07-15', assignee: '周雨桐',
+    userNotes: '一期 UI 视觉方案已确认，设计资源与标注同步完成。',
+  },
+  '3.7': {
+    stepName: '双端交付执行与每日跟进', status: 'completed',
+    startDate: '2026-07-16', dueDate: '2026-08-25', assignee: '何江奇',
+  },
+  '3.8': {
+    status: 'completed', startDate: '2026-06-08', dueDate: '2026-08-25', assignee: '何江奇',
+    userNotes: '两次范围变更均已完成评估、报价、补充协议签署与排期回写。',
+  },
+  '3.9': {
+    stepName: '原型、UI、架构与候选版本阶段交付', status: 'completed',
+    startDate: '2026-06-28', dueDate: '2026-08-25', assignee: '何江奇',
+  },
+  '3.10': {
+    status: 'completed', startDate: '2026-06-05', dueDate: '2026-08-13', assignee: '黄奕',
+    userNotes: '累计回款 12.6 万元，主合同及 AI 补充协议尾款随终验节点继续跟进。',
+  },
+  '5.1': {
+    stepName: 'iOS / Android 核心体验全量回归', status: 'completed',
+    startDate: '2026-08-20', dueDate: '2026-08-26', assignee: '蒋梦婷',
+  },
+  '5.2': {
+    stepName: '双端兼容、安全与权限专项验证', status: 'completed',
+    startDate: '2026-08-21', dueDate: '2026-08-26', assignee: '蒋梦婷',
+  },
+  '5.3': {
+    stepName: '一期终验材料预审', status: 'completed',
+    startDate: '2026-08-27', dueDate: '2026-08-27', assignee: '何江奇',
+    userNotes: '终验功能清单、测试报告、版本说明和交付物目录已提交甲方预审。',
+  },
+  '5.4': {
+    stepName: '候选版本问题修复与复测', status: 'completed',
+    startDate: '2026-08-28', dueDate: '2026-08-29', assignee: '蒋梦婷',
+    userNotes: '无 P0 阻断问题；2 项 P1 已纳入终验遗留跟踪并完成责任确认。',
+  },
+  '5.5': {
+    stepName: '甲方终验功能清单确认', status: 'in_progress',
+    startDate: '2026-08-27', dueDate: '2026-09-05', assignee: '何江奇',
+    userNotes: '甲方正在审查终验清单，计划 9 月 3 日闭环意见、9 月 5 日完成签署归档。',
+  },
+};
+
+for (const step of pawkeyPlan.steps) {
+  const override = pawkeyStepOverrides[step.stepNo];
+  if (!override) continue;
+  const generatedNotes = step.userNotes;
+  Object.assign(step, override);
+  if (generatedNotes && override.userNotes) {
+    step.userNotes = `${generatedNotes}\n${override.userNotes}`;
+  }
+}
+
+for (const milestone of pawkeyPlan.milestones) {
+  if (milestone.source === 'contract_delivery' && milestone.name !== '一期终验单签署') {
+    milestone.completed = true;
+  }
+}
+
+for (const phase of pawkeyPlan.phases) {
+  const phaseSteps = pawkeyPlan.steps.filter((step) => step.phaseId === phase.id);
+  const dates = phaseSteps.flatMap((step) => [step.startDate, step.dueDate]).filter(Boolean).sort();
+  phase.status = derivePhaseStatus(phaseSteps);
+  phase.startDate = dates[0] ?? phase.startDate;
+  phase.dueDate = dates.at(-1) ?? phase.dueDate;
+}
+
+// ──────────────────────────────────────
 // 导出
 // ──────────────────────────────────────
 
@@ -192,4 +326,5 @@ export const initialDeliveryPlans: Record<string, DeliveryPlan> = {
   '1': plan1,
   '2': plan2,
   '3': plan3,
+  'prod-112': pawkeyPlan,
 };

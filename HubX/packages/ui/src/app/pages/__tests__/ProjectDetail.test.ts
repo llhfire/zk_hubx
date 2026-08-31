@@ -1,6 +1,4 @@
-// Mock react-quill to avoid 'document is not defined' in non-DOM test environment
 import { vi } from 'vitest'
-vi.mock('react-quill', () => ({ default: () => null }))
 import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'

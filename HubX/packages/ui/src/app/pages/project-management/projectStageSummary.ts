@@ -1,7 +1,8 @@
-import type { CollectionLedgerEntry } from '@/services/collectionMutations';
+import { collectionAmountForPeriod, type CollectionLedgerEntry } from '../../../services/collectionMutations';
 import type { Contract, PaymentPlanItem } from '../contracts/types';
 import {
   getProjectDeliveryStage,
+  PROJECT_DELIVERY_STAGES,
   type ProjectConfirmation,
   type ProjectDeliveryStage,
   type ProjectListItem,
@@ -15,7 +16,22 @@ export interface ProjectStageCheck {
   target?: { main?: string; side?: string; route?: string };
 }
 
-export type ProjectTimelineStep = 'contract' | ProjectDeliveryStage;
+export type ProjectTimelineStep = 'contract' | 'supplement' | ProjectDeliveryStage;
+
+export function buildProjectTimelineStepOrder(input: {
+  includeContractSigning: boolean;
+  includeSupplementAgreement: boolean;
+}): ProjectTimelineStep[] {
+  const deliverySteps = PROJECT_DELIVERY_STAGES.flatMap<ProjectTimelineStep>((step) => [
+    ...(step === 'closeout' && input.includeSupplementAgreement ? ['supplement' as const] : []),
+    step,
+  ]);
+
+  return [
+    ...(input.includeContractSigning ? ['contract' as const] : []),
+    ...deliverySteps,
+  ];
+}
 
 export interface ProjectStagePayment {
   id: string;
@@ -60,7 +76,7 @@ function splitChecks(
   };
 }
 
-/** 付款条件决定它嵌入哪一个执行步骤；无法识别的期次统一留在回款结项。 */
+/** 主合同付款条件决定它嵌入哪一个执行步骤；无法识别的期次统一留在回款结项。 */
 export function getPaymentTimelineStep(plan: PaymentPlanItem): ProjectTimelineStep {
   const condition = plan.condition ?? '';
   if (/合同.*(签|生效)|签订.*合同/.test(condition)) return 'contract';
@@ -73,7 +89,7 @@ export function getPaymentTimelineStep(plan: PaymentPlanItem): ProjectTimelineSt
 
 function buildPaymentsByStage(input: ProjectStageSummaryInput): Record<ProjectTimelineStep, ProjectStagePayment[]> {
   const result: Record<ProjectTimelineStep, ProjectStagePayment[]> = {
-    contract: [], design: [], development: [], testing: [], acceptance: [], closeout: [],
+    contract: [], design: [], development: [], testing: [], acceptance: [], supplement: [], closeout: [],
   };
 
   const mainContract = input.contracts.find((contract) => contract.kind !== 'supplement') ?? input.contracts[0];
@@ -82,12 +98,12 @@ function buildPaymentsByStage(input: ProjectStageSummaryInput): Record<ProjectTi
     const records = ledgerRecords.length > 0 ? ledgerRecords : (contract.collectionRecords ?? []);
     contract.current.paymentPlans.forEach((plan) => {
       const receivedAmount = records
-        .filter((record) => record.period === plan.period)
-        .reduce((sum, record) => sum + record.amount, 0);
+        .reduce((sum, record) => sum + collectionAmountForPeriod(record, plan.period), 0);
       const status: ProjectStagePayment['status'] = receivedAmount >= plan.amount
         ? 'paid'
         : receivedAmount > 0 ? 'partial' : 'pending';
-      const mappedStep = getPaymentTimelineStep(plan);
+      // 补充协议的所有回款条件都收口在独立步骤，不再混入主合同的交付阶段。
+      const mappedStep = contract.kind === 'supplement' ? 'supplement' : getPaymentTimelineStep(plan);
       const step = mappedStep === 'contract' && contract.id !== mainContract?.id ? 'closeout' : mappedStep;
       result[step].push({
         id: `${contract.id}-payment-${plan.period}`,
@@ -158,6 +174,39 @@ export function buildContractSigningStageSummary(input: ProjectStageSummaryInput
     { id: 'contract-signed', label: '合同已签订并归档', done: mainContract.status === 'archived', target: { main: 'contracts' } },
     { id: 'initial-payment', label: '合同签订触发款已足额到账', done: payments.every((item) => item.status === 'paid'), target: { main: 'payments' } },
   ], [], payments);
+}
+
+export function buildSupplementAgreementStageSummary(input: ProjectStageSummaryInput): ProjectStageSummary | null {
+  const supplements = input.contracts.filter((contract) => contract.kind === 'supplement' && contract.status !== 'voided');
+  if (supplements.length === 0) return null;
+
+  const archivedCount = supplements.filter((contract) => contract.status === 'archived').length;
+  const payments = buildPaymentsByStage(input).supplement;
+  const checks: ProjectStageCheck[] = [
+    {
+      id: 'supplement-created',
+      label: `已创建补充协议（${supplements.length} 份）`,
+      done: true,
+      target: { main: 'contracts' },
+    },
+    {
+      id: 'supplement-archived',
+      label: `补充协议已签订并归档（${archivedCount}/${supplements.length} 份）`,
+      done: archivedCount === supplements.length,
+      target: { main: 'contracts' },
+    },
+  ];
+
+  if (payments.length > 0) {
+    checks.push({
+      id: 'supplement-collected',
+      label: '补充协议已全部回款',
+      done: payments.every((payment) => payment.status === 'paid'),
+      target: { main: 'payments' },
+    });
+  }
+
+  return splitChecks('supplement', checks, [], payments);
 }
 
 export function getCurrentProjectStageSummary(

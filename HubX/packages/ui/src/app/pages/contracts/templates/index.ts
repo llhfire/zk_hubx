@@ -39,15 +39,36 @@ export function renderTemplate(templateId: string, formData: Parameters<Contract
 // 手动编辑过模板时优先使用编辑后的正文，否则按当前表单数据实时渲染模板。
 export function renderContractDocument(formData: Parameters<ContractTemplate['render']>[0]): string {
   if (formData.customContractHtml?.trim()) return formData.customContractHtml;
+  if (formData.templateId === 'software_sales') {
+    return softwareSalesTemplate.render(formData);
+  }
   const published = findPublishedTemplate(formData.templateId, formData.templateVersionId);
+  // v1 是源 Word 的结构化适配入口；管理员发布 v2+ 后，以实际发布内容为准。
+  if (formData.templateId === 'tpl-zkrt-software' && (!published || published.versionNo === 1)) {
+    return softwareSalesTemplate.render(formData);
+  }
   if (!published) return renderTemplate(formData.templateId, formData);
   const values: Record<string, string | number | undefined> = {
     contractName: formData.contractName,
+    contractNo: formData.contractNo,
     customerName: formData.customerName,
     customerContact: formData.customerContact,
     customerPhone: formData.customerPhone,
     customerTaxNo: formData.customerTaxNo,
+    customerAddress: formData.customerAddress,
+    customerEmail: formData.customerEmail,
+    customerPostalCode: formData.customerPostalCode,
+    bankName: formData.bankName,
+    bankAccount: formData.bankAccount,
     signingEntity: formData.signingEntity,
+    signingEntityTaxNo: formData.signingEntityTaxNo,
+    signingPerson: formData.signingPerson,
+    signingEntityAddress: formData.signingEntityAddress,
+    signingEntityPhone: formData.signingEntityPhone,
+    signingEntityEmail: formData.signingEntityEmail,
+    signingEntityPostalCode: formData.signingEntityPostalCode,
+    signingEntityBankName: formData.signingEntityBankName,
+    signingEntityBankAccount: formData.signingEntityBankAccount,
     signDate: formData.signDate,
     effectiveDate: formData.effectiveDate,
     endDate: formData.endDate,

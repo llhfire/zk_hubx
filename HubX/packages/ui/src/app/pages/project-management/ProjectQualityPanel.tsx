@@ -17,8 +17,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { RichTextEditor, type RichTextEditorHandle } from '@/app/components/ui';
 import type { Project } from './mockData';
 import {
   getProjectBugs,
@@ -51,7 +50,7 @@ export function ProjectQualityPanel({ project }: { project: Project }) {
   const [selectedBug, setSelectedBug] = useState<ProjectBug | null>(null);
   const [createForm] = Form.useForm();
   const [flowForm] = Form.useForm();
-  const descriptionEditorRef = useRef<ReactQuill>(null);
+  const descriptionEditorRef = useRef<RichTextEditorHandle>(null);
   const descriptionImageInputRef = useRef<HTMLInputElement>(null);
   const members = Array.from(new Set([project.owner, ...project.productUsers, ...project.frontendUsers, ...project.backendUsers, ...project.testUsers].filter(Boolean)));
   const summary = useMemo(() => getProjectBugSummary(project, bugs), [bugs, project]);
@@ -182,7 +181,7 @@ export function ProjectQualityPanel({ project }: { project: Project }) {
             <Grid.Col span={6}><FormItem label="环境信息" field="environment" rules={[{ required: true, message: '请选择环境信息' }]}><Select placeholder="请选择环境信息"><Select.Option value="测试环境">测试环境</Select.Option><Select.Option value="正式环境">正式环境</Select.Option></Select></FormItem></Grid.Col>
           </Grid.Row>
           <FormItem label="Bug 描述" field="description" rules={[{ required: true, message: '请输入 Bug 描述' }]}>
-            <ReactQuill
+            <RichTextEditor
               ref={descriptionEditorRef}
               className="bug-description-editor"
               modules={descriptionEditorModules}
@@ -216,7 +215,7 @@ export function ProjectQualityPanel({ project }: { project: Project }) {
 
           <section className="bug-detail-section">
             <Text className="bug-detail-section-title">Bug 描述</Text>
-            <div className="bug-detail-description"><ReactQuill theme="bubble" readOnly value={detailBug.description} /></div>
+            <div className="bug-detail-description"><RichTextEditor theme="bubble" readOnly value={detailBug.description} /></div>
           </section>
 
           <section className="bug-detail-section">

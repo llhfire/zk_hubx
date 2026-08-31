@@ -2,7 +2,13 @@ import React, { useCallback } from 'react';
 import { Badge, Tag, Button, Typography, Space } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconCaretDown, IconCaretRight } from '@arco-design/web-react/icon';
 import { format } from 'date-fns';
-import type { DeliveryPlan, SopStep, SopStepStatus, SopMilestone } from './types';
+import type { DeliveryPlan, SopStep, SopStepStatus } from './types';
+import {
+  GANTT_HEADER_HEIGHT,
+  GANTT_ROW_HEIGHT,
+  GANTT_STEP_DETAIL_HEIGHT,
+  milestonesInPhase,
+} from './ganttLayout';
 
 const { Text } = Typography;
 
@@ -52,21 +58,6 @@ function cnOrdinal(n: number): string {
   return String(n);
 }
 
-/* ---------- Milestones within a phase date range ---------- */
-
-function milestonesInPhase(
-  milestones: SopMilestone[],
-  phaseStart: string,
-  phaseEnd: string,
-): SopMilestone[] {
-  const start = new Date(phaseStart).getTime();
-  const end = new Date(phaseEnd).getTime();
-  return milestones.filter((m) => {
-    const t = new Date(m.date).getTime();
-    return t >= start && t <= end;
-  });
-}
-
 /* ---------- Step detail panel ---------- */
 
 function StepDetailPanel({ step }: { step: SopStep }) {
@@ -83,7 +74,10 @@ function StepDetailPanel({ step }: { step: SopStep }) {
   return (
     <div
       style={{
+        height: GANTT_STEP_DETAIL_HEIGHT,
         padding: '10px 16px 10px 56px',
+        boxSizing: 'border-box',
+        overflowY: 'auto',
         background: 'var(--grey-50)',
         borderTop: '1px solid var(--grey-100)',
         fontSize: 14,
@@ -161,12 +155,30 @@ const TaskList: React.FC<TaskListProps> = ({
         background: '#fff',
       }}
     >
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          height: GANTT_HEADER_HEIGHT,
+          padding: '0 12px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'var(--grey-50)',
+          borderBottom: '1px solid var(--grey-200)',
+        }}
+      >
+        <Text style={{ fontSize: 12, color: 'var(--grey-400)' }}>交付步骤</Text>
+        <Text style={{ fontSize: 12, color: 'var(--grey-400)' }}>负责人 · 状态</Text>
+      </div>
       {sortedPhases.map((phase) => {
         const isPhaseExpanded = expandedPhaseIds.includes(phase.id);
         const phaseSteps = steps
           .filter((s) => s.phaseId === phase.id)
           .sort((a, b) => a.stepNo.localeCompare(b.stepNo, undefined, { numeric: true }));
-        const phaseMilestones = milestonesInPhase(milestones, phase.startDate, phase.dueDate);
+        const phaseMilestones = milestonesInPhase(milestones, phase, phases);
 
         return (
           <div key={phase.id}>
@@ -176,7 +188,7 @@ const TaskList: React.FC<TaskListProps> = ({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                height: 40,
+                height: GANTT_ROW_HEIGHT,
                 padding: '0 12px',
                 boxSizing: 'border-box',
                 background: 'var(--grey-100)',
@@ -240,7 +252,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          height: 40,
+                          height: GANTT_ROW_HEIGHT,
                           padding: '0 12px 0 36px',
                           boxSizing: 'border-box',
                           background: '#fff',
@@ -318,7 +330,7 @@ const TaskList: React.FC<TaskListProps> = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      height: 40,
+                      height: GANTT_ROW_HEIGHT,
                       padding: '0 12px 0 36px',
                       boxSizing: 'border-box',
                       background: 'var(--brand-50)',

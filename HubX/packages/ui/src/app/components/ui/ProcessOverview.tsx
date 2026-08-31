@@ -15,14 +15,16 @@ interface ProcessOverviewProps {
   title: ReactNode;
   tags?: ReactNode;
   actions?: ReactNode;
-  steps: ProcessOverviewStep[];
+  steps?: ProcessOverviewStep[];
   /** 从 0 开始的业务步骤索引。组件内部转换为 Arco Steps 的第 N 步。 */
-  currentStep: number;
+  currentStep?: number;
 }
 
-export function ProcessOverview({ identifier, title, tags, actions, steps, currentStep }: ProcessOverviewProps) {
+export function ProcessOverview({ identifier, title, tags, actions, steps, currentStep = 0 }: ProcessOverviewProps) {
+  const hasSteps = Boolean(steps?.length);
+
   return (
-    <Card className="hubx-process-overview">
+    <Card className={['hubx-process-overview', !hasSteps && 'hubx-process-overview--without-steps'].filter(Boolean).join(' ')}>
       <div className="hubx-process-overview__head">
         <div className="hubx-process-overview__identity">
           {identifier && <span className="hubx-process-overview__identifier">{identifier}</span>}
@@ -31,13 +33,15 @@ export function ProcessOverview({ identifier, title, tags, actions, steps, curre
         </div>
         {actions && <div className="hubx-process-overview__actions">{actions}</div>}
       </div>
-      <div className="hubx-process-overview__steps" aria-label="流程进度">
-        <Steps current={Math.max(0, currentStep) + 1} size="small">
-          {steps.map((step) => (
-            <Step key={step.key} title={step.title} description={step.description} />
-          ))}
-        </Steps>
-      </div>
+      {hasSteps && (
+        <div className="hubx-process-overview__steps" aria-label="流程进度">
+          <Steps current={Math.max(0, currentStep) + 1} size="small">
+            {steps!.map((step) => (
+              <Step key={step.key} title={step.title} description={step.description} />
+            ))}
+          </Steps>
+        </div>
+      )}
     </Card>
   );
 }

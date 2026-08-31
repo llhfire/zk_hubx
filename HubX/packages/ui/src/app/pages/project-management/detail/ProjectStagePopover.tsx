@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button, Popover, Tag, Typography } from '@arco-design/web-react';
-import { IconDown } from '@arco-design/web-react/icon';
+import { IconCheck, IconClockCircle, IconDown, IconRight } from '@arco-design/web-react/icon';
 import type { ProjectStageCheck, ProjectStageSummary } from '../projectStageSummary';
 
 const { Text } = Typography;
@@ -13,45 +13,52 @@ interface ProjectStagePopoverProps {
 
 const PAYMENT_STATUS_META: Record<ProjectStageSummary['payments'][number]['status'], { label: string; color: string }> = {
   paid: { label: '已收足', color: 'green' },
-  partial: { label: '部分到账', color: 'orange' },
+  partial: { label: '部分已收', color: 'orange' },
   pending: { label: '待收', color: 'gray' },
 };
 
 export function ProjectStagePopover({ children, summary, onNavigate }: ProjectStagePopoverProps) {
-  const renderChecks = (title: string, tone: string, checks: ProjectStageCheck[]) => checks.length > 0 && (
+  const renderChecks = (
+    title: string,
+    kind: 'completed' | 'pending',
+    checks: ProjectStageCheck[],
+  ) => checks.length > 0 && (
     <section className="project-stage-popover__section">
       <div className="project-stage-popover__heading">
-        <span>{title}</span><Tag size="small" color={tone}>{checks.length}</Tag>
+        <span>{title}</span><span>{checks.length} 项</span>
       </div>
-      {checks.map((check) => (
-        <button
-          key={check.id}
-          type="button"
-          className="project-stage-popover__check"
-          disabled={!check.target}
-          onClick={() => check.target && onNavigate(check.target)}
-        >
-          <span aria-hidden>{check.done ? '✓' : title === '阻塞' ? '!' : '○'}</span>
-          <span>{check.label}</span>
-        </button>
-      ))}
+      <div className="project-stage-popover__checks">
+        {checks.map((check) => (
+          <button
+            key={check.id}
+            type="button"
+            className={`project-stage-popover__check project-stage-popover__check--${kind}${check.target ? ' is-actionable' : ''}`}
+            disabled={!check.target}
+            onClick={() => check.target && onNavigate(check.target)}
+          >
+            <span className="project-stage-popover__check-icon" aria-hidden>
+              {kind === 'completed' ? <IconCheck /> : <IconClockCircle />}
+            </span>
+            <span>{check.label}</span>
+            {check.target && <IconRight className="project-stage-popover__check-arrow" />}
+          </button>
+        ))}
+      </div>
     </section>
   );
 
   return (
     <Popover
+      className="project-stage-popover-popup"
+      style={{ width: 384, maxWidth: 'calc(100vw - 32px)' }}
       position="bottom"
       trigger="click"
       content={(
         <div className="project-stage-popover">
-          <div className="project-stage-popover__title">
-            <Text style={{ fontWeight: 600 }}>阶段详情</Text>
-            <Text type="secondary">支持查看历史事实与付款节点</Text>
-          </div>
           {summary.payments.length > 0 && (
             <section className="project-stage-popover__section">
               <div className="project-stage-popover__heading">
-                <span>付款节点</span><Tag size="small" color="gold">{summary.payments.length}</Tag>
+                <span>付款节点</span><span>{summary.payments.length} 项</span>
               </div>
               <div className="project-stage-popover__payments">
                 {summary.payments.map((payment) => {
@@ -70,9 +77,8 @@ export function ProjectStagePopover({ children, summary, onNavigate }: ProjectSt
               </div>
             </section>
           )}
-          {renderChecks('已完成', 'green', summary.completed)}
-          {renderChecks('待完成', 'gray', summary.pending)}
-          {renderChecks('阻塞', 'red', summary.blocked)}
+          {renderChecks('已完成', 'completed', summary.completed)}
+          {renderChecks('待完成', 'pending', summary.pending)}
         </div>
       )}
     >

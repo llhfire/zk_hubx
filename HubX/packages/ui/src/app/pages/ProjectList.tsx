@@ -31,7 +31,7 @@ import {
   IconLayout,
   IconFilter,
 } from '@arco-design/web-react/icon';
-import { ChatCircleText, UserSwitch } from '@phosphor-icons/react';
+import { UserSwitch } from '@phosphor-icons/react';
 import type {
   ProjectListItem,
   ProjectStatus,
@@ -67,7 +67,7 @@ import {
   formatHours,
   formatAmount,
 } from './project-management/utils';
-import { PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import { FollowUpIcon, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -369,7 +369,7 @@ export function ProjectList() {
             </Tooltip>
           )}
           <Tooltip content="查看详情"><Button type="text" className="hubx-icon-action" aria-label="查看项目详情" icon={<IconEye />} size="small" onClick={() => navigate(`/projects/${r.id}`)} /></Tooltip>
-          <Tooltip content="添加跟进"><Button type="text" className="hubx-icon-action" aria-label="添加项目跟进" icon={<ChatCircleText size={18} />} size="small" onClick={() => openFollowModal(r)} /></Tooltip>
+          <Tooltip content="添加跟进"><Button type="text" className="hubx-icon-action" aria-label="添加项目跟进" icon={<FollowUpIcon />} size="small" onClick={() => openFollowModal(r)} /></Tooltip>
           <Tooltip content="编辑项目"><Button type="text" className="hubx-icon-action" aria-label="编辑项目" icon={<IconEdit />} size="small" onClick={() => openEditDrawer(r)} /></Tooltip>
         </Space>
       ),

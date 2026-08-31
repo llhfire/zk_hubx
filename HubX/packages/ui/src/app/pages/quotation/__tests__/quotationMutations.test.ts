@@ -18,6 +18,8 @@ function fakeQuote(status: QuoteStatus, extra?: Partial<Quote>): Quote {
     version: 'v1.0',
     status,
     leadId: 'lead-1',
+    quoteTemplateId: 'zkrt-standard-quote',
+    signingEntity: '中科软通',
     basicInfo: {
       projectName: '测试项目',
       projectType: '其他定制',
@@ -199,6 +201,11 @@ describe('buildNewQuote', () => {
     const quote = buildNewQuote('q-file', 'QT-2026-9', 'lead-1', [], {}, '张三', 'file');
     expect(quote.flowMode).toBe('file');
     expect(quote.fileFlow?.onlineDocument.status).toBe('empty');
+  });
+
+  it('创建时固化线索带入的签约主体', () => {
+    const quote = buildNewQuote('q-entity', 'QT-2026-10', 'lead-2', [], {}, '张三', 'online', '中科软艺');
+    expect(quote.signingEntity).toBe('中科软艺');
   });
 });
 

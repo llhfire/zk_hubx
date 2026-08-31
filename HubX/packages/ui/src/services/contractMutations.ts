@@ -69,7 +69,7 @@ export function nextContractNo(signingEntity: string, seq: number): string {
 }
 
 export function applyCreateFromWizard(input: WizardInput, id: string, contractNo: string, now: string): Contract {
-  const formData = input.formData;
+  const formData = { ...input.formData, contractNo };
   if (input.kind === 'supplement') {
     if (!input.parentContractId) throw new Error('补充合同必须关联主合同');
     if (!input.sourceQuoteId) throw new Error('补充合同必须来源于已确认的补充报价');
@@ -99,12 +99,13 @@ export function applyCreateFromWizard(input: WizardInput, id: string, contractNo
 }
 
 export function applySaveDraft(c: Contract, formData: ContractFormData, reallocatedNo: string | null): Contract {
+  const contractNo = c.status === 'draft' && c.current.signingEntity !== formData.signingEntity
+    ? (reallocatedNo ?? c.contractNo)
+    : c.contractNo;
   return {
     ...c,
-    contractNo: c.status === 'draft' && c.current.signingEntity !== formData.signingEntity
-      ? (reallocatedNo ?? c.contractNo)
-      : c.contractNo,
-    current: formData,
+    contractNo,
+    current: { ...formData, contractNo },
   };
 }
 

@@ -1,6 +1,4 @@
-// Mock react-quill to avoid 'document is not defined' in non-DOM test environment
 import { vi } from 'vitest'
-vi.mock('react-quill', () => ({ default: () => null }))
 import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -56,6 +54,8 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
     expect(markup).toContain('PRJ202605001')
     // 统一指标网格
     expect(markup).toContain('hubx-process-metrics__grid')
+    expect(markup).toContain('aria-label="打开项目甘特图"')
+    expect(markup).toContain('project-progress-metric__gantt-icon')
     expect(markup).toContain('客户')
     expect(markup).toContain('A公司')
     expect(markup).toContain('工时')

@@ -15,14 +15,9 @@ import {
 } from '@/app/business-case';
 import { useLeads } from '@/app/leads/LeadContext';
 import { diffContractEvents, getSigningOpenBridgeIssue, type ContractSnapshotEntry } from './signingOpenEvents';
-import { generateDeliveryPlan } from '../delivery-plan/utils';
+import { generateDeliveryPlanFromContract } from '../delivery-plan/contractBasis';
 import { saveDeliveryPlan } from '../delivery-plan/deliveryPlanStore';
-import { SOP_PHASES } from '../delivery-plan/constants';
-import type { DeliveryType } from '../delivery-plan/types';
 import type { Contract } from './types';
-
-/** 自动生成 SOP 计划的默认交付类型；项目可在交付计划页重新配置 */
-const DEFAULT_DELIVERY_TYPE: DeliveryType = '网站';
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
@@ -190,14 +185,9 @@ export function SigningOpenBridge() {
     if (patch) {
       const startedProject = { ...project, ...patch };
       updateProject(startedProject);
-      const plan = generateDeliveryPlan(
-        {
-          selectedPhases: SOP_PHASES.map((p) => p.phaseNo),
-          deliveryType: DEFAULT_DELIVERY_TYPE,
-          contractId: contract.id,
-        },
+      const plan = generateDeliveryPlanFromContract(
+        contract,
         startedProject as unknown as Record<string, unknown>,
-        contract.current.signDate,
       );
       saveDeliveryPlan(plan);
     } else if (project.status === '未确认') {

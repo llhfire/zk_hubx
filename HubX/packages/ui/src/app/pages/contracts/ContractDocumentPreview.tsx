@@ -26,6 +26,7 @@ import { useContracts } from './ContractsContext';
 import { contractTemplates, renderContractDocument } from './templates';
 import { PageShell } from '@/app/components/ui';
 import type { ContractFormData, ContractVersionAttachment } from './types';
+import { createDocxBlob } from '../../documents/wordExport';
 
 const Title = Typography.Title;
 const FormItem = Form.Item;
@@ -48,6 +49,7 @@ export function ContractDocumentPreview() {
   const documentEditorRef = useRef<HTMLDivElement>(null);
   const documentEditedRef = useRef(false);
   const [submitVisible, setSubmitVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitForm] = Form.useForm();
 
   const routeReturnTarget = (location.state as {
@@ -120,36 +122,39 @@ export function ContractDocumentPreview() {
     setSubmitVisible(true);
   };
 
-  const createGeneratedAttachment = (latestFormData: ContractFormData): ContractVersionAttachment => {
+  const createGeneratedAttachment = async (latestFormData: ContractFormData): Promise<ContractVersionAttachment> => {
     const documentContent = latestFormData.customContractHtml || renderContractDocument(latestFormData);
-    const file = new Blob([
-      '<!doctype html><html><head><meta charset="utf-8"></head><body>',
-      documentContent,
-      '</body></html>',
-    ], { type: 'application/msword' });
+    const file = await createDocxBlob(documentContent, latestFormData.contractName || contract.contractNo);
     return {
       id: `generated-contract-${Date.now()}`,
-      name: `${contract.contractNo}-${latestFormData.contractName || '合同正文'}.doc`,
+      name: `${contract.contractNo}-${latestFormData.contractName || '合同正文'}.docx`,
       size: `${Math.max(1, Math.ceil(file.size / 1024))} KB`,
       url: URL.createObjectURL(file),
     };
   };
 
-  const confirmSubmit = () => {
-    submitForm.validate().then((values) => {
+  const confirmSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const values = await submitForm.validate();
       const latestFormData = getLatestFormData();
       saveDocumentPreviewVersion(contract.id, {
         formData: latestFormData,
         projectId: projectIdFromReturnTarget,
         createNewVersion,
         changeSummary: values.changeSummary.trim(),
-        attachment: createGeneratedAttachment(latestFormData),
+        attachment: await createGeneratedAttachment(latestFormData),
       });
       setSubmitVisible(false);
       submitForm.resetFields();
       Message.success('合同版本已生成');
       navigate(returnTarget.pathname, { state: returnTarget.state, replace: true });
-    });
+    } catch (error) {
+      if (error instanceof Error) Message.error(error.message || '合同版本生成失败');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -261,6 +266,8 @@ export function ContractDocumentPreview() {
           submitForm.resetFields();
         }}
         maskClosable={false}
+        okButtonProps={{ loading: submitting, disabled: submitting }}
+        cancelButtonProps={{ disabled: submitting }}
       >
         <Form form={submitForm} layout="vertical">
           <FormItem

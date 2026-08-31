@@ -714,6 +714,13 @@ export function buildInitialContracts(): Contract[] {
     customerTaxNo: '91500100DEMO05942X',
     productCategory: '产品设计与系统架构设计',
     contractContent: '乙方完成帕奇宠 C 端一期需求调研、产品方案、交互原型、UI 视觉规范、系统架构设计及终验交付材料。',
+    deliveryPlatforms: ['APP'],
+    deliveryConditions: [
+      { name: '一期需求范围确认', expectedDate: '2026-06-12', condition: '甲方确认一期需求范围与产品边界', deliverables: '一期需求范围说明、产品需求文档' },
+      { name: '核心体验原型确认', expectedDate: '2026-06-28', condition: '甲方确认 C 端核心体验原型', deliverables: '信息架构、核心体验交互原型' },
+      { name: 'UI 与系统架构设计确认', expectedDate: '2026-07-20', condition: '甲方确认 UI 视觉规范及系统架构方案', deliverables: '高保真 UI、视觉规范、系统架构设计' },
+      { name: '一期终验单签署', expectedDate: '2026-08-28', condition: '终验功能清单审查通过并签署一期终验单', deliverables: 'iOS/Android 候选版本、测试报告、版本说明、交付物目录' },
+    ],
     totalAmount: 100000,
     signDate: '2026-06-01',
     effectiveDate: '2026-06-01',

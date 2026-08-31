@@ -32,6 +32,7 @@ import {
   IconDelete,
   IconUpload,
 } from '@arco-design/web-react/icon';
+import { ChartBarHorizontal, Flag } from '@phosphor-icons/react';
 import type {
   ActivityEvent,
   ProjectMeetingMinutes,
@@ -42,9 +43,8 @@ import {
   BUSINESS_LINE_COLOR,
   HEALTH_LABEL,
   HEALTH_COLOR,
-  PROJECT_DELIVERY_STAGES,
   PROJECT_DELIVERY_STAGE_LABEL,
-  getProjectDeliveryStageIndex,
+  getProjectDeliveryStage,
   PROJECT_RISK_LEVEL_LABEL,
   PROJECT_RISK_LEVEL_COLOR,
 } from './project-management/types';
@@ -73,9 +73,16 @@ import { ProjectPresalesHistoryPanel } from './project-management/ProjectPresale
 import { LeadFinalContractPanel } from './leads/components/LeadFinalContractPanel';
 import { useContracts } from './contracts/ContractsContext';
 import { useCollections } from '@/app/collections/CollectionContext';
-import { collectionsForProject, sumReceived, type CollectionLedgerEntry } from '@/services/collectionMutations';
+import {
+  allocateCollectionAmount,
+  collectionsForProject,
+  getCollectionPeriods,
+  sumReceived,
+  type CollectionLedgerEntry,
+  type CollectionPeriod,
+} from '@/services/collectionMutations';
 import type { Contract, ContractStatus } from './contracts/types';
-import { effectiveAmount } from './contracts/paymentUtils';
+import { computePlanStatusRows, effectiveAmount } from './contracts/paymentUtils';
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
 import { QuoteCard } from './quotation/QuoteCard';
@@ -107,7 +114,9 @@ import {
 } from './project-management/projectActivityProjection';
 import {
   buildContractSigningStageSummary,
+  buildProjectTimelineStepOrder,
   buildProjectStageSummaries,
+  buildSupplementAgreementStageSummary,
   type ProjectStageCheck,
 } from './project-management/projectStageSummary';
 import './project-management/detail/projectDetail360.css';
@@ -365,6 +374,16 @@ export function ProjectDetail360() {
     receivedAmount,
   }) : null, [project, linkedContracts, visibleProjectCollections, confirmations, tasks, contractAmount, receivedAmount]);
 
+  const supplementAgreementStageSummary = useMemo(() => project ? buildSupplementAgreementStageSummary({
+    project,
+    contracts: linkedContracts,
+    collections: visibleProjectCollections,
+    confirmations,
+    tasks,
+    contractAmount,
+    receivedAmount,
+  }) : null, [project, linkedContracts, visibleProjectCollections, confirmations, tasks, contractAmount, receivedAmount]);
+
   if (!project || !metrics) {
     return (
       <Card>
@@ -379,7 +398,7 @@ export function ProjectDetail360() {
   }
 
   const cd = getProjectCountdown(project.startDate, project.expectedEndDate);
-  const deliveryStageIndex = getProjectDeliveryStageIndex(project.status, project.progress);
+  const currentDeliveryStage = getProjectDeliveryStage(project.status, project.progress);
   const budgetHoursLabel = metrics.budgetHours > 0 ? formatHours(metrics.budgetHours) : '未设置';
   const hoursUsageLabel = metrics.budgetHours > 0
     ? `${Math.round(metrics.totalHours / metrics.budgetHours * 100)}%`
@@ -401,16 +420,44 @@ export function ProjectDetail360() {
 
   const openCollectionEditor = (record?: CollectionLedgerEntry) => {
     setEditingCollectionId(record?.id);
-    collectionForm.setFieldsValue(record || { date: '2026-08-27', method: '银行汇款', period: 'other', amount: 0, note: '' });
+    collectionForm.resetFields();
+    collectionForm.setFieldsValue(record ? {
+      ...record,
+      periods: getCollectionPeriods(record).map(String),
+    } : {
+      date: '2026-08-27',
+      method: '银行汇款',
+      contractId: mainContract?.id,
+      periods: [],
+      amount: 0,
+      note: '',
+    });
     setCollectionModalVisible(true);
   };
 
   const saveCollection = () => {
     collectionForm.validate().then((values) => {
+      const contract = linkedContracts.find((item) => item.id === values.contractId) ?? mainContract;
+      if (!contract) {
+        Message.error('未找到关联合同');
+        return;
+      }
+      const periods = ((values.periods ?? []) as string[]).map<CollectionPeriod>((value) => value === 'other' ? 'other' : Number(value));
+      const otherCollections = visibleProjectCollections.filter((item) => item.contractId === contract.id && item.id !== editingCollectionId);
+      const allocatedRows = computePlanStatusRows({ ...contract, collectionRecords: otherCollections });
+      const periodAllocations = allocateCollectionAmount({
+        periods,
+        amount: Number(values.amount),
+        plans: contract.current.paymentPlans,
+        allocatedByPeriod: new Map(allocatedRows.map((row) => [row.plan.period, row.allocated])),
+      });
       const record: CollectionLedgerEntry = {
         id: editingCollectionId || `project-col-${Date.now()}`,
-        contractId: mainContract?.id || '', projectId: project.id,
-        period: values.period === 'other' ? 'other' : Number(values.period),
+        contractId: contract.id,
+        projectId: project.id,
+        period: periods[0],
+        periods,
+        periodAllocations,
         amount: Number(values.amount), date: values.date, method: values.method, note: values.note || '',
       };
       if (editingCollectionId) setCollectionOverrides((current) => ({ ...current, [editingCollectionId]: record }));
@@ -474,15 +521,15 @@ export function ProjectDetail360() {
   const activeQuotes = leadQuotes.filter((q) => q.status !== 'voided');
   const voidedQuotes = leadQuotes.filter((q) => q.status === 'voided');
   const collectionPercent = contractAmount > 0 ? Math.round(receivedAmount / contractAmount * 100) : 0;
-  const timelineSteps = [
-    ...(contractSigningStageSummary ? [{ key: 'contract', label: '合同签订', summary: contractSigningStageSummary }] : []),
-    ...PROJECT_DELIVERY_STAGES.map((step) => ({
-      key: step,
-      label: PROJECT_DELIVERY_STAGE_LABEL[step],
-      summary: stageSummaries![step],
-    })),
-  ];
-  const currentTimelineIndex = deliveryStageIndex + (contractSigningStageSummary ? 1 : 0);
+  const timelineSteps = buildProjectTimelineStepOrder({
+    includeContractSigning: Boolean(contractSigningStageSummary),
+    includeSupplementAgreement: Boolean(supplementAgreementStageSummary),
+  }).map((step) => {
+    if (step === 'contract') return { key: step, label: '合同签订', summary: contractSigningStageSummary! };
+    if (step === 'supplement') return { key: step, label: '补充协议', summary: supplementAgreementStageSummary! };
+    return { key: step, label: PROJECT_DELIVERY_STAGE_LABEL[step], summary: stageSummaries![step] };
+  });
+  const currentTimelineIndex = timelineSteps.findIndex((step) => step.key === currentDeliveryStage);
   const milestones: ProjectMilestoneItem[] = [
     { name: '方案设计', done: project.progress >= 30, date: confirmations.filter((item) => item.status === '已签署' && /原型|UI|视觉/.test(item.type)).at(-1)?.signDate },
     { name: '开发', done: project.progress >= 70, date: tasks.filter((item) => item.type === '开发' && item.status === '已完成').at(-1)?.plannedEndDate },
@@ -490,6 +537,49 @@ export function ProjectDetail360() {
     { name: '验收', done: confirmations.some((item) => item.status === '已签署' && /验收|终验/.test(item.type)), date: confirmations.find((item) => item.status === '已签署' && /验收|终验/.test(item.type))?.signDate },
     { name: '回款结项', done: project.status === '已完成' && collectionPercent >= 100, date: project.status === '已完成' ? project.expectedEndDate : undefined },
   ];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const scheduleStartTime = new Date(`${project.startDate}T00:00:00`).getTime();
+  const scheduleEndTime = new Date(`${project.expectedEndDate}T00:00:00`).getTime();
+  const hasScheduleRange = Number.isFinite(scheduleStartTime)
+    && Number.isFinite(scheduleEndTime)
+    && scheduleEndTime > scheduleStartTime;
+  const scheduleScaleEnd = hasScheduleRange ? Math.max(scheduleEndTime, today.getTime()) : today.getTime();
+  const scheduleDuration = hasScheduleRange ? scheduleScaleEnd - scheduleStartTime : 1;
+  const schedulePlanPosition = hasScheduleRange
+    ? Math.max(0, Math.min(100, (scheduleEndTime - scheduleStartTime) / scheduleDuration * 100))
+    : 100;
+  const scheduleCurrentPosition = hasScheduleRange
+    ? Math.max(0, Math.min(100, (today.getTime() - scheduleStartTime) / scheduleDuration * 100))
+    : 0;
+  const scheduleStatus = !project.expectedEndDate
+    ? '未设置工期'
+    : cd.isOverdue
+    ? `逾期 ${Math.abs(cd.daysRemaining)} 天`
+    : cd.daysRemaining === 0 ? '今日到期' : `剩余 ${cd.daysRemaining} 天`;
+  const scheduleStartLabel = project.startDate ? project.startDate.slice(5).replace('-', '.') : '--';
+  const scheduleEndLabel = project.expectedEndDate ? project.expectedEndDate.slice(5).replace('-', '.') : '--';
+
+  const hourBlockTotal = 12;
+  const hourScale = Math.max(metrics.totalHours, metrics.budgetHours, 1);
+  const completedHours = metrics.budgetHours > 0
+    ? Math.min(metrics.totalHours, metrics.budgetHours)
+    : metrics.totalHours;
+  const overrunHours = metrics.budgetHours > 0
+    ? Math.max(metrics.totalHours - metrics.budgetHours, 0)
+    : 0;
+  const completedHourBlocks = Math.min(hourBlockTotal, Math.round(completedHours / hourScale * hourBlockTotal));
+  const overrunHourBlocks = Math.min(
+    hourBlockTotal - completedHourBlocks,
+    Math.round(overrunHours / hourScale * hourBlockTotal),
+  );
+  const expectedHourBlocks = hourBlockTotal - completedHourBlocks - overrunHourBlocks;
+  const hourBlocks = Array.from({ length: hourBlockTotal }, (_, index) => (
+    index < completedHourBlocks
+      ? 'completed'
+      : index < completedHourBlocks + expectedHourBlocks ? 'expected' : 'overrun'
+  ));
 
   const navigateToStageTarget = (target: NonNullable<ProjectStageCheck['target']>) => {
     if (target.route) navigate(target.route);
@@ -526,34 +616,116 @@ export function ProjectDetail360() {
   const overviewMetrics: ProcessMetricItem[] = [
     {
       key: 'progress',
-      label: '项目进度',
-      value: `${project.progress}%`,
-      onClick: () => setActiveMainTab('activity'),
-      ariaLabel: '查看项目进度与活动',
+      label: (
+        <span className="project-metric-heading">
+          <span className="project-metric-heading__label">
+            <ChartBarHorizontal className="project-progress-metric__gantt-icon" size={14} aria-hidden="true" />
+            项目进度
+          </span>
+          <strong>{project.progress}%</strong>
+        </span>
+      ),
+      value: (
+        <div className="project-milestone-metric" aria-label={`${milestones.filter((item) => item.done).length} 个里程碑已完成，共 ${milestones.length} 个`}>
+          {milestones.map((milestone) => (
+            <span
+              key={milestone.name}
+              className={`project-milestone-metric__item ${milestone.done ? 'is-completed' : 'is-pending'}`}
+              title={`${milestone.name}：${milestone.done ? '已完成' : '未完成'}`}
+            >
+              <Flag size={16} weight={milestone.done ? 'fill' : 'regular'} aria-hidden="true" />
+            </span>
+          ))}
+        </div>
+      ),
+      onClick: () => navigate(`/projects/${id}/delivery`),
+      ariaLabel: '打开项目甘特图',
     },
     {
       key: 'schedule',
-      label: cd.isOverdue ? '工期状态' : '剩余工期',
-      value: cd.label,
+      label: (
+        <span className="project-metric-heading">
+          <span>工期状态</span>
+          <strong className={cd.isOverdue ? 'is-overdue' : ''}>{scheduleStatus}</strong>
+        </span>
+      ),
+      value: (
+        <div className={`project-schedule-metric ${cd.isOverdue ? 'is-overdue' : ''}`}>
+          <span className="project-schedule-metric__track" aria-hidden="true">
+            <span
+              className="project-schedule-metric__elapsed"
+              style={{ width: `${scheduleCurrentPosition}%` }}
+            />
+            {cd.isOverdue && (
+              <span
+                className="project-schedule-metric__overrun"
+                style={{ left: `${schedulePlanPosition}%`, width: `${100 - schedulePlanPosition}%` }}
+              />
+            )}
+            <span className="project-schedule-metric__marker is-start" />
+            <span className="project-schedule-metric__marker is-current" style={{ left: `${scheduleCurrentPosition}%` }} />
+            <span className="project-schedule-metric__marker is-plan" style={{ left: `${schedulePlanPosition}%` }} />
+          </span>
+          <span className="project-schedule-metric__dates">
+            <span>启动 {scheduleStartLabel}</span>
+            <span>计划 {scheduleEndLabel}</span>
+          </span>
+        </div>
+      ),
       tone: cd.isOverdue ? 'danger' : 'neutral',
       onClick: () => navigate(`/projects/${id}/delivery`),
-      ariaLabel: '查看项目排期',
+      ariaLabel: `工期状态：${scheduleStatus}，${scheduleStartLabel} 启动，计划 ${scheduleEndLabel}，查看项目排期`,
     },
     {
       key: 'hours',
-      label: '工时消耗',
-      value: `${formatHours(metrics.totalHours)} / ${budgetHoursLabel}`,
+      label: (
+        <span className="project-metric-heading">
+          <span>工时消耗</span>
+          <strong>{formatHours(metrics.totalHours)} / {budgetHoursLabel}</strong>
+        </span>
+      ),
+      value: (
+        <div
+          className="project-hours-metric"
+          aria-label={`已完成工时 ${formatHours(completedHours)}，预期剩余工时 ${formatHours(Math.max(metrics.budgetHours - metrics.totalHours, 0))}，超出工时 ${formatHours(overrunHours)}`}
+        >
+          {hourBlocks.map((kind, index) => (
+            <span key={`${kind}-${index}`} className={`project-hours-metric__block is-${kind}`} aria-hidden="true" />
+          ))}
+        </div>
+      ),
       tone: metrics.budgetHours > 0 && metrics.totalHours > metrics.budgetHours ? 'warning' : 'neutral',
       onClick: () => setActiveMainTab('team'),
-      ariaLabel: '查看团队与工时',
+      ariaLabel: `工时消耗 ${formatHours(metrics.totalHours)}，预算 ${budgetHoursLabel}，查看团队与工时`,
     },
     {
       key: 'collection',
-      label: '合同回款',
-      value: contractAmount > 0 ? `${formatAmount(receivedAmount)} / ${formatAmount(contractAmount)}` : '暂无有效合同',
+      label: (
+        <span className="project-metric-heading">
+          <span>合同回款</span>
+          {contractAmount > 0 && <strong>{collectionPercent}%</strong>}
+        </span>
+      ),
+      value: contractAmount > 0 ? (
+        <div className="project-collection-metric">
+          <Progress
+            percent={Math.max(0, Math.min(100, collectionPercent))}
+            size="small"
+            showText={false}
+            color="rgb(var(--success-6))"
+            trailColor="rgb(var(--success-1))"
+          />
+          <span className="project-collection-metric__amount">
+            <span>已回 {formatAmount(receivedAmount)}</span>
+            <span>合同 {formatAmount(contractAmount)}</span>
+          </span>
+        </div>
+      ) : '暂无有效合同',
       tone: contractAmount > 0 && collectionPercent >= 100 ? 'success' : 'neutral',
       onClick: () => setActiveMainTab('payments'),
-      ariaLabel: '查看回款与发票',
+      ariaLabel: contractAmount > 0
+        ? `合同回款 ${collectionPercent}%，已回 ${formatAmount(receivedAmount)}，合同 ${formatAmount(contractAmount)}，查看回款与发票`
+        : '暂无有效合同，查看回款与发票',
     },
     {
       key: 'bugs',
@@ -609,26 +781,31 @@ export function ProjectDetail360() {
           </Space>
         )}
         currentStep={currentTimelineIndex}
-        steps={timelineSteps.map((step, index) => ({
-          key: step.key,
-          title: (
-            <ProjectStagePopover summary={step.summary} onNavigate={navigateToStageTarget}>
-              {step.label}
-            </ProjectStagePopover>
-          ),
-          description:
-                index === currentTimelineIndex && step.key === 'development'
-                  ? `${project.progress}%`
-                  : index === currentTimelineIndex && step.key === 'acceptance'
-                  ? '终验中'
-                  : index === currentTimelineIndex && step.key === 'closeout'
-                  ? `回款 ${collectionPercent}%`
-                  : project.status === '搁置' && index === currentTimelineIndex
-                  ? '已暂停'
-                  : project.status === '延迟' && index === currentTimelineIndex
-                  ? '延期中'
-                  : undefined,
-        }))}
+        steps={timelineSteps.map((step, index) => {
+          const status = index === currentTimelineIndex && step.key === 'development'
+            ? `${project.progress}%`
+            : index === currentTimelineIndex && step.key === 'acceptance'
+            ? '终验中'
+            : index === currentTimelineIndex && step.key === 'closeout'
+            ? `回款 ${collectionPercent}%`
+            : project.status === '搁置' && index === currentTimelineIndex
+            ? '已暂停'
+            : project.status === '延迟' && index === currentTimelineIndex
+            ? '延期中'
+            : undefined;
+
+          return {
+            key: step.key,
+            title: (
+              <span className="project-stage-step-title">
+                <ProjectStagePopover summary={step.summary} onNavigate={navigateToStageTarget}>
+                  {step.label}
+                </ProjectStagePopover>
+                {status && <span className="project-stage-step-status">{status}</span>}
+              </span>
+            ),
+          };
+        })}
       />
 
       <ProcessMetricGrid items={overviewMetrics} />
@@ -703,7 +880,7 @@ export function ProjectDetail360() {
                 <div>
                   <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
                     {mainContract ? (
-                      <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo />
+                      <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo defaultCollapsed />
                     ) : (
                       <Empty description="暂无关联合同" />
                     )}
@@ -712,7 +889,7 @@ export function ProjectDetail360() {
                     {supplementContracts.length > 0 ? (
                       <Space direction="vertical" size={16} style={{ width: '100%' }}>
                         {supplementContracts.map((contract) => (
-                          <LeadFinalContractPanel key={contract.id} contract={contract} projectLayout />
+                          <LeadFinalContractPanel key={contract.id} contract={contract} projectLayout defaultCollapsed />
                         ))}
                       </Space>
                     ) : (
@@ -1314,6 +1491,9 @@ export function ProjectDetail360() {
         visible={collectionModalVisible}
         editing={Boolean(editingCollectionId)}
         form={collectionForm}
+        contracts={linkedContracts.filter((contract) => contract.status !== 'voided')}
+        collections={visibleProjectCollections}
+        editingCollectionId={editingCollectionId}
         onOk={saveCollection}
         onCancel={() => setCollectionModalVisible(false)}
       />

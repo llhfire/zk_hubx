@@ -19,8 +19,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { RichTextEditor, type RichTextEditorHandle } from '@/app/components/ui';
 import type { Project } from './mockData';
 import {
   getProjectTasks,
@@ -55,7 +54,7 @@ export function ProjectTaskPanel({ project }: { project: Project }) {
   const [selectedTask, setSelectedTask] = useState<ProjectWorkTask | null>(null);
   const [createForm] = Form.useForm();
   const [flowForm] = Form.useForm();
-  const descriptionEditorRef = useRef<ReactQuill>(null);
+  const descriptionEditorRef = useRef<RichTextEditorHandle>(null);
   const descriptionImageInputRef = useRef<HTMLInputElement>(null);
   const members = Array.from(new Set([project.owner, ...project.assistants, ...project.productUsers, ...project.uiUsers, ...project.frontendUsers, ...project.backendUsers, ...project.opsUsers, ...project.testUsers].filter(Boolean)));
   const summary = useMemo(() => getProjectTaskSummary(project, tasks), [project, tasks]);
@@ -183,7 +182,7 @@ export function ProjectTaskPanel({ project }: { project: Project }) {
           </Grid.Row>
           <FormItem label="协作人" field="collaborators"><Select mode="multiple" allowClear placeholder="可选，仅限项目成员">{members.map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></FormItem>
           <FormItem label="任务说明" field="description" rules={[{ required: true, message: '请输入任务说明' }]}>
-            <ReactQuill ref={descriptionEditorRef} className="project-task-description-editor" modules={descriptionEditorModules} placeholder="说明交付内容、范围或验收要点，可通过工具栏插入截图" />
+            <RichTextEditor ref={descriptionEditorRef} className="project-task-description-editor" modules={descriptionEditorModules} placeholder="说明交付内容、范围或验收要点，可通过工具栏插入截图" />
           </FormItem>
           <input ref={descriptionImageInputRef} type="file" accept="image/*" onChange={insertDescriptionImage} style={{ display: 'none' }} />
         </Form>
@@ -203,7 +202,7 @@ export function ProjectTaskPanel({ project }: { project: Project }) {
         {detailTask && <div className="project-task-detail">
           <div className="project-task-detail-summary"><Text className="project-task-detail-title">{detailTask.title}</Text><Space size="small" style={{ marginTop: 8 }}><Tag color={priorityColor[detailTask.priority]}>{detailTask.priority}</Tag><Tag color={statusColor[detailTask.status]}>{detailTask.status}</Tag></Space><Progress percent={detailTask.progress} style={{ marginTop: 16 }} /></div>
           <section className="project-task-detail-section"><Text className="project-task-detail-section-title">任务信息</Text><Descriptions column={2} data={[{ label: '任务类型', value: detailTask.type }, { label: '任务状态', value: detailTask.status }, { label: '处理人', value: detailTask.assignee }, { label: '协作人', value: detailTask.collaborators.join('、') || '-' }, { label: '计划完成', value: detailTask.plannedEndDate }]} /></section>
-          <section className="project-task-detail-section"><Text className="project-task-detail-section-title">任务说明</Text><div className="project-task-detail-description"><ReactQuill theme="bubble" readOnly value={detailTask.description} /></div></section>
+          <section className="project-task-detail-section"><Text className="project-task-detail-section-title">任务说明</Text><div className="project-task-detail-description"><RichTextEditor theme="bubble" readOnly value={detailTask.description} /></div></section>
           <section className="project-task-detail-section"><Text className="project-task-detail-section-title">处理记录</Text><Timeline className="project-task-detail-timeline">{detailTask.logs.map((log) => <Timeline.Item key={log.id} label={log.time}><div className="project-task-detail-log-title"><Tag color={statusColor[log.status]}>{log.status}</Tag><Text>进度 {log.progress}%</Text></div><div className="project-task-detail-log-meta">操作人：{log.operator} · 下一步处理人：{log.assignee}</div><div className="project-task-detail-log-comment">{log.comment}</div></Timeline.Item>)}</Timeline></section>
         </div>}
       </Drawer>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Card,
@@ -15,9 +15,7 @@ import {
   Tooltip,
   Popover,
 } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye, IconUserAdd, IconDelete } from '@arco-design/web-react/icon';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { IconSearch, IconPlus, IconEye, IconUserAdd } from '@arco-design/web-react/icon';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -47,18 +45,9 @@ import { LeadTransferPopover } from '@/app/leads/LeadTransferPopover';
 import { searchLeads, getCountdownCapsule, COUNTDOWN_COLOR, COUNTDOWN_BG } from './leads/utils';
 import { NewLeadModal, type NewLeadFormValues } from './leads/components/NewLeadModal';
 import { uploadItemsToLeadAttachments } from './leads/leadAttachments';
-import { WeChatIcon } from '@/app/components/ui';
+import { TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
 
 const FormItem = Form.Item;
-
-function RichTextEditor({ value = '', onChange, ...props }: any) {
-  const quillRef = useRef<ReactQuill>(null);
-  return (
-    <div style={{ marginBottom: 42 }}>
-      <ReactQuill ref={quillRef} value={value} onChange={onChange} {...props} />
-    </div>
-  );
-}
 
 export function PublicLeads() {
   const navigate = useNavigate();
@@ -220,7 +209,7 @@ export function PublicLeads() {
         <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}?from=public`, { state: { from: 'public' } })} /></Tooltip>
           <Tooltip content="认领"><Button type="text" icon={<IconUserAdd />} size="small" onClick={() => Message.success('认领成功')} /></Tooltip>
-          <Tooltip content="标记垃圾"><Button type="text" icon={<IconDelete />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
+          <Tooltip content="标记垃圾"><Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
         </Space>
       ),
     },

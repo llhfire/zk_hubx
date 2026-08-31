@@ -352,14 +352,14 @@ export function validateBeforeAudit(quote: Quote): ValidationIssue[] {
     issues.push({ code: 'no_price', message: '项目总报价必须大于 0', severity: 'error' });
   }
 
-  // 校验 3：付款比例合计必须精确等于 100%（黄灯）
+  // 校验 3：付款比例会直接进入合同回款计划，必须精确等于 100%（硬拦）
   const terms = quote.summary?.paymentTerms ?? [];
   if (terms.length === 0) {
-    issues.push({ code: 'payment_percent', message: '请配置付款方式', severity: 'warning' });
+    issues.push({ code: 'payment_percent', message: '请配置付款方式', severity: 'error' });
   } else {
     const percentSum = round2(terms.reduce((s, t) => s + t.percent, 0));
     if (Math.abs(percentSum - 100) > 0.01) {
-      issues.push({ code: 'payment_percent', message: `付款阶段比例合计为 ${percentSum}%，必须等于 100%`, severity: 'warning' });
+      issues.push({ code: 'payment_percent', message: `付款阶段比例合计为 ${percentSum}%，必须等于 100%`, severity: 'error' });
     }
   }
 

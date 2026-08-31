@@ -346,10 +346,10 @@ describe('提交审批前硬校验', () => {
     expect(validateBeforeAudit(quote).some((i) => i.code === 'no_price')).toBe(false);
   });
 
-  it('数字一致性问题为 warning，步骤缺失为 error', () => {
+  it('付款比例与步骤缺失均为硬拦，其他数字一致性问题为 warning', () => {
     const warningQuote = buildQuote();
     warningQuote.summary!.paymentTerms = [{ stage: '首付', percent: 90, amount: 0 }];
-    expect(validateBeforeAudit(warningQuote).find((i) => i.code === 'payment_percent')?.severity).toBe('warning');
+    expect(validateBeforeAudit(warningQuote).find((i) => i.code === 'payment_percent')?.severity).toBe('error');
     const errorQuote = buildQuote({ evalSheet: undefined, salesAddedRoles: [], otherCosts: [] });
     expect(validateBeforeAudit(errorQuote).find((i) => i.code === 'no_eval')?.severity).toBe('error');
   });

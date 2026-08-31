@@ -17,8 +17,12 @@ describe('generateQuoteHtml', () => {
       },
     });
 
+    expect(html).toContain('项目整体报价');
     expect(html).toContain('公司介绍');
-    expect(html).toContain('软件开发服务费');
+    expect(html).toContain('详细报价清单');
+    expect(html).toContain('端口/平台');
+    expect(html).toContain('人天(天)');
+    expect(html).toContain('可能涉及的其他费用（自费项目）');
     expect(html).toContain('授权代表');
     expect(html).not.toMatch(/岗位成本|日单价|利润率|人力成本/);
   });

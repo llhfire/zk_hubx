@@ -1,4 +1,8 @@
-import type { CollectionLedgerEntry } from '@/services/collectionMutations';
+import {
+  collectionAmountForPeriod,
+  getCollectionPeriods,
+  type CollectionLedgerEntry,
+} from '../../../services/collectionMutations';
 import type { Contract, ContractStatus, PaymentPlanItem } from '../contracts/types';
 import type {
   ActivityEvent,
@@ -132,8 +136,8 @@ function periodLabel(plan: PaymentPlanItem | undefined, period: number | 'other'
 
 function collectionsByPeriod(collections: CollectionLedgerEntry[], contractId: string, period: number) {
   return collections
-    .filter((item) => item.contractId === contractId && item.period === period)
-    .reduce((sum, item) => sum + item.amount, 0);
+    .filter((item) => item.contractId === contractId)
+    .reduce((sum, item) => sum + collectionAmountForPeriod(item, period), 0);
 }
 
 function buildCollectionItems(
@@ -144,13 +148,15 @@ function buildCollectionItems(
   const contractById = new Map(contracts.map((contract) => [contract.id, contract]));
   const received = collections.map<ProjectActivityItem>((collection) => {
     const contract = contractById.get(collection.contractId);
-    const plan = contract?.current.paymentPlans.find((item) => item.period === collection.period);
-    const expected = plan?.amount ?? collection.amount;
+    const periods = getCollectionPeriods(collection);
+    const plans = contract?.current.paymentPlans.filter((item) => periods.includes(item.period)) ?? [];
+    const labels = plans.map((plan) => periodLabel(plan, plan.period));
+    const expected = plans.length > 0 ? plans.reduce((sum, plan) => sum + plan.amount, 0) : collection.amount;
     return {
       id: `collection-${collection.id}`,
       projectId: collection.projectId || contract?.projectId || '',
       kind: 'collection',
-      title: `${periodLabel(plan, collection.period)}到账`,
+      title: `${labels.length > 0 ? labels.join('、') : '其他款项'}${labels.length > 1 ? '合并' : ''}到账`,
       summary: collection.note || `${projectContractLabel(contract ?? ({ kind: 'main' } as Contract))}已登记一笔实收。`,
       operator: '财务',
       occurredAt: collection.date,

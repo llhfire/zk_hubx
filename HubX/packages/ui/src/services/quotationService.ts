@@ -32,6 +32,7 @@ import { buildSupplementQuote } from '@/app/pages/quotation/supplementQuote';
 export interface CreateQuoteOptions {
   flowMode?: Quote['flowMode'];
   salesOwnerName?: string;
+  signingEntity?: string;
 }
 
 export interface QuotationService {
@@ -141,6 +142,7 @@ export function createMockQuotationService(): QuotationService {
         basicInfo,
         options?.salesOwnerName,
         options?.flowMode,
+        options?.signingEntity,
       )];
       persist();
       return id;
@@ -317,6 +319,7 @@ export function createHttpQuotationService(baseUrl: string, opts?: { actor?: str
         basicInfo,
         options?.salesOwnerName,
         options?.flowMode,
+        options?.signingEntity,
       ));
       return id;
     },

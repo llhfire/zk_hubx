@@ -14,6 +14,7 @@ import {
   QUOTE_ROLES,
   buildInitialAuditNodes,
 } from '@/app/pages/quotation/types';
+import { ZKRT_QUOTE_TEMPLATE } from '@/app/pages/quotation/quoteDocumentTemplate';
 import type {
   EvalSheet,
   FeatureModule,
@@ -61,11 +62,10 @@ export function buildPricingSummary(quote: Quote): NonNullable<Quote['summary']>
         ...term,
         amount: Math.round((breakdown.grandTotal * term.percent / 100) * 100) / 100,
       }))
-    : [
-        { stage: '合同签订首付款', percent: 50, amount: breakdown.grandTotal * 0.5 },
-        { stage: '系统交付款', percent: 40, amount: breakdown.grandTotal * 0.4 },
-        { stage: '验收尾款', percent: 10, amount: breakdown.grandTotal * 0.1 },
-      ];
+    : ZKRT_QUOTE_TEMPLATE.defaultPaymentTerms.map((term) => ({
+        ...term,
+        amount: Math.round((breakdown.grandTotal * term.percent / 100) * 100) / 100,
+      }));
   return {
     totalLaborDays: breakdown.totalLaborDays,
     projectWorkDays: quote.evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
@@ -188,6 +188,7 @@ export function buildNewQuote(
   basicInfo: Partial<Quote['basicInfo']>,
   salesOwnerName?: string,
   flowMode: Quote['flowMode'] = 'online',
+  signingEntity: string = ZKRT_QUOTE_TEMPLATE.signingEntity,
 ): Quote {
   const nowStr = now();
   return {
@@ -196,6 +197,8 @@ export function buildNewQuote(
     version: 'v1.0',
     status: 'draft',
     leadId,
+    quoteTemplateId: ZKRT_QUOTE_TEMPLATE.id,
+    signingEntity,
     flowMode,
     fileFlow: { onlineDocument: { status: 'empty' }, scans: [] },
     salesOwnerName: salesOwnerName ?? '张三',
@@ -226,9 +229,7 @@ export function buildNewQuote(
       projectWorkDays: 0,
       grandTotalPrice: 0,
       paymentTerms: [
-        { stage: '合同签订首付款', percent: 50, amount: 0 },
-        { stage: '系统交付款', percent: 40, amount: 0 },
-        { stage: '验收尾款', percent: 10, amount: 0 },
+        ...ZKRT_QUOTE_TEMPLATE.defaultPaymentTerms.map((term) => ({ ...term, amount: 0 })),
       ],
       taxIncluded: true,
       warrantyYears: 1,
@@ -329,6 +330,8 @@ export function migrateQuote(quote: Quote): Quote {
   return {
     ...quote,
     status: mapped ?? quote.status,
+    quoteTemplateId: quote.quoteTemplateId ?? ZKRT_QUOTE_TEMPLATE.id,
+    signingEntity: quote.signingEntity ?? ZKRT_QUOTE_TEMPLATE.signingEntity,
     salesOwnerName: quote.salesOwnerName ?? quote.ccSalesNames?.[0] ?? '张三',
     basicInfo: {
       projectName: basicInfo.projectName ?? '未命名项目',

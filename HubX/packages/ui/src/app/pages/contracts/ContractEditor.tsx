@@ -53,6 +53,7 @@ import type {
   PaymentRatio,
 } from './types';
 import { findDefaultContractTemplate, loadContractTemplates } from './templateStore';
+import { createDocxBlob, downloadBlob } from '../../documents/wordExport';
 
 const Title = Typography.Title;
 
@@ -100,7 +101,7 @@ export function ContractEditor() {
   const baseVersionNo = (location.state as { baseVersionNo?: string } | null)?.baseVersionNo;
   const baseVersion = contract?.versionHistory.find((version) => version.versionNo === baseVersionNo);
   const [formData, setFormData] = useState<ContractFormData | null>(
-    contract ? structuredClone(baseVersion?.formData ?? contract.current) : null,
+    contract ? structuredClone({ ...(baseVersion?.formData ?? contract.current), contractNo: contract.contractNo }) : null,
   );
   const [paymentPlanModalVisible, setPaymentPlanModalVisible] = useState(false);
   const [editingPaymentPlanIndex, setEditingPaymentPlanIndex] = useState<number | null>(null);
@@ -111,8 +112,9 @@ export function ContractEditor() {
   const [selectedPaymentTemplateId, setSelectedPaymentTemplateId] = useState(formData?.paymentRatio ?? '');
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
   const [templateDescription, setTemplateDescription] = useState('');
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [templateHtml, setTemplateHtml] = useState(() => (
-    contract ? (baseVersion?.renderedHtml ?? renderContractDocument(contract.current)) : ''
+    contract ? (baseVersion?.renderedHtml ?? renderContractDocument({ ...contract.current, contractNo: contract.contractNo })) : ''
   ));
   const templateEditorRef = useRef<HTMLDivElement>(null);
   const templateEditedRef = useRef(false);
@@ -123,7 +125,7 @@ export function ContractEditor() {
     if (contract && contract !== lastSeenContractRef.current) {
       // 简单策略：合同 status 变了或 current 引用变了就重置
       if (lastSeenContractRef.current?.current !== contract.current) {
-        setFormData(contract.current);
+        setFormData({ ...contract.current, contractNo: contract.contractNo });
       }
       lastSeenContractRef.current = contract;
     }
@@ -205,6 +207,7 @@ export function ContractEditor() {
   };
 
   const handleSigningEntityChange = (signingEntity: string) => {
+    const entity = findCompanyEntityByName(signingEntity);
     const companyTemplate = getCompanyContractTemplate(signingEntity);
     const defaultTemplate = findDefaultContractTemplate(signingEntity, formData.productCategory);
     const latestVersion = defaultTemplate?.versions.at(-1);
@@ -214,6 +217,14 @@ export function ContractEditor() {
       return {
         ...prev,
         signingEntity,
+        signingEntityTaxNo: entity?.taxNumber ?? '',
+        signingPerson: entity?.legalPerson ?? '',
+        signingEntityAddress: entity?.address ?? '',
+        signingEntityPhone: entity?.contactPhone ?? '',
+        signingEntityEmail: entity?.email ?? '',
+        signingEntityPostalCode: entity?.shortName === '中科软通' ? '430000' : '',
+        signingEntityBankName: entity?.invoiceBankName ?? '',
+        signingEntityBankAccount: entity?.invoiceBankAccount ?? '',
         templateId: defaultTemplate?.id ?? companyTemplate?.contractTemplateId ?? prev.templateId,
         templateVersionId: latestVersion?.id,
         customContractHtml: undefined,
@@ -468,6 +479,7 @@ export function ContractEditor() {
     const requiredFields: Array<[string, string | undefined]> = [
       ['合同名称', latestFormData.contractName],
       ['签约日期', latestFormData.signDate],
+      ['签约主体', latestFormData.signingEntity],
       ['公司名称', latestFormData.customerName],
       ['税务登记号', latestFormData.customerTaxNo],
       ['联系人', latestFormData.customerContact],
@@ -478,8 +490,26 @@ export function ContractEditor() {
       Message.error(`请填写${missingField[0]}`);
       return;
     }
-    if (!latestFormData.totalAmount || latestFormData.totalAmount <= 0) {
-      Message.error('请输入有效的合同金额');
+    if (!latestFormData.totalAmount || (contract.kind !== 'supplement' && latestFormData.totalAmount <= 0)) {
+      Message.error(contract.kind === 'supplement' ? '补充合同变更金额不能为 0' : '请输入有效的合同金额');
+      return;
+    }
+    if ((latestFormData.projectWorkDays ?? 0) <= 0 || (latestFormData.prototypeConfirmDays ?? 0) <= 0 || (latestFormData.acceptanceDays ?? 0) <= 0) {
+      Message.error('开发工期、原型确认时限和验收反馈时限必须大于 0');
+      return;
+    }
+    if (!latestFormData.paymentPlans.length) {
+      Message.error('请至少配置一期回款计划');
+      return;
+    }
+    const planPercent = latestFormData.paymentPlans.reduce((sum, plan) => sum + plan.percentage, 0);
+    if (Math.abs(planPercent - 100) > 0.01) {
+      Message.error(`回款期次比例合计为 ${planPercent}%，必须等于 100%`);
+      return;
+    }
+    const planAmount = latestFormData.paymentPlans.reduce((sum, plan) => sum + plan.amount, 0);
+    if (Math.abs(planAmount - latestFormData.totalAmount) > 0.01) {
+      Message.error('回款期次金额合计必须与合同金额一致');
       return;
     }
     setFormData(latestFormData);
@@ -496,18 +526,18 @@ export function ContractEditor() {
     });
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
     const latestFormData = getFormDataWithTemplateEdits();
     const html = renderContractDocument(latestFormData);
     const templateName = managedTemplateOptions.find((item) => item.id === latestFormData.templateId)?.name ?? companyContractTemplate?.name ?? '合同模板';
-    const documentHtml = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>${templateName}</title></head><body>${html}</body></html>`;
-    const url = URL.createObjectURL(new Blob([documentHtml], { type: 'text/html;charset=utf-8' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${templateName.replace(/[\\/:*?"<>|]/g, '-')}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
-    Message.success('合同模板已下载');
+    setDownloadingTemplate(true);
+    try {
+      const blob = await createDocxBlob(html, templateName);
+      downloadBlob(blob, `${templateName.replace(/[\\/:*?"<>|]/g, '-')}.docx`);
+      Message.success('Word 合同已下载');
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
   const paymentPlanColumns = [
@@ -607,7 +637,7 @@ export function ContractEditor() {
       )}
 
       <Grid.Row gutter={16}>
-        <Grid.Col span={14}>
+        <Grid.Col xs={24} xl={14}>
           <Card title="合同信息">
             <Form layout="vertical">
               <Grid.Row gutter={16}>
@@ -919,7 +949,7 @@ export function ContractEditor() {
             />
           </Card>
         </Grid.Col>
-        <Grid.Col span={10}>
+        <Grid.Col xs={24} xl={10}>
           <div style={{ position: 'sticky', top: 16 }}>
             <Card
               title="合同模板"
@@ -929,7 +959,7 @@ export function ContractEditor() {
                     {managedTemplateOptions.map((template) => <Select.Option key={template.id} value={template.id}>{template.name} · V{template.versions.at(-1)?.versionNo}</Select.Option>)}
                     {managedTemplateOptions.length === 0 && companyContractTemplate?.contractTemplateId && <Select.Option value={companyContractTemplate.contractTemplateId}>{companyContractTemplate.name}（旧模板）</Select.Option>}
                   </Select>
-                  <Button icon={<IconDownload />} onClick={handleDownloadTemplate} title="下载当前正文" />
+                  <Button icon={<IconDownload />} loading={downloadingTemplate} disabled={downloadingTemplate} onClick={handleDownloadTemplate} title="下载当前正文" aria-label="下载当前合同正文" />
                 </Space>
               }
               bodyStyle={{ padding: 0 }}

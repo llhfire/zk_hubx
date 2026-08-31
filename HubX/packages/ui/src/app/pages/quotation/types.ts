@@ -444,6 +444,10 @@ export interface Quote {
   version: string;            // v1.0
   status: QuoteStatus;
   leadId: string;
+  /** 客户版报价单使用的文档模板；与审批流程模板分开。 */
+  quoteTemplateId?: string;
+  /** 报价单落款主体。当前标准 Word 模板绑定中科软通。 */
+  signingEntity?: string;
   customerId?: string;
   customerSnapshot?: CustomerSnapshot;
   /** 报价数据的流转载体：在线数据表单或 Excel 文件。 */

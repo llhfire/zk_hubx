@@ -1,7 +1,7 @@
 # ZK HubX 系统功能与规则总览
 
 > 本文由遍历 `HubX/src` 全部源码生成，覆盖前端原型的完整功能与业务规则。
-> 技术栈：React 18 + Vite 6 + React Router 7 + Arco Design + Tailwind v4；数据层为页面内 `useState` + 模块级 `mockData` + Context + localStorage，**无真实后端**。
+> 技术栈：React 18 + Vite 7 + React Router 7.18 + Arco Design + Tailwind v4；数据层为页面内 `useState` + 模块级 `mockData` + Context + localStorage，**无真实后端**。
 > 与 `ARCHITECTURE.md`（架构/边界）、`CONTEXT.md`（业务术语）、`CLAUDE.md`（命令/约定）、`FRONTEND_CONVENTIONS.md`（编码规范）配合阅读。
 
 ---
@@ -23,7 +23,7 @@
 
 | 层 | 技术 |
 |---|---|
-| 框架 | React 18 + Vite 6 |
+| 框架 | React 18 + Vite 7.3 |
 | 路由 | React Router 7（`createBrowserRouter`） |
 | 业务 UI | Arco Design（主力；shadcn/Radix 已于 2026-08-13 清除） |
 | 样式 | Tailwind v4 + CSS 变量主题（入口 `src/styles/index.css`） |
@@ -318,6 +318,7 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 - `derivePhaseStatus`：空→pending；全 completed/skipped→completed；否则取 `STATUS_PRIORITY`（completed:4/skipped:3/in_progress:2/pending:1）最低者。
 - `calcPhaseCompletion`：skipped 排除分母，completed=1、in_progress=0.5、pending=0。
 - `generateDeliveryPlan`：拓扑排序板块；板块1 锚定 contractSignDate（否则 project.startDate，缺省 2026-06-15）；依赖板块锚定「最晚依赖结束日+1 工作日」；非 evergreen 步骤 `start=依赖步骤截止+1 工作日`、`due=start+(durationDays-1)工作日`。
+- `generateDeliveryPlanFromContract`：以标准 SOP 为骨架，从合同标的平台范围推导 `DeliveryType` 与适用板块，将合同标的、付款条件、交付/验收条件保存为生成依据快照，并生成带来源、条件和金额的合同里程碑；签约开启桥不再使用固定“网站 + 全部板块”。
 - `SOP_STEP_TEMPLATES` 37 个步骤；`SOP_STEP_DEPENDENCIES`/`SOP_PHASE_DEPENDENCIES` 定义依赖；`3.8 需求变更全流程管理` 为常驻（evergreen）步骤。
 - 步骤状态机 `VALID_TRANSITIONS`：pending→[in_progress,skipped]；in_progress→[completed,skipped]；completed→[in_progress]；skipped→[]（不可恢复）。
 

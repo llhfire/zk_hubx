@@ -13,7 +13,7 @@ import {
   Popover,
   Tabs,
 } from '@arco-design/web-react';
-import { IconSearch, IconEye, IconUserAdd, IconDelete, IconFilter } from '@arco-design/web-react/icon';
+import { IconSearch, IconEye, IconUserAdd, IconFilter } from '@arco-design/web-react/icon';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -51,7 +51,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './leads/utils';
-import { WeChatIcon } from '@/app/components/ui';
+import { TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
 
 export function AllLeads() {
   const navigate = useNavigate();
@@ -282,7 +282,7 @@ export function AllLeads() {
           )}
           {r.clueType !== 'trash' && (
             <Tooltip content="标记垃圾">
-              <Button type="text" icon={<IconDelete />} size="small" status="danger" onClick={() => Message.success('已标记垃圾')} />
+              <Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => Message.success('已标记垃圾')} />
             </Tooltip>
           )}
         </Space>

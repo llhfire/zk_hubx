@@ -16,6 +16,7 @@ export function ContractTextViewer({ contract }: Props) {
 
   return (
     <div
+      className="contract-text-viewer"
       style={{
         background: '#fff',
         padding: 16,

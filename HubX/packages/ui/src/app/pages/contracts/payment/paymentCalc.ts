@@ -310,3 +310,21 @@ function daysBetween(from: string, to: string): number {
   const b = new Date(to);
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
+
+/** 甘特图逾期警告色阶：逾期天数越长，颜色越深。 */
+export type OverdueWarningLevel = 'orange' | 'red' | 'deep-red' | 'brown' | 'black';
+
+export function getOverdueWarningLevel(
+  forecastDate: string,
+  isSettled: boolean,
+  today: string = '2026-08-29',
+): OverdueWarningLevel | null {
+  if (isSettled || !/^\d{4}-\d{2}-\d{2}$/.test(forecastDate)) return null;
+  const overdueDays = Math.max(0, -daysBetween(today, forecastDate));
+  if (overdueDays <= 0) return null;
+  if (overdueDays <= 7) return 'orange';
+  if (overdueDays <= 14) return 'red';
+  if (overdueDays <= 30) return 'deep-red';
+  if (overdueDays <= 60) return 'brown';
+  return 'black';
+}

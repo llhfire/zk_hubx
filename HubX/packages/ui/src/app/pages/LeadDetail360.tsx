@@ -1073,7 +1073,7 @@ export function LeadDetail360() {
                     <Button type="primary" size="small" icon={<IconPlus />} onClick={() => setFollowVisible(true)}>写跟进</Button>
                   </div>
                   <Timeline>
-                    {followUps.filter((r) => r.leadId === id || r.leadId === '5940').map((record, index) => (
+                    {followUps.filter((r) => r.leadId === id || r.leadId === profileLeadId || r.leadId === serviceLeadId).map((record, index) => (
                       <Timeline.Item key={record.id} dotColor={index === 0 ? 'rgb(var(--primary-6))' : 'var(--color-border-2)'}>
                         <div style={{ marginBottom: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -1573,10 +1573,16 @@ export function LeadDetail360() {
         <Radio.Group value={quoteFlowMode} onChange={setQuoteFlowMode} style={{ width: '100%' }}>
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
             <Radio value="file">
-              <div><b>文件流转方式</b><div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>使用 Excel 文件流转功能清单和工时评估。</div></div>
+              <div className="quotation-quote-mode-option">
+                <span className="quotation-quote-mode-option__title">文件流转方式</span>
+                <span className="quotation-quote-mode-option__description">使用 Excel 文件流转功能清单和工时评估。</span>
+              </div>
             </Radio>
             <Radio value="online">
-              <div><b>在线表单方式</b><div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>各角色在工作台内协作处理结构化表单数据。</div></div>
+              <div className="quotation-quote-mode-option">
+                <span className="quotation-quote-mode-option__title">在线表单方式</span>
+                <span className="quotation-quote-mode-option__description">各角色在工作台内协作处理结构化表单数据。</span>
+              </div>
             </Radio>
           </Space>
         </Radio.Group>

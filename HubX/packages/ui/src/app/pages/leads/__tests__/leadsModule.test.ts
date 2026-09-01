@@ -32,6 +32,7 @@ import {
   FOLLOWUP_RECORDS,
   getLeadDetailInfo,
 } from '../mockData';
+import { getLeadDetailProfile } from '../leadDetailProfiles';
 
 // --- 类型定义测试 ---
 describe('线索类型定义', () => {
@@ -247,6 +248,30 @@ describe('Mock 数据', () => {
   it('getLeadDetailInfo 不存在返回 null', () => {
     const detail = getLeadDetailInfo('NOT_EXIST');
     expect(detail).toBeNull();
+  });
+
+  it('社区生鲜小程序补齐线索侧 mock，且不预置报价合同', () => {
+    const lead = MY_LEADS.find((item) => item.id === '5957');
+    expect(lead).toMatchObject({
+      name: '社区生鲜小程序',
+      customer: '武汉鲜邻生活服务有限公司',
+      contact: '刘经理',
+      phone: '139****2864',
+      wechat: 'fresh-neighbor-liu',
+      budget: 80000,
+      prototypeLink: 'https://prototype.example.com/community-fresh-v1',
+    });
+    expect(lead?.attachments).toHaveLength(2);
+
+    const detail = getLeadDetailInfo('5957');
+    expect(detail?.customerNote).toContain('3 个社区生鲜门店');
+    expect(detail?.attachments).toHaveLength(2);
+    expect(FOLLOWUP_RECORDS.filter((item) => item.leadId === '5957')).toHaveLength(3);
+
+    const profile = getLeadDetailProfile('5957', 'my');
+    expect(profile.quotationHistory).toEqual([]);
+    expect(profile.demoContracts).toEqual([]);
+    expect(profile.useLiveContracts).toBe(true);
   });
 });
 

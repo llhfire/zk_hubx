@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning, PLAN_STATUS_META } from '../paymentUtils';
+import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning, getPaymentPeriodLabel, PLAN_STATUS_META } from '../paymentUtils';
 import type { Contract } from '../types';
+import { buildRecoveryBoardContracts } from '../recoveryBoardData';
 
 function makeContract(overrides: Partial<Contract> = {}): Contract {
   return {
@@ -62,6 +63,21 @@ describe('computePaymentStatus', () => {
       ],
     });
     expect(computePaymentStatus(c)).toBe('blocked');
+  });
+
+  it('卡点按付款期次生效，已结清期次的卡点不阻塞合同', () => {
+    const settledPeriodBlocker = makeContract({
+      collectionRecords: [{ id: '1', contractId: 'test-1', amount: 50000, date: '2026-03-01', method: '汇款', note: '', period: 1 }],
+      paymentBlockers: [{ id: 'b1', contractId: 'test-1', paymentPeriod: 1, type: 'acceptance_stuck', title: '首期卡点', description: '', amountBlocked: 50000, createdAt: '2026-08-01' }],
+    });
+    const openPeriodBlocker = makeContract({
+      collectionRecords: [{ id: '1', contractId: 'test-1', amount: 50000, date: '2026-03-01', method: '汇款', note: '', period: 1 }],
+      paymentBlockers: [{ id: 'b2', contractId: 'test-1', paymentPeriod: 2, type: 'acceptance_stuck', title: '中期卡点', description: '', amountBlocked: 50000, createdAt: '2026-08-01' }],
+    });
+
+    expect(computePaymentStatus(settledPeriodBlocker, new Date('2026-08-01'))).toBe('overdue');
+    expect(computePaymentStatus(openPeriodBlocker, new Date('2026-08-01'))).toBe('blocked');
+    expect(getPaymentPeriodLabel(openPeriodBlocker, 2)).toBe('第2期 · 付款');
   });
 
   it('returns overdue when payment date passed with 7-day buffer', () => {
@@ -153,6 +169,14 @@ describe('getLatestDunning', () => {
 });
 
 describe('computePlanStatusRows（阶段 3 回款 Tab）', () => {
+  it('中铁安全信息化平台按期次关联到账，尾款不能被前两期累计金额误判为已收', () => {
+    const contract = buildRecoveryBoardContracts().find((item) => item.current.customerName === '中国铁建电气化局集团有限公司');
+    expect(contract).toBeDefined();
+    const rows = computePlanStatusRows(contract!, new Date('2026-09-02'));
+    expect(rows.map((row) => row.allocated)).toEqual([11_500, 9_200, 0]);
+    expect(rows.map((row) => row.status)).toEqual(['paid', 'paid', 'overdue']);
+  });
+
   it('已回款按期次顺序分摊：第一期收足、第二期未收且未到期为待收', () => {
     const c = makeContract();
     (c as unknown as { collectionRecords: Array<{ amount: number }> }).collectionRecords = [

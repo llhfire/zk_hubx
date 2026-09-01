@@ -1,7 +1,8 @@
 import { Card, Tag, Progress } from '@arco-design/web-react';
+import type { CSSProperties } from 'react';
 import { IconUser } from '@arco-design/web-react/icon';
 import type { Contract, PaymentStatus } from '../types';
-import { computePaymentStatus, getReceivedAmount, getLatestDunning } from '../paymentUtils';
+import { computePaymentStatus, getReceivedAmount, getLatestDunning, getPaymentPeriodLabel } from '../paymentUtils';
 import { BLOCKER_TYPE_LABELS } from '../types';
 
 const STATUS_COLORS: Record<PaymentStatus, string> = {
@@ -12,12 +13,20 @@ const STATUS_COLORS: Record<PaymentStatus, string> = {
   settled: 'var(--success-500)',
 };
 
-const STATUS_BORDER_COLORS: Record<PaymentStatus, string> = {
+const STATUS_ACCENTS: Record<PaymentStatus, string> = {
   normal: 'var(--brand-500)',
   upcoming: 'var(--warning-500)',
   overdue: 'var(--destructive-500)',
   blocked: 'var(--destructive-600)',
   settled: 'var(--success-500)',
+};
+
+const STATUS_LABELS: Record<PaymentStatus, string> = {
+  normal: '正常',
+  upcoming: '即将到期',
+  overdue: '已逾期',
+  blocked: '卡点阻塞',
+  settled: '已结清',
 };
 
 interface Props {
@@ -42,29 +51,30 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
   return (
     <Card
       size="small"
+      className="payment-lane-card"
       hoverable
       onClick={() => onClick(contract)}
-      style={{
-        marginBottom: 12,
-        borderLeft: `3px solid ${STATUS_BORDER_COLORS[status]}`,
-        cursor: 'pointer',
-      }}
+      style={{ '--card-accent': STATUS_ACCENTS[status] } as CSSProperties}
     >
-      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
-        {contract.contractNo}
+      <div className="payment-lane-card__header">
+        <div className="payment-lane-card__project-name" title={contract.current.contractName}>
+          {contract.current.contractName || '未命名项目'}
+        </div>
+        <span className="payment-lane-card__status">{STATUS_LABELS[status]}</span>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 8 }}>
-        {contract.current.customerName}
+      <div className="payment-lane-card__contract-meta">
+        <span className="payment-lane-card__contract-no">合同编号 {contract.contractNo}</span>
+        <span className="payment-lane-card__customer">{contract.current.customerName}</span>
       </div>
 
-      <div style={{ marginBottom: 8 }}>
+      <div className="payment-lane-card__progress">
         <Progress
           percent={pct}
           color={STATUS_COLORS[status]}
           size="small"
           showText={false}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginTop: 2 }}>
+        <div className="payment-lane-card__progress-meta">
           <span style={{ color: STATUS_COLORS[status], fontWeight: 600 }}>
             ¥{(received / 10000).toFixed(1)}万 / ¥{(total / 10000).toFixed(1)}万
           </span>
@@ -73,28 +83,28 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       </div>
 
       {pendingPlan && status !== 'settled' && (
-        <div style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 6 }}>
+        <div className="payment-lane-card__next-payment">
           下期：¥{(pendingPlan.amount / 10000).toFixed(1)}万  {pendingPlan.expectedDate}
         </div>
       )}
 
       {activeBlockers.length > 0 && (
-        <div style={{ marginBottom: 6 }}>
+        <div className="payment-lane-card__blockers">
           {activeBlockers.map(b => (
-            <Tag key={b.id} color="red" style={{ fontSize: 12, marginBottom: 2 }}>
-              {BLOCKER_TYPE_LABELS[b.type]}
+            <Tag key={b.id} color="red" className="payment-lane-card__blocker">
+              {getPaymentPeriodLabel(contract, b.paymentPeriod)} · {BLOCKER_TYPE_LABELS[b.type]}
             </Tag>
           ))}
         </div>
       )}
 
       {latestDunning && (
-        <div style={{ fontSize: 12, color: 'var(--grey-400)', marginBottom: 4 }}>
+        <div className="payment-lane-card__dunning">
           上次催款：{latestDunning.date}  {latestDunning.method}
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--grey-500)' }}>
+      <div className="payment-lane-card__owner">
         <IconUser style={{ fontSize: 12 }} />
         {contract.createdBy}
       </div>

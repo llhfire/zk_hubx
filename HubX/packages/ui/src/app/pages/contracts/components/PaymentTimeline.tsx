@@ -1,7 +1,8 @@
 import { Timeline } from '@arco-design/web-react';
 import { IconCheckCircleFill, IconExclamationCircleFill, IconClockCircle } from '@arco-design/web-react/icon';
 import type { Contract } from '../types';
-import { getReceivedAmount } from '../paymentUtils';
+import { computePlanStatusRows, getActiveBlockersForPeriod, getPaymentPeriodLabel } from '../paymentUtils';
+import { collectionAmountForPeriod } from '@/services/collectionMutations';
 import { BLOCKER_TYPE_LABELS } from '../types';
 
 const TimelineItem = Timeline.Item;
@@ -11,11 +12,8 @@ interface Props {
 }
 
 export function PaymentTimeline({ contract }: Props) {
-  const received = getReceivedAmount(contract);
   const plans = contract.current.paymentPlans ?? [];
-  const blockers = contract.paymentBlockers ?? [];
-
-  let accumulatedPlan = 0;
+  const planStatusRows = computePlanStatusRows(contract);
 
   return (
     <Timeline>
@@ -29,16 +27,16 @@ export function PaymentTimeline({ contract }: Props) {
 
       {/* 付款节点 */}
       {plans.map((plan) => {
-        accumulatedPlan += plan.amount;
-        const planCols = (contract.collectionRecords ?? []).filter((col) => {
-          const colDate = new Date(col.date);
-          const planDate = new Date(plan.expectedDate);
-          return colDate <= planDate;
-        });
-        const planReceived = planCols.reduce((s, c) => s + c.amount, 0);
+        const planRow = planStatusRows.find((row) => row.plan.period === plan.period);
+        const planCols = (contract.collectionRecords ?? []).filter((col) => (
+          collectionAmountForPeriod(col, plan.period) > 0
+        ));
+        const planReceived = planRow?.allocated ?? 0;
         const isPaid = planReceived >= plan.amount;
-        const isOverdue = !isPaid && new Date() > new Date(new Date(plan.expectedDate).getTime() + 7 * 86400000);
-        const relatedBlockers = blockers.filter(b => !b.resolvedAt);
+        const expected = new Date(plan.expectedDate);
+        const isOverdue = !isPaid && !Number.isNaN(expected.getTime())
+          && new Date() > new Date(expected.getTime() + 7 * 86400000);
+        const relatedBlockers = getActiveBlockersForPeriod(contract, plan.period);
 
         return (
           <TimelineItem
@@ -68,7 +66,7 @@ export function PaymentTimeline({ contract }: Props) {
             )}
             {relatedBlockers.map(b => (
               <div key={b.id} style={{ color: 'var(--destructive-600)', fontSize: 12, marginTop: 2 }}>
-                卡点：{BLOCKER_TYPE_LABELS[b.type]}：{b.title}
+                卡点：{getPaymentPeriodLabel(contract, b.paymentPeriod)} · {BLOCKER_TYPE_LABELS[b.type]}：{b.title}
               </div>
             ))}
           </TimelineItem>

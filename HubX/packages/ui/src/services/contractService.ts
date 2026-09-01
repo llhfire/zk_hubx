@@ -3,6 +3,7 @@
 
 import { Message } from '@arco-design/web-react';
 import { buildInitialContracts } from '@/app/pages/contracts/mockData';
+import { buildRecoveryBoardContracts } from '@/app/pages/contracts/recoveryBoardData';
 import {
   applyAddBlocker,
   applyAddCollection,
@@ -75,7 +76,7 @@ export interface ContractService {
 export { createInitialApprovalFlow } from './contractMutations';
 
 export function createMockContractService(): ContractService {
-  let contracts: Contract[] = buildInitialContracts();
+  let contracts: Contract[] = [...buildInitialContracts(), ...buildRecoveryBoardContracts()];
   const seq: Record<string, number> = {};
 
   function allocateNo(signingEntity: string): string {

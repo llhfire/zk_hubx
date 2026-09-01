@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Alert, Button, Card, Descriptions, Drawer, Input, Message, Modal, Radio, Result, Select, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconLeft, IconHistory, IconUser } from '@arco-design/web-react/icon';
+import { Alert, Button, Card, Drawer, Input, Message, Modal, Radio, Result, Select, Space, Tag, Typography } from '@arco-design/web-react';
+import { IconCheck, IconClose, IconLeft, IconHistory, IconUser } from '@arco-design/web-react/icon';
 import { useQuotation } from './QuotationContext';
 import { QuoteTimeline } from './components/QuoteTimeline';
 import { Stage1FeatureList } from './stages/Stage1FeatureList';
@@ -11,7 +11,7 @@ import { Stage4Approval } from './stages/Stage4Approval';
 import { canDeleteQuote, canViewQuote } from './quoteAccess';
 import { canTransition } from '@/services/quotationMutations';
 import {
-  QUOTE_STAGE_NAMES,
+  QUOTE_FLOW_STAGE_NAMES,
   QUOTE_STATUS_COLORS,
   QUOTE_STATUS_LABELS,
 } from './types';
@@ -19,7 +19,6 @@ import type { Quote, QuoteStage } from './types';
 import { computeAmountBreakdown, deriveStage, getPendingOwner, getStageAccess, isTerminalStatus } from './quoteFlow';
 import {
   PageShell,
-  ProcessMetricGrid,
   ProcessOverview,
   ProcessWorkspace,
   ProcessWorkspaceAside,
@@ -27,7 +26,7 @@ import {
 } from '@/app/components/ui';
 import { useEmployee } from '@/app/pages/employee/EmployeeContext';
 import { FileFlowWorkbench } from './components/FileFlowWorkbench';
-import { QuoteGovernancePanel } from './components/QuoteGovernancePanel';
+import { ScanUpload } from './components/ScanUpload';
 import { useTodos } from '@/app/todos/TodoContext';
 import './quotationWorkbench.css';
 
@@ -39,6 +38,143 @@ function money(value: number): string {
   return value > 0
     ? `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`
     : '—';
+}
+
+function ApprovalProcessPanel({ quote, readonly, leadFrozen }: { quote: Quote; readonly: boolean; leadFrozen: boolean }) {
+  const { currentRole, decideAudit, stampQuote, updateQuote } = useQuotation();
+  const [rejectVisible, setRejectVisible] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
+  const [documentSource, setDocumentSource] = useState<'generated' | 'scan'>('generated');
+  const auditor = quote.auditNodes.find((node) => node.quoteRole === currentRole)?.auditorName ?? null;
+  const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant');
+  const state = quote.fileFlow ?? { onlineDocument: { status: 'empty' as const }, scans: [] };
+  const auditLabel = (status: string) => status === 'APPROVED' ? '已通过' : status === 'REJECTED' ? '已驳回' : '待审批';
+  const auditColor = (status: string) => status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'gray';
+  const stampLabel = quote.stampNode.status === 'COMPLETED'
+    ? '已盖章'
+    : quote.stampNode.status === 'PENDING_STAMP' ? '待盖章' : '未到盖章环节';
+  const stampColor = quote.stampNode.status === 'COMPLETED'
+    ? 'green'
+    : quote.stampNode.status === 'PENDING_STAMP' ? 'orange' : 'gray';
+
+  const handleApprove = () => {
+    if (!auditor) return;
+    decideAudit(quote.id, auditor, 'approve', '同意');
+    Message.success('已审批通过');
+  };
+
+  const handleReject = () => {
+    if (!auditor) return;
+    if (!rejectComment.trim()) { Message.warning('驳回意见为必填项'); return; }
+    decideAudit(quote.id, auditor, 'reject', rejectComment.trim());
+    setRejectVisible(false);
+    setRejectComment('');
+    Message.success('已驳回，退回销售修改，三人会签将重审');
+  };
+
+  const handleStamp = () => {
+    stampQuote(quote.id);
+    Message.success('已加盖公章，可下载正式 PDF 报价单');
+  };
+
+  const handleScansChange = (scans: NonNullable<NonNullable<Quote['fileFlow']>['scans']>) => {
+    updateQuote(quote.id, (current) => ({
+      ...current,
+      fileFlow: {
+        ...(current.fileFlow ?? { onlineDocument: { status: 'empty' as const }, scans: [] }),
+        scans,
+      },
+    }));
+  };
+
+  return (
+    <Card title="审批流程" size="small">
+      <div className="quotation-approval-status">
+        <Text type="secondary">当前状态</Text>
+        <Tag color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
+      </div>
+      <div className="quotation-approval-flow">
+        {quote.auditNodes.length > 0 ? quote.auditNodes.map((node, index) => (
+          <div className="quotation-approval-node" key={`${node.auditorId}-${index}`}>
+            <span className="quotation-approval-node__marker">{index + 1}</span>
+            <div className="quotation-approval-node__body">
+              <div className="quotation-approval-node__head">
+                <Text bold>{node.auditorName}</Text>
+                <Tag color={auditColor(node.status)} size="small">{auditLabel(node.status)}</Tag>
+              </div>
+              <span className="quotation-approval-node__meta">{node.role}</span>
+              {node.comment && <span className="quotation-approval-node__comment">{node.comment}</span>}
+            </div>
+          </div>
+        )) : (
+          <Text type="secondary">提交审批后生成审批节点</Text>
+        )}
+      </div>
+      {!readonly && auditor && quote.status === 'auditing' && (
+        <div className="quotation-approval-actions">
+          <Space>
+            <Button type="primary" icon={<IconCheck />} disabled={leadFrozen} onClick={handleApprove}>同意并通过</Button>
+            <Button status="danger" icon={<IconClose />} onClick={() => setRejectVisible((visible) => !visible)}>驳回报价</Button>
+          </Space>
+          {rejectVisible && (
+            <div className="quotation-approval-reject">
+              <Input.TextArea rows={2} placeholder="驳回意见（必填，将退回销售修改并全员重审）" value={rejectComment} onChange={setRejectComment} />
+              <Button type="primary" status="danger" onClick={handleReject}>确认驳回</Button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="quotation-stamp-panel">
+        <div className="quotation-stamp-panel__head">
+          <Text bold>盖章节点 · {quote.stampNode.stamperName || '盖章人'}</Text>
+          <Tag color={stampColor}>{stampLabel}</Tag>
+        </div>
+        {quote.stampNode.stampTime && <Text type="secondary" className="quotation-approval-node__meta">盖章时间：{quote.stampNode.stampTime}</Text>}
+        <Radio.Group value={documentSource} onChange={setDocumentSource} disabled={readonly || !isStamper || quote.status !== 'pending_stamp'}>
+          <Radio value="generated">系统生成 PDF</Radio>
+          <Radio value="scan">盖章扫描件</Radio>
+        </Radio.Group>
+        <ScanUpload quoteStatus={quote.status} scans={state.scans ?? []} onScansChange={handleScansChange} />
+        {!readonly && isStamper && quote.status === 'pending_stamp' && (
+          <Button type="primary" disabled={leadFrozen} onClick={handleStamp}>确认使用所选文件</Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function QuoteDynamicPanel({
+  quote,
+  currentStage,
+  flowStageNames,
+  amountBreakdown,
+}: {
+  quote: Quote;
+  currentStage: QuoteStage;
+  flowStageNames: Record<QuoteStage, string>;
+  amountBreakdown: ReturnType<typeof computeAmountBreakdown>;
+}) {
+  const items = [
+    { label: '客户', value: quote.basicInfo.customerName || '—' },
+    { label: '当前阶段', value: flowStageNames[currentStage] },
+    { label: '总报价', value: money(amountBreakdown.grandTotal) },
+    { label: '评估人天', value: amountBreakdown.totalLaborDays > 0 ? `${amountBreakdown.totalLaborDays} 人天` : '—' },
+    { label: '当前待办人', value: getPendingOwner(quote) },
+    { label: '报价有效期', value: `${quote.basicInfo.quoteValidityDays} 天` },
+  ];
+
+  return (
+    <Card title="报价动态" size="small">
+      <div className="quotation-workbench__dynamic-list">
+        {items.map((item) => (
+          <div className="quotation-workbench__dynamic-item" key={item.label}>
+            <Text type="secondary">{item.label}</Text>
+            <Text bold>{item.value}</Text>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
 }
 
 /** 工作台底部流转操作栏：按当前状态与角色动态出按钮。实际动作调用在各 Stage 内部。 */
@@ -59,17 +195,17 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   const { activeTodos, updateTodo } = useTodos();
   const handleBack = onClose ?? (() => navigate('/quotation'));
   const quote = quoteId ? getQuoteById(quoteId) : undefined;
-  const [viewedStage, setViewedStage] = useState<QuoteStage | null>(null);
   const [timelineVisible, setTimelineVisible] = useState(false);
   const [voidVisible, setVoidVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [reassignVisible, setReassignVisible] = useState(false);
   const [reassignField, setReassignField] = useState<'salesOwnerName' | 'techEvaluatorName'>('salesOwnerName');
   const [reassignValue, setReassignValue] = useState('');
-  const [customerVisible, setCustomerVisible] = useState(false);
 
+  const flowMode = quote?.flowMode === 'file' ? 'file' : 'online';
+  const flowStageNames = QUOTE_FLOW_STAGE_NAMES[flowMode];
   const currentStage = useMemo(() => (quote ? deriveStage(quote.status) : 1), [quote]);
-  const stage = viewedStage ?? currentStage;
+  const stage = currentStage;
   const leadFrozen = quote ? isLeadFrozen(quote.id) : false;
   const breadcrumbs = embedded
     ? undefined
@@ -207,53 +343,12 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
             )}
           </Space>
         )}
-        steps={STAGES.map((s) => ({ key: String(s), title: QUOTE_STAGE_NAMES[s] }))}
+        steps={STAGES.map((s) => ({ key: String(s), title: flowStageNames[s] }))}
         currentStep={currentStage - 1}
-      />
-
-      <ProcessMetricGrid
-        items={[
-          { key: 'customer', label: '客户', value: quote.basicInfo.customerName || '—' },
-          { key: 'stage', label: '当前阶段', value: QUOTE_STAGE_NAMES[currentStage] },
-          { key: 'amount', label: '总报价', value: money(amountBreakdown.grandTotal), tone: amountBreakdown.grandTotal > 0 ? 'success' : 'neutral' },
-          { key: 'days', label: '评估人天', value: amountBreakdown.totalLaborDays > 0 ? `${amountBreakdown.totalLaborDays} 人天` : '—' },
-          { key: 'owner', label: '当前待办人', value: getPendingOwner(quote), tone: isTerminalStatus(quote.status) ? 'success' : 'warning' },
-          { key: 'validity', label: '报价有效期', value: `${quote.basicInfo.quoteValidityDays} 天` },
-        ]}
       />
 
       <ProcessWorkspace>
         <ProcessWorkspaceMain>
-          <Card size="small" className="quotation-workbench__stage-switcher">
-            <div className="quotation-workbench__stage-switcher-head">
-              <div>
-                <Text bold>工作阶段</Text>
-                <Text type="secondary">已完成阶段可回看，未到达阶段不可进入</Text>
-              </div>
-              <Tag color={stage === currentStage ? 'arcoblue' : 'gray'}>
-                {stage === currentStage ? '当前处理' : '历史回看'}
-              </Tag>
-            </div>
-            <Radio.Group
-              type="button"
-              className="hubx-horizontal-rail"
-              value={stage}
-              onChange={(value) => setViewedStage(Number(value) as QuoteStage)}
-            >
-              {STAGES.map((item) => (
-                <Radio key={item} value={item} disabled={item > currentStage}>
-                  {item}. {QUOTE_STAGE_NAMES[item]}
-                </Radio>
-              ))}
-            </Radio.Group>
-          </Card>
-
-          {access === 'readonly' && stage < currentStage && (
-            <Alert
-              type="info"
-              content={`当前为历史阶段回看，内容只读。如需继续处理，请切换到阶段 ${currentStage}。`}
-            />
-          )}
           {access === 'readonly' && stage === currentStage && currentRole !== 'assistant' && (
             <Alert
               type="info"
@@ -270,42 +365,13 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
         </ProcessWorkspaceMain>
 
         <ProcessWorkspaceAside>
-          <Card title="当前协作" size="small">
-            <Descriptions
-              column={1}
-              data={[
-                { label: '处理状态', value: <Tag color={access === 'editable' ? 'green' : 'gray'}>{access === 'editable' ? '可编辑' : '只读'}</Tag> },
-                { label: '产品经理', value: quote.basicInfo.creatorName || '—' },
-                { label: '技术评估', value: quote.basicInfo.techEvaluatorName || '—' },
-                { label: '销售负责人', value: quote.salesOwnerName || '—' },
-                { label: '当前待办', value: getPendingOwner(quote) },
-              ]}
-            />
-          </Card>
-
-          <Card title="关联信息" size="small">
-            <Descriptions
-              column={1}
-              data={[
-                { label: '线索 ID', value: quote.leadId || '—' },
-                { label: '合同 ID', value: quote.generatedContractId || quote.contractId || '尚未生成' },
-                { label: '客户联系人', value: quote.basicInfo.customerContact || '—' },
-                { label: '联系电话', value: quote.basicInfo.customerPhone || '—' },
-                { label: '创建时间', value: quote.createdAt || '—' },
-                { label: '最近更新', value: quote.updatedAt || '—' },
-              ]}
-            />
-            <Space wrap className="quotation-workbench__related-actions">
-              <Button size="small" onClick={() => navigate(`/leads/${quote.leadId}`)}>查看线索</Button>
-              {(quote.generatedContractId || quote.contractId) && (
-                <Button size="small" onClick={() => navigate(`/contracts/${quote.generatedContractId || quote.contractId}`)}>查看合同</Button>
-              )}
-              <Button size="small" type="text" onClick={() => setCustomerVisible(true)}>客户详情</Button>
-            </Space>
-          </Card>
-          <Card title="销售协作与证据" size="small">
-            <QuoteGovernancePanel quote={quote} />
-          </Card>
+          <QuoteDynamicPanel
+            quote={quote}
+            currentStage={currentStage}
+            flowStageNames={flowStageNames}
+            amountBreakdown={amountBreakdown}
+          />
+          <ApprovalProcessPanel quote={quote} readonly={access !== 'editable'} leadFrozen={leadFrozen} />
         </ProcessWorkspaceAside>
       </ProcessWorkspace>
 
@@ -378,11 +444,6 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
           </div>
         </Space>
       </Modal>
-      <Drawer title="客户详情" width={520} visible={customerVisible} onCancel={() => setCustomerVisible(false)} footer={null}>
-        <Card title={quote.basicInfo.customerName || '未关联客户'}>
-          <Space direction="vertical"><Text>联系人：{quote.basicInfo.customerContact || '—'}</Text><Text>联系电话：{quote.basicInfo.customerPhone || '—'}</Text><Text type="secondary">在报价工作台中保持当前上下文，可关闭抽屉继续处理。</Text></Space>
-        </Card>
-      </Drawer>
     </PageShell>
   );
 }

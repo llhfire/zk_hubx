@@ -4,6 +4,7 @@
 
 import {
   buildInitialAuditNodes,
+  QUOTE_FLOW_STAGE_NAMES,
   QUOTE_ROLE_ACTORS,
   QUOTE_STAGE_NAMES,
   QUOTE_STATUS_LABELS,
@@ -36,6 +37,11 @@ export function deriveStage(status: QuoteStatus): QuoteStage {
       // auditing / pending_stamp / stamped / sent / confirmed / voided
       return 4;
   }
+}
+
+export function getQuoteStageName(quote: Quote, stage = deriveStage(quote.status)): string {
+  const flowMode = quote.flowMode === 'file' ? 'file' : 'online';
+  return QUOTE_FLOW_STAGE_NAMES[flowMode][stage];
 }
 
 /** 已经走过的最高阶段——用于阶段导航判断哪些可回看 */
@@ -171,7 +177,7 @@ export function buildQuoteTodos(quotes: Quote[], role: QuoteRole): TodoItem[] {
       id: `quote-todo-${quote.id}`,
       source: 'quotation',
       sourceId: quote.id,
-      module: QUOTE_STAGE_NAMES[stage],
+      module: getQuoteStageName(quote, stage),
       title: quote.basicInfo.projectName,
       content: `报价 ${quote.quoteNo}，${QUOTE_STATUS_LABELS[quote.status]}，待 ${getPendingOwner(quote)} 处理`,
       assigneeId: role,

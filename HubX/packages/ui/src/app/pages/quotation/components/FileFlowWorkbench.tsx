@@ -9,7 +9,6 @@ import { canSubmitWithDocument } from '../fileFlow';
 import type { Quote, QuoteStage } from '../types';
 import { FeatureListUpload } from './FeatureListUpload';
 import { OnlineDocumentPreview } from './OnlineDocumentPreview';
-import { ScanUpload } from './ScanUpload';
 import { Stage4Approval } from '../stages/Stage4Approval';
 import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
@@ -61,12 +60,21 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             <FeatureListUpload initialModules={quote.featureList} onParsed={(modules) => saveFeatureList(quote.id, modules)} />
           )}
           {!readonly && (
-            <Button
-              type="primary"
-              icon={<IconSend />}
-              disabled={frozen || quote.featureList.reduce((sum, module) => sum + module.subFeatures.length, 0) === 0}
-              onClick={async () => { await submitFeatureList(quote.id); Message.success('清单已提交技术评估'); }}
-            >提交技术评估</Button>
+            <div className="quotation-stage-submit">
+              <Button
+                type="primary"
+                icon={<IconSend />}
+                disabled={frozen || quote.featureList.reduce((sum, module) => sum + module.subFeatures.length, 0) === 0}
+                onClick={async () => {
+                  try {
+                    await submitFeatureList(quote.id);
+                    Message.success('清单已提交技术评估');
+                  } catch (error) {
+                    Message.error(error instanceof Error ? error.message : '提交技术评估失败');
+                  }
+                }}
+              >提交技术评估</Button>
+            </div>
           )}
         </Space>
       </Card>
@@ -94,12 +102,18 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             <InputNumber min={0.1} precision={1} value={state.evaluationTotalDays} disabled={readonly} onChange={(value) => patchState({ evaluationTotalDays: Number(value) || undefined })} />
           </Space>
           {!readonly && (
-            <Button type="primary" icon={<IconSend />} disabled={frozen || !canSubmit} onClick={async () => {
-              if (!quote.evalSheet) return;
-              await saveEvalSheet(quote.id, { ...quote.evalSheet, manualWorkDays: state.evaluationWorkDays ?? 0 });
-              await submitEval(quote.id);
-              Message.success('技术评估已提交销售报价');
-            }}>提交评估结果</Button>
+            <div className="quotation-stage-submit">
+              <Button type="primary" icon={<IconSend />} disabled={frozen || !canSubmit} onClick={async () => {
+                if (!quote.evalSheet) return;
+                try {
+                  await saveEvalSheet(quote.id, { ...quote.evalSheet, manualWorkDays: state.evaluationWorkDays ?? 0 });
+                  await submitEval(quote.id);
+                  Message.success('技术评估已提交销售报价');
+                } catch (error) {
+                  Message.error(error instanceof Error ? error.message : '提交评估结果失败');
+                }
+              }}>提交评估结果</Button>
+            </div>
           )}
         </Space>
       </Card>
@@ -124,11 +138,27 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             quoteStatus={quote.status}
             onDocumentChange={(onlineDocument) => patchState({ onlineDocument })}
           />
+          {!readonly && (!documentSaved || !amountValid || !state.quoteWorkDays) && (
+            <Alert
+              type="warning"
+              content={`提交审批前请补齐：${[
+                !documentSaved ? '保存报价文档' : '',
+                !state.quoteWorkDays ? '报价工期' : '',
+                !amountValid ? '报价总额' : '',
+              ].filter(Boolean).join('、')}`}
+            />
+          )}
           {!readonly && (
-            <Button type="primary" icon={<IconSend />} disabled={frozen || !documentSaved || !amountValid || !state.quoteWorkDays} onClick={async () => {
-              await submitForAudit(quote.id);
-              Message.success('报价文档已提交审批');
-            }}>提交审批</Button>
+            <div className="quotation-stage-submit">
+              <Button type="primary" icon={<IconSend />} disabled={frozen || !documentSaved || !amountValid || !state.quoteWorkDays} onClick={async () => {
+                try {
+                  await submitForAudit(quote.id);
+                  Message.success('报价文档已提交审批');
+                } catch (error) {
+                  Message.error(error instanceof Error ? error.message : '提交审批失败');
+                }
+              }}>提交审批</Button>
+            </div>
           )}
         </Space>
       </Card>
@@ -138,9 +168,6 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Stage4Approval quote={quote} readonly={readonly} />
-      <Card title="盖章扫描件">
-        <ScanUpload quoteStatus={quote.status} scans={state.scans} onScansChange={(scans) => patchState({ scans })} />
-      </Card>
     </Space>
   );
 }

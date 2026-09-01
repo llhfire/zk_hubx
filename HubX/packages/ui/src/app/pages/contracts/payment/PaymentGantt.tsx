@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Gantt, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
 import { Card, Select, Space, Typography, Tag, Button, Modal, Input, Message } from '@arco-design/web-react';
-import { buildGanttNodes } from './paymentCalc';
+import { buildGanttNodes, getOverdueWarningLevel } from './paymentCalc';
 import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
 import type { Task } from 'gantt-task-react';
 import type { Contract } from '../types';
@@ -17,13 +17,22 @@ interface Props {
   onOverride: (override: ForecastOverride) => void;
 }
 
-const TODAY = '2026-08-19';
+// 该甘特图服务于 0829 回款快照，逾期口径固定到数据截点，避免浏览日期变化导致颜色漂移。
+const TODAY = '2026-08-29';
 
 const CERTAINTY_STYLES: Record<string, { backgroundColor: string; progressColor: string }> = {
   high: { backgroundColor: 'rgb(var(--success-2))', progressColor: 'rgb(var(--success-6))' },
   medium: { backgroundColor: 'rgb(var(--blue-2))', progressColor: 'rgb(var(--blue-6))' },
   low: { backgroundColor: 'rgb(var(--warning-2))', progressColor: 'rgb(var(--warning-6))' },
   blocked: { backgroundColor: 'rgb(var(--danger-2))', progressColor: 'rgb(var(--danger-6))' },
+};
+
+const OVERDUE_STYLES: Record<string, { backgroundColor: string; progressColor: string; label: string }> = {
+  orange: { backgroundColor: '#f59e0b', progressColor: '#d97706', label: '逾期 1–7 天' },
+  red: { backgroundColor: '#ef4444', progressColor: '#dc2626', label: '逾期 8–14 天' },
+  'deep-red': { backgroundColor: '#b91c1c', progressColor: '#991b1b', label: '逾期 15–30 天' },
+  brown: { backgroundColor: '#78350f', progressColor: '#5b260b', label: '逾期 31–60 天' },
+  black: { backgroundColor: '#171717', progressColor: '#000000', label: '逾期 60 天以上' },
 };
 
 export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOverride }: Props) {
@@ -71,6 +80,8 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
         end.setDate(end.getDate() + 3); // 显示为 3 天宽的条
 
         const styles = CERTAINTY_STYLES[node.certaintyLevel] ?? CERTAINTY_STYLES.medium;
+        const overdueLevel = getOverdueWarningLevel(node.forecastDate, node.isSettled, TODAY);
+        const overdueStyles = overdueLevel ? OVERDUE_STYLES[overdueLevel] : null;
 
         result.push({
           id: node.nodeId,
@@ -81,8 +92,10 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           progress: node.isSettled ? 100 : 0,
           project: contractId,
           styles: {
-            backgroundColor: styles.backgroundColor,
-            progressColor: node.isSettled ? 'rgb(var(--success-6))' : styles.progressColor,
+            backgroundColor: overdueStyles?.backgroundColor ?? styles.backgroundColor,
+            progressColor: node.isSettled
+              ? 'rgb(var(--success-6))'
+              : overdueStyles?.progressColor ?? styles.progressColor,
           },
         });
       }
@@ -131,7 +144,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
             {expandedAll ? '折叠全部' : '展开全部'}
           </Button>
         </Space>
-        <Space>
+        <Space wrap>
           {Object.entries(CERTAINTY_LABELS).map(([key, label]) => (
             <Space key={key} size={4}>
               <div style={{
@@ -139,6 +152,12 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
                 background: CERTAINTY_STYLES[key]?.progressColor ?? 'var(--color-fill-4)',
               }} />
               <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{label}</Text>
+            </Space>
+          ))}
+          {Object.entries(OVERDUE_STYLES).map(([key, style]) => (
+            <Space key={key} size={4}>
+              <div style={{ width: 12, height: 12, borderRadius: 2, background: style.backgroundColor }} />
+              <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{style.label}</Text>
             </Space>
           ))}
         </Space>

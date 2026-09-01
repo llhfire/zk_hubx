@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Button, Select, Input, Modal, Form, Timeline, Tag, Message } from '@arco-design/web-react';
+import { Button, Select, Input, InputNumber, Modal, Form, Timeline, Tag, Message } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
 import { useContracts } from '../ContractsContext';
 import type { Contract, BlockerType } from '../types';
 import { BLOCKER_TYPE_LABELS } from '../types';
+import { getPaymentPeriodLabel } from '../paymentUtils';
 
 const FormItem = Form.Item;
 const TimelineItem = Timeline.Item;
@@ -23,9 +24,11 @@ export function BlockerDunningPanel({ contract }: Props) {
   const resolvedBlockers = (contract.paymentBlockers ?? []).filter(b => b.resolvedAt);
   const dunningRecords = contract.dunningRecords ?? [];
 
-  const handleAddBlocker = () => {
-    blockerForm.validate().then((values: Record<string, unknown>) => {
-      addBlocker(contract.id, {
+  const handleAddBlocker = async () => {
+    try {
+      const values = await blockerForm.validate() as Record<string, unknown>;
+      await addBlocker(contract.id, {
+        paymentPeriod: Number(values.paymentPeriod),
         type: values.type as BlockerType,
         title: values.title as string,
         description: (values.description as string) || '',
@@ -34,12 +37,15 @@ export function BlockerDunningPanel({ contract }: Props) {
       setBlockerVisible(false);
       blockerForm.resetFields();
       Message.success('卡点已添加');
-    });
+    } catch {
+      // 表单校验失败时保留弹窗，便于继续填写。
+    }
   };
 
-  const handleAddDunning = () => {
-    dunningForm.validate().then((values: Record<string, unknown>) => {
-      addDunning(contract.id, {
+  const handleAddDunning = async () => {
+    try {
+      const values = await dunningForm.validate() as Record<string, unknown>;
+      await addDunning(contract.id, {
         date: values.date as string,
         method: values.method as string,
         contactPerson: values.contactPerson as string,
@@ -49,7 +55,9 @@ export function BlockerDunningPanel({ contract }: Props) {
       setDunningVisible(false);
       dunningForm.resetFields();
       Message.success('催款记录已添加');
-    });
+    } catch {
+      // 表单校验失败时保留弹窗，便于继续填写。
+    }
   };
 
   return (
@@ -68,9 +76,10 @@ export function BlockerDunningPanel({ contract }: Props) {
         {activeBlockers.map(b => (
           <div key={b.id} style={{ background: 'var(--destructive-50)', borderRadius: 6, padding: 8, marginBottom: 6, fontSize: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <Tag color="red" size="small">{BLOCKER_TYPE_LABELS[b.type]}</Tag>
-                <span style={{ fontWeight: 600, marginLeft: 4 }}>{b.title}</span>
+            <div>
+              <Tag color="red" size="small">{BLOCKER_TYPE_LABELS[b.type]}</Tag>
+              <span style={{ fontWeight: 600, marginLeft: 4 }}>{getPaymentPeriodLabel(contract, b.paymentPeriod)}</span>
+              <span style={{ fontWeight: 600, marginLeft: 4 }}>{b.title}</span>
               </div>
               <Button
                 size="mini"
@@ -129,6 +138,22 @@ export function BlockerDunningPanel({ contract }: Props) {
         onOk={handleAddBlocker}
       >
         <Form form={blockerForm} layout="vertical">
+          <FormItem label="关联付款期次" field="paymentPeriod" rules={[{ required: true, message: '请选择付款期次' }]}>
+            <Select
+              placeholder="请选择具体付款期次"
+              onChange={(value) => {
+                const period = Number(value);
+                const plan = (contract.current.paymentPlans ?? []).find((item) => item.period === period);
+                blockerForm.setFieldValue('amountBlocked', plan?.amount ?? 0);
+              }}
+            >
+              {(contract.current.paymentPlans ?? []).map((plan) => (
+                <Select.Option key={plan.period} value={String(plan.period)}>
+                  {getPaymentPeriodLabel(contract, plan.period)}
+                </Select.Option>
+              ))}
+            </Select>
+          </FormItem>
           <FormItem label="卡点类型" field="type" rules={[{ required: true, message: '请选择' }]}>
             <Select placeholder="请选择">
               {Object.entries(BLOCKER_TYPE_LABELS).map(([k, v]) => (
@@ -143,7 +168,7 @@ export function BlockerDunningPanel({ contract }: Props) {
             <Input.TextArea placeholder="卡点详细描述" />
           </FormItem>
           <FormItem label="卡住金额（元）" field="amountBlocked">
-            <Input type="number" placeholder="0" />
+            <InputNumber min={0} precision={2} placeholder="选择期次后自动带出，可调整" style={{ width: '100%' }} />
           </FormItem>
         </Form>
       </Modal>

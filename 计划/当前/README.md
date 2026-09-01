@@ -25,6 +25,7 @@
 详细依据见 `全域流程完整性评估.md`；核心漏斗通过前，暂缓新增独立页面和管理驾驶舱能力。
 
 - `quote-flow-prd-implementation.md`：报价流程按 PRD grill 收口（阶段 4，α 版 4.1–4.8 已完成）
+- `报价双轨分离-PLAN.md`：数据流转 / 文件流转事实源与审批前路径分离（已 grill 锁定，待按阶段 A–E 实施）
 - `unified-view-implementation.md`：线索·项目·合同统一视图（α 已完成，β 持久化接缝另列）
 - `operating-expense-dev-plan.md`：运营费用阶段 A–E（文件级已展开，已全部编码完成）
 - `operating-expense-restyle.md`：运营费用菜单重构（grill 已收束）

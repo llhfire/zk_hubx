@@ -6,7 +6,7 @@ import {
 import { IconSearch } from '@arco-design/web-react/icon';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useQuotation } from './QuotationContext';
-import { computeAmountBreakdown, getPendingOwner, getPendingRoles, isExpired } from './quoteFlow';
+import { computeAmountBreakdown, getPendingOwner, getPendingRoles, getQuoteStageName, isExpired } from './quoteFlow';
 import { canViewQuote } from './quoteAccess';
 import { loadQuotePermission } from './quotePermissionStore';
 import {
@@ -62,7 +62,7 @@ export function QuotationCenter() {
     { title: '客户', dataIndex: 'customerName', width: 180, render: (_: unknown, r: Quote) => r.basicInfo.customerName || '-' },
     {
       title: '阶段', dataIndex: 'stage', width: 100,
-      render: (_: unknown, r: Quote) => <Tag color="arcoblue">{QUOTE_STAGE_NAMES[deriveStage(r.status)]}</Tag>,
+      render: (_: unknown, r: Quote) => <Tag color="arcoblue">{getQuoteStageName(r)}</Tag>,
     },
     {
       title: '状态', dataIndex: 'status', width: 140,

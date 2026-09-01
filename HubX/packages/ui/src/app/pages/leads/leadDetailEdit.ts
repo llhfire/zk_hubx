@@ -57,6 +57,7 @@ export function mergeLeadDetail(
         daysHeld: listLead.daysHeld,
         presalesGroupName: listLead.presalesGroupName,
         prototypeLink: listLead.prototypeLink,
+        customerNote: listLead.customerNote,
         trashCount: listLead.trashCount,
         transformStatus: listLead.transformStatus,
         requirement: listLead.remark ?? profileLead.requirement,
@@ -89,6 +90,7 @@ export function applyLeadEdit(current: LeadListItem, values: LeadEditValues): Le
     optimizer: values.optimizer,
     assistant: values.assistant,
     presalesGroupName: values.presalesGroupName,
+    customerNote: values.customerNote,
     remark: values.requirement,
     attachments: values.attachments,
   };

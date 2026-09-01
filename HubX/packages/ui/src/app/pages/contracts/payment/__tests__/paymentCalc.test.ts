@@ -11,6 +11,7 @@ import {
   buildGanttNodes,
   aggregateCashflow,
   deriveKanbanSummary,
+  getOverdueWarningLevel,
 } from '../paymentCalc';
 import type { Contract, PaymentPlanItem, CollectionRecord, PaymentBlocker } from '../../types';
 import type { ForecastOverride } from '../types';
@@ -196,6 +197,17 @@ describe('buildGanttNodes', () => {
     expect(nodes).toHaveLength(1);
     expect(nodes[0].periodIndex).toBe(3);
     expect(Number.isNaN(new Date(nodes[0].forecastDate).getTime())).toBe(false);
+  });
+});
+
+describe('getOverdueWarningLevel', () => {
+  it('按逾期天数从橙色逐级加深到黑色', () => {
+    expect(getOverdueWarningLevel('2026-08-25', false)).toBe('orange');
+    expect(getOverdueWarningLevel('2026-08-15', false)).toBe('red');
+    expect(getOverdueWarningLevel('2026-08-01', false)).toBe('deep-red');
+    expect(getOverdueWarningLevel('2026-07-15', false)).toBe('brown');
+    expect(getOverdueWarningLevel('2026-06-01', false)).toBe('black');
+    expect(getOverdueWarningLevel('2026-08-25', true)).toBeNull();
   });
 });
 

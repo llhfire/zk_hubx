@@ -108,7 +108,7 @@ export const mockPaymentContracts: Contract[] = [
     ],
     paymentBlockers: [
       {
-        id: 'blk-1', contractId: 'pay-4', type: 'acceptance_stuck',
+        id: 'blk-1', contractId: 'pay-4', paymentPeriod: 3, type: 'acceptance_stuck',
         title: '验收卡住', description: '客户信息科副科长离职，新接手人员要求重新核对接口协议文档',
         amountBlocked: 240000, createdAt: '2026-08-01', createdBy: '张销售', ownerId: 'PM王工',
       },

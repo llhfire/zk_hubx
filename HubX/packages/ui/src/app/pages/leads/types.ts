@@ -325,6 +325,7 @@ export interface LeadListItem {
   groupType?: GroupType;     // 售前群类型（微信/企微/飞书/钉钉）
   hasGroup?: boolean;        // 售前群是否已建立
   prototypeLink?: string;    // 原型图链接
+  customerNote?: string;    // 客户信息备注
   historyOwners?: string;    // 历史归属人
   trashReason?: string;
   trashCount: number;

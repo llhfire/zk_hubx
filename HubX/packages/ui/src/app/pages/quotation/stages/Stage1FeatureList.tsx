@@ -398,7 +398,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
   return (
     <>
       <Card
-        title={<Title heading={6} style={{ margin: 0 }}>工作台一 · 产品经理功能清单</Title>}
+        title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台一 · 在线功能清单</Title>}
       extra={
         <Space>
           {!readonly && <Button icon={<IconImport />} onClick={() => setImportVisible(true)}>导入</Button>}

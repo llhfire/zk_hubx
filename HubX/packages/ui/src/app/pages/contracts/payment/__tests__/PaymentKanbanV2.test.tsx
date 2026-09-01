@@ -53,10 +53,10 @@ describe('PaymentDashboard', () => {
     );
   }
 
-  it('默认以回款合同泳道作为首页页签', () => {
+  it('默认以回款合同泳道作为合同看板页签', () => {
     const markup = renderDashboard('/contracts/payments');
 
-    expect(markup).toContain('回款合同泳道');
+    expect(markup).toContain('经营概览');
     expect(markup).toContain('正常回款');
     expect(markup).toContain('即将到期');
     expect(markup).toContain('已逾期');
@@ -67,9 +67,10 @@ describe('PaymentDashboard', () => {
   it('保留行动队列和回款预测页签', () => {
     const markup = renderDashboard('/contracts/payments?tab=actions');
 
-    expect(markup).toContain('首页');
+    expect(markup).toContain('合同看板');
     expect(markup).toContain('行动队列');
     expect(markup).toContain('回款预测');
     expect(markup).toContain('回款行动队列');
   });
+
 });

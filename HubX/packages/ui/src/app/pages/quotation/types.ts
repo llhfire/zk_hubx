@@ -66,9 +66,11 @@ export const QUOTE_ROLE_ACTORS: Record<QuoteRole, string> = {
   assistant: '黄海',
 };
 
-// ─── 阶段（由 status 推导，不落库）──────────────────────────
+// ─── 流转模式与阶段（由 status 推导，不落库）────────────────
 
 /** 1 功能清单 / 2 人天评估 / 3 报价配置 / 4 审批盖章 */
+export type QuoteFlowMode = 'online' | 'file';
+
 export type QuoteStage = 1 | 2 | 3 | 4;
 
 export const QUOTE_STAGE_NAMES: Record<QuoteStage, string> = {
@@ -76,6 +78,22 @@ export const QUOTE_STAGE_NAMES: Record<QuoteStage, string> = {
   2: '人天评估',
   3: '报价配置',
   4: '审批盖章',
+};
+
+/** 两种报价轨迹在审批前使用不同的作业路径，提交审批后汇合到系统审批节点。 */
+export const QUOTE_FLOW_STAGE_NAMES: Record<QuoteFlowMode, Record<QuoteStage, string>> = {
+  online: {
+    1: '在线功能清单',
+    2: '在线人天评估',
+    3: '在线报价配置',
+    4: '系统审批盖章',
+  },
+  file: {
+    1: '上传功能清单',
+    2: '技术评估文件',
+    3: '报价文档确认',
+    4: '系统审批盖章',
+  },
 };
 
 // ─── 流转轨迹 ─────────────────────────────────────────────
@@ -451,7 +469,7 @@ export interface Quote {
   customerId?: string;
   customerSnapshot?: CustomerSnapshot;
   /** 报价数据的流转载体：在线数据表单或 Excel 文件。 */
-  flowMode?: 'online' | 'file';
+  flowMode?: QuoteFlowMode;
   /** 文件流转专属状态；创建后 flowMode 不再修改。 */
   fileFlow?: {
     evaluationFileName?: string;

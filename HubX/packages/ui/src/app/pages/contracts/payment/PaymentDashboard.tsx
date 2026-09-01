@@ -10,7 +10,7 @@ const TabPane = Tabs.TabPane;
 
 /**
  * 回款看板统一入口。
- * 首页泳道、行动队列与预测均读取 ContractsContext + CollectionContext。
+ * 合同看板、行动队列与预测均读取 ContractsContext + CollectionContext。
  */
 export default function PaymentDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -43,7 +43,7 @@ export default function PaymentDashboard() {
         activeTab={activeTab}
         onChange={changeTab}
       >
-        <TabPane key="home" title="首页">
+        <TabPane key="home" title="合同看板">
           <PaymentKanban />
         </TabPane>
         <TabPane key="actions" title="行动队列">

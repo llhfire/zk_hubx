@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { CSSProperties } from 'react';
 import type { Contract, PaymentStatus } from '../types';
 import { computePaymentStatus } from '../paymentUtils';
 import { PaymentKanbanCard } from './PaymentKanbanCard';
@@ -28,46 +29,21 @@ function KanbanColumn({
 }) {
   return (
     <div
-      style={{
-        flex: 1,
-        minWidth: 220,
-        maxWidth: 300,
-        background: bg,
-        borderRadius: 8,
-        padding: 12,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="payment-lane-column"
+      style={{ '--lane-accent': color, '--lane-surface': bg } as CSSProperties}
     >
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: 14,
-          color,
-          marginBottom: 12,
-          paddingBottom: 8,
-          borderBottom: `2px solid ${color}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}
-      >
-        <span>{label}</span>
-        <span style={{
-          background: color,
-          color: '#fff',
-          borderRadius: 10,
-          padding: '0 8px',
-          fontSize: 12,
-        }}>
+      <div className="payment-lane-column__header">
+        <span className="payment-lane-column__label">{label}</span>
+        <span className="payment-lane-column__count">
           {contracts.length}
         </span>
       </div>
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div className="payment-lane-column__body">
         {contracts.map((c) => (
           <PaymentKanbanCard key={c.id} contract={c} onClick={onCardClick} />
         ))}
         {contracts.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--grey-400)', fontSize: 12, padding: 24 }}>
+          <div className="payment-lane-column__empty">
             暂无合同
           </div>
         )}
@@ -99,7 +75,7 @@ export function PaymentKanbanBoard({ contracts, onCardClick }: Props) {
   }, [contracts]);
 
   return (
-    <div style={{ display: 'flex', gap: 12, overflow: 'auto', paddingBottom: 16 }}>
+    <div className="payment-lane-grid">
       {COLUMNS.map((col) => (
         <KanbanColumn
           key={col.status}

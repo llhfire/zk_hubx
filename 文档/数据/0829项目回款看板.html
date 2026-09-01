@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>项目回款进度看板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;background:#f4f6fa;color:#1f2733;font-size:14px;line-height:1.5;padding-bottom:40px;}
+.wrap{max-width:760px;margin:0 auto;padding:0 12px;}
+.top{background:linear-gradient(135deg,#2f6fed 0%,#4f8df0 100%);color:#fff;padding:18px 16px 50px;border-radius:0 0 22px 22px;}
+.top h1{font-size:19px;font-weight:600;}
+.top .sub{font-size:12px;opacity:.85;margin-top:4px;}
+.kpi-row{position:relative;margin-top:-32px;display:-webkit-box;display:flex;}
+.kpi{-webkit-box-flex:1;flex:1;background:#fff;border-radius:12px;padding:14px 8px;margin-right:6px;text-align:center;box-shadow:0 2px 10px rgba(31,39,51,.07);}
+.kpi:last-child{margin-right:0;}
+.kpi .lab{font-size:12px;color:#6b7585;margin-bottom:6px;}
+.kpi .val{font-size:18px;font-weight:700;color:#1f2733;}
+.kpi .val.small{font-size:16px;}
+.kpi .rate{font-size:11px;color:#2f6fed;margin-top:3px;}
+.kpi.hl .val{color:#2f6fed;}
+.kpi.warn .val{color:#e07b00;}
+.card{background:#fff;border-radius:14px;padding:14px 14px;margin-top:14px;box-shadow:0 2px 10px rgba(31,39,51,.05);}
+.card h3{font-size:15px;font-weight:600;margin-bottom:12px;display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;}
+.card h3 .badge{font-size:11px;font-weight:normal;background:#fff1f0;color:#e54848;padding:2px 8px;border-radius:10px;margin-left:auto;}
+.muted{color:#9aa3b1;font-weight:normal;font-size:12px;}
+.od-item{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;padding:8px 0;border-bottom:1px dashed #f0f1f4;}
+.od-item:last-child{border-bottom:0;}
+.od-pj{-webkit-box-flex:1;flex:1;font-size:13px;}
+.od-lb{font-size:12px;color:#6b7585;margin-right:8px;}
+.od-amt{font-weight:700;color:#e54848;margin-right:6px;min-width:60px;text-align:right;}
+.od-tag{font-size:11px;background:#fff1f0;color:#e54848;padding:1px 6px;border-radius:8px;}
+.bar-box{padding:4px 0;}
+.bar-row{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;margin-bottom:10px;}
+.bar-lab{width:36px;font-size:12px;color:#6b7585;}
+.bar-bg{-webkit-box-flex:1;flex:1;height:14px;background:#f0f3f8;border-radius:7px;margin:0 10px;overflow:hidden;}
+.bar-fg{height:100%;background:linear-gradient(90deg,#2f6fed,#5e95f5);border-radius:7px;}
+.bar-amt{min-width:74px;text-align:right;font-size:13px;font-weight:600;color:#1f2733;}
+.up-item{padding:10px 0;border-bottom:1px dashed #f0f1f4;}
+.up-item:last-child{border-bottom:0;}
+.up-line1{display:-webkit-box;display:flex;-webkit-box-pack:justify;justify-content:space-between;-webkit-box-align:center;align-items:center;}
+.up-line2{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;font-size:12px;color:#9aa3b1;margin-top:4px;-webkit-flex-wrap:wrap;flex-wrap:wrap;}
+.up-pj{font-size:13px;font-weight:600;color:#1f2733;}
+.up-amt{font-weight:700;color:#2f6fed;}
+.up-lb{margin-right:8px;}
+.up-r{margin-right:10px;color:#b0b8c3;}
+.up-date{margin-right:8px;}
+.up-tag{font-size:11px;padding:1px 8px;border-radius:8px;margin-left:auto;}
+.up-tag-late{background:#fff1f0;color:#e54848;}
+.up-tag-soon{background:#fff7e6;color:#e07b00;}
+.up-tag-mid{background:#eef5ff;color:#2f6fed;}
+.up-tag-far{background:#f4f6fa;color:#9aa3b1;}
+.filter-bar{display:-webkit-box;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;margin-bottom:14px;}
+.filter-tip{font-size:12px;color:#9aa3b1;margin-right:8px;line-height:28px;}
+.filter-chip{display:inline-block;font-size:12px;padding:5px 12px;background:#f4f6fa;border-radius:14px;color:#6b7585;text-decoration:none;margin-right:6px;margin-bottom:4px;}
+.filter-chip.on{background:#2f6fed;color:#fff;}
+.filter-chip.od{background:#fff1f0;color:#e54848;}
+.filter-chip.pg{background:#fff7e6;color:#e07b00;}
+.filter-chip.nw{background:#f4f6fa;color:#6b7585;}
+.filter-chip.dn{background:#e8f7ec;color:#2b8a3e;}
+.pj-block{margin-bottom:6px;scroll-margin-top:60px;}
+.pj-block-h{font-size:13px;font-weight:600;color:#1f2733;padding:8px 0;border-bottom:1px dashed #e8eaef;margin-bottom:8px;}
+.pj-card{background:#fafbfd;border-radius:10px;margin-bottom:8px;overflow:hidden;border:1px solid #eef0f4;}
+.pj-card[open]{background:#fff;}
+.pj-card summary{padding:12px;list-style:none;cursor:pointer;outline:none;}
+.pj-card summary::-webkit-details-marker{display:none;}
+.pj-card summary::marker{display:none;}
+.pj-summ-row{display:-webkit-box;display:flex;-webkit-box-align:center;align-items:center;-webkit-flex-wrap:wrap;flex-wrap:wrap;}
+.pj-name{-webkit-box-flex:1;flex:1 1 100%;font-size:14px;font-weight:600;color:#1f2733;margin-bottom:4px;}
+.pj-meta{-webkit-box-flex:1;flex:1 1 auto;font-size:11px;color:#9aa3b1;}
+.pj-cli{margin-right:10px;}
+.pj-num{text-align:right;font-size:12px;}
+.pj-total{font-weight:700;color:#1f2733;}
+.pj-paid-mini{color:#2f6fed;font-size:11px;margin-top:2px;}
+.pj-paid-mini.muted{color:#9aa3b1;}
+.pj-paid-mini b{color:#e07b00;}
+.pj-st{font-size:11px;}
+.st-overdue{background:#fff1f0;color:#e54848;padding:2px 8px;border-radius:8px;}
+.st-ongoing{background:#fff7e6;color:#e07b00;padding:2px 8px;border-radius:8px;}
+.st-new{background:#f4f6fa;color:#9aa3b1;padding:2px 8px;border-radius:8px;}
+.st-done{background:#e8f7ec;color:#2b8a3e;padding:2px 8px;border-radius:8px;}
+.pj-detail{padding:0 12px 12px;}
+.pj-note{background:#f4f6fa;border-radius:8px;padding:8px 10px;font-size:12px;color:#6b7585;margin-bottom:10px;}
+.ps-table{width:100%;border-collapse:collapse;font-size:12px;}
+.ps-table th{background:#f4f6fa;padding:8px 6px;text-align:left;color:#6b7585;font-weight:normal;}
+.ps-table th:first-child{width:24px;}
+.ps-table th:nth-child(3){text-align:right;}
+.ps-table th:nth-child(5){width:70px;}
+.ps-table td{padding:8px 6px;border-bottom:1px solid #f0f1f4;}
+.ps-table tr:last-child td{border-bottom:0;}
+.ps-no{color:#9aa3b1;text-align:center;}
+.ps-lb{color:#1f2733;}
+.ps-r{color:#b0b8c3;font-size:11px;margin-left:4px;}
+.ps-amt{text-align:right;font-weight:600;}
+.ps-date{color:#6b7585;font-size:11px;}
+.ps-state{font-size:11px;}
+.ps-state.ok{color:#2b8a3e;}
+.ps-state.warn{color:#e07b00;}
+.ps-state.danger{color:#e54848;font-weight:600;}
+.ps-paid{background:#f9fcf9;}
+.ps-paid .ps-state{color:#2b8a3e;}
+.pj-foot{font-size:12px;color:#6b7585;padding:10px 0 0;text-align:right;}
+.pj-foot b{color:#e07b00;}
+.footer{text-align:center;color:#9aa3b1;font-size:11px;margin-top:18px;padding:0 16px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top">
+  <h1>💰 项目回款进度看板</h1>
+  <div class="sub">数据截止 2026-08-29 · 共 <b>25</b> 个在跟项目</div>
+</div>
+<div class="kpi-row">
+  <div class="kpi"><div class="lab">合同总额</div><div class="val">¥2,838,200</div></div>
+  <div class="kpi hl"><div class="lab">已回款</div><div class="val">¥1,428,120</div><div class="rate">50.3%</div></div>
+  <div class="kpi warn"><div class="lab">待回款</div><div class="val small">¥1,410,080</div></div>
+</div>
+<div class="card" id="sec-overdue">
+  <h3>🔴 逾期提醒 <span class="badge">2笔 · ¥6,380</span></h3>
+  <div class="od-list"><div class="od-item"><span class="od-pj">中铁安全信息化平台</span><span class="od-lb">尾款</span><span class="od-amt">¥2,300</span><span class="od-tag">逾期 4 天</span></div><div class="od-item"><span class="od-pj">DXF图纸表现与结构信息智能识读解析小模型</span><span class="od-lb">尾款</span><span class="od-amt">¥4,080</span><span class="od-tag">逾期 39 天</span></div></div>
+</div>
+<div class="card">
+  <h3>📊 待回款节奏 <span class="muted">按预计回款月份</span></h3>
+  <div class="bar-box"><div class="bar-row"><div class="bar-lab">7月</div><div class="bar-bg"><div class="bar-fg" style="width:2.7%"></div></div><div class="bar-amt">¥4,080</div></div><div class="bar-row"><div class="bar-lab">8月</div><div class="bar-bg"><div class="bar-fg" style="width:6.4%"></div></div><div class="bar-amt">¥9,500</div></div><div class="bar-row"><div class="bar-lab">9月</div><div class="bar-bg"><div class="bar-fg" style="width:49.5%"></div></div><div class="bar-amt">¥74,000</div></div><div class="bar-row"><div class="bar-lab">10月</div><div class="bar-bg"><div class="bar-fg" style="width:100.0%"></div></div><div class="bar-amt">¥149,500</div></div><div class="bar-row"><div class="bar-lab">10月</div><div class="bar-bg"><div class="bar-fg" style="width:20.1%"></div></div><div class="bar-amt">¥30,000</div></div></div>
+</div>
+<div class="card">
+  <h3>⏰ 近期预计回款 <span class="muted">按时间排序</span></h3>
+  <div class="up-box"><div class="up-item"><div class="up-line1"><span class="up-pj">DXF图纸表现与结构信息智能识读解析小模型</span><span class="up-amt">¥4,080</span></div><div class="up-line2"><span class="up-lb">尾款</span><span class="up-r">10%</span><span class="up-date">7/21</span><span class="up-tag up-tag-late">已逾期</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">中铁安全信息化平台</span><span class="up-amt">¥2,300</span></div><div class="up-line2"><span class="up-lb">尾款</span><span class="up-r">10%</span><span class="up-date">8/25</span><span class="up-tag up-tag-late">已逾期</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">汽车配件索赔管理系统</span><span class="up-amt">¥7,200</span></div><div class="up-line2"><span class="up-lb">验收款</span><span class="up-r">40%</span><span class="up-date">8/31</span><span class="up-tag up-tag-soon">2天后</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">小红书插件</span><span class="up-amt">¥9,760</span></div><div class="up-line2"><span class="up-lb">二期款</span><span class="up-r">40%</span><span class="up-date">9/13</span><span class="up-tag up-tag-mid">15天后</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">汽车配件索赔管理系统</span><span class="up-amt">¥1,800</span></div><div class="up-line2"><span class="up-lb">尾款</span><span class="up-r">10%</span><span class="up-date">9/15</span><span class="up-tag up-tag-mid">17天后</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">配送机器人平台系统</span><span class="up-amt">¥60,000</span></div><div class="up-line2"><span class="up-lb">二期款</span><span class="up-r">20%</span><span class="up-date">9/18</span><span class="up-tag up-tag-mid">20天后</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">小红书插件</span><span class="up-amt">¥2,440</span></div><div class="up-line2"><span class="up-lb">尾款</span><span class="up-r">10%</span><span class="up-date">9/28</span><span class="up-tag up-tag-mid">30天后</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">果蔬零售小程序(无支付)</span><span class="up-amt">¥2,700</span></div><div class="up-line2"><span class="up-lb">验收款</span><span class="up-r">10%</span><span class="up-date">10/12</span><span class="up-tag up-tag-far">2026-10-12</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">积分商城应用及电子集章互动游戏抽奖</span><span class="up-amt">¥9,800</span></div><div class="up-line2"><span class="up-lb">尾款</span><span class="up-r">10%</span><span class="up-date">10/15</span><span class="up-tag up-tag-far">2026-10-15</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">重庆宠物医护B端一期</span><span class="up-amt">¥17,000</span></div><div class="up-line2"><span class="up-lb">验收款</span><span class="up-r">10%</span><span class="up-date">10/15</span><span class="up-tag up-tag-far">2026-10-15</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">配送机器人平台系统</span><span class="up-amt">¥120,000</span></div><div class="up-line2"><span class="up-lb">三期款</span><span class="up-r">40%</span><span class="up-date">10/20</span><span class="up-tag up-tag-far">2026-10-20</span></div></div><div class="up-item"><div class="up-line1"><span class="up-pj">配送机器人平台系统</span><span class="up-amt">¥30,000</span></div><div class="up-line2"><span class="up-lb">四期款</span><span class="up-r">10%</span><span class="up-date">10/20</span><span class="up-tag up-tag-far">2027-10-20</span></div></div></div>
+</div>
+<div class="card">
+  <h3>📁 项目明细 <span class="muted">点卡展开各期</span></h3>
+  <div class="filter-bar" id="sec-all">
+  <span class="filter-tip">筛选：</span>
+  <a href="#sec-all" class="filter-chip on">全部 25</a>
+  <a href="#sec-od" class="filter-chip od">逾期 1</a>
+  <a href="#sec-pg" class="filter-chip pg">回款中 14</a>
+  <a href="#sec-nw" class="filter-chip nw">未启动 1</a>
+  <a href="#sec-dn" class="filter-chip dn">已结清 9</a>
+</div>
+  <div class="pj-block" id="sec-od">
+  <div class="pj-block-h">🔴 有逾期 <span class="muted">(1个)</span></div>
+  <details class="pj-card" data-status="O">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">中铁安全信息化平台</div>
+      <div class="pj-meta">
+        <span class="pj-cli">中国铁建电气化局集团有限公司</span>
+        <span class="pj-sales">销售：黄奕，郭豪杰</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥23,000</div>
+        <div class="pj-paid-mini">已回 ¥20,700 · <b>90%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-overdue'>有逾期</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0707 正在开发中</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥11,500</td><td class="ps-date">6/16</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">40%</span></td><td class="ps-amt">¥9,200</td><td class="ps-date">7/23</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥2,300</td><td class="ps-date">8/25</td><td class="ps-state danger">逾期 4 天</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥2,300</b>，含 1 期未回
+    </div>
+  </div>
+</details>
+</div>
+  <div class="pj-block" id="sec-pg">
+  <div class="pj-block-h">🟡 回款中 <span class="muted">(14个)</span></div>
+  <details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">宜宾政务云多云管理平台开发</div>
+      <div class="pj-meta">
+        <span class="pj-cli">梯度科技股份有限公司</span>
+        <span class="pj-sales">销售：罗承成</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥456,000</div>
+        <div class="pj-paid-mini">已回 ¥211,200 · <b>46%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 罗承成跟进，项目开发中，进度80%</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">32.8%</span></td><td class="ps-amt">¥150,000</td><td class="ps-date">1/21</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">13.4%</span></td><td class="ps-amt">¥61,200</td><td class="ps-date">2/9</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">27%</span></td><td class="ps-amt">¥122,400</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">20%</span></td><td class="ps-amt">¥91,800</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">五期款<span class="ps-r">7%</span></td><td class="ps-amt">¥30,600</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥244,800</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">深圳政务云多云管理平台开发</div>
+      <div class="pj-meta">
+        <span class="pj-cli">梯度科技股份有限公司</span>
+        <span class="pj-sales">销售：罗承成</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥420,000</div>
+        <div class="pj-paid-mini">已回 ¥84,000 · <b>20%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 罗承成跟进，项目开发中，进度70%</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">20%</span></td><td class="ps-amt">¥84,000</td><td class="ps-date">2/9</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥126,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">45%</span></td><td class="ps-amt">¥189,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">5%</span></td><td class="ps-amt">¥21,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥336,000</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">配送机器人平台系统</div>
+      <div class="pj-meta">
+        <span class="pj-cli">星元之上（武汉）科技有限公司</span>
+        <span class="pj-sales">销售：黄奕，闵权</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥300,000</div>
+        <div class="pj-paid-mini">已回 ¥90,000 · <b>30%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0812客户支付首笔款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥90,000</td><td class="ps-date">8/12</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">20%</span></td><td class="ps-amt">¥60,000</td><td class="ps-date">9/18</td><td class="ps-state">9/18</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">40%</span></td><td class="ps-amt">¥120,000</td><td class="ps-date">10/20</td><td class="ps-state">10/20</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">10%</span></td><td class="ps-amt">¥30,000</td><td class="ps-date">10/20</td><td class="ps-state">10/20</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥210,000</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">宠物医护B端项目二期</div>
+      <div class="pj-meta">
+        <span class="pj-cli">重庆绮算法科技有限公司</span>
+        <span class="pj-sales">销售：闵总，黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥300,000</div>
+        <div class="pj-paid-mini">已回 ¥120,000 · <b>40%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 开发进度待确认</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">40%</span></td><td class="ps-amt">¥120,000</td><td class="ps-date">5/21</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥90,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">20%</span></td><td class="ps-amt">¥60,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">验收款<span class="ps-r">10%</span></td><td class="ps-amt">¥30,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥180,000</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">重庆宠物医护B端一期</div>
+      <div class="pj-meta">
+        <span class="pj-cli">重庆绮算法科技有限公司</span>
+        <span class="pj-sales">销售：闵总，黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥170,000</div>
+        <div class="pj-paid-mini">已回 ¥153,000 · <b>90%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0710 陈周伟反馈app已上架</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">40%</span></td><td class="ps-amt">¥68,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥51,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">三期款<span class="ps-r">20%</span></td><td class="ps-amt">¥34,000</td><td class="ps-date">7/22</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">验收款<span class="ps-r">10%</span></td><td class="ps-amt">¥17,000</td><td class="ps-date">10/15</td><td class="ps-state">10/15</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥17,000</b>，含 1 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">智能家居管理系统项目</div>
+      <div class="pj-meta">
+        <span class="pj-cli">湖北洲语科技有限公司</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥88,000</div>
+        <div class="pj-paid-mini">已回 ¥52,800 · <b>60%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户先做智能酒店，导致智能家居延期</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date">2/10</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date">4/24</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥8,800</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥35,200</b>，含 2 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">建筑电气综合管理系统（一期）</div>
+      <div class="pj-meta">
+        <span class="pj-cli">湖北洲语科技有限公司</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥80,000</div>
+        <div class="pj-paid-mini">已回 ¥48,000 · <b>60%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户提供测试环境，一直未提供到位</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">60%</span></td><td class="ps-amt">¥48,000</td><td class="ps-date">4/18</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">20%</span></td><td class="ps-amt">¥16,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">20%</span></td><td class="ps-amt">¥16,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥32,000</b>，含 2 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">微电网boss小程序和电视版apk</div>
+      <div class="pj-meta">
+        <span class="pj-cli">维网物联科技（武汉）有限公司</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥55,000</div>
+        <div class="pj-paid-mini">已回 ¥55,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户测试中，8月15日支付尾款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥27,500</td><td class="ps-date">1/6</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">40%</span></td><td class="ps-amt">¥22,000</td><td class="ps-date">8/19</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥5,500</td><td class="ps-date">8/19</td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">小红书插件</div>
+      <div class="pj-meta">
+        <span class="pj-cli">上海贝拉知见文化传媒有限公司</span>
+        <span class="pj-sales">销售：吴丹丹</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥24,400</div>
+        <div class="pj-paid-mini">已回 ¥12,200 · <b>50%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0813客户支付首笔款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥12,200</td><td class="ps-date">8/13</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">40%</span></td><td class="ps-amt">¥9,760</td><td class="ps-date">9/13</td><td class="ps-state">9/13</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥2,440</td><td class="ps-date">9/28</td><td class="ps-state">9/28</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥12,200</b>，含 2 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">鼎信电表接入</div>
+      <div class="pj-meta">
+        <span class="pj-cli">维网物联科技（武汉）有限公司</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥24,000</div>
+        <div class="pj-paid-mini">已回 ¥24,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 验收确认书已回执，8月15日支付尾款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥12,000</td><td class="ps-date">9/17</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">25%</span></td><td class="ps-amt">¥6,000</td><td class="ps-date">12/18</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">三期款<span class="ps-r">25%</span></td><td class="ps-amt">¥6,000</td><td class="ps-date">8/19</td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">微电网用户端支付宝小程序</div>
+      <div class="pj-meta">
+        <span class="pj-cli">维网物联科技（武汉）有限公司</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥20,000</div>
+        <div class="pj-paid-mini">已回 ¥20,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户测试中，8月15日支付尾款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥10,000</td><td class="ps-date">1/6</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">验收款<span class="ps-r">40%</span></td><td class="ps-amt">¥8,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥2,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">汽车配件索赔管理系统</div>
+      <div class="pj-meta">
+        <span class="pj-cli">重庆诺信对外贸易发展有限公司</span>
+        <span class="pj-sales">销售：吴丹丹，周欢</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥18,000</div>
+        <div class="pj-paid-mini">已回 ¥9,000 · <b>50%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0731客户支付首笔款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥9,000</td><td class="ps-date">7/31</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">验收款<span class="ps-r">40%</span></td><td class="ps-amt">¥7,200</td><td class="ps-date">8/31</td><td class="ps-state warn">2 天后</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥1,800</td><td class="ps-date">9/15</td><td class="ps-state">9/15</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥9,000</b>，含 2 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">物业小程序项目</div>
+      <div class="pj-meta">
+        <span class="pj-cli">郧西县鑫宇物业管理有限公司</span>
+        <span class="pj-sales">销售：郭豪杰</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥8,000</div>
+        <div class="pj-paid-mini">已回 ¥8,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 已全部回款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥2,400</td><td class="ps-date">11/27</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥2,400</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">三期款<span class="ps-r">30%</span></td><td class="ps-amt">¥2,400</td><td class="ps-date">8/14</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">四期款<span class="ps-r">10%</span></td><td class="ps-amt">¥800</td><td class="ps-date">8/19</td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="P">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">服装鞋类修色上门预约小程序</div>
+      <div class="pj-meta">
+        <span class="pj-cli">武汉市黄陂创艺复色信息咨询中心</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥8,000</div>
+        <div class="pj-paid-mini">已回 ¥4,000 · <b>50%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-ongoing'>回款中</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0708 客户又不愿意支付额外费用，项目搁置</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥4,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">验收款<span class="ps-r">50%</span></td><td class="ps-amt">¥4,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥4,000</b>，含 1 期未回
+    </div>
+  </div>
+</details>
+</div>
+  <div class="pj-block" id="sec-nw">
+  <div class="pj-block-h">⚪ 未启动 <span class="muted">(1个)</span></div>
+  <details class="pj-card" data-status="N">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">建筑电气综合管理系统（二期）</div>
+      <div class="pj-meta">
+        <span class="pj-cli">湖北洲语科技有限公司</span>
+        <span class="pj-sales">销售：黄奕，郭豪杰</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥120,000</div>
+        <div class="pj-paid-mini muted">未启动</div>
+      </div>
+      <div class="pj-st"><span class='st-new'>未启动</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 一期还未交付，二期未开展</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr><td class="ps-no">0</td><td class="ps-lb">首付款<span class="ps-r">60%</span></td><td class="ps-amt">¥72,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">20%</span></td><td class="ps-amt">¥24,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">20%</span></td><td class="ps-amt">¥24,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥120,000</b>，含 3 期未回
+    </div>
+  </div>
+</details>
+</div>
+  <div class="pj-block" id="sec-dn">
+  <div class="pj-block-h">🟢 已结清 <span class="muted">(9个)</span></div>
+  <details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">南智云多云管开发</div>
+      <div class="pj-meta">
+        <span class="pj-cli">梯度科技股份有限公司</span>
+        <span class="pj-sales">销售：罗承成</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥250,000</div>
+        <div class="pj-paid-mini">已回 ¥114,000 · <b>46%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 罗承成跟进，功能开发完成，客户验收中</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">32%</span></td><td class="ps-amt">¥80,000</td><td class="ps-date">1/13</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">13.6%</span></td><td class="ps-amt">¥34,000</td><td class="ps-date">1/13</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">20.4%</span></td><td class="ps-amt">¥51,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">30.6%</span></td><td class="ps-amt">¥76,500</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">五期款<span class="ps-r">3.4%</span></td><td class="ps-amt">¥8,500</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥136,000</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">帕奇宠C端需求调研及原型设计</div>
+      <div class="pj-meta">
+        <span class="pj-cli">重庆绮算法科技有限公司</span>
+        <span class="pj-sales">销售：闵总，黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥100,000</div>
+        <div class="pj-paid-mini">已回 ¥100,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户已付完款，交付结果待确认</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">全款<span class="ps-r">100%</span></td><td class="ps-amt">¥100,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">积分商城应用及电子集章互动游戏抽奖</div>
+      <div class="pj-meta">
+        <span class="pj-cli">北京世纪国彩信息技术有限公司</span>
+        <span class="pj-sales">销售：周欢，吴丹丹</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥98,000</div>
+        <div class="pj-paid-mini">已回 ¥88,200 · <b>90%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0710 客户已转需求变更费用7000元，并返利3000</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥49,000</td><td class="ps-date">5/22</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">验收款<span class="ps-r">40%</span></td><td class="ps-amt">¥39,200</td><td class="ps-date">6/18</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥9,800</td><td class="ps-date">10/15</td><td class="ps-state">10/15</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥9,800</b>，含 1 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">首饰珠宝小程序</div>
+      <div class="pj-meta">
+        <span class="pj-cli">南京一静文化科技有限公司</span>
+        <span class="pj-sales">销售：吴丹丹</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥88,000</div>
+        <div class="pj-paid-mini">已回 ¥88,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 客户尾款已全额回款</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">验收款<span class="ps-r">30%</span></td><td class="ps-amt">¥26,400</td><td class="ps-date">7/17</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥8,800</td><td class="ps-date">8/20</td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">峰璟汽车数据采集</div>
+      <div class="pj-meta">
+        <span class="pj-cli">河北登灏科技有限公司</span>
+        <span class="pj-sales">销售：罗承成</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥50,000</div>
+        <div class="pj-paid-mini">已回 ¥15,000 · <b>30%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 罗承成跟进，目前项目在验收中，进度80%</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">10%</span></td><td class="ps-amt">¥5,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥35,000</b>，含 3 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">高卡产品溯源系统</div>
+      <div class="pj-meta">
+        <span class="pj-cli">河北登灏科技有限公司</span>
+        <span class="pj-sales">销售：罗承成</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥50,000</div>
+        <div class="pj-paid-mini">已回 ¥30,000 · <b>60%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 罗承成跟进，目前项目在验收中，进度90%</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date"></td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">三期款<span class="ps-r">30%</span></td><td class="ps-amt">¥15,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">四期款<span class="ps-r">10%</span></td><td class="ps-amt">¥5,000</td><td class="ps-date">未排期</td><td class="ps-state">未排期</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥20,000</b>，含 2 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">DXF图纸表现与结构信息智能识读解析小模型</div>
+      <div class="pj-meta">
+        <span class="pj-cli">东莞市新一代人工智能产业技术研究院</span>
+        <span class="pj-sales">销售：牛一</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥40,800</div>
+        <div class="pj-paid-mini">已回 ¥36,720 · <b>90%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0707 已提供给客户正在测试中</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥20,400</td><td class="ps-date">6/6</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">验收款<span class="ps-r">40%</span></td><td class="ps-amt">¥16,320</td><td class="ps-date">7/23</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">尾款<span class="ps-r">10%</span></td><td class="ps-amt">¥4,080</td><td class="ps-date">7/21</td><td class="ps-state danger">逾期 39 天</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥4,080</b>，含 1 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">果蔬零售小程序(无支付)</div>
+      <div class="pj-meta">
+        <span class="pj-cli">兰飞</span>
+        <span class="pj-sales">销售：黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥27,000</div>
+        <div class="pj-paid-mini">已回 ¥24,300 · <b>90%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 0708 小程序已提交备案，审核中</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">30%</span></td><td class="ps-amt">¥8,100</td><td class="ps-date">5/29</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">30%</span></td><td class="ps-amt">¥8,100</td><td class="ps-date">6/23</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">三期款<span class="ps-r">30%</span></td><td class="ps-amt">¥8,100</td><td class="ps-date">7/11</td><td class="ps-state ok">✓ 已回</td></tr><tr><td class="ps-no">0</td><td class="ps-lb">验收款<span class="ps-r">10%</span></td><td class="ps-amt">¥2,700</td><td class="ps-date">10/12</td><td class="ps-state">10/12</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥2,700</b>，含 1 期未回
+    </div>
+  </div>
+</details><details class="pj-card" data-status="D">
+  <summary>
+    <div class="pj-summ-row">
+      <div class="pj-name">乐游商城小程序项目</div>
+      <div class="pj-meta">
+        <span class="pj-cli">商城县安顺达广告传媒有限公司</span>
+        <span class="pj-sales">销售：郭豪杰，黄奕</span>
+      </div>
+      <div class="pj-num">
+        <div class="pj-total">合同 ¥20,000</div>
+        <div class="pj-paid-mini">已回 ¥20,000 · <b>100%</b></div>
+      </div>
+      <div class="pj-st"><span class='st-done'>已结清</span></div>
+    </div>
+  </summary>
+  <div class="pj-detail">
+    <div class="pj-note">📝 6月1日转款10000，项目已结项</div>
+    <table class="ps-table">
+      <thead><tr><th>期</th><th>款项</th><th>金额</th><th>日期</th><th>状态</th></tr></thead>
+      <tbody><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">首付款<span class="ps-r">50%</span></td><td class="ps-amt">¥10,000</td><td class="ps-date">4/2</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">二期款<span class="ps-r">40%</span></td><td class="ps-amt">¥8,000</td><td class="ps-date">6/1</td><td class="ps-state ok">✓ 已回</td></tr><tr class="ps-paid"><td class="ps-no">1</td><td class="ps-lb">验收款<span class="ps-r">10%</span></td><td class="ps-amt">¥2,000</td><td class="ps-date">6/1</td><td class="ps-state ok">✓ 已回</td></tr></tbody>
+    </table>
+    <div class="pj-foot">
+      待回尾款 <b>¥0</b>，含 0 期未回
+    </div>
+  </div>
+</details>
+</div>
+</div>
+<div class="footer">
+数据来源：0829项目回款记录.xlsx（口径以「项目列表」sheet 为准）<br>
+点击项目卡片可展开各期回款明细，上方筛选可定位各分组<br>
+完全静态版本 · 无 JS 依赖 · 企业微信手机端可直接查看
+</div>
+</div>
+</body>
+</html>

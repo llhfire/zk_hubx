@@ -186,7 +186,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const evalSheet = readonly ? quote.evalSheet : draft;
   if (!evalSheet) {
     return (
-      <Card title={<Title heading={6} style={{ margin: 0 }}>工作台二 · 技术人天评估</Title>}>
+      <Card title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台二 · 在线人天评估</Title>}>
         <Empty description="尚未收到功能清单，等待产品经理提交" />
       </Card>
     );
@@ -554,7 +554,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   return (
     <>
     <Card
-      title={<Title heading={6} style={{ margin: 0 }}>工作台二 · 罗总成本与技术人天评估</Title>}
+      title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台二 · 在线人天评估</Title>}
     >
       {/* 控制栏：新增岗位 + 切片操作 */}
       {!readonly && (

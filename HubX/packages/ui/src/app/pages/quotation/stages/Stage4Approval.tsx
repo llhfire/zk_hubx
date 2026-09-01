@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Button, Card, Empty, Input, Message, Radio, Space, Table, Tag, Timeline, Typography, Upload,
+  Button, Card, Empty, Input, Message, Space, Table, Tag, Typography,
 } from '@arco-design/web-react';
 import {
-  IconCheck, IconClose, IconUpload, IconSend, IconDownload, IconCheckCircle, IconCloseCircle, IconApps, IconEye,
+  IconSend, IconDownload, IconCheckCircle, IconCloseCircle, IconApps,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
@@ -12,7 +12,6 @@ import { computeAmountBreakdown, sumEvalDaysByRole } from '../quoteFlow';
 import { PLATFORM_OPTIONS, QUOTE_STATUS_COLORS, QUOTE_STATUS_LABELS, RISK_META } from '../types';
 import type { EvalRole } from '../types';
 import { buildDealQuotePrefill } from '../../contracts/dealQuotePrefill';
-import { DocumentViewerModal } from '@/app/components/ui';
 
 const { Text, Title } = Typography;
 
@@ -21,21 +20,11 @@ function money(n: number): string {
 }
 
 export function Stage4Approval({ quote, readonly }: StageProps) {
-  const { currentRole, decideAudit, stampQuote, markSent, markConfirmed, markVoided, withdrawSent, returnToStamp, returnToEditFeatures, isLeadFrozen } = useQuotation();
+  const { currentRole, markSent, markConfirmed, markVoided, withdrawSent, returnToStamp, returnToEditFeatures, isLeadFrozen } = useQuotation();
   const leadFrozen = isLeadFrozen(quote.id);
   const navigate = useNavigate();
-  const [rejectVisible, setRejectVisible] = useState(false);
-  const [rejectComment, setRejectComment] = useState('');
   const [voidVisible, setVoidVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
-  const [documentSource, setDocumentSource] = useState<'generated' | 'scan'>('generated');
-  const [previewVisible, setPreviewVisible] = useState(false);
-
-  const auditor = quote.auditNodes.find((node) => node.quoteRole === currentRole)?.auditorName
-    ?? ({ sales_manager: '黄奕', tech: '罗总', decision: '闵总' } as Partial<Record<typeof currentRole, string>>)[currentRole]
-    ?? null;
-  const isAuditor = Boolean(auditor);
-  const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant');
   const isSales = currentRole === 'sales';
   const breakdown = useMemo(() => computeAmountBreakdown(quote), [quote]);
   const roleTotals = useMemo(() => sumEvalDaysByRole(quote.evalSheet), [quote.evalSheet]);
@@ -43,26 +32,6 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
   const featureList = quote.featureList;
   const evalSheet = quote.evalSheet;
   const travelOnsite = quote.travelOnsite;
-
-  const handleApprove = () => {
-    if (!auditor) return;
-    decideAudit(quote.id, auditor, 'approve', '同意');
-    Message.success('已审批通过');
-  };
-
-  const handleReject = () => {
-    if (!auditor) return;
-    if (!rejectComment.trim()) { Message.warning('驳回意见为必填项'); return; }
-    decideAudit(quote.id, auditor, 'reject', rejectComment.trim());
-    setRejectVisible(false);
-    setRejectComment('');
-    Message.success('已驳回，退回销售修改，三人会签将重审');
-  };
-
-  const handleStamp = () => {
-    stampQuote(quote.id);
-    Message.success('已加盖公章，可下载正式 PDF 报价单');
-  };
 
   const handleSend = () => {
     markSent(quote.id);
@@ -106,9 +75,6 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
     Message.success('已退回改清单，报价回到草稿状态');
   };
 
-  const auditColor = (s: string) => (s === 'APPROVED' ? 'green' : s === 'REJECTED' ? 'red' : 'gray');
-  const auditLabel = (s: string) => (s === 'APPROVED' ? '已通过' : s === 'REJECTED' ? '已驳回' : '待审批');
-
   // 计算总人天和总金额
   const grandTotalDays = useMemo(() => {
     if (!evalSheet) return 0;
@@ -139,7 +105,7 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
   return (
     <Card title={
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title heading={6} style={{ margin: 0 }}>工作台四 · 管理层审批与盖章</Title>
+        <Title heading={6} style={{ margin: 0 }}>系统审批与盖章 · {quote.flowMode === 'file' ? '文件流转' : '数据流转'}</Title>
         {(quote.status === 'stamped' || quote.status === 'sent' || quote.status === 'confirmed') && (
           <Button size="small" icon={<IconDownload />} onClick={handleDownloadPDF}>下载报价单 PDF</Button>
         )}
@@ -403,74 +369,11 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
       </Card>
       </div>
 
-      {/* 三人并行会签 */}
-      <Text bold style={{ display: 'block', marginBottom: 8 }}>三人并行会签</Text>
-      <Timeline style={{ marginBottom: 16 }}>
-        {quote.auditNodes.map((node) => (
-          <Timeline.Item
-            key={node.auditorId}
-            dotColor={node.status === 'APPROVED' ? 'rgb(var(--green-6))' : node.status === 'REJECTED' ? 'rgb(var(--red-6))' : 'rgb(var(--gray-5))'}
-          >
-            <Space>
-              <Text bold>{node.auditorName}（{node.role}）</Text>
-              <Tag color={auditColor(node.status)}>{auditLabel(node.status)}</Tag>
-              {node.auditTime && <Text type="secondary" style={{ fontSize: 12 }}>{node.auditTime}</Text>}
-            </Space>
-            {node.comment && <div style={{ marginTop: 2 }}><Text type="secondary">{node.comment}</Text></div>}
-          </Timeline.Item>
-        ))}
-      </Timeline>
-
-      {/* 盖章节点 */}
-      <Text bold style={{ display: 'block', marginBottom: 8 }}>盖章节点（{quote.stampNode.stamperName}）</Text>
-      <Space style={{ marginBottom: 16 }}>
-        <Tag color={quote.stampNode.status === 'COMPLETED' ? 'green' : quote.stampNode.status === 'PENDING_STAMP' ? 'orange' : 'gray'}>
-          {quote.stampNode.status === 'COMPLETED' ? '已盖章' : quote.stampNode.status === 'PENDING_STAMP' ? '待盖章' : '待激活（需三人全通）'}
-        </Tag>
-        {quote.stampNode.stampTime && <Text type="secondary" style={{ fontSize: 12 }}>{quote.stampNode.stampTime}</Text>}
-      </Space>
-
-      {/* 操作区 */}
-      {!readonly && isAuditor && quote.status === 'auditing' && (
-        <Space>
-          <Button type="primary" icon={<IconCheck />} disabled={leadFrozen} onClick={handleApprove}>同意并通过</Button>
-          <Button status="danger" icon={<IconClose />} onClick={() => setRejectVisible(!rejectVisible)}>驳回报价</Button>
-        </Space>
-      )}
-
       {!readonly && isSales && quote.status === 'rejected' && (
         <Space>
           <Button onClick={handleReturnToEditFeatures}>退回改清单</Button>
         </Space>
       )}
-
-      {rejectVisible && (
-        <div style={{ marginTop: 12, padding: 12, background: 'rgb(var(--red-1))', borderRadius: 6 }}>
-          <Input.TextArea rows={2} placeholder="驳回意见（必填，将退回销售修改并全员重审）" value={rejectComment} onChange={setRejectComment} style={{ marginBottom: 8 }} />
-          <Button type="primary" status="danger" onClick={handleReject}>确认驳回</Button>
-        </div>
-      )}
-
-      {!readonly && isStamper && quote.status === 'pending_stamp' && (
-        <Card size="small" title="报价文件" style={{ marginTop: 12 }}>
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Radio.Group value={documentSource} onChange={setDocumentSource}>
-              <Radio value="generated">系统生成 PDF</Radio>
-              <Radio value="scan">盖章扫描件</Radio>
-            </Radio.Group>
-            <Space>
-              <Button icon={<IconEye />} onClick={() => setPreviewVisible(true)}>预览系统报价单</Button>
-              <Button icon={<IconDownload />} onClick={handleDownloadPDF}>下载 PDF</Button>
-              <Upload showUploadList={false} accept=".pdf,.jpg,.jpeg,.png" onChange={() => { setDocumentSource('scan'); Message.success('扫描件已上传'); }}>
-                <Button type="primary" icon={<IconUpload />}>上传扫描件</Button>
-              </Upload>
-              <Button type="primary" disabled={leadFrozen} onClick={handleStamp}>确认使用所选文件</Button>
-            </Space>
-          </Space>
-        </Card>
-      )}
-
-      <DocumentViewerModal visible={previewVisible} title={`${quote.quoteNo}_报价单.pdf`} content={<div ref={printRef}>软件项目报价单 · {quote.basicInfo.projectName}<br />总报价：{money(breakdown.grandTotal)}</div>} onClose={() => setPreviewVisible(false)} onDownload={handleDownloadPDF} />
 
       {!readonly && isSales && quote.status === 'stamped' && (
         <Space>
@@ -514,9 +417,6 @@ export function Stage4Approval({ quote, readonly }: StageProps) {
           <AlertLike text="该报价已废止，历史版本保留不可删除。" />
         )
       )}
-
-      {/* 驳回弹窗 */}
-      {rejectVisible && null}
 
       {/* 作废弹窗 */}
       {voidVisible && (

@@ -16,10 +16,11 @@ interface Props {
  * 支持粘贴/上传，解析后预览+确认
  */
 export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [previewModules, setPreviewModules] = useState<FeatureModule[]>(initialModules);
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleParse = useCallback(async (file: File) => {
     try {
       const ExcelJS = await import('exceljs');
       const buffer = await file.arrayBuffer();
@@ -67,6 +68,12 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
     }
   }, []);
 
+  const handleSelectFile = (file: File) => {
+    setSelectedFile(file);
+    setParseResult(null);
+    setPreviewModules([]);
+  };
+
   const handleConfirm = () => {
     if (previewModules.length === 0) {
       Message.warning('无有效功能清单');
@@ -93,22 +100,35 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <Button icon={<IconUpload />} onClick={() => {
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = '.xlsx';
           input.onchange = (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
-            if (file) handleFile(file);
+            if (file) handleSelectFile(file);
           };
           input.click();
         }}>
           上传 Excel 清单
         </Button>
-        <Text type="secondary" style={{ lineHeight: '32px' }}>
+        <Button
+          type="outline"
+          icon={<IconFile />}
+          disabled={!selectedFile}
+          onClick={() => selectedFile && handleParse(selectedFile)}
+        >
+          解析文件
+        </Button>
+        {selectedFile && (
+          <Text type="secondary" style={{ lineHeight: '32px', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            已选择：{selectedFile.name}
+          </Text>
+        )}
+        {!selectedFile && <Text type="secondary" style={{ lineHeight: '32px' }}>
           格式：模块 | 子功能 | 描述 | 备注 | 端
-        </Text>
+        </Text>}
       </div>
 
       {parseResult && parseResult.errors.length > 0 && (
@@ -132,7 +152,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
             <Button type="primary" onClick={handleConfirm}>
               确认导入（{previewModules.reduce((s, m) => s + m.subFeatures.length, 0)} 项）
             </Button>
-            <Button onClick={() => { setPreviewModules([]); setParseResult(null); }}>
+            <Button onClick={() => { setSelectedFile(null); setPreviewModules([]); setParseResult(null); }}>
               清空
             </Button>
           </div>

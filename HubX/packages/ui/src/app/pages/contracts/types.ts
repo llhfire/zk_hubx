@@ -39,6 +39,7 @@ export interface ContractApprovalRound {
 }
 
 export type PaymentPlanPeriodName =
+  | '首付款'
   | '首期款'
   | '二期款'
   | '三期款'
@@ -200,6 +201,8 @@ export interface ScanArchiveEntry {
 export interface Contract {
   id: string;
   contractNo: string; // CT202606001
+  /** mock 数据来源标记；用于让回款工作台切换到外部看板快照。 */
+  dataSource?: 'default' | 'recovery-board';
   status: ContractStatus;
   /** 合同类型：主合同 / 补充合同（U3：补充合同作废不搁置项目） */
   kind?: 'main' | 'supplement';
@@ -299,6 +302,8 @@ export interface CollectionRecord {
 export interface PaymentBlocker {
   id: string;
   contractId: string;
+  /** 卡点直接归属付款期次；旧数据缺失时仅作未关联数据兼容展示。 */
+  paymentPeriod?: number | 'other';
   type: BlockerType;
   title: string;
   description: string;

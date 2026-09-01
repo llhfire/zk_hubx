@@ -218,7 +218,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   // ─── 渲染 ─────────────────────────────────────────────
 
   return (
-    <Card title="工作台三 · 报价配置">
+    <Card title="数据流转 · 工作台三 · 在线报价配置">
       <Space direction="vertical" style={{ width: '100%' }} size={16}>
 
         <Card size="small" title="报价单主体">
@@ -777,7 +777,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
         {/* 提交按钮 */}
         {!readonly && (
-          <div style={{ textAlign: 'right' }}>
+          <div className="quotation-stage-submit">
             <Button type="primary" icon={<IconSend />} disabled={leadFrozen || blockingIssues.length > 0 || templateMissingFields.length > 0} onClick={handleSubmit}>提交审批</Button>
           </div>
         )}

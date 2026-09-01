@@ -14,12 +14,13 @@ export function PaymentForecastContent() {
   const [overrides, setOverrides] = useState<ForecastOverride[]>([]);
   const { contracts } = useContracts();
   const { collections } = useCollections();
-  const paymentContracts = useMemo(
-    () => contracts
+  const paymentContracts = useMemo(() => {
+    const hasRecoveryBoard = contracts.some((contract) => contract.dataSource === 'recovery-board');
+    return contracts
       .filter((contract) => contract.status !== 'voided')
-      .map((contract) => toPaymentAnalysisContract(contract, collections)),
-    [contracts, collections],
-  );
+      .filter((contract) => !hasRecoveryBoard || contract.dataSource === 'recovery-board')
+      .map((contract) => toPaymentAnalysisContract(contract, collections));
+  }, [contracts, collections]);
 
   const handleOverride = (override: ForecastOverride) => {
     setOverrides(prev => [...prev, override]);

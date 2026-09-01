@@ -135,7 +135,14 @@ function loadStorage<T>(key: string, fallback: T): T {
 }
 
 export function loadWorkflowTemplates() {
-  return loadStorage(TEMPLATE_STORAGE_KEY, defaultWorkflowTemplates);
+  const stored = loadStorage<WorkflowTemplateDefinition[]>(TEMPLATE_STORAGE_KEY, defaultWorkflowTemplates);
+  // 旧版本曾经把审批模板持久化为不含报价并行会签的列表；保留管理员已有配置，
+  // 但自动补回报价域依赖的模板，避免升级后提交报价时报“未配置”。
+  const missingQuoteTemplate = defaultWorkflowTemplates.find((template) => template.id === 'T-QUOTE-PARALLEL');
+  if (missingQuoteTemplate && !stored.some((template) => template.id === missingQuoteTemplate.id)) {
+    return [...stored, missingQuoteTemplate];
+  }
+  return stored;
 }
 
 export function saveWorkflowTemplates(templates: WorkflowTemplateDefinition[]) {
@@ -143,7 +150,13 @@ export function saveWorkflowTemplates(templates: WorkflowTemplateDefinition[]) {
 }
 
 export function loadBusinessApprovals() {
-  return loadStorage(BUSINESS_STORAGE_KEY, defaultBusinessApprovals);
+  const stored = loadStorage<BusinessApprovalDefinition[]>(BUSINESS_STORAGE_KEY, defaultBusinessApprovals);
+  // 配置版本升级时只补缺失的报价/补充报价绑定，不覆盖管理员已禁用或自定义的绑定。
+  const missingQuoteBindings = defaultBusinessApprovals.filter(
+    (binding) => ['quote-approval', 'supplement-quote-approval'].includes(binding.bizCode)
+      && !stored.some((item) => item.bizCode === binding.bizCode),
+  );
+  return missingQuoteBindings.length > 0 ? [...stored, ...missingQuoteBindings] : stored;
 }
 
 export function saveBusinessApprovals(businessApprovals: BusinessApprovalDefinition[]) {

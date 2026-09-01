@@ -1,6 +1,7 @@
 import { Tag, Typography, Card, Space } from '@arco-design/web-react';
 import { BLOCKER_TYPE_LABELS } from './paymentMock';
 import type { Contract } from '../types';
+import { getPaymentPeriodLabel } from '../paymentUtils';
 
 const { Text } = Typography;
 
@@ -36,6 +37,7 @@ export function BlockerDunningTab({ contract }: Props) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
                 <Space>
                   <Tag color="red" size="small">{BLOCKER_TYPE_LABELS[b.type] ?? b.type}</Tag>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{getPaymentPeriodLabel(contract, b.paymentPeriod)}</Text>
                   <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>受阻金额: ¥{b.amountBlocked.toLocaleString()}</Text>
                 </Space>
                 <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>

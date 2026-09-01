@@ -173,6 +173,7 @@ export function buildInitialContracts(): Contract[] {
       {
         id: 'blocker-1-1',
         contractId: 'contract-1',
+        paymentPeriod: 2,
         type: 'customer_delay' as BlockerType,
         title: '客户二期尾款迟迟不付',
         description: '已催款3次，客户财务说在走流程但一直没有实质进展',
@@ -766,7 +767,7 @@ export function buildInitialContracts(): Contract[] {
       { id: 'pawkey-col-3', contractId: 'pawkey-c1', projectId: 'prod-112', period: 3, amount: 10000, date: '2026-07-31', method: '银行转账', note: 'UI 与系统架构设计确认款到账' },
     ],
     paymentBlockers: [
-      { id: 'pawkey-payment-blocker-1', contractId: 'pawkey-c1', type: 'acceptance_stuck', title: '终验尾款待功能清单审查完成', description: '甲方尚未返回最终审查结论，终验单与 10% 尾款暂未闭环。', amountBlocked: 10000, createdAt: '2026-08-29 18:00' },
+      { id: 'pawkey-payment-blocker-1', contractId: 'pawkey-c1', paymentPeriod: 4, type: 'acceptance_stuck', title: '终验尾款待功能清单审查完成', description: '甲方尚未返回最终审查结论，终验单与 10% 尾款暂未闭环。', amountBlocked: 10000, createdAt: '2026-08-29 18:00' },
     ],
     dunningRecords: [
       { id: 'pawkey-dunning-1', contractId: 'pawkey-c1', date: '2026-08-29', method: '项目群', contactPerson: '甲方产品负责人', result: '确认先完成终验功能清单审查，再安排尾款流程。', nextPlan: '9 月 3 日跟进最终审查意见与终验单签署。' },
@@ -883,7 +884,7 @@ export function buildInitialContracts(): Contract[] {
       { id: 'pawkey-s2-col-1', contractId: 'pawkey-c1-s2', projectId: 'prod-112', period: 1, amount: 8000, date: '2026-08-11', method: '银行转账', note: 'AI 能力接入补充合同首期款到账' },
     ],
     paymentBlockers: [
-      { id: 'pawkey-s2-blocker-1', contractId: 'pawkey-c1-s2', type: 'acceptance_stuck', title: 'AI 增补尾款随一期终验支付', description: '终验单签署后进入 8000 元尾款支付流程。', amountBlocked: 8000, createdAt: '2026-08-29 18:10' },
+      { id: 'pawkey-s2-blocker-1', contractId: 'pawkey-c1-s2', paymentPeriod: 2, type: 'acceptance_stuck', title: 'AI 增补尾款随一期终验支付', description: '终验单签署后进入 8000 元尾款支付流程。', amountBlocked: 8000, createdAt: '2026-08-29 18:10' },
     ],
     dunningRecords: [
       { id: 'pawkey-s2-dunning-1', contractId: 'pawkey-c1-s2', date: '2026-08-29', method: '项目群', contactPerson: '甲方技术负责人', result: '确认 AI 增补范围随一期统一终验。', nextPlan: '终验单回签后提交尾款付款申请。' },

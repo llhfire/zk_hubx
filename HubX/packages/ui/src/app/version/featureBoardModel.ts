@@ -244,6 +244,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '角色切换器', description: 'RoleSwitcher 六角色。目标改为本单评估人/销售可改指。' },
     { name: '报价中心', description: '列表按新状态+待我处理+过期标记。' },
     { name: '报价工作台长流程框架', description: 'QuotationWorkbench 复用统一面包屑、对象控制卡、6 维指标摘要和 70:30 主辅工作区；已到达阶段可只读回看，未到达阶段禁止进入。', usage: '报价中心 → 进入报价工作台 → 在顶部确认阶段、金额、人天与待办人 → 通过阶段导航回看历史内容 → 在当前阶段继续处理。', referencePath: 'HubX/DESIGN.md' },
+    { name: '双轨流转路径', description: '文件流转与数据流转使用独立的阶段导航、待办和页面标题：前者以上传/解析文件及在线报价文档为载体，后者以结构化清单、人天评估和在线报价配置为载体；两条轨迹仅在系统审批盖章阶段汇合。' },
   ],
   '客户与报价基础': [
     { name: '客户列表', description: 'Customers.tsx：按名称/联系人/电话/类型/等级/状态组合筛选，支持新建与行内编辑并同步结果总数。' },
@@ -298,7 +299,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '期次拆分', description: 'LeadPaymentInvoicePanel.tsx：按付款比例拆分期次，金额联动校验。' },
     { name: '回款登记', description: '一次实收可选择多个未收足期次，金额按选择顺序优先冲抵，未完全冲足显示部分已收，已收足期次不再进入可选列表；实收台账与合同兼容记录同 ID 双写。' },
     { name: '状态自动计算', description: 'paymentInvoiceModel.ts getPaymentPeriodMetrics：回款四态×开票三态自动计算。' },
-    { name: '回款看板', description: '首页按五个状态泳道总览回款合同，行动队列推进具体回款期次，预测页签查看未来现金流。', usage: '合同管理 → 回款管理 → 首页查看合同泳道 → 点击合同查看回款详情；需要推进节点时进入行动队列。', referencePath: '计划/当前/payment-kanban-dev-plan.md' },
+    { name: '回款看板', description: '合同看板按五个状态泳道总览回款合同，行动队列推进具体回款期次，预测页签查看未来现金流。', usage: '合同管理 → 回款管理 → 合同看板查看合同泳道 → 点击合同查看回款详情；需要推进节点时进入行动队列。', referencePath: '计划/当前/payment-kanban-dev-plan.md' },
     { name: '回款权限矩阵', description: 'getPeriodActionPermissions（P0② WIP）：统一状态机控制操作权限。' },
   ],
   '开票管理': [
@@ -395,7 +396,6 @@ const PLANNED_SEED: Record<string, string[]> = {
   '客户与报价基础': ['联系人管理（多联系人/职位/标记主联系人）', '关系视图（客户→线索→报价→合同→项目链路可视化）', '开票信息（纳税人识别号/开户行等，合同创建时自动带入）'],
   '报价工作台': [
     '状态机按 PRD 收口（已确认/已废止/过期标记）',
-    '数据流转与文件流转双来源',
     '会签盖章读审批配置快照',
     '客户报价单按中科标准件',
     '文件流转在线文档+扫描件',
@@ -463,7 +463,7 @@ export function createSeedBoard(): FeatureBoard {
   const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: ExistingFeature[]; planned?: string[]; note: string }> = [
     // === 销售域（优先级 1）===
     { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '五池流转+线索类型维度+客户等级SABC+跟进自动同步+操作规则+重复检查+24h限制+3次退回自动垃圾+复合列压缩+倒计时胶囊+色彩降噪+快捷模板+高级筛选Popover+枚举映射层' },
-    { module: '报价工作台', domain: '销售域', isPlanned: false, features: FEATURES_SEED['报价工作台'] ?? [], note: 'β版报价单落 D1，含状态迁移校验；已上线 http+D1' },
+    { module: '报价工作台', domain: '销售域', isPlanned: false, features: FEATURES_SEED['报价工作台'] ?? [], note: 'α 已明确文件流转与数据流转为独立轨迹，系统审批盖章为公共汇合节点；β版报价单落 D1，含状态迁移校验；已上线 http+D1' },
     { module: '客户与报价基础', domain: '销售域', isPlanned: false, features: FEATURES_SEED['客户与报价基础'] ?? [], note: 'α 客户主档、联系人、开票历史、合并与业务链已统一到共享事实源' },
     { module: '合同签约', domain: '销售域', isPlanned: false, features: FEATURES_SEED['合同签约'] ?? [], note: 'α 补齐版本化模板与历史版本基线编辑；β 服务端接缝独立推进' },
     { module: '跟进助手', domain: '销售域', isPlanned: false, features: FEATURES_SEED['跟进助手'] ?? [], planned: ['阶段推进智能建议（不纳入 α）'], note: 'α 复用统一 Todo/Reminder，不新建第二套助手页面' },

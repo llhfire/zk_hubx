@@ -33,7 +33,13 @@ function getNextPendingPlan(c: Contract, now: Date) {
 }
 
 export function computePaymentStatus(c: Contract, now: Date = new Date()): PaymentStatus {
-  const hasActiveBlocker = (c.paymentBlockers ?? []).some(b => !b.resolvedAt);
+  const planRows = computePlanStatusRows(c, now);
+  const hasActiveBlocker = (c.paymentBlockers ?? []).some((blocker) => {
+    if (blocker.resolvedAt) return false;
+    if (blocker.paymentPeriod === 'other' || blocker.paymentPeriod == null) return true;
+    const linkedPlan = planRows.find((row) => row.plan.period === blocker.paymentPeriod);
+    return !linkedPlan || linkedPlan.status !== 'paid';
+  });
   if (hasActiveBlocker) return 'blocked';
 
   const total = c.current.totalAmount;
@@ -88,6 +94,23 @@ export interface PlanStatusRow {
   /** 按期次顺序累计分摊后，该期已到账金额 */
   allocated: number;
   status: PlanStatusKind;
+}
+
+/** 付款期次的统一展示文案，主合同和补充合同均从当前合同自身计划读取。 */
+export function getPaymentPeriodLabel(c: Contract, paymentPeriod?: number | 'other'): string {
+  if (paymentPeriod === 'other') return '其他付款事项';
+  if (paymentPeriod == null) return '未关联付款期次';
+  const plan = (c.current.paymentPlans ?? []).find((item) => item.period === paymentPeriod);
+  return plan ? `第${plan.period}期 · ${plan.periodName ?? '付款'}` : `第${paymentPeriod}期`;
+}
+
+/** 仅保留未结清付款期次上的活跃卡点；无期次旧数据继续兼容为合同级卡点。 */
+export function getActiveBlockersForPeriod(c: Contract, paymentPeriod?: number): NonNullable<Contract['paymentBlockers']> {
+  return (c.paymentBlockers ?? []).filter((blocker) => {
+    if (blocker.resolvedAt) return false;
+    if (paymentPeriod == null) return blocker.paymentPeriod == null || blocker.paymentPeriod === 'other';
+    return blocker.paymentPeriod === paymentPeriod;
+  });
 }
 
 /**
@@ -171,7 +194,13 @@ export function computeKanbanSummary(contracts: Contract[], now: Date = new Date
       }
     }
 
-    const activeBlockers = (c.paymentBlockers ?? []).filter(b => !b.resolvedAt);
+    const planRows = computePlanStatusRows(c, now);
+    const activeBlockers = (c.paymentBlockers ?? []).filter((blocker) => {
+      if (blocker.resolvedAt) return false;
+      if (blocker.paymentPeriod === 'other' || blocker.paymentPeriod == null) return true;
+      const plan = planRows.find((row) => row.plan.period === blocker.paymentPeriod);
+      return Boolean(plan && plan.status !== 'paid');
+    });
     if (activeBlockers.length > 0) {
       blockedCount++;
       blockedAmount += activeBlockers.reduce((s, b) => s + b.amountBlocked, 0);

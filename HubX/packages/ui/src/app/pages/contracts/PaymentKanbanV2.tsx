@@ -118,9 +118,13 @@ function getReceivedAmount(contract: Contract): number {
   return contract.receivedAmount ?? 0;
 }
 
-function getBlockerAmount(contract: Contract): number {
+function getBlockerAmount(contract: Contract, paymentPeriod?: number, includeLegacy = false): number {
   return (contract.paymentBlockers ?? [])
-    .filter((blocker) => !blocker.resolvedAt)
+    .filter((blocker) => !blocker.resolvedAt && (
+      paymentPeriod == null
+      || blocker.paymentPeriod === paymentPeriod
+      || (includeLegacy && blocker.paymentPeriod == null)
+    ))
     .reduce((sum, blocker) => sum + blocker.amountBlocked, 0);
 }
 
@@ -149,10 +153,16 @@ function getStage(
 function buildMilestones(contracts: Contract[], today: Date): PaymentMilestone[] {
   return contracts.flatMap((contract) => {
     const receivedAmount = getReceivedAmount(contract);
-    const blockerAmount = getBlockerAmount(contract);
+    const firstPendingIndex = contract.current.paymentPlans.findIndex((plan, index) => {
+      const accumulated = contract.current.paymentPlans
+        .slice(0, index + 1)
+        .reduce((sum, item) => sum + item.amount, 0);
+      return receivedAmount < accumulated;
+    });
     let accumulatedBefore = 0;
 
     return contract.current.paymentPlans.map((plan, idx) => {
+      const blockerAmount = getBlockerAmount(contract, plan.period, idx === firstPendingIndex);
       const paidInPlan = Math.max(0, Math.min(plan.amount, receivedAmount - accumulatedBefore));
       const remainingAmount = Math.max(0, plan.amount - paidInPlan);
       const dueDate = derivePlanDate(contract, plan, idx);
@@ -235,10 +245,12 @@ export function PaymentKanbanV2() {
   const [stageFilter, setStageFilter] = useState<'all' | MilestoneStage>('all');
 
   const today = useMemo(() => new Date(), []);
-  const financialContracts = useMemo(
-    () => contracts.map((contract) => withCollectionLedger(contract, collections)),
-    [contracts, collections],
-  );
+  const financialContracts = useMemo(() => {
+    const hasRecoveryBoard = contracts.some((contract) => contract.dataSource === 'recovery-board');
+    return contracts
+      .filter((contract) => !hasRecoveryBoard || contract.dataSource === 'recovery-board')
+      .map((contract) => withCollectionLedger(contract, collections));
+  }, [contracts, collections]);
   const milestones = useMemo(
     () => buildMilestones(financialContracts, today).sort((a, b) => {
       const stageDelta = stageWeight(a.stage) - stageWeight(b.stage);

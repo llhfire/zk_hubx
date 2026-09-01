@@ -263,7 +263,7 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 - `renderContractDocument`：`customContractHtml` 非空则直接用它，否则 `renderTemplate`。
 
 ### 回款状态与金额（`paymentUtils.ts`）
-- `computePaymentStatus(c, now)`：①有未解决 blocker→`blocked`；②实收≥总额→`settled`；③某期 `expectedDate+7天` 已过且未收满→`overdue`；④下期 `diffDays≤7`→`upcoming`；⑤否则 `normal`。`BUFFER_DAYS=7`。
+- `computePaymentStatus(c, now)`：①有未解决且关联未结清付款期次的 blocker→`blocked`（补充合同按自身期次计划判断）；②实收≥总额→`settled`；③某期 `expectedDate+7天` 已过且未收满→`overdue`；④下期 `diffDays≤7`→`upcoming`；⑤否则 `normal`。`BUFFER_DAYS=7`。
 - `computeKanbanSummary`：排除 voided，算应收/本月已回/卡点/逾期/预计下月回款。
 - 回款比例模板 `PAYMENT_RATIO_OPTIONS`：`3:3:3:1 → [30,30,30,10]`、`4:5:1 → [40,50,10]`。
 

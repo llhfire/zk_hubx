@@ -76,7 +76,7 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
         />
         <div className="payment-lane-card__progress-meta">
           <span style={{ color: STATUS_COLORS[status], fontWeight: 600 }}>
-            ¥{(received / 10000).toFixed(1)}万 / ¥{(total / 10000).toFixed(1)}万
+            ¥{received.toLocaleString()} / ¥{total.toLocaleString()}
           </span>
           <span style={{ color: 'var(--grey-400)' }}>{pct}%</span>
         </div>
@@ -84,7 +84,7 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
 
       {pendingPlan && status !== 'settled' && (
         <div className="payment-lane-card__next-payment">
-          下期：¥{(pendingPlan.amount / 10000).toFixed(1)}万  {pendingPlan.expectedDate}
+          下期：¥{pendingPlan.amount.toLocaleString()}  {pendingPlan.expectedDate}
         </div>
       )}
 

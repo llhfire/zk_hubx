@@ -53,10 +53,10 @@ export function PaymentTimeline({ contract }: Props) {
             label={plan.expectedDate}
           >
             {plan.period === 1 ? '一期' : plan.period === 2 ? '二期' : plan.period === 3 ? '三期' : `${plan.period}期`}
-            付款 ¥{(plan.amount / 10000).toFixed(1)}万（{plan.percentage}%）
+            付款 ¥{plan.amount.toLocaleString()}（{plan.percentage}%）
             {isPaid && planCols.length > 0 && (
               <div style={{ color: 'var(--success-500)', fontSize: 12 }}>
-                实际到账 ¥{(planReceived / 10000).toFixed(0)}万
+                实际到账 ¥{planReceived.toLocaleString()}
               </div>
             )}
             {isOverdue && (

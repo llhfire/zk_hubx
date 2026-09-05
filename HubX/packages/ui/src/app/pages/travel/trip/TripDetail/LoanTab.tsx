@@ -18,12 +18,16 @@ import {
   Input,
   InputNumber,
   Select,
+  Progress,
 } from '@arco-design/web-react';
 import {
   IconPlus,
   IconEye,
   IconStorage,
   IconRight,
+  IconClockCircle,
+  IconCheckCircle,
+  IconCompass,
 } from '@arco-design/web-react/icon';
 import type { Trip, Loan, LoanStatus } from '../../types';
 import { getLoanList } from '../../travel-api';
@@ -175,39 +179,106 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
     },
   ];
 
-  return (
-    <div style={{ padding: 16 }}>
-      {/* 汇总信息 */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={8}>
-          <Card>
-            <div><Text type="secondary">借款总额</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold' }}>¥{totalLoanAmount.toLocaleString()}</div>
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <div><Text type="secondary">已冲抵金额</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#00b42a' }}>¥{totalOffsetAmount.toLocaleString()}</div>
-          </Card>
-        </Col>
-        <Col span={8}>
-          <Card>
-            <div><Text type="secondary">剩余未冲抵</Text></div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ff7d00' }}>¥{totalRemaining.toLocaleString()}</div>
-          </Card>
-        </Col>
-      </Row>
+  const offsetRate = totalLoanAmount > 0 ? Math.round((totalOffsetAmount / totalLoanAmount) * 100) : 0;
 
-      {/* 借款列表 */}
-      <Card
-        title="借款记录"
-        extra={
+  return (
+    <div className="trip-tab-pane">
+      {/* 资金闭环核销总览看板（环形闭环率 + 借还核销对比条） */}
+      <div className="trip-loan-dashboard">
+        <div className="trip-loan-circle-box">
+          <Progress
+            type="circle"
+            percent={offsetRate}
+            width={96}
+            color={offsetRate === 100 ? '#00b42a' : '#165dff'}
+            formatText={(p) => (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-1)' }}>{p}%</div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>闭环完成率</div>
+              </div>
+            )}
+          />
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-2)', textAlign: 'center' }}>
+            <span>资金闭环完成率</span>
+            <Tag size="small" color={offsetRate === 100 ? 'green' : 'arcoblue'} style={{ marginLeft: 4 }}>
+              {offsetRate === 100 ? '已完全清账' : '核销中'}
+            </Tag>
+          </div>
+        </div>
+
+        <div className="trip-loan-bullet-container">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconStorage style={{ color: '#165dff' }} /> 借款总额
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-1)', marginTop: 4 }}>
+                ¥{totalLoanAmount.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
+                共计 {loans.length} 笔借款支出
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconCheckCircle style={{ color: '#00b42a' }} /> 已冲抵核销金额
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#00b42a', marginTop: 4 }}>
+                ¥{totalOffsetAmount.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
+                报销单据自动对冲
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconClockCircle style={{ color: totalRemaining > 0 ? '#ff7d00' : '#86909c' }} /> 剩余待还/在途借款
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: totalRemaining > 0 ? '#ff7d00' : 'var(--color-text-1)', marginTop: 4 }}>
+                ¥{totalRemaining.toLocaleString()}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
+                {totalRemaining > 0 ? '差旅归来 5 日内核销' : '无未清待还借款'}
+              </div>
+            </div>
+          </div>
+
+          {/* 核销对冲进度横向对比条 */}
+          <div style={{ marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+              <span style={{ color: 'var(--color-text-3)' }}>已核销冲抵进度</span>
+              <span style={{ fontWeight: 600 }}>{totalOffsetAmount.toLocaleString()} / {totalLoanAmount.toLocaleString()} ({offsetRate}%)</span>
+            </div>
+            <Progress
+              percent={offsetRate}
+              size="small"
+              status={offsetRate === 100 ? 'success' : 'normal'}
+              color={offsetRate === 100 ? '#00b42a' : '#165dff'}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 专业精良的操作工具栏（与表格直接咬合） */}
+      <div className="trip-section-toolbar">
+        <div className="trip-section-toolbar__title">
+          <span>借款记录明细</span>
+          <Tag size="small" color="gray">
+            共 {loans.length} 笔记录
+          </Tag>
+        </div>
+
+        <div className="trip-section-toolbar__actions">
           <Button type="primary" size="small" icon={<IconPlus />} onClick={handleCreate}>
             新增借款
           </Button>
-        }
-      >
+        </div>
+      </div>
+
+      {/* 主体表格视图 */}
+      <div style={{ marginTop: 8 }}>
         <Table
           columns={columns}
           data={loans}
@@ -251,7 +322,7 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
             </Space>
           </div>
         )}
-      </Card>
+      </div>
       <Modal title="新增借款" visible={createVisible} onOk={handleSave} onCancel={() => setCreateVisible(false)} okText="保存草稿">
         <Form form={form} layout="vertical">
           <Form.Item label="借款类型" field="type" rules={[{ required: true }]}><Select options={[{ label: '差旅借款', value: 'travel' }, { label: '备用金', value: 'petty_cash' }, { label: '其他', value: 'other' }]} /></Form.Item>

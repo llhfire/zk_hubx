@@ -5,12 +5,14 @@
   justify-content: center;
 }
 
-.trip-detail__tabs-card .arco-card-body {
+.trip-detail__tabs-card .arco-card-body,
+.trip-detail__aside-tabs-card .arco-card-body {
   padding: 0;
 }
 
-.trip-detail__tabs-card .arco-tabs-header {
-  padding-inline: 16px;
+.trip-detail__tabs-card .arco-tabs-header,
+.trip-detail__aside-tabs-card .arco-tabs-header {
+  padding-inline: 14px;
 }
 
 .trip-detail__aside-stack {
@@ -25,12 +27,1003 @@
   line-height: 22px;
 }
 
+.trip-core-profile-purpose-card {
+  padding: 12px 14px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .trip-detail .hubx-process-workspace__main > .trip-detail__tabs-card {
   min-width: 0;
 }
 
+.trip-detail__link {
+  color: rgb(var(--primary-6));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+  word-break: break-all;
+}
+
+.trip-detail__link:hover {
+  color: rgb(var(--primary-5));
+  text-decoration: underline;
+}
+
+/* 步进条下方六张微指标卡片：白色线框、不要着色、标题左对齐加粗带 icon */
+.trip-detail .hubx-process-metrics {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.trip-detail .hubx-process-metrics .arco-card-body {
+  padding: 0;
+}
+
+.trip-detail .hubx-process-metrics__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1280px) {
+  .trip-detail .hubx-process-metrics__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .trip-detail .hubx-process-metrics__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.trip-detail .hubx-process-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important;
+  justify-content: flex-start;
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: var(--color-bg-2) !important; /* 统一白色线框卡片，不要着色底 */
+  border: 1px solid var(--color-border-2) !important; /* 细灰白线框 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  text-align: left !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  min-height: 84px;
+  width: 100%;
+}
+
+/* 彻底覆盖各 tone 背景着色，统一步调不着色 */
+.trip-detail .hubx-process-metric--neutral,
+.trip-detail .hubx-process-metric--success,
+.trip-detail .hubx-process-metric--warning,
+.trip-detail .hubx-process-metric--danger {
+  background: var(--color-bg-2) !important;
+}
+
+/* 交互悬浮状态：轻微抬起与线框高亮 */
+.trip-detail .hubx-process-metric--interactive {
+  cursor: pointer;
+}
+
+.trip-detail .hubx-process-metric--interactive:hover {
+  border-color: rgb(var(--primary-5)) !important;
+  background: var(--color-bg-2) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* 标题：左对齐、左侧带 icon、标题加粗 */
+.trip-detail .hubx-process-metric__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 600 !important; /* 标题加粗 */
+  color: var(--color-text-1) !important;
+  line-height: 20px;
+  text-align: left !important;
+}
+
+.trip-metric-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600 !important; /* 标题加粗 */
+  color: var(--color-text-1);
+}
+
+.trip-metric-card-icon {
+  font-size: 14px;
+  color: rgb(var(--primary-6));
+  flex-shrink: 0;
+}
+
+/* 数值：左对齐、清晰突出 */
+.trip-detail .hubx-process-metric__value {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start !important;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-align: left !important;
+  color: var(--color-text-1);
+}
+
+/* 详情：左对齐 */
+.trip-detail .hubx-process-metric__detail {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-text-3);
+  text-align: left !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 阶段步进条胶囊与状态标签 */
+.trip-detail .hubx-process-overview__steps .arco-steps-item-icon,
+.trip-detail .hubx-process-overview__steps .arco-steps-item-title {
+  vertical-align: top;
+}
+
+.trip-stage-step-title {
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  gap: 6px;
+}
+
+.trip-stage-step-status {
+  color: var(--color-text-3);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.trip-stage-popover__trigger {
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 999px;
+  background: var(--color-fill-1);
+  color: inherit;
+  font-weight: 600;
+  line-height: 20px;
+  transition: border-color 160ms ease, background-color 160ms ease;
+  cursor: pointer;
+}
+
+.trip-stage-popover__trigger:hover {
+  border-color: rgb(var(--primary-4));
+  background: rgb(var(--primary-1));
+}
+
+.trip-detail .hubx-process-overview__steps .arco-steps-item-process .trip-stage-popover__trigger {
+  border-color: rgb(var(--primary-4));
+  background: rgb(var(--primary-1));
+  color: rgb(var(--primary-6));
+}
+
+.trip-stage-popover__chevron {
+  color: var(--color-text-3);
+  font-size: 10px;
+  transition: transform 160ms ease;
+}
+
+/* 下拉面板弹出层 */
+.arco-popover.trip-stage-popover-popup {
+  box-sizing: border-box;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+}
+
+.trip-stage-popover-popup .arco-popover-content {
+  width: 100%;
+}
+
+.trip-stage-popover-popup .arco-popover-inner-content {
+  width: 100%;
+  padding: 12px 14px;
+}
+
+.trip-stage-popover {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.trip-stage-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-1);
+}
+
+.trip-stage-popover__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-1);
+}
+
+.trip-stage-popover__highlights {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--color-fill-1);
+  border-radius: 6px;
+}
+
+.trip-stage-popover__highlight-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trip-stage-popover__highlight-label {
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+.trip-stage-popover__highlight-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+}
+
+.trip-stage-popover__highlight-val.tone-success {
+  color: rgb(var(--success-6));
+}
+
+.trip-stage-popover__highlight-val.tone-warning {
+  color: rgb(var(--warning-6));
+}
+
+.trip-stage-popover__highlight-val.tone-danger {
+  color: rgb(var(--danger-6));
+}
+
+.trip-stage-popover__section {
+  margin-top: 10px;
+}
+
+.trip-stage-popover__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.trip-stage-popover__heading > span:first-child {
+  color: var(--color-text-2);
+  font-weight: 600;
+}
+
+.trip-stage-popover__checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trip-stage-popover__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 12px;
+  text-align: left;
+  line-height: 18px;
+  cursor: default;
+  transition: all 140ms ease;
+}
+
+.trip-stage-popover__check.is-actionable {
+  cursor: pointer;
+}
+
+.trip-stage-popover__check.is-actionable:hover {
+  background: var(--color-fill-2);
+  border-color: var(--color-border-2);
+}
+
+.trip-stage-popover__check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.trip-stage-popover__check--completed .trip-stage-popover__check-icon {
+  color: rgb(var(--success-6));
+}
+
+.trip-stage-popover__check--pending .trip-stage-popover__check-icon {
+  color: rgb(var(--warning-6));
+}
+
+.trip-stage-popover__check-label {
+  flex: 1;
+  color: var(--color-text-2);
+}
+
+.trip-stage-popover__check-arrow {
+  color: var(--color-text-3);
+  font-size: 10px;
+}
+
+.trip-stage-popover__tips {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--color-fill-2);
+  color: var(--color-text-3);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* 侧边栏动态与制度卡片 */
+.trip-detail__aside-approval-card .arco-card-body {
+  padding: 0;
+}
+
+.trip-detail__aside-policy-card .arco-descriptions-item-label {
+  font-weight: 500;
+  color: var(--color-text-2);
+}
+
+.trip-detail__aside-policy-card,
+.trip-detail__aside-helper-card {
+  border-radius: 6px;
+}
+
 @media (max-width: 768px) {
-  .trip-detail__tabs-card .arco-tabs-header-nav {
+  .trip-detail__tabs-card .arco-tabs-header-nav,
+  .trip-detail__aside-tabs-card .arco-tabs-header-nav {
     overflow-x: auto;
   }
 }
+
+/* 记账流水时间切片钳形组件 */
+.expense-time-caliper {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--color-fill-1);
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+}
+
+.expense-time-caliper__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.expense-time-caliper__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.expense-time-caliper__title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.expense-time-caliper__icon {
+  font-size: 15px;
+  color: rgb(var(--primary-6));
+}
+
+.expense-time-caliper__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+}
+
+.expense-time-caliper__active-desc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-2);
+}
+
+.expense-time-caliper__range-text strong {
+  color: rgb(var(--primary-6));
+}
+
+.expense-time-caliper__actions {
+  display: flex;
+  align-items: center;
+}
+
+/* 钳形轨道与热度分布 */
+.expense-time-caliper__track-container {
+  position: relative;
+  padding: 4px 0 2px;
+}
+
+.expense-time-caliper__bars {
+  display: flex;
+  align-items: flex-end;
+  height: 28px;
+  gap: 3px;
+  padding-bottom: 2px;
+}
+
+.expense-time-caliper__bar-col {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  cursor: pointer;
+}
+
+.expense-time-caliper__bar-fill {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  transition: all 160ms ease;
+}
+
+.expense-time-caliper__bar-col:hover .expense-time-caliper__bar-fill {
+  background: rgb(var(--primary-5)) !important;
+}
+
+/* 钳形导轨与卡爪 */
+.expense-time-caliper__jaw-rail {
+  display: flex;
+  position: relative;
+  height: 24px;
+  background: var(--color-fill-3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.expense-time-caliper__jaw-slot {
+  position: relative;
+  height: 100%;
+  cursor: pointer;
+}
+
+.expense-time-caliper__jaw-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgb(var(--primary-6));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(var(--primary-6), 0.35);
+}
+
+.expense-time-caliper__jaw-claw {
+  width: 2px;
+  height: 14px;
+  background: #ffffff;
+  border-radius: 1px;
+}
+
+.expense-time-caliper__jaw-window {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.expense-time-caliper__scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--color-text-3);
+  margin-top: 4px;
+}
+
+/* 快捷片段胶囊按钮 */
+.expense-time-caliper__pills-wrapper {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border-2);
+  overflow-x: auto;
+}
+
+.expense-time-caliper__pills {
+  display: flex;
+  gap: 6px;
+  min-width: max-content;
+}
+
+/* ========================================================
+   Tab 内部专业排版系统（去套娃、微指标对齐、精致工具栏）
+   ======================================================== */
+.trip-tab-pane {
+  padding: 16px 20px 24px;
+}
+
+/* 顶部统一样式的微指标统计网格 */
+.trip-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.trip-stat-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.trip-stat-grid--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .trip-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.trip-stat-card {
+  background: var(--color-fill-1, #f7f8fa);
+  border: 1px solid var(--color-border-2, #e5e6eb);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 82px;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.trip-stat-card:hover {
+  border-color: var(--color-border-3, #c9cdd4);
+  background: var(--color-bg-2, #ffffff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.trip-stat-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.trip-stat-card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-3, #86909c);
+  font-weight: 500;
+}
+
+.trip-stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.trip-stat-card__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-1, #1d2129);
+  line-height: 1.2;
+}
+
+.trip-stat-card__meta {
+  font-size: 11px;
+  color: var(--color-text-3, #86909c);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 专业精良的表格/图表工具栏（取代繁重的 Card 标题） */
+.trip-section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-1, #f2f3f5);
+}
+
+.trip-section-toolbar__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-1, #1d2129);
+}
+
+.trip-section-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 费用分类分布条（Pill Bar） */
+.trip-category-pill-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-fill-1, #f7f8fa);
+  border: 1px dashed var(--color-border-2, #e5e6eb);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.trip-category-pill-bar__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-3, #86909c);
+  margin-right: 4px;
+}
+
+.trip-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--color-bg-2, #ffffff);
+  border: 1px solid var(--color-border-2, #e5e6eb);
+  color: var(--color-text-2, #4e5969);
+  transition: all 0.15s ease;
+}
+
+.trip-category-pill:hover {
+  border-color: var(--color-primary-6, #165dff);
+  color: var(--color-primary-6, #165dff);
+}
+
+.trip-category-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* =========================================================
+   差旅费用综合轧差核销看板（三账合一资金平衡算式流）
+   ========================================================= */
+.trip-settlement-board {
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  border: 1px solid #dbe8ff;
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(22, 93, 255, 0.04);
+}
+
+.trip-settlement-board__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.trip-settlement-board__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-1, #1d2129);
+}
+
+.trip-settlement-formula {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--color-bg-2, #ffffff);
+  border: 1px solid var(--color-border-2, #e5e6eb);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.trip-settlement-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 110px;
+}
+
+.trip-settlement-cell__label {
+  font-size: 11px;
+  color: var(--color-text-3, #86909c);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trip-settlement-cell__value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.trip-settlement-cell__meta {
+  font-size: 11px;
+  color: var(--color-text-3, #86909c);
+  margin-top: 2px;
+}
+
+.trip-settlement-operator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-fill-2, #f2f3f5);
+  color: var(--color-text-2, #4e5969);
+  font-size: 16px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.trip-settlement-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 14px;
+  border-radius: 6px;
+  min-width: 140px;
+}
+
+.trip-settlement-result--to-pay {
+  background: #e8ffea;
+  border: 1px solid #aff0b5;
+}
+
+.trip-settlement-result--to-pay .trip-settlement-cell__value {
+  color: #00b42a;
+}
+
+.trip-settlement-result--to-refund {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+}
+
+.trip-settlement-result--to-refund .trip-settlement-cell__value {
+  color: #fa8c16;
+}
+
+.trip-settlement-result--balanced {
+  background: #f2f3f5;
+  border: 1px solid #e5e6eb;
+}
+
+.trip-settlement-result--balanced .trip-settlement-cell__value {
+  color: #4e5969;
+}
+
+/* =========================================================
+   机票/高铁车票质感行程卡（Boarding Pass / Ticket Stub）
+   ========================================================= */
+.trip-ticket-card {
+  position: relative;
+  border: 1px solid var(--color-border-2, #e5e6eb);
+  border-radius: 8px;
+  background: var(--color-bg-2, #ffffff);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+  overflow: hidden;
+}
+
+.trip-ticket-card:hover {
+  border-color: rgb(var(--primary-5));
+  box-shadow: 0 4px 12px rgba(22, 93, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.trip-ticket-card--active {
+  border-color: rgb(var(--primary-6)) !important;
+  background: #f7faff !important;
+  box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.15) !important;
+}
+
+.trip-ticket-card--current {
+  border-left: 4px solid #165dff;
+}
+
+.trip-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.trip-ticket-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.trip-ticket-station {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-1, #1d2129);
+}
+
+.trip-ticket-transport-bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  padding: 0 4px;
+}
+
+.trip-ticket-transport-line {
+  width: 100%;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, #165dff 0, #165dff 4px, transparent 4px, transparent 8px);
+  position: relative;
+}
+
+.trip-ticket-transport-line::after {
+  content: '▶';
+  position: absolute;
+  right: -3px;
+  top: -6px;
+  font-size: 9px;
+  color: #165dff;
+}
+
+.trip-ticket-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--color-text-2, #4e5969);
+  padding: 8px 10px;
+  background: var(--color-fill-1, #f7f8fa);
+  border-radius: 4px;
+}
+
+.trip-ticket-hotel-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fff9e6;
+  border: 1px dashed #ffd591;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #d46b08;
+}
+
+.trip-ticket-pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #165dff;
+  box-shadow: 0 0 0 rgba(22, 93, 255, 0.4);
+  animation: pulse-ring 1.8s infinite;
+  margin-right: 4px;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 93, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 93, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 93, 255, 0);
+  }
+}
+
+/* 联动筛选指示栏 */
+.trip-filter-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #e8f3ff;
+  border: 1px solid #bedaff;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #0e42d2;
+}
+
+/* =========================================================
+   借款管理：资金闭环进度与对比条
+   ========================================================= */
+.trip-loan-dashboard {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  background: var(--color-bg-2, #ffffff);
+  border: 1px solid var(--color-border-2, #e5e6eb);
+  border-radius: 6px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .trip-loan-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trip-loan-circle-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--color-border-1, #f2f3f5);
+  padding-right: 16px;
+}
+
+.trip-loan-bullet-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+

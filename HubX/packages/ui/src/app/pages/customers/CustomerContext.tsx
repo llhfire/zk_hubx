@@ -38,7 +38,21 @@ export function CustomerProvider({ children }: PropsWithChildren) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(customers));
   }, [customers]);
 
-  const getCustomer = useCallback((id?: string) => customers.find((item) => item.id === id), [customers]);
+  const getCustomer = useCallback(
+    (id?: string) => {
+      if (!id) return undefined;
+      const normalized = id.toLowerCase();
+      return customers.find(
+        (item) =>
+          item.id === id ||
+          item.id.toLowerCase() === normalized ||
+          item.name.toLowerCase() === normalized ||
+          (`cust-${item.id.padStart(3, '0')}`).toLowerCase() === normalized ||
+          item.id === id.replace(/^cust-0*/i, ''),
+      );
+    },
+    [customers],
+  );
 
   const createCustomer = useCallback((input: CustomerCreateInput) => {
     const duplicate = findCustomerDuplicate(customers, input);

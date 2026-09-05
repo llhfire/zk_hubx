@@ -22,7 +22,19 @@ export interface LeadEditValues {
 }
 
 export function findLeadByRouteId(leads: LeadListItem[], routeId?: string): LeadListItem | undefined {
-  return leads.find((lead) => lead.id === routeId || lead.key === routeId);
+  if (!routeId) return undefined;
+  const normalized = routeId.toLowerCase();
+  const cleanId = routeId.replace(/^(lead-|l-)/i, '');
+  return leads.find(
+    (lead) =>
+      lead.id === routeId ||
+      lead.key === routeId ||
+      lead.id.toLowerCase() === normalized ||
+      lead.key?.toLowerCase() === normalized ||
+      lead.id === `lead-${cleanId}` ||
+      lead.id === `L-${cleanId}` ||
+      lead.id.replace(/^(lead-|l-)/i, '') === cleanId,
+  );
 }
 
 export function mergeLeadDetail(

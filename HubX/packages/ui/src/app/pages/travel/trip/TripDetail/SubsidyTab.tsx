@@ -95,71 +95,138 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
 
   const cardStyle = { marginBottom: 16 };
 
+  const attendanceRate = attendanceRecords.length > 0
+    ? Math.round((effectiveDays / attendanceRecords.length) * 100)
+    : 100;
+  const abnormalCount = attendanceRecords.length - effectiveDays;
+
   return (
-    <div style={{ padding: 16 }}>
-      {/* 顶部：补贴总额 + 计算参数 并排 */}
-      <Row gutter={16} style={cardStyle}>
-        {/* 补贴总额 */}
-        <Col span={8}>
-          <Card style={{ background: 'linear-gradient(135deg, #f0f5ff, #f5f0ff)', borderColor: '#d6e4ff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text type="secondary">差旅补贴总额</Text>
-              <Tag color={subsidy?.isPaid ? 'green' : 'orange'} size="small">
-                {subsidy?.isPaid ? '已发放' : '待发放'}
-              </Tag>
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 'bold', color: '#722ed1' }}>
-              ¥{subsidy?.totalAmount.toLocaleString() || '-'}
-            </div>
-            <div style={{ fontSize: 12, color: '#86909c', marginTop: 4 }}>随当月工资发放</div>
-          </Card>
-        </Col>
+    <div className="trip-tab-pane">
+      {/* 顶部专业微指标卡片组（4列对齐） */}
+      <div className="trip-stat-grid">
+        <div className="trip-stat-card">
+          <div className="trip-stat-card__header">
+            <span className="trip-stat-card__title">
+              <span className="trip-stat-card__icon" style={{ background: '#e8f3ff', color: '#165dff' }}>
+                <IconStorage />
+              </span>
+              差旅补贴核定总额
+            </span>
+            <Tag size="small" color={subsidy?.isPaid ? 'green' : 'orange'}>
+              {subsidy?.isPaid ? '已发放' : '待发放'}
+            </Tag>
+          </div>
+          <div className="trip-stat-card__value">
+            ¥{subsidy?.totalAmount.toLocaleString() || '0'}
+          </div>
+          <div className="trip-stat-card__meta">
+            <span>发放渠道：随当月工资</span>
+            <span>独立津贴税前核发</span>
+          </div>
+        </div>
 
-        {/* 计算参数 */}
-        <Col span={8}>
-          <Card>
-            <div style={{ fontWeight: 500, marginBottom: 12 }}>计算参数</div>
-            <Row gutter={[16, 8]}>
-              <Col span={12}>
-                <Space size={8}>
-                  <IconCalendar style={{ color: '#86909c' }} />
-                  <Text type="secondary">模式</Text>
-                  <Text style={{ fontWeight: 500 }}>自然日</Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space size={8}>
-                  <IconStorage style={{ color: '#86909c' }} />
-                  <Text type="secondary">标准</Text>
-                  <Text style={{ fontWeight: 500 }}>¥{subsidy?.standard}/天</Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space size={8}>
-                  <IconClockCircle style={{ color: '#86909c' }} />
-                  <Text type="secondary">天数</Text>
-                  <Text style={{ fontWeight: 500 }}>{subsidy?.days}天</Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space size={8}>
-                  <IconLocation style={{ color: '#86909c' }} />
-                  <Text type="secondary">城市</Text>
-                  <Text style={{ fontWeight: 500 }}>{subsidy?.cityLevel === 'first_tier' ? '一线' : '二线'}</Text>
-                </Space>
-              </Col>
-            </Row>
-            <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 13 }}>
-              <Text type="secondary">计算公式：</Text> ¥{subsidy?.standard} × {subsidy?.days} 天 = <Text bold style={{ color: '#722ed1' }}>¥{subsidy?.totalAmount.toLocaleString()}</Text>
-            </div>
-          </Card>
-        </Col>
+        <div className="trip-stat-card">
+          <div className="trip-stat-card__header">
+            <span className="trip-stat-card__title">
+              <span className="trip-stat-card__icon" style={{ background: '#f5e8ff', color: '#722ed1' }}>
+                <IconLocation />
+              </span>
+              补贴核定标准
+            </span>
+            <Tag size="small" color="purple">
+              {subsidy?.cityLevel === 'first_tier' ? '一线定额' : '二线定额'}
+            </Tag>
+          </div>
+          <div className="trip-stat-card__value">
+            ¥{subsidy?.standard || 0} / 天
+          </div>
+          <div className="trip-stat-card__meta">
+            <span>目的地：{trip.destinations?.[0] || '默认城市'}</span>
+            <span>按自然日考勤折算</span>
+          </div>
+        </div>
 
-        <Col span={8}>
-          <Card title={`${calendarMonth} 打卡日历`}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 4 }}>
+        <div className="trip-stat-card">
+          <div className="trip-stat-card__header">
+            <span className="trip-stat-card__title">
+              <span className="trip-stat-card__icon" style={{ background: '#e8ffea', color: '#00b42a' }}>
+                <IconCalendar />
+              </span>
+              有效考勤天数
+            </span>
+            <Tag size="small" color="green">已核定</Tag>
+          </div>
+          <div className="trip-stat-card__value">
+            {effectiveDays} 天
+          </div>
+          <div className="trip-stat-card__meta">
+            <span>计划申请：{trip.days} 天</span>
+            <span>实际考勤 {attendanceRecords.length} 天</span>
+          </div>
+        </div>
+
+        <div className="trip-stat-card">
+          <div className="trip-stat-card__header">
+            <span className="trip-stat-card__title">
+              <span
+                className="trip-stat-card__icon"
+                style={{
+                  background: abnormalCount > 0 ? '#ffece8' : '#e8ffea',
+                  color: abnormalCount > 0 ? '#f53f3f' : '#00b42a',
+                }}
+              >
+                <IconClockCircle />
+              </span>
+              异地打卡核验率
+            </span>
+            <Tag size="small" color={abnormalCount > 0 ? 'red' : 'green'}>
+              {abnormalCount > 0 ? `${abnormalCount} 天异常` : '考勤完整'}
+            </Tag>
+          </div>
+          <div className="trip-stat-card__value" style={{ color: abnormalCount > 0 ? '#f53f3f' : '#00b42a' }}>
+            {attendanceRate}%
+          </div>
+          <div className="trip-stat-card__meta">
+            <span>正常考勤：{effectiveDays} 天</span>
+            <span>支持异常申述复核</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 中部双列规整布局 */}
+      <Row gutter={16}>
+        {/* 左侧：打卡日历 */}
+        <Col span={14}>
+          <div
+            style={{
+              background: 'var(--color-bg-2, #ffffff)',
+              border: '1px solid var(--color-border-2, #e5e6eb)',
+              borderRadius: 6,
+              padding: '14px 16px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+                paddingBottom: 8,
+                borderBottom: '1px solid var(--color-border-1, #f2f3f5)',
+              }}
+            >
+              <Space size={6}>
+                <IconCalendar style={{ color: 'var(--color-primary-6)' }} />
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{calendarMonth} 异地出差打卡核验日历</span>
+              </Space>
+              <Tag size="small" color="blue">点击日期可查具体打卡轨迹</Tag>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
               {['日', '一', '二', '三', '四', '五', '六'].map(day => (
-                <div key={day} style={{ color: 'var(--color-text-3)', fontSize: 11, textAlign: 'center' }}>{day}</div>
+                <div key={day} style={{ color: 'var(--color-text-3)', fontSize: 12, textAlign: 'center', fontWeight: 500 }}>
+                  {day}
+                </div>
               ))}
               {Array.from({ length: leadingBlanks }).map((_, index) => <span key={`blank-${index}`} />)}
               {Array.from({ length: monthDays }).map((_, index) => {
@@ -174,41 +241,115 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                     onClick={() => attendance && setSelectedAttendance(attendance)}
                     aria-label={attendance ? `${date} ${attendance.status}` : date}
                     style={{
-                      minHeight: 34,
-                      padding: 2,
+                      minHeight: 38,
+                      padding: 4,
                       border: attendance ? `1px solid ${attendance.valid ? 'rgb(var(--success-3))' : 'rgb(var(--danger-3))'}` : '1px solid transparent',
                       borderRadius: 6,
                       background: attendance ? (attendance.valid ? 'rgb(var(--success-1))' : 'rgb(var(--danger-1))') : 'transparent',
                       color: attendance ? 'var(--color-text-1)' : 'var(--color-text-4)',
                       cursor: attendance ? 'pointer' : 'default',
                       fontSize: 12,
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    <span style={{ display: 'block' }}>{day}</span>
-                    {attendance && <span style={{ display: 'block', fontSize: 9, color: attendance.valid ? 'rgb(var(--success-6))' : 'rgb(var(--danger-6))' }}>{attendance.status}</span>}
+                    <span style={{ display: 'block', fontWeight: attendance ? 600 : 400 }}>{day}</span>
+                    {attendance && (
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 10,
+                          color: attendance.valid ? 'rgb(var(--success-6))' : 'rgb(var(--danger-6))',
+                          marginTop: 2,
+                        }}
+                      >
+                        {attendance.status}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border-2)', fontSize: 12 }}>
-              <div><strong>有效出差 {effectiveDays} 天</strong> / 申请 {attendanceRecords.length} 天</div>
-              <div style={{ color: 'var(--color-text-3)', marginTop: 3 }}>正常打卡计入补贴；异常日期需补充说明后复核。</div>
+
+            <div
+              style={{
+                marginTop: 12,
+                paddingTop: 10,
+                borderTop: '1px solid var(--color-border-2)',
+                fontSize: 12,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>
+                <strong>有效出差 {effectiveDays} 天</strong> / 申请 {attendanceRecords.length} 天
+              </span>
+              <span style={{ color: 'var(--color-text-3)' }}>
+                打卡定位需与目的地一致方可计入补贴天数
+              </span>
             </div>
-          </Card>
+          </div>
         </Col>
 
-      </Row>
+        {/* 右侧：计算参数与发放规则 */}
+        <Col span={10}>
+          <div
+            style={{
+              background: 'var(--color-bg-2, #ffffff)',
+              border: '1px solid var(--color-border-2, #e5e6eb)',
+              borderRadius: 6,
+              padding: '14px 16px',
+              height: '100%',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  marginBottom: 12,
+                  paddingBottom: 8,
+                  borderBottom: '1px solid var(--color-border-1, #f2f3f5)',
+                }}
+              >
+                <IconStorage style={{ color: 'var(--color-primary-6)' }} />
+                <span>津贴测算公式与发放依据</span>
+              </div>
 
-      <Card title="发放规则">
-        <div>
-          <div style={{ fontSize: 12, color: '#86909c' }}>
-            <div>• 差旅补贴随当月工资一起发放</div>
-            <div>• 不计入工资基数，作为独立津贴</div>
-            <div>• 出差单关闭后自动汇总到当月工资</div>
-            <div>• 往返路途当日享受补贴</div>
+              <div style={{ padding: '10px 12px', background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>公式推演</div>
+                <div style={{ fontSize: 14 }}>
+                  ¥{subsidy?.standard} (日标准) × {effectiveDays} (有效天数) ={' '}
+                  <strong style={{ color: 'var(--color-primary-6)', fontSize: 16 }}>
+                    ¥{subsidy?.totalAmount.toLocaleString()}
+                  </strong>
+                </div>
+              </div>
+
+              <div style={{ fontSize: 12, color: 'var(--color-text-2)', lineHeight: '22px' }}>
+                <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--color-text-1)' }}>发放规则说明：</div>
+                <div>• 差旅补贴随当月工资一并发放，出差单归档后自动同步薪酬系统；</div>
+                <div>• 本津贴属于国家规定范围内的差旅交通餐饮补贴，不扣减日常考勤绩效；</div>
+                <div>• 出发当日与返程路途当日均按完整自然日享受补贴；</div>
+                <div>• 异常考勤经部门主管与 HR 核准补卡后可申请补发。</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, paddingTop: 10, borderTop: '1px dashed var(--color-border-2)', textAlign: 'right' }}>
+              <Button size="small" onClick={handleRecalculate} loading={loading}>
+                重新核算补贴
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Col>
+      </Row>
 
       <Modal
         title={selectedAttendance ? `打卡详情 · ${selectedAttendance.date}` : '打卡详情'}

@@ -322,7 +322,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   ],
   '差旅管理': [
     { name: '出差申请', description: 'TripForm 通过统一三级面包屑与 20px 页头进入新建申请，填写关联对象、行程、费用预估和借款需求；TripDetail 保留 6 Tab 流程。', usage: '差旅管理 → 出差申请 → 新建出差申请 → 填写基本信息、行程、住宿、费用与借款 → 保存草稿或提交审批。', referencePath: 'HubX/DESIGN.md' },
-    { name: '出差详情长流程工作台', description: 'TripDetail 复用统一面包屑、对象控制卡、6 步流程概览、6 维指标和 70:30 主辅工作区；保留基本信息、旅程、费用、报销、借款与补贴六个业务页签。', usage: '差旅管理 → 出差申请 → 打开出差单 → 在顶部确认当前阶段与费用摘要 → 进入对应页签处理行程、费用、报销、借款或补贴 → 按状态执行开始、结束或关闭出差。', referencePath: 'HubX/DESIGN.md' },
+    { name: '出差详情长流程工作台', description: 'TripDetail 标杆化详情页：统一三级面包屑、对象控制卡、6 步流程概览、6 维指标（预算执行率、报销核销比、审批合规、成本沉淀等）和 70:30 主辅工作区；支持 URL 参数驱动 Tab、申请人/项目/客户/线索穿透高亮链接与工作区快捷导航。', usage: '差旅管理 → 出差申请 → 打开出差单 → 在顶部确认当前阶段与费用摘要 → 进入对应页签处理行程、费用、报销、借款或补贴 → 按状态执行开始、结束或关闭出差。', referencePath: 'HubX/DESIGN.md' },
     { name: '报销与借款', description: '出差详情页签支持新建报销/借款草稿、金额汇总和详情审批轨迹抽屉；借款保留报销冲抵记录。' },
     { name: '宿舍管理', description: 'DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。' },
     { name: '费用标准', description: 'StandardList：版本+生效期+职级×城市等级标准明细。' },

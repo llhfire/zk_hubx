@@ -7,6 +7,7 @@ const { Text } = Typography;
 interface TimelineViewProps {
   expenses: (Expense & { segmentDesc: string })[];
   typeLabels: Record<TripExpenseType, string>;
+  visibleDates?: string[];
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -22,21 +23,22 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 
 const TRACK_TYPES: TripExpenseType[] = ['transport', 'accommodation', 'meal', 'local_transport', 'other'];
 
-export function TimelineView({ expenses, typeLabels }: TimelineViewProps) {
+export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineViewProps) {
   // 按日期和类型分组
   const { dateRange, expensesByDate } = useMemo(() => {
-    if (expenses.length === 0) return { dateRange: [], expensesByDate: {} };
+    const dates = visibleDates && visibleDates.length > 0
+      ? visibleDates
+      : [...new Set(expenses.map((e) => e.date))].sort();
 
-    const dates = [...new Set(expenses.map((e) => e.date))].sort();
     const byDate: Record<string, (Expense & { segmentDesc: string })[]> = {};
     expenses.forEach((e) => {
       if (!byDate[e.date]) byDate[e.date] = [];
       byDate[e.date].push(e);
     });
     return { dateRange: dates, expensesByDate: byDate };
-  }, [expenses]);
+  }, [expenses, visibleDates]);
 
-  if (expenses.length === 0) {
+  if (dateRange.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: '#86909c' }}>
         暂无费用记录
@@ -84,7 +86,7 @@ export function TimelineView({ expenses, typeLabels }: TimelineViewProps) {
                 background: '#165dff',
                 border: '2px solid white',
                 boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                left: `${(i / (dateRange.length - 1 || 1)) * 100}%`,
+                left: `${((i + 0.5) / dateRange.length) * 100}%`,
               }}
             />
           ))}

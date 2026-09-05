@@ -58,7 +58,19 @@ export function ProjectProvider({ children, service }: ProjectProviderProps) {
   }, [svc]);
 
   const getProjectById = useCallback(
-    (id: string | undefined) => (id ? projects.find((project) => project.id === id) : undefined),
+    (id: string | undefined) => {
+      if (!id) return undefined;
+      const normalized = id.toLowerCase();
+      return projects.find(
+        (project) =>
+          project.id === id ||
+          project.id.toLowerCase() === normalized ||
+          project.projectNo?.toLowerCase() === normalized ||
+          (`proj-${project.id.padStart(3, '0')}`).toLowerCase() === normalized ||
+          project.id === id.replace(/^proj-0*/i, '') ||
+          project.name === id,
+      );
+    },
     [projects],
   );
 

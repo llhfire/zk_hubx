@@ -90,7 +90,19 @@ export function EmployeeProvider({ children, service }: EmployeeProviderProps) {
   }, []);
 
   const getEmployeeById = useCallback(
-    (id: string) => employees.find(e => e.id === id),
+    (id: string) => {
+      if (!id) return undefined;
+      const normalized = id.toLowerCase();
+      return employees.find(
+        (e) =>
+          e.id === id ||
+          e.id.toLowerCase() === normalized ||
+          e.jobNumber?.toLowerCase() === normalized ||
+          e.name === id ||
+          (`emp-${e.id.padStart(3, '0')}`).toLowerCase() === normalized ||
+          e.id === id.replace(/^emp-0*/i, ''),
+      );
+    },
     [employees],
   );
 

@@ -5,6 +5,7 @@ import {
   AttendanceManagement,
   EmployeeDetail,
   EmployeeList,
+  EmployeeSkillTree,
   LevelRateSettings,
   PerformanceManagement,
 } from "./pages/employee";
@@ -168,6 +169,7 @@ export const router = createBrowserRouter([
       { path: "employees/attendance", Component: AttendanceManagement },
       { path: "employees/performance", Component: PerformanceManagement },
       { path: "employees/level-rates", Component: LevelRateSettings },
+      { path: "employees/:id/skills", Component: EmployeeSkillTree },
       { path: "employees/:id", Component: EmployeeDetail },
       { path: "hr/expenses", loader: () => redirect("/finance/expenses") },
       { path: "system/organization", Component: Organization },

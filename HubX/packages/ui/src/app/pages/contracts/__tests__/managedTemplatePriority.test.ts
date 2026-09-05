@@ -29,8 +29,23 @@ const formData: ContractFormData = {
   templateId: 'tpl-zkrt-software',
 };
 
+const storageMap = new Map<string, string>();
+const storageMock: Storage = {
+  getItem: (key: string) => storageMap.get(key) ?? null,
+  setItem: (key: string, value: string) => { storageMap.set(key, String(value)); },
+  removeItem: (key: string) => { storageMap.delete(key); },
+  clear: () => { storageMap.clear(); },
+  key: (index: number) => Array.from(storageMap.keys())[index] ?? null,
+  get length() { return storageMap.size; },
+};
+Object.defineProperty(window, 'localStorage', {
+  value: storageMock,
+  configurable: true,
+  writable: true,
+});
+
 describe('合同模板版本优先级', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => storageMock.clear());
 
   it('管理员发布 V2 后使用 V2 内容，不再被内置中科软通 V1 覆盖', () => {
     const templates = loadContractTemplates();

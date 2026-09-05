@@ -14,7 +14,8 @@
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787';
 
   // X-Actor（ADR-0094）：操作人随写请求上报，服务端记录；登录认证落地后换会话身份。
-  const actor = CURRENT_LOGIN_USER.name;
+  // HTTP Header 必须符合 ByteString (ASCII) 规范，中文统一进行 URI 编码，服务端自动 decode
+  const actor = encodeURIComponent(CURRENT_LOGIN_USER.name);
 
   // B3（ADR-0093）：β 标记，SigningOpenBridge 据此跳过前端联动（Workers 已处理）
   (globalThis as Record<string, unknown>).__ZK_BETA__ = true;

@@ -650,12 +650,12 @@ export function LeadDetail360() {
           source: 'lead_followup',
           sourceId: serviceLeadId,
           module: '线索跟进',
-          title: `跟进 ${lead.name}`,
+          title: `跟进 ${lead?.name || dispatchLead?.name || '线索'}`,
           content: values.content.trim(),
-          assigneeId: dispatchLead?.owner || lead.owner || CURRENT_LOGIN_USER.id,
-          assigneeName: dispatchLead?.owner || lead.owner || CURRENT_LOGIN_USER.name,
+          assigneeId: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.id,
+          assigneeName: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.name,
           status: 'pending',
-          priority: lead.customerLevel === 'S' ? 'high' : 'medium',
+          priority: lead?.customerLevel === 'S' ? 'high' : 'medium',
           createdAt: completedAt,
           deadline: nextFollowTime,
           route: `/leads/${id}`,
@@ -665,9 +665,9 @@ export function LeadDetail360() {
       setLeadOverride((current) => ({
         ...current,
         status: values.customerStatus,
-        level: values.intentionLevel ?? lead.level,
+        level: values.intentionLevel ?? lead?.level,
         nextFollowTime: nextFollowTime ?? '',
-        followCount: (lead.followCount ?? 0) + 1,
+        followCount: ((lead?.followCount) ?? 0) + 1,
       }));
       Message.success('跟进记录已保存');
       setFollowVisible(false);
@@ -1591,8 +1591,8 @@ export function LeadDetail360() {
       <LeadFollowUpModal
         visible={followVisible}
         submitting={followSubmitting}
-        defaultStatus={lead.status}
-        defaultIntention={lead.level}
+        defaultStatus={lead?.status || '初步沟通'}
+        defaultIntention={lead?.level}
         onCancel={() => setFollowVisible(false)}
         onSubmit={saveFollowUp}
       />

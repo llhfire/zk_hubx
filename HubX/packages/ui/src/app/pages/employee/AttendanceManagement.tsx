@@ -39,9 +39,9 @@ const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   '事假': 'var(--warning-500)',
   '病假': 'var(--destructive-500)',
   '调休': 'var(--info-500)',
-  '婚宴': 'var(--chart-5)',
-  '产宴': 'var(--chart-5)',
-  '丧宴': 'var(--grey-400)',
+  '婚假': 'var(--chart-5)',
+  '产假': 'var(--chart-5)',
+  '丧假': 'var(--grey-400)',
   '加班': 'var(--success-500)',
 };
 

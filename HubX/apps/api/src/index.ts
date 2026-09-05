@@ -1,9 +1,11 @@
-// ZK HubX β版后端（Cloudflare Workers + Hono + D1）。
-// 报价数据存 D1（SQLite），data 列存整条 Quote 的 JSON。与前端 QuotationService 的 list/upsert 对应。
+// ZK HubX β版后端（Cloudflare Workers + Hono + Supabase / D1）。
+// 优先接入 Supabase (PostgreSQL，JSONB 文档式存储)，支持本地 D1 / 内存存储兜底。
 
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { cors } from 'hono/cors';
+
+import { getDbAdapter, type DatabaseAdapter, type ApiEnvBindings } from './db';
 
 // B3 签约联动（ADR-0093）：单源导入 packages/ui 纯函数，禁止复制
 import { diffContractEvents, prevSnapshotForWrite, shouldEnsureUnconfirmedProject } from '../../../packages/ui/src/app/pages/contracts/signingOpenEvents';
@@ -26,9 +28,7 @@ import {
 import type { LeadListItem, CustomerLevel } from '../../../packages/ui/src/app/pages/leads/types';
 import type { DispatchInput } from '../../../packages/ui/src/services/leadMutations';
 
-type Env = {
-  DB: D1Database;
-};
+type Env = ApiEnvBindings;
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -78,11 +78,17 @@ function seedQuote() {
   };
 }
 
-async function ensureSeed(db: D1Database) {
-  await db
-    .prepare('INSERT OR IGNORE INTO quotes (id, data, updated_at) VALUES (?, ?, ?)')
-    .bind('q-seed-1', JSON.stringify(seedQuote()), new Date().toISOString())
-    .run();
+function getActor(c: Context): string {
+  const raw = c.req.header('X-Actor') ?? '';
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+async function ensureSeed(db: DatabaseAdapter) {
+  await db.ensureSeedQuote(seedQuote());
 }
 
 // 报价状态机「合法迁移」表（与前端 quotationMutations TRANSITIONS 对齐，服务端校验用）。
@@ -135,31 +141,33 @@ function domainNow(): string {
   return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 }
 
-app.get('/', (c) => c.json({ ok: true, service: 'zkhubx-api' }));
+app.get('/', (c) => {
+  const db = getDbAdapter(c.env);
+  return c.json({ ok: true, service: 'zkhubx-api', engine: db.engine });
+});
+
+// ── 报价域 ───────────────────────────────────────────────
 
 app.get('/api/quotes', async (c) => {
-  await ensureSeed(c.env.DB);
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM quotes ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ quotes: results.map((r) => withVersion(migrateQuoteApi(JSON.parse(r.data)), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  await ensureSeed(db);
+  const records = await db.getQuotes();
+  return c.json({ quotes: records.map((r) => withVersion(migrateQuoteApi(r.data), r.version)) });
 });
 
 app.get('/api/quotes/:id', async (c) => {
-  const row = await c.env.DB
-    .prepare('SELECT data, version FROM quotes WHERE id = ?')
-    .bind(c.req.param('id'))
-    .first<{ data: string; version: number }>();
-  return row ? c.json({ quote: withVersion(migrateQuoteApi(JSON.parse(row.data)), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
+  const db = getDbAdapter(c.env);
+  const row = await db.getQuote(c.req.param('id'));
+  return row ? c.json({ quote: withVersion(migrateQuoteApi(row.data), row.version) }) : c.json({ error: 'not found' }, 404);
 });
 
 app.put('/api/quotes/:id', async (c) => {
+  const db = getDbAdapter(c.env);
   const id = c.req.param('id');
   const body = (await c.req.json()) as Record<string, unknown> & { status?: string; version?: number };
-  const actor = c.req.header('X-Actor') ?? '';
+  const actor = getActor(c);
 
-  const old = await c.env.DB
-    .prepare('SELECT data, version FROM quotes WHERE id = ?')
-    .bind(id)
-    .first<{ data: string; version: number }>();
+  const old = await db.getQuote(id);
   const currentVersion = old?.version ?? 0;
 
   // 乐观锁（ADR-0094）：请求携带的 version 与库内不一致 -> 409，客户端提示刷新重试
@@ -169,89 +177,44 @@ app.put('/api/quotes/:id', async (c) => {
 
   // 服务端校验状态迁移：读旧状态，比对新状态是否合法（防止"胖客户端"跳过步骤）
   if (old) {
-    const oldStatus = (JSON.parse(old.data) as { status?: string }).status;
+    const oldStatus = (old.data as { status?: string }).status;
     const newStatus = body.status;
     if (oldStatus && newStatus && !isValidTransition(oldStatus, newStatus)) {
       return c.json({ error: `非法状态迁移：${oldStatus} -> ${newStatus}` }, 400);
     }
   }
 
-  // version 是传输层并发令牌，不落进 data；updatedAt 由服务端时钟覆盖
+  // version 是传输层并发令牌，不落进 data；updatedAt 由服务端时钟覆盖；保留 id
   const { version: _v, ...data } = body;
   const serverUpdatedAt = domainNow();
-  await c.env.DB
-    .prepare('INSERT OR REPLACE INTO quotes (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify({ ...data, updatedAt: serverUpdatedAt }), new Date().toISOString(), currentVersion + 1)
-    .run();
+  await db.upsertQuote(id, { id, ...data, updatedAt: serverUpdatedAt }, currentVersion + 1, new Date().toISOString());
   return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt, actor });
 });
 
 app.delete('/api/quotes/:id', async (c) => {
-  await c.env.DB.prepare('DELETE FROM quotes WHERE id = ?').bind(c.req.param('id')).run();
+  const db = getDbAdapter(c.env);
+  await db.deleteQuote(c.req.param('id'));
   return c.json({ ok: true });
 });
 
-// ── 合同（与报价同模式，存 D1 contracts 表）────────────────
+// ── 合同域 ───────────────────────────────────────────────
+
 app.get('/api/contracts', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM contracts ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ contracts: results.map((r) => withVersion(JSON.parse(r.data), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getContracts();
+  return c.json({ contracts: records.map((r) => withVersion(r.data, r.version)) });
 });
 
 app.get('/api/contracts/:id', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data, version FROM contracts WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
-  return row ? c.json({ contract: withVersion(JSON.parse(row.data), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
+  const db = getDbAdapter(c.env);
+  const row = await db.getContract(c.req.param('id'));
+  return row ? c.json({ contract: withVersion(row.data, row.version) }) : c.json({ error: 'not found' }, 404);
 });
-
-app.put('/api/contracts/:id', async (c) => {
-  const id = c.req.param('id');
-  const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
-  const actor = c.req.header('X-Actor') ?? '';
-
-  // 读旧文档（含 data）：乐观锁 + 联动 diff 都需要
-  const old = await c.env.DB.prepare('SELECT data, version FROM contracts WHERE id = ?').bind(id).first<{ data: string; version: number }>();
-  const currentVersion = old?.version ?? 0;
-
-  // 乐观锁（ADR-0094）：与报价同规则
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
-  }
-
-  // version 不落进 data；updatedAt 由服务端时钟覆盖
-  const { version: _v, ...data } = body;
-  const serverUpdatedAt = domainNow();
-  await c.env.DB
-    .prepare('INSERT OR REPLACE INTO contracts (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify({ ...data, updatedAt: serverUpdatedAt }), new Date().toISOString(), currentVersion + 1)
-    .run();
-
-  // B3 签约联动（ADR-0093）：合同写入后检测事件，在同一请求内完成 spawn / startDelivery / shelve
-  // 洞 C 修复：首次 INSERT 也执行联动（使用 prevSnapshotForWrite）
-  const oldDoc = old ? (JSON.parse(old.data) as Record<string, unknown>) : null;
-  const prevSnapshot = prevSnapshotForWrite(id, oldDoc ? { approvedAt: oldDoc.approvedAt as string | undefined, status: oldDoc.status as string | undefined } : null);
-  const nextContract = { id, ...data } as import('../../../packages/ui/src/app/pages/contracts/types').Contract;
-  const events = diffContractEvents(prevSnapshot, [nextContract]);
-
-  if (events.created.length > 0 || events.approved.length > 0 || events.voided.length > 0) {
-    await handleSigningLinkage(c.env.DB, events as unknown as { created: ContractLike[]; approved: ContractLike[]; voided: ContractLike[] }, serverUpdatedAt);
-  }
-
-  // 洞 C ③：草稿/未批准且非作废，该 lead 还没有项目 → 再 spawn（INSERT OR IGNORE，幂等）
-  await ensureUnconfirmedProjectIfMissing(c.env.DB, nextContract as ContractLike, serverUpdatedAt);
-
-  return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt, actor });
-});
-
-app.delete('/api/contracts/:id', async (c) => {
-  await c.env.DB.prepare('DELETE FROM contracts WHERE id = ?').bind(c.req.param('id')).run();
-  return c.json({ ok: true });
-});
-
-// ── B3 签约联动（ADR-0093）：合同事件 → 项目/商机/交付 ──
 
 type ContractLike = Record<string, unknown>;
 
 /** 合同写入后，在同一请求内完成 spawn / startDelivery / shelve（原子性） */
-async function handleSigningLinkage(db: D1Database, events: { created: ContractLike[]; approved: ContractLike[]; voided: ContractLike[] }, today: string) {
+async function handleSigningLinkage(db: DatabaseAdapter, events: { created: ContractLike[]; approved: ContractLike[]; voided: ContractLike[] }, today: string) {
   // 合同新建 → spawn 未确认项目
   for (const contract of events.created) {
     const leadId = contract.leadId as string | undefined;
@@ -259,7 +222,7 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
     const contractId = contract.id as string;
 
     // 检查是否已有项目
-    const existing = await db.prepare('SELECT id FROM projects WHERE json_extract(data, \'$.leadId\') = ?').bind(leadId).first();
+    const existing = await db.getProjectByLeadId(leadId);
     if (existing) continue; // 已有项目不重复 spawn
 
     const projectId = 'ap-' + contractId;
@@ -274,11 +237,9 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
       projectId,
       today,
     });
-    await db.batch([
-      db.prepare('INSERT OR IGNORE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(projectId, JSON.stringify(fullProject), new Date().toISOString(), 0),
-      db.prepare('INSERT OR IGNORE INTO cases (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(bizCase.id, JSON.stringify({ ...bizCase, contractId }), new Date().toISOString(), 0),
+    await Promise.all([
+      db.insertProjectIfMissing(projectId, fullProject, 0, new Date().toISOString()),
+      db.insertCaseIfMissing(bizCase.id, { ...bizCase, contractId }, 0, new Date().toISOString()),
     ]);
   }
 
@@ -288,10 +249,10 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
     if (!leadId) continue;
     const contractId = contract.id as string;
 
-    const projectRow = await db.prepare('SELECT data, version FROM projects WHERE json_extract(data, \'$.leadId\') = ?').bind(leadId).first<{ data: string; version: number }>();
+    const projectRow = await db.getProjectByLeadId(leadId);
     if (!projectRow) continue; // ADR-0067：批准时无项目不兜底 spawn
 
-    const project = JSON.parse(projectRow.data) as Record<string, unknown>;
+    const project = projectRow.data as Record<string, unknown>;
     const patch = startDelivery({
       project: { status: project.status as string, contractId: project.contractId as string | undefined },
       contractId,
@@ -300,24 +261,18 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
 
     if (patch) {
       const updatedProject = { ...project, ...patch, updatedAt: today };
-      await db.prepare('INSERT OR REPLACE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(project.id as string, JSON.stringify(updatedProject), new Date().toISOString(), (projectRow.version ?? 0) + 1)
-        .run();
+      await db.upsertProject(project.id as string, updatedProject, (projectRow.version ?? 0) + 1, new Date().toISOString());
     }
 
     // 补全商机关联
-    const caseRow = await db.prepare('SELECT data, version FROM cases WHERE json_extract(data, \'$.leadId\') = ?').bind(leadId).first<{ data: string; version: number }>();
+    const caseRow = await db.getCaseByLeadId(leadId);
     if (caseRow) {
-      const bizCase = JSON.parse(caseRow.data) as Record<string, unknown>;
+      const bizCase = caseRow.data as Record<string, unknown>;
       const updatedCase = { ...bizCase, projectId: bizCase.projectId ?? project.id, contractId: bizCase.contractId ?? contractId, updatedAt: today };
-      await db.prepare('INSERT OR REPLACE INTO cases (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(bizCase.id as string, JSON.stringify(updatedCase), new Date().toISOString(), (caseRow.version ?? 0) + 1)
-        .run();
+      await db.upsertCase(bizCase.id as string, updatedCase, (caseRow.version ?? 0) + 1, new Date().toISOString());
     } else {
       const newCase = { id: 'case-' + leadId, leadId, projectId: project.id, contractId, extraContractIds: [], quoteIds: [], updatedAt: today };
-      await db.prepare('INSERT OR IGNORE INTO cases (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(newCase.id, JSON.stringify(newCase), new Date().toISOString(), 0)
-        .run();
+      await db.insertCaseIfMissing(newCase.id, newCase, 0, new Date().toISOString());
     }
   }
 
@@ -327,10 +282,10 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
     if (!leadId) continue;
     const contractId = contract.id as string;
 
-    const projectRow = await db.prepare('SELECT data, version FROM projects WHERE json_extract(data, \'$.leadId\') = ?').bind(leadId).first<{ data: string; version: number }>();
+    const projectRow = await db.getProjectByLeadId(leadId);
     if (!projectRow) continue;
 
-    const project = JSON.parse(projectRow.data) as Record<string, unknown>;
+    const project = projectRow.data as Record<string, unknown>;
     const shelvePatch = shelveProject({
       project: { status: project.status as string, contractId: project.contractId as string | undefined },
       contractId,
@@ -338,9 +293,7 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
     });
     if (shelvePatch) {
       const updatedProject = { ...project, ...shelvePatch, updatedAt: today };
-      await db.prepare('INSERT OR REPLACE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-        .bind(project.id as string, JSON.stringify(updatedProject), new Date().toISOString(), (projectRow.version ?? 0) + 1)
-        .run();
+      await db.upsertProject(project.id as string, updatedProject, (projectRow.version ?? 0) + 1, new Date().toISOString());
     }
   }
 }
@@ -349,10 +302,10 @@ async function handleSigningLinkage(db: D1Database, events: { created: ContractL
  * 洞 C ③：草稿/未批准且非作废，该 lead 还没有项目 → 再 spawn（INSERT OR IGNORE，幂等）
  * 解决首次 INSERT 跳过联动、或联动失败后无法补救的问题
  */
-async function ensureUnconfirmedProjectIfMissing(db: D1Database, contract: ContractLike, today: string) {
+async function ensureUnconfirmedProjectIfMissing(db: DatabaseAdapter, contract: ContractLike, today: string) {
   if (!shouldEnsureUnconfirmedProject(
     { approvedAt: contract.approvedAt as string | undefined, status: contract.status as string | undefined, leadId: contract.leadId as string | undefined },
-    false, // hasProjectForLead 会在下面查询
+    false,
   )) {
     return;
   }
@@ -360,8 +313,7 @@ async function ensureUnconfirmedProjectIfMissing(db: D1Database, contract: Contr
   const leadId = contract.leadId as string;
   const contractId = contract.id as string;
 
-  // 检查是否已有项目
-  const existing = await db.prepare('SELECT id FROM projects WHERE json_extract(data, \'$.leadId\') = ?').bind(leadId).first();
+  const existing = await db.getProjectByLeadId(leadId);
   if (existing) return; // 已有项目不重复 spawn
 
   const projectId = 'ap-' + contractId;
@@ -370,62 +322,91 @@ async function ensureUnconfirmedProjectIfMissing(db: D1Database, contract: Contr
     leadId,
     projectId,
   });
-
-  // 从 contract.current 读取展示字段（洞 C 修复：读 current 而非顶层）
-  const cur = (contract.current && typeof contract.current === 'object')
-    ? (contract.current as { customerName?: string; signingEntity?: string })
-    : {};
-  const customerName = cur.customerName ?? (contract.customerName as string | undefined);
-  const signingEntity = cur.signingEntity ?? (contract.signingEntity as string | undefined);
-
   const fullProject = buildUnconfirmedProject({
-    lead: { id: leadId, name: customerName },
-    contract: { id: contractId, current: { customerName, signingEntity } },
+    lead: { id: leadId, name: contract.customerName as string | undefined },
+    contract: { id: contractId, current: { customerName: contract.customerName as string | undefined, signingEntity: contract.signingEntity as string | undefined } },
     projectId,
     today,
   });
-
-  await db.batch([
-    db.prepare('INSERT OR IGNORE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-      .bind(projectId, JSON.stringify(fullProject), new Date().toISOString(), 0),
-    db.prepare('INSERT OR IGNORE INTO cases (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-      .bind(bizCase.id, JSON.stringify({ ...bizCase, contractId }), new Date().toISOString(), 0),
+  await Promise.all([
+    db.insertProjectIfMissing(projectId, fullProject, 0, new Date().toISOString()),
+    db.insertCaseIfMissing(bizCase.id, { ...bizCase, contractId }, 0, new Date().toISOString()),
   ]);
 }
 
-// ── 项目域 CRUD（B3/B4，文档式）──
+app.put('/api/contracts/:id', async (c) => {
+  const db = getDbAdapter(c.env);
+  const id = c.req.param('id');
+  const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
+  const actor = getActor(c);
+
+  // 读旧文档：乐观锁 + 联动 diff 都需要
+  const old = await db.getContract(id);
+  const currentVersion = old?.version ?? 0;
+
+  // 乐观锁（ADR-0094）：与报价同规则
+  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
+    return c.json({ error: 'version conflict', currentVersion }, 409);
+  }
+
+  // version 不落进 data；updatedAt 由服务端时钟覆盖；确保 id 保留在文档对象中
+  const { version: _v, ...data } = body;
+  const serverUpdatedAt = domainNow();
+  await db.upsertContract(id, { id, ...data, updatedAt: serverUpdatedAt }, currentVersion + 1, new Date().toISOString());
+
+  // B3 签约联动（ADR-0093）：合同写入后检测事件，在同一请求内完成 spawn / startDelivery / shelve
+  const oldDoc = old ? (old.data as Record<string, unknown>) : null;
+  const prevSnapshot = prevSnapshotForWrite(id, oldDoc ? { approvedAt: oldDoc.approvedAt as string | undefined, status: oldDoc.status as string | undefined } : null);
+  const nextContract = { id, ...data } as import('../../../packages/ui/src/app/pages/contracts/types').Contract;
+  const events = diffContractEvents(prevSnapshot, [nextContract]);
+
+  if (events.created.length > 0 || events.approved.length > 0 || events.voided.length > 0) {
+    await handleSigningLinkage(db, events as unknown as { created: ContractLike[]; approved: ContractLike[]; voided: ContractLike[] }, serverUpdatedAt);
+  }
+
+  // 洞 C ③：草稿/未批准且非作废，该 lead 还没有项目 → 再 spawn（幂等）
+  await ensureUnconfirmedProjectIfMissing(db, nextContract as ContractLike, serverUpdatedAt);
+
+  return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt, actor });
+});
+
+app.delete('/api/contracts/:id', async (c) => {
+  const db = getDbAdapter(c.env);
+  await db.deleteContract(c.req.param('id'));
+  return c.json({ ok: true });
+});
+
+// ── 项目域 CRUD（B3/B4，文档式）───────────────────────────
 
 app.get('/api/projects', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM projects ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ projects: results.map((r) => withVersion(JSON.parse(r.data), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getProjects();
+  return c.json({ projects: records.map((r) => withVersion(r.data, r.version)) });
 });
 
 app.get('/api/projects/:id', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data, version FROM projects WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
-  return row ? c.json({ project: withVersion(JSON.parse(row.data), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
+  const db = getDbAdapter(c.env);
+  const row = await db.getProject(c.req.param('id'));
+  return row ? c.json({ project: withVersion(row.data, row.version) }) : c.json({ error: 'not found' }, 404);
 });
 
-// 项目详情复合接口（β 阶段 2）：项目 + 关联合同（contractId / leadId 两路匹配）+ 项目实收 + 活动事件（doc 内嵌若有）
+// 项目详情复合接口（β 阶段 2）：项目 + 关联合同 + 项目实收 + 活动事件
 app.get('/api/projects/:id/detail', async (c) => {
+  const db = getDbAdapter(c.env);
   const id = c.req.param('id');
-  const row = await c.env.DB.prepare('SELECT data, version FROM projects WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  const row = await db.getProject(id);
   if (!row) return c.json({ error: 'not found' }, 404);
-  const project = withVersion(JSON.parse(row.data), row.version ?? 0) as Record<string, unknown> & { contractId?: string; leadId?: string; activities?: unknown[] };
+  const project = withVersion(row.data, row.version) as Record<string, unknown> & { contractId?: string; leadId?: string; activities?: unknown[] };
 
   const contractId = project.contractId || '';
   const leadId = project.leadId || '';
-  const { results: contractRows } = await c.env.DB
-    .prepare("SELECT data FROM contracts WHERE id = ? OR (? != '' AND json_extract(data, '$.leadId') = ?)")
-    .bind(contractId, leadId, leadId)
-    .all<{ data: string }>();
-  const contracts = (contractRows ?? []).map((r) => JSON.parse(r.data));
+
+  const contractRows = await db.getContractsForProject(contractId, leadId);
+  const contracts = contractRows.map((r) => r.data);
   const contractIds = contracts.map((ct) => String(ct.id ?? ''));
 
-  const { results: collectionRows } = await c.env.DB
-    .prepare("SELECT data FROM collections WHERE json_extract(data, '$.projectId') = ? OR json_extract(data, '$.contractId') IN (SELECT value FROM json_each(?))")
-    .bind(id, JSON.stringify(contractIds))
-    .all<{ data: string }>();
-  const collections = (collectionRows ?? []).map((r) => JSON.parse(r.data));
+  const collectionRows = await db.getCollectionsForProject(id, contractIds);
+  const collections = collectionRows.map((r) => r.data);
 
   return c.json({
     project,
@@ -436,28 +417,28 @@ app.get('/api/projects/:id/detail', async (c) => {
 });
 
 app.post('/api/projects', async (c) => {
+  const db = getDbAdapter(c.env);
   const body = (await c.req.json()) as Record<string, unknown>;
   const id = (typeof body.id === 'string' && body.id) ? body.id : `p-${Date.now()}`;
-  const existing = await c.env.DB.prepare('SELECT id FROM projects WHERE id = ?').bind(id).first();
+  const existing = await db.getProject(id);
   if (existing) return c.json({ id });
   const serverUpdatedAt = domainNow();
   const doc = { ...body, id, createdAt: body.createdAt ?? serverUpdatedAt, updatedAt: serverUpdatedAt };
-  await c.env.DB.prepare('INSERT OR IGNORE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify(doc), new Date().toISOString(), 0)
-    .run();
+  await db.insertProjectIfMissing(id, doc, 0, new Date().toISOString());
   return c.json({ id });
 });
 
 app.put('/api/projects/:id', async (c) => {
+  const db = getDbAdapter(c.env);
   const id = c.req.param('id');
   const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
-  const old = await c.env.DB.prepare('SELECT data, version FROM projects WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  const old = await db.getProject(id);
   const currentVersion = old?.version ?? 0;
   if (old && typeof body.version === 'number' && body.version !== currentVersion) {
     return c.json({ error: 'version conflict', currentVersion }, 409);
   }
   if (old) {
-    const oldDoc = JSON.parse(old.data) as Record<string, unknown>;
+    const oldDoc = old.data as Record<string, unknown>;
     const statusErr = validateProjectStatusWrite(
       String(oldDoc.status ?? ''),
       String(body.status ?? oldDoc.status ?? ''),
@@ -467,28 +448,27 @@ app.put('/api/projects/:id', async (c) => {
   }
   const { version: _v, ...data } = body;
   const serverUpdatedAt = domainNow();
-  await c.env.DB.prepare('INSERT OR REPLACE INTO projects (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify({ ...data, updatedAt: serverUpdatedAt }), new Date().toISOString(), currentVersion + 1)
-    .run();
+  await db.upsertProject(id, { id, ...data, updatedAt: serverUpdatedAt }, currentVersion + 1, new Date().toISOString());
   return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt });
 });
 
 app.delete('/api/projects/:id', async (c) => {
-  await c.env.DB.prepare('DELETE FROM projects WHERE id = ?').bind(c.req.param('id')).run();
+  const db = getDbAdapter(c.env);
+  await db.deleteProject(c.req.param('id'));
   return c.json({ ok: true });
 });
 
-// ── 回款实收台账（B4，append-only 文档行）──
+// ── 回款实收台账（B4）─────────────────────────────────────
 
 app.get('/api/collections', async (c) => {
+  const db = getDbAdapter(c.env);
   const contractId = c.req.query('contractId');
-  const { results } = contractId
-    ? await c.env.DB.prepare('SELECT data FROM collections WHERE json_extract(data, \'$.contractId\') = ? ORDER BY updated_at DESC').bind(contractId).all<{ data: string }>()
-    : await c.env.DB.prepare('SELECT data FROM collections ORDER BY updated_at DESC').all<{ data: string }>();
-  return c.json({ collections: (results ?? []).map((r) => JSON.parse(r.data)) });
+  const records = await db.getCollections(contractId);
+  return c.json({ collections: records.map((r) => r.data) });
 });
 
 app.post('/api/collections', async (c) => {
+  const db = getDbAdapter(c.env);
   const body = (await c.req.json()) as Record<string, unknown>;
   try {
     const rec = buildCollectionRecord({
@@ -502,69 +482,62 @@ app.post('/api/collections', async (c) => {
       note: String(body.note ?? ''),
     });
     const serverUpdatedAt = domainNow();
-    await c.env.DB.prepare('INSERT OR IGNORE INTO collections (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-      .bind(rec.id, JSON.stringify({ ...rec, updatedAt: serverUpdatedAt }), new Date().toISOString(), 0)
-      .run();
+    await db.insertCollectionIfMissing(rec.id, { ...rec, updatedAt: serverUpdatedAt }, 0, new Date().toISOString());
     return c.json({ id: rec.id });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : '登记实收失败' }, 400);
   }
 });
 
-// ── 商机域 CRUD ──
+// ── 商机域 CRUD ───────────────────────────────────────────
 
 app.get('/api/cases', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM cases ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ cases: results.map((r) => withVersion(JSON.parse(r.data), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getCases();
+  return c.json({ cases: records.map((r) => withVersion(r.data, r.version)) });
 });
 
 app.put('/api/cases/:id', async (c) => {
+  const db = getDbAdapter(c.env);
   const id = c.req.param('id');
   const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
-  const old = await c.env.DB.prepare('SELECT version FROM cases WHERE id = ?').bind(id).first<{ version: number }>();
+  const old = await db.getCase(id);
   const currentVersion = old?.version ?? 0;
   if (old && typeof body.version === 'number' && body.version !== currentVersion) {
     return c.json({ error: 'version conflict', currentVersion }, 409);
   }
   const { version: _v, ...data } = body;
   const serverUpdatedAt = domainNow();
-  await c.env.DB.prepare('INSERT OR REPLACE INTO cases (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify({ ...data, updatedAt: serverUpdatedAt }), new Date().toISOString(), currentVersion + 1)
-    .run();
+  await db.upsertCase(id, { id, ...data, updatedAt: serverUpdatedAt }, currentVersion + 1, new Date().toISOString());
   return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt });
 });
 
-// ── 线索域（B2，与报价/合同同文档式模式；接口形态对齐 LeadService，见 packages/ui/services/leadService.ts）──
-// 表：leads（主文档+version）、lead_followups / lead_transfers（一条一 JSON 行）。
-// 服务端校验：领取前置条件（公海才可领）、退回前置条件（已分配且未成交，第 3 次自动进垃圾）。
+// ── 线索域（B2）───────────────────────────────────────────
 
 app.get('/api/leads', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM leads ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ leads: results.map((r) => withVersion(JSON.parse(r.data), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getLeads();
+  return c.json({ leads: records.map((r) => withVersion(r.data, r.version)) });
 });
 
 app.get('/api/leads/:id', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
-  return row ? c.json({ lead: withVersion(JSON.parse(row.data), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
+  const db = getDbAdapter(c.env);
+  const row = await db.getLead(c.req.param('id'));
+  return row ? c.json({ lead: withVersion(row.data, row.version) }) : c.json({ error: 'not found' }, 404);
 });
 
-function parseLeadDoc(data: string): Record<string, unknown> {
-  return JSON.parse(data) as Record<string, unknown>;
-}
-
-// 领取前置校验：仅公海线索可认领（与前端 canClaimLead 对齐）
 function isValidClaim(oldDoc: Record<string, unknown>): boolean {
   return oldDoc.clueType === 'public';
 }
 
-// 退回前置校验：已分配未成交可退回（与前端 canReturnLead 对齐）
 function isValidReturn(oldDoc: Record<string, unknown>): boolean {
-  if (oldDoc.clueType === 'trash') return true; // 垃圾池退出
+  if (oldDoc.clueType === 'trash') return true;
   if (oldDoc.clueType !== 'assigned') return false;
   return oldDoc.status !== '已签单' && oldDoc.status !== '已终止';
 }
 
 app.post('/api/leads', async (c) => {
+  const db = getDbAdapter(c.env);
   const body = (await c.req.json()) as Record<string, unknown>;
   const id = `L-${Date.now()}`;
   const serverUpdatedAt = domainNow();
@@ -579,91 +552,101 @@ app.post('/api/leads', async (c) => {
     followCount: 0,
     daysHeld: 0,
     isOverdue: false,
-    owner: '',
+    owner: (body.owner as string) ?? '',
+    createTime: (body.createTime as string) || serverUpdatedAt,
+    updateTime: serverUpdatedAt,
     createdAt: serverUpdatedAt,
     updatedAt: serverUpdatedAt,
   };
-  await c.env.DB
-    .prepare('INSERT OR REPLACE INTO leads (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify(doc), new Date().toISOString(), 0)
-    .run();
+  await db.upsertLead(id, doc, 0, new Date().toISOString());
   return c.json({ id });
 });
 
 app.put('/api/leads/:id', async (c) => {
+  const db = getDbAdapter(c.env);
   const id = c.req.param('id');
   const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
-  const actor = c.req.header('X-Actor') ?? '';
+  const actor = getActor(c);
 
-  const old = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  const old = await db.getLead(id);
   const currentVersion = old?.version ?? 0;
 
-  // 乐观锁（ADR-0094）：与报价/合同同规则
   if (old && typeof body.version === 'number' && body.version !== currentVersion) {
     return c.json({ error: 'version conflict', currentVersion }, 409);
   }
 
-  // 服务端校验（B2）：领取/退回前置条件，防“胖客户端”跳过规则
   if (old) {
-    const oldDoc = parseLeadDoc(old.data);
+    const oldDoc = old.data as Record<string, unknown>;
     const changedLeadField = (key: string) => oldDoc[key] !== body[key];
 
     if (changedLeadField('clueType') && body.clueType === 'assigned' && oldDoc.clueType === 'public') {
-      // 认领跳转：公海 → 我的，仅公海有效
       if (!isValidClaim(oldDoc)) return c.json({ error: '仅公海线索可认领' }, 400);
     }
     if (changedLeadField('clueType') && body.clueType === 'public' && oldDoc.clueType === 'assigned') {
-      // 退回公海：已分配未成交才可退；第 3 次自动垃圾在 mutation 内已算好
       if (!isValidReturn(oldDoc)) return c.json({ error: '仅已分配且未成交线索可退回公海' }, 400);
     }
   }
 
   const { version: _v, ...data } = body;
   const serverUpdatedAt = domainNow();
-  await c.env.DB
-    .prepare('INSERT OR REPLACE INTO leads (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-    .bind(id, JSON.stringify({ ...data, updatedAt: serverUpdatedAt }), new Date().toISOString(), currentVersion + 1)
-    .run();
+  await db.upsertLead(
+    id,
+    { id, ...data, updateTime: serverUpdatedAt, updatedAt: serverUpdatedAt },
+    currentVersion + 1,
+    new Date().toISOString(),
+  );
   return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt, actor });
 });
 
 app.delete('/api/leads/:id', async (c) => {
-  await c.env.DB.prepare('DELETE FROM leads WHERE id = ?').bind(c.req.param('id')).run();
+  const db = getDbAdapter(c.env);
+  await db.deleteLead(c.req.param('id'));
   return c.json({ ok: true });
 });
 
-// ── 跟进记录（写入时顺带同步线索状态/等级/时间）──
+// ── 跟进记录 ──
 app.get('/api/leads/:id/followups', async (c) => {
-  const { results } = await c.env.DB
-    .prepare('SELECT data FROM lead_followups WHERE lead_id = ? ORDER BY updated_at DESC')
-    .bind(c.req.param('id'))
-    .all<{ data: string }>();
-  return c.json({ followUps: (results ?? []).map((r) => JSON.parse(r.data)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getLeadFollowups(c.req.param('id'));
+  return c.json({ followUps: records.map((r) => r.data) });
 });
 
 app.post('/api/leads/:id/followups', async (c) => {
-  const id = c.req.param('id');
-  const input = (await c.req.json()) as { method?: string; customerStatus?: string; content?: string; nextFollowTime?: string; customerLevel?: string; creator?: string };
-  const leadRow = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  const db = getDbAdapter(c.env);
+  const paramId = c.req.param('id');
+  const input = (await c.req.json()) as {
+    method?: string;
+    customerStatus?: string;
+    content?: string;
+    nextFollowTime?: string;
+    customerLevel?: string;
+    creator?: string;
+    costHours?: number;
+    costMins?: number;
+    attachments?: unknown[];
+  };
+  const leadRow = await db.getLead(paramId);
   if (!leadRow) return c.json({ error: 'not found' }, 404);
 
-  const leadDoc = parseLeadDoc(leadRow.data);
+  const realId = leadRow.id;
+  const leadDoc = leadRow.data as Record<string, unknown>;
   const t = domainNow();
   const record = {
-    id: `fu-${id}-${t.replace(/[-: ]/g, '')}`,
-    leadId: id,
-    method: input.method ?? '电话',
+    id: `fu-${realId}-${t.replace(/[-: ]/g, '')}`,
+    leadId: realId,
+    method: input.method ?? '电话沟通',
     customerStatus: input.customerStatus ?? leadDoc.status,
     customerLevel: input.customerLevel ?? leadDoc.customerLevel,
+    costHours: input.costHours,
+    costMins: input.costMins,
     content: input.content ?? '',
     nextFollowTime: input.nextFollowTime ?? '',
-    attachments: [],
-    creator: input.creator ?? '',
+    attachments: input.attachments ?? [],
+    creator: input.creator || getActor(c) || '系统',
     createdAt: t,
     updatedAt: t,
     followupStatus: 'pending',
   };
-  // 同步线索状态与跟进时间（服务端时钟）
   const updatedLead = {
     ...leadDoc,
     status: input.customerStatus ?? leadDoc.status,
@@ -672,29 +655,32 @@ app.post('/api/leads/:id/followups', async (c) => {
     lastFollowContent: input.content ?? '',
     nextFollowTime: input.nextFollowTime ?? '',
     followCount: ((leadDoc.followCount as number) ?? 0) + 1,
+    updateTime: t,
     updatedAt: t,
   };
-  await c.env.DB.batch([
-    c.env.DB.prepare('INSERT OR REPLACE INTO lead_followups (id, lead_id, data, updated_at) VALUES (?, ?, ?, ?)').bind(record.id, id, JSON.stringify(record), new Date().toISOString()),
-    c.env.DB.prepare('INSERT OR REPLACE INTO leads (id, data, updated_at, version) VALUES (?, ?, ?, ?)').bind(id, JSON.stringify(updatedLead), new Date().toISOString(), (leadRow.version ?? 0) + 1),
-  ]);
-  return c.json({ ok: true });
+
+  await db.saveLeadFollowupAndLead(
+    { id: record.id, leadId: realId, data: record },
+    updatedLead,
+    (leadRow.version ?? 0) + 1,
+    new Date().toISOString(),
+  );
+  return c.json({ ok: true, id: record.id, leadId: realId });
 });
 
 // ── 流转记录 ──
 app.get('/api/leads/:id/transfers', async (c) => {
-  const { results } = await c.env.DB
-    .prepare('SELECT data FROM lead_transfers WHERE lead_id = ? ORDER BY updated_at DESC')
-    .bind(c.req.param('id'))
-    .all<{ data: string }>();
-  return c.json({ transfers: (results ?? []).map((r) => JSON.parse(r.data)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getLeadTransfers(c.req.param('id'));
+  return c.json({ transfers: records.map((r) => r.data) });
 });
 
-// ── 线索详情复合接口（β 阶段 2）：迁移线索无 α 静态 profile，服务端按列表字段组装 ──
+// ── 线索详情复合接口 ──
 app.get('/api/leads/:id/detail', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
+  const db = getDbAdapter(c.env);
+  const row = await db.getLead(c.req.param('id'));
   if (!row) return c.json({ error: 'not found' }, 404);
-  const lead = JSON.parse(row.data) as LeadListItem & { leadEvents?: unknown[] };
+  const lead = row.data as LeadListItem & { leadEvents?: unknown[] };
   return c.json({
     detail: buildLeadDetailInfo(lead),
     events: lead.leadEvents ?? [],
@@ -702,33 +688,29 @@ app.get('/api/leads/:id/detail', async (c) => {
   });
 });
 
-// ── 派发域写端点（β 阶段 2；事件 id/时间服务端生成，actor 取 X-Actor；单请求原子写 doc）──
+// ── 派发域写端点 ──
 
-/** 派发域共用：读 doc -> 纯函数 -> 原子写回（version+1），可选同事务写流转记录 */
 async function appendLeadAction(
   c: Context<{ Bindings: Env }>,
   id: string,
   build: (lead: LeadListItem, actor: string, now: string, eventId: string) => { lead: LeadListItem; transfer: { id: string } | null },
 ) {
-  const row = await c.env.DB.prepare('SELECT data, version FROM leads WHERE id = ?').bind(id).first<{ data: string; version: number }>();
+  const db = getDbAdapter(c.env);
+  const row = await db.getLead(id);
   if (!row) return c.json({ error: 'not found' }, 404);
-  const actor = c.req.header('X-Actor') ?? '';
+  const actor = getActor(c);
   const now = domainNow();
   const eventId = `evt-${Date.now()}-${id}`;
-  const lead = JSON.parse(row.data) as LeadListItem;
+  const lead = row.data as unknown as LeadListItem;
   const { lead: updated, transfer } = build(lead, actor, now, eventId);
 
-  const statements = [
-    c.env.DB.prepare('INSERT OR REPLACE INTO leads (id, data, updated_at, version) VALUES (?, ?, ?, ?)')
-      .bind(id, JSON.stringify({ ...updated, updatedAt: now }), new Date().toISOString(), (row.version ?? 0) + 1),
-  ];
-  if (transfer) {
-    statements.push(
-      c.env.DB.prepare('INSERT OR REPLACE INTO lead_transfers (id, lead_id, data, updated_at) VALUES (?, ?, ?, ?)')
-        .bind(transfer.id, id, JSON.stringify(transfer), new Date().toISOString()),
-    );
-  }
-  await c.env.DB.batch(statements);
+  await db.saveLeadActionAndTransfer(
+    id,
+    { ...updated, updateTime: now, updatedAt: now },
+    (row.version ?? 0) + 1,
+    new Date().toISOString(),
+    transfer ? { id: transfer.id, leadId: id, data: transfer as unknown as Record<string, unknown> } : null,
+  );
   return c.json({ ok: true, id, version: (row.version ?? 0) + 1, serverUpdatedAt: now });
 }
 
@@ -774,24 +756,26 @@ app.post('/api/leads/:id/level-audit', async (c) => {
   }));
 });
 
-// 线索事件时间线（doc 内嵌 leadEvents，只增不删）
 app.get('/api/leads/:id/events', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data FROM leads WHERE id = ?').bind(c.req.param('id')).first<{ data: string }>();
+  const db = getDbAdapter(c.env);
+  const row = await db.getLead(c.req.param('id'));
   if (!row) return c.json({ error: 'not found' }, 404);
-  const lead = JSON.parse(row.data) as LeadListItem & { leadEvents?: unknown[] };
+  const lead = row.data as LeadListItem & { leadEvents?: unknown[] };
   return c.json({ events: lead.leadEvents ?? [] });
 });
 
-// ── 员工/用户域（B5，β 前端 EmployeeContext 数据源）──
+// ── 员工/用户域（B5）───────────────────────────────────────
 
 app.get('/api/employees', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT data, version FROM employees ORDER BY updated_at DESC').all<{ data: string; version: number }>();
-  return c.json({ employees: results.map((r) => withVersion(JSON.parse(r.data), r.version ?? 0)) });
+  const db = getDbAdapter(c.env);
+  const records = await db.getEmployees();
+  return c.json({ employees: records.map((r) => withVersion(r.data, r.version)) });
 });
 
 app.get('/api/employees/:id', async (c) => {
-  const row = await c.env.DB.prepare('SELECT data, version FROM employees WHERE id = ?').bind(c.req.param('id')).first<{ data: string; version: number }>();
-  return row ? c.json({ employee: withVersion(JSON.parse(row.data), row.version ?? 0) }) : c.json({ error: 'not found' }, 404);
+  const db = getDbAdapter(c.env);
+  const row = await db.getEmployee(c.req.param('id'));
+  return row ? c.json({ employee: withVersion(row.data, row.version) }) : c.json({ error: 'not found' }, 404);
 });
 
 export default app;

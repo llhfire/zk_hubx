@@ -272,8 +272,12 @@ export default defineConfig(({ mode }) => {
     include: ['@arco-design/web-react', '@arco-design/web-react/icon'],
   },
 
-  // 测试文件已迁至 packages/ui，vitest 需要跨 workspace 扫描
+  // 测试文件跨 packages/ui 与 apps/api，vitest 跨 workspace 扫描
   test: {
-    include: ['../../packages/ui/src/**/*.test.ts', '../../packages/ui/src/**/*.test.tsx'],
+    include: [
+      '../../packages/ui/src/**/*.test.ts',
+      '../../packages/ui/src/**/*.test.tsx',
+      '../api/src/**/*.test.ts',
+    ],
   },
 }})

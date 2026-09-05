@@ -58,6 +58,8 @@ import {
   getQuickFilterCounts,
 } from './leads/utils';
 import { FollowUpIcon, TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
+import { LeadFollowUpModal, type LeadFollowUpFormValues } from './leads/components/LeadFollowUpModal';
+import { uploadItemsToLeadAttachments } from './leads/leadAttachments';
 
 const TabPane = Tabs.TabPane;
 
@@ -75,7 +77,7 @@ export function getLeadFollowupReminderBanner(reminders: ReminderItem[]) {
 export function MyLeads() {
   const navigate = useNavigate();
   const { reminders } = useReminders();
-  const { leads, getTransferRecords } = useLeads();
+  const { leads, getTransferRecords, addFollowUp } = useLeads();
   const currentUser = CURRENT_LOGIN_USER.name;
   const banner = getLeadFollowupReminderBanner(reminders);
   const [activeTab, setActiveTab] = useState('my');
@@ -86,6 +88,38 @@ export function MyLeads() {
   const [trashForm] = Form.useForm();
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
+  const [followTargetLead, setFollowTargetLead] = useState<LeadListItem | null>(null);
+  const [followSubmitting, setFollowSubmitting] = useState(false);
+
+  const handleFollowUpSubmit = async (values: LeadFollowUpFormValues) => {
+    if (!followTargetLead) return;
+    try {
+      setFollowSubmitting(true);
+      const nextFollowTimeStr = typeof values.nextFollowTime === 'string'
+        ? values.nextFollowTime
+        : (values.nextFollowTime && typeof (values.nextFollowTime as { format?: (fmt: string) => string }).format === 'function'
+          ? (values.nextFollowTime as { format: (fmt: string) => string }).format('YYYY-MM-DD HH:mm:ss')
+          : undefined);
+
+      await addFollowUp(followTargetLead.id, {
+        method: values.method,
+        customerStatus: values.customerStatus,
+        intentionLevel: values.intentionLevel,
+        costHours: values.costHours,
+        costMins: values.costMins,
+        content: values.content.trim(),
+        nextFollowTime: nextFollowTimeStr,
+        attachments: uploadItemsToLeadAttachments(values.attachments),
+        creator: currentUser,
+      });
+      Message.success('跟进记录已保存');
+      setFollowTargetLead(null);
+    } catch (err) {
+      Message.error(err instanceof Error ? err.message : '跟进记录保存失败，请重试');
+    } finally {
+      setFollowSubmitting(false);
+    }
+  };
 
   const myPool = leads.filter((l) => l.clueType === 'assigned');
   const rawLeads = useMemo(() => {
@@ -286,7 +320,7 @@ export function MyLeads() {
       render: (_: unknown, r: LeadListItem) => (
         <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}`, { state: { from: 'my' } })} /></Tooltip>
-          <Tooltip content="添加跟进"><Button type="text" icon={<FollowUpIcon />} size="small" /></Tooltip>
+          <Tooltip content="添加跟进"><Button type="text" icon={<FollowUpIcon />} size="small" onClick={() => setFollowTargetLead(r)} /></Tooltip>
           <Tooltip content="标记垃圾"><Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
         </Space>
       ),
@@ -358,6 +392,17 @@ export function MyLeads() {
       </Modal>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />
+
+      {followTargetLead && (
+        <LeadFollowUpModal
+          visible={Boolean(followTargetLead)}
+          submitting={followSubmitting}
+          defaultStatus={followTargetLead.status || '初步沟通'}
+          defaultIntention={followTargetLead.level}
+          onCancel={() => setFollowTargetLead(null)}
+          onSubmit={handleFollowUpSubmit}
+        />
+      )}
     </div>
   );
 }

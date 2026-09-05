@@ -204,13 +204,14 @@
       </ul>
     </div>
     <div class="rt-box">
-      <div class="rt-title">β 后端 · Workers + D1</div>
+      <div class="rt-title">β 后端 · Workers + Supabase</div>
       <div class="sub">https://zkhubx-api.llhfire.workers.dev</div>
       <ul>
         <li>Hono，<code>apps/api/src/index.ts</code></li>
-        <li>D1 <code>zkhubx-db</code> · id <code>ac02e216-…53339</code></li>
-        <li>文档式：<code>id + data JSON + version</code></li>
-        <li>本机 <code>wrangler dev</code> → :8787</li>
+        <li>Supabase (PostgreSQL · JSONB 文档式存储 + 表达式索引，ADR-0106)</li>
+        <li>统一适配层：<code>DatabaseAdapter</code>（优先 Supabase，兜底 D1 / 内存）</li>
+        <li>文档式：<code>id + data JSONB + version</code></li>
+        <li>本机 <code>wrangler dev</code>（支持 <code>.dev.vars</code>）→ :8787</li>
       </ul>
     </div>
   </div>
@@ -243,10 +244,10 @@
       </tr>
       <tr>
         <td><strong>数据库</strong></td>
-        <td>Cloudflare D1</td>
-        <td>SQLite（serverless 关系型）</td>
-        <td><code>zkhubx-db</code>（id <code>ac02e216-…53339</code>）</td>
-        <td>文档式存储（ADR-0094）：一域一表，<code>data</code> 列存整段 JSON，<code>id + version</code> 做乐观锁。无外键、无列拆分。β 期不做关系建模。迁移用 <code>wrangler d1 execute --file</code>。</td>
+        <td>Supabase (PostgreSQL) / Cloudflare D1 兜底</td>
+        <td>PostgreSQL (托管于 Supabase，具备 JSONB 表达式索引与 RLS)</td>
+        <td><code>Supabase PostgreSQL</code>（schema 见 <code>supabase/schema.sql</code>）</td>
+        <td>文档式存储（ADR-0094 / ADR-0106）：一域一表，<code>data</code> 列存整段 JSONB，<code>id + version</code> 做乐观锁，建立高频字段表达式索引。未配置凭证时可自动回退 D1。迁移用 Supabase SQL Editor 执行 <code>schema.sql</code>。</td>
       </tr>
       <tr>
         <td><strong>部署工具</strong></td>
@@ -299,9 +300,9 @@
       <div class="path">apps/api/src/index.ts</div>
     </div>
     <div class="layer">
-      <div class="who">D1</div>
-      <div class="what">文档式存储（ADR-0094）：不拆列、无外键。表：quotes / contracts / leads / lead_followups / lead_transfers / projects / cases / collections / employees。生产是否已有新表以实施当天探测为准。</div>
-      <div class="path">schema.sql · migrations/</div>
+      <div class="who">数据库</div>
+      <div class="what">Supabase (PostgreSQL，ADR-0106) / D1 兜底：文档式存储，整段 JSONB + version 乐观锁。表：quotes / contracts / leads / lead_followups / lead_transfers / projects / cases / collections / employees。</div>
+      <div class="path">HubX/supabase/schema.sql</div>
     </div>
   </div>
 
@@ -312,7 +313,7 @@
     <div><b>2 Context</b>调用 service.put / create</div>
     <div><b>3 http service</b>fetch + 头 <code>X-Actor</code> + body.version</div>
     <div><b>4 Workers PUT</b>比 version，不匹配 409</div>
-    <div><b>5 D1</b>INSERT OR REPLACE 整段 JSON，version+1</div>
+    <div><b>5 DB Upsert</b>Supabase / D1 写入整段 JSONB，version+1</div>
     <div><b>6 写时联动</b>仅合同：created / approved / voided → 项目/商机</div>
   </div>
   <p class="note">
@@ -321,12 +322,12 @@
   </p>
 
   <!-- 4 -->
-  <h2>4. 平台基座（ADR-0094）</h2>
+  <h2>4. 平台基座（ADR-0094 / ADR-0106）</h2>
   <div class="grid-2">
     <div class="card">
       <h3>已落地的可信度修补 <span class="pill p-code">工作区已编码</span></h3>
       <ul>
-        <li><b>文档式 D1</b>：一域一张表，<code>data</code> 存整对象。β 期不做关系建模。</li>
+        <li><b>Supabase PostgreSQL</b>：一域一张表，<code>data</code> 存整对象（JSONB）。β 期不做多余关系建模。</li>
         <li><b>乐观锁</b>：PUT 带 <code>version</code>，冲突 409 + 当前 version。</li>
         <li><b>服务端时钟</b>：<code>updatedAt</code> 由 Workers 生成，回写前端。</li>
         <li><b>X-Actor</b>：过渡身份；登录落地后换会话。</li>

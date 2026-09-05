@@ -1,3 +1,91 @@
+.customer-detail-360 {
+  --customer-detail-gap-xs: 4px;
+  --customer-detail-gap-sm: 8px;
+  --customer-detail-gap-md: 12px;
+  --customer-detail-gap-lg: 16px;
+  --customer-detail-gap-xl: 24px;
+}
+
+.customer-detail-360 .hubx-process-metrics {
+  box-shadow: none;
+}
+
+.customer-detail-360 .hubx-process-metrics__grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.customer-detail-360 .hubx-process-metric {
+  position: relative;
+  min-width: 0;
+  min-height: 88px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 10px 14px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  background: var(--color-bg-2);
+  text-align: left;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.customer-detail-360 .hubx-process-metric:hover {
+  border-color: rgb(var(--primary-4));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.customer-detail-360 .hubx-process-metric::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: rgb(var(--primary-6));
+  content: '';
+}
+
+.customer-detail-360 .hubx-process-metric:nth-child(1)::before { background: rgb(var(--primary-6)); }
+.customer-detail-360 .hubx-process-metric:nth-child(2)::before { background: rgb(var(--cyan-6)); }
+.customer-detail-360 .hubx-process-metric:nth-child(3)::before { background: rgb(var(--warning-6)); }
+.customer-detail-360 .hubx-process-metric:nth-child(4)::before { background: rgb(var(--success-6)); }
+
+.customer-metric-heading {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-2);
+}
+
+.customer-metric-heading strong {
+  color: var(--color-text-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.customer-metric-value-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+}
+
+.customer-metric-detail-row {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .customer-detail-main .arco-tabs-content {
   min-height: 520px;
 }
@@ -28,7 +116,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin: 32px 0 12px;
+  margin: 20px 0 12px;
 }
 
 .customer-section-heading h3,
@@ -44,14 +132,20 @@
 
 .customer-chain-list {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .customer-chain {
   padding: 16px 18px;
   border: 1px solid var(--color-border-2);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--color-bg-2);
+  transition: all 180ms ease;
+}
+
+.customer-chain:hover {
+  border-color: rgb(var(--primary-4));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .customer-chain-lead {
@@ -87,10 +181,36 @@
   margin-top: 12px;
   color: var(--color-text-2);
   font-variant-numeric: tabular-nums;
+  font-size: 13px;
 }
 
 .customer-chain-links {
   margin-top: 12px;
+}
+
+.customer-project-card {
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: var(--color-bg-2);
+  transition: all 180ms ease;
+}
+
+.customer-project-card:hover {
+  border-color: rgb(var(--primary-4));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.customer-contact-card {
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--color-bg-2);
+  transition: all 180ms ease;
+}
+
+.customer-contact-card:hover {
+  border-color: rgb(var(--primary-4));
 }
 
 .customer-invoice-history {
@@ -100,4 +220,16 @@
   padding-top: 12px;
   border-top: 1px solid var(--color-border-2);
   color: var(--color-text-2);
+}
+
+@media (max-width: 992px) {
+  .customer-detail-360 .hubx-process-metrics__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .customer-detail-360 .hubx-process-metrics__grid {
+    grid-template-columns: 1fr;
+  }
 }

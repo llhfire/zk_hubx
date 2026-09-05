@@ -10,7 +10,10 @@
     "dev": "npm run dev --workspace apps/prototype",
     "build": "npm run build --workspace apps/prototype",
     "test": "npm run test --workspace apps/prototype",
-    "test:reminders": "npm run test:reminders --workspace apps/prototype"
+    "test:reminders": "npm run test:reminders --workspace apps/prototype",
+    "db": "node scripts/db.js",
+    "db:status": "node scripts/db.js status",
+    "db:seed": "node scripts/db.js seed"
   },
   "dependencies": {
     "gantt-task-react": "^0.3.9",

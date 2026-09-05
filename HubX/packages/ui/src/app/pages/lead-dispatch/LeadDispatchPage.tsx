@@ -83,12 +83,12 @@ function WorkbenchInner() {
     if (filter.department) list = list.filter((l) => departmentByOwner.get(l.owner) === filter.department);
     if (filter.customerLevel) list = list.filter((l) => l.customerLevel === filter.customerLevel);
 
-    if (sortKey === 'create_desc') list = [...list].sort((a, b) => b.createTime.localeCompare(a.createTime));
-    else if (sortKey === 'create_asc') list = [...list].sort((a, b) => a.createTime.localeCompare(b.createTime));
+    if (sortKey === 'create_desc') list = [...list].sort((a, b) => (b.createTime || '').localeCompare(a.createTime || ''));
+    else if (sortKey === 'create_asc') list = [...list].sort((a, b) => (a.createTime || '').localeCompare(b.createTime || ''));
     else {
       // 时效紧急优先：派发剩余时间升序
       list = [...list].sort((a, b) => {
-        const remaining = (l: LeadListItem) => (l.dispatchedAt ? Infinity : new Date(l.createTime).getTime());
+        const remaining = (l: LeadListItem) => (l.dispatchedAt ? Infinity : new Date(l.createTime || 0).getTime());
         return remaining(a) - remaining(b);
       });
     }
@@ -154,36 +154,46 @@ function WorkbenchInner() {
 
   // ── 录入（阶段 B） ──
   const handleCreate = async (payload: CreateLeadFormPayload) => {
-    const id = await createLead({
-      name: payload.name,
-      contact: payload.contact,
-      phone: payload.phone,
-      source: payload.source,
-      entity: payload.entity,
-      customerLevel: payload.customerLevel,
-    });
-    if (payload.initialAssign === 'sales' && payload.assignee) {
-      await assignLead(id, payload.assignee, CURRENT_LOGIN_USER.name, '派发工作台 · 录入即指派');
-      await updateLead(id, (l) => ({
-        ...l,
-        businessLine: payload.businessLine,
-        channelPlan: payload.channelPlan || undefined,
-        dispatchedAt: nowString(),
-        dispatchTarget: 'sales',
-        leadEvents: [
-          { id: generateEventId(), leadId: id, kind: 'inbound', actor: CURRENT_LOGIN_USER.name, at: l.createTime },
-          { id: generateEventId(), leadId: id, kind: 'dispatch_to_sales', actor: CURRENT_LOGIN_USER.name, at: nowString(), assignee: payload.assignee },
-        ],
-      }));
-    } else {
-      await updateLead(id, (l) => ({
-        ...l,
-        businessLine: payload.businessLine,
-        channelPlan: payload.channelPlan || undefined,
-        leadEvents: [
-          { id: generateEventId(), leadId: id, kind: 'inbound', actor: CURRENT_LOGIN_USER.name, at: l.createTime },
-        ],
-      }));
+    try {
+      const id = await createLead({
+        name: payload.name,
+        contact: payload.contact,
+        phone: payload.phone,
+        source: payload.source,
+        entity: payload.entity,
+        customerLevel: payload.customerLevel,
+      });
+      if (!id) {
+        Message.error('线索创建失败，请重试');
+        return;
+      }
+      if (payload.initialAssign === 'sales' && payload.assignee) {
+        await assignLead(id, payload.assignee, CURRENT_LOGIN_USER.name, '派发工作台 · 录入即指派');
+        await updateLead(id, (l) => ({
+          ...l,
+          businessLine: payload.businessLine,
+          channelPlan: payload.channelPlan || undefined,
+          dispatchedAt: nowString(),
+          dispatchTarget: 'sales',
+          leadEvents: [
+            { id: generateEventId(), leadId: id, kind: 'inbound', actor: CURRENT_LOGIN_USER.name, at: l.createTime || nowString() },
+            { id: generateEventId(), leadId: id, kind: 'dispatch_to_sales', actor: CURRENT_LOGIN_USER.name, at: nowString(), assignee: payload.assignee },
+          ],
+        }));
+      } else {
+        await updateLead(id, (l) => ({
+          ...l,
+          businessLine: payload.businessLine,
+          channelPlan: payload.channelPlan || undefined,
+          leadEvents: [
+            { id: generateEventId(), leadId: id, kind: 'inbound', actor: CURRENT_LOGIN_USER.name, at: l.createTime || nowString() },
+          ],
+        }));
+      }
+      Message.success('线索录入成功');
+      setCreateVisible(false);
+    } catch {
+      Message.error('线索录入失败，请重试');
     }
   };
 

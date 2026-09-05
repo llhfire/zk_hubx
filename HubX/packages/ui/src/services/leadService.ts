@@ -334,7 +334,16 @@ export function createHttpLeadService(baseUrl: string, opts?: { actor?: string }
         headers: { 'Content-Type': 'application/json', ...(opts?.actor ? { 'X-Actor': opts.actor } : {}) },
         body: JSON.stringify(input),
       });
-      if (r.status === 409) Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
+      if (r.status === 409) {
+        Message.warning('数据已被他人修改，已刷新为最新内容，请重试本次操作');
+        throw new Error('409 数据冲突');
+      }
+      if (!r.ok) {
+        const d = (await r.json().catch(() => ({}))) as { error?: string };
+        const msg = d.error || `保存跟进记录失败(${r.status})`;
+        Message.error(msg);
+        throw new Error(msg);
+      }
     },
     updateLead: async (id, updater) => mutate(id, updater),
 

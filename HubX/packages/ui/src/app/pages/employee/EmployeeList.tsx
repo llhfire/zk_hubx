@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate, Link } from 'react-router';
 import {
   Card,
   Empty,
@@ -51,6 +52,7 @@ const EMPLOYEE_IMPORT_HEADERS = ['用户名', '姓名', '所属部门', '职位'
 type ImportedEmployee = Omit<Employee, 'id' | 'capability' | 'personality'>;
 
 export function EmployeeList() {
+  const navigate = useNavigate();
   const { employees, positions, addEmployee, updateEmployee } = useEmployee();
   const { bindings } = useIntegration();
   const currentDate = new Date().toISOString().slice(0, 10);
@@ -301,12 +303,16 @@ export function EmployeeList() {
     {
       title: '姓名',
       dataIndex: 'name',
-      width: 80,
+      width: 90,
       fixed: 'left' as const,
       render: (_: unknown, record: Employee) => (
-        <Space>
-          <span style={{ color: 'var(--color-text-1)', fontWeight: 500 }}>{record.name}</span>
-        </Space>
+        <Link
+          to={`/employees/${record.id}`}
+          className="table-primary-link"
+          style={{ cursor: 'pointer', fontWeight: 500 }}
+        >
+          {record.name}
+        </Link>
       ),
     },
     {
@@ -405,14 +411,14 @@ export function EmployeeList() {
       fixed: 'right' as const,
       render: (_: unknown, record: Employee) => (
         <Space>
-          <Tooltip content="查看员工详情">
+          <Tooltip content="查看完整档案">
             <Button
               className="hubx-icon-action"
               type="text"
               size="small"
               icon={<IconEye />}
-              aria-label={`查看员工${record.name}详情`}
-              onClick={() => setDetailEmployee(record)}
+              aria-label={`查看员工${record.name}完整档案`}
+              onClick={() => navigate(`/employees/${record.id}`)}
             />
           </Tooltip>
           <Tooltip content="编辑员工">
@@ -428,6 +434,9 @@ export function EmployeeList() {
           <Dropdown
             droplist={
               <Menu>
+                <Menu.Item key="quick-detail" onClick={() => setDetailEmployee(record)}>
+                  快速预览
+                </Menu.Item>
                 <Menu.Item key="regularize" onClick={() => handleRegularize(record)}>
                   办理转正
                 </Menu.Item>

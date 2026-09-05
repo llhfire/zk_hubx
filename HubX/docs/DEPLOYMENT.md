@@ -35,9 +35,14 @@ npx wrangler deploy
 https://zkhubx-api.<你的子域>.workers.dev
 ```
 
-**记下这个地址**，β前端要用它。验证：浏览器打开 `https://zkhubx-api.xxx.workers.dev/api/quotes`，应返回种子报价 JSON。
-
-> ✅ 后端已接 **D1（SQLite）**，数据持久化、重启不丢。首次部署前需初始化 D1：`npx wrangler d1 create zkhubx-db`（拿到 id 填入 wrangler.toml）+ `npx wrangler d1 execute zkhubx-db --file schema.sql --remote`。
+> **记下这个地址**，β前端要用它。验证：浏览器打开 `https://zkhubx-api.xxx.workers.dev/api/quotes`，应返回种子报价 JSON。
+>
+> ✅ 后端数据库已升级为 **Supabase (PostgreSQL)**（ADR-0106）：
+> 1. **初始化数据表**：登录 Supabase 控制台，在 SQL Editor 中执行 `HubX/supabase/schema.sql`（创建 9 张表、JSONB 索引及 RLS 策略；历史数据可选执行 `HubX/supabase/seed_from_mysql.sql`）。
+> 2. **配置连接凭据**：
+>    - 本地联调：在 `apps/api/.dev.vars` 中写入 `SUPABASE_URL` 与 `SUPABASE_KEY`。
+>    - 生产部署：执行 `npx wrangler secret put SUPABASE_KEY` 注入服务密钥；在 `wrangler.toml` 的 `[vars]` 设定 `SUPABASE_URL`。
+> 3. **兼容兜底**：若未配置 Supabase 环境变量，Workers 会自动平滑回退至 Cloudflare D1 或内存存储。
 
 ## 2. 部署 β前端（Pages）
 

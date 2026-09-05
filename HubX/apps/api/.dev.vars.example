@@ -1,0 +1,7 @@
+# ZK HubX β版后端环境变量配置示例
+# 本地联调：复制此文件为 .dev.vars 并填入真实的 Supabase 项目信息（wrangler dev 会自动读取）
+# cp .dev.vars.example .dev.vars
+
+SUPABASE_URL=https://your-project-id.supabase.co
+# 建议在后端 Workers 使用 service_role key（具备完整权限且绕过 RLS），或使用配置了策略的 anon key
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...

@@ -440,6 +440,32 @@ export function buildInitialAuditNodes(): AuditNode[] {
   ];
 }
 
+// ─── 方案精细化管理与客户反馈 ─────────────────────────────
+
+export type CustomerFeedbackDisposition =
+  | 'price_high'       // 价格偏高 / 超出预算
+  | 'timeline_long'    // 工期偏长 / 交付紧迫
+  | 'scope_mismatch'   // 功能范围不符 / 需调整功能
+  | 'payment_terms'    // 付款条件 / 账期分歧
+  | 'tech_concerns'    // 技术架构 / 选型疑虑
+  | 'competitor'       // 竞对低价冲击
+  | 'approved'         // 方案基本认可 / 推进签约
+  | 'other';           // 其他反馈
+
+export interface QuoteCustomerFeedback {
+  id: string;
+  disposition: CustomerFeedbackDisposition;
+  dispositionLabel?: string;
+  targetBudget?: number;        // 客户期望预算（元）
+  targetDays?: number;          // 客户期望工期（工作日）
+  targetDeliveryDate?: string;  // 期望交付日期
+  content: string;              // 客户反馈原话/核心关切
+  strategy?: string;            // 销售应对策略/内部调整思路
+  nextAction?: 'new_version' | 'discount_approval' | 'tech_meeting' | 'maintain_negotiation';
+  recordedBy: string;           // 记录人
+  recordedAt: string;           // 记录时间
+}
+
 // ─── 报价单主实体 ─────────────────────────────────────────
 
 export interface QuoteBasicInfo {
@@ -475,8 +501,30 @@ export interface Quote {
     evaluationFileName?: string;
     evaluationWorkDays?: number;
     evaluationTotalDays?: number;
+    evaluationNotes?: string;
+    evaluationAttachment?: {
+      id: string;
+      name: string;
+      size?: number;
+      url?: string;
+      uploadedAt: string;
+      uploadedBy?: string;
+    };
+    featureAttachment?: {
+      id: string;
+      name: string;
+      size?: number;
+      url?: string;
+      uploadedAt: string;
+    };
     quoteWorkDays?: number;
     quoteAmount?: number;
+    paymentPlan?: {
+      presetId?: string;
+      milestones: Array<{ name: string; ratio: number; note?: string }>;
+    };
+    warrantyYears?: number;
+    invoiceType?: string;
     onlineDocument: {
       status: 'empty' | 'draft' | 'saved' | 'finalized';
       savedAt?: string;
@@ -528,6 +576,8 @@ export interface Quote {
     revokedAt?: string;
   }>;
   signingPackage?: ElectronicSigningPackage;
+  /** 针对此方案的客户反馈与商务谈判记录 */
+  customerFeedbacks?: QuoteCustomerFeedback[];
   createdAt: string;
   updatedAt: string;
 }

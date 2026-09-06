@@ -1,3 +1,32 @@
+.lead-attachment-panel--embedded {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border-2);
+}
+
+.lead-attachment-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.lead-attachment-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+}
+
+.lead-attachment-panel__empty-inline {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-fill-1);
+  border: 1px dashed var(--color-border-2);
+}
+
 .lead-attachment-panel__list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

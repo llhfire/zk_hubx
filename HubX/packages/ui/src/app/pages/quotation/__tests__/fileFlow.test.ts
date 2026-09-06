@@ -140,3 +140,103 @@ describe('canUploadScan', () => {
     expect(canUploadScan('pending_eval')).toBe(false);
   });
 });
+
+describe('智能别名匹配与体检指标 (Smart Fuzzy Headers & Metrics)', () => {
+  it('支持一级模块、功能点、功能说明等常见别名', async () => {
+    const { detectHeaders, validateHeaders } = await import('../fileFlow');
+    const headers = ['一级模块', '功能点', '功能说明', '说明备注', '所属端'];
+    expect(validateHeaders(headers)).toBe(true);
+
+    const mapping = detectHeaders(headers);
+    expect(mapping).not.toBeNull();
+    expect(mapping?.moduleIdx).toBe(0);
+    expect(mapping?.subFeatureIdx).toBe(1);
+    expect(mapping?.descriptionIdx).toBe(2);
+    expect(mapping?.remarkIdx).toBe(3);
+    expect(mapping?.endpointIdx).toBe(4);
+  });
+
+  it('乱序表头仍可智能定位列索引', async () => {
+    const { detectHeaders } = await import('../fileFlow');
+    const headers = ['终端', '需求说明', '模块名称', '子功能名称'];
+    const mapping = detectHeaders(headers);
+    expect(mapping).not.toBeNull();
+    expect(mapping?.endpointIdx).toBe(0);
+    expect(mapping?.descriptionIdx).toBe(1);
+    expect(mapping?.moduleIdx).toBe(2);
+    expect(mapping?.subFeatureIdx).toBe(3);
+  });
+
+  it('体检指标能正确统计缺失描述与子功能总数', () => {
+    const rows: Raw清单Row[] = [
+      { 模块: '订单中心', 子功能: '创建订单', 描述: '提交下单' },
+      { 模块: '订单中心', 子功能: '取消订单', 描述: '' }, // 缺描述
+      { 模块: '商品中心', 子功能: '查看详情', 描述: '' }, // 缺描述
+    ];
+    const result = parseFeature清单(rows);
+    expect(result.subFeatureCount).toBe(3);
+    expect(result.missingDescCount).toBe(2);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0]).toContain('缺少具体描述');
+  });
+});
+
+describe('毛利率计算与预警分析 (calculateMargin)', () => {
+  it('毛利率大于 25% 标记为健康绿色', async () => {
+    const { calculateMargin } = await import('../fileFlow');
+    // 报价 100000，20 人天 * 600 = 12000 成本，毛利 88000 (88%)
+    const res = calculateMargin(100000, 20, 600);
+    expect(res.cost).toBe(12000);
+    expect(res.grossProfit).toBe(88000);
+    expect(res.marginRate).toBe(88);
+    expect(res.level).toBe('healthy');
+  });
+
+  it('毛利率在 15%~25% 之间标记为预警黄色', async () => {
+    const { calculateMargin } = await import('../fileFlow');
+    // 报价 10000，14 人天 * 600 = 8400 成本，毛利 1600 (16%)
+    const res = calculateMargin(10000, 14, 600);
+    expect(res.cost).toBe(8400);
+    expect(res.grossProfit).toBe(1600);
+    expect(res.marginRate).toBe(16);
+    expect(res.level).toBe('warning');
+  });
+
+  it('毛利率低于 15% 标记为高风险红色', async () => {
+    const { calculateMargin } = await import('../fileFlow');
+    // 报价 10000，16 人天 * 600 = 9600 成本，毛利 400 (4%)
+    const res = calculateMargin(10000, 16, 600);
+    expect(res.marginRate).toBe(4);
+    expect(res.level).toBe('danger');
+  });
+});
+
+describe('分期付款节点预设 (DEFAULT_PAYMENT_PRESETS)', () => {
+  it('所有预设方案的比例之和应严格为 100%', async () => {
+    const { DEFAULT_PAYMENT_PRESETS } = await import('../fileFlow');
+    expect(DEFAULT_PAYMENT_PRESETS.length).toBeGreaterThanOrEqual(4);
+    for (const preset of DEFAULT_PAYMENT_PRESETS) {
+      const sumRatio = preset.milestones.reduce((sum, m) => sum + m.ratio, 0);
+      expect(sumRatio).toBe(100);
+    }
+  });
+});
+
+describe('Excel 模板工作簿生成 (createFeatureTemplateWorkbook)', () => {
+  it('空白模板生成成功且包含标准 5 列', async () => {
+    const { createFeatureTemplateWorkbook } = await import('../fileFlow');
+    const workbook = await createFeatureTemplateWorkbook('blank');
+    expect(workbook).toBeDefined();
+    const sheet = workbook.getWorksheet('功能清单');
+    expect(sheet).toBeDefined();
+    expect(sheet.columnCount).toBe(5);
+  }, 20000);
+
+  it('示例模板生成成功且包含多条预设行', async () => {
+    const { createFeatureTemplateWorkbook } = await import('../fileFlow');
+    const workbook = await createFeatureTemplateWorkbook('sample');
+    const sheet = workbook.getWorksheet('功能清单');
+    expect(sheet.rowCount).toBeGreaterThan(5);
+  }, 20000);
+});
+

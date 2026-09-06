@@ -227,7 +227,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
   // ========== 销售域 ==========
   '线索全流程': [
     { name: '五池流转', description: 'LeadList（公海/我的/全部/已成交/垃圾）：线索类型独立维度（public/assigned/trash/hightech），8态销售漏斗，快捷筛选（今日未跟进/S类/AB类/超期），标红规则。' },
-    { name: '线索详情', description: 'LeadDetail360（/leads/:id）：70:30 分栏，6步生命周期+6维胶囊。右侧报价页签新建报价/进入工作台（createQuote+QuotationWorkbench 抽屉）；合同记录页签新建合同进向导（/contracts/new + leadContractPrefill）。跟进/演示/资料/出差/报销。操作：领取/分配/退回/标记垃圾。' },
+    { name: '线索详情', description: 'LeadDetail360（/leads/:id）：标杆化 360 详情页。统一微指标网格 + 步骤下拉面板 LeadStagePopover（阶段停留时效预警、核心目标、SOP 动作直达 Tab 与推进控制器）。左侧 70% 展开 6 大实体工作台，其中「方案与报价」采用 LeadQuotationManager 双栏精细化工作台，消灭横向过宽，支持客户商务反馈博弈跟踪（价格/工期差距量化对比、客户原话、应对策略、多轮谈判记录与一键 v+1 改版），附件内聚于主档案卡；右侧 30% 纯粹化为沟通协同流。操作：领取/分配/退回/标记垃圾。', usage: '销售管理 → 线索管理 → 打开任一线索详情 → 顶部查看 6 步生命周期并点击步骤浮层推进阶段 → 左侧 Tab 宽幅处理档案、精细化管理报价方案与客户反馈、合同、差旅、交付及资料 → 右侧就地快捷写跟进或查看 AI 洞察与时间线。', referencePath: 'HubX/docs/线索详情页360信息架构优化方案.md' },
     { name: '线索跟进记录', description: '跟进记录同步线索状态和等级；明确的下次跟进承诺进入统一待办，并按业务键更新、完成与转交。' },
     { name: '签约开启时生成未确认项目', description: '线索首次进入合同洽谈或已签单时，以 ap-lead-{leadId} 幂等生成待指派项目；后续创建合同只绑定原项目。', usage: '线索详情 → 写跟进 → 客户状态选择“合同洽谈”或“已签单” → 提交 → 项目管理的“待确认指派”查看唯一项目。', referencePath: 'HubX/docs/adr/0095-signing-open-server-linkage-does-not-move-spawn-to-approve.md' },
     { name: '线索操作规则', description: '领取(→assigned)/分配(批量+原因)/退回公海(第3次自动垃圾)/标记垃圾/软删除/转客户(自动填充+同步跟进)。重复检查(新增+修改)。' },
@@ -325,7 +325,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '出差详情长流程工作台', description: 'TripDetail 标杆化详情页：统一三级面包屑、对象控制卡、6 步流程概览、6 维指标（预算执行率、报销核销比、审批合规、成本沉淀等）和 70:30 主辅工作区；支持 URL 参数驱动 Tab、申请人/项目/客户/线索穿透高亮链接与工作区快捷导航。', usage: '差旅管理 → 出差申请 → 打开出差单 → 在顶部确认当前阶段与费用摘要 → 进入对应页签处理行程、费用、报销、借款或补贴 → 按状态执行开始、结束或关闭出差。', referencePath: 'HubX/DESIGN.md' },
     { name: '报销与借款', description: '出差详情页签支持新建报销/借款草稿、金额汇总和详情审批轨迹抽屉；借款保留报销冲抵记录。' },
     { name: '宿舍管理', description: 'DormitoryManagement：楼/层/房/床、入住退住、维修、费用台账（宿舍费用的唯一写入方）。' },
-    { name: '费用标准', description: 'StandardList：版本+生效期+职级×城市等级标准明细。' },
+    { name: '费用标准', description: 'StandardList：集团多版本标准矩阵（职级×城市等级）、316px 立体版本 Master 列表（设为基准/克隆派生/状态切换）、3 大工作台 Tab（规则明细增删改、差旅合规模拟试算器、双版本差异对比）。', usage: '差旅管理 → 费用标准 → 选择标准版本 → 查看/维护规则明细 → 切换至「差旅试算器」输入职级目的地即时测算合规限额 → 切换至「版本对比」评估调价差异。', referencePath: 'HubX/FRONTEND_CONVENTIONS.md' },
     { name: '差旅看板', description: 'TravelDashboard + FinanceAuditDashboard：个人/部门/项目差旅统计与财务审计。' },
   ],
   '财务视图': [

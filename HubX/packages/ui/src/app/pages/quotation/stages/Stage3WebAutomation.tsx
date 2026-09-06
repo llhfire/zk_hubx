@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert, Button, Card, Empty, Input, InputNumber, Message, Select, Space, Switch, Table, Tag, Typography,
+  Alert, Button, Card, Divider, Empty, Input, InputNumber, Message, Modal, Progress, Select, Space, Switch, Tag, Tooltip, Typography,
 } from '@arco-design/web-react';
 import {
-  IconPlus, IconDelete, IconSend, IconApps,
+  IconPlus, IconDelete, IconSend, IconApps, IconEye, IconCheckCircleFill, IconCloseCircleFill,
+  IconExclamationCircleFill, IconRefresh, IconDown, IconUp, IconFile, IconCheck,
 } from '@arco-design/web-react/icon';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
@@ -12,8 +13,11 @@ import { addWorkdays, computeProfitRate, DEFAULT_MIN_PROFIT_RATE } from '../quot
 import { PLATFORM_OPTIONS } from '../types';
 import type { CostItem, EvalRole, SalesAddedRole, TravelOnsiteConfig } from '../types';
 import { QuoteTemplatePreviewPanel } from '../components/QuoteTemplatePreviewPanel';
-import { getQuoteTemplateMissingFields } from '../quoteDocumentTemplate';
-import { contractSigningEntities } from '../../company-entity/companyEntityData';
+import { getQuoteTemplateMissingFields, ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
+import { contractSigningEntities, findCompanyEntityByName } from '../../company-entity/companyEntityData';
+import { generateQuoteHtml } from '../quotePdfTemplate';
+import { createDocxBlob, downloadBlob } from '../../../documents/wordExport';
+import './Stage3WebAutomation.css';
 
 const { Text, Title } = Typography;
 
@@ -25,7 +29,54 @@ function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// ─── 主组件 ─────────────────────────────────────────────
+// 常见付款条款模版预设
+const PAYMENT_TERM_PRESETS = [
+  {
+    name: '标准 3:3:3:1',
+    description: '行业标准：预付款 30% - 阶段验收 30% - 交付上线 30% - 质保金 10%',
+    terms: [
+      { stage: '合同签订预付款', percent: 30 },
+      { stage: '中期原型与核心功能验收', percent: 30 },
+      { stage: '系统部署上线与终验', percent: 30 },
+      { stage: '一年质保期满尾款', percent: 10 },
+    ],
+  },
+  {
+    name: '敏捷 5:3:2',
+    description: '敏捷项目：预付款 50% - 阶段成果 30% - 交付上线 20%',
+    terms: [
+      { stage: '首期启动预付款', percent: 50 },
+      { stage: '主干功能演示验收', percent: 30 },
+      { stage: '系统上线交付验收', percent: 20 },
+    ],
+  },
+  {
+    name: '对半 5:5',
+    description: '简易轻量项目：预付款 50% - 终验交付 50%',
+    terms: [
+      { stage: '合同签订首付款', percent: 50 },
+      { stage: '系统上线验收交付款', percent: 50 },
+    ],
+  },
+  {
+    name: '大型 4:3:2:1',
+    description: '大型政企：预付款 40% - 原型与设计 30% - 部署上线 20% - 质保尾款 10%',
+    terms: [
+      { stage: '项目启动预付款', percent: 40 },
+      { stage: '详细设计与阶段验收款', percent: 30 },
+      { stage: '初验通过上线款', percent: 20 },
+      { stage: '终验及质保金', percent: 10 },
+    ],
+  },
+];
+
+// 常见销售增项预设
+const SALES_ROLE_PRESETS = [
+  { roleName: 'PMO 项目管理', reason: '跨部门协作与甲方定期双周汇报协调', dailyRate: 1000 },
+  { roleName: '现场技术驻场', reason: '现场环境部署联调与上线保驾护航', dailyRate: 800 },
+  { roleName: '系统安全等保配合', reason: '配合第三方测评机构进行等保三级整改', dailyRate: 1200 },
+  { roleName: '定制化技术培训', reason: '为甲方技术与业务人员提供专场实操培训', dailyRate: 800 },
+];
 
 export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   const { updateQuote, submitForAudit, isLeadFrozen } = useQuotation();
@@ -33,21 +84,27 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
   // 从工作台一和工作台二获取的数据（只读展示）
   const endpointConfigs = quote.endpointConfigs || [];
-  const featureList = quote.featureList;
+  const featureList = quote.featureList || [];
   const evalSheet = quote.evalSheet;
   const roleTotals = useMemo(() => sumEvalDaysByRole(evalSheet), [evalSheet]);
+
+  // 本地折叠面板状态与弹窗
+  const [showFeatureDetail, setShowFeatureDetail] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<'travel' | 'onsite'>('travel');
 
   // 本地状态 - 兼容旧数据格式
   const [travelOnsite, setTravelOnsite] = useState<TravelOnsiteConfig>(() => {
     const t = quote.travelOnsite;
     return {
       ...t,
-      travelDetails: (t as any).travelDetails || (t as any).travelDetail ? [(t as any).travelDetail || { location: '', headcount: 1, days: 1, transportFee: 0, hotelFeePerDay: 0, allowancePerDay: 0 }] : [],
-      onsiteDetails: (t as any).onsiteDetails || (t as any).onsiteDetail ? [(t as any).onsiteDetail || { location: '', headcount: 1, days: 1, serviceFeePerDay: 0 }] : [],
+      travelDetails: (t as any)?.travelDetails || (t as any)?.travelDetail ? [(t as any).travelDetail || { location: '', headcount: 1, days: 1, transportFee: 0, hotelFeePerDay: 0, allowancePerDay: 0 }] : [],
+      onsiteDetails: (t as any)?.onsiteDetails || (t as any)?.onsiteDetail ? [(t as any).onsiteDetail || { location: '', headcount: 1, days: 1, serviceFeePerDay: 0 }] : [],
     };
   });
-  const [otherCosts, setOtherCosts] = useState<CostItem[]>(quote.otherCosts);
-  const [salesAddedRoles, setSalesAddedRoles] = useState<SalesAddedRole[]>(quote.salesAddedRoles);
+  const [otherCosts, setOtherCosts] = useState<CostItem[]>(quote.otherCosts || []);
+  const [salesAddedRoles, setSalesAddedRoles] = useState<SalesAddedRole[]>(quote.salesAddedRoles || []);
+
   // 岗位日均成本：key -> 成本
   const [roleDailyCosts, setRoleDailyCosts] = useState<Record<string, number>>(() => {
     const costs: Record<string, number> = { ...(quote.roleDailyCosts ?? {}) };
@@ -56,13 +113,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     });
     return costs;
   });
-  const [editingCostKey, setEditingCostKey] = useState<string | null>(null);
 
-  // 计算总人天和总金额（组件级别）
+  // 计算总人天和总金额
   const grandTotalDays = useMemo(() => {
     if (!evalSheet) return 0;
     return evalSheet.evaluationUnits.reduce((s, u) => s + u.totalDays, 0);
   }, [evalSheet]);
+
   const workingQuote = useMemo(() => ({
     ...quote,
     roleDailyCosts,
@@ -70,12 +127,15 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     travelOnsite,
     otherCosts,
   }), [quote, roleDailyCosts, salesAddedRoles, travelOnsite, otherCosts]);
+
   const breakdown = useMemo(() => computeAmountBreakdown(workingQuote), [workingQuote]);
+
   const profitRate = useMemo(() => computeProfitRate({
     grandTotal: breakdown.grandTotal,
     upliftTotal: breakdown.addedCost,
     roleCostTotal: breakdown.techLaborCost,
   }), [breakdown]);
+
   const validationIssues = useMemo(() => validateBeforeAudit(workingQuote), [workingQuote]);
   const blockingIssues = validationIssues.filter((issue) => issue.severity === 'error');
   const warningIssues = validationIssues.filter((issue) => issue.severity === 'warning');
@@ -84,26 +144,18 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     ? addWorkdays(new Date().toISOString().slice(0, 10), evalSheet.manualWorkDays)
     : null;
 
+  // 付款比例合计与校验
+  const paymentTerms = quote.summary?.paymentTerms ?? [];
+  const paymentPercentTotal = useMemo(() => {
+    return paymentTerms.reduce((sum, term) => sum + (term.percent || 0), 0);
+  }, [paymentTerms]);
+  const isPayment100 = paymentPercentTotal === 100;
+
   const persist = (patch: Partial<typeof quote>) => {
     updateQuote(quote.id, (q) => ({ ...q, ...patch }));
   };
 
-  const updatePaymentTerm = (index: number, patch: { stage?: string; percent?: number }) => {
-    const paymentTerms = (quote.summary?.paymentTerms ?? []).map((term, termIndex) => (
-      termIndex === index ? { ...term, ...patch } : term
-    ));
-    persist({
-      summary: {
-        totalLaborDays: breakdown.totalLaborDays,
-        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
-        grandTotalPrice: breakdown.grandTotal,
-        paymentTerms,
-        taxIncluded: quote.summary?.taxIncluded ?? true,
-        warrantyYears: quote.summary?.warrantyYears ?? 1,
-        invoiceType: quote.summary?.invoiceType ?? '专票',
-      },
-    });
-  };
+  // ─── 费率与付款配置逻辑 ────────────────────────────────────
 
   const updateRoleDailyCost = (roleKey: string, value: number) => {
     const next = { ...roleDailyCosts, [roleKey]: value };
@@ -111,9 +163,104 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     persist({ roleDailyCosts: next });
   };
 
-  // ─── 出差配置 ─────────────────────────────────────────
+  const resetAllRolesToBaseRate = () => {
+    const next: Record<string, number> = {};
+    evalSheet?.activeRoles.forEach((r) => {
+      next[r.key] = TECH_DAILY_RATE;
+    });
+    setRoleDailyCosts(next);
+    persist({ roleDailyCosts: next });
+    Message.success(`已将所有技术岗位日均成本重置为基准 ¥${TECH_DAILY_RATE}/天`);
+  };
 
-  const calcTravelSubtotal = (details: TravelDetail[]) => {
+  const applyPaymentPreset = (preset: typeof PAYMENT_TERM_PRESETS[0]) => {
+    persist({
+      summary: {
+        totalLaborDays: breakdown.totalLaborDays,
+        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+        grandTotalPrice: breakdown.grandTotal,
+        paymentTerms: [...preset.terms],
+        taxIncluded: quote.summary?.taxIncluded ?? true,
+        warrantyYears: quote.summary?.warrantyYears ?? 1,
+        invoiceType: quote.summary?.invoiceType ?? '专票',
+      },
+    });
+    Message.success(`已套用「${preset.name}」付款模版`);
+  };
+
+  const updatePaymentTerm = (index: number, patch: { stage?: string; percent?: number }) => {
+    const nextTerms = paymentTerms.map((term, termIndex) => (
+      termIndex === index ? { ...term, ...patch } : term
+    ));
+    persist({
+      summary: {
+        totalLaborDays: breakdown.totalLaborDays,
+        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+        grandTotalPrice: breakdown.grandTotal,
+        paymentTerms: nextTerms,
+        taxIncluded: quote.summary?.taxIncluded ?? true,
+        warrantyYears: quote.summary?.warrantyYears ?? 1,
+        invoiceType: quote.summary?.invoiceType ?? '专票',
+      },
+    });
+  };
+
+  const addPaymentTerm = () => {
+    const nextTerms = [
+      ...paymentTerms,
+      { stage: `第 ${paymentTerms.length + 1} 期付款`, percent: Math.max(0, 100 - paymentPercentTotal) },
+    ];
+    persist({
+      summary: {
+        totalLaborDays: breakdown.totalLaborDays,
+        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+        grandTotalPrice: breakdown.grandTotal,
+        paymentTerms: nextTerms,
+        taxIncluded: quote.summary?.taxIncluded ?? true,
+        warrantyYears: quote.summary?.warrantyYears ?? 1,
+        invoiceType: quote.summary?.invoiceType ?? '专票',
+      },
+    });
+  };
+
+  const removePaymentTerm = (index: number) => {
+    const nextTerms = paymentTerms.filter((_, i) => i !== index);
+    persist({
+      summary: {
+        totalLaborDays: breakdown.totalLaborDays,
+        projectWorkDays: evalSheet?.manualWorkDays ?? quote.summary?.projectWorkDays ?? 0,
+        grandTotalPrice: breakdown.grandTotal,
+        paymentTerms: nextTerms,
+        taxIncluded: quote.summary?.taxIncluded ?? true,
+        warrantyYears: quote.summary?.warrantyYears ?? 1,
+        invoiceType: quote.summary?.invoiceType ?? '专票',
+      },
+    });
+  };
+
+  // ─── 销售增项岗位 ──────────────────────────────────────────
+
+  const addSalesRolePreset = (preset: typeof SALES_ROLE_PRESETS[0]) => {
+    const next: SalesAddedRole[] = [
+      ...salesAddedRoles,
+      {
+        id: uid('ar'),
+        roleName: preset.roleName,
+        headcount: 1,
+        days: 5,
+        dailyRate: preset.dailyRate,
+        subtotal: preset.dailyRate * 5,
+        reason: preset.reason,
+      },
+    ];
+    setSalesAddedRoles(next);
+    persist({ salesAddedRoles: next });
+    Message.success(`已添加增项「${preset.roleName}」`);
+  };
+
+  // ─── 出差配置 ─────────────────────────────────────────────
+
+  const calcTravelSubtotal = (details: any[]) => {
     return details.reduce((sum, d) => {
       const transportFee = (d.transportFee || 0) * (d.headcount || 1);
       const hotelTotal = (d.hotelFeePerDay || 0) * (d.headcount || 1) * (d.days || 1);
@@ -150,9 +297,9 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     persist({ travelOnsite: next });
   };
 
-  // ─── 驻场配置 ─────────────────────────────────────────
+  // ─── 驻场配置 ─────────────────────────────────────────────
 
-  const calcOnsiteSubtotal = (details: OnsiteDetail[]) => {
+  const calcOnsiteSubtotal = (details: any[]) => {
     return details.reduce((sum, d) => sum + (d.serviceFeePerDay || 0) * (d.headcount || 1) * (d.days || 1), 0);
   };
 
@@ -184,7 +331,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     persist({ travelOnsite: next });
   };
 
-  // ─── 其他成本 ─────────────────────────────────────────
+  // ─── 其他成本 ─────────────────────────────────────────────
 
   const addCost = () => {
     const next = [...otherCosts, { id: uid('cost'), name: '', amount: 0, note: '' }];
@@ -204,7 +351,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     persist({ otherCosts: next });
   };
 
-  // ─── 提交审批 ─────────────────────────────────────────
+  // ─── 提交审批 ─────────────────────────────────────────────
 
   const handleSubmit = async () => {
     try {
@@ -215,573 +362,890 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
     }
   };
 
-  // ─── 渲染 ─────────────────────────────────────────────
+  // 实体与客户版报价单预览
+  const entity = findCompanyEntityByName(quote.signingEntity ?? ZKRT_QUOTE_TEMPLATE.signingEntity);
+  const quoteHtml = useMemo(() => generateQuoteHtml({
+    quote: workingQuote,
+    breakdown,
+    company: {
+      name: entity?.name ?? '中科软通（武汉）科技有限公司',
+      address: entity?.address ?? '',
+      phone: entity?.contactPhone ?? '',
+      representative: entity?.legalPerson ?? '',
+    },
+    isSupplement: quote.isSupplement,
+  }), [breakdown, entity, quote.isSupplement, workingQuote]);
+
+  // 成本百分比计算
+  const totalCostForBar = Math.max(breakdown.grandTotal, 1);
+  const techPercent = Math.round((breakdown.techLaborCost / totalCostForBar) * 100);
+  const addedPercent = Math.round((breakdown.addedCost / totalCostForBar) * 100);
+  const deliveryPercent = Math.round(((breakdown.travelSubtotal + breakdown.onsiteSubtotal) / totalCostForBar) * 100);
 
   return (
-    <Card title="数据流转 · 工作台三 · 在线报价配置">
-      <Space direction="vertical" style={{ width: '100%' }} size={16}>
-
-        <Card size="small" title="报价单主体">
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 220px) minmax(240px, 1fr)', gap: 16, alignItems: 'center' }}>
-            <Text type="secondary">签约与落款主体</Text>
+    <div className="stage3-container">
+      {/* 顶栏：签约法人主体与增补信息轻量横栏 */}
+      <Card size="small" style={{ marginBottom: 16, background: 'var(--color-bg-2)', borderRadius: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <Text bold style={{ fontSize: 14 }}>签约主体：</Text>
             <Select
               aria-label="报价单签约主体"
               value={quote.signingEntity || undefined}
               disabled={readonly}
               placeholder="请选择签约主体"
-              options={contractSigningEntities.map((entity) => ({ label: entity.name, value: entity.shortName }))}
+              style={{ width: 280 }}
+              options={contractSigningEntities.map((item) => ({ label: item.name, value: item.shortName }))}
               onChange={(signingEntity) => persist({ signingEntity })}
             />
-          </div>
-        </Card>
-
-        {/* 功能清单 + 工时评估（从工作台一和工作台二带入） */}
-        <Card size="small" title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <IconApps />
-              <span>功能清单与工时评估</span>
-            </div>
-            {evalSheet && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                总周期 <Text bold>{evalSheet.manualWorkDays || '-'}</Text> 工作日
-              </Text>
+            {entity && (
+              <Tag color="arcoblue" style={{ fontSize: 12 }}>
+                信用代码: {entity.usci}
+              </Tag>
+            )}
+            {quote.isSupplement ? (
+              <Tag color="purple">增补合同报价</Tag>
+            ) : (
+              <Tag color="gray">标准首版报价</Tag>
             )}
           </div>
-        }>
-          {evalSheet && endpointConfigs.length > 0 ? (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: 'var(--color-fill-1)' }}>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>端</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>模块</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>子功能</th>
-                    {evalSheet.activeRoles.map((r: EvalRole) => (
-                      <th key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 80, whiteSpace: 'nowrap' }}>
-                        <div>{r.name}</div>
-                        {editingCostKey === r.key ? (
-                          <div style={{ marginTop: 2 }}>
-                            <InputNumber
-                              size="mini"
-                              min={0}
-                              value={roleDailyCosts[r.key]}
-                              onChange={(v) => updateRoleDailyCost(r.key, v || 0)}
-                              onBlur={() => setEditingCostKey(null)}
-                              onPressEnter={() => setEditingCostKey(null)}
-                              style={{ width: 70 }}
-                              autoFocus
-                            />
-                          </div>
-                        ) : (
-                          <div
-                            style={{ fontSize: 10, color: 'var(--color-text-3)', fontWeight: 400, cursor: readonly ? 'default' : 'pointer', textDecoration: readonly ? 'none' : 'underline' }}
-                            onClick={() => { if (!readonly) setEditingCostKey(r.key); }}
-                          >
-                            ¥{roleDailyCosts[r.key]?.toFixed(0)}/天
-                          </div>
-                        )}
-                      </th>
-                    ))}
-                    <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 60, whiteSpace: 'nowrap' }}>人天</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    // 构建评估单元的映射：子功能ID -> 评估单元
-                    const unitMap = new Map<string, typeof evalSheet.evaluationUnits[0]>();
-                    evalSheet.evaluationUnits.forEach((u) => {
-                      u.boundSubFeatureIds.forEach((subId) => { unitMap.set(subId, u); });
-                    });
-                    // 计算端的 rowspan
-                    const epRowSpans: Record<string, number> = {};
-                    const epFirstIdx: Record<string, number> = {};
-                    let idx = 0;
-                    featureList.forEach((m) => {
-                      const epId = m.endpointId || '';
-                      if (!(epId in epFirstIdx)) { epFirstIdx[epId] = idx; epRowSpans[epId] = 0; }
-                      epRowSpans[epId] += Math.max(m.subFeatures.length, 1);
-                      idx += Math.max(m.subFeatures.length, 1);
-                    });
-                    let rowIdx = 0;
-                    let grandTotalDays = 0;
-                    let grandTotalCost = 0;
-                    const rows = featureList.flatMap((m) => {
-                      const ep = endpointConfigs.find((e) => e.id === m.endpointId);
-                      const isFirstOfEp = epFirstIdx[m.endpointId || ''] === rowIdx;
-                      const subs = m.subFeatures.length > 0 ? m.subFeatures : [{ id: 'empty', name: '（暂无子功能）', description: '' }];
-                      // 计算模块行的 rowspan
-                      const moduleRowSpan = subs.length;
-                      return subs.map((f, fIdx) => {
-                        rowIdx++;
-                        const unit = unitMap.get(f.id);
-                        const roleDays = unit ? evalSheet.activeRoles.map((r) => unit.manualWorkload[r.key] ?? 0) : evalSheet.activeRoles.map(() => 0);
-                        const totalDays = unit?.totalDays ?? 0;
-                        // 按岗位分别计算成本
-                        let itemCost = 0;
-                        evalSheet.activeRoles.forEach((r: EvalRole, ri) => {
-                          itemCost += roleDays[ri] * (roleDailyCosts[r.key] ?? 0);
-                        });
-                        grandTotalDays += totalDays;
-                        grandTotalCost += itemCost;
-                        return (
-                          <tr key={f.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                            {isFirstOfEp && fIdx === 0 && (
-                              <td rowSpan={epRowSpans[m.endpointId || ''] || 1} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 600, borderRight: '1px solid var(--color-border-2)', fontSize: 12 }}>
-                                {ep?.name || '-'}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
-                                  {(ep?.platforms || []).map((pid) => (
-                                    <Tag key={pid} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>{PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid}</Tag>
-                                  ))}
-                                </div>
-                              </td>
-                            )}
-                            {fIdx === 0 && (
-                              <td rowSpan={moduleRowSpan} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 500, borderRight: '1px solid var(--color-border-2)' }}>{m.name}</td>
-                            )}
-                            <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
-                            {evalSheet.activeRoles.map((r: EvalRole, ri) => (
-                              <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
-                                {roleDays[ri] > 0 ? roleDays[ri].toFixed(1) : '-'}
-                              </td>
-                            ))}
-                            <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
-                              {totalDays > 0 ? totalDays.toFixed(1) : '-'}
-                            </td>
-                          </tr>
-                        );
-                      });
-                    });
-                    // 添加合计行
-                    // 计算每个岗位的总人天和总成本
-                    const roleTotalsData = evalSheet.activeRoles.map((r: EvalRole) => {
-                      const roleTotalDays = (evalSheet?.evaluationUnits || []).reduce((s, u) => s + (u.manualWorkload[r.key] ?? 0), 0);
-                      const roleTotalCost = roleTotalDays * (roleDailyCosts[r.key] ?? 0);
-                      return { days: roleTotalDays, cost: roleTotalCost };
-                    });
-                    rows.push(
-                      <tr key="total" style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
-                        <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)', whiteSpace: 'nowrap' }}>合计</td>
-                        <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)' }} colSpan={2} />
-                        {roleTotalsData.map((rt, ri) => (
-                          <td key={ri} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 11 }}>
-                            <div>{rt.days.toFixed(1)}</div>
-                            <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>{money(rt.cost)}</div>
-                          </td>
-                        ))}
-                        <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{grandTotalDays.toFixed(1)}</td>
-                      </tr>
-                    );
-                    // 添加总金额行
-                    rows.push(
-                      <tr key="totalCost" style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
-                        <td colSpan={4 + evalSheet.activeRoles.length} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '1px solid var(--color-border-2)' }}>
-                          <span>总人天 <span style={{ color: 'rgb(var(--arcoblue-6))', fontSize: 16, fontWeight: 700 }}>{grandTotalDays.toFixed(1)}</span></span>
-                          <span style={{ marginLeft: 24 }}>总金额 <span style={{ color: 'rgb(var(--arcoblue-6))', fontSize: 16, fontWeight: 700 }}>{money(grandTotalCost)}</span></span>
-                        </td>
-                      </tr>
-                    );
-                    return rows;
-                  })()}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Empty description="暂无评估数据" />
-          )}
-        </Card>
 
-        {/* 第二部分：销售增项岗位 */}
-        <Card size="small" title="销售增项岗位">
-          {salesAddedRoles.map((role) => (
-            <div key={role.id} style={{ padding: 12, border: '1px dashed var(--color-border-2)', borderRadius: 6, marginBottom: 12, background: 'var(--color-fill-1)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(220px, 1.4fr) 80px 80px 120px 100px 40px', gap: 12, alignItems: 'end' }}>
+          {quote.isSupplement && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Text type="secondary" style={{ fontSize: 13 }}>本次变更增减额：</Text>
+              <InputNumber
+                style={{ width: 140 }}
+                value={quote.supplementChangeAmount ?? 0}
+                disabled={readonly}
+                prefix="¥"
+                placeholder="支持负数"
+                onChange={(value) => persist({ supplementChangeAmount: typeof value === 'number' ? value : 0 })}
+              />
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* 72:28 双栏主体结构 */}
+      <div className="stage3-layout">
+        {/* 左侧 72%：商务精算与履约配置 */}
+        <div className="stage3-main">
+
+          {/* 模块 1：研发成本与岗位费率调优器（核心卡片网格 + 渐进展开明细） */}
+          <Card
+            size="small"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <IconApps style={{ color: 'rgb(var(--arcoblue-6))' }} />
+                  <span style={{ fontWeight: 600 }}>研发人力成本与岗位费率</span>
+                  {evalSheet && (
+                    <Tag size="small" color="blue">
+                      总工期 {evalSheet.manualWorkDays || '-'} 工作日 / 共 {grandTotalDays.toFixed(1)} 人天
+                    </Tag>
+                  )}
+                </div>
+                <Space size={8}>
+                  {!readonly && (
+                    <Button size="mini" type="text" icon={<IconRefresh />} onClick={resetAllRolesToBaseRate}>
+                      重置基准 ¥{TECH_DAILY_RATE}/天
+                    </Button>
+                  )}
+                  <Button
+                    size="mini"
+                    type="outline"
+                    icon={showFeatureDetail ? <IconUp /> : <IconDown />}
+                    onClick={() => setShowFeatureDetail(!showFeatureDetail)}
+                  >
+                    {showFeatureDetail ? '收起功能工时明细' : `展开功能工时明细 (${featureList.reduce((s, m) => s + Math.max(m.subFeatures.length, 1), 0)} 项)`}
+                  </Button>
+                </Space>
+              </div>
+            }
+          >
+            {/* 岗位费率紧凑卡片网格 */}
+            {evalSheet && evalSheet.activeRoles.length > 0 ? (
+              <>
+                <div className="stage3-role-grid">
+                  {evalSheet.activeRoles.map((role: EvalRole) => {
+                    const days = roleTotals[role.key] || 0;
+                    const dailyRate = roleDailyCosts[role.key] ?? TECH_DAILY_RATE;
+                    const roleSubtotal = days * dailyRate;
+                    return (
+                      <div key={role.key} className="stage3-role-card">
+                        <div className="stage3-role-header">
+                          <Tag size="small" color="arcoblue" style={{ fontWeight: 600 }}>{role.name}</Tag>
+                          <span className="stage3-role-days">{days.toFixed(1)} 人天</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0' }}>
+                          <Text type="secondary" style={{ fontSize: 12 }}>日均单价:</Text>
+                          <InputNumber
+                            size="mini"
+                            min={0}
+                            step={100}
+                            value={dailyRate}
+                            disabled={readonly}
+                            prefix="¥"
+                            style={{ width: 95 }}
+                            onChange={(v) => updateRoleDailyCost(role.key, v || 0)}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 6, borderTop: '1px dashed var(--color-border-2)' }}>
+                          <Text type="secondary" style={{ fontSize: 11 }}>岗位小计</Text>
+                          <span className="stage3-role-subtotal">{money(roleSubtotal)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 渐进展开：完整功能工时明细表格 */}
+                {showFeatureDetail && (
+                  <div style={{ marginTop: 16, borderTop: '1px solid var(--color-border-2)', paddingTop: 12 }}>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--color-fill-1)' }}>
+                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>端</th>
+                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>模块</th>
+                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>子功能</th>
+                            {evalSheet.activeRoles.map((r: EvalRole) => (
+                              <th key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 80, whiteSpace: 'nowrap' }}>
+                                <div>{r.name}</div>
+                                <div style={{ fontSize: 10, color: 'var(--color-text-3)', fontWeight: 400 }}>
+                                  ¥{roleDailyCosts[r.key]?.toFixed(0)}/天
+                                </div>
+                              </th>
+                            ))}
+                            <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 60, whiteSpace: 'nowrap' }}>人天</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            const unitMap = new Map<string, typeof evalSheet.evaluationUnits[0]>();
+                            evalSheet.evaluationUnits.forEach((u) => {
+                              u.boundSubFeatureIds.forEach((subId) => { unitMap.set(subId, u); });
+                            });
+                            const epRowSpans: Record<string, number> = {};
+                            const epFirstIdx: Record<string, number> = {};
+                            let idx = 0;
+                            featureList.forEach((m) => {
+                              const epId = m.endpointId || '';
+                              if (!(epId in epFirstIdx)) { epFirstIdx[epId] = idx; epRowSpans[epId] = 0; }
+                              epRowSpans[epId] += Math.max(m.subFeatures.length, 1);
+                              idx += Math.max(m.subFeatures.length, 1);
+                            });
+                            let rowIdx = 0;
+                            let grandDays = 0;
+                            let grandCost = 0;
+                            const rows = featureList.flatMap((m) => {
+                              const ep = endpointConfigs.find((e) => e.id === m.endpointId);
+                              const isFirstOfEp = epFirstIdx[m.endpointId || ''] === rowIdx;
+                              const subs = m.subFeatures.length > 0 ? m.subFeatures : [{ id: 'empty', name: '（暂无子功能）', description: '' }];
+                              const moduleRowSpan = subs.length;
+                              return subs.map((f, fIdx) => {
+                                rowIdx++;
+                                const unit = unitMap.get(f.id);
+                                const roleDays = unit ? evalSheet.activeRoles.map((r) => unit.manualWorkload[r.key] ?? 0) : evalSheet.activeRoles.map(() => 0);
+                                const totalDays = unit?.totalDays ?? 0;
+                                let itemCost = 0;
+                                evalSheet.activeRoles.forEach((r: EvalRole, ri) => {
+                                  itemCost += roleDays[ri] * (roleDailyCosts[r.key] ?? 0);
+                                });
+                                grandDays += totalDays;
+                                grandCost += itemCost;
+                                return (
+                                  <tr key={f.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
+                                    {isFirstOfEp && fIdx === 0 && (
+                                      <td rowSpan={epRowSpans[m.endpointId || ''] || 1} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 600, borderRight: '1px solid var(--color-border-2)', fontSize: 12 }}>
+                                        {ep?.name || '-'}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+                                          {(ep?.platforms || []).map((pid) => (
+                                            <Tag key={pid} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>
+                                              {PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid}
+                                            </Tag>
+                                          ))}
+                                        </div>
+                                      </td>
+                                    )}
+                                    {fIdx === 0 && (
+                                      <td rowSpan={moduleRowSpan} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 500, borderRight: '1px solid var(--color-border-2)' }}>{m.name}</td>
+                                    )}
+                                    <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
+                                    {evalSheet.activeRoles.map((r: EvalRole, ri) => (
+                                      <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                                        {roleDays[ri] > 0 ? roleDays[ri].toFixed(1) : '-'}
+                                      </td>
+                                    ))}
+                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
+                                      {totalDays > 0 ? totalDays.toFixed(1) : '-'}
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            });
+                            rows.push(
+                              <tr key="total" style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
+                                <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)', whiteSpace: 'nowrap' }}>研发人天合计</td>
+                                <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)' }} colSpan={2} />
+                                {evalSheet.activeRoles.map((r: EvalRole) => {
+                                  const rDays = (evalSheet?.evaluationUnits || []).reduce((s, u) => s + (u.manualWorkload[r.key] ?? 0), 0);
+                                  const rCost = rDays * (roleDailyCosts[r.key] ?? 0);
+                                  return (
+                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 11 }}>
+                                      <div>{rDays.toFixed(1)}</div>
+                                      <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>{money(rCost)}</div>
+                                    </td>
+                                  );
+                                })}
+                                <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                                  {grandDays.toFixed(1)}
+                                </td>
+                              </tr>
+                            );
+                            return rows;
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Empty description="暂无评估数据" />
+            )}
+          </Card>
+
+          {/* 模块 2：销售增项岗位配置 */}
+          <Card
+            size="small"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space>
+                  <span style={{ fontWeight: 600 }}>销售商务增项</span>
+                  <Tag size="small" color="orange">计入总价 · 不占研发人天</Tag>
+                </Space>
+                {!readonly && (
+                  <Space size={6}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>快捷添加:</Text>
+                    {SALES_ROLE_PRESETS.map((p) => (
+                      <Tag
+                        key={p.roleName}
+                        size="small"
+                        color="arcoblue"
+                        className="stage3-preset-btn"
+                        onClick={() => addSalesRolePreset(p)}
+                      >
+                        + {p.roleName}
+                      </Tag>
+                    ))}
+                  </Space>
+                )}
+              </div>
+            }
+          >
+            {salesAddedRoles.map((role) => (
+              <div key={role.id} style={{ padding: '10px 12px', border: '1px solid var(--color-border-2)', borderRadius: 6, marginBottom: 8, background: 'var(--color-fill-1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1fr) minmax(200px, 1.5fr) 75px 75px 110px 90px 36px', gap: 10, alignItems: 'center' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>岗位名称</Text>
+                    <Input
+                      size="small"
+                      value={role.roleName}
+                      onChange={(v) => {
+                        const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, roleName: v } : r));
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }}
+                      placeholder="如：PMO"
+                      disabled={readonly}
+                    />
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>增项事由</Text>
+                    <Input
+                      size="small"
+                      value={role.reason}
+                      onChange={(v) => {
+                        const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, reason: v } : r));
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }}
+                      placeholder="增项原因与交付要求"
+                      disabled={readonly}
+                    />
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                    <InputNumber
+                      size="small"
+                      min={1}
+                      value={role.headcount}
+                      onChange={(v) => {
+                        const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, headcount: v || 1, subtotal: (v || 1) * r.days * r.dailyRate } : r));
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }}
+                      disabled={readonly}
+                    />
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                    <InputNumber
+                      size="small"
+                      min={1}
+                      value={role.days}
+                      onChange={(v) => {
+                        const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, days: v || 1, subtotal: r.headcount * (v || 1) * r.dailyRate } : r));
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }}
+                      disabled={readonly}
+                    />
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>日单价</Text>
+                    <InputNumber
+                      size="small"
+                      min={0}
+                      prefix="¥"
+                      value={role.dailyRate}
+                      onChange={(v) => {
+                        const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, dailyRate: v || 0, subtotal: r.headcount * r.days * (v || 0) } : r));
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }}
+                      disabled={readonly}
+                    />
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>小计</Text>
+                    <Text bold style={{ color: 'var(--color-danger-6)', fontSize: 13 }}>{money(role.subtotal)}</Text>
+                  </div>
+                  <div>
+                    {!readonly && (
+                      <Button size="mini" status="danger" icon={<IconDelete />} onClick={() => {
+                        const next = salesAddedRoles.filter((r) => r.id !== role.id);
+                        setSalesAddedRoles(next);
+                        persist({ salesAddedRoles: next });
+                      }} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              {!readonly && (
+                <Button size="small" icon={<IconPlus />} onClick={() => {
+                  const next = [...salesAddedRoles, { id: uid('ar'), roleName: '', headcount: 1, days: 1, dailyRate: 800, subtotal: 800, reason: '' }];
+                  setSalesAddedRoles(next);
+                  persist({ salesAddedRoles: next });
+                }}>
+                  添加自定义增项
+                </Button>
+              )}
+              {salesAddedRoles.length > 0 && (
+                <div style={{ padding: '6px 12px', background: 'var(--color-fill-1)', borderRadius: 4 }}>
+                  <Text>增项小计：</Text>
+                  <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(salesAddedRoles.reduce((s, r) => s + r.subtotal, 0))}</Text>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* 模块 3：交付履约配置（出差与驻场服务合并卡片） */}
+          <Card
+            size="small"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space>
+                  <span style={{ fontWeight: 600 }}>交付履约服务（出差与驻场）</span>
+                  <Tag size="small" color={travelOnsite.enableTravel || travelOnsite.enableOnsite ? 'green' : 'gray'}>
+                    履约合计: {money(breakdown.travelSubtotal + breakdown.onsiteSubtotal)}
+                  </Tag>
+                </Space>
+              </div>
+            }
+          >
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              {/* 出差区域 */}
+              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Space align="center">
+                    <Switch checked={travelOnsite.enableTravel} onChange={toggleTravel} disabled={readonly} />
+                    <Text bold>异地出差服务</Text>
+                  </Space>
+                  {travelOnsite.enableTravel && (
+                    <Text bold style={{ color: 'var(--color-danger-6)' }}>差旅小计: {money(travelOnsite.travelSubtotal)}</Text>
+                  )}
+                </div>
+
+                {travelOnsite.enableTravel && (
+                  <>
+                    {travelOnsite.travelDetails.map((detail, idx) => (
+                      <div key={idx} style={{ padding: 10, background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <Text bold style={{ fontSize: 12 }}>出差目的地 {idx + 1}</Text>
+                          {!readonly && travelOnsite.travelDetails.length > 1 && (
+                            <Button size="mini" status="danger" icon={<IconDelete />} onClick={() => removeTravelDetail(idx)} />
+                          )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>出差地点</Text>
+                            <Input size="small" value={detail.location} onChange={(v) => updateTravelDetail(idx, 'location', v)} placeholder="如：北京、上海" disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                            <InputNumber size="small" min={1} value={detail.headcount} onChange={(v) => updateTravelDetail(idx, 'headcount', v || 1)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                            <InputNumber size="small" min={1} value={detail.days} onChange={(v) => updateTravelDetail(idx, 'days', v || 1)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>往返交通/人</Text>
+                            <InputNumber size="small" min={0} prefix="¥" value={detail.transportFee} onChange={(v) => updateTravelDetail(idx, 'transportFee', v || 0)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>住宿费/天/人</Text>
+                            <InputNumber size="small" min={0} prefix="¥" value={detail.hotelFeePerDay} onChange={(v) => updateTravelDetail(idx, 'hotelFeePerDay', v || 0)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>补贴/天/人</Text>
+                            <InputNumber size="small" min={0} prefix="¥" value={detail.allowancePerDay} onChange={(v) => updateTravelDetail(idx, 'allowancePerDay', v || 0)} disabled={readonly} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!readonly && (
+                      <Button size="mini" icon={<IconPlus />} onClick={addTravelDetail}>添加出差地点</Button>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* 驻场区域 */}
+              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Space align="center">
+                    <Switch checked={travelOnsite.enableOnsite} onChange={toggleOnsite} disabled={readonly} />
+                    <Text bold>现场驻场技术服务</Text>
+                  </Space>
+                  {travelOnsite.enableOnsite && (
+                    <Text bold style={{ color: 'var(--color-danger-6)' }}>驻场小计: {money(travelOnsite.onsiteSubtotal)}</Text>
+                  )}
+                </div>
+
+                {travelOnsite.enableOnsite && (
+                  <>
+                    {travelOnsite.onsiteDetails.map((detail, idx) => (
+                      <div key={idx} style={{ padding: 10, background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <Text bold style={{ fontSize: 12 }}>驻场地点 {idx + 1}</Text>
+                          {!readonly && travelOnsite.onsiteDetails.length > 1 && (
+                            <Button size="mini" status="danger" icon={<IconDelete />} onClick={() => removeOnsiteDetail(idx)} />
+                          )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>驻场地点</Text>
+                            <Input size="small" value={detail.location} onChange={(v) => updateOnsiteDetail(idx, 'location', v)} placeholder="如：客户现场" disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                            <InputNumber size="small" min={1} value={detail.headcount} onChange={(v) => updateOnsiteDetail(idx, 'headcount', v || 1)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                            <InputNumber size="small" min={1} value={detail.days} onChange={(v) => updateOnsiteDetail(idx, 'days', v || 1)} disabled={readonly} />
+                          </div>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>技术服务费/天/人</Text>
+                            <InputNumber size="small" min={0} prefix="¥" value={detail.serviceFeePerDay} onChange={(v) => updateOnsiteDetail(idx, 'serviceFeePerDay', v || 0)} disabled={readonly} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!readonly && (
+                      <Button size="mini" icon={<IconPlus />} onClick={addOnsiteDetail}>添加驻场地点</Button>
+                    )}
+                  </>
+                )}
+              </div>
+            </Space>
+          </Card>
+
+          {/* 模块 4：第三方自费或代采项目 */}
+          <Card
+            size="small"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space>
+                  <span style={{ fontWeight: 600 }}>外部自费与代采项目</span>
+                  <Tag size="small" color="gray">客户自费/代采 · 不计入我方报价</Tag>
+                </Space>
+                {otherCosts.length > 0 && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    自费总额：<Text bold>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
+                  </Text>
+                )}
+              </div>
+            }
+          >
+            {otherCosts.map((cost) => (
+              <div key={cost.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1fr) 110px minmax(180px, 1.5fr) 36px', gap: 10, alignItems: 'center', marginBottom: 8 }}>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>岗位名称</Text>
-                  <Input
-                    value={role.roleName}
-                    onChange={(v) => {
-                      const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, roleName: v } : r));
-                      setSalesAddedRoles(next);
-                      persist({ salesAddedRoles: next });
-                    }}
-                    placeholder="如：PMO、驻场运维"
-                    disabled={readonly}
-                  />
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>费用名称</Text>
+                  <Input size="small" value={cost.name} onChange={(v) => updateCost(cost.id, 'name', v)} placeholder="如：云服务器、短信包" disabled={readonly} />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>增项事由</Text>
-                  <Input value={role.reason} onChange={(v) => {
-                    const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, reason: v } : r));
-                    setSalesAddedRoles(next); persist({ salesAddedRoles: next });
-                  }} placeholder="客户要求每周现场汇报" disabled={readonly} />
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>金额</Text>
+                  <InputNumber size="small" min={0} prefix="¥" value={cost.amount} onChange={(v) => updateCost(cost.id, 'amount', v || 0)} disabled={readonly} />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>人数</Text>
-                  <InputNumber
-                    min={1}
-                    value={role.headcount}
-                    onChange={(v) => {
-                      const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, headcount: v || 1, subtotal: (v || 1) * r.days * r.dailyRate } : r));
-                      setSalesAddedRoles(next);
-                      persist({ salesAddedRoles: next });
-                    }}
-                    placeholder="人数"
-                    disabled={readonly}
-                  />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>天数</Text>
-                  <InputNumber
-                    min={1}
-                    value={role.days}
-                    onChange={(v) => {
-                      const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, days: v || 1, subtotal: r.headcount * (v || 1) * r.dailyRate } : r));
-                      setSalesAddedRoles(next);
-                      persist({ salesAddedRoles: next });
-                    }}
-                    placeholder="天数"
-                    disabled={readonly}
-                  />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>日均单价（元）</Text>
-                  <InputNumber
-                    min={0}
-                    value={role.dailyRate}
-                    onChange={(v) => {
-                      const next = salesAddedRoles.map((r) => (r.id === role.id ? { ...r, dailyRate: v || 0, subtotal: r.headcount * r.days * (v || 0) } : r));
-                      setSalesAddedRoles(next);
-                      persist({ salesAddedRoles: next });
-                    }}
-                    placeholder="如：800"
-                    disabled={readonly}
-                  />
-                </div>
-                <div>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>小计</Text>
-                  <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(role.subtotal)}</Text>
+                  <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>备注说明</Text>
+                  <Input size="small" value={cost.note} onChange={(v) => updateCost(cost.id, 'note', v)} placeholder="如：首年免费/代采实报实销" disabled={readonly} />
                 </div>
                 <div>
                   {!readonly && (
-                    <Button size="small" status="danger" icon={<IconDelete />} onClick={() => {
-                      const next = salesAddedRoles.filter((r) => r.id !== role.id);
-                      setSalesAddedRoles(next);
-                      persist({ salesAddedRoles: next });
-                    }} />
+                    <Button size="mini" status="danger" icon={<IconDelete />} onClick={() => removeCost(cost.id)} />
                   )}
-                </div>
-              </div>
-            </div>
-          ))}
-          {/* 添加按钮 + 小计 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            {!readonly && (
-              <Button size="small" icon={<IconPlus />} onClick={() => {
-                const next = [...salesAddedRoles, { id: uid('ar'), roleName: '', headcount: 1, days: 1, dailyRate: 800, subtotal: 800, reason: '' }];
-                setSalesAddedRoles(next);
-                persist({ salesAddedRoles: next });
-              }}>添加增项岗位</Button>
-            )}
-            {salesAddedRoles.length > 0 && (
-              <div style={{ padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 4 }}>
-                <Text>增项小计：</Text>
-                <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(salesAddedRoles.reduce((s, r) => s + r.subtotal, 0))}</Text>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* 第四部分：出差与驻场 */}
-        <Card size="small" title="出差与驻场">
-          {/* 出差配置 */}
-          <div style={{ marginBottom: 16 }}>
-            <Space align="center" style={{ marginBottom: 8 }}>
-              <Switch checked={travelOnsite.enableTravel} onChange={toggleTravel} disabled={readonly} />
-              <Text>开启出差</Text>
-            </Space>
-            {travelOnsite.enableTravel && travelOnsite.travelDetails.map((detail, idx) => (
-              <div key={idx} style={{ padding: 12, background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <Text bold style={{ fontSize: 12 }}>出差地点 {idx + 1}</Text>
-                  {!readonly && travelOnsite.travelDetails.length > 1 && (
-                    <Button size="small" status="danger" icon={<IconDelete />} onClick={() => removeTravelDetail(idx)} />
-                  )}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>出差地点</Text>
-                    <Input value={detail.location} onChange={(v) => updateTravelDetail(idx, 'location', v)} placeholder="如：北京、上海" disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>出差人数</Text>
-                    <InputNumber min={1} value={detail.headcount} onChange={(v) => updateTravelDetail(idx, 'headcount', v || 1)} disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>出差天数</Text>
-                    <InputNumber min={1} value={detail.days} onChange={(v) => updateTravelDetail(idx, 'days', v || 1)} disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>交通费（往返/人，元）</Text>
-                    <InputNumber min={0} value={detail.transportFee} onChange={(v) => updateTravelDetail(idx, 'transportFee', v || 0)} placeholder="如：1000" disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>住宿费（元/天/人）</Text>
-                    <InputNumber min={0} value={detail.hotelFeePerDay} onChange={(v) => updateTravelDetail(idx, 'hotelFeePerDay', v || 0)} placeholder="如：300" disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>差旅补贴（元/天/人）</Text>
-                    <InputNumber min={0} value={detail.allowancePerDay} onChange={(v) => updateTravelDetail(idx, 'allowancePerDay', v || 0)} placeholder="如：100" disabled={readonly} />
-                  </div>
                 </div>
               </div>
             ))}
-            {travelOnsite.enableTravel && (
-              <>
-                {!readonly && (
-                  <Button size="small" icon={<IconPlus />} onClick={addTravelDetail} style={{ marginBottom: 8 }}>添加出差地点</Button>
-                )}
-                <div style={{ textAlign: 'right', padding: '8px 0', borderTop: '1px solid var(--color-border-2)' }}>
-                  <Text>差旅合计：</Text>
-                  <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(travelOnsite.travelSubtotal)}</Text>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* 驻场配置 */}
-          <div>
-            <Space align="center" style={{ marginBottom: 8 }}>
-              <Switch checked={travelOnsite.enableOnsite} onChange={toggleOnsite} disabled={readonly} />
-              <Text>开启驻场</Text>
-            </Space>
-            {travelOnsite.enableOnsite && travelOnsite.onsiteDetails.map((detail, idx) => (
-              <div key={idx} style={{ padding: 12, background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <Text bold style={{ fontSize: 12 }}>驻场地点 {idx + 1}</Text>
-                  {!readonly && travelOnsite.onsiteDetails.length > 1 && (
-                    <Button size="small" status="danger" icon={<IconDelete />} onClick={() => removeOnsiteDetail(idx)} />
-                  )}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>驻场地点</Text>
-                    <Input value={detail.location} onChange={(v) => updateOnsiteDetail(idx, 'location', v)} placeholder="如：客户现场" disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>驻场人数</Text>
-                    <InputNumber min={1} value={detail.headcount} onChange={(v) => updateOnsiteDetail(idx, 'headcount', v || 1)} disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>驻场天数</Text>
-                    <InputNumber min={1} value={detail.days} onChange={(v) => updateOnsiteDetail(idx, 'days', v || 1)} disabled={readonly} />
-                  </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>服务费（元/天/人）</Text>
-                    <InputNumber min={0} value={detail.serviceFeePerDay} onChange={(v) => updateOnsiteDetail(idx, 'serviceFeePerDay', v || 0)} placeholder="如：800" disabled={readonly} />
-                  </div>
-                </div>
-              </div>
-            ))}
-            {travelOnsite.enableOnsite && (
-              <>
-                {!readonly && (
-                  <Button size="small" icon={<IconPlus />} onClick={addOnsiteDetail} style={{ marginBottom: 8 }}>添加驻场地点</Button>
-                )}
-                <div style={{ textAlign: 'right', padding: '8px 0', borderTop: '1px solid var(--color-border-2)' }}>
-                  <Text>驻场合计：</Text>
-                  <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(travelOnsite.onsiteSubtotal)}</Text>
-                </div>
-              </>
-            )}
-          </div>
-        </Card>
-
-        {/* 第五部分：其他成本 */}
-        <Card size="small" title="其他成本">
-          {otherCosts.map((cost) => (
-            <div key={cost.id} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr 40px', gap: 12, alignItems: 'center', marginBottom: 8 }}>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>费用名称</Text>
-                <Input value={cost.name} onChange={(v) => updateCost(cost.id, 'name', v)} placeholder="如：云服务器、域名SSL、短信包" disabled={readonly} />
-              </div>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>金额（元）</Text>
-                <InputNumber min={0} value={cost.amount} onChange={(v) => updateCost(cost.id, 'amount', v || 0)} placeholder="如：5000" disabled={readonly} />
-              </div>
-              <div>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>备注说明</Text>
-                <Input value={cost.note} onChange={(v) => updateCost(cost.id, 'note', v)} placeholder="如：客户自费或代采、年度费用" disabled={readonly} />
-              </div>
-              <div>
-                {!readonly && (
-                  <Button size="small" status="danger" icon={<IconDelete />} onClick={() => removeCost(cost.id)} />
-                )}
-              </div>
-            </div>
-          ))}
-          {/* 添加按钮 + 其他合计 */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
             {!readonly && (
-              <Button size="small" icon={<IconPlus />} onClick={addCost}>添加费用项</Button>
+              <Button size="mini" icon={<IconPlus />} onClick={addCost}>添加自费项目</Button>
             )}
-            {otherCosts.length > 0 && (
-              <div style={{ padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 4 }}>
-                <Text>自费项目合计（不计入报价）：</Text>
-                <Text bold style={{ color: 'var(--color-danger-6)' }}>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
+          </Card>
+
+          {/* 模块 5：商务结算条款与付款计划预设 */}
+          <Card
+            size="small"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600 }}>商务结算与付款计划</span>
+                <Space size={8}>
+                  <Select
+                    size="mini"
+                    style={{ width: 110 }}
+                    value={quote.summary?.invoiceType ?? '专票'}
+                    disabled={readonly}
+                    options={[{ label: '增值税专票', value: '专票' }, { label: '增值税普票', value: '普票' }]}
+                    onChange={(invoiceType) => persist({
+                      summary: {
+                        totalLaborDays: breakdown.totalLaborDays,
+                        projectWorkDays: evalSheet?.manualWorkDays ?? 0,
+                        grandTotalPrice: breakdown.grandTotal,
+                        paymentTerms: quote.summary?.paymentTerms ?? [],
+                        taxIncluded: quote.summary?.taxIncluded ?? true,
+                        warrantyYears: quote.summary?.warrantyYears ?? 1,
+                        invoiceType,
+                      },
+                    })}
+                  />
+                  <Tag size="small" color="arcoblue">含税人民币</Tag>
+                  <Tag size="small">质保 {quote.summary?.warrantyYears ?? 1} 年</Tag>
+                </Space>
+              </div>
+            }
+          >
+            {/* 付款预设快捷选择 */}
+            {!readonly && (
+              <div style={{ marginBottom: 12 }}>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>套用经典付款比例预设：</Text>
+                <div className="stage3-preset-tags">
+                  {PAYMENT_TERM_PRESETS.map((preset) => (
+                    <Tooltip key={preset.name} content={preset.description} position="top">
+                      <Tag
+                        size="small"
+                        color="arcoblue"
+                        className="stage3-preset-btn"
+                        onClick={() => applyPaymentPreset(preset)}
+                      >
+                        {preset.name}
+                      </Tag>
+                    </Tooltip>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </Card>
 
-        {/* 第六部分：报价汇总 */}
-        <Card size="small" title="报价汇总">
-          <Space wrap style={{ marginBottom: 16 }}>
-            <Text type="secondary">发票类型</Text>
-            <Select
-              size="small"
-              style={{ width: 120 }}
-              value={quote.summary?.invoiceType ?? '专票'}
-              disabled={readonly}
-              options={[{ label: '增值税专票', value: '专票' }, { label: '增值税普票', value: '普票' }]}
-              onChange={(invoiceType) => persist({
-                summary: {
-                  totalLaborDays: breakdown.totalLaborDays,
-                  projectWorkDays: evalSheet?.manualWorkDays ?? 0,
-                  grandTotalPrice: breakdown.grandTotal,
-                  paymentTerms: quote.summary?.paymentTerms ?? [],
-                  taxIncluded: quote.summary?.taxIncluded ?? true,
-                  warrantyYears: quote.summary?.warrantyYears ?? 1,
-                  invoiceType,
-                },
+            {/* 付款期数网格 */}
+            <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+              {paymentTerms.map((term, index) => {
+                const termAmount = (breakdown.grandTotal * (term.percent || 0)) / 100;
+                return (
+                  <div key={`${term.stage}-${index}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) 100px 120px 36px', gap: 10, alignItems: 'center' }}>
+                    <Input
+                      size="small"
+                      aria-label={`第 ${index + 1} 期付款节点`}
+                      value={term.stage}
+                      disabled={readonly}
+                      placeholder={`第 ${index + 1} 期付款节点`}
+                      onChange={(stage) => updatePaymentTerm(index, { stage })}
+                    />
+                    <InputNumber
+                      size="small"
+                      aria-label={`第 ${index + 1} 期付款比例`}
+                      min={0}
+                      max={100}
+                      value={term.percent}
+                      disabled={readonly}
+                      suffix="%"
+                      onChange={(percent) => updatePaymentTerm(index, { percent: Number(percent) || 0 })}
+                    />
+                    <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--color-text-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                      ≈ {money(termAmount)}
+                    </div>
+                    <div>
+                      {!readonly && paymentTerms.length > 1 && (
+                        <Button size="mini" status="danger" icon={<IconDelete />} onClick={() => removePaymentTerm(index)} />
+                      )}
+                    </div>
+                  </div>
+                );
               })}
-            />
-            <Tag color="arcoblue">含税人民币</Tag>
-            <Tag>质保 {quote.summary?.warrantyYears ?? 1} 年</Tag>
-          </Space>
-          <div style={{ marginBottom: 18 }}>
-            <Text bold style={{ display: 'block', marginBottom: 8 }}>付款方式（写入报价模板与后续合同）</Text>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {(quote.summary?.paymentTerms ?? []).map((term, index) => (
-                <div key={`${term.stage}-${index}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) 120px', gap: 10 }}>
-                  <Input aria-label={`第 ${index + 1} 期付款节点`} value={term.stage} disabled={readonly} onChange={(stage) => updatePaymentTerm(index, { stage })} />
-                  <InputNumber aria-label={`第 ${index + 1} 期付款比例`} min={0} max={100} value={term.percent} disabled={readonly} suffix="%" onChange={(percent) => updatePaymentTerm(index, { percent: Number(percent) || 0 })} />
+            </div>
+
+            {/* 比例校验提示条 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--color-border-2)' }}>
+              {!readonly && (
+                <Button size="mini" icon={<IconPlus />} onClick={addPaymentTerm}>添加付款期</Button>
+              )}
+              <div>
+                {isPayment100 ? (
+                  <Text type="success" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <IconCheckCircleFill /> 比例合计 100%（合规达标）
+                  </Text>
+                ) : (
+                  <Text type="error" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <IconCloseCircleFill />
+                    比例合计 {paymentPercentTotal}%
+                    {paymentPercentTotal < 100 ? ` (还差 ${100 - paymentPercentTotal}%)` : ` (超出 ${paymentPercentTotal - 100}%)`}
+                  </Text>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* 模块 6：报价模板适配与导出面板 */}
+          <QuoteTemplatePreviewPanel quote={workingQuote} breakdown={breakdown} />
+
+        </div>
+
+        {/* 右侧商务驾驶舱 (紧凑高密度 280px) */}
+        <div className="stage3-cockpit-wrapper">
+          <div className="stage3-cockpit-card">
+            {/* 驾驶舱 Header：总报价 */}
+            <div className="stage3-cockpit-header">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 500 }}>对外总报价 (含税)</Text>
+                <Tag size="small" color="arcoblue" style={{ fontSize: 10, padding: '0 4px', height: 18, lineHeight: '18px' }}>
+                  {quote.summary?.invoiceType ?? '专票'}
+                </Tag>
+              </div>
+              <div className="stage3-total-price">
+                {money(breakdown.grandTotal)}
+              </div>
+            </div>
+
+            {/* 驾驶舱 Body：毛利率、工期、成本构成、内审清单与提交 */}
+            <div className="stage3-cockpit-body">
+
+              {/* 核心指标卡 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                <div className="stage3-metric-tile">
+                  <Text type="secondary" style={{ fontSize: 11 }}>人力毛利率</Text>
+                  <div style={{ marginTop: 2 }}>
+                    {profitRate == null ? (
+                      <Text type="secondary" style={{ fontSize: 11 }}>无法计算</Text>
+                    ) : (
+                      <Tag
+                        size="small"
+                        color={
+                          profitRate >= DEFAULT_MIN_PROFIT_RATE
+                            ? 'green'
+                            : profitRate >= 0.4
+                              ? 'blue'
+                              : 'orange'
+                        }
+                        style={{ fontWeight: 600, fontSize: 11, padding: '0 4px', height: 20, lineHeight: '20px' }}
+                      >
+                        {(profitRate * 100).toFixed(1)}%
+                      </Tag>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--color-text-3)', marginTop: 2 }}>
+                    底线: {(DEFAULT_MIN_PROFIT_RATE * 100).toFixed(0)}%
+                  </div>
                 </div>
-              ))}
+
+                <div className="stage3-metric-tile">
+                  <Text type="secondary" style={{ fontSize: 11 }}>交付工期</Text>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
+                    {evalSheet?.manualWorkDays || '-'} 工作日
+                  </div>
+                  {expectedEndDate && (
+                    <div style={{ fontSize: 10, color: 'var(--color-text-3)', marginTop: 2 }}>
+                      预计 {expectedEndDate}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 成本积木多维构成条 */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-2)' }}>
+                  <span>成本构成</span>
+                  <span>{breakdown.totalLaborDays.toFixed(1)} 人天</span>
+                </div>
+                <div className="stage3-brick-bar">
+                  <div className="stage3-brick-segment" style={{ width: `${techPercent}%`, background: 'rgb(var(--arcoblue-6))' }} />
+                  <div className="stage3-brick-segment" style={{ width: `${addedPercent}%`, background: 'rgb(var(--orange-6))' }} />
+                  <div className="stage3-brick-segment" style={{ width: `${deliveryPercent}%`, background: 'rgb(var(--green-6))' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--arcoblue-6))', marginRight: 4 }} />技术人力</span>
+                    <span style={{ fontWeight: 500 }}>{money(breakdown.techLaborCost)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--orange-6))', marginRight: 4 }} />商务增项</span>
+                    <span style={{ fontWeight: 500 }}>{money(breakdown.addedCost)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--green-6))', marginRight: 4 }} />差旅驻场</span>
+                    <span style={{ fontWeight: 500 }}>{money(breakdown.travelSubtotal + breakdown.onsiteSubtotal)}</span>
+                  </div>
+                  {breakdown.selfPaidSubtotal > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-3)' }}>
+                      <span>客户自费</span>
+                      <span>{money(breakdown.selfPaidSubtotal)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Divider style={{ margin: '2px 0' }} />
+
+              {/* 内审合规体检清单 (Pre-flight Checklist) */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <Text bold style={{ fontSize: 11 }}>内审合规体检</Text>
+                  {isPayment100 && quote.signingEntity && templateMissingFields.length === 0 && !leadFrozen && (
+                    <Tag size="small" color="green" style={{ fontSize: 10, padding: '0 4px', height: 18, lineHeight: '18px' }}>合格</Tag>
+                  )}
+                </div>
+                <div className="stage3-checklist">
+                  {/* 1. 签约主体 */}
+                  <div className={`stage3-check-item ${quote.signingEntity ? 'pass' : 'fail'}`}>
+                    <span>1. 签约主体</span>
+                    <span>{quote.signingEntity ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : '未选择'}</span>
+                  </div>
+
+                  {/* 2. 付款比例 */}
+                  <div className={`stage3-check-item ${isPayment100 ? 'pass' : 'fail'}`}>
+                    <span>2. 付款比例 100%</span>
+                    <span>{isPayment100 ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : `${paymentPercentTotal}% 异常`}</span>
+                  </div>
+
+                  {/* 3. 毛利率底线 */}
+                  <div className={`stage3-check-item ${profitRate != null && profitRate >= DEFAULT_MIN_PROFIT_RATE ? 'pass' : 'warn'}`}>
+                    <span>3. 人力毛利红线 (≥45%)</span>
+                    <span>
+                      {profitRate != null && profitRate >= DEFAULT_MIN_PROFIT_RATE
+                        ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} />
+                        : <IconExclamationCircleFill style={{ color: 'var(--color-warning-6)' }} />}
+                    </span>
+                  </div>
+
+                  {/* 4. 模版完整性 */}
+                  <div className={`stage3-check-item ${templateMissingFields.length === 0 ? 'pass' : 'fail'}`}>
+                    <span>4. 报价单模板字段</span>
+                    <span>{templateMissingFields.length === 0 ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : `缺 ${templateMissingFields.length} 项`}</span>
+                  </div>
+
+                  {/* 5. 线索冻结状态 */}
+                  <div className={`stage3-check-item ${!leadFrozen ? 'pass' : 'fail'}`}>
+                    <span>5. 线索流转状态</span>
+                    <span>{!leadFrozen ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : '已冻结'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 异常警示提示 */}
+              {blockingIssues.length > 0 && (
+                <Alert type="error" title="提交条件未满足" content={blockingIssues.map((i) => i.message).join('；')} />
+              )}
+              {warningIssues.length > 0 && (
+                <Alert type="warning" title="请确认以下数字" content={`${warningIssues.map((i) => i.message).join('；')}。黄灯项不阻止提交。`} />
+              )}
+              {templateMissingFields.length > 0 && (
+                <Alert type="error" title="客户版报价单未完整" content={`还需补齐：${templateMissingFields.join('、')}`} />
+              )}
+
+              {/* 行动按钮 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <Button
+                  size="default"
+                  type="outline"
+                  icon={<IconEye />}
+                  onClick={() => setPreviewModalVisible(true)}
+                  style={{ width: '100%', height: 34, fontSize: 13 }}
+                >
+                  预览客户版报价单
+                </Button>
+
+                {!readonly && (
+                  <div className="quotation-stage-submit" style={{ width: '100%' }}>
+                    <Button
+                      size="default"
+                      type="primary"
+                      icon={<IconSend />}
+                      disabled={leadFrozen || blockingIssues.length > 0 || templateMissingFields.length > 0}
+                      onClick={handleSubmit}
+                      style={{ width: '100%', height: 36, fontSize: 13, fontWeight: 600 }}
+                    >
+                      提交审批
+                    </Button>
+                  </div>
+                )}
+              </div>
+
             </div>
-            <Text
-              type={(quote.summary?.paymentTerms ?? []).reduce((sum, term) => sum + term.percent, 0) === 100 ? 'success' : 'error'}
-              style={{ display: 'block', marginTop: 8 }}
-            >
-              比例合计 {(quote.summary?.paymentTerms ?? []).reduce((sum, term) => sum + term.percent, 0)}%
-            </Text>
           </div>
-          {quote.isSupplement && (
-            <Space wrap style={{ marginBottom: 16 }}>
-              <Text type="secondary">本次变更金额（可为负）</Text>
-              <InputNumber
-                value={quote.supplementChangeAmount ?? 0}
-                disabled={readonly}
-                onChange={(value) => persist({ supplementChangeAmount: typeof value === 'number' ? value : 0 })}
-              />
-              <Text type="secondary">负数表示合同减额</Text>
-            </Space>
-          )}
-          {/* 项目综述 */}
-          <div style={{ marginBottom: 16 }}>
-            <Text bold style={{ display: 'block', marginBottom: 8 }}>项目综述</Text>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>项目名称</Text>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>{quote.basicInfo.projectName || '-'}</div>
-              </div>
-              <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>项目工期</Text>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>{evalSheet?.manualWorkDays || '-'} 工作日</div>
-                {expectedEndDate && <Text type="secondary" style={{ fontSize: 11 }}>预计 {expectedEndDate} 完成</Text>}
-              </div>
-              <div style={{ padding: '12px 16px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>开发人天</Text>
-                <div style={{ fontWeight: 600, marginTop: 4 }}>{grandTotalDays.toFixed(1)} 人天</div>
-              </div>
-              <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--color-primary-6), #4F46E5)', borderRadius: 8, color: 'white' }}>
-                <Text type="secondary" style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>项目总价</Text>
-                <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.grandTotal)}</div>
-              </div>
-            </div>
+        </div>
+      </div>
+
+      {/* 报价单客户版 1:1 弹窗预览 */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <IconFile />
+            <span>客户版报价单预览 · {quote.basicInfo.projectName || quote.quoteNo}</span>
           </div>
-
-          {/* 费用明细 */}
-          <Text bold style={{ display: 'block', marginBottom: 8 }}>费用明细</Text>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: 'var(--color-fill-1)' }}>
-                <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>费用项</th>
-                <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500 }}>说明</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120 }}>金额</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>技术人力成本</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{evalSheet?.activeRoles.length || 0} 个岗位 × {breakdown.techDays.toFixed(1)} 人天</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.techLaborCost)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>销售增项成本</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{salesAddedRoles.length > 0 ? salesAddedRoles.map((r) => r.roleName || '未命名').join('、') : '无增项'}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.addedCost)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>差旅费用</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableTravel ? `${travelOnsite.travelDetails.length} 个出差地点` : '未开启'}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.travelSubtotal)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>驻场费用</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{travelOnsite.enableOnsite ? `${travelOnsite.onsiteDetails.length} 个驻场地点` : '未开启'}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.onsiteSubtotal)}</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                <td style={{ padding: '8px 12px', fontWeight: 500 }}>自费项目（不计入报价）</td>
-                <td style={{ padding: '8px 12px', color: 'var(--color-text-3)', fontSize: 12 }}>{otherCosts.length > 0 ? otherCosts.map((c) => c.name || '未命名').join('、') : '无自费项目'}</td>
-                <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(breakdown.selfPaidSubtotal)}</td>
-              </tr>
-              {/* 合计行 */}
-              <tr style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
-                <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }}>合计</td>
-                <td style={{ padding: '10px 12px', borderTop: '2px solid var(--color-border-2)' }} />
-                <td style={{ padding: '10px 12px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 14, color: 'var(--color-danger-6)' }}>{money(breakdown.grandTotal)}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style={{ marginTop: 12 }}>
-            <Tag color={profitRate != null && profitRate >= DEFAULT_MIN_PROFIT_RATE ? 'green' : 'orange'}>
-              开发人力毛利率：{profitRate == null ? '无法计算' : `${(profitRate * 100).toFixed(1)}%`}
-            </Tag>
-            <Text type="secondary" style={{ marginLeft: 8 }}>底线 {(DEFAULT_MIN_PROFIT_RATE * 100).toFixed(0)}%</Text>
-          </div>
-        </Card>
-
-        <QuoteTemplatePreviewPanel quote={workingQuote} breakdown={breakdown} />
-
-        {blockingIssues.length > 0 && (
-          <Alert type="error" title="提交条件未满足" content={blockingIssues.map((issue) => issue.message).join('；')} />
-        )}
-        {warningIssues.length > 0 && (
-          <Alert type="warning" title="请确认以下数字" content={`${warningIssues.map((issue) => issue.message).join('；')}。黄灯项不阻止提交。`} />
-        )}
-        {templateMissingFields.length > 0 && (
-          <Alert type="error" title="客户版报价单未完整" content={`还需补齐：${templateMissingFields.join('、')}`} />
-        )}
-
-        {/* 提交按钮 */}
-        {!readonly && (
-          <div className="quotation-stage-submit">
-            <Button type="primary" icon={<IconSend />} disabled={leadFrozen || blockingIssues.length > 0 || templateMissingFields.length > 0} onClick={handleSubmit}>提交审批</Button>
-          </div>
-        )}
-      </Space>
-    </Card>
+        }
+        visible={previewModalVisible}
+        onOk={() => setPreviewModalVisible(false)}
+        onCancel={() => setPreviewModalVisible(false)}
+        okText="完成浏览"
+        cancelButtonProps={{ style: { display: 'none' } }}
+        style={{ width: '88vw', maxWidth: 1080 }}
+      >
+        <div style={{ maxHeight: '72vh', overflowY: 'auto', padding: '12px 16px', background: '#f8fafc', borderRadius: 8 }}>
+          <div
+            dangerouslySetInnerHTML={{ __html: quoteHtml }}
+            style={{
+              background: '#fff',
+              padding: '24px 32px',
+              borderRadius: 6,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            }}
+          />
+        </div>
+      </Modal>
+    </div>
   );
 }

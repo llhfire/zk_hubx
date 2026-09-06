@@ -60,4 +60,15 @@ describe('员工借款管理列表页', () => {
     expect(markup).toContain('状态');
     expect(markup).toContain('操作');
   });
+
+  test('支持操作区新建借款单按钮且无断裂路由', () => {
+    const markup = renderToStaticMarkup(createElement(
+      MemoryRouter,
+      { initialEntries: ['/travel/loans'] },
+      createElement(LoanList),
+    ));
+
+    expect(markup).toContain('新建借款单');
+    expect(markup).not.toContain('/travel/loans/new');
+  });
 });

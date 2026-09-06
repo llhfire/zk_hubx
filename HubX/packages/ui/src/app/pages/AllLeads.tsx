@@ -51,7 +51,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './leads/utils';
-import { TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
+import { TrashLeadIcon, WeChatIcon, PageShell, PageHeader, ProcessMetricGrid } from '@/app/components/ui';
 
 export function AllLeads() {
   const navigate = useNavigate();
@@ -295,69 +295,142 @@ export function AllLeads() {
     <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>线索类型</div>
-        <Select placeholder="不限线索类型" style={{ width: '100%' }} allowClear value={clueTypeFilter} onChange={setClueTypeFilter}>
+        <Select placeholder="全部线索类型" style={{ width: '100%' }} allowClear value={clueTypeFilter || undefined} onChange={setClueTypeFilter}>
           {Object.entries(CLUE_TYPE_LABEL).map(([k, v]) => <Select.Option key={k} value={k}>{v}</Select.Option>)}
         </Select>
       </div>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>线索来源</div>
-        <Select placeholder="不限来源" style={{ width: '100%' }} allowClear value={sourceFilter} onChange={setSourceFilter}>
+        <Select placeholder="全部线索来源" style={{ width: '100%' }} allowClear value={sourceFilter || undefined} onChange={setSourceFilter}>
           {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
         </Select>
       </div>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>客户等级</div>
-        <Select placeholder="不限等级" style={{ width: '100%' }} allowClear value={customerLevelFilter} onChange={setCustomerLevelFilter}>
+        <Select placeholder="全部客户等级" style={{ width: '100%' }} allowClear value={customerLevelFilter || undefined} onChange={setCustomerLevelFilter}>
           {CUSTOMER_LEVEL_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
         </Select>
       </div>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>意向等级</div>
-        <Select placeholder="不限意向" style={{ width: '100%' }} allowClear value={levelFilter} onChange={setLevelFilter}>
+        <Select placeholder="全部意向等级" style={{ width: '100%' }} allowClear value={levelFilter || undefined} onChange={setLevelFilter}>
           {INTENTION_LEVEL_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
         </Select>
       </div>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>对接主体</div>
-        <Select placeholder="不限主体" style={{ width: '100%' }} allowClear value={entityFilter} onChange={setEntityFilter}>
+        <Select placeholder="全部对接主体" style={{ width: '100%' }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
           {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
         </Select>
       </div>
       <div>
         <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>线索状态</div>
-        <Select placeholder="不限状态" style={{ width: '100%' }} allowClear value={statusFilter} onChange={setStatusFilter}>
+        <Select placeholder="全部线索状态" style={{ width: '100%' }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
           {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
         </Select>
       </div>
     </div>
   );
 
+  const assignedCount = leads.filter((l) => l.clueType === 'assigned').length;
+  const publicCount = leads.filter((l) => l.clueType === 'public').length;
+  const closedCount = leads.filter((l) => l.status === '已签单' || l.transformStatus).length;
+  const filtersActive = [keyword, statusFilter, entityFilter, clueTypeFilter, sourceFilter, customerLevelFilter, levelFilter, quickFilter].some(Boolean);
+
   return (
-    <div>
-      {/* 快捷筛选 Tab */}
-      <div style={{ marginBottom: 12 }}>
-        <Tabs type="card" activeTab={quickFilter || 'all'} onChange={(v) => setQuickFilter(v === 'all' ? '' : v as QuickFilter)}>
+    <PageShell breadcrumbs={[{ label: '线索管理' }, { label: '全部线索' }]}>
+      <PageHeader
+        title="全部线索池"
+        description="全息透视公司各渠道、各主体与责任人的线索流动全貌，支持复合多维检索与全局流转把控。"
+      />
+
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'allTotal',
+            label: '全量线索总数',
+            value: `${leads.length} 条`,
+            detail: filtersActive ? `当前筛选命中 ${filteredLeads.length} 条` : '涵盖公海、在跟、垃圾各池',
+          },
+          {
+            key: 'assigned',
+            label: '人员在跟线索',
+            value: `${assignedCount} 条`,
+            detail: '处于销售责任人跟进中',
+            tone: assignedCount > 0 ? 'success' : undefined,
+          },
+          {
+            key: 'public',
+            label: '公海资源池',
+            value: `${publicCount} 条`,
+            detail: '待认领与流通资源',
+          },
+          {
+            key: 'closed',
+            label: '已签约转化',
+            value: `${closedCount} 条`,
+            detail: leads.length > 0 ? `转化率 ${((closedCount / leads.length) * 100).toFixed(1)}%` : '暂无转化',
+            tone: closedCount > 0 ? 'success' : undefined,
+          },
+        ]}
+      />
+
+      {/* 快捷状态分段筛选器 */}
+      <div style={{ marginBottom: 16, padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-md)' }}>
+        <Tabs type="card" size="small" activeTab={quickFilter || 'all'} onChange={(v) => setQuickFilter(v === 'all' ? '' : v as QuickFilter)}>
           <Tabs.TabPane key="all" title={`全部 (${leadsWithOverdue.length})`} />
           {Object.entries(QUICK_FILTER_LABEL).map(([key, label]) => (
-            <Tabs.TabPane key={key} title={`${label} (${filterCounts[key as QuickFilter]})`} />
+            <Tabs.TabPane
+              key={key}
+              title={
+                <Space size={6}>
+                  <span>{label}</span>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '1px 6px',
+                      borderRadius: 10,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today' && filterCounts.today > 0) ? '#fff' : 'var(--color-text-3)',
+                      backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today' && filterCounts.today > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
+                    }}
+                  >
+                    {filterCounts[key as QuickFilter]}
+                  </span>
+                </Space>
+              }
+            />
           ))}
         </Tabs>
       </div>
 
-      <Card>
-        {/* 常驻搜索栏（1行4项） */}
-        <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
+      <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
+        {/* 常驻搜索栏（1行4项+高级筛选+重置） */}
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 16px',
+            background: 'var(--color-fill-1)',
+            border: '1px solid var(--color-border-2)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
           <Input style={{ width: 280 }} placeholder="搜索线索名称、电话、联系人" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="线索状态" style={{ width: 130 }} allowClear value={statusFilter} onChange={setStatusFilter}>
+          <Select placeholder="全部线索状态" style={{ width: 140 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
             {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
-          <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
+          <Select placeholder="全部线索来源" style={{ width: 140 }} allowClear value={sourceFilter || undefined} onChange={setSourceFilter}>
             {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
-          <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
+          <Select placeholder="全部对接主体" style={{ width: 140 }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
           </Select>
-          <Select placeholder="客户等级" style={{ width: 110 }} allowClear value={customerLevelFilter} onChange={setCustomerLevelFilter}>
+          <Select placeholder="全部客户等级" style={{ width: 130 }} allowClear value={customerLevelFilter || undefined} onChange={setCustomerLevelFilter}>
             {CUSTOMER_LEVEL_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
           </Select>
           <Popover content={advancedFilterContent} trigger="click" position="bottom">
@@ -370,7 +443,7 @@ export function AllLeads() {
               )}
             </Button>
           </Popover>
-          {[keyword, statusFilter, entityFilter, clueTypeFilter, sourceFilter, customerLevelFilter, levelFilter, quickFilter].some(Boolean) && (
+          {filtersActive && (
             <Button
               type="text"
               onClick={() => {
@@ -378,6 +451,7 @@ export function AllLeads() {
                 setClueTypeFilter(''); setSourceFilter(''); setCustomerLevelFilter('');
                 setLevelFilter(''); setQuickFilter('');
               }}
+              style={{ color: 'var(--color-text-3)' }}
             >
               重置
             </Button>
@@ -402,6 +476,6 @@ export function AllLeads() {
         onCancel={() => setCompanyModalVisible(false)}
         onGoManage={() => navigate('/system/company')}
       />
-    </div>
+    </PageShell>
   );
 }

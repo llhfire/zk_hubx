@@ -15,7 +15,7 @@ import {
   Tooltip,
   Popover,
 } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye, IconUserAdd } from '@arco-design/web-react/icon';
+import { IconSearch, IconPlus, IconEye, IconUserAdd, IconRefresh } from '@arco-design/web-react/icon';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -40,21 +40,24 @@ import {
   INTENTION_LEVEL_LIST,
 } from './leads/types';
 import { useLeads } from '@/app/leads/LeadContext';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 import { leadDispatchView } from '@/app/pages/lead-dispatch/kpiCalc';
 import { LeadTransferPopover } from '@/app/leads/LeadTransferPopover';
 import { searchLeads, getCountdownCapsule, COUNTDOWN_COLOR, COUNTDOWN_BG } from './leads/utils';
 import { NewLeadModal, type NewLeadFormValues } from './leads/components/NewLeadModal';
 import { uploadItemsToLeadAttachments } from './leads/leadAttachments';
-import { TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
+import { PageShell, PageHeader, ProcessMetricGrid, TrashLeadIcon, WeChatIcon } from '@/app/components/ui';
 
 const FormItem = Form.Item;
 
 export function PublicLeads() {
   const navigate = useNavigate();
-  const { leads, createLead } = useLeads();
+  const { leads, createLead, claimLead, markTrash } = useLeads();
   const [visible, setVisible] = useState(false);
   const [trashVisible, setTrashVisible] = useState(false);
+  const [selectedTrashLead, setSelectedTrashLead] = useState<LeadListItem | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [levelFilter, setLevelFilter] = useState<string>('');
   const [customerLevelFilter, setCustomerLevelFilter] = useState<string>('');
@@ -63,16 +66,18 @@ export function PublicLeads() {
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
+  const publicPool = useMemo(() => leads.filter((l) => l.clueType === 'public'), [leads]);
+
   const filteredLeads = useMemo(() => {
-    const pool = leads.filter((l) => l.clueType === 'public');
-    let result = pool;
+    let result = publicPool;
     if (keyword) result = searchLeads(result, keyword);
+    if (statusFilter) result = result.filter((l) => l.status === statusFilter);
     if (sourceFilter) result = result.filter((l) => l.source === sourceFilter);
     if (levelFilter) result = result.filter((l) => l.level === levelFilter);
     if (customerLevelFilter) result = result.filter((l) => l.customerLevel === customerLevelFilter);
     if (entityFilter) result = result.filter((l) => l.entity === entityFilter);
     return result;
-  }, [leads, keyword, sourceFilter, levelFilter, customerLevelFilter, entityFilter]);
+  }, [publicPool, keyword, statusFilter, sourceFilter, levelFilter, customerLevelFilter, entityFilter]);
 
   const now = useMemo(() => new Date(), []);
   const dispatchViews = useMemo(() => {
@@ -88,6 +93,48 @@ export function PublicLeads() {
     setSelectedCompanyEntity(e);
     setCompanyModalVisible(true);
   };
+
+  const handleClaim = async (r: LeadListItem) => {
+    try {
+      await claimLead(r.id, CURRENT_LOGIN_USER.name);
+      Message.success(`成功认领线索「${r.name}」至我的线索`);
+    } catch (err) {
+      Message.error(err instanceof Error ? err.message : '认领失败，请重试');
+    }
+  };
+
+  const handleOpenTrashModal = (r: LeadListItem) => {
+    setSelectedTrashLead(r);
+    setTrashVisible(true);
+  };
+
+  const handleConfirmTrash = async () => {
+    if (!selectedTrashLead) return;
+    try {
+      const values = await trashForm.validate();
+      await markTrash(selectedTrashLead.id, CURRENT_LOGIN_USER.name, values.reason.trim());
+      Message.success(`线索「${selectedTrashLead.name}」已转入垃圾池`);
+      setTrashVisible(false);
+      setSelectedTrashLead(null);
+      trashForm.resetFields();
+    } catch {
+      // Form validate or markTrash rejection handled
+    }
+  };
+
+  const filtersActive = Boolean(keyword || statusFilter || sourceFilter || entityFilter || customerLevelFilter || levelFilter);
+  const resetFilters = () => {
+    setKeyword('');
+    setStatusFilter('');
+    setSourceFilter('');
+    setLevelFilter('');
+    setCustomerLevelFilter('');
+    setEntityFilter('');
+  };
+
+  // 统计指标
+  const highIntentionCount = publicPool.filter((l) => l.customerLevel === 'S' || l.customerLevel === 'A' || l.level === '高').length;
+  const pendingContactCount = publicPool.filter((l) => l.status === '未联系' || l.status === '未接通').length;
 
   // 复合列（与 AllLeads 一致）
   const columns = [
@@ -203,13 +250,13 @@ export function PublicLeads() {
     },
     {
       title: '操作',
-      width: 100,
+      width: 110,
       fixed: 'right' as const,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}?from=public`, { state: { from: 'public' } })} /></Tooltip>
-          <Tooltip content="认领"><Button type="text" icon={<IconUserAdd />} size="small" onClick={() => Message.success('认领成功')} /></Tooltip>
-          <Tooltip content="标记垃圾"><Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => setTrashVisible(true)} /></Tooltip>
+          <Tooltip content="认领"><Button type="text" icon={<IconUserAdd />} size="small" onClick={() => handleClaim(r)} /></Tooltip>
+          <Tooltip content="标记垃圾"><Button type="text" icon={<TrashLeadIcon />} size="small" status="danger" onClick={() => handleOpenTrashModal(r)} /></Tooltip>
         </Space>
       ),
     },
@@ -241,27 +288,80 @@ export function PublicLeads() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-400)', letterSpacing: '0.025em', textTransform: 'uppercase' }}>公海线索池</div>
-        <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>新建线索</Button>
-      </div>
+    <PageShell breadcrumbs={[{ label: '线索管理' }, { label: '公海线索池' }]}>
+      <PageHeader
+        title="公海线索池"
+        description="沉淀共享待认领与退回公海的线索资产，支持销售人员自由认领、跟进与转化流转。"
+        actions={
+          <Button type="primary" icon={<IconPlus />} onClick={() => setVisible(true)}>
+            新建线索
+          </Button>
+        }
+      />
+
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'publicTotal',
+            label: '公海沉淀总数',
+            value: `${publicPool.length} 条`,
+            detail: filtersActive ? `当前筛选 ${filteredLeads.length} 条` : '全量可认领资源',
+          },
+          {
+            key: 'highIntention',
+            label: '优质高意向 (S/A级)',
+            value: `${highIntentionCount} 条`,
+            detail: '重点商机优先抢占',
+            tone: highIntentionCount > 0 ? 'success' : undefined,
+          },
+          {
+            key: 'pendingContact',
+            label: '待首建联',
+            value: `${pendingContactCount} 条`,
+            detail: '尚未取得有效沟通',
+            tone: pendingContactCount > 0 ? 'warning' : undefined,
+          },
+          {
+            key: 'displayed',
+            label: '当前命中视图',
+            value: `${filteredLeads.length} 条`,
+            detail: filtersActive ? '已应用条件过滤' : '实时可操作状态',
+          },
+        ]}
+      />
 
       <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
-        <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 16px',
+            background: 'var(--color-fill-1)',
+            border: '1px solid var(--color-border-2)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
           <Input style={{ width: 280 }} placeholder="搜索线索名称、电话、联系人" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="线索状态" style={{ width: 130 }} allowClear>
+          <Select placeholder="全部线索状态" style={{ width: 140 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
             {SALES_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
           </Select>
-          <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
+          <Select placeholder="全部线索来源" style={{ width: 140 }} allowClear value={sourceFilter || undefined} onChange={setSourceFilter}>
             {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
-          <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
+          <Select placeholder="全部对接主体" style={{ width: 140 }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
           </Select>
-          <Select placeholder="客户等级" style={{ width: 110 }} allowClear value={customerLevelFilter} onChange={setCustomerLevelFilter}>
+          <Select placeholder="全部客户等级" style={{ width: 130 }} allowClear value={customerLevelFilter || undefined} onChange={setCustomerLevelFilter}>
             <Select.Option value="S">S</Select.Option><Select.Option value="A">A</Select.Option><Select.Option value="B">B</Select.Option><Select.Option value="C">C</Select.Option>
           </Select>
+          {filtersActive && (
+            <Button type="text" icon={<IconRefresh />} onClick={resetFilters} style={{ color: 'var(--color-text-3)' }}>
+              重置
+            </Button>
+          )}
         </div>
 
         <Table columns={columns} data={filteredLeads} scroll={{ x: 1300 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
@@ -269,11 +369,40 @@ export function PublicLeads() {
 
       <NewLeadModal visible={visible} onSubmit={handleCreateLead} onCancel={() => setVisible(false)} />
 
-      <Modal title="标记为垃圾" visible={trashVisible} onOk={() => { trashForm.validate().then(() => { Message.success('已标记为垃圾'); setTrashVisible(false); trashForm.resetFields(); }); }} onCancel={() => { setTrashVisible(false); trashForm.resetFields(); }} style={{ width: 480 }}>
-        <Form form={trashForm} layout="vertical"><FormItem label="垃圾原因" field="reason" rules={[{ required: true, message: '请填写垃圾原因' }]}><Input.TextArea placeholder="请说明原因" rows={4} /></FormItem></Form>
+      <Modal
+        title={`标记线索「${selectedTrashLead?.name || ''}」为垃圾`}
+        visible={trashVisible}
+        onOk={handleConfirmTrash}
+        onCancel={() => { setTrashVisible(false); setSelectedTrashLead(null); trashForm.resetFields(); }}
+        style={{ width: 500 }}
+      >
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(var(--warning-1), 0.5)', border: '1px solid rgb(var(--warning-2))', borderRadius: 4, fontSize: 12, color: 'rgb(var(--warning-7))' }}>
+          提示：标记为垃圾后将自动从公海移入垃圾线索池；历史退回质检记录将被保留。
+        </div>
+        <Form form={trashForm} layout="vertical">
+          <FormItem label="快捷原因" style={{ marginBottom: 8 }}>
+            <Space wrap size={6}>
+              {['电话空号/错号', '暂无采购意向', '预算严重不足', '同行测试/调研', '业务范围不匹配'].map((r) => (
+                <Tag
+                  key={r}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    const cur = trashForm.getFieldValue('reason') || '';
+                    trashForm.setFieldValue('reason', cur ? `${cur}；${r}` : r);
+                  }}
+                >
+                  {r}
+                </Tag>
+              ))}
+            </Space>
+          </FormItem>
+          <FormItem label="垃圾原因" field="reason" rules={[{ required: true, message: '请填写垃圾原因' }]}>
+            <Input.TextArea placeholder="请详述标记为垃圾线索的具体原因（可点选上方标签）" rows={3} />
+          </FormItem>
+        </Form>
       </Modal>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />
-    </div>
+    </PageShell>
   );
 }

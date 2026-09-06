@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router';
 import {
   Card,
   Button,
@@ -72,6 +72,8 @@ import {
 import { LeadAttachmentPanel } from './leads/components/LeadAttachmentPanel';
 import { LeadFollowUpModal, type LeadFollowUpFormValues } from './leads/components/LeadFollowUpModal';
 import { LeadFinalContractPanel } from './leads/components/LeadFinalContractPanel';
+import { LeadStagePopover, type LeadStageSopInfo } from './leads/components/LeadStagePopover';
+import { SelectQuoteModeModal } from './leads/components/SelectQuoteModeModal';
 import { WeChatIcon } from '@/app/components/ui';
 import './leads/components/NewLeadModal.css';
 import { useLeads } from '@/app/leads/LeadContext';
@@ -95,7 +97,11 @@ import {
 import { useQuotation } from './quotation/QuotationContext';
 import { QuotationWorkbench } from './quotation/QuotationWorkbench';
 import { QuoteCard } from './quotation/QuoteCard';
-import { QUOTE_STATUS_LABELS } from './quotation/types';
+import { QUOTE_STATUS_LABELS, type QuoteCustomerFeedback } from './quotation/types';
+import {
+  LeadQuotationManager,
+  FEEDBACK_DISPOSITION_MAP,
+} from './leads/components/LeadQuotationManager';
 import {
   PageShell,
   ProcessMetricGrid,
@@ -143,6 +149,87 @@ function getLifecycleIndex(status: string): number {
   return idx >= 0 ? idx : 0;
 }
 
+const STAGE_SOP_MAP: Record<number, LeadStageSopInfo> = {
+  0: {
+    key: 'intake',
+    label: '接入录入',
+    target: '核对客户主体与联系方式，完成初始清洗分配',
+    checklist: [
+      { id: 'c-0-1', label: '核实有效电话与微信', targetTab: 'basic' },
+      { id: 'c-0-2', label: '确认业务线与推广渠道', targetTab: 'basic' },
+      { id: 'c-0-3', label: '明确线索责任人与对接主体', targetTab: 'basic' },
+    ],
+    suggestedActionLabel: '核对客户档案',
+    suggestedActionKey: 'edit',
+    nextStatuses: ['未接通', '初步沟通'],
+  },
+  1: {
+    key: 'contact',
+    label: '初步建联',
+    target: '24小时内首联，摸清客户行业背景与核心痛点',
+    checklist: [
+      { id: 'c-1-1', label: '电话初联或微信建群沟通', actionKey: 'quick_follow' },
+      { id: 'c-1-2', label: '摸清客户行业与业务场景痛点', actionKey: 'quick_follow' },
+      { id: 'c-1-3', label: '明确客户预算范围与意向等级', targetTab: 'basic' },
+    ],
+    suggestedActionLabel: '快速记跟进',
+    suggestedActionKey: 'quick_follow',
+    nextStatuses: ['需求调研'],
+  },
+  2: {
+    key: 'research',
+    label: '需求调研',
+    target: '梳理业务功能边界，输出技术清单与原型示意',
+    checklist: [
+      { id: 'c-2-1', label: '收集整理客户功能清单与业务流', targetTab: 'basic' },
+      { id: 'c-2-2', label: '出具或关联产品原型示意', targetTab: 'assets' },
+      { id: 'c-2-3', label: '确认客户期望交付工期与预算上线节点', targetTab: 'quotation' },
+    ],
+    suggestedActionLabel: '补充需求描述',
+    suggestedActionKey: 'edit',
+    nextStatuses: ['方案报价'],
+  },
+  3: {
+    key: 'contract',
+    label: '主合同签署',
+    target: '完成方案报价审批，锁定商务条款，推进合同盖章回执',
+    checklist: [
+      { id: 'c-3-1', label: '生成正式报价方案并完成内部审批', targetTab: 'quotation' },
+      { id: 'c-3-2', label: '发起主合同商务审批与评审流程', targetTab: 'contracts' },
+      { id: 'c-3-3', label: '完成双方签署盖章与合同归档', targetTab: 'contracts' },
+    ],
+    suggestedActionLabel: '新建报价',
+    suggestedActionKey: 'quote',
+    nextStatuses: ['已签单'],
+  },
+  4: {
+    key: 'delivery',
+    label: '项目交付中',
+    target: '项目立项启动，推进里程碑交付与按期验收',
+    checklist: [
+      { id: 'c-4-1', label: '分配项目经理PM并立项启动', targetTab: 'delivery' },
+      { id: 'c-4-2', label: '关键里程碑与核心功能阶段交付确认', targetTab: 'delivery' },
+      { id: 'c-4-3', label: '按合同节点催收阶段款项并开具发票', targetTab: 'contracts' },
+    ],
+    suggestedActionLabel: '查看交付看板',
+    suggestedActionKey: 'delivery',
+    nextStatuses: ['已签单'],
+  },
+  5: {
+    key: 'closeout',
+    label: '终验结项',
+    target: '完成客户最终验收盖章，核销尾款，沉淀交付案例',
+    checklist: [
+      { id: 'c-5-1', label: '客户签署终验证书或验收确认单', targetTab: 'delivery' },
+      { id: 'c-5-2', label: '核销项目尾款并出具全额发票', targetTab: 'contracts' },
+      { id: 'c-5-3', label: '售后服务交接与标杆案例沉淀', targetTab: 'assets' },
+    ],
+    suggestedActionLabel: '查看合同与回款',
+    suggestedActionKey: 'contracts',
+    nextStatuses: [],
+  },
+};
+
 function money(n: number) {
   return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
@@ -182,13 +269,70 @@ export function LeadDetail360() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const from = (
     (location.state as { from?: string } | null)?.from
-    || new URLSearchParams(location.search).get('from')
+    || searchParams.get('from')
     || 'my'
   );
-  const [activeMainTab, setActiveMainTab] = useState('basic');
+
+  const resolveMainTab = useCallback((tabOrSide?: string | null): string => {
+    if (!tabOrSide) return 'basic';
+    if (tabOrSide === 'contract-records' || tabOrSide === 'contracts' || tabOrSide === 'contracts-history') {
+      return 'contracts';
+    }
+    if (tabOrSide === 'quotation') {
+      return 'quotation';
+    }
+    if (tabOrSide === 'travel' || tabOrSide === 'reimbursement') {
+      return 'travel';
+    }
+    if (tabOrSide === 'delivery') {
+      return 'delivery';
+    }
+    if (tabOrSide === 'assets' || tabOrSide === 'demo' || tabOrSide === 'documents') {
+      return 'assets';
+    }
+    if (tabOrSide === 'basic') {
+      return 'basic';
+    }
+    return tabOrSide;
+  }, []);
+
+  const [activeMainTabState, setActiveMainTabState] = useState<string>(() => {
+    const fromSearch = searchParams.get('tab') || searchParams.get('main');
+    return resolveMainTab(fromSearch);
+  });
   const [activeSideTab, setActiveSideTab] = useState('follow');
+
+  const activeMainTab = resolveMainTab(searchParams.get('tab') || searchParams.get('main') || activeMainTabState);
+
+  const setActiveMainTab = (tab: string) => {
+    const resolved = resolveMainTab(tab);
+    setActiveMainTabState(resolved);
+    const next = new URLSearchParams(searchParams);
+    if (resolved === 'basic') {
+      next.delete('tab');
+      next.delete('main');
+    } else {
+      next.set('tab', resolved);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  // 阶段推进状态
+  const [advanceModalVisible, setAdvanceModalVisible] = useState(false);
+  const [advanceTargetStatus, setAdvanceTargetStatus] = useState<string>('');
+  const [advanceNote, setAdvanceNote] = useState('');
+  const [advanceNextFollowTime, setAdvanceNextFollowTime] = useState<string>('');
+  const [advanceSubmitting, setAdvanceSubmitting] = useState(false);
+
+  // 右侧快捷写跟进状态
+  const [quickFollowMethod, setQuickFollowMethod] = useState<'电话' | '微信' | '拜访' | '会议'>('电话');
+  const [quickFollowContent, setQuickFollowContent] = useState('');
+  const [quickFollowNextTime, setQuickFollowNextTime] = useState<string>('');
+  const [quickFollowSubmitting, setQuickFollowSubmitting] = useState(false);
+  const [timelineFilterMethod, setTimelineFilterMethod] = useState<string>('all');
   const [followVisible, setFollowVisible] = useState(false);
   const [followSubmitting, setFollowSubmitting] = useState(false);
   const [editLeadVisible, setEditLeadVisible] = useState(false);
@@ -221,7 +365,7 @@ export function LeadDetail360() {
   const [editingCollectionId, setEditingCollectionId] = useState<string>();
   const [collectionForm] = Form.useForm();
   const [invoiceRecords, setInvoiceRecords] = useState<PaymentInvoiceRecord[]>([]);
-  const { createQuote, quotes, updateQuote } = useQuotation();
+  const { createQuote, quotes, updateQuote, createNewVersion } = useQuotation();
   const { customers } = useCustomers();
   const { contracts: allContracts } = useContracts();
   const { completeTodosBySource, upsertActiveTodo } = useTodos();
@@ -290,6 +434,38 @@ export function LeadDetail360() {
   );
   const serviceLeadId = dispatchLead?.id ?? id;
   const dispatchView = useMemo(() => dispatchLead ? leadDispatchView(dispatchLead, new Date()) : null, [dispatchLead]);
+
+  const filteredTimeline = useMemo(() => {
+    const all = followUps.filter((r) => r.leadId === id || r.leadId === profileLeadId || r.leadId === serviceLeadId);
+    const matched = timelineFilterMethod === 'all' ? all : all.filter((r) => r.method === timelineFilterMethod);
+    return [...matched].sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      if (!isNaN(timeA) && !isNaN(timeB)) {
+        return timeB - timeA;
+      }
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  }, [followUps, id, profileLeadId, serviceLeadId, timelineFilterMethod]);
+
+  // 跨路由 key 与业务 id 多向兼容匹配当前线索下的全部方案
+  const matchedLeadQuotes = useMemo(() => {
+    const candidateIds = new Set<string>();
+    if (id) {
+      candidateIds.add(id);
+      const clean = id.replace(/^(lead-|l-)/i, '');
+      candidateIds.add(clean);
+      candidateIds.add(`lead-${clean}`);
+      candidateIds.add(`l-${clean}`);
+      candidateIds.add(`L-${clean}`);
+    }
+    if (profileLeadId) candidateIds.add(profileLeadId);
+    if (serviceLeadId) candidateIds.add(serviceLeadId);
+    if (dispatchLead?.id) candidateIds.add(dispatchLead.id);
+    if (dispatchLead?.key) candidateIds.add(dispatchLead.key);
+
+    return quotes.filter((q) => candidateIds.has(q.leadId));
+  }, [quotes, id, profileLeadId, serviceLeadId, dispatchLead]);
 
   useEffect(() => {
     setLeadOverride(null);
@@ -374,12 +550,13 @@ export function LeadDetail360() {
     const state = location.state as { activeMainTab?: string; activeSideTab?: string } | null;
     if (state?.activeSideTab) {
       setActiveSideTab(state.activeSideTab);
+      setActiveMainTab(resolveMainTab(state.activeSideTab));
       return;
     }
-    if (state?.activeMainTab === 'contracts-history') {
-      setActiveSideTab('contract-records');
+    if (state?.activeMainTab) {
+      setActiveMainTab(resolveMainTab(state.activeMainTab));
     }
-  }, [location.state]);
+  }, [location.state, resolveMainTab]);
 
   if (!lead) {
     return (
@@ -678,6 +855,162 @@ export function LeadDetail360() {
     }
   };
 
+  const submitQuickFollow = async () => {
+    if (!serviceLeadId) {
+      Message.error('未找到可跟进的线索');
+      return;
+    }
+    if (!quickFollowContent.trim()) {
+      Message.warning('请输入跟进纪要内容');
+      return;
+    }
+
+    try {
+      setQuickFollowSubmitting(true);
+      const nextTimeFormatted = formDateTime(quickFollowNextTime);
+      await addFollowUp(serviceLeadId, {
+        method: quickFollowMethod,
+        customerStatus: lead.status,
+        intentionLevel: lead.level,
+        costHours: 0,
+        costMins: 15,
+        content: quickFollowContent.trim(),
+        nextFollowTime: nextTimeFormatted,
+        creator: CURRENT_LOGIN_USER.name,
+      });
+
+      const completedAt = new Date().toISOString();
+      completeTodosBySource('lead_followup', serviceLeadId, completedAt);
+      if (nextTimeFormatted) {
+        upsertActiveTodo({
+          id: `todo-lead-followup-${serviceLeadId}-${Date.now()}`,
+          source: 'lead_followup',
+          sourceId: serviceLeadId,
+          module: '线索跟进',
+          title: `跟进 ${lead?.name || dispatchLead?.name || '线索'}`,
+          content: quickFollowContent.trim(),
+          assigneeId: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.id,
+          assigneeName: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.name,
+          status: 'pending',
+          priority: lead?.customerLevel === 'S' ? 'high' : 'medium',
+          createdAt: completedAt,
+          deadline: nextTimeFormatted,
+          route: `/leads/${id}`,
+        });
+      }
+
+      setFollowUps(await getFollowUps(serviceLeadId));
+      setLeadOverride((current) => ({
+        ...current,
+        nextFollowTime: nextTimeFormatted ?? lead?.nextFollowTime,
+        followCount: (lead?.followCount ?? 0) + 1,
+      }));
+      setQuickFollowContent('');
+      setQuickFollowNextTime('');
+      Message.success('跟进记录已快速保存');
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '保存失败，请重试');
+    } finally {
+      setQuickFollowSubmitting(false);
+    }
+  };
+ 
+  const handleStageAction = (actionKey: string) => {
+    if (actionKey === 'edit') {
+      openEditLead();
+    } else if (actionKey === 'quick_follow') {
+      const el = document.getElementById('quick-follow-input');
+      if (el) {
+        el.focus();
+      } else {
+        setFollowVisible(true);
+      }
+    } else if (actionKey === 'quote') {
+      setActiveMainTab('quotation');
+      setQuoteModeVisible(true);
+    } else if (actionKey === 'contracts') {
+      setActiveMainTab('contracts');
+    } else if (actionKey === 'delivery') {
+      setActiveMainTab('delivery');
+    }
+  };
+
+  const openStageAdvanceModal = () => {
+    const currentIdx = getLifecycleIndex(lead.status);
+    const nextStep = LIFECYCLE_STEPS[currentIdx + 1];
+    if (nextStep && nextStep.statuses.length > 0) {
+      setAdvanceTargetStatus(nextStep.statuses[0]);
+    } else {
+      setAdvanceTargetStatus(lead.status);
+    }
+    setAdvanceNote('');
+    setAdvanceNextFollowTime('');
+    setAdvanceModalVisible(true);
+  };
+
+  const submitStageAdvance = async () => {
+    if (!serviceLeadId || !advanceTargetStatus) {
+      Message.warning('请选择目标阶段状态');
+      return;
+    }
+
+    try {
+      setAdvanceSubmitting(true);
+      const prevStatus = lead.status;
+      if (dispatchLead) {
+        await updateLead(dispatchLead.id, (current) => ({
+          ...current,
+          status: advanceTargetStatus,
+        }));
+      }
+      setLeadOverride((current) => ({
+        ...current,
+        status: advanceTargetStatus,
+      }));
+
+      // 自动写入一条阶段推进的跟进动态
+      const advanceFollowContent = `【阶段推进】状态由「${prevStatus}」推进至「${advanceTargetStatus}」${advanceNote.trim() ? `。推进要点：${advanceNote.trim()}` : ''}`;
+      const nextTimeFormatted = formDateTime(advanceNextFollowTime);
+      await addFollowUp(serviceLeadId, {
+        method: '系统流转',
+        customerStatus: advanceTargetStatus,
+        intentionLevel: lead.level,
+        costHours: 0,
+        costMins: 5,
+        content: advanceFollowContent,
+        nextFollowTime: nextTimeFormatted,
+        creator: CURRENT_LOGIN_USER.name,
+      });
+
+      if (nextTimeFormatted) {
+        const completedAt = new Date().toISOString();
+        upsertActiveTodo({
+          id: `todo-lead-followup-${serviceLeadId}-${Date.now()}`,
+          source: 'lead_followup',
+          sourceId: serviceLeadId,
+          module: '线索跟进',
+          title: `跟进 ${lead?.name || dispatchLead?.name || '线索'}`,
+          content: advanceFollowContent,
+          assigneeId: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.id,
+          assigneeName: dispatchLead?.owner || lead?.owner || CURRENT_LOGIN_USER.name,
+          status: 'pending',
+          priority: lead?.customerLevel === 'S' ? 'high' : 'medium',
+          createdAt: completedAt,
+          deadline: nextTimeFormatted,
+          route: `/leads/${id}`,
+        });
+      }
+
+      setFollowUps(await getFollowUps(serviceLeadId));
+      Message.success(`阶段已成功推进至「${advanceTargetStatus}」`);
+      setAdvanceModalVisible(false);
+    } catch (error) {
+      Message.error(error instanceof Error ? error.message : '阶段推进失败');
+    } finally {
+      setAdvanceSubmitting(false);
+    }
+  };
+
   const openLeadOperation = (operation: LeadOperation) => {
     leadOperationForm.resetFields();
     setLeadOperation(operation);
@@ -816,6 +1149,12 @@ export function LeadDetail360() {
         )}
         actions={(
           <Space wrap>
+            {lifecycleIdx < LIFECYCLE_STEPS.length - 1 && (
+              <Button size="small" type="primary" onClick={openStageAdvanceModal} style={{ fontWeight: 500 }}>
+                推进阶段 &gt;
+              </Button>
+            )}
+            <Button size="small" type="outline" onClick={() => setFollowVisible(true)}>写跟进</Button>
             <Button size="small" icon={<IconEdit />} onClick={openEditLead}>编辑线索</Button>
             {showAssignActions && <Button size="small" icon={<IconSwap />} onClick={() => openLeadOperation('transfer')}>转移给他人</Button>}
             {showReturn && <Button size="small" icon={<IconReply />} status="warning" onClick={() => openLeadOperation('return')}>扔回公海</Button>}
@@ -829,14 +1168,42 @@ export function LeadDetail360() {
           </Space>
         )}
         currentStep={lifecycleIdx}
-        steps={LIFECYCLE_STEPS.map((step, index) => ({
-          key: step.key,
-          title: step.label,
-          description:
-                index === 4 && lead.status === '已签单' ? '进行中' :
-                index === 5 && lead.status === '已签单' ? '待完成' :
-                undefined,
-        }))}
+        steps={LIFECYCLE_STEPS.map((step, index) => {
+          const sopInfo = STAGE_SOP_MAP[index] || STAGE_SOP_MAP[0];
+          const nextStage = LIFECYCLE_STEPS[index + 1];
+          const isCurrent = index === lifecycleIdx;
+          const isDone = index < lifecycleIdx;
+          const status = (
+            isCurrent ? `进行中 · 已停留 ${lead.daysHeld || 1} 天` :
+            isDone ? '已达成' :
+            undefined
+          );
+
+          return {
+            key: step.key,
+            title: (
+              <span className="lead-stage-step-title">
+                <LeadStagePopover
+                  stageIndex={index}
+                  currentStageIndex={lifecycleIdx}
+                  sopInfo={sopInfo}
+                  daysHeld={lead.daysHeld || 1}
+                  nextStageLabel={nextStage?.label}
+                  onNavigateTab={setActiveMainTab}
+                  onAction={handleStageAction}
+                  onAdvanceStage={openStageAdvanceModal}
+                >
+                  {step.label}
+                </LeadStagePopover>
+                {status && (
+                  <span className={`lead-stage-step-status ${isCurrent ? 'lead-stage-step-status--active' : 'lead-stage-step-status--done'}`}>
+                    {status}
+                  </span>
+                )}
+              </span>
+            ),
+          };
+        })}
       />
 
       <ProcessMetricGrid
@@ -873,43 +1240,156 @@ export function LeadDetail360() {
         {/* 左侧主区域 (70%) */}
         <ProcessWorkspaceMain>
           {/* 关键信息档案卡 */}
-          <Card size="small" bodyStyle={{ padding: '12px 16px' }}>
-            <div style={{ marginBottom: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>{lead.name}</span>
+          <Card
+            size="small"
+            style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}
+            bodyStyle={{ padding: '16px 20px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-text-1)' }}>{lead.name}</span>
+                {lead.customerTitle && (
+                  <Tag color="arcoblue" size="small">称谓: {lead.customerTitle}</Tag>
+                )}
+                {lead.customerLevel && (
+                  <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'} size="small">{lead.customerLevel} 级客户</Tag>
+                )}
+              </div>
+              {lead.presalesGroupName && (
+                <Tooltip content="点击复制群名">
+                  <Button
+                    type="outline"
+                    size="mini"
+                    icon={<WeChatIcon size={14} />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(lead.presalesGroupName || '');
+                      Message.success('已复制售前群名');
+                    }}
+                    style={{ borderColor: 'rgb(var(--warning-4))', color: 'rgb(var(--warning-7))' }}
+                  >
+                    {lead.presalesGroupName}
+                  </Button>
+                </Tooltip>
+              )}
             </div>
-            <Grid.Row gutter={[8, 4]}>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>来源</Text> <Tag color="gray" size="small" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客资成本</Text> <Text style={{ fontSize: 14 }}>{lead.customerCost || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>客户称呼</Text> <Text style={{ fontSize: 14 }}>{lead.customerTitle || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>电话</Text> <Text style={{ fontSize: 14 }}>{lead.phone || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>微信</Text> <Text style={{ fontSize: 14 }}>{lead.wechat || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>对接主体</Text> <Text style={{ fontSize: 14 }}>{lead.entity}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>创建人</Text> <Text style={{ fontSize: 14 }}>{lead.creator}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>优化师</Text> <Text style={{ fontSize: 14 }}>{lead.optimizer || '-'}</Text></Grid.Col>
-              <Grid.Col span={6}><Text type="secondary" style={{ fontSize: 12 }}>协助人</Text> <Text style={{ fontSize: 14 }}>{lead.assistant || '-'}</Text></Grid.Col>
-            </Grid.Row>
-            <Divider style={{ margin: '8px 0' }} />
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>初始需求</Text>
-              <div style={{ marginTop: 4, fontSize: 14, color: 'var(--color-text-1)' }}>{lead.requirement || lead.initialRequirement || '-'}</div>
+
+            {/* 3 组模块化属性胶囊 */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: 12,
+                padding: '12px 14px',
+                background: 'var(--color-fill-1)',
+                border: '1px solid var(--color-border-2)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 12,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>联系电话</div>
+                <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{lead.phone || '-'}</span>
+                  {lead.phone && (
+                    <Tooltip content="复制电话">
+                      <Button
+                        type="text"
+                        size="mini"
+                        icon={<IconCopy />}
+                        style={{ padding: 2, height: 'auto', color: 'var(--color-text-3)' }}
+                        onClick={() => { navigator.clipboard.writeText(lead.phone); Message.success('已复制电话号码'); }}
+                      />
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>微信号</div>
+                <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{lead.wechat || '-'}</span>
+                  {lead.wechat && (
+                    <Tooltip content="复制微信">
+                      <Button
+                        type="text"
+                        size="mini"
+                        icon={<IconCopy />}
+                        style={{ padding: 2, height: 'auto', color: 'var(--color-text-3)' }}
+                        onClick={() => { navigator.clipboard.writeText(lead.wechat); Message.success('已复制微信号'); }}
+                      />
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>渠道与主体</div>
+                <Space size={4}>
+                  <Tag color="gray" size="small" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag>
+                  <Tag color="blue" size="small">{lead.entity}</Tag>
+                </Space>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>客资成本</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: lead.customerCost ? 'rgb(var(--primary-6))' : 'var(--color-text-3)' }}>
+                  {lead.customerCost || '¥0.00'}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>团队协作</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                  优化师: {lead.optimizer || '-'} · 协助人: {lead.assistant || '-'}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>意向标签</div>
+                <Space size={4} wrap>
+                  {(lead.tags && lead.tags.length > 0) ? lead.tags.map((t) => (
+                    <Tag key={t} size="small" color="green">{t}</Tag>
+                  )) : <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>暂无标签</span>}
+                </Space>
+              </div>
             </div>
+
+            {/* 初始需求引用面板 */}
+            <div
+              style={{
+                padding: '10px 14px',
+                background: 'rgba(var(--primary-1), 0.4)',
+                borderLeft: '3px solid rgb(var(--primary-6))',
+                borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'rgb(var(--primary-7))', marginBottom: 2 }}>初始业务需求</div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: 1.6 }}>
+                {lead.requirement || lead.initialRequirement || '暂无填写的初始需求描述'}
+              </div>
+            </div>
+
+            {/* 线索附件：内聚在线索详情卡内，消除视觉分割感 */}
+            <LeadAttachmentPanel
+              embedded
+              attachments={lead.attachments ?? []}
+              onManage={openEditLead}
+            />
           </Card>
 
-          <LeadAttachmentPanel
-            attachments={lead.attachments ?? []}
-            onManage={openEditLead}
-          />
-
-          {/* 左侧 3 个 Tab */}
-          <Card size="small">
+          {/* 左侧业务实体工作台：6 大宽幅 Tab */}
+          <Card size="small" style={{ flex: 1 }}>
             <Tabs activeTab={activeMainTab} onChange={setActiveMainTab} type="card">
-              <TabPane key="basic" title="基础信息" />
-              <TabPane key="contracts" title="合同信息" />
-              <TabPane key="payments" title="回款与发票" />
+              <TabPane key="basic" title="基础档案" />
+              <TabPane key="quotation" title={`方案与报价 (${quotes.filter((q) => q.leadId === id && q.status !== 'voided').length})`} />
+              <TabPane key="contracts" title={`合同与财务 (${relatedContracts.length})`} />
+              <TabPane key="travel" title={`差旅与费用 (${travels.length + reimbursements.length})`} />
+              <TabPane key="delivery" title="交付执行" />
+              <TabPane key="assets" title={`资料与环境 (${demos.length + documents.length})`} />
             </Tabs>
 
             <div style={{ marginTop: 16 }}>
-              {/* 基础信息 */}
+              {/* 1. 基础信息 */}
               {activeMainTab === 'basic' && (
                 <Descriptions
                   column={4}
@@ -938,17 +1418,100 @@ export function LeadDetail360() {
                 />
               )}
 
-              {/* 合同信息 */}
+              {/* 2. 方案与报价（精细化管理与商务反馈工作台） */}
+              {activeMainTab === 'quotation' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <span style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
+                      沉淀此线索的技术方案成本测算与多版本报价记录
+                    </span>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<IconPlus />}
+                      onClick={() => setQuoteModeVisible(true)}
+                    >
+                      新建报价
+                    </Button>
+                  </div>
+                  <LeadQuotationManager
+                    leadId={profileLeadId || id || ''}
+                    leadName={lead?.name || dispatchLead?.name}
+                    quotes={matchedLeadQuotes}
+                    onOpenWorkbench={(quoteId) => {
+                      setQuotationDrawerQuoteId(quoteId);
+                      setQuotationDrawerVisible(true);
+                    }}
+                    onCreateQuote={() => setQuoteModeVisible(true)}
+                    onNewVersion={async (sourceQuoteId) => {
+                      try {
+                        const newId = await createNewVersion(sourceQuoteId);
+                        Message.success('已基于反馈成功创建新版本报价');
+                        return newId;
+                      } catch (err: any) {
+                        Message.error(err?.message || '创建新版本失败');
+                      }
+                    }}
+                    onRecordFeedback={async (quoteId, feedback, syncToFollowUp) => {
+                      const newFb: QuoteCustomerFeedback = {
+                        ...feedback,
+                        id: `fb-${Date.now()}`,
+                        recordedAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+                        recordedBy: CURRENT_LOGIN_USER.name,
+                      };
+                      await updateQuote(quoteId, (q) => ({
+                        ...q,
+                        customerFeedbacks: [newFb, ...(q.customerFeedbacks || [])],
+                      }));
+
+                      if (syncToFollowUp && serviceLeadId) {
+                        const dispConfig = FEEDBACK_DISPOSITION_MAP[feedback.disposition];
+                        const dispText = dispConfig?.label || '方案反馈';
+                        const gapDetails = [
+                          feedback.targetBudget ? `期望预算 ¥${feedback.targetBudget.toLocaleString()}` : '',
+                          feedback.targetDays ? `期望工期 ${feedback.targetDays}工作日` : '',
+                        ].filter(Boolean).join('，');
+
+                        const logNote = `【方案客户反馈 · ${dispText}】针对报价方案${gapDetails ? `（${gapDetails}）` : ''}：${feedback.content}${feedback.strategy ? `。销售应对思路：${feedback.strategy}` : ''}`;
+
+                        try {
+                          await addFollowUp(serviceLeadId, {
+                            method: '电话沟通',
+                            customerStatus: lead.status,
+                            intentionLevel: lead.level,
+                            costHours: 0,
+                            costMins: 15,
+                            content: logNote,
+                            nextFollowTime: feedback.nextAction === 'new_version' ? '次日完成方案调整' : '',
+                            creator: CURRENT_LOGIN_USER.name,
+                          });
+                          setFollowUps(await getFollowUps(serviceLeadId));
+                        } catch (err) {
+                          console.warn('Sync feedback to follow-up failed:', err);
+                        }
+                      }
+                      Message.success('客户反馈已成功记录');
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* 3. 合同与财务 */}
               {activeMainTab === 'contracts' && (
                 <div>
-                  <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                    <Button type="primary" size="small" icon={<IconPlus />} onClick={handleCreateContract}>
+                      新建合同
+                    </Button>
+                  </div>
+                  <Card size="small" title="正式主合同" style={{ marginBottom: 16 }}>
                     {mainContract ? (
                       <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo />
                     ) : (
                       <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无关联合同</div>
                     )}
                   </Card>
-                  <Card size="small" title={`补充合同（${supplementContracts.length}）`}>
+                  <Card size="small" title={`补充合同（${supplementContracts.length}）`} style={{ marginBottom: 16 }}>
                     {supplementContracts.length > 0 ? (
                       <Space direction="vertical" size={16} style={{ width: '100%' }}>
                         {supplementContracts.map((contract) => (
@@ -959,362 +1522,345 @@ export function LeadDetail360() {
                       <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
                     )}
                   </Card>
+
+                  <Card size="small" title="回款与发票台账">
+                    <ContractPaymentInvoicePanel
+                      mainContract={mainContract}
+                      supplementContracts={supplementContracts}
+                      contractAmount={paymentContractAmount}
+                      receivedAmount={paymentReceivedAmount}
+                      collections={visibleLeadCollections}
+                      invoiceRecords={invoiceRecords}
+                      onAddCollection={() => openCollectionEditor()}
+                      onEditCollection={openCollectionEditor}
+                      onDeleteCollection={(record) => {
+                        if (addedCollections.some((item) => item.id === record.id)) {
+                          setAddedCollections((items) => items.filter((item) => item.id !== record.id));
+                        } else {
+                          setDeletedCollectionIds((items) => [...items, record.id]);
+                        }
+                        Message.success('实收记录已删除');
+                      }}
+                      onIssueInvoice={issueInvoice}
+                      onRedInvoice={redInvoice}
+                      onCorrectInvoice={(invoice) => setInvoiceRecords((items) => items.map((item) => item.id === invoice.id ? { ...item, invoiceNo: `${item.invoiceNo}-更正` } : item))}
+                      onDeleteInvoice={(invoice) => setInvoiceRecords((items) => items.filter((item) => item.id !== invoice.id))}
+                    />
+                  </Card>
                 </div>
               )}
 
-              {/* 回款与发票 */}
-              {activeMainTab === 'payments' && (
-                <ContractPaymentInvoicePanel
-                  mainContract={mainContract}
-                  supplementContracts={supplementContracts}
-                  contractAmount={paymentContractAmount}
-                  receivedAmount={paymentReceivedAmount}
-                  collections={visibleLeadCollections}
-                  invoiceRecords={invoiceRecords}
-                  onAddCollection={() => openCollectionEditor()}
-                  onEditCollection={openCollectionEditor}
-                  onDeleteCollection={(record) => {
-                    if (addedCollections.some((item) => item.id === record.id)) {
-                      setAddedCollections((items) => items.filter((item) => item.id !== record.id));
-                    } else {
-                      setDeletedCollectionIds((items) => [...items, record.id]);
-                    }
-                    Message.success('实收记录已删除');
-                  }}
-                  onIssueInvoice={issueInvoice}
-                  onRedInvoice={redInvoice}
-                  onCorrectInvoice={(invoice) => setInvoiceRecords((items) => items.map((item) => item.id === invoice.id ? { ...item, invoiceNo: `${item.invoiceNo}-更正` } : item))}
-                  onDeleteInvoice={(invoice) => setInvoiceRecords((items) => items.filter((item) => item.id !== invoice.id))}
-                />
+              {/* 4. 差旅与费用（宽幅并列） */}
+              {activeMainTab === 'travel' && (
+                <div>
+                  <Grid.Row gutter={16}>
+                    <Grid.Col span={12}>
+                      <Card
+                        size="small"
+                        title="出差申请记录"
+                        extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>}
+                      >
+                        {travels.map((travel) => (
+                          <ProcessRecordCard
+                            key={travel.id}
+                            title={`${travel.destination} · ${travel.purpose}`}
+                            tags={<Tag color="green" size="small">{travel.status}</Tag>}
+                            actions={<Tooltip content="展开出差详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
+                            identifier={`审批号 ${travel.approvalNo}`}
+                            onClick={() => setTravelDetailId(travel.id)}
+                            ariaLabel={`展开${travel.destination}出差详情`}
+                            summary={(
+                              <>
+                                <span>申请人 <strong>{travel.applicant}</strong></span>
+                                <span>{travel.startDate} 至 {travel.endDate}</span>
+                                <span>费用 <strong>{money(travel.amount)}</strong></span>
+                              </>
+                            )}
+                          />
+                        ))}
+                        {travels.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无出差记录</div>}
+                      </Card>
+                    </Grid.Col>
+
+                    <Grid.Col span={12}>
+                      <Card
+                        size="small"
+                        title="费用报销记录"
+                        extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>}
+                      >
+                        {reimbursements.map((rb) => (
+                          <ProcessRecordCard
+                            key={rb.id}
+                            title={`${rb.type} · ${rb.description}`}
+                            tags={<Tag color="green" size="small">{rb.status}</Tag>}
+                            actions={<Tooltip content="展开报销详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
+                            identifier={`审批号 ${rb.approvalNo}`}
+                            onClick={() => setReimbursementDetailId(rb.id)}
+                            ariaLabel={`展开${rb.type}报销详情`}
+                            summary={(
+                              <>
+                                <span>申请人 <strong>{rb.applicant}</strong></span>
+                                <span>报销金额 <strong>{money(rb.amount)}</strong></span>
+                              </>
+                            )}
+                          />
+                        ))}
+                        {reimbursements.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报销记录</div>}
+                      </Card>
+                    </Grid.Col>
+                  </Grid.Row>
+                </div>
+              )}
+
+              {/* 5. 交付执行 */}
+              {activeMainTab === 'delivery' && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
+                    <Tag color="blue">项目编号</Tag>
+                    <Text style={{ fontWeight: 500 }}>PRJ20260820001</Text>
+                    <Divider type="vertical" />
+                    <Tag color="green">健康度: 正常</Tag>
+                    <Divider type="vertical" />
+                    <Text type="secondary">PM: 李四</Text>
+                    <Divider type="vertical" />
+                    <Text type="secondary">进度: 65%</Text>
+                    <Progress percent={65} size="small" style={{ width: 100 }} showText={false} />
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
+                    <Steps current={2} size="small">
+                      <Step title="立项启动" description="08-20 已确认" />
+                      <Step title="UI确认" description="08-28 客户盖章" />
+                      <Step title="核心开发" description="进行中 65%" />
+                      <Step title="提测预发布" description="计划 09-15" />
+                      <Step title="终验上线" description="计划 09-25" />
+                    </Steps>
+                  </div>
+
+                  <Grid.Row gutter={16}>
+                    <Grid.Col span={12}>
+                      <Card size="small" title="任务看板">
+                        <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>开发中 3 项 · 待分配 1 项 · 已完成 1 项</div>
+                      </Card>
+                    </Grid.Col>
+                    <Grid.Col span={12}>
+                      <Card size="small" title="缺陷跟踪">
+                        <div style={{ fontSize: 12 }}>
+                          <Tag color="red" size="small">P0: 0</Tag>
+                          <Tag color="orangered" size="small">P1: 1</Tag>
+                          <Tag color="orange" size="small">P2: 0</Tag>
+                          <Tag color="blue" size="small">P3: 0</Tag>
+                        </div>
+                      </Card>
+                    </Grid.Col>
+                  </Grid.Row>
+                </div>
+              )}
+
+              {/* 6. 资料与环境 */}
+              {activeMainTab === 'assets' && (
+                <div>
+                  <Grid.Row gutter={16}>
+                    <Grid.Col span={12}>
+                      <Card
+                        size="small"
+                        title="演示环境管理"
+                        extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>}
+                      >
+                        {demos.map((demo) => (
+                          <ProcessRecordCard
+                            key={demo.id}
+                            leading={<Tag color="blue" size="small">{demo.type}</Tag>}
+                            title={demo.description}
+                            identifier={(
+                              <span className="hubx-process-record-card__identifier-line">
+                                <span>{demo.url}</span>
+                                <Tooltip content="复制链接">
+                                  <Button
+                                    className="hubx-icon-action"
+                                    type="text"
+                                    size="mini"
+                                    aria-label={`复制${demo.description}链接`}
+                                    icon={<IconCopy />}
+                                    onClick={() => { navigator.clipboard.writeText(demo.url); Message.success('已复制链接'); }}
+                                  />
+                                </Tooltip>
+                              </span>
+                            )}
+                            actions={(
+                              <Tooltip content="删除环境">
+                                <Button className="hubx-icon-action" aria-label={`删除${demo.description}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDemos(demos.filter((d) => d.id !== demo.id)); Message.success('已删除'); }} />
+                              </Tooltip>
+                            )}
+                          />
+                        ))}
+                        {demos.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无演示环境</div>}
+                      </Card>
+                    </Grid.Col>
+
+                    <Grid.Col span={12}>
+                      <Card
+                        size="small"
+                        title="方案资料库"
+                        extra={<Button type="primary" size="mini" icon={<IconUpload />} onClick={() => { docForm.resetFields(); setDocUploadItems([]); setDocModalVisible(true); }}>上传资料</Button>}
+                      >
+                        {documents.map((doc) => (
+                          <ProcessRecordCard
+                            key={doc.id}
+                            leading={<IconFile />}
+                            title={doc.name}
+                            tags={<><Tag size="small" color="gray">{doc.type}</Tag><Tag size="small" color="arcoblue">{doc.source}</Tag></>}
+                            identifier={`${doc.uploader} · ${doc.createdAt}`}
+                            actions={(
+                              <Space size={4}>
+                                <Tooltip content="下载"><Button className="hubx-icon-action" type="text" size="small" aria-label={`下载 ${doc.name}`} icon={<IconDownload />} onClick={() => Message.success(`开始下载 ${doc.name}`)} /></Tooltip>
+                                <Tooltip content="删除资料"><Button className="hubx-icon-action" aria-label={`删除 ${doc.name}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDocuments(documents.filter((d) => d.id !== doc.id)); Message.success('已删除'); }} /></Tooltip>
+                              </Space>
+                            )}
+                          />
+                        ))}
+                        {documents.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无资料</div>}
+                      </Card>
+                    </Grid.Col>
+                  </Grid.Row>
+                </div>
               )}
             </div>
           </Card>
-
-          {/* 项目交付执行（独立板块） */}
-          <Card size="small" title="项目交付执行">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-              <Tag color="blue">项目编号</Tag>
-              <Text style={{ fontWeight: 500 }}>PRJ20260820001</Text>
-              <Divider type="vertical" />
-              <Tag color="green">健康度: 正常</Tag>
-              <Divider type="vertical" />
-              <Text type="secondary">PM: 李四</Text>
-              <Divider type="vertical" />
-              <Text type="secondary">进度: 65%</Text>
-              <Progress percent={65} size="small" style={{ width: 100 }} showText={false} />
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <Text style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
-              <Steps current={2} size="small">
-                <Step title="立项启动" description="08-20 已确认" />
-                <Step title="UI确认" description="08-28 客户盖章" />
-                <Step title="核心开发" description="进行中 65%" />
-                <Step title="提测预发布" description="计划 09-15" />
-                <Step title="终验上线" description="计划 09-25" />
-              </Steps>
-            </div>
-
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}>
-                <Card size="small" title="任务看板">
-                  <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>开发中 3 项 · 待分配 1 项 · 已完成 1 项</div>
-                </Card>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <Card size="small" title="缺陷跟踪">
-                  <div style={{ fontSize: 12 }}>
-                    <Tag color="red" size="small">P0: 0</Tag>
-                    <Tag color="orangered" size="small">P1: 1</Tag>
-                    <Tag color="orange" size="small">P2: 0</Tag>
-                    <Tag color="blue" size="small">P3: 0</Tag>
-                  </div>
-                </Card>
-              </Grid.Col>
-            </Grid.Row>
-          </Card>
         </ProcessWorkspaceMain>
 
-        {/* 右侧业务过程 (30%) */}
+        {/* 右侧互动流与协同 (30%) */}
         <ProcessWorkspaceAside>
-          {/* 售前聊天群分析（独立板块） */}
+          {/* 售前聊天群分析 */}
           {lead.presalesGroupName && (
-            <Card size="small" title="售前聊天群分析">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Card size="small" title="售前聊天群分析" style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <WeChatIcon />
                 <Text style={{ fontWeight: 500 }}>{lead.presalesGroupName}</Text>
               </div>
-              <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 14, color: 'var(--color-text-2)' }}>
-                <Text type="secondary">AI 摘要分析</Text>
-                <div style={{ marginTop: 8 }}>
+              <div style={{ padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13, color: 'var(--color-text-2)' }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-3)', marginBottom: 4 }}>AI 摘要洞察</div>
+                <div>
                   客户对小程序点餐系统需求明确，重点关注多门店管理和微信支付对接。已确认基础功能清单，待确认抖音端增项需求。
                 </div>
               </div>
             </Card>
           )}
 
-          {/* 右侧 7 个 Tab */}
-          <Card size="small" style={{ flex: 1 }}>
-            <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
-              <TabPane key="follow" title="跟进" />
-              <TabPane key="quotation" title="报价" />
-              <TabPane key="contract-records" title="合同" />
-              <TabPane key="demo" title="演示" />
-              <TabPane key="documents" title="资料" />
-              <TabPane key="travel" title="出差" />
-              <TabPane key="reimbursement" title="报销" />
-            </Tabs>
+          {/* 常驻快捷写跟进卡片 */}
+          <Card
+            size="small"
+            title="快捷写跟进"
+            extra={
+              <Button
+                type="text"
+                size="mini"
+                onClick={() => setFollowVisible(true)}
+                style={{ color: 'var(--primary)', padding: 0 }}
+              >
+                详细表单(传附件)
+              </Button>
+            }
+            style={{ marginBottom: 14 }}
+          >
+            <Input.TextArea
+              id="quick-follow-input"
+              value={quickFollowContent}
+              onChange={setQuickFollowContent}
+              placeholder="就地记录本次跟进要点、客户核心反馈..."
+              autoSize={{ minRows: 2, maxRows: 4 }}
+              style={{ marginBottom: 10 }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <Space size={4}>
+                {(['电话', '微信', '拜访', '会议'] as const).map((m) => (
+                  <Button
+                    key={m}
+                    size="mini"
+                    type={quickFollowMethod === m ? 'primary' : 'secondary'}
+                    onClick={() => setQuickFollowMethod(m)}
+                  >
+                    {m}
+                  </Button>
+                ))}
+              </Space>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+                <DatePicker
+                  size="mini"
+                  placeholder="下次跟进"
+                  style={{ width: 136 }}
+                  showTime
+                  format="YYYY-MM-DD HH:mm"
+                  value={quickFollowNextTime}
+                  onChange={setQuickFollowNextTime}
+                />
+                <Button
+                  type="primary"
+                  size="mini"
+                  loading={quickFollowSubmitting}
+                  onClick={submitQuickFollow}
+                >
+                  保存
+                </Button>
+              </div>
+            </div>
+          </Card>
 
-            <div style={{ marginTop: 16 }}>
-              {/* 跟进 */}
-              {activeSideTab === 'follow' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => setFollowVisible(true)}>写跟进</Button>
-                  </div>
-                  <Timeline>
-                    {followUps.filter((r) => r.leadId === id || r.leadId === profileLeadId || r.leadId === serviceLeadId).map((record, index) => (
-                      <Timeline.Item key={record.id} dotColor={index === 0 ? 'rgb(var(--primary-6))' : 'var(--color-border-2)'}>
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <Tag color="blue" size="small">{record.method}</Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>{record.createdAt}</Text>
-                            <Text type="secondary" style={{ fontSize: 12 }}>· {record.creator}</Text>
-                          </div>
-                          <div style={{ fontSize: 14, color: 'var(--color-text-1)', marginBottom: 4 }}>{record.content}</div>
-                          {record.nextFollowTime && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>下次跟进: {record.nextFollowTime}</Text>
-                          )}
-                        </div>
-                      </Timeline.Item>
-                    ))}
-                  </Timeline>
-                </div>
-              )}
-
-              {/* 报价 */}
-              {activeSideTab === 'quotation' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<IconPlus />}
-                      onClick={() => setQuoteModeVisible(true)}
-                    >
-                      新建报价
-                    </Button>
-                  </div>
-                  {(() => {
-                    const leadQuotes = quotes.filter((q) => q.leadId === id);
-                    const active = leadQuotes.filter((q) => q.status !== 'voided');
-                    const voided = leadQuotes.filter((q) => q.status === 'voided');
-                    if (leadQuotes.length === 0) {
-                      return <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报价记录</div>;
-                    }
-                    return (
-                      <div>
-                        {active.map((q) => (
-                          <QuoteCard
-                            key={q.id}
-                            quote={q}
-                            onOpen={() => {
-                              setQuotationDrawerQuoteId(q.id);
-                              setQuotationDrawerVisible(true);
-                            }}
-                          />
-                        ))}
-                        {voided.length > 0 && (
-                          <>
-                            <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '12px 0' }} />
-                            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</Text>
-                            {voided.map((q) => (
-                              <ProcessRecordCard
-                                key={q.id}
-                                muted
-                                title={<span style={{ textDecoration: 'line-through' }}>{q.basicInfo.projectName}</span>}
-                                tags={(
-                                  <>
-                                  <Tag color="arcoblue" size="small">{q.version}</Tag>
-                                  <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
-                                  </>
-                                )}
-                                identifier={q.quoteNo}
-                                notice={`作废原因：${q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}`}
-                              />
-                            ))}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-
-              {/* 合同记录 */}
-              {activeSideTab === 'contract-records' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={handleCreateContract}>新建合同</Button>
-                  </div>
-                  {relatedContracts.map((c) => (
-                    <ProcessRecordCard
-                      key={c.id}
-                      title={c.current.contractName}
-                      tags={<Tag color={CONTRACT_STATUS_COLORS[c.status]} size="small">{CONTRACT_STATUS_LABELS[c.status]}</Tag>}
-                      actions={<Tooltip content="查看合同详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
-                      identifier={c.contractNo}
-                      onClick={() => handleViewContractDetail(c.id)}
-                      ariaLabel={`查看合同${c.current.contractName}详情`}
-                      summary={(
-                        <>
-                          <span>签约主体 <strong>{c.current.signingEntity}</strong></span>
-                          <span>合同金额 <strong>{money(c.current.totalAmount)}</strong></span>
-                        </>
-                      )}
-                    />
-                  ))}
-                  {relatedContracts.length === 0 && profile.demoContracts?.map((c) => {
-                    const contractStatusColor = c.status === '已归档' || c.status === '已盖章' ? 'green' : c.status === '审批通过' ? 'blue' : 'orange';
-                    const liveMatch = allContracts.find((contract) => contract.id === c.id);
-                    return (
-                      <ProcessRecordCard
-                        key={c.id}
-                        title={c.name}
-                        tags={<Tag color={contractStatusColor} size="small">{c.status}</Tag>}
-                        actions={liveMatch ? <Tooltip content="查看合同详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip> : undefined}
-                        identifier={c.contractNo}
-                        onClick={liveMatch ? () => handleViewContractDetail(liveMatch.id) : undefined}
-                        ariaLabel={liveMatch ? `查看合同${c.name}详情` : undefined}
-                        summary={(
-                          <>
-                            <span>签约主体 <strong>{c.contractEntity}</strong></span>
-                            <span>合同金额 <strong>¥{c.amount}</strong></span>
-                          </>
-                        )}
-                      />
-                    );
-                  })}
-                  {relatedContracts.length === 0 && (!profile.demoContracts || profile.demoContracts.length === 0) && (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同记录</div>
-                  )}
-                </div>
-              )}
-
-              {/* 演示 */}
-              {activeSideTab === 'demo' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>
-                  </div>
-                  {demos.map((demo) => (
-                    <ProcessRecordCard
-                      key={demo.id}
-                      leading={<Tag color="blue" size="small">{demo.type}</Tag>}
-                      title={demo.description}
-                      identifier={(
-                        <span className="hubx-process-record-card__identifier-line">
-                          <span>{demo.url}</span>
-                          <Tooltip content="复制链接">
-                            <Button
-                              className="hubx-icon-action"
-                              type="text"
-                              size="mini"
-                              aria-label={`复制${demo.description}链接`}
-                              icon={<IconCopy />}
-                              onClick={() => { navigator.clipboard.writeText(demo.url); Message.success('已复制链接'); }}
-                            />
-                          </Tooltip>
-                        </span>
-                      )}
-                      actions={(
-                        <Tooltip content="删除环境">
-                          <Button className="hubx-icon-action" aria-label={`删除${demo.description}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDemos(demos.filter((d) => d.id !== demo.id)); Message.success('已删除'); }} />
-                        </Tooltip>
-                      )}
-                    />
-                  ))}
-                  {demos.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无演示环境</div>}
-                </div>
-              )}
-
-              {/* 资料 */}
-              {activeSideTab === 'documents' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconUpload />} onClick={() => { docForm.resetFields(); setDocUploadItems([]); setDocModalVisible(true); }}>上传资料</Button>
-                  </div>
-                  {documents.map((doc) => (
-                    <ProcessRecordCard
-                      key={doc.id}
-                      leading={<IconFile />}
-                      title={doc.name}
-                      tags={<><Tag size="small" color="gray">{doc.type}</Tag><Tag size="small" color="arcoblue">{doc.source}</Tag></>}
-                      identifier={`${doc.uploader} · ${doc.createdAt}`}
-                      actions={(
-                        <Space size={4}>
-                        <Tooltip content="下载"><Button className="hubx-icon-action" type="text" size="small" aria-label={`下载 ${doc.name}`} icon={<IconDownload />} onClick={() => Message.success(`开始下载 ${doc.name}`)} /></Tooltip>
-                          <Tooltip content="删除资料"><Button className="hubx-icon-action" aria-label={`删除 ${doc.name}`} type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDocuments(documents.filter((d) => d.id !== doc.id)); Message.success('已删除'); }} /></Tooltip>
+          {/* 互动时间线卡片 */}
+          <Card
+            size="small"
+            title="跟进与互动动态"
+            extra={
+              <Space size={4}>
+                {[
+                  { label: '全部', value: 'all' },
+                  { label: '电话', value: '电话' },
+                  { label: '微信', value: '微信' },
+                  { label: '拜访', value: '拜访' },
+                ].map((item) => (
+                  <Tag
+                    key={item.value}
+                    size="small"
+                    color={timelineFilterMethod === item.value ? 'arcoblue' : undefined}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setTimelineFilterMethod(item.value)}
+                  >
+                    {item.label}
+                  </Tag>
+                ))}
+              </Space>
+            }
+            style={{ flex: 1 }}
+          >
+            <div style={{ maxHeight: 600, overflowY: 'auto', paddingRight: 4, marginTop: 4 }}>
+              <Timeline>
+                {filteredTimeline.map((record, index) => (
+                  <Timeline.Item key={record.id} dotColor={index === 0 ? 'rgb(var(--primary-6))' : 'var(--color-border-2)'}>
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
+                        <Space size={6}>
+                          <Tag color="blue" size="small">{record.method}</Tag>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-2)' }}>{record.creator}</span>
                         </Space>
+                        <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>{record.createdAt}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: 1.6, marginBottom: 4, whiteSpace: 'pre-wrap' }}>
+                        {record.content}
+                      </div>
+                      {record.nextFollowTime && (
+                        <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span>📅 下次跟进:</span>
+                          <strong>{record.nextFollowTime}</strong>
+                        </div>
                       )}
-                    />
-                  ))}
-                  {documents.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无资料</div>}
-                </div>
-              )}
-
-              {/* 出差 */}
-              {activeSideTab === 'travel' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>
-                  </div>
-                  {travels.map((travel) => (
-                    <ProcessRecordCard
-                      key={travel.id}
-                      title={`${travel.destination} · ${travel.purpose}`}
-                      tags={<Tag color="green" size="small">{travel.status}</Tag>}
-                      actions={<Tooltip content="展开出差详情"><span className="hubx-process-record-card__indicator"><IconArrowLeft /></span></Tooltip>}
-                      identifier={`审批号 ${travel.approvalNo}`}
-                      onClick={() => setTravelDetailId(travel.id)}
-                      ariaLabel={`展开${travel.destination}出差详情`}
-                      summary={(
-                        <>
-                          <span>申请人 <strong>{travel.applicant}</strong></span>
-                          <span>{travel.startDate} 至 {travel.endDate}</span>
-                          <span>费用 <strong>{money(travel.amount)}</strong></span>
-                        </>
-                      )}
-                    />
-                  ))}
-                  {travels.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无出差记录</div>}
-                </div>
-              )}
-
-              {/* 报销 */}
-              {activeSideTab === 'reimbursement' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>
-                  </div>
-                  {reimbursements.map((rb) => (
-                    <ProcessRecordCard
-                      key={rb.id}
-                      title={`${rb.type} · ${rb.description}`}
-                      tags={<Tag color="green" size="small">{rb.status}</Tag>}
-                      actions={<Tooltip content="展开报销详情"><span className="hubx-process-record-card__indicator"><IconArrowLeft /></span></Tooltip>}
-                      identifier={`审批号 ${rb.approvalNo}`}
-                      onClick={() => setReimbursementDetailId(rb.id)}
-                      ariaLabel={`展开${rb.type}报销详情`}
-                      summary={(
-                        <>
-                          <span>申请人 <strong>{rb.applicant}</strong></span>
-                          <span>报销金额 <strong>{money(rb.amount)}</strong></span>
-                        </>
-                      )}
-                    />
-                  ))}
-                  {reimbursements.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报销记录</div>}
+                    </div>
+                  </Timeline.Item>
+                ))}
+              </Timeline>
+              {filteredTimeline.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--color-text-4)' }}>
+                  暂无匹配的跟进记录
                 </div>
               )}
             </div>
@@ -1548,45 +2094,56 @@ export function LeadDetail360() {
         </Form>
       </Modal>
 
-      <Modal
-        title="选择报价工作台"
+      <SelectQuoteModeModal
         visible={quoteModeVisible}
+        leadName={lead?.name || dispatchLead?.name || ''}
+        customerName={lead?.customer || dispatchLead?.customer}
+        contactName={lead?.contact || dispatchLead?.contact}
+        contactPhone={lead?.phone || dispatchLead?.phone}
+        defaultFlowMode={quoteFlowMode}
         onCancel={() => setQuoteModeVisible(false)}
-        onOk={async () => {
-          const newId = await createQuote(id ?? '', [], {
-            projectName: lead.name,
-            customerName: lead.customer,
-            customerContact: lead.contact,
-            customerPhone: lead.phone,
-          }, { flowMode: quoteFlowMode });
-          const customer = customers.find((item) => item.id === dispatchLead?.customerId || item.name === lead.customer);
-          if (customer) {
-            await updateQuote(newId, (current) => ({ ...current, customerId: customer.id, customerSnapshot: buildCustomerSnapshot(customer) }));
+        onSubmit={async ({ flowMode, projectName }) => {
+          try {
+            setQuoteFlowMode(flowMode);
+            const targetLeadId = profileLeadId || id || '';
+            const safeCustomer = lead?.customer || dispatchLead?.customer || '';
+            const safeContact = lead?.contact || dispatchLead?.contact || '';
+            const safePhone = lead?.phone || dispatchLead?.phone || '';
+            const safeOwner = lead?.owner || dispatchLead?.owner;
+
+            const newId = await createQuote(
+              targetLeadId,
+              [],
+              {
+                projectName,
+                customerName: safeCustomer,
+                customerContact: safeContact,
+                customerPhone: safePhone,
+              },
+              { flowMode, salesOwnerName: safeOwner }
+            );
+
+            const customer = customers.find(
+              (item) => item.id === dispatchLead?.customerId || (safeCustomer && item.name === safeCustomer)
+            );
+            if (customer) {
+              await updateQuote(newId, (current) => ({
+                ...current,
+                customerId: customer.id,
+                customerSnapshot: buildCustomerSnapshot(customer),
+              }));
+            }
+
+            setQuoteModeVisible(false);
+            Message.success(`已成功创建「${flowMode === 'file' ? '文件流转' : '数据流转'}」新报价单`);
+            setQuotationDrawerQuoteId(newId);
+            setQuotationDrawerVisible(true);
+          } catch (err: any) {
+            console.error('Failed to create quote:', err);
+            Message.error(err?.message || '创建报价单失败，请重试');
           }
-          setQuoteModeVisible(false);
-          setQuotationDrawerQuoteId(newId);
-          setQuotationDrawerVisible(true);
         }}
-        okText="进入报价流程"
-        style={{ width: 620 }}
-      >
-        <Radio.Group value={quoteFlowMode} onChange={setQuoteFlowMode} style={{ width: '100%' }}>
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Radio value="file">
-              <div className="quotation-quote-mode-option">
-                <span className="quotation-quote-mode-option__title">文件流转方式</span>
-                <span className="quotation-quote-mode-option__description">使用 Excel 文件流转功能清单和工时评估。</span>
-              </div>
-            </Radio>
-            <Radio value="online">
-              <div className="quotation-quote-mode-option">
-                <span className="quotation-quote-mode-option__title">在线表单方式</span>
-                <span className="quotation-quote-mode-option__description">各角色在工作台内协作处理结构化表单数据。</span>
-              </div>
-            </Radio>
-          </Space>
-        </Radio.Group>
-      </Modal>
+      />
 
       <LeadFollowUpModal
         visible={followVisible}
@@ -1721,6 +2278,46 @@ export function LeadDetail360() {
       <Drawer title="报销详情与审批流" width={520} visible={Boolean(reimbursementDetailId)} onCancel={() => setReimbursementDetailId(null)} footer={null}>
         {reimbursements.filter((item) => item.id === reimbursementDetailId).map((item) => <div key={item.id}><Descriptions column={1} data={[{ label: '报销类型', value: item.type }, { label: '说明', value: item.description }, { label: '申请人', value: item.applicant }, { label: '金额', value: money(item.amount) }, { label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交报销 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">直属负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
       </Drawer>
+
+      {/* 阶段推进流转弹窗 */}
+      <Modal
+        title={`阶段推进：流转至「${advanceTargetStatus}」`}
+        visible={advanceModalVisible}
+        onOk={submitStageAdvance}
+        onCancel={() => setAdvanceModalVisible(false)}
+        confirmLoading={advanceSubmitting}
+        okText="确认推进阶段"
+        cancelText="取消"
+        style={{ width: 480 }}
+      >
+        <Form layout="vertical">
+          <Form.Item label="目标阶段与状态" required>
+            <Select value={advanceTargetStatus} onChange={setAdvanceTargetStatus}>
+              {SALES_STATUS_LIST.map((status) => (
+                <Select.Option key={status} value={status}>{status}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item label="推进要点说明">
+            <Input.TextArea
+              value={advanceNote}
+              onChange={setAdvanceNote}
+              placeholder="请填写本次推进的核心达成项、客户反馈或后续计划..."
+              rows={3}
+            />
+          </Form.Item>
+          <Form.Item label="安排下次跟进时间">
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              value={advanceNextFollowTime}
+              onChange={setAdvanceNextFollowTime}
+              style={{ width: '100%' }}
+              placeholder="请选择下次跟进计划时间"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </PageShell>
   );
 }

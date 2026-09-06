@@ -28,7 +28,7 @@ import { useLeads } from '@/app/leads/LeadContext';
 import { useContracts } from './contracts/ContractsContext';
 import { useProjects } from './project-management/ProjectContext';
 import { useCollections } from '@/app/collections/CollectionContext';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid, WeChatIcon } from '@/app/components/ui';
+import { PageHeader, PageShell, ProcessMetricGrid, WeChatIcon } from '@/app/components/ui';
 import { buildClosedLeadRows, type ClosedLeadRow } from './closedLeadReadModel';
 
 export function ClosedLeads() {
@@ -38,6 +38,7 @@ export function ClosedLeads() {
   const { projects } = useProjects();
   const { collections } = useCollections();
   const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
@@ -52,11 +53,12 @@ export function ClosedLeads() {
     const base = dataSource;
     return base.filter((lead) => {
       const hitKeyword = !keyword || [lead.id, lead.name, lead.customer, lead.contractNo, lead.projectName].some((item) => item.includes(keyword));
+      const hitStatus = !statusFilter || lead.closedStatus === statusFilter;
       const hitSource = !sourceFilter || lead.source === sourceFilter;
       const hitEntity = !entityFilter || lead.entity === entityFilter;
-      return hitKeyword && hitSource && hitEntity;
+      return hitKeyword && hitStatus && hitSource && hitEntity;
     });
-  }, [keyword, sourceFilter, entityFilter, dataSource]);
+  }, [keyword, statusFilter, sourceFilter, entityFilter, dataSource]);
 
   const openRelatedDetail = (record: ClosedLeadRow) => {
     navigate(record.projectId ? `/projects/${record.projectId}` : `/leads/${record.id}`);
@@ -65,10 +67,11 @@ export function ClosedLeads() {
   const totalAmount = filteredLeads.reduce((sum, lead) => sum + lead.contractAmount, 0);
   const receivedAmount = filteredLeads.reduce((sum, lead) => sum + lead.receivedAmount, 0);
   const averageConversionDays = Math.round(filteredLeads.reduce((sum, lead) => sum + lead.conversionDays, 0) / Math.max(filteredLeads.length, 1));
-  const filtersActive = Boolean(keyword || sourceFilter || entityFilter);
+  const filtersActive = Boolean(keyword || statusFilter || sourceFilter || entityFilter);
 
   const resetFilters = () => {
     setKeyword('');
+    setStatusFilter('');
     setSourceFilter('');
     setEntityFilter('');
   };
@@ -162,16 +165,40 @@ export function ClosedLeads() {
       ]} />
 
       <Card>
-        <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {filteredLeads.length} 条</span>}>
+        <div
+          style={{
+            background: 'var(--color-fill-1)',
+            padding: '12px 16px',
+            borderRadius: 8,
+            marginBottom: 16,
+            border: '1px solid var(--color-border-2)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
           <Input allowClear prefix={<IconSearch />} placeholder="搜索线索、客户、合同或项目" value={keyword} onChange={setKeyword} style={{ width: 280 }} />
-          <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
+          <Select placeholder="全部成交状态" style={{ width: 140 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
+            <Select.Option value="已签约">已签约</Select.Option>
+            <Select.Option value="已立项">已立项</Select.Option>
+            <Select.Option value="待关联">待关联</Select.Option>
+          </Select>
+          <Select placeholder="全部线索来源" style={{ width: 140 }} allowClear value={sourceFilter || undefined} onChange={setSourceFilter}>
             {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
-          <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
+          <Select placeholder="全部对接主体" style={{ width: 140 }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
           </Select>
-        </FilterBar>
-        <div style={{ marginTop: 16, color: 'var(--color-text-3)', fontSize: 12 }}>筛选结果：{filteredLeads.length} 条</div>
+          {filtersActive && (
+            <Button type="text" icon={<IconRefresh />} onClick={resetFilters} style={{ color: 'var(--color-text-3)' }}>
+              重置
+            </Button>
+          )}
+          <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--color-text-3)' }}>
+            筛选结果：{filteredLeads.length} 条
+          </div>
+        </div>
 
         <Table columns={columns} data={filteredLeads} rowKey="key" scroll={{ x: 1400 }} pagination={false} />
       </Card>

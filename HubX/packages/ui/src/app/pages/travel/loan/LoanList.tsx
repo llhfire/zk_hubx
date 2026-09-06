@@ -20,6 +20,8 @@ import {
   Checkbox,
   Badge,
   Progress,
+  Form,
+  InputNumber,
 } from '@arco-design/web-react';
 import {
   IconSearch,
@@ -50,6 +52,7 @@ const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
+const { Row, Col } = Grid;
 
 const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
   draft: { color: 'gray', text: '草稿' },
@@ -86,6 +89,45 @@ export function LoanList() {
   // 详情抽屉
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+
+  // 新建借款弹窗与表单
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [createForm] = Form.useForm();
+
+  const handleCreateLoan = async () => {
+    try {
+      const values = await createForm.validate();
+      const now = new Date().toISOString().slice(0, 10);
+      const amount = Number(values.amount);
+      const newLoan: Loan = {
+        id: `loan-${Date.now()}`,
+        loanNo: `JK${Date.now().toString().slice(-8)}`,
+        applicantId: values.applicantId || 'emp-current',
+        applicantName: values.applicantName,
+        department: values.department,
+        tripId: values.tripId || 'TRIP-2026-001',
+        tripNo: values.tripNo || 'BT20260428001',
+        type: values.type || 'travel',
+        amount,
+        remainingAmount: amount,
+        repaymentPlan: {
+          dueDate: values.expectedRepayDate || now,
+          method: 'reimbursement_offset',
+        },
+        reason: values.reason,
+        status: 'pending',
+        createDate: now,
+        updateDate: now,
+        approvalRecords: [],
+      };
+      setAllLoans((prev) => [newLoan, ...prev]);
+      Message.success('差旅备用借款申请已成功发起并进入审批流！');
+      setCreateModalVisible(false);
+      createForm.resetFields();
+    } catch {
+      // 验证未通过
+    }
+  };
 
   // 加载数据
   const loadLoans = async () => {
@@ -421,7 +463,10 @@ export function LoanList() {
             <Button
               type="primary"
               icon={<IconPlus />}
-              onClick={() => navigate('/travel/loans/new')}
+              onClick={() => {
+                createForm.resetFields();
+                setCreateModalVisible(true);
+              }}
             >
               新建借款单
             </Button>
@@ -843,6 +888,108 @@ export function LoanList() {
             onChange={setApprovalComment}
           />
         </div>
+      </Modal>
+
+      {/* 新建差旅借款申请弹窗 */}
+      <Modal
+        title="新建差旅借款申请"
+        visible={createModalVisible}
+        onOk={handleCreateLoan}
+        onCancel={() => setCreateModalVisible(false)}
+        okText="提交借款申请"
+        cancelText="取消"
+        style={{ width: 520 }}
+      >
+        <Form form={createForm} layout="vertical">
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item
+                label="申请人姓名"
+                field="applicantName"
+                rules={[{ required: true, message: '请输入申请人' }]}
+                initialValue="张三"
+              >
+                <Input placeholder="如：张三" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="所属部门"
+                field="department"
+                rules={[{ required: true, message: '请输入部门' }]}
+                initialValue="技术部"
+              >
+                <Select placeholder="选择部门">
+                  <Option value="技术部">技术部</Option>
+                  <Option value="市场部">市场部</Option>
+                  <Option value="销售部">销售部</Option>
+                  <Option value="交付中心">交付中心</Option>
+                  <Option value="综合管理部">综合管理部</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item
+                label="借款类型"
+                field="type"
+                initialValue="travel"
+                rules={[{ required: true }]}
+              >
+                <Select>
+                  <Option value="travel">差旅备用金</Option>
+                  <Option value="petty_cash">日常备用金</Option>
+                  <Option value="other">专项周转金</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="借款金额 (元)"
+                field="amount"
+                rules={[{ required: true, message: '请输入借款金额' }]}
+              >
+                <InputNumber
+                  min={100}
+                  step={500}
+                  placeholder="如：3000"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="关联出差申请单号" field="tripNo" initialValue="BT20260428001">
+                <Input placeholder="如：BT20260428001" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="预计还款/冲抵日期"
+                field="expectedRepayDate"
+                rules={[{ required: true, message: '请选择预计还款日' }]}
+                initialValue="2026-09-30"
+              >
+                <Input type="date" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            label="借款用途与事由说明"
+            field="reason"
+            rules={[{ required: true, message: '请简述借款事由' }]}
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="如：赴上海中科项目现场紧急技术交底，预支往返交通与住宿备用金"
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </PageShell>
   );

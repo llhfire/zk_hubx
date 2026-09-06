@@ -194,7 +194,24 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   const { employees } = useEmployee();
   const { activeTodos, updateTodo } = useTodos();
   const handleBack = onClose ?? (() => navigate('/quotation'));
-  const quote = quoteId ? getQuoteById(quoteId) : undefined;
+  const contextQuote = quoteId ? getQuoteById(quoteId) : undefined;
+  const storageQuote = useMemo(() => {
+    if (contextQuote) return contextQuote;
+    if (!quoteId) return undefined;
+    try {
+      const raw = window.localStorage.getItem('hubx-quotation-quotes-v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.find((item) => item.id === quoteId);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return undefined;
+  }, [contextQuote, quoteId]);
+  const quote = contextQuote || storageQuote;
   const [timelineVisible, setTimelineVisible] = useState(false);
   const [voidVisible, setVoidVisible] = useState(false);
   const [voidReason, setVoidReason] = useState('');
@@ -282,7 +299,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     );
   }
 
-  if (!canViewQuote(quote, currentViewer, isAdmin)) {
+  if (!embedded && !canViewQuote(quote, currentViewer, isAdmin)) {
     return (
       <PageShell breadcrumbs={breadcrumbs}>
         <Result
@@ -364,7 +381,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
           <ActionBar quote={quote} />
         </ProcessWorkspaceMain>
 
-        <ProcessWorkspaceAside>
+        <ProcessWorkspaceAside className="quotation-workbench__aside">
           <QuoteDynamicPanel
             quote={quote}
             currentStage={currentStage}

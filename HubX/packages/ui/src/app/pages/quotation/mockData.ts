@@ -247,6 +247,20 @@ function buildQuote(): Quote {
     deadline: '2026-08-16 18:00',
     salesOwnerName: '张三',
     ccSalesNames: ['张三'],
+    customerFeedbacks: [
+      {
+        id: 'fb-q1-1',
+        disposition: 'price_high',
+        dispositionLabel: '价格偏高',
+        targetBudget: 200000,
+        targetDays: 15,
+        content: '客户陈总表示当前一期预算只有 20 万以内，当前报价 24.3 万超出财务批复上限；且希望赶在国庆前（约 15 工作日）完成交付，当前 20 工作日偏紧。',
+        strategy: '与技术罗总沟通，建议一期剥离管理后台多维度数据大屏模块（可省约 3.5 万成本），并申请销售部 95 折特批；同时技术排期前置，可满足 15 工作日交付上线。计划生成 v1.1 报价修正版。',
+        nextAction: 'new_version',
+        recordedBy: '张三',
+        recordedAt: '2026-08-15 11:30',
+      },
+    ],
     createdAt: '2026-08-14 09:10',
     updatedAt: '2026-08-14 16:10',
   };
@@ -428,6 +442,20 @@ function buildPawkeyQuote(): Quote {
     ],
     ccSalesNames: ['黄奕'],
     sentAt: '2026-05-29 14:00',
+    customerFeedbacks: [
+      {
+        id: 'fb-pawkey-1',
+        disposition: 'approved',
+        dispositionLabel: '基本认可',
+        targetBudget: 100000,
+        targetDays: 40,
+        content: '甲方产品负责人已核对 Flutter 双端架构与一期核心模块拆分，金额与周期均在预算范围内，已提请财务走合同流程。',
+        strategy: '跟进主合同盖章与首笔预付款 50% 汇款节点，技术侧同步启动工程骨架搭建。',
+        nextAction: 'maintain_negotiation',
+        recordedBy: '黄奕',
+        recordedAt: '2026-05-30 14:20',
+      },
+    ],
     createdAt: '2026-05-20 10:00',
     updatedAt: '2026-05-30 16:40',
   };

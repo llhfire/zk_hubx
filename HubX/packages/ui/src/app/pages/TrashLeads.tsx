@@ -12,7 +12,7 @@ import {
   Tag,
   Tooltip,
 } from '@arco-design/web-react';
-import { IconSearch, IconEye, IconUserAdd, IconReply } from '@arco-design/web-react/icon';
+import { IconSearch, IconEye, IconUserAdd, IconReply, IconRefresh } from '@arco-design/web-react/icon';
 import { CompanyEntityInfoModal } from './company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -27,25 +27,28 @@ import {
   COMPANY_ENTITY_LIST,
 } from './leads/types';
 import { useLeads } from '@/app/leads/LeadContext';
+import { CURRENT_LOGIN_USER } from '@/app/currentUser';
 import { searchLeads } from './leads/utils';
+import { PageShell, PageHeader, ProcessMetricGrid } from '@/app/components/ui';
 
 export function TrashLeads() {
   const navigate = useNavigate();
-  const { leads } = useLeads();
+  const { leads, claimLead, returnLead } = useLeads();
   const [keyword, setKeyword] = useState('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('');
   const [companyModalVisible, setCompanyModalVisible] = useState(false);
   const [selectedCompanyEntity, setSelectedCompanyEntity] = useState<CompanyEntityRecord | null>(null);
 
+  const trashPool = useMemo(() => leads.filter((l) => l.clueType === 'trash'), [leads]);
+
   const filteredLeads = useMemo(() => {
-    const pool = leads.filter((l) => l.clueType === 'trash');
-    let result = pool;
+    let result = trashPool;
     if (keyword) result = searchLeads(result, keyword);
     if (sourceFilter) result = result.filter((l) => l.source === sourceFilter);
     if (entityFilter) result = result.filter((l) => l.entity === entityFilter);
     return result;
-  }, [leads, keyword, sourceFilter, entityFilter]);
+  }, [trashPool, keyword, sourceFilter, entityFilter]);
 
   const handleOpenCompanyEntity = (entityName: string) => {
     if (!companyEntityPermissions.view) { Message.warning('暂无权限'); return; }
@@ -54,6 +57,34 @@ export function TrashLeads() {
     setSelectedCompanyEntity(e);
     setCompanyModalVisible(true);
   };
+
+  const handleReclaim = async (record: LeadListItem) => {
+    try {
+      await claimLead(record.id, CURRENT_LOGIN_USER.name);
+      Message.success(`已重新认领线索「${record.name}」至我的线索`);
+    } catch (err) {
+      Message.error(err instanceof Error ? err.message : '认领失败，请重试');
+    }
+  };
+
+  const handleReturnPublic = async (record: LeadListItem) => {
+    try {
+      await returnLead(record.id, CURRENT_LOGIN_USER.name, '从垃圾池释放回公海池');
+      Message.success(`线索「${record.name}」已成功释放回公海池`);
+    } catch (err) {
+      Message.error(err instanceof Error ? err.message : '退回公海失败，请重试');
+    }
+  };
+
+  const filtersActive = Boolean(keyword || sourceFilter || entityFilter);
+  const resetFilters = () => {
+    setKeyword('');
+    setSourceFilter('');
+    setEntityFilter('');
+  };
+
+  const highTrashCount = trashPool.filter((l) => l.trashCount >= 3).length;
+  const recoverableCount = trashPool.filter((l) => l.trashCount < 3).length;
 
   // 复合列（与 AllLeads 一致）
   const columns = [
@@ -107,35 +138,88 @@ export function TrashLeads() {
     },
     {
       title: '操作',
-      width: 100,
+      width: 120,
       fixed: 'right' as const,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={0}>
           <Tooltip content="查看详情"><Button type="text" icon={<IconEye />} size="small" onClick={() => navigate(`/leads/${r.key}`, { state: { from: 'trash' } })} /></Tooltip>
-          <Tooltip content="重新认领"><Button type="text" icon={<IconUserAdd />} size="small" onClick={() => Message.success('认领成功')} /></Tooltip>
-          <Tooltip content="退回公海"><Button type="text" icon={<IconReply />} size="small" onClick={() => Message.success('已退回公海')} /></Tooltip>
+          <Tooltip content="重新认领"><Button type="text" icon={<IconUserAdd />} size="small" onClick={() => handleReclaim(r)} /></Tooltip>
+          <Tooltip content="退回公海"><Button type="text" icon={<IconReply />} size="small" onClick={() => handleReturnPublic(r)} /></Tooltip>
         </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      <Card>
-        <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
+    <PageShell breadcrumbs={[{ label: '线索管理' }, { label: '垃圾线索池' }]}>
+      <PageHeader
+        title="垃圾线索池"
+        description="收纳退回、无效或报废线索；支持质检核查、挽回重新认领或释放回公海池。"
+      />
+
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'trashTotal',
+            label: '垃圾池沉淀总数',
+            value: `${trashPool.length} 条`,
+            detail: filtersActive ? `当前筛选 ${filteredLeads.length} 条` : '历史标记垃圾',
+          },
+          {
+            key: 'recoverable',
+            label: '可激活挽回 (<3次)',
+            value: `${recoverableCount} 条`,
+            detail: '具备挽回激活潜质',
+            tone: recoverableCount > 0 ? 'success' : undefined,
+          },
+          {
+            key: 'highTrash',
+            label: '达质检退回上限 (≥3次)',
+            value: `${highTrashCount} 条`,
+            detail: highTrashCount > 0 ? '退回频次过高沉淀' : '无严重反复退回',
+            tone: highTrashCount > 0 ? 'error' : undefined,
+          },
+          {
+            key: 'displayed',
+            label: '当前命中视图',
+            value: `${filteredLeads.length} 条`,
+            detail: filtersActive ? '已应用条件过滤' : '实时可处理状态',
+          },
+        ]}
+      />
+
+      <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 16px',
+            background: 'var(--color-fill-1)',
+            border: '1px solid var(--color-border-2)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            alignItems: 'center',
+          }}
+        >
           <Input style={{ width: 280 }} placeholder="搜索线索名称、联系人" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="线索来源" style={{ width: 130 }} allowClear value={sourceFilter} onChange={setSourceFilter}>
+          <Select placeholder="全部线索来源" style={{ width: 140 }} allowClear value={sourceFilter || undefined} onChange={setSourceFilter}>
             {LEAD_SOURCE_LIST.map((s) => <Select.Option key={s} value={s}>{LEAD_SOURCE_LABEL[s]}</Select.Option>)}
           </Select>
-          <Select placeholder="对接主体" style={{ width: 130 }} allowClear value={entityFilter} onChange={setEntityFilter}>
+          <Select placeholder="全部对接主体" style={{ width: 140 }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
             {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
           </Select>
+          {filtersActive && (
+            <Button type="text" icon={<IconRefresh />} onClick={resetFilters} style={{ color: 'var(--color-text-3)' }}>
+              重置
+            </Button>
+          )}
         </div>
 
         <Table columns={columns} data={filteredLeads} scroll={{ x: 1100 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
       </Card>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />
-    </div>
+    </PageShell>
   );
 }

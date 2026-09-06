@@ -1,0 +1,247 @@
+/* ─── 选择报价工作台流转模式弹窗 ─── */
+
+.select-quote-mode-modal .arco-modal {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.select-quote-mode-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.select-quote-mode-modal__header-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-primary-light-1);
+  color: rgb(var(--primary-6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.select-quote-mode-modal__header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  line-height: 1.3;
+}
+
+.select-quote-mode-modal__header-desc {
+  font-size: 12px;
+  color: var(--color-text-3);
+  margin-top: 2px;
+}
+
+/* 上下文概览卡片 */
+.select-quote-mode-modal__context-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--color-fill-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.select-quote-mode-modal__context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.select-quote-mode-modal__context-item .label {
+  font-size: 11px;
+  color: var(--color-text-4);
+  font-weight: 500;
+}
+
+.select-quote-mode-modal__context-item .value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 双卡片容器 */
+.select-quote-mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 680px) {
+  .select-quote-mode-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 模式选择卡片 */
+.select-quote-mode-card {
+  border: 1.5px solid var(--color-border-2);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--color-bg-2);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.select-quote-mode-card:hover {
+  border-color: var(--color-primary-light-3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.select-quote-mode-card.is-selected.is-online {
+  border-color: rgb(var(--primary-6));
+  background: var(--color-primary-light-1);
+  box-shadow: 0 4px 16px rgba(22, 93, 255, 0.12);
+}
+
+.select-quote-mode-card.is-selected.is-file {
+  border-color: #722ed1;
+  background: #f9f0ff;
+  box-shadow: 0 4px 16px rgba(114, 46, 209, 0.12);
+}
+
+.select-quote-mode-card__badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.select-quote-mode-card__icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-quote-mode-card__icon-box.icon-box--online {
+  background: linear-gradient(135deg, #165dff 0%, #0e42d2 100%);
+  box-shadow: 0 2px 8px rgba(22, 93, 255, 0.25);
+}
+
+.select-quote-mode-card__icon-box.icon-box--file {
+  background: linear-gradient(135deg, #722ed1 0%, #531dab 100%);
+  box-shadow: 0 2px 8px rgba(114, 46, 209, 0.25);
+}
+
+.select-quote-mode-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-1);
+  margin-bottom: 4px;
+}
+
+.select-quote-mode-card__desc {
+  font-size: 12px;
+  color: var(--color-text-3);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  min-height: 36px;
+}
+
+.select-quote-mode-card__features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.select-quote-mode-card__feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-2);
+  line-height: 18px;
+}
+
+.select-quote-mode-card__feature-item .check-icon {
+  font-size: 14px;
+  color: rgb(var(--primary-6));
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.select-quote-mode-card.is-file .select-quote-mode-card__feature-item .check-icon {
+  color: #722ed1;
+}
+
+.select-quote-mode-card__footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border-2);
+  font-size: 11px;
+  color: var(--color-text-3);
+  line-height: 16px;
+}
+
+.select-quote-mode-card__footer .scene-label {
+  font-weight: 600;
+  color: var(--color-text-2);
+}
+
+.select-quote-mode-card__check-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 18px;
+  color: rgb(var(--primary-6));
+}
+
+.select-quote-mode-card__check-indicator.is-file {
+  color: #722ed1;
+}
+
+/* 方案名称微调输入栏 */
+.select-quote-mode-modal__form-box {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--color-fill-1);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.select-quote-mode-modal__form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-2);
+  white-space: nowrap;
+}
+
+/* 底部操作区 */
+.select-quote-mode-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.select-quote-mode-modal__footer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-3);
+}

@@ -4,18 +4,61 @@
   text-align: center;
 }
 
+/* 报价工作台最右侧侧边栏：紧凑高密度布局 */
+.quotation-workbench__aside {
+  flex: 0 0 260px !important;
+  width: 260px !important;
+  max-width: 260px !important;
+  min-width: 240px !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 1024px) {
+  .quotation-workbench__aside {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+.quotation-workbench__aside .arco-card {
+  border-radius: 8px;
+}
+
+.quotation-workbench__aside .arco-card-header {
+  height: 38px;
+  padding: 0 12px;
+}
+
+.quotation-workbench__aside .arco-card-header-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quotation-workbench__aside .arco-card-body {
+  padding: 10px 12px !important;
+}
+
 .quotation-workbench__dynamic-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .quotation-workbench__dynamic-item {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.quotation-workbench__dynamic-item > *:first-child {
+  font-size: 12px;
+  color: var(--color-text-3);
+  flex-shrink: 0;
 }
 
 .quotation-workbench__dynamic-item > *:last-child {
@@ -24,6 +67,7 @@
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 12px;
 }
 
 .quotation-workbench__related-actions {
@@ -64,21 +108,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
+  gap: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border-2);
+  font-size: 12px;
 }
 
 .quotation-approval-flow {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 16px;
+  gap: 8px;
+  padding-top: 10px;
 }
 
 .quotation-approval-node {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   gap: 8px;
   align-items: start;
 }
@@ -87,12 +132,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--color-fill-2);
   color: var(--color-text-3);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -107,29 +152,37 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+}
+
+.quotation-approval-node__head .arco-typography {
+  font-size: 12px;
 }
 
 .quotation-approval-node__comment {
   color: var(--color-text-2);
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 11px;
+  line-height: 16px;
   overflow-wrap: anywhere;
+  background: var(--color-fill-1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
 }
 
 .quotation-approval-node__meta {
   color: var(--color-text-3);
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 11px;
+  line-height: 16px;
 }
 
 .quotation-approval-actions,
 .quotation-stamp-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
-  padding-top: 16px;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--color-border-2);
 }
 
@@ -143,7 +196,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  font-size: 12px;
 }
 
 .quotation-workbench--embedded .hubx-page-shell__content {

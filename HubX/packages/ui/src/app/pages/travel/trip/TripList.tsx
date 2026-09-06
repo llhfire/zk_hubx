@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Card,
@@ -12,42 +12,86 @@ import {
   Space,
   Typography,
   Tooltip,
+  DatePicker,
+  Radio,
+  Checkbox,
+  Badge,
 } from '@arco-design/web-react';
 import {
   IconSearch,
   IconPlus,
-  IconLocation,
-  IconCalendar,
+  IconRefresh,
+  IconCheck,
+  IconClose,
+  IconThunderbolt,
 } from '@arco-design/web-react/icon';
-import { CheckCircle, Eye, PaperPlaneTilt, Play, Stop, Trash } from '@phosphor-icons/react';
-import type { Trip, TripStatus } from '../types';
-import { getTripList, submitTrip, approveTrip, startTrip, endTrip, deleteTrip } from '../travel-api';
+import {
+  CheckCircle,
+  Eye,
+  PaperPlaneTilt,
+  Play,
+  Stop,
+  Trash,
+  Airplane,
+  Train,
+  Car,
+  Buildings,
+  Briefcase,
+  ArrowRight,
+  CalendarBlank,
+  CreditCard,
+  User,
+} from '@phosphor-icons/react';
+import type { Trip, TripStatus, TransportMode } from '../types';
+import {
+  getTripList,
+  submitTrip,
+  approveTrip,
+  startTrip,
+  endTrip,
+  deleteTrip,
+} from '../travel-api';
 import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './tripList.css';
 
 const { Text } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const statusConfig: Record<TripStatus, { color: string; text: string }> = {
   draft: { color: 'gray', text: '草稿' },
   pending: { color: 'orange', text: '待审批' },
   approved: { color: 'green', text: '已通过' },
-  in_progress: { color: 'blue', text: '进行中' },
+  in_progress: { color: 'arcoblue', text: '进行中' },
   to_reimburse: { color: 'purple', text: '待报销' },
   closed: { color: 'gray', text: '已关闭' },
   rejected: { color: 'red', text: '已拒绝' },
   cancelled: { color: 'gray', text: '已取消' },
 };
 
+// 快捷审批常用语
+const APPROVAL_PRESETS = [
+  '行程合规，准予出差',
+  '预算在合理标准内，同意申请',
+  '材料齐全，准予出差并支持预支备用金',
+  '行程计划不合理，请调整后重新提交',
+  '请补充行前审批依据与客户邀请函',
+];
+
 export function TripList() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [tripList, setTripList] = useState<Trip[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+
+  // 筛选表单
   const [searchForm, setSearchForm] = useState({
     keyword: '',
     status: '' as TripStatus | '',
     startDate: '',
     endDate: '',
+    department: '',
+    onlyNeedLoan: false,
   });
 
   // 审批弹窗
@@ -57,19 +101,14 @@ export function TripList() {
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   // 加载数据
-  const loadTrips = async (filters = searchForm) => {
+  const loadTrips = async () => {
     setLoading(true);
     try {
-      const result = await getTripList({
-        keyword: filters.keyword || undefined,
-        status: (filters.status as TripStatus) || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      });
-      setTripList(result.list);
-      setTotal(result.total);
-    } catch (error) {
-      Message.error('加载数据失败');
+      // 获取全量列表以供统计与筛选
+      const result = await getTripList();
+      setAllTrips(result.list);
+    } catch {
+      Message.error('加载出差申请数据失败');
     } finally {
       setLoading(false);
     }
@@ -79,16 +118,84 @@ export function TripList() {
     loadTrips();
   }, []);
 
-  // 搜索
-  const handleSearch = () => {
-    loadTrips();
+  // 客户端实时派生过滤列表
+  const filteredTrips = useMemo(() => {
+    return allTrips.filter((item) => {
+      // 关键字搜索：单号、申请人、目的地、事由、客户名、项目名
+      if (searchForm.keyword.trim()) {
+        const kw = searchForm.keyword.toLowerCase();
+        const matchNo = item.tripNo.toLowerCase().includes(kw);
+        const matchName = item.applicantName.toLowerCase().includes(kw);
+        const matchDest = item.destinations.some((d) => d.toLowerCase().includes(kw));
+        const matchPurpose = item.purpose?.toLowerCase().includes(kw);
+        const matchCust = item.customerName?.toLowerCase().includes(kw);
+        const matchProj = item.projectName?.toLowerCase().includes(kw);
+        if (!matchNo && !matchName && !matchDest && !matchPurpose && !matchCust && !matchProj) {
+          return false;
+        }
+      }
+
+      // 状态筛选
+      if (searchForm.status && item.status !== searchForm.status) {
+        return false;
+      }
+
+      // 部门筛选
+      if (searchForm.department && item.department !== searchForm.department) {
+        return false;
+      }
+
+      // 日期范围
+      if (searchForm.startDate && item.startDate < searchForm.startDate) {
+        return false;
+      }
+      if (searchForm.endDate && item.endDate > searchForm.endDate) {
+        return false;
+      }
+
+      // 仅看有借款
+      if (searchForm.onlyNeedLoan && !item.needLoan) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [allTrips, searchForm]);
+
+  // 各状态计数统计
+  const total = allTrips.length;
+  const pendingCount = allTrips.filter((t) => t.status === 'pending').length;
+  const approvedCount = allTrips.filter((t) => t.status === 'approved').length;
+  const activeCount = allTrips.filter((t) => t.status === 'in_progress').length;
+  const reimburseCount = allTrips.filter((t) => t.status === 'to_reimburse').length;
+  const draftCount = allTrips.filter((t) => t.status === 'draft').length;
+  const loanCount = allTrips.filter((t) => t.needLoan).length;
+  const estimatedAmount = filteredTrips.reduce((sum, item) => sum + (item.estimatedTotalCost || 0), 0);
+
+  const filtersActive = Boolean(
+    searchForm.keyword ||
+    searchForm.status ||
+    searchForm.startDate ||
+    searchForm.endDate ||
+    searchForm.department ||
+    searchForm.onlyNeedLoan
+  );
+
+  // 重置筛选
+  const handleReset = () => {
+    setSearchForm({
+      keyword: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+      department: '',
+      onlyNeedLoan: false,
+    });
   };
 
-  // 重置
-  const handleReset = () => {
-    const emptyFilters = { keyword: '', status: '' as TripStatus | '', startDate: '', endDate: '' };
-    setSearchForm(emptyFilters);
-    loadTrips(emptyFilters);
+  // 通过指标卡或状态条快捷筛选状态
+  const handleFilterByStatus = (status: TripStatus | '') => {
+    setSearchForm((prev) => ({ ...prev, status }));
   };
 
   // 新建出差申请
@@ -101,13 +208,13 @@ export function TripList() {
     navigate(`/travel/trips/${trip.id}`);
   };
 
-  // 提交申请
+  // 提交草稿
   const handleSubmit = async (trip: Trip) => {
     try {
       await submitTrip(trip.id);
-      Message.success('出差申请已提交');
+      Message.success(`出差单 ${trip.tripNo} 已提交审批`);
       loadTrips();
-    } catch (error) {
+    } catch {
       Message.error('提交失败');
     }
   };
@@ -120,12 +227,12 @@ export function TripList() {
     }
     try {
       await approveTrip(selectedTrip!.id, approvalAction, approvalComment);
-      Message.success(`审批${approvalAction === 'approve' ? '通过' : '不通过'}成功`);
+      Message.success(`出差单 ${selectedTrip?.tripNo} 审批${approvalAction === 'approve' ? '通过' : '已驳回'}`);
       setApprovalVisible(false);
       setApprovalComment('');
       loadTrips();
-    } catch (error) {
-      Message.error('审批失败');
+    } catch {
+      Message.error('审批操作失败');
     }
   };
 
@@ -133,9 +240,9 @@ export function TripList() {
   const handleStartTrip = async (trip: Trip) => {
     try {
       await startTrip(trip.id);
-      Message.success('已标记为进行中');
+      Message.success(`出差单 ${trip.tripNo} 已标记为「进行中」`);
       loadTrips();
-    } catch (error) {
+    } catch {
       Message.error('操作失败');
     }
   };
@@ -144,298 +251,561 @@ export function TripList() {
   const handleEndTrip = async (trip: Trip) => {
     try {
       await endTrip(trip.id);
-      Message.success('已标记为待报销');
+      Message.success(`出差单 ${trip.tripNo} 已标记为「待报销」`);
       loadTrips();
-    } catch (error) {
+    } catch {
       Message.error('操作失败');
     }
   };
 
-  // 删除
+  // 删除草稿
   const handleDelete = async (trip: Trip) => {
     Modal.confirm({
-      title: '确认删除',
-      content: `确定要删除出差单 ${trip.tripNo} 吗？`,
+      title: '确认删除出差单',
+      content: `确定要删除草稿出差单「${trip.tripNo}」吗？此操作不可恢复。`,
       onOk: async () => {
         try {
           await deleteTrip(trip.id);
           Message.success('删除成功');
           loadTrips();
-        } catch (error) {
+        } catch {
           Message.error('删除失败');
         }
       },
     });
   };
 
-  // 渲染操作按钮
-  const renderActions = (_: unknown, record: Trip) => {
-    const actions = [];
-
-    // 查看详情（始终显示）
-    actions.push(
-      <Tooltip key="view" content="查看详情">
-        <Button className="hubx-icon-action" type="text" size="small" aria-label={`查看出差单${record.tripNo}`} icon={<Eye size={18} />} onClick={() => handleViewDetail(record)} />
-      </Tooltip>
-    );
-
-    // 草稿状态
-    if (record.status === 'draft') {
-      actions.push(
-        <Tooltip key="submit" content="提交">
-          <Button className="hubx-icon-action" type="text" size="small" aria-label={`提交出差单${record.tripNo}`} icon={<PaperPlaneTilt size={18} />} onClick={() => handleSubmit(record)} />
-        </Tooltip>
-      );
-      actions.push(
-        <Tooltip key="delete" content="删除">
-          <Button className="hubx-icon-action" type="text" size="small" status="danger" aria-label={`删除出差单${record.tripNo}`} icon={<Trash size={18} />} onClick={() => handleDelete(record)} />
-        </Tooltip>
-      );
+  // 获取交通方式对应图标
+  const renderTransportIcon = (mode?: TransportMode) => {
+    switch (mode) {
+      case 'airplane':
+        return <Airplane size={14} weight="fill" style={{ color: '#165dff' }} />;
+      case 'high_speed_rail':
+      case 'bullet_train':
+        return <Train size={14} weight="fill" style={{ color: '#00b42a' }} />;
+      case 'self_drive':
+        return <Car size={14} weight="fill" style={{ color: '#ff7d00' }} />;
+      default:
+        return <Train size={14} weight="fill" style={{ color: '#86909c' }} />;
     }
-
-    // 待审批状态（管理员/审批人视角）
-    if (record.status === 'pending') {
-      actions.push(
-        <Tooltip key="approve" content="审批">
-          <Button
-            type="text"
-            size="small"
-            className="hubx-icon-action"
-            aria-label={`审批出差单${record.tripNo}`}
-            icon={<CheckCircle size={18} />}
-            onClick={() => {
-              setSelectedTrip(record);
-              setApprovalAction('approve');
-              setApprovalVisible(true);
-            }}
-          />
-        </Tooltip>
-      );
-    }
-
-    // 已通过状态
-    if (record.status === 'approved') {
-      actions.push(
-        <Tooltip key="start" content="开始出差">
-          <Button className="hubx-icon-action" type="text" size="small" aria-label={`开始出差单${record.tripNo}`} icon={<Play size={18} />} onClick={() => handleStartTrip(record)} />
-        </Tooltip>
-      );
-    }
-
-    // 进行中状态
-    if (record.status === 'in_progress') {
-      actions.push(
-        <Tooltip key="end" content="结束出差">
-          <Button className="hubx-icon-action" type="text" size="small" aria-label={`结束出差单${record.tripNo}`} icon={<Stop size={18} />} onClick={() => handleEndTrip(record)} />
-        </Tooltip>
-      );
-    }
-
-    return <Space>{actions}</Space>;
   };
 
+  // 渲染操作按钮
+  const renderActions = (_: unknown, record: Trip) => {
+    return (
+      <Space size={4}>
+        {/* 查看详情（始终显示） */}
+        <Tooltip content="查看详情">
+          <Button
+            className="hubx-icon-action"
+            type="text"
+            size="small"
+            aria-label={`查看出差单${record.tripNo}`}
+            icon={<Eye size={17} />}
+            onClick={() => handleViewDetail(record)}
+          />
+        </Tooltip>
+
+        {/* 草稿状态 */}
+        {record.status === 'draft' && (
+          <>
+            <Tooltip content="提交审批">
+              <Button
+                className="hubx-icon-action"
+                type="text"
+                size="small"
+                status="success"
+                aria-label={`提交出差单${record.tripNo}`}
+                icon={<PaperPlaneTilt size={17} />}
+                onClick={() => handleSubmit(record)}
+              />
+            </Tooltip>
+            <Tooltip content="删除草稿">
+              <Button
+                className="hubx-icon-action"
+                type="text"
+                size="small"
+                status="danger"
+                aria-label={`删除出差单${record.tripNo}`}
+                icon={<Trash size={17} />}
+                onClick={() => handleDelete(record)}
+              />
+            </Tooltip>
+          </>
+        )}
+
+        {/* 待审批状态 */}
+        {record.status === 'pending' && (
+          <Tooltip content="审批处理">
+            <Button
+              type="text"
+              size="small"
+              className="hubx-icon-action"
+              status="warning"
+              aria-label={`审批出差单${record.tripNo}`}
+              icon={<CheckCircle size={17} />}
+              onClick={() => {
+                setSelectedTrip(record);
+                setApprovalAction('approve');
+                setApprovalComment('行程合规，准予出差');
+                setApprovalVisible(true);
+              }}
+            />
+          </Tooltip>
+        )}
+
+        {/* 已通过状态 */}
+        {record.status === 'approved' && (
+          <Tooltip content="开始出差">
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              status="success"
+              aria-label={`开始出差单${record.tripNo}`}
+              icon={<Play size={17} />}
+              onClick={() => handleStartTrip(record)}
+            />
+          </Tooltip>
+        )}
+
+        {/* 进行中状态 */}
+        {record.status === 'in_progress' && (
+          <Tooltip content="结束出差（转待报销）">
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              aria-label={`结束出差单${record.tripNo}`}
+              icon={<Stop size={17} />}
+              onClick={() => handleEndTrip(record)}
+            />
+          </Tooltip>
+        )}
+      </Space>
+    );
+  };
+
+  // 7 大高信息密度黄金列
   const columns = [
     {
-      title: '出差单号',
+      title: '出差单与事由',
       dataIndex: 'tripNo',
-      width: 150,
-      render: (value: string) => <Text style={{ fontWeight: 500 }}>{value}</Text>,
+      width: 230,
+      fixed: 'left' as const,
+      render: (tripNo: string, record: Trip) => (
+        <div className="trip-cell-no-wrap">
+          <span
+            className="trip-cell-link"
+            onClick={() => handleViewDetail(record)}
+            title="点击查看出差全景详情"
+          >
+            {tripNo}
+          </span>
+          <div className="trip-cell-purpose" title={record.purpose}>
+            {record.purpose || '无出差事由'}
+          </div>
+        </div>
+      ),
     },
     {
-      title: '申请人',
+      title: '申请人 / 归属',
       dataIndex: 'applicantName',
-      width: 100,
+      width: 130,
+      render: (name: string, record: Trip) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--color-text-1)' }}>
+            {name}
+          </div>
+          <Tag size="small" color="arcoblue" style={{ padding: '0 6px', fontSize: 11, width: 'fit-content' }}>
+            {record.department || '未分配'}
+          </Tag>
+        </div>
+      ),
     },
     {
-      title: '部门',
-      dataIndex: 'department',
-      width: 100,
-    },
-    {
-      title: '目的地',
+      title: '行程轨迹与周期',
       dataIndex: 'destinations',
-      width: 150,
-      render: (value: string[]) => (
-        <Space size={4}>
-          <IconLocation style={{ color: 'var(--color-text-3)' }} />
-          <span>{value?.join('、')}</span>
-        </Space>
-      ),
+      width: 210,
+      render: (destinations: string[], record: Trip) => {
+        const dest = destinations?.join('、') || '未定目的地';
+        const primaryTransport = record.transportModes?.[0] || 'high_speed_rail';
+        return (
+          <div className="trip-cell-journey">
+            <div className="trip-cell-journey__route">
+              <span>北京</span>
+              <ArrowRight size={13} weight="bold" style={{ color: 'var(--color-text-3)' }} />
+              <span style={{ color: 'rgb(var(--primary-6))' }}>{dest}</span>
+              <span style={{ marginLeft: 4 }}>{renderTransportIcon(primaryTransport)}</span>
+            </div>
+            <div className="trip-cell-journey__date">
+              <CalendarBlank size={13} style={{ color: 'var(--color-text-3)' }} />
+              <span>
+                {record.startDate?.slice(5)} ~ {record.endDate?.slice(5)} · {record.days}天
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     {
-      title: '出发日期',
-      dataIndex: 'startDate',
-      width: 120,
-      render: (value: string) => (
-        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
-          <IconCalendar style={{ color: 'var(--color-text-3)' }} />
-          <span>{value}</span>
-        </Space>
-      ),
-    },
-    {
-      title: '返回日期',
-      dataIndex: 'endDate',
-      width: 120,
-    },
-    {
-      title: '天数',
-      dataIndex: 'days',
-      width: 80,
-      render: (value: number) => `${value}天`,
-    },
-    {
-      title: '关联客户',
+      title: '关联业务载体',
       dataIndex: 'customerName',
-      width: 150,
-      render: (value: string) => value || '-',
+      width: 200,
+      render: (_: unknown, record: Trip) => {
+        const hasCustomer = Boolean(record.customerName);
+        const hasProject = Boolean(record.projectName);
+        if (!hasCustomer && !hasProject) {
+          return <span style={{ color: 'var(--color-text-4)' }}>-</span>;
+        }
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {hasCustomer && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 12,
+                  color: 'var(--color-text-1)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title={record.customerName}
+              >
+                <Buildings size={14} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+                <span>{record.customerName}</span>
+              </div>
+            )}
+            {hasProject && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 12,
+                  color: 'var(--color-text-3)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title={record.projectName}
+              >
+                <Briefcase size={14} style={{ color: 'var(--color-text-3)', flexShrink: 0 }} />
+                <span>{record.projectName}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
-      title: '关联项目',
-      dataIndex: 'projectName',
-      width: 150,
-      render: (value: string) => value || '-',
-    },
-    {
-      title: '预计费用',
+      title: '预计费用 / 借款',
       dataIndex: 'estimatedTotalCost',
-      width: 120,
-      render: (value: number) => (
-        <span style={{ whiteSpace: 'nowrap' }}>¥{value?.toLocaleString()}</span>
+      width: 160,
+      render: (cost: number, record: Trip) => (
+        <div className="trip-cell-cost">
+          <div className="trip-cell-cost__total">
+            ¥{(cost || 0).toLocaleString()}
+          </div>
+          {record.needLoan ? (
+            <Tag size="small" color="orange" style={{ padding: '0 6px', width: 'fit-content' }}>
+              借款 ¥{(record.loanAmount || 0).toLocaleString()}
+            </Tag>
+          ) : (
+            <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>无备用借款</span>
+          )}
+        </div>
       ),
     },
     {
-      title: '状态',
+      title: '当前状态',
       dataIndex: 'status',
-      width: 100,
-      render: (value: TripStatus) => (
-        <Tag color={statusConfig[value].color}>
-          {statusConfig[value].text}
-        </Tag>
-      ),
+      width: 110,
+      render: (status: TripStatus) => {
+        const conf = statusConfig[status] || { color: 'gray', text: status };
+        return (
+          <Tag color={conf.color} style={{ display: 'inline-flex', alignItems: 'center' }}>
+            {status === 'in_progress' && <span className="trip-status-pulse" />}
+            {conf.text}
+          </Tag>
+        );
+      },
     },
     {
       title: '操作',
-      width: 112,
+      width: 130,
       fixed: 'right' as const,
       render: renderActions,
     },
   ];
 
-  const filtersActive = Boolean(searchForm.keyword || searchForm.status || searchForm.startDate || searchForm.endDate);
-  const pendingCount = tripList.filter((item) => item.status === 'pending').length;
-  const approvedCount = tripList.filter((item) => item.status === 'approved').length;
-  const activeCount = tripList.filter((item) => item.status === 'in_progress').length;
-  const reimburseCount = tripList.filter((item) => item.status === 'to_reimburse').length;
-  const estimatedAmount = tripList.reduce((sum, item) => sum + (item.estimatedTotalCost || 0), 0);
-
   return (
-    <PageShell>
+    <PageShell className="trip-list-page">
       <PageHeader
         title="出差申请"
-        description="集中查询出差计划、审批进度、执行状态与预计费用。"
-        actions={<Button type="primary" icon={<IconPlus />} onClick={handleCreate}>新建出差申请</Button>}
+        description="集中统筹出差计划、审批流转、行程跟踪与差旅预借备用金结算。"
+        actions={
+          <Space>
+            <Button icon={<IconRefresh />} onClick={loadTrips}>
+              刷新
+            </Button>
+            <Button type="primary" icon={<IconPlus />} onClick={handleCreate}>
+              新建出差申请
+            </Button>
+          </Space>
+        }
       />
 
-      <ProcessMetricGrid items={[
-        { key: 'total', label: '出差申请', value: `${total} 单`, detail: filtersActive ? '当前查询结果' : '全部出差单' },
-        { key: 'pending', label: '待审批', value: `${pendingCount} 单`, detail: '等待审批人处理', tone: pendingCount > 0 ? 'warning' : 'success' },
-        { key: 'active', label: '执行中', value: `${activeCount} 单`, detail: `待出发 ${approvedCount} 单`, tone: activeCount > 0 ? 'success' : 'neutral' },
-        { key: 'amount', label: '预计费用', value: `¥${estimatedAmount.toLocaleString()}`, detail: `待报销 ${reimburseCount} 单` },
-      ]} />
+      {/* 顶部指标卡：支持点击直接筛选状态 */}
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'all',
+            label: '出差申请总数',
+            value: `${total} 单`,
+            detail: searchForm.status === '' ? '✓ 正在显示全部' : '点击查看全部',
+            onClick: () => handleFilterByStatus(''),
+            tone: searchForm.status === '' ? 'neutral' : undefined,
+          },
+          {
+            key: 'pending',
+            label: '待我审批',
+            value: `${pendingCount} 单`,
+            detail: searchForm.status === 'pending' ? '✓ 正在筛选待审批' : '点击快速待审批',
+            tone: pendingCount > 0 ? 'warning' : 'neutral',
+            onClick: () => handleFilterByStatus('pending'),
+          },
+          {
+            key: 'active',
+            label: '执行中 / 待出发',
+            value: `${activeCount} 单`,
+            detail: `待出发 ${approvedCount} 单`,
+            tone: activeCount > 0 ? 'success' : 'neutral',
+            onClick: () => handleFilterByStatus('in_progress'),
+          },
+          {
+            key: 'to_reimburse',
+            label: '待报销单据',
+            value: `${reimburseCount} 单`,
+            detail: searchForm.status === 'to_reimburse' ? '✓ 正在筛选待报销' : '点击待报销单',
+            tone: reimburseCount > 0 ? 'neutral' : 'neutral',
+            onClick: () => handleFilterByStatus('to_reimburse'),
+          },
+          {
+            key: 'amount',
+            label: '预计费用总额',
+            value: `¥${estimatedAmount.toLocaleString()}`,
+            detail: `涉及借款 ${loanCount} 单`,
+          },
+        ]}
+      />
 
-      {/* 搜索栏 */}
-      <Card>
-        <FilterBar actions={filtersActive ? <Button type="text" onClick={handleReset}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {total} 条</span>}>
-          <Input
-            style={{ width: 200 }}
-            placeholder="搜索出差单号/申请人/目的地"
-            value={searchForm.keyword}
-            onChange={(value) => setSearchForm({ ...searchForm, keyword: value })}
-          />
-          <Select
-            style={{ width: 150 }}
-            placeholder="选择状态"
-            value={searchForm.status || undefined}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value as TripStatus | '' })}
-            allowClear
-          >
-            <Option value="draft">草稿</Option>
-            <Option value="pending">待审批</Option>
-            <Option value="approved">已通过</Option>
-            <Option value="in_progress">进行中</Option>
-            <Option value="to_reimburse">待报销</Option>
-            <Option value="closed">已关闭</Option>
-            <Option value="rejected">已拒绝</Option>
-          </Select>
-          <Input
-            type="date"
-            style={{ width: 140 }}
-            value={searchForm.startDate}
-            onChange={(value) => setSearchForm({ ...searchForm, startDate: value })}
-          />
-          <Input
-            type="date"
-            style={{ width: 140 }}
-            value={searchForm.endDate}
-            onChange={(value) => setSearchForm({ ...searchForm, endDate: value })}
-          />
-          <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>
-            搜索
-          </Button>
-        </FilterBar>
+      {/* 现代化搜索与快速状态切换卡 */}
+      <Card className="trip-list-filter-card">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* 状态快捷分段胶囊 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <Radio.Group
+              type="button"
+              value={searchForm.status}
+              onChange={(val) => handleFilterByStatus(val as TripStatus | '')}
+            >
+              <Radio value="">全部 ({total})</Radio>
+              <Radio value="pending">
+                待审批 {pendingCount > 0 && <Badge count={pendingCount} style={{ marginLeft: 4 }} />}
+              </Radio>
+              <Radio value="approved">已通过 ({approvedCount})</Radio>
+              <Radio value="in_progress">进行中 ({activeCount})</Radio>
+              <Radio value="to_reimburse">待报销 ({reimburseCount})</Radio>
+              <Radio value="draft">草稿 ({draftCount})</Radio>
+            </Radio.Group>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {filtersActive && (
+                <Button type="text" status="warning" onClick={handleReset}>
+                  重置筛选条件
+                </Button>
+              )}
+              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+                找到 <strong>{filteredTrips.length}</strong> 条符合条件的单据
+              </span>
+            </div>
+          </div>
+
+          {/* 细粒度筛选字段 */}
+          <FilterBar>
+            <Input
+              style={{ width: 220 }}
+              placeholder="搜索单号 / 申请人 / 目的地 / 事由"
+              value={searchForm.keyword}
+              allowClear
+              prefix={<IconSearch />}
+              onChange={(val) => setSearchForm((prev) => ({ ...prev, keyword: val }))}
+            />
+
+            <Select
+              style={{ width: 140 }}
+              placeholder="所属部门"
+              allowClear
+              value={searchForm.department || undefined}
+              onChange={(val) => setSearchForm((prev) => ({ ...prev, department: val || '' }))}
+            >
+              <Option value="销售部">销售部</Option>
+              <Option value="技术部">技术部</Option>
+              <Option value="市场部">市场部</Option>
+              <Option value="行政部">行政部</Option>
+              <Option value="财务部">财务部</Option>
+              <Option value="产品部">产品部</Option>
+            </Select>
+
+            <RangePicker
+              style={{ width: 240 }}
+              value={[searchForm.startDate, searchForm.endDate]}
+              onChange={(_, dateStrings) => {
+                setSearchForm((prev) => ({
+                  ...prev,
+                  startDate: dateStrings[0] || '',
+                  endDate: dateStrings[1] || '',
+                }));
+              }}
+            />
+
+            <Checkbox
+              checked={searchForm.onlyNeedLoan}
+              onChange={(checked) => setSearchForm((prev) => ({ ...prev, onlyNeedLoan: checked }))}
+            >
+              仅看有借款
+            </Checkbox>
+          </FilterBar>
+        </div>
       </Card>
 
-      {/* 列表 */}
-      <Card title="出差申请列表">
+      {/* 列表主体卡片 */}
+      <Card
+        className="trip-list-table-card"
+        title="出差申请明细台账"
+        extra={
+          selectedRowKeys.length > 0 && (
+            <Space>
+              <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>
+                已勾选 {selectedRowKeys.length} 项
+              </span>
+              <Button size="small" onClick={() => setSelectedRowKeys([])}>
+                取消勾选
+              </Button>
+            </Space>
+          )
+        }
+      >
         <Table
           columns={columns}
-          data={tripList}
+          data={filteredTrips}
           loading={loading}
           rowKey="id"
-          scroll={{ x: 1412 }}
+          scroll={{ x: 1100 }}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys as string[]),
+          }}
           pagination={{
-            total,
+            total: filteredTrips.length,
             pageSize: 10,
             showTotal: true,
+            sizeCanChange: true,
           }}
         />
       </Card>
 
-      {/* 审批弹窗 */}
+      {/* 强化版审批弹窗 */}
       <Modal
-        title={approvalAction === 'approve' ? '审批通过' : '审批不通过'}
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 600 }}>
+              {approvalAction === 'approve' ? '审批通过出差申请' : '驳回出差申请'}
+            </span>
+            {selectedTrip && <Tag size="small">{selectedTrip.tripNo}</Tag>}
+          </div>
+        }
         visible={approvalVisible}
         onOk={handleApprove}
         onCancel={() => {
           setApprovalVisible(false);
           setApprovalComment('');
         }}
-        okText="确认"
+        okText={approvalAction === 'approve' ? '确认通过' : '确认驳回'}
+        okButtonProps={{ status: approvalAction === 'approve' ? 'success' : 'danger' }}
         cancelText="取消"
+        style={{ width: 520 }}
       >
         {selectedTrip && (
-          <div style={{ padding: 12, background: 'var(--color-fill-1)', borderRadius: 4, marginBottom: 16 }}>
-            <div>
-              <Text style={{ fontWeight: 500 }}>{selectedTrip.applicantName}</Text> 的出差申请
+          <div className="trip-approval-preview-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <User size={16} weight="bold" style={{ color: 'rgb(var(--primary-6))' }} />
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{selectedTrip.applicantName}</span>
+                <Tag size="small" color="arcoblue">{selectedTrip.department}</Tag>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgb(var(--primary-6))' }}>
+                ¥{selectedTrip.estimatedTotalCost?.toLocaleString()}
+              </div>
             </div>
-            <div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>
-              目的地：{selectedTrip.destinations.join('、')} | 日期：{selectedTrip.startDate} ~ {selectedTrip.endDate}
+
+            <div className="trip-approval-preview-grid">
+              <div>
+                <span style={{ color: 'var(--color-text-3)' }}>行程路线：</span>
+                北京 ➔ {selectedTrip.destinations.join('、')}
+              </div>
+              <div>
+                <span style={{ color: 'var(--color-text-3)' }}>出差周期：</span>
+                {selectedTrip.startDate} ~ {selectedTrip.endDate} ({selectedTrip.days}天)
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: 'var(--color-text-3)' }}>出差事由：</span>
+                {selectedTrip.purpose || '无'}
+              </div>
+              {selectedTrip.needLoan && (
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: 'var(--color-text-3)' }}>预借备用金：</span>
+                  <Tag color="orange" size="small">
+                    ¥{selectedTrip.loanAmount?.toLocaleString()}（{selectedTrip.loanReason || '差旅备用金'}）
+                  </Tag>
+                </div>
+              )}
             </div>
           </div>
         )}
+
         <div>
-          <div style={{ marginBottom: 8 }}>审批意见</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-1)' }}>
+              审批核决意见 <span style={{ color: '#f53f3f' }}>*</span>
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+              支持点击下方常用短语一键填入
+            </span>
+          </div>
+
           <Input.TextArea
-            placeholder={
-              approvalAction === 'approve'
-                ? '请填写审批意见（如：同意出差申请）'
-                : '请填写不通过的理由（如：出差计划不合理，请重新调整）'
-            }
-            rows={4}
+            placeholder="请填写审批核决意见..."
+            rows={3}
             value={approvalComment}
             onChange={setApprovalComment}
           />
+
+          <div className="trip-approval-quick-comments">
+            <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>快捷评语：</span>
+            {APPROVAL_PRESETS.map((preset) => (
+              <span
+                key={preset}
+                className="trip-approval-quick-pill"
+                onClick={() => setApprovalComment(preset)}
+              >
+                + {preset}
+              </span>
+            ))}
+          </div>
         </div>
       </Modal>
     </PageShell>

@@ -696,12 +696,13 @@ export async function getExpenseAnalysis(): Promise<{
   maxExpense: number;
   expenseByType: { type: string; amount: number }[];
   expenseByCity: { city: string; amount: number }[];
-  transportDistribution: { mode: string; count: number }[];
+  transportDistribution: { mode: string; count: number; tag?: string }[];
   avgAccommodationCost: number;
   hotelVsDormitory: { hotel: number; dormitory: number };
+  dormitorySaving?: number;
   overStandardCount: number;
   overStandardAmount: number;
-  overStandardReasons: { reason: string; count: number }[];
+  overStandardReasons: { reason: string; count: number; percent?: number; amount?: number }[];
 }> {
   await delay();
   return {
@@ -721,19 +722,20 @@ export async function getExpenseAnalysis(): Promise<{
       { city: '广州', amount: 20000 },
     ],
     transportDistribution: [
-      { mode: '高铁', count: 15 },
-      { mode: '动车', count: 8 },
-      { mode: '飞机', count: 10 },
-      { mode: '自驾', count: 3 },
+      { mode: '高铁', count: 15, tag: '绿色低碳' },
+      { mode: '动车', count: 8, tag: '城际互联' },
+      { mode: '飞机', count: 10, tag: '长途快捷' },
+      { mode: '自驾', count: 3, tag: '灵活周边' },
     ],
     avgAccommodationCost: 450,
     hotelVsDormitory: { hotel: 80, dormitory: 20 },
+    dormitorySaving: 28000,
     overStandardCount: 5,
     overStandardAmount: 3500,
     overStandardReasons: [
-      { reason: '协议酒店满房', count: 2 },
-      { reason: '紧急出差无协议酒店', count: 2 },
-      { reason: '客户指定酒店', count: 1 },
+      { reason: '协议酒店满房', count: 2, percent: 40, amount: 1600 },
+      { reason: '紧急出差无协议酒店', count: 2, percent: 40, amount: 1400 },
+      { reason: '客户指定酒店', count: 1, percent: 20, amount: 500 },
     ],
   };
 }

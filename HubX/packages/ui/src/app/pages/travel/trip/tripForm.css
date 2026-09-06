@@ -1,0 +1,318 @@
+/* ========================================================
+   出差申请页（TripForm）70:30 沉浸式现代表单样式
+   ======================================================== */
+
+.trip-form-container {
+  padding-bottom: 72px; /* 留出底部吸底栏高度 */
+}
+
+/* 主表单分段卡片 */
+.trip-form-section {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trip-form-section:hover {
+  border-color: var(--color-border-3);
+}
+
+.trip-form-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-fill-3);
+}
+
+.trip-form-section__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trip-form-section__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(var(--primary-6));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.trip-form-section__title {
+  margin: 0;
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.trip-form-section__subtitle {
+  color: var(--color-text-3);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* 快捷胶囊条 */
+.trip-form-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.trip-form-quick-pill {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-fill-1);
+  color: var(--color-text-2);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.trip-form-quick-pill:hover {
+  border-color: rgb(var(--primary-6));
+  color: rgb(var(--primary-6));
+  background: rgb(var(--primary-1));
+}
+
+.trip-form-quick-pill--active {
+  border-color: rgb(var(--primary-6));
+  color: rgb(var(--primary-6));
+  background: rgb(var(--primary-1));
+  font-weight: 500;
+}
+
+/* 交通方式磁贴网格 */
+.trip-form-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.trip-form-tile {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border-2);
+  background: var(--color-bg-2);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+  user-select: none;
+}
+
+.trip-form-tile:hover {
+  border-color: rgb(var(--primary-4));
+  transform: translateY(-1px);
+}
+
+.trip-form-tile--selected {
+  border-color: rgb(var(--primary-6));
+  background: rgb(var(--primary-1));
+  box-shadow: 0 0 0 1px rgb(var(--primary-6));
+}
+
+.trip-form-tile__icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+  color: var(--color-text-2);
+  transition: color 0.2s ease;
+}
+
+.trip-form-tile--selected .trip-form-tile__icon {
+  color: rgb(var(--primary-6));
+}
+
+.trip-form-tile__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+}
+
+.trip-form-tile__desc {
+  font-size: 11px;
+  color: var(--color-text-3);
+  margin-top: 2px;
+}
+
+.trip-form-tile__check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(var(--primary-6));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+/* 费用预估网格卡 */
+.trip-form-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .trip-form-cost-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trip-form-cost-item {
+  background: var(--color-fill-1);
+  border: 1px solid var(--color-border-1);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.trip-form-cost-item__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--color-text-2);
+}
+
+.trip-form-cost-item__hint {
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+/* 借款卡片 */
+.trip-form-loan-box {
+  background: var(--color-fill-1);
+  border: 1px dashed var(--color-border-3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.trip-form-loan-box--active {
+  border-style: solid;
+  border-color: rgb(var(--primary-4));
+  background: rgb(var(--primary-1) / 0.3);
+}
+
+/* 侧边栏卡片微调 */
+.trip-form-aside-sticky {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trip-form-summary-card {
+  background: linear-gradient(135deg, rgb(var(--primary-1)) 0%, var(--color-bg-2) 100%);
+  border: 1px solid rgb(var(--primary-2));
+  border-radius: 8px;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.trip-form-summary-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.trip-form-summary-card__amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: rgb(var(--primary-7));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+.trip-form-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-2);
+}
+
+.trip-form-summary-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-form-summary-metric__label {
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+.trip-form-summary-metric__value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  margin-top: 2px;
+}
+
+/* 底部吸底操作栏 */
+.trip-form-sticky-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--color-bg-2);
+  border-top: 1px solid var(--color-border-2);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.trip-form-sticky-footer__info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.trip-form-sticky-footer__total {
+  font-size: 14px;
+  color: var(--color-text-2);
+}
+
+.trip-form-sticky-footer__amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgb(var(--primary-6));
+  margin-left: 4px;
+}
+
+.trip-form-sticky-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

@@ -1,0 +1,620 @@
+/* 宿舍管理页面专属样式表 */
+
+.dorm-management-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 楼栋专属 Master-Detail 双栏布局（加宽左栏，消除字段挤压） */
+.dorm-master-detail {
+  display: grid;
+  grid-template-columns: 316px minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 1080px) {
+  .dorm-master-detail {
+    grid-template-columns: 290px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .dorm-master-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 楼栋选择器左栏 */
+.dorm-master-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dorm-building-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-bg-2);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dorm-building-card:hover {
+  border-color: rgb(var(--primary-4));
+  box-shadow: 0 4px 12px rgba(var(--primary-6), 0.08);
+  transform: translateY(-1px);
+}
+
+.dorm-building-card--active {
+  border-color: rgb(var(--primary-6));
+  background: linear-gradient(135deg, rgba(var(--primary-1), 0.7) 0%, var(--color-bg-2) 100%);
+  box-shadow: 0 4px 16px rgba(var(--primary-6), 0.12);
+}
+
+.dorm-building-card--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgb(var(--primary-6));
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.dorm-building-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dorm-building-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dorm-building-card__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dorm-building-card__actions {
+  flex-shrink: 0;
+}
+
+.dorm-building-card__sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dorm-building-card__address {
+  font-size: 12px;
+  color: var(--color-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dorm-building-card__stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dorm-building-card__room-count {
+  font-size: 11px;
+  color: var(--color-text-3);
+  white-space: nowrap;
+}
+
+.dorm-building-card__rent-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border-2);
+  font-size: 12px;
+}
+
+.dorm-building-card__lease-tag {
+  color: var(--color-text-3);
+  font-size: 11px;
+}
+
+.dorm-building-card__rent {
+  color: rgb(var(--danger-6));
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* 楼栋概览面板 */
+.dorm-hero-panel {
+  background: linear-gradient(180deg, var(--color-fill-1) 0%, var(--color-bg-2) 100%);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.dorm-hero-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border-1);
+}
+
+.dorm-hero-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dorm-hero-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px 24px;
+}
+
+.dorm-hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dorm-hero-meta-label {
+  font-size: 12px;
+  color: var(--color-text-3);
+}
+
+.dorm-hero-meta-val {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+}
+
+/* 房态可视化区域 */
+.dorm-visual-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-fill-1);
+  border-radius: 6px;
+}
+
+.dorm-visual-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-text-2);
+}
+
+.dorm-visual-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dorm-visual-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dorm-visual-dot--occupied {
+  background: rgb(var(--primary-6));
+  box-shadow: 0 0 0 2px rgba(var(--primary-6), 0.2);
+}
+
+.dorm-visual-dot--available {
+  background: rgb(var(--success-6));
+  box-shadow: 0 0 0 2px rgba(var(--success-6), 0.2);
+}
+
+.dorm-visual-dot--maintenance {
+  background: rgb(var(--warning-6));
+  box-shadow: 0 0 0 2px rgba(var(--warning-6), 0.2);
+}
+
+/* 楼层区块 */
+.dorm-floor-section {
+  margin-bottom: 24px;
+}
+
+.dorm-floor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-left: 4px;
+}
+
+.dorm-floor-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 房间卡片网格 */
+.dorm-room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.dorm-room-card {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-bg-2);
+  padding: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dorm-room-card:hover {
+  border-color: var(--color-border-3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dorm-room-card--maintenance {
+  border-color: rgba(var(--warning-5), 0.6);
+  background: linear-gradient(180deg, rgba(var(--warning-1), 0.3) 0%, var(--color-bg-2) 100%);
+}
+
+.dorm-room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dorm-room-number {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dorm-room-facilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+}
+
+/* 床位胶囊 */
+.dorm-beds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dorm-bed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+/* 已入住床位：品牌蓝调，纯文本无头像 */
+.dorm-bed-item--occupied {
+  background: rgba(var(--primary-1), 0.7);
+  border: 1px solid rgba(var(--primary-3), 0.6);
+  color: var(--color-text-1);
+}
+
+.dorm-bed-item--occupied:hover {
+  background: rgba(var(--primary-1), 1);
+  border-color: rgb(var(--primary-5));
+}
+
+.dorm-bed-occupant-name {
+  font-weight: 600;
+  color: rgb(var(--primary-7));
+  margin-right: 4px;
+}
+
+/* 空闲床位：清新自然绿 */
+.dorm-bed-item--available {
+  background: rgba(var(--success-1), 0.7);
+  border: 1px solid rgba(var(--success-3), 0.6);
+  color: var(--color-text-1);
+  cursor: pointer;
+}
+
+.dorm-bed-item--available:hover {
+  background: rgba(var(--success-1), 1);
+  border-color: rgb(var(--success-5));
+  box-shadow: 0 2px 6px rgba(var(--success-6), 0.15);
+}
+
+.dorm-bed-available-text {
+  color: rgb(var(--success-7));
+  font-weight: 500;
+}
+
+/* 通用表格工具栏 */
+.dorm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dorm-toolbar__filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 员工无头像纯净单元格 */
+.dorm-employee-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dorm-employee-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-1);
+}
+
+.dorm-employee-sub {
+  font-size: 11px;
+  color: var(--color-text-3);
+}
+
+/* 费用汇总胶囊栏 */
+.dorm-cost-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 16px;
+  background: var(--color-fill-1);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.dorm-cost-ribbon-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-2);
+}
+
+.dorm-cost-ribbon-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-1);
+}
+
+/* ================== 子功能弹窗专属高级样式 ================== */
+
+/* 表单分段卡片 */
+.dorm-form-section {
+  padding: 14px 16px;
+  background: var(--color-fill-1);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.dorm-form-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+}
+
+.dorm-form-section__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(var(--primary-6));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* 城市快选标签 */
+.dorm-quick-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dorm-quick-tag-item {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dorm-quick-tag-item:hover {
+  color: rgb(var(--primary-6));
+  border-color: rgb(var(--primary-4));
+}
+
+/* 图形化床位选择器 (Bed Picker) */
+.dorm-bed-picker-box {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.dorm-bed-picker-room {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--color-fill-1);
+  border-radius: 6px;
+}
+
+.dorm-bed-picker-room:last-child {
+  margin-bottom: 0;
+}
+
+.dorm-bed-picker-room__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-2);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dorm-bed-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
+
+.dorm-bed-picker-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-bg-2);
+  transition: all 0.15s ease;
+}
+
+.dorm-bed-picker-chip--selected {
+  background: rgb(var(--primary-1));
+  border-color: rgb(var(--primary-6));
+  color: rgb(var(--primary-6));
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(var(--primary-6), 0.2);
+}
+
+.dorm-bed-picker-chip--available:hover:not(.dorm-bed-picker-chip--selected) {
+  border-color: rgb(var(--success-5));
+  background: rgba(var(--success-1), 0.5);
+}
+
+.dorm-bed-picker-chip--occupied {
+  cursor: not-allowed;
+  background: var(--color-fill-2);
+  border-color: var(--color-border-1);
+  color: var(--color-text-4);
+  opacity: 0.7;
+}
+
+/* 退宿交接卡片 */
+.dorm-checkout-card {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(var(--warning-1), 0.5) 0%, var(--color-fill-1) 100%);
+  border: 1px solid rgba(var(--warning-3), 0.6);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.dorm-checkout-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+/* 费用实时测算看板 */
+.dorm-split-calculator {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(var(--primary-1), 0.6) 0%, var(--color-fill-1) 100%);
+  border: 1px dashed rgb(var(--primary-4));
+  border-radius: 6px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dorm-split-calculator__num {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgb(var(--primary-6));
+}
+
+/* 报修常见故障快选胶囊 */
+.dorm-fault-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dorm-fault-tag-item {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.dorm-fault-tag-item:hover {
+  color: rgb(var(--primary-6));
+  border-color: rgb(var(--primary-5));
+  background: rgb(var(--primary-1));
+}
+

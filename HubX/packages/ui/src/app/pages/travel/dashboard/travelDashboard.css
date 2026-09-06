@@ -1,0 +1,234 @@
+/* 差旅数据看板专属样式表 */
+
+.travel-dash-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 控制台筛选卡片 */
+.travel-dash-control-bar {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border-2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.travel-dash-control-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.travel-dash-control-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-3);
+}
+
+/* 现代化月度趋势柱状图 */
+.travel-dash-trend-box {
+  padding: 16px 8px 8px 8px;
+}
+
+.travel-dash-trend-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  height: 220px;
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.travel-dash-trend-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.travel-dash-trend-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  transition: all 0.2s ease;
+}
+
+.travel-dash-trend-bar {
+  width: 100%;
+  max-width: 42px;
+  background: linear-gradient(180deg, rgb(var(--primary-5)) 0%, rgb(var(--primary-6)) 100%);
+  border-radius: 6px 6px 2px 2px;
+  transition: all 0.3s cubic-bezier(0.34, 0.69, 0.1, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.travel-dash-trend-bar:hover {
+  background: linear-gradient(180deg, rgb(var(--primary-4)) 0%, rgb(var(--primary-5)) 100%);
+  box-shadow: 0 4px 12px rgba(var(--primary-6), 0.3);
+  transform: translateY(-2px);
+}
+
+.travel-dash-trend-month {
+  font-size: 12px;
+  color: var(--color-text-3);
+  margin-top: 4px;
+}
+
+/* 排名列表 */
+.travel-dash-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.travel-dash-rank-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--color-fill-1);
+  transition: background 0.15s ease;
+}
+
+.travel-dash-rank-item:hover {
+  background: var(--color-fill-2);
+}
+
+.travel-dash-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.travel-dash-rank-badge--1 {
+  background: #ffe58f;
+  color: #d46b08;
+}
+
+.travel-dash-rank-badge--2 {
+  background: #e6f4ff;
+  color: #0958d9;
+}
+
+.travel-dash-rank-badge--3 {
+  background: #fff0f6;
+  color: #c41d7f;
+}
+
+.travel-dash-rank-badge--default {
+  background: var(--color-fill-3);
+  color: var(--color-text-3);
+}
+
+.travel-dash-rank-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.travel-dash-rank-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.travel-dash-rank-bar-wrap {
+  flex: 1;
+  max-width: 160px;
+}
+
+.travel-dash-rank-amount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  text-align: right;
+  min-width: 75px;
+}
+
+/* 个人看板待办行动卡 */
+.travel-dash-action-card {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(var(--primary-1), 0.7) 0%, var(--color-bg-2) 100%);
+  border: 1px solid rgba(var(--primary-3), 0.6);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.travel-dash-action-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.travel-dash-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgb(var(--primary-6));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+/* 绿色与集约效益卡片 */
+.travel-dash-eco-card {
+  background: linear-gradient(135deg, rgba(var(--success-1), 0.6) 0%, var(--color-bg-2) 100%);
+  border: 1px solid rgba(var(--success-3), 0.6);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.travel-dash-eco-stat {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgb(var(--success-6));
+  margin: 6px 0;
+}
+
+/* 超标风险监控卡 */
+.travel-dash-risk-card {
+  background: linear-gradient(135deg, rgba(var(--danger-1), 0.5) 0%, var(--color-bg-2) 100%);
+  border: 1px solid rgba(var(--danger-3), 0.6);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.travel-dash-risk-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgb(var(--danger-6));
+  margin: 6px 0;
+}

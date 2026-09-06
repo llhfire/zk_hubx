@@ -127,20 +127,80 @@ export const mockReimbursements: Reimbursement[] = [
   {
     id: 'reimb-1', reimbursementNo: 'BX20260505001', tripId: '1', tripNo: 'BT20260425001',
     applicantId: 'emp-001', applicantName: '张三', department: '销售部',
-    // 餐费不进实报（T2 规则）：1106+1320+460=2886
     totalAmount: 2886, status: 'pending', createDate: '2026-05-05', updateDate: '2026-05-05',
     items: [
       { id: 'ri-1', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'transport', description: '往返高铁', amount: 1106, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
       { id: 'ri-2', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'accommodation', description: '杭州西溪谷美居酒店6晚', amount: 1320, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
       { id: 'ri-3', reimbursementId: 'reimb-1', expenseId: '', expenseType: 'local_transport', description: '市内打车/地铁', amount: 460, itinerarySegmentId: 'seg-1-1', itinerarySegmentDesc: '北京→杭州' },
     ],
-    offsetAmount: 0, netAmount: 2886,
+    offsetAmount: 2000, netAmount: 886,
+    attachments: [
+      { id: 'att-1', name: '高铁票与酒店专用电子发票合辑.pdf', size: '2.4 MB' },
+      { id: 'att-2', name: '滴滴出行行程报销单.pdf', size: '540 KB' },
+    ],
+    approvalRecords: [
+      { id: 'ar-1', step: '发起申请', approver: '张三', approverId: 'emp-001', status: 'approved', time: '2026-05-05 10:00', comment: '提交出差报销单，并关联借款冲抵' },
+    ],
+  },
+  {
+    id: 'reimb-2', reimbursementNo: 'BX20260506001', tripId: '2', tripNo: 'BT20260424001',
+    applicantId: 'emp-002', applicantName: '李四', department: '销售部',
+    totalAmount: 3300, status: 'finance_approved', createDate: '2026-05-06', updateDate: '2026-05-07',
+    items: [
+      { id: 'ri-4', reimbursementId: 'reimb-2', expenseId: '', expenseType: 'transport', description: '往返机票', amount: 2000, itinerarySegmentId: 'seg-2-1', itinerarySegmentDesc: '北京→深圳' },
+      { id: 'ri-5', reimbursementId: 'reimb-2', expenseId: '', expenseType: 'accommodation', description: '深圳南山假日酒店1晚', amount: 800, itinerarySegmentId: 'seg-2-1', itinerarySegmentDesc: '北京→深圳' },
+      { id: 'ri-6', reimbursementId: 'reimb-2', expenseId: '', expenseType: 'local_transport', description: '机场快线与出租车', amount: 500, itinerarySegmentId: 'seg-2-1', itinerarySegmentDesc: '北京→深圳' },
+    ],
+    offsetAmount: 0, netAmount: 3300,
+    attachments: [
+      { id: 'att-3', name: '机票登机牌及报销电子客票.pdf', size: '1.2 MB' },
+    ],
+    approvalRecords: [
+      { id: 'ar-2', step: '部门审批', approver: '王经理', approverId: 'emp-003', status: 'approved', time: '2026-05-06 14:30', comment: '行程属实，准予报销' },
+      { id: 'ar-3', step: '财务审核', approver: '陈财务', approverId: 'emp-004', status: 'approved', time: '2026-05-07 09:15', comment: '发票验真合规，待出纳安排打款' },
+    ],
+  },
+  {
+    id: 'reimb-3', reimbursementNo: 'BX20260508001', tripId: '3', tripNo: 'BT20260420001',
+    applicantId: 'emp-005', applicantName: '王工', department: '技术部',
+    totalAmount: 1860, status: 'paid', createDate: '2026-05-08', updateDate: '2026-05-09',
+    items: [
+      { id: 'ri-7', reimbursementId: 'reimb-3', expenseId: '', expenseType: 'transport', description: '京沪高铁二等座往返', amount: 1106, itinerarySegmentId: 'seg-3-1', itinerarySegmentDesc: '北京→上海' },
+      { id: 'ri-8', reimbursementId: 'reimb-3', expenseId: '', expenseType: 'accommodation', description: '上海全季酒店2晚', amount: 440, itinerarySegmentId: 'seg-3-1', itinerarySegmentDesc: '北京→上海' },
+      { id: 'ri-9', reimbursementId: 'reimb-3', expenseId: '', expenseType: 'local_transport', description: '市内地铁通勤', amount: 314, itinerarySegmentId: 'seg-3-1', itinerarySegmentDesc: '北京→上海' },
+    ],
+    offsetAmount: 1500, netAmount: 360,
+    approvalRecords: [
+      { id: 'ar-4', step: '出纳打款', approver: '李出纳', approverId: 'emp-006', status: 'approved', time: '2026-05-09 16:00', comment: '已通过招商银行公对私打款差额 ¥360，借款 ¥1,500 结清' },
+    ],
+  },
+  {
+    id: 'reimb-4', reimbursementNo: 'BX20260510001', tripId: '4', tripNo: 'BT20260418001',
+    applicantId: 'emp-007', applicantName: '赵主管', department: '市场部',
+    totalAmount: 4200, status: 'completed', createDate: '2026-05-10', updateDate: '2026-05-11',
+    items: [
+      { id: 'ri-10', reimbursementId: 'reimb-4', expenseId: '', expenseType: 'transport', description: '往返机票', amount: 2400, itinerarySegmentId: 'seg-4-1', itinerarySegmentDesc: '北京→广州' },
+      { id: 'ri-11', reimbursementId: 'reimb-4', expenseId: '', expenseType: 'accommodation', description: '广州天河喜来登酒店3晚', amount: 1500, itinerarySegmentId: 'seg-4-1', itinerarySegmentDesc: '北京→广州' },
+      { id: 'ri-12', reimbursementId: 'reimb-4', expenseId: '', expenseType: 'other', description: '展会会务材料印刷与快递', amount: 300, itinerarySegmentId: 'seg-4-1', itinerarySegmentDesc: '北京→广州' },
+    ],
+    offsetAmount: 4000, netAmount: 200,
     approvalRecords: [],
   },
 ]
 
 export const mockLoans: Loan[] = [
-  { id: 'loan-1', loanNo: 'LN20260425001', applicantId: 'emp-001', applicantName: '张三', department: '销售部', tripId: '1', tripNo: 'BT20260425001', type: 'travel', amount: 3000, reason: '出差备用金', expectedPayDate: '2026-04-27', payMethod: 'bank', status: 'paid', createDate: '2026-04-25', updateDate: '2026-04-26', offsetAmount: 0, remainingAmount: 3000, approvalRecords: [] },
+  { id: 'loan-1', loanNo: 'LN20260425001', applicantId: 'emp-001', applicantName: '张三', department: '销售部', tripId: '1', tripNo: 'BT20260425001', type: 'travel', amount: 3000, reason: '杭州驻场差旅周转备用金', expectedPayDate: '2026-04-27', payMethod: 'bank', status: 'offset', createDate: '2026-04-25', updateDate: '2026-05-05', offsetAmount: 2000, remainingAmount: 1000, approvalRecords: [
+    { id: 'la-1', step: '部门主管审批', approver: '王经理', approverId: 'emp-003', status: 'approved', time: '2026-04-25 15:00', comment: '同意借款' },
+    { id: 'la-2', step: '财务审核打款', approver: '陈财务', approverId: 'emp-004', status: 'approved', time: '2026-04-26 10:00', comment: '网银已汇款' },
+  ] },
+  { id: 'loan-2', loanNo: 'LN20260502001', applicantId: 'emp-002', applicantName: '李四', department: '销售部', tripId: '2', tripNo: 'BT20260424001', type: 'travel', amount: 2000, reason: '深圳客户拜访交通与住宿预支', expectedPayDate: '2026-05-05', payMethod: 'bank', status: 'pending', createDate: '2026-05-02', updateDate: '2026-05-02', offsetAmount: 0, remainingAmount: 2000, approvalRecords: [] },
+  { id: 'loan-3', loanNo: 'LN20260504001', applicantId: 'emp-005', applicantName: '王工', department: '技术部', tripId: '3', tripNo: 'BT20260420001', type: 'travel', amount: 1500, reason: '上海现场联调技术支持备用金', expectedPayDate: '2026-05-06', payMethod: 'bank', status: 'settled', createDate: '2026-05-04', updateDate: '2026-05-09', offsetAmount: 1500, remainingAmount: 0, approvalRecords: [
+    { id: 'la-3', step: '部门主管审批', approver: '刘总监', approverId: 'emp-008', status: 'approved', time: '2026-05-04 11:00', comment: '准予借款' },
+    { id: 'la-4', step: '报销全额冲抵', approver: '陈财务', approverId: 'emp-004', status: 'approved', time: '2026-05-09 16:30', comment: '关联报销单 BX20260508001 全额冲抵结清' },
+  ] },
+  { id: 'loan-4', loanNo: 'LN20260506001', applicantId: 'emp-007', applicantName: '赵主管', department: '市场部', tripId: '4', tripNo: 'BT20260418001', type: 'travel', amount: 4000, reason: '大湾区行业峰会展位与物料筹备备用金', expectedPayDate: '2026-05-08', payMethod: 'bank', status: 'approved', createDate: '2026-05-06', updateDate: '2026-05-07', offsetAmount: 0, remainingAmount: 4000, approvalRecords: [
+    { id: 'la-5', step: '部门主管审批', approver: '孙总监', approverId: 'emp-009', status: 'approved', time: '2026-05-07 14:00', comment: '峰会项目预算已批复，同意借款' },
+  ] },
 ]
 
 /** 宿舍 mock：1 栋 2 层 4 房 */
@@ -182,6 +242,94 @@ export const mockDormitories: DormitoryBuilding[] = [
             beds: [
               { id: 'dorm-1-f2-r2-b1', buildingId: 'dorm-1', floorId: 'dorm-1-f2', roomId: 'dorm-1-f2-r2', bedNumber: '1', status: 'available' },
             ] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dorm-2',
+    name: '杭州滨江创新公寓',
+    companyId: 'company-1',
+    companyName: '中科集团',
+    city: '杭州',
+    district: '滨江区',
+    street: '江南大道',
+    community: '滨江高新人才社区',
+    address: '杭州市滨江区江南大道88号5号楼',
+    landlordName: '李经理',
+    landlordPhone: '13911112222',
+    leaseStartDate: '2025-06-01',
+    leaseEndDate: '2028-05-31',
+    monthlyRent: 16000,
+    deposit: 32000,
+    paymentMethod: 'quarterly',
+    waterAccountNo: 'HZ-W8801',
+    waterPayMethod: '自动代扣',
+    electricityAccountNo: 'HZ-E8801',
+    electricityPayMethod: '自动代扣',
+    internetAccountNo: 'HZ-NET8801',
+    internetProvider: '中国移动千兆宽带',
+    internetMonthlyFee: 260,
+    internetPayMethod: '自动代扣',
+    status: 'active',
+    floors: [
+      {
+        id: 'dorm-2-f1',
+        buildingId: 'dorm-2',
+        floorNumber: 1,
+        roomCount: 2,
+        rooms: [
+          {
+            id: 'dorm-2-f1-r1',
+            buildingId: 'dorm-2',
+            floorId: 'dorm-2-f1',
+            roomNumber: '101',
+            roomType: 'double',
+            bedCount: 2,
+            facilities: ['独立卫浴', '空调', '热水器', 'WiFi'],
+            status: 'occupied',
+            beds: [
+              { id: 'dorm-2-f1-r1-b1', buildingId: 'dorm-2', floorId: 'dorm-2-f1', roomId: 'dorm-2-f1-r1', bedNumber: '1', status: 'occupied', occupantId: 'emp-002', occupantName: '李四' },
+              { id: 'dorm-2-f1-r1-b2', buildingId: 'dorm-2', floorId: 'dorm-2-f1', roomId: 'dorm-2-f1-r1', bedNumber: '2', status: 'available' },
+            ],
+          },
+          {
+            id: 'dorm-2-f1-r2',
+            buildingId: 'dorm-2',
+            floorId: 'dorm-2-f1',
+            roomNumber: '102',
+            roomType: 'single',
+            bedCount: 1,
+            facilities: ['独立卫浴', '空调', '热水器', '阳台'],
+            status: 'maintenance',
+            beds: [
+              { id: 'dorm-2-f1-r2-b1', buildingId: 'dorm-2', floorId: 'dorm-2-f1', roomId: 'dorm-2-f1-r2', bedNumber: '1', status: 'available' },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'dorm-2-f2',
+        buildingId: 'dorm-2',
+        floorNumber: 2,
+        roomCount: 1,
+        rooms: [
+          {
+            id: 'dorm-2-f2-r1',
+            buildingId: 'dorm-2',
+            floorId: 'dorm-2-f2',
+            roomNumber: '201',
+            roomType: 'quad',
+            bedCount: 4,
+            facilities: ['空调', '热水器', '洗衣机', 'WiFi'],
+            status: 'occupied',
+            beds: [
+              { id: 'dorm-2-f2-r1-b1', buildingId: 'dorm-2', floorId: 'dorm-2-f2', roomId: 'dorm-2-f2-r1', bedNumber: '1', status: 'occupied', occupantId: 'emp-003', occupantName: '王五', tripId: 'TRIP-2026-003' },
+              { id: 'dorm-2-f2-r1-b2', buildingId: 'dorm-2', floorId: 'dorm-2-f2', roomId: 'dorm-2-f2-r1', bedNumber: '2', status: 'occupied', occupantId: 'emp-005', occupantName: '孙七', tripId: 'TRIP-2026-005' },
+              { id: 'dorm-2-f2-r1-b3', buildingId: 'dorm-2', floorId: 'dorm-2-f2', roomId: 'dorm-2-f2-r1', bedNumber: '3', status: 'available' },
+              { id: 'dorm-2-f2-r1-b4', buildingId: 'dorm-2', floorId: 'dorm-2-f2', roomId: 'dorm-2-f2-r1', bedNumber: '4', status: 'available' },
+            ],
+          },
         ],
       },
     ],

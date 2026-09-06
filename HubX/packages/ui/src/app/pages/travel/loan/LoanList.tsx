@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Card,
@@ -15,29 +15,48 @@ import {
   Drawer,
   Timeline,
   Tooltip,
+  DatePicker,
+  Radio,
+  Checkbox,
+  Badge,
+  Progress,
 } from '@arco-design/web-react';
 import {
   IconSearch,
   IconPlus,
   IconCheck,
   IconClose,
-  IconStorage,
   IconEye,
+  IconRefresh,
+  IconFile,
+  IconPrinter,
 } from '@arco-design/web-react/icon';
+import {
+  Wallet,
+  Bank,
+  CheckCircle,
+  FileText,
+  Clock,
+  Coins,
+  ArrowsLeftRight,
+  HandCoins,
+} from '@phosphor-icons/react';
 import type { Loan, LoanStatus } from '../types';
 import { getLoanList, approveLoan, payLoan } from '../travel-api';
 import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '@/app/components/ui';
+import './loanList.css';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 
 const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
   draft: { color: 'gray', text: '草稿' },
   pending: { color: 'orange', text: '待审批' },
-  approved: { color: 'green', text: '已通过' },
-  paid: { color: 'green', text: '已打款' },
-  offset: { color: 'blue', text: '已冲抵' },
+  approved: { color: 'arcoblue', text: '待打款' },
+  paid: { color: 'blue', text: '已打款' },
+  offset: { color: 'cyan', text: '冲抵中' },
   settled: { color: 'green', text: '已结清' },
   rejected: { color: 'red', text: '已拒绝' },
   cancelled: { color: 'gray', text: '已取消' },
@@ -46,38 +65,36 @@ const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
 export function LoanList() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [loanList, setLoanList] = useState<Loan[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allLoans, setAllLoans] = useState<Loan[]>([]);
+
+  // 筛选表单
   const [searchForm, setSearchForm] = useState({
     keyword: '',
     status: '' as LoanStatus | '',
     startDate: '',
     endDate: '',
+    department: '',
+    type: '' as 'travel' | 'petty_cash' | 'other' | '',
+    onlyUnsettled: false,
   });
 
   // 审批弹窗
   const [approvalVisible, setApprovalVisible] = useState(false);
   const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>('approve');
   const [approvalComment, setApprovalComment] = useState('');
+
+  // 详情抽屉
+  const [detailVisible, setDetailVisible] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
 
-  // 详情弹窗
-  const [detailVisible, setDetailVisible] = useState(false);
-
   // 加载数据
-  const loadLoans = async (filters = searchForm) => {
+  const loadLoans = async () => {
     setLoading(true);
     try {
-      const result = await getLoanList({
-        keyword: filters.keyword || undefined,
-        status: (filters.status as LoanStatus) || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-      });
-      setLoanList(result.list);
-      setTotal(result.total);
-    } catch (error) {
-      Message.error('加载数据失败');
+      const result = await getLoanList();
+      setAllLoans(result.list);
+    } catch {
+      Message.error('加载借款申请数据失败');
     } finally {
       setLoading(false);
     }
@@ -87,19 +104,91 @@ export function LoanList() {
     loadLoans();
   }, []);
 
-  // 搜索
-  const handleSearch = () => {
-    loadLoans();
-  };
+  // 派生过滤列表
+  const filteredLoans = useMemo(() => {
+    return allLoans.filter((item) => {
+      // 关键字搜索：借款单号、出差单号、申请人、借款事由
+      if (searchForm.keyword.trim()) {
+        const kw = searchForm.keyword.toLowerCase();
+        const matchNo = item.loanNo.toLowerCase().includes(kw);
+        const matchTrip = item.tripNo.toLowerCase().includes(kw);
+        const matchName = item.applicantName.toLowerCase().includes(kw);
+        const matchReason = item.reason?.toLowerCase().includes(kw);
+        if (!matchNo && !matchTrip && !matchName && !matchReason) {
+          return false;
+        }
+      }
 
-  // 重置
+      // 状态筛选
+      if (searchForm.status && item.status !== searchForm.status) {
+        return false;
+      }
+
+      // 部门筛选
+      if (searchForm.department && item.department !== searchForm.department) {
+        return false;
+      }
+
+      // 借款类型
+      if (searchForm.type && item.type !== searchForm.type) {
+        return false;
+      }
+
+      // 日期范围
+      if (searchForm.startDate && item.createDate < searchForm.startDate) {
+        return false;
+      }
+      if (searchForm.endDate && item.createDate > searchForm.endDate) {
+        return false;
+      }
+
+      // 仅看未结清
+      if (searchForm.onlyUnsettled && item.status === 'settled') {
+        return false;
+      }
+
+      return true;
+    });
+  }, [allLoans, searchForm]);
+
+  // 统计数据
+  const total = allLoans.length;
+  const pendingCount = allLoans.filter((item) => item.status === 'pending').length;
+  const payableCount = allLoans.filter((item) => item.status === 'approved').length;
+  const offsettingCount = allLoans.filter((item) => item.status === 'paid' || item.status === 'offset').length;
+  const settledCount = allLoans.filter((item) => item.status === 'settled').length;
+  const totalLoanAmount = filteredLoans.reduce((sum, item) => sum + item.amount, 0);
+  const remainingAmount = filteredLoans.reduce((sum, item) => sum + item.remainingAmount, 0);
+
+  const filtersActive = Boolean(
+    searchForm.keyword ||
+    searchForm.status ||
+    searchForm.startDate ||
+    searchForm.endDate ||
+    searchForm.department ||
+    searchForm.type ||
+    searchForm.onlyUnsettled
+  );
+
+  // 重置筛选
   const handleReset = () => {
-    const emptyFilters = { keyword: '', status: '' as LoanStatus | '', startDate: '', endDate: '' };
-    setSearchForm(emptyFilters);
-    loadLoans(emptyFilters);
+    setSearchForm({
+      keyword: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+      department: '',
+      type: '',
+      onlyUnsettled: false,
+    });
   };
 
-  // 查看详情
+  // 通过指标卡快捷切换状态
+  const handleFilterByStatus = (status: LoanStatus | '') => {
+    setSearchForm((prev) => ({ ...prev, status }));
+  };
+
+  // 查看详情抽屉
   const handleViewDetail = (loan: Loan) => {
     setSelectedLoan(loan);
     setDetailVisible(true);
@@ -113,12 +202,15 @@ export function LoanList() {
     }
     try {
       await approveLoan(selectedLoan!.id, approvalAction, approvalComment);
-      Message.success(`审批${approvalAction === 'approve' ? '通过' : '不通过'}成功`);
+      Message.success(`借款单 ${selectedLoan?.loanNo} 审批${approvalAction === 'approve' ? '通过' : '不通过'}成功`);
       setApprovalVisible(false);
       setApprovalComment('');
+      if (selectedLoan) {
+        selectedLoan.status = approvalAction === 'approve' ? 'approved' : 'rejected';
+      }
       loadLoans();
-    } catch (error) {
-      Message.error('审批失败');
+    } catch {
+      Message.error('审批操作失败');
     }
   };
 
@@ -126,117 +218,182 @@ export function LoanList() {
   const handlePay = async (loan: Loan) => {
     try {
       await payLoan(loan.id);
-      Message.success('打款成功');
+      Message.success(`借款单 ${loan.loanNo} 已确认打款，借款已生效在途`);
+      if (selectedLoan && selectedLoan.id === loan.id) {
+        selectedLoan.status = 'paid';
+      }
       loadLoans();
-    } catch (error) {
-      Message.error('打款失败');
+    } catch {
+      Message.error('打款操作失败');
     }
   };
 
   // 渲染操作按钮
   const renderActions = (_: unknown, record: Loan) => {
-    const actions = [];
-
-    actions.push(
-      <Tooltip key="view" content="查看详情">
-        <Button className="hubx-icon-action" type="text" size="small" aria-label={`查看借款单${record.loanNo}`} icon={<IconEye />} onClick={() => handleViewDetail(record)} />
-      </Tooltip>
-    );
-
-    // 待审批状态
-    if (record.status === 'pending') {
-      actions.push(
-        <Tooltip key="approve" content="审批">
+    return (
+      <Space size={4}>
+        <Tooltip content="查看借款详情">
           <Button
+            className="hubx-icon-action"
             type="text"
             size="small"
-            className="hubx-icon-action"
-            aria-label={`审批借款单${record.loanNo}`}
-            icon={<IconCheck />}
-            onClick={() => {
-              setSelectedLoan(record);
-              setApprovalAction('approve');
-              setApprovalVisible(true);
-            }}
+            aria-label={`查看借款单${record.loanNo}`}
+            icon={<IconEye />}
+            onClick={() => handleViewDetail(record)}
           />
         </Tooltip>
-      );
-    }
 
-    // 已通过状态
-    if (record.status === 'approved') {
-      actions.push(
-        <Tooltip key="pay" content="确认打款">
-          <Button className="hubx-icon-action" type="text" size="small" aria-label={`确认借款单${record.loanNo}打款`} icon={<IconStorage />} onClick={() => handlePay(record)} />
-        </Tooltip>
-      );
-    }
+        {/* 待审批状态 */}
+        {record.status === 'pending' && (
+          <Tooltip content="审批处理">
+            <Button
+              type="text"
+              size="small"
+              className="hubx-icon-action"
+              status="warning"
+              aria-label={`审批借款单${record.loanNo}`}
+              icon={<IconCheck />}
+              onClick={() => {
+                setSelectedLoan(record);
+                setApprovalAction('approve');
+                setApprovalComment('借款事由正当，准予借款');
+                setApprovalVisible(true);
+              }}
+            />
+          </Tooltip>
+        )}
 
-    return <Space>{actions}</Space>;
+        {/* 待打款状态 */}
+        {record.status === 'approved' && (
+          <Tooltip content="确认打款出纳">
+            <Button
+              className="hubx-icon-action"
+              type="text"
+              size="small"
+              status="success"
+              aria-label={`确认借款单${record.loanNo}打款`}
+              icon={<Bank size={16} weight="duotone" />}
+              onClick={() => handlePay(record)}
+            />
+          </Tooltip>
+        )}
+      </Space>
+    );
   };
 
+  // 紧凑高信息密度列
   const columns = [
     {
-      title: '借款单号',
+      title: '借款单号 / 事由',
       dataIndex: 'loanNo',
-      width: 150,
-      render: (value: string) => <Text style={{ fontWeight: 500 }}>{value}</Text>,
+      width: 220,
+      fixed: 'left' as const,
+      render: (loanNo: string, record: Loan) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span
+            className="loan-cell-link"
+            onClick={() => handleViewDetail(record)}
+            title="点击查看借款详情抽屉"
+          >
+            {loanNo}
+          </span>
+          <div className="loan-cell-reason" title={record.reason}>
+            {record.reason || '差旅备用金借款'}
+          </div>
+        </div>
+      ),
     },
     {
-      title: '申请人',
+      title: '申请人 / 归属',
       dataIndex: 'applicantName',
-      width: 100,
+      width: 130,
+      render: (name: string, record: Loan) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--color-text-1)' }}>
+            {name}
+          </div>
+          <Tag size="small" color="arcoblue" style={{ padding: '0 6px', fontSize: 11, width: 'fit-content' }}>
+            {record.department || '未分配'}
+          </Tag>
+        </div>
+      ),
     },
     {
-      title: '部门',
-      dataIndex: 'department',
-      width: 100,
-    },
-    {
-      title: '借款类型',
+      title: '借款类型 / 关联出差',
       dataIndex: 'type',
-      width: 100,
-      render: (value: string) => (
-        <Tag>
-          {value === 'travel' ? '差旅借款' : value === 'petty_cash' ? '备用金' : '其他'}
-        </Tag>
+      width: 190,
+      render: (type: string, record: Loan) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Tag color="cyan" size="small" style={{ width: 'fit-content' }}>
+            {type === 'travel' ? '差旅借款' : type === 'petty_cash' ? '备用金' : '其他借款'}
+          </Tag>
+          {record.tripNo ? (
+            <span
+              style={{ fontSize: 12, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
+              onClick={() => navigate(`/travel/trips/${record.tripId}`)}
+              title="点击查看关联出差单"
+            >
+              📍 {record.tripNo} ↗
+            </span>
+          ) : (
+            <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>无出差单关联</span>
+          )}
+        </div>
       ),
     },
     {
-      title: '借款金额',
+      title: '借款总额与冲抵核销进度',
       dataIndex: 'amount',
-      width: 120,
-      render: (value: number) => (
-        <Space size={4}>
-          <IconStorage style={{ color: 'var(--color-text-3)' }} />
-          <span>¥{value.toLocaleString()}</span>
-        </Space>
-      ),
+      width: 230,
+      render: (amount: number, record: Loan) => {
+        const offset = record.offsetAmount || 0;
+        const percent = Math.min(100, Math.round((offset / amount) * 100));
+        return (
+          <div className="loan-cell-progress">
+            <div className="loan-cell-progress__header">
+              <span>¥{amount.toLocaleString()}</span>
+              <span style={{ fontSize: 11, color: percent === 100 ? '#00b42a' : '#ff7d00' }}>
+                已冲抵 {percent}%
+              </span>
+            </div>
+            <div className="loan-cell-progress__track">
+              <div
+                className="loan-cell-progress__bar"
+                style={{
+                  width: `${percent}%`,
+                  background: percent === 100 ? '#00b42a' : 'rgb(var(--primary-6))',
+                }}
+              />
+            </div>
+            <div className="loan-cell-progress__footer">
+              <span>已冲抵 ¥{offset.toLocaleString()}</span>
+              <span style={{ color: record.remainingAmount > 0 ? '#ff7d00' : 'var(--color-text-4)' }}>
+                待还余额 ¥{record.remainingAmount.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     {
-      title: '已冲抵',
-      dataIndex: 'offsetAmount',
-      width: 100,
-      render: (value: number) => (
-        value > 0 ? <span style={{ color: 'rgb(var(--success-6))' }}>¥{value.toLocaleString()}</span> : '-'
-      ),
-    },
-    {
-      title: '剩余金额',
-      dataIndex: 'remainingAmount',
-      width: 120,
-      render: (value: number) => <Text style={{ fontWeight: 500 }}>¥{value.toLocaleString()}</Text>,
-    },
-    {
-      title: '关联出差单',
-      dataIndex: 'tripNo',
+      title: '打款方式 / 期望日期',
+      dataIndex: 'payMethod',
       width: 150,
-      render: (value: string) => value || '-',
+      render: (payMethod: string, record: Loan) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={{ fontSize: 12, color: 'var(--color-text-1)' }}>
+            {payMethod === 'bank' ? '🏦 银行转账' : payMethod === 'cash' ? '💵 现金支取' : '其他方式'}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>
+            期望：{record.expectedPayDate || record.createDate}
+          </span>
+        </div>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'status',
-      width: 100,
+      width: 110,
       render: (value: LoanStatus) => (
         <Tag color={statusConfig[value].color}>
           {statusConfig[value].text}
@@ -244,238 +401,442 @@ export function LoanList() {
       ),
     },
     {
-      title: '创建日期',
-      dataIndex: 'createDate',
-      width: 120,
-    },
-    {
       title: '操作',
-      width: 150,
+      width: 110,
       fixed: 'right' as const,
       render: renderActions,
     },
   ];
 
-  const filtersActive = Boolean(searchForm.keyword || searchForm.status || searchForm.startDate || searchForm.endDate);
-  const pendingCount = loanList.filter((item) => item.status === 'pending').length;
-  const payableCount = loanList.filter((item) => item.status === 'approved').length;
-  const offsettingCount = loanList.filter((item) => item.status === 'paid' || item.status === 'offset').length;
-  const remainingAmount = loanList.reduce((sum, item) => sum + item.remainingAmount, 0);
-
   return (
-    <PageShell>
+    <PageShell className="loan-list-page">
       <PageHeader
         title="借款管理"
-        description="集中查询借款申请、审批、打款与报销冲抵状态。"
-        actions={<Button type="primary" icon={<IconPlus />} onClick={() => navigate('/travel/loans/new')}>新增借款</Button>}
+        description="集中统筹员工差旅备用借款、审批下拨、打款出纳与后续报销对冲核销台账。"
+        actions={
+          <Space>
+            <Button icon={<IconRefresh />} onClick={loadLoans}>
+              刷新
+            </Button>
+            <Button
+              type="primary"
+              icon={<IconPlus />}
+              onClick={() => navigate('/travel/loans/new')}
+            >
+              新建借款单
+            </Button>
+          </Space>
+        }
       />
 
-      <ProcessMetricGrid items={[
-        { key: 'total', label: '借款申请', value: `${total} 单`, detail: filtersActive ? '当前查询结果' : '全部借款单' },
-        { key: 'pending', label: '待审批', value: `${pendingCount} 单`, detail: '等待审批人处理', tone: pendingCount > 0 ? 'warning' : 'success' },
-        { key: 'payable', label: '待打款', value: `${payableCount} 单`, detail: '审批通过待付款', tone: payableCount > 0 ? 'warning' : 'success' },
-        { key: 'remaining', label: '未冲抵余额', value: `¥${remainingAmount.toLocaleString()}`, detail: `冲抵处理中 ${offsettingCount} 单` },
-      ]} />
+      {/* 顶部指标卡：支持点击直接筛选状态 */}
+      <ProcessMetricGrid
+        items={[
+          {
+            key: 'total',
+            label: '借款申请总数',
+            value: `${total} 单`,
+            detail: searchForm.status === '' ? '✓ 正在显示全部' : '点击查看全部',
+            onClick: () => handleFilterByStatus(''),
+            tone: searchForm.status === '' ? 'neutral' : undefined,
+          },
+          {
+            key: 'pending',
+            label: '待我审批',
+            value: `${pendingCount} 单`,
+            detail: searchForm.status === 'pending' ? '✓ 正在筛选待审批' : '部门及财务审批',
+            tone: pendingCount > 0 ? 'warning' : 'neutral',
+            onClick: () => handleFilterByStatus('pending'),
+          },
+          {
+            key: 'payable',
+            label: '待财务打款',
+            value: `${payableCount} 单`,
+            detail: searchForm.status === 'approved' ? '✓ 正在筛选待打款' : '审批通过待付款',
+            tone: payableCount > 0 ? 'warning' : 'neutral',
+            onClick: () => handleFilterByStatus('approved'),
+          },
+          {
+            key: 'offsetting',
+            label: '冲抵核销中',
+            value: `${offsettingCount} 单`,
+            detail: `已完全结清 ${settledCount} 单`,
+            tone: offsettingCount > 0 ? 'neutral' : 'neutral',
+            onClick: () => handleFilterByStatus('offset'),
+          },
+          {
+            key: 'remaining',
+            label: '在途待还余额',
+            value: `¥${remainingAmount.toLocaleString()}`,
+            detail: `累计借出 ¥${totalLoanAmount.toLocaleString()}`,
+          },
+        ]}
+      />
 
-      {/* 搜索栏 */}
-      <Card>
-        <FilterBar actions={filtersActive ? <Button type="text" onClick={handleReset}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {total} 条</span>}>
-          <Input
-            style={{ width: 200 }}
-            placeholder="搜索借款单号/申请人"
-            value={searchForm.keyword}
-            onChange={(value) => setSearchForm({ ...searchForm, keyword: value })}
-          />
-          <Select
-            style={{ width: 150 }}
-            placeholder="选择状态"
-            value={searchForm.status || undefined}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value as LoanStatus | '' })}
-            allowClear
-          >
-            <Option value="draft">草稿</Option>
-            <Option value="pending">待审批</Option>
-            <Option value="approved">已通过</Option>
-            <Option value="paid">已打款</Option>
-            <Option value="offset">已冲抵</Option>
-            <Option value="settled">已结清</Option>
-            <Option value="rejected">已拒绝</Option>
-          </Select>
-          <Input
-            type="date"
-            style={{ width: 140 }}
-            value={searchForm.startDate}
-            onChange={(value) => setSearchForm({ ...searchForm, startDate: value })}
-          />
-          <Input
-            type="date"
-            style={{ width: 140 }}
-            value={searchForm.endDate}
-            onChange={(value) => setSearchForm({ ...searchForm, endDate: value })}
-          />
-          <Button type="primary" icon={<IconSearch />} onClick={handleSearch}>
-            搜索
-          </Button>
-        </FilterBar>
+      {/* 搜索与快捷状态条卡片 */}
+      <Card className="loan-list-filter-card">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* 状态快捷分段胶囊 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <Radio.Group
+              type="button"
+              value={searchForm.status}
+              onChange={(val) => handleFilterByStatus(val as LoanStatus | '')}
+            >
+              <Radio value="">全部 ({total})</Radio>
+              <Radio value="pending">
+                待审批 {pendingCount > 0 && <Badge count={pendingCount} style={{ marginLeft: 4 }} />}
+              </Radio>
+              <Radio value="approved">
+                待打款 {payableCount > 0 && <Badge count={payableCount} style={{ marginLeft: 4 }} />}
+              </Radio>
+              <Radio value="offset">冲抵中 ({allLoans.filter(l => l.status === 'offset').length})</Radio>
+              <Radio value="settled">已结清 ({settledCount})</Radio>
+              <Radio value="draft">草稿 ({allLoans.filter(l => l.status === 'draft').length})</Radio>
+            </Radio.Group>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {filtersActive && (
+                <Button type="text" status="warning" onClick={handleReset}>
+                  重置筛选条件
+                </Button>
+              )}
+              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+                找到 <strong>{filteredLoans.length}</strong> 条借款单据
+              </span>
+            </div>
+          </div>
+
+          {/* 细粒度筛选 */}
+          <FilterBar>
+            <Input
+              style={{ width: 220 }}
+              placeholder="搜索借款单号 / 出差单 / 申请人"
+              value={searchForm.keyword}
+              allowClear
+              prefix={<IconSearch />}
+              onChange={(val) => setSearchForm((prev) => ({ ...prev, keyword: val }))}
+            />
+
+            <Select
+              style={{ width: 140 }}
+              placeholder="借款类型"
+              allowClear
+              value={searchForm.type || undefined}
+              onChange={(val) => setSearchForm((prev) => ({ ...prev, type: val as any }))}
+            >
+              <Option value="travel">差旅借款</Option>
+              <Option value="petty_cash">备用金</Option>
+              <Option value="other">其他</Option>
+            </Select>
+
+            <Select
+              style={{ width: 140 }}
+              placeholder="所属部门"
+              allowClear
+              value={searchForm.department || undefined}
+              onChange={(val) => setSearchForm((prev) => ({ ...prev, department: val || '' }))}
+            >
+              <Option value="销售部">销售部</Option>
+              <Option value="技术部">技术部</Option>
+              <Option value="市场部">市场部</Option>
+              <Option value="行政部">行政部</Option>
+            </Select>
+
+            <RangePicker
+              style={{ width: 240 }}
+              value={[searchForm.startDate, searchForm.endDate]}
+              onChange={(_, dateStrings) => {
+                setSearchForm((prev) => ({
+                  ...prev,
+                  startDate: dateStrings[0] || '',
+                  endDate: dateStrings[1] || '',
+                }));
+              }}
+            />
+
+            <Checkbox
+              checked={searchForm.onlyUnsettled}
+              onChange={(checked) => setSearchForm((prev) => ({ ...prev, onlyUnsettled: checked }))}
+            >
+              仅看未结清借款
+            </Checkbox>
+          </FilterBar>
+        </div>
       </Card>
 
-      {/* 列表 */}
-      <Card title="借款申请列表">
+      {/* 列表主体卡片 */}
+      <Card className="loan-list-table-card" title="员工借款与备用金台账">
         <Table
           columns={columns}
-          data={loanList}
+          data={filteredLoans}
           loading={loading}
           rowKey="id"
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1100 }}
           pagination={{
-            total,
+            total: filteredLoans.length,
             pageSize: 10,
             showTotal: true,
+            sizeCanChange: true,
           }}
         />
       </Card>
 
-      {/* 详情抽屉 */}
+      {/* 借款详情与对冲台账抽屉 */}
       <Drawer
-        title="借款申请详情"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <HandCoins size={20} weight="duotone" style={{ color: 'rgb(var(--primary-6))' }} />
+            <span style={{ fontWeight: 600 }}>借款申请与冲抵详情</span>
+            {selectedLoan && (
+              <Tag size="small" color={statusConfig[selectedLoan.status].color}>
+                {statusConfig[selectedLoan.status].text}
+              </Tag>
+            )}
+          </div>
+        }
         visible={detailVisible}
         onCancel={() => setDetailVisible(false)}
         footer={null}
-        width={640}
+        width={780}
       >
         {selectedLoan && (
-          <div>
-            <Grid.Row gutter={16} style={{ marginBottom: 24 }}>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">借款单号</Text></div>
-                <div style={{ fontWeight: 500 }}>{selectedLoan.loanNo}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">申请人</Text></div>
-                <div style={{ fontWeight: 500 }}>{selectedLoan.applicantName}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">部门</Text></div>
-                <div style={{ fontWeight: 500 }}>{selectedLoan.department}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">借款类型</Text></div>
-                <div style={{ fontWeight: 500 }}>
-                  {selectedLoan.type === 'travel' ? '差旅借款' : selectedLoan.type === 'petty_cash' ? '备用金' : '其他'}
+          <div className="loan-drawer-container">
+            {/* 顶部借款总额与冲抵进度大看板 */}
+            <div className="loan-drawer-progress-card">
+              <div className="loan-drawer-progress-grid">
+                <div className="loan-drawer-progress-metric">
+                  <span className="loan-drawer-progress-metric__label">借款总金额</span>
+                  <span className="loan-drawer-progress-metric__val">
+                    ¥{selectedLoan.amount.toLocaleString()}
+                  </span>
                 </div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">借款金额</Text></div>
-                <div style={{ fontWeight: 500, color: 'rgb(var(--primary-6))' }}>¥{selectedLoan.amount.toLocaleString()}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">已冲抵</Text></div>
-                <div style={{ fontWeight: 500 }}>
-                  {selectedLoan.offsetAmount > 0 ? (
-                    <span style={{ color: 'rgb(var(--success-6))' }}>¥{selectedLoan.offsetAmount.toLocaleString()}</span>
-                  ) : '¥0'}
-                </div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">剩余金额</Text></div>
-                <div style={{ fontWeight: 500, color: 'rgb(var(--warning-6))' }}>¥{selectedLoan.remainingAmount.toLocaleString()}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">关联出差单</Text></div>
-                <div style={{ fontWeight: 500 }}>{selectedLoan.tripNo || '-'}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">借款理由</Text></div>
-                <div style={{ fontWeight: 500 }}>{selectedLoan.reason}</div>
-              </Grid.Col>
-              <Grid.Col span={12}>
-                <div><Text type="secondary">打款方式</Text></div>
-                <div style={{ fontWeight: 500 }}>
-                  {selectedLoan.payMethod === 'bank' ? '银行转账' : selectedLoan.payMethod === 'cash' ? '现金' : '其他'}
-                </div>
-              </Grid.Col>
-            </Grid.Row>
 
-            <Card title="审批流程" size="small" style={{ marginBottom: 24 }}>
-              <Tag color="arcoblue" style={{ marginBottom: 12 }}>
-                当前节点：{{
-                  draft: '草稿',
-                  pending: '部门审批',
-                  approved: '待打款',
-                  paid: '待冲抵',
-                  offset: '冲抵处理中',
-                  settled: '已结清',
-                  rejected: '已驳回',
-                  cancelled: '已取消',
-                }[selectedLoan.status]}
-              </Tag>
+                <div className="loan-drawer-progress-metric">
+                  <span className="loan-drawer-progress-metric__label">已报销冲抵</span>
+                  <span className="loan-drawer-progress-metric__val" style={{ color: '#00b42a' }}>
+                    ¥{selectedLoan.offsetAmount.toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="loan-drawer-progress-metric">
+                  <span className="loan-drawer-progress-metric__label">待还 / 未冲抵余额</span>
+                  <span
+                    className="loan-drawer-progress-metric__val"
+                    style={{ color: selectedLoan.remainingAmount > 0 ? '#ff7d00' : 'var(--color-text-3)' }}
+                  >
+                    ¥{selectedLoan.remainingAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* 进度条 */}
+              <div>
+                <Progress
+                  percent={Math.min(100, Math.round((selectedLoan.offsetAmount / selectedLoan.amount) * 100))}
+                  status={selectedLoan.status === 'settled' ? 'success' : 'normal'}
+                  color="rgb(var(--primary-6))"
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>
+                  <span>借款生成日：{selectedLoan.createDate}</span>
+                  <span>
+                    冲抵进度：{Math.min(100, Math.round((selectedLoan.offsetAmount / selectedLoan.amount) * 100))}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 核心要素 */}
+            <div className="loan-drawer-section">
+              <div className="loan-drawer-section__title">
+                <FileText size={16} /> 核心单据要素
+              </div>
+              <Grid.Row gutter={[16, 16]}>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>借款单号</Text>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>{selectedLoan.loanNo}</div>
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>申请人 / 部门</Text>
+                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
+                    {selectedLoan.applicantName} ({selectedLoan.department})
+                  </div>
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>借款类型</Text>
+                  <div style={{ fontSize: 13, marginTop: 2 }}>
+                    <Tag size="small" color="arcoblue">
+                      {selectedLoan.type === 'travel' ? '差旅借款' : selectedLoan.type === 'petty_cash' ? '备用金' : '其他'}
+                    </Tag>
+                  </div>
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>关联出差单</Text>
+                  <div
+                    style={{ fontWeight: 600, fontSize: 13, marginTop: 2, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
+                    onClick={() => {
+                      if (selectedLoan.tripId) navigate(`/travel/trips/${selectedLoan.tripId}`);
+                    }}
+                  >
+                    {selectedLoan.tripNo || '无关联出差单'} ↗
+                  </div>
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>期望到款日</Text>
+                  <div style={{ fontSize: 13, marginTop: 2 }}>{selectedLoan.expectedPayDate}</div>
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>打款方式</Text>
+                  <div style={{ fontSize: 13, marginTop: 2 }}>
+                    {selectedLoan.payMethod === 'bank' ? '对私银行转账' : '现金支取'}
+                  </div>
+                </Grid.Col>
+              </Grid.Row>
+            </div>
+
+            {/* 借款事由 */}
+            <div className="loan-drawer-section">
+              <div className="loan-drawer-section__title">
+                <Wallet size={16} /> 借款事由与用途说明
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: '22px' }}>
+                {selectedLoan.reason || '无借款事由说明'}
+              </div>
+            </div>
+
+            {/* 冲抵往来台账 */}
+            <div className="loan-drawer-section">
+              <div className="loan-drawer-section__title">
+                <ArrowsLeftRight size={16} /> 报销对冲往来台账
+              </div>
+              {selectedLoan.offsetAmount > 0 ? (
+                <div
+                  style={{
+                    background: 'var(--color-fill-1)',
+                    border: '1px solid var(--color-border-2)',
+                    borderRadius: 6,
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>出差报销单冲抵核销</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>
+                      已在出差报销结算流程中自动完成轧差对冲
+                    </div>
+                  </div>
+                  <Tag color="green" size="medium">
+                    已冲抵 ¥{selectedLoan.offsetAmount.toLocaleString()}
+                  </Tag>
+                </div>
+              ) : (
+                <div style={{ color: 'var(--color-text-3)', fontSize: 12, padding: '8px 0' }}>
+                  暂无报销单冲抵记录。后续员工在提交出差报销单时，系统将自动优先冲抵该笔借款。
+                </div>
+              )}
+            </div>
+
+            {/* 审批与打款流程 */}
+            <div className="loan-drawer-section">
+              <div className="loan-drawer-section__title">
+                <Clock size={16} /> 审批流转流水线
+              </div>
               <Timeline>
-                {(selectedLoan.approvalRecords ?? []).map(record => (
+                {(selectedLoan.approvalRecords ?? []).map((record) => (
                   <Timeline.Item key={record.id} label={record.time}>
                     <Space direction="vertical" size={2}>
                       <strong>{record.step} · {record.approver}</strong>
-                      <span>{record.comment || statusConfig[selectedLoan.status].text}</span>
+                      <span style={{ color: 'var(--color-text-2)' }}>
+                        {record.comment || '无审批说明'}
+                      </span>
                     </Space>
                   </Timeline.Item>
                 ))}
                 {(selectedLoan.approvalRecords ?? []).length === 0 && (
-                  <Timeline.Item>申请已提交，等待当前节点处理。</Timeline.Item>
+                  <Timeline.Item>借款单已发起，等待部门审批人与财务审核。</Timeline.Item>
                 )}
               </Timeline>
-            </Card>
+            </div>
 
-            {/* 审批按钮 */}
-            {selectedLoan.status === 'pending' && (
-              <div style={{ textAlign: 'center' }}>
-                <Space>
+            {/* 抽屉吸底栏 */}
+            <div className="loan-drawer-sticky-footer">
+              <div>
+                <Button
+                  icon={<IconPrinter />}
+                  onClick={() => Message.success('已调起借款凭据打印预览')}
+                >
+                  打印借款凭证
+                </Button>
+              </div>
+
+              <Space>
+                {/* 待审批操作 */}
+                {selectedLoan.status === 'pending' && (
+                  <>
+                    <Button
+                      status="danger"
+                      onClick={() => {
+                        setApprovalAction('reject');
+                        setApprovalVisible(true);
+                      }}
+                    >
+                      驳回申请
+                    </Button>
+                    <Button
+                      type="primary"
+                      status="success"
+                      icon={<IconCheck />}
+                      onClick={() => {
+                        setApprovalAction('approve');
+                        setApprovalVisible(true);
+                      }}
+                    >
+                      审批通过
+                    </Button>
+                  </>
+                )}
+
+                {/* 待打款操作 */}
+                {selectedLoan.status === 'approved' && (
                   <Button
                     type="primary"
                     status="success"
-                    icon={<IconCheck />}
-                    onClick={() => {
-                      setApprovalAction('approve');
-                      setApprovalVisible(true);
-                    }}
+                    icon={<Bank size={16} />}
+                    onClick={() => handlePay(selectedLoan)}
                   >
-                    通过
+                    确认网银打款 (¥{selectedLoan.amount.toLocaleString()})
                   </Button>
-                  <Button
-                    type="primary"
-                    status="danger"
-                    icon={<IconClose />}
-                    onClick={() => {
-                      setApprovalAction('reject');
-                      setApprovalVisible(true);
-                    }}
-                  >
-                    不通过
-                  </Button>
-                </Space>
-              </div>
-            )}
+                )}
+
+                <Button onClick={() => setDetailVisible(false)}>关闭</Button>
+              </Space>
+            </div>
           </div>
         )}
       </Drawer>
 
-      {/* 审批弹窗 */}
+      {/* 审批确认弹窗 */}
       <Modal
-        title={approvalAction === 'approve' ? '审批通过' : '审批不通过'}
+        title={approvalAction === 'approve' ? '审批通过借款申请' : '驳回借款申请'}
         visible={approvalVisible}
         onOk={handleApprove}
         onCancel={() => {
           setApprovalVisible(false);
           setApprovalComment('');
         }}
-        okText="确认"
+        okText="确认提交"
+        okButtonProps={{ status: approvalAction === 'approve' ? 'success' : 'danger' }}
         cancelText="取消"
       >
         <div>
-          <div style={{ marginBottom: 8 }}><Text>审批意见</Text></div>
+          <div style={{ marginBottom: 8 }}><Text>审批核决意见</Text></div>
           <TextArea
             placeholder={
               approvalAction === 'approve'
-                ? '请填写审批意见（如：同意借款）'
-                : '请填写不通过的理由（如：借款金额过大，请重新评估）'
+                ? '请填写审批意见（如：同意借款，请财务安排打款）'
+                : '请填写驳回原因（如：借款金额超出项目差旅预算）'
             }
             rows={4}
             value={approvalComment}

@@ -1,0 +1,272 @@
+/* ========================================================
+   出差申请列表页（TripList）现代优化样式
+   ======================================================== */
+
+.trip-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 顶部指标卡交互增强 */
+.trip-list-page .hubx-process-metric--interactive {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+  text-align: left;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-bg-2);
+}
+
+.trip-list-page .hubx-process-metric--interactive:hover {
+  border-color: rgb(var(--primary-4));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.trip-list-page .hubx-process-metric--active {
+  border-color: rgb(var(--primary-6)) !important;
+  background: rgb(var(--primary-1) / 0.5) !important;
+  box-shadow: 0 0 0 2px rgb(var(--primary-3)) !important;
+}
+
+/* 筛选工具栏 */
+.trip-list-filter-card {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-2);
+}
+
+.trip-list-filter-card .arco-card-body {
+  padding: 16px 20px;
+}
+
+/* 筛选栏 radio group 压缩高度 */
+.trip-list-filter-card .arco-radio-group {
+  line-height: 22px;
+}
+
+.trip-list-filter-card .arco-radio-group .arco-radio-button-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.trip-list-filter-card .arco-radio-group .arco-radio-button {
+  padding: 2px 10px;
+}
+
+.trip-list-filter-card .arco-radio-group .arco-badge {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.trip-list-filter-card .arco-radio-group .arco-badge-number {
+  height: 12px !important;
+  min-width: 12px !important;
+  line-height: 12px !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  padding: 0 3px !important;
+  border-radius: 999px !important;
+  transform: none !important;
+}
+
+.trip-list-filter-rail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.trip-list-filter-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trip-list-filter-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 表格主体卡片 */
+.trip-list-table-card {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-2);
+  overflow: hidden;
+}
+
+.trip-list-table-card .arco-card-header {
+  border-bottom: 1px solid var(--color-border-2);
+  padding: 14px 20px;
+}
+
+.trip-list-table-card .arco-card-body {
+  padding: 0;
+}
+
+/* 表格内部单元格精细排版 */
+.trip-cell-no-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trip-cell-link {
+  font-weight: 600;
+  color: rgb(var(--primary-6));
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.trip-cell-link:hover {
+  color: rgb(var(--primary-5));
+  text-decoration: underline;
+}
+
+.trip-cell-purpose {
+  font-size: 12px;
+  color: var(--color-text-3);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-cell-applicant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trip-cell-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgb(var(--primary-1));
+  color: rgb(var(--primary-6));
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.trip-cell-journey {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trip-cell-journey__route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--color-text-1);
+  font-size: 13px;
+}
+
+.trip-cell-journey__date {
+  font-size: 11px;
+  color: var(--color-text-3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trip-cell-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trip-cell-cost__total {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+.trip-cell-cost__loan {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+}
+
+/* 进行中状态呼吸脉冲圆点 */
+.trip-status-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgb(var(--primary-6));
+  margin-right: 6px;
+  animation: tripStatusPulse 1.8s infinite;
+}
+
+@keyframes tripStatusPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(var(--primary-6), 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(var(--primary-6), 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(var(--primary-6), 0);
+  }
+}
+
+/* 快捷审批弹窗 */
+.trip-approval-preview-card {
+  background: var(--color-fill-1);
+  border: 1px solid var(--color-border-2);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.trip-approval-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.trip-approval-quick-comments {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.trip-approval-quick-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-2);
+  background: var(--color-bg-2);
+  color: var(--color-text-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trip-approval-quick-pill:hover {
+  border-color: rgb(var(--primary-6));
+  color: rgb(var(--primary-6));
+  background: rgb(var(--primary-1));
+}

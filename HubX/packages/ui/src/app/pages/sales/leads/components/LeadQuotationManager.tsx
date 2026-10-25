@@ -41,6 +41,7 @@ import {
   type QuoteCustomerFeedback,
 } from '../../quotation/types';
 import './LeadQuotationManager.css';
+import { formatMoney as money } from '../../../../utils/money';
 
 const { Text } = Typography;
 
@@ -125,10 +126,6 @@ export interface LeadQuotationManagerProps {
     feedback: Omit<QuoteCustomerFeedback, 'id' | 'recordedAt'>,
     syncToFollowUp?: boolean,
   ) => Promise<void>;
-}
-
-function money(val: number) {
-  return `¥${Number(val || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
 export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({

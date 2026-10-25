@@ -83,7 +83,7 @@ import { useContracts } from '../contracts/ContractsContext';
 import { useTodos } from '../../../todos/TodoContext';
 import { useCustomers } from '../customers/CustomerContext';
 import { buildCustomerSnapshot } from '../customers/customerModel';
-import type { Contract, ContractStatus } from '../contracts/types';
+import type { Contract } from '../contracts/types';
 import { computePlanStatusRows, effectiveAmount } from '../contracts/paymentUtils';
 import { useCollections } from '../../../collections/CollectionContext';
 import {
@@ -95,6 +95,7 @@ import {
   type CollectionPeriod,
 } from '../../../../services/collectionMutations';
 import { useQuotation } from '../quotation/QuotationContext';
+import { formatMoney as money } from '../../../utils/money';
 import { QuotationWorkbench } from '../quotation/QuotationWorkbench';
 import { QuoteCard } from '../quotation/QuoteCard';
 import { QUOTE_STATUS_LABELS, type QuoteCustomerFeedback } from '../quotation/types';
@@ -230,10 +231,6 @@ const STAGE_SOP_MAP: Record<number, LeadStageSopInfo> = {
   },
 };
 
-function money(n: number) {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
-
 function formDateTime(value: unknown): string | undefined {
   if (!value) return undefined;
   if (typeof value === 'string') return value;
@@ -247,26 +244,16 @@ function formDateTime(value: unknown): string | undefined {
   return undefined;
 }
 
-const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
-  draft: '草稿',
-  approving: '审批中',
-  pending_mail: '待寄出',
-  pending_return: '待回寄',
-  archived: '已归档',
-  voided: '已作废',
-};
+interface LeadDetail360Props {
+  /** 覆盖路由参数：审批中心等场景在弹窗内嵌渲染，没有 /leads/:id 路由。 */
+  leadId?: string;
+  /** 初始侧栏页签（如 'quotation'），同样服务于内嵌场景。 */
+  initialSideTab?: string;
+}
 
-const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
-  draft: 'gray',
-  approving: 'orange',
-  pending_mail: 'gold',
-  pending_return: 'arcoblue',
-  archived: 'green',
-  voided: 'gray',
-};
-
-export function LeadDetail360() {
-  const { id } = useParams();
+export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {}) {
+  const { id: routeId } = useParams();
+  const id = leadId ?? routeId;
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -547,6 +534,11 @@ export function LeadDetail360() {
   }, [serviceLeadId, getFollowUps]);
 
   useEffect(() => {
+    if (initialSideTab) {
+      setActiveSideTab(initialSideTab);
+      setActiveMainTab(resolveMainTab(initialSideTab));
+      return;
+    }
     const state = location.state as { activeMainTab?: string; activeSideTab?: string } | null;
     if (state?.activeSideTab) {
       setActiveSideTab(state.activeSideTab);
@@ -556,7 +548,7 @@ export function LeadDetail360() {
     if (state?.activeMainTab) {
       setActiveMainTab(resolveMainTab(state.activeMainTab));
     }
-  }, [location.state, resolveMainTab]);
+  }, [initialSideTab, location.state, resolveMainTab]);
 
   if (!lead) {
     return (
@@ -1396,7 +1388,7 @@ export function LeadDetail360() {
                   size="small"
                   data={[
                     { label: '对接主体', value: lead.entity },
-                    { label: '线索意向', value: lead.intention || '-' },
+                    { label: '线索意向', value: lead.level || '-' },
                     { label: '线索状态', value: lead.status },
                     { label: '客户类型', value: lead.customerLevel || '-' },
                     { label: '客户预算', value: lead.customerBudget || '-' },
@@ -2124,7 +2116,8 @@ export function LeadDetail360() {
             );
 
             const customer = customers.find(
-              (item) => item.id === dispatchLead?.customerId || (safeCustomer && item.name === safeCustomer)
+              // 客户主档 id 在 LeadDetailInfo 上（lead.customerId）；列表项 LeadListItem 没有该字段。
+              (item) => item.id === lead?.customerId || (safeCustomer && item.name === safeCustomer)
             );
             if (customer) {
               await updateQuote(newId, (current) => ({

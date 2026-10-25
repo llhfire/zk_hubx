@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   Button,
   DatePicker,
@@ -35,6 +35,7 @@ import {
 } from '../paymentInvoiceModel';
 import { useProjectInvoices } from '../../../finance/invoice/ProjectInvoiceContext';
 import './LeadPaymentInvoicePanel.css';
+import { formatMoney as formatCurrency } from '../../../../utils/money';
 
 const FormItem = Form.Item;
 const PAYMENT_METHOD_OPTIONS = ['公对公', '私对公', '微信', '支付宝', '银行转账', '其他'];
@@ -154,10 +155,6 @@ export interface CustomerInvoiceInfo {
   recipientName: string;
   recipientPhone: string;
   recipientEmail?: string;
-}
-
-function formatCurrency(value: number) {
-  return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
 function formatDate(date: Date) {
@@ -1492,13 +1489,12 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         scroll={{ x: 800 }}
       />
 
-      <Modal
+      <Modal className="hubx-modal"
         title={detailPeriod ? `${getProjectPeriodLabel(detailPeriod, periods.findIndex(item => item.id === detailPeriod.id))} 详情` : '回款与发票详情'}
         visible={Boolean(detailPeriod)}
         onCancel={() => setDetailPeriodId(null)}
         footer={null}
-        style={{ width: 860, maxWidth: 'calc(100vw - 32px)' }}
-        bodyStyle={{ padding: 0, background: 'var(--grey-100)' }}
+        style={{ width: 860, maxWidth: 'calc(100vw - 32px)', '--modal-content-bg': 'var(--grey-100)' } as CSSProperties}
       >
         {detailPeriod && (() => {
           const application = findApplication(projectId, detailPeriod.id);
@@ -1581,7 +1577,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         )}
       </Modal>
 
-      <Modal
+      <Modal className="hubx-modal"
         title="填写开票信息"
         visible={Boolean(invoiceEditor)}
         onOk={saveInvoice}
@@ -1589,8 +1585,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         okText="提交开票申请"
         cancelText="取消"
         maskClosable={false}
-        style={{ width: 820, maxWidth: 'calc(100vw - 32px)' }}
-        bodyStyle={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', padding: '20px 24px 8px' }}
+        style={{ width: 820, maxWidth: 'calc(100vw - 32px)', '--modal-content-max-height': 'calc(100vh - 180px)', '--modal-content-overflow': 'auto', '--modal-content-padding': '20px 24px 8px' } as CSSProperties}
       >
         <Form form={invoiceForm} layout="vertical" className="project-invoice-application-form">
           <div className="project-invoice-form-tip">客户信息已根据关联合同自动带入，提交前请核对并按实际开票资料修改。</div>

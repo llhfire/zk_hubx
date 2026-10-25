@@ -118,6 +118,7 @@ export function createMockLeadService(): LeadService {
     list: async () => leads.filter((lead) => !lead.deleted),
     getById: async (id) => findOne(id),
     getDetailInfo: async (id) => {
+      if (!id) return null;
       const detail = getLeadDetailInfo(id);
       if (detail) return detail;
       // 兜底：从列表切片组装（新增/迁移线索无 α 静态 profile 时用列表字段组装）

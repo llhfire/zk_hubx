@@ -12,6 +12,7 @@ import { BUSINESS_LINE_LABEL, type LeadBusinessLine } from '../types';
 import { leadDispatchView, type RowHighlight } from '../kpiCalc';
 import { canBeDispatched } from '../dispatchRules';
 import { hasPendingLevelAudit, returnActorsOf } from '../kpiCalc';
+import { CUSTOMER_LEVEL_COLOR as LEVEL_COLOR } from '../../leads/types';
 
 interface LeadTableProps {
   leads: LeadListItem[];
@@ -40,7 +41,6 @@ const SLA_TAG_COLOR: Record<string, string> = {
   contacted: 'green',
 };
 
-const LEVEL_COLOR: Record<string, string> = { S: 'red', A: 'orange', B: 'blue', C: 'gray' };
 
 export function LeadTable({
   leads, now, loading, selectedIds, onSelectChange, departmentByOwner, onDispatch, onUrge, onLevelAdjust, onQualityConfirm,
@@ -95,7 +95,7 @@ export function LeadTable({
       dataIndex: 'customerLevel',
       width: 70,
       render: (v: string) => v
-        ? <Tag size="small" color={LEVEL_COLOR[v] ?? 'gray'}>{v}</Tag>
+        ? <Tag size="small" color={LEVEL_COLOR[v as keyof typeof LEVEL_COLOR] ?? 'gray'}>{v}</Tag>
         : '-',
     },
     {

@@ -253,7 +253,7 @@ export function MyLeads() {
       width: 120,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
         </Space>
       ),
@@ -301,8 +301,8 @@ export function MyLeads() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {capsule}
             <div style={{ display: 'flex', gap: 2 }}>
-              <Tag size="mini" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
-              <Tag size="mini" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+              <Tag size="small" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
+              <Tag size="small" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
             </div>
           </div>
         );
@@ -397,16 +397,16 @@ export function MyLeads() {
           {
             key: 'todayFollow',
             label: '今日需跟进',
-            value: `${filterCounts.today} 条`,
+            value: `${filterCounts.today_unfollowed} 条`,
             detail: '需完成计划拜访/联络',
-            tone: filterCounts.today > 0 ? 'warning' : undefined,
+            tone: filterCounts.today_unfollowed > 0 ? 'warning' : undefined,
           },
           {
             key: 'overdueFollow',
             label: '逾期未跟进',
             value: `${filterCounts.overdue} 条`,
             detail: filterCounts.overdue > 0 ? '时效严重超时待处理' : '健康履约',
-            tone: filterCounts.overdue > 0 ? 'error' : 'success',
+            tone: filterCounts.overdue > 0 ? 'danger' : 'success',
           },
           {
             key: 'negotiation',
@@ -476,8 +476,8 @@ export function MyLeads() {
                         borderRadius: 10,
                         fontSize: 11,
                         fontWeight: 600,
-                        color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today' && filterCounts.today > 0) ? '#fff' : 'var(--color-text-3)',
-                        backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today' && filterCounts.today > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
+                        color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? '#fff' : 'var(--color-text-3)',
+                        backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
                       }}
                     >
                       {filterCounts[key as QuickFilter]}

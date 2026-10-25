@@ -28,7 +28,7 @@ export function LeadTransferPopover({ leadId, followCount, daysHeld, historyOwne
     <Popover
       title="流转记录"
       trigger="click"
-      popupStyle={{ maxWidth: 520 }}
+      style={{ maxWidth: 520 }}
       onVisibleChange={(vis) => { if (vis) { void open(); } }}
       content={
         <div style={{ fontSize: 12 }}>

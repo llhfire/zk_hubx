@@ -165,7 +165,7 @@ export function AllLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>
             {r.entity}
           </a>
@@ -219,8 +219,8 @@ export function AllLeads() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {countdown}
             <div style={{ display: 'flex', gap: 2 }}>
-              <Tag size="mini" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
-              <Tag size="mini" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+              <Tag size="small" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
+              <Tag size="small" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
             </div>
           </div>
         );
@@ -392,8 +392,8 @@ export function AllLeads() {
                       borderRadius: 10,
                       fontSize: 11,
                       fontWeight: 600,
-                      color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today' && filterCounts.today > 0) ? '#fff' : 'var(--color-text-3)',
-                      backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today' && filterCounts.today > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
+                      color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? '#fff' : 'var(--color-text-3)',
+                      backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
                     }}
                   >
                     {filterCounts[key as QuickFilter]}

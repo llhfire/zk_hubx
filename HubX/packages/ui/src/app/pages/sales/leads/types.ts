@@ -314,6 +314,8 @@ export interface LeadListItem {
   optimizer: string;
   assistant: string;
   createTime: string;
+  /** 认领时间：公海认领 / 分配时写入，用于首联时效与 SLA 计算。 */
+  claimTime?: string;
   lastFollowTime: string;
   lastFollowContent?: string; // 最近跟进内容
   nextFollowTime: string;

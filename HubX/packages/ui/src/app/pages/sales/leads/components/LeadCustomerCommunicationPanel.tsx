@@ -173,7 +173,7 @@ export function LeadCustomerCommunicationPanel({ groupName, leadId, leadName, as
   return (
     <Card className="lead-detail-main-content">
       <div className="lead-customer-communication-header">
-        <div><Text strong>售前群：{groupName}</Text><Text type="secondary" style={{ marginLeft: 8 }}>自动读取本机微信聊天记录</Text></div>
+        <div><Text bold>售前群：{groupName}</Text><Text type="secondary" style={{ marginLeft: 8 }}>自动读取本机微信聊天记录</Text></div>
         <Button size="small" loading={loading} onClick={loadCommunication}>刷新沟通记录</Button>
       </div>
       {error ? <Alert type="warning" showIcon content={error} style={{ marginTop: 16 }} /> : null}
@@ -205,7 +205,7 @@ export function LeadCustomerCommunicationPanel({ groupName, leadId, leadName, as
                 <article className="lead-customer-message-item" key={message.id}>
                   <div className="lead-customer-message-header">
                     <Avatar size={32} className="lead-customer-message-avatar">{message.avatar ? <img src={message.avatar} alt="" /> : message.sender.slice(0, 1)}</Avatar>
-                    <Text strong>{message.sender}</Text>
+                    <Text bold>{message.sender}</Text>
                     <Text type="secondary" className="lead-customer-message-time">{message.time || '-'}</Text>
                   </div>
                   <div className="lead-customer-message-content">{message.content}</div>

@@ -11,6 +11,7 @@ import {
 import type { ProjectQuotationConfig, ProjectQuotationSummary } from '../../../delivery/project/projectQuotationConfigModel';
 import type { LeadBusinessEnd } from './LeadFeatureListPanel';
 import './QuotationDocumentPreviewModal.css';
+import { formatAmountPlain as formatMoney } from '../../../../utils/money';
 
 export interface QuotationDocumentData {
   projectName: string;
@@ -39,11 +40,6 @@ interface QuotationDocumentPreviewModalProps {
   onCancel: () => void;
   onSubmit: (document: GeneratedQuotationDocument) => void;
 }
-
-const formatMoney = (value: number) => value.toLocaleString('zh-CN', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 const escapeHtml = (value: string) => value
   .replaceAll('&', '&amp;')

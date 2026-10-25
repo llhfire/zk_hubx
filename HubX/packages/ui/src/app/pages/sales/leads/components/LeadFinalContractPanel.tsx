@@ -17,6 +17,7 @@ import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../../contracts/ut
 import { renderContractDocument } from '../../contracts/templates';
 import { DocumentViewerModal } from '../../../../components/ui';
 import './LeadFinalContractPanel.css';
+import { formatMoney as formatCurrency } from '../../../../utils/money';
 
 interface LeadFinalContractPanelProps {
   contract: Contract;
@@ -24,10 +25,6 @@ interface LeadFinalContractPanelProps {
   projectLayout?: boolean;
   projectFullInfo?: boolean;
   defaultCollapsed?: boolean;
-}
-
-function formatCurrency(value: number) {
-  return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
 function getFinalVersion(contract: Contract): ContractVersion {

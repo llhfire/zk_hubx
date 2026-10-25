@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   Button,
   Card,
@@ -752,13 +752,12 @@ export function LeadQuotationHistoryPanel({
         </div>
       )}
       </Card>
-      <Modal
+      <Modal className="hubx-modal"
         title="报价操作流程说明"
         visible={flowDescriptionVisible}
         footer={null}
         onCancel={() => setFlowDescriptionVisible(false)}
-        style={{ width: 1040, maxWidth: 'calc(100vw - 32px)' }}
-        bodyStyle={{ padding: 0, maxHeight: 'calc(100vh - 150px)', overflowY: 'auto' }}
+        style={{ width: 1040, maxWidth: 'calc(100vw - 32px)', '--modal-content-max-height': 'calc(100vh - 150px)', '--modal-content-overflow': 'auto' } as CSSProperties}
       >
         <div className="quotation-flow-guide">
           <div className="quotation-flow-guide-hero">

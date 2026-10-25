@@ -1,7 +1,7 @@
 // 线索域操作纯函数（B2）。mock/http 服务共用，口径与 PRD-线索管理模块一致。
 // 规则：8 态销售漏斗、退回第 3 次自动进垃圾、公海认领/分配、软删除、转客户、写跟进同步状态。
 // β 阶段 2：派发域四动作与详情组装也下沉到这里（Workers 经 esbuild 单源导入，禁止复制）。
-import type { Attachment, LeadListItem, LeadDetailInfo, FollowUpRecord, LeadAction, CustomerLevel } from '../app/pages/sales/leads/types';
+import type { Attachment, LeadListItem, LeadDetailInfo, FollowUpRecord, LeadAction, CustomerLevel, TransferRecord } from '../app/pages/sales/leads/types';
 import type { LeadEvent, DispatchTarget } from '../app/pages/sales/lead-dispatch/types';
 
 /** 线索创建入参 */
@@ -38,11 +38,18 @@ export interface FollowUpInput {
   creator: string;
 }
 
-/** 流转记录构建入参 */
+/**
+ * 流转记录构建入参。
+ *
+ * action 不能直接用 `LeadAction`：后者还包含 `delete`（软删除，不产生流转记录）
+ * 和 `transfer`（历史遗留，实际由 assign + 原因表达），
+ * 而 `TransferRecord.action` 的展示映射表里没有 delete。
+ * 这里收窄到真正会落流转记录的动作，新增动作时两边会同时编译报错。
+ */
 export interface TransferRecordInput {
   leadId: string;
   operator: string;
-  action: LeadAction;
+  action: Exclude<LeadAction, 'delete'> & TransferRecord['action'];
   toOwner: string;
   status: string;
   reason?: string;

@@ -115,7 +115,7 @@ export function TrashLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source] || r.source}</Tag>
+          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
           <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
         </Space>
       ),
@@ -177,7 +177,7 @@ export function TrashLeads() {
             label: '达质检退回上限 (≥3次)',
             value: `${highTrashCount} 条`,
             detail: highTrashCount > 0 ? '退回频次过高沉淀' : '无严重反复退回',
-            tone: highTrashCount > 0 ? 'error' : undefined,
+            tone: highTrashCount > 0 ? 'danger' : undefined,
           },
           {
             key: 'displayed',

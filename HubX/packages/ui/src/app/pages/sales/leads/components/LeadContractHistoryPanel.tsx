@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import {
   Alert,
   Button,
@@ -443,12 +444,14 @@ export function LeadContractHistoryPanel({
                 <span>共 {versions.length} 个版本</span>
               </div>
               <Space size="small">
+                {/* LocalUploadItem 的 uid 可选，Arco 的 UploadItem 要求必填；
+                    运行时形状一致（Arco 会补 uid），只在类型边界收敛。 */}
                 {canUploadWord ? (
                   <Upload
                     autoUpload={false}
                     accept=".doc,.docx"
                     showUploadList={false}
-                    fileList={wordFileList}
+                    fileList={wordFileList as UploadItem[]}
                     onChange={handleWordUpload}
                   >
                     <Button size="small" icon={<IconUpload />}>

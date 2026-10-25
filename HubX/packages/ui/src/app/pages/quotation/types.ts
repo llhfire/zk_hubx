@@ -367,7 +367,15 @@ export const PRESET_COST_ITEMS = [
 export interface PaymentTerm {
   stage: string;
   percent: number;
-  amount: number;
+  amount?: number;
+  /** 预计回款日期 YYYY-MM-DD */
+  expectedDate?: string;
+  /** 回款条件计算方式：工作日 / 自然日 */
+  conditionType?: 'working_day' | 'calendar_day';
+  /** 回款条件约定天数（如 3、5、15 天） */
+  conditionDays?: number;
+  /** 回款触发节点描述（如「合同签订生效后」、「初验通过后」） */
+  conditionDesc?: string;
 }
 
 /** 标准付款方式模板 */

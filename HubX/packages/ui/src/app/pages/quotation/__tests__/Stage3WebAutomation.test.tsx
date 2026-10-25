@@ -233,4 +233,143 @@ describe('Stage 3 Web Automation 在线报价配置页面重构 (Stage3WebAutoma
     expect(html).toContain('比例合计 80%');
     expect(html).toContain('还差 20%');
   });
+
+  it('8. 渲染资金流彩虹进度条与自定义付款方案模版存储入口', () => {
+    const quote = createMockStage3Quote();
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 资金流彩色里程碑进度条
+    expect(html).toContain('stage3-payment-flow-bar');
+    expect(html).toContain('stage3-flow-segment');
+    expect(html).toContain('合同签订预付款 30%');
+
+    // 保存模版按钮入口
+    expect(html).toContain('保存当前方案为模版');
+    expect(html).toContain('存为模版');
+  });
+
+  it('9. 交付履约服务提供城市标准套用、单地成本小计与复制目的地能力', () => {
+    const quote = createMockStage3Quote();
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 差旅城市标准
+    expect(html).toContain('一线标准 (北上广深)');
+    expect(html).toContain('省会/二线标准');
+    expect(html).toContain('套用标准:');
+
+    // 单地成本小计
+    expect(html).toContain('单地小计:');
+  });
+
+  it('10. 外部自费代采提供高频常用代采快捷芯片库与备注说明', () => {
+    const quote = createMockStage3Quote();
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 常用快捷代采芯片
+    expect(html).toContain('快捷添加常用代采:');
+    expect(html).toContain('+ 阿里云 ECS/RDS 服务器');
+    expect(html).toContain('+ 域名注册与 SSL 国密证书');
+    expect(html).toContain('+ 腾讯云短信验证码包');
+    expect(html).toContain('+ 微信小程序认证与商户号');
+  });
+
+  it('11. 付款比例未达 100% 时提供一键补齐尾款快捷操作', () => {
+    const quote = createMockStage3Quote({
+      summary: {
+        totalLaborDays: 30,
+        projectWorkDays: 20,
+        grandTotalPrice: 38100,
+        paymentTerms: [
+          { stage: '首期启动款', percent: 60 },
+          { stage: '上线交付款', percent: 20 },
+        ],
+        taxIncluded: true,
+        warrantyYears: 1,
+        invoiceType: '专票',
+      },
+    });
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 一键补齐尾款按钮
+    expect(html).toContain('一键补齐尾款 (+20%)');
+    // 彩虹条中黄色警告段
+    expect(html).toContain('stage3-flow-segment-warning');
+    expect(html).toContain('未分配 20%');
+  });
+
+  it('12. 商务结算与付款计划完整呈现期数、预计回款日期、回款条件、回款比例与回款金额 5 大字段', () => {
+    const quote = createMockStage3Quote({
+      summary: {
+        totalLaborDays: 30,
+        projectWorkDays: 20,
+        grandTotalPrice: 100000,
+        paymentTerms: [
+          {
+            stage: '预付款',
+            percent: 30,
+            expectedDate: '2026-10-01',
+            conditionType: 'working_day',
+            conditionDays: 5,
+            conditionDesc: '合同生效后',
+          },
+          {
+            stage: '尾款',
+            percent: 70,
+            expectedDate: '2026-12-31',
+            conditionType: 'calendar_day',
+            conditionDays: 15,
+            conditionDesc: '系统终验后',
+          },
+        ],
+        taxIncluded: true,
+        warrantyYears: 1,
+        invoiceType: '专票',
+      },
+    });
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 表头 5 个核心字段
+    expect(html).toContain('期数 / 阶段名称');
+    expect(html).toContain('预计回款日期');
+    expect(html).toContain('回款条件（自然日/工作日）');
+    expect(html).toContain('回款比例');
+    expect(html).toContain('回款金额');
+
+    // 期数序号展示
+    expect(html).toContain('第1期');
+    expect(html).toContain('第2期');
+
+    // 自然日 / 工作日选择器与描述
+    expect(html).toContain('工作日');
+    expect(html).toContain('自然日');
+    expect(html).toContain('合同生效后');
+    expect(html).toContain('系统终验后');
+
+    // 动态回款金额折算 (30,100 * 30% = ¥9,030; 30,100 * 70% = ¥21,070)
+    expect(html).toContain('¥9,030');
+    expect(html).toContain('¥21,070');
+  });
+
+  it('13. 外部自费与代采项目具备统一表头行与各列垂直居中对齐结构', () => {
+    const quote = createMockStage3Quote({
+      otherCosts: [
+        { id: 'c1', name: '阿里云ECS', amount: 5000, note: '客户直购' },
+        { id: 'c2', name: '腾讯云短信', amount: 800, note: '我方代采' },
+      ],
+    });
+    const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
+
+    // 外部自费统一表头
+    expect(html).toContain('费用名称');
+    expect(html).toContain('金额');
+    expect(html).toContain('备注说明 / 采购属性');
+    expect(html).toContain('操作');
+
+    // 条目内容
+    expect(html).toContain('阿里云ECS');
+    expect(html).toContain('腾讯云短信');
+    expect(html).toContain('客户直购');
+    expect(html).toContain('我方代采');
+  });
 });
+

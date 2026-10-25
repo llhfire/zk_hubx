@@ -40,14 +40,16 @@ function money(value: number): string {
     : '—';
 }
 
-function ApprovalProcessPanel({ quote, readonly, leadFrozen }: { quote: Quote; readonly: boolean; leadFrozen: boolean }) {
-  const { currentRole, decideAudit, stampQuote, updateQuote } = useQuotation();
-  const [rejectVisible, setRejectVisible] = useState(false);
-  const [rejectComment, setRejectComment] = useState('');
-  const [documentSource, setDocumentSource] = useState<'generated' | 'scan'>('generated');
-  const auditor = quote.auditNodes.find((node) => node.quoteRole === currentRole)?.auditorName ?? null;
-  const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant');
-  const state = quote.fileFlow ?? { onlineDocument: { status: 'empty' as const }, scans: [] };
+function ApprovalProcessPanel({
+  quote,
+  currentStage,
+}: {
+  quote: Quote;
+  currentStage: QuoteStage;
+}) {
+  const { currentRole } = useQuotation();
+  const myAuditNode = quote.auditNodes.find((node) => node.quoteRole === currentRole);
+  const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant') || quote.stampNode.stamperName === currentRole;
   const auditLabel = (status: string) => status === 'APPROVED' ? '已通过' : status === 'REJECTED' ? '已驳回' : '待审批';
   const auditColor = (status: string) => status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'gray';
   const stampLabel = quote.stampNode.status === 'COMPLETED'
@@ -57,35 +59,18 @@ function ApprovalProcessPanel({ quote, readonly, leadFrozen }: { quote: Quote; r
     ? 'green'
     : quote.stampNode.status === 'PENDING_STAMP' ? 'orange' : 'gray';
 
-  const handleApprove = () => {
-    if (!auditor) return;
-    decideAudit(quote.id, auditor, 'approve', '同意');
-    Message.success('已审批通过');
-  };
-
-  const handleReject = () => {
-    if (!auditor) return;
-    if (!rejectComment.trim()) { Message.warning('驳回意见为必填项'); return; }
-    decideAudit(quote.id, auditor, 'reject', rejectComment.trim());
-    setRejectVisible(false);
-    setRejectComment('');
-    Message.success('已驳回，退回销售修改，三人会签将重审');
-  };
-
-  const handleStamp = () => {
-    stampQuote(quote.id);
-    Message.success('已加盖公章，可下载正式 PDF 报价单');
-  };
-
-  const handleScansChange = (scans: NonNullable<NonNullable<Quote['fileFlow']>['scans']>) => {
-    updateQuote(quote.id, (current) => ({
-      ...current,
-      fileFlow: {
-        ...(current.fileFlow ?? { onlineDocument: { status: 'empty' as const }, scans: [] }),
-        scans,
-      },
-    }));
-  };
+  // 关键：只有当前用户节点处于待审 (PENDING) 时才提示；确认通过或驳回后，提示立即消失！
+  const isPendingMyAudit = Boolean(
+    myAuditNode &&
+    myAuditNode.status === 'PENDING' &&
+    quote.status === 'auditing'
+  );
+  // 关键：只有当前用户是印管且确实待盖章时才提示；盖章完成后，提示立即消失！
+  const isPendingMyStamp = Boolean(
+    isStamper &&
+    quote.status === 'pending_stamp' &&
+    quote.stampNode.status === 'PENDING_STAMP'
+  );
 
   return (
     <Card title="审批流程" size="small">
@@ -93,51 +78,88 @@ function ApprovalProcessPanel({ quote, readonly, leadFrozen }: { quote: Quote; r
         <Text type="secondary">当前状态</Text>
         <Tag color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
       </div>
+
+      {/* 阶段指示与引导提示 */}
+      {currentStage < 4 ? (
+        <div style={{ padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 4, margin: '8px 0', fontSize: 11, color: 'var(--color-text-3)', lineHeight: '16px' }}>
+          前置商务配置阶段 · 提交后正式激活下方会签流转
+        </div>
+      ) : (isPendingMyAudit || isPendingMyStamp) ? (
+        <div style={{ padding: '6px 8px', background: 'rgb(var(--arcoblue-1))', border: '1px solid rgb(var(--arcoblue-3))', borderRadius: 4, margin: '8px 0', fontSize: 11, color: 'rgb(var(--arcoblue-7))', lineHeight: '16px' }}>
+          👉 当前等待您处理，请在主工作区公函上方执行审批/盖章决策
+        </div>
+      ) : null}
+
+      {/* 会签审批节点列表（只读全景时间线） */}
       <div className="quotation-approval-flow">
-        {quote.auditNodes.length > 0 ? quote.auditNodes.map((node, index) => (
-          <div className="quotation-approval-node" key={`${node.auditorId}-${index}`}>
-            <span className="quotation-approval-node__marker">{index + 1}</span>
-            <div className="quotation-approval-node__body">
-              <div className="quotation-approval-node__head">
-                <Text bold>{node.auditorName}</Text>
-                <Tag color={auditColor(node.status)} size="small">{auditLabel(node.status)}</Tag>
+        {quote.auditNodes.length > 0 ? quote.auditNodes.map((node, index) => {
+          const isApproved = node.status === 'APPROVED';
+          const isRejected = node.status === 'REJECTED';
+          return (
+            <div className="quotation-approval-node" key={`${node.auditorId || node.auditorName}-${index}`}>
+              <span className={`quotation-approval-node__marker ${isApproved ? 'approved' : isRejected ? 'rejected' : ''}`}>
+                {index + 1}
+              </span>
+              <div className="quotation-approval-node__body">
+                <div className="quotation-approval-node__head">
+                  <Text bold>{node.auditorName}</Text>
+                  <Tag color={auditColor(node.status)} size="small">{auditLabel(node.status)}</Tag>
+                </div>
+                <span className="quotation-approval-node__meta">{node.role}</span>
+                {node.comment && <span className="quotation-approval-node__comment">{node.comment}</span>}
+                {node.auditTime && (
+                  <span style={{ fontSize: 10, color: 'var(--color-text-4)' }}>批复于 {node.auditTime}</span>
+                )}
               </div>
-              <span className="quotation-approval-node__meta">{node.role}</span>
-              {node.comment && <span className="quotation-approval-node__comment">{node.comment}</span>}
             </div>
-          </div>
-        )) : (
+          );
+        }) : (
           <Text type="secondary">提交审批后生成审批节点</Text>
         )}
-      </div>
-      {!readonly && auditor && quote.status === 'auditing' && (
-        <div className="quotation-approval-actions">
-          <Space>
-            <Button type="primary" icon={<IconCheck />} disabled={leadFrozen} onClick={handleApprove}>同意并通过</Button>
-            <Button status="danger" icon={<IconClose />} onClick={() => setRejectVisible((visible) => !visible)}>驳回报价</Button>
-          </Space>
-          {rejectVisible && (
-            <div className="quotation-approval-reject">
-              <Input.TextArea rows={2} placeholder="驳回意见（必填，将退回销售修改并全员重审）" value={rejectComment} onChange={setRejectComment} />
-              <Button type="primary" status="danger" onClick={handleReject}>确认驳回</Button>
+
+        {/* 盖章节点（只读全景展示，区分电子公章与线下实体章扫描件） */}
+        <div className="quotation-approval-node">
+          <span className={`quotation-approval-node__marker ${quote.stampNode.status === 'COMPLETED' ? 'approved' : ''}`}>
+            印
+          </span>
+          <div className="quotation-approval-node__body">
+            <div className="quotation-approval-node__head">
+              <Text bold>{quote.stampNode.stamperName || '公章管理员'}</Text>
+              <Tag color={stampColor} size="small">{stampLabel}</Tag>
             </div>
-          )}
+            <span className="quotation-approval-node__meta">
+              {quote.stampNode.status === 'COMPLETED'
+                ? (quote.fileFlow?.scans && quote.fileFlow.scans.length > 0
+                    ? `线下实体章扫描件归档 (${quote.fileFlow.scans.length}份)`
+                    : '系统防伪电子公章')
+                : '企业公章加盖'}
+            </span>
+            {quote.stampNode.stampTime && (
+              <span style={{ fontSize: 10, color: 'var(--color-text-4)' }}>加盖于 {quote.stampNode.stampTime}</span>
+            )}
+          </div>
         </div>
-      )}
-      <div className="quotation-stamp-panel">
-        <div className="quotation-stamp-panel__head">
-          <Text bold>盖章节点 · {quote.stampNode.stamperName || '盖章人'}</Text>
-          <Tag color={stampColor}>{stampLabel}</Tag>
+
+        {/* 商务成交闭环节点（只读全景展示） */}
+        <div className="quotation-approval-node">
+          <span className={`quotation-approval-node__marker ${quote.status === 'confirmed' ? 'approved' : quote.status === 'voided' ? 'rejected' : ''}`}>
+            终
+          </span>
+          <div className="quotation-approval-node__body">
+            <div className="quotation-approval-node__head">
+              <Text bold>客户成交闭环</Text>
+              <Tag
+                size="small"
+                color={quote.status === 'confirmed' ? 'green' : quote.status === 'sent' ? 'arcoblue' : quote.status === 'voided' ? 'red' : 'gray'}
+              >
+                {quote.status === 'confirmed' ? '已成交' : quote.status === 'sent' ? '已发送客户' : quote.status === 'voided' ? '已废止' : '待达成'}
+              </Tag>
+            </div>
+            <span className="quotation-approval-node__meta">
+              {quote.status === 'confirmed' ? '已确认成交并关联合同' : quote.sentAt ? `发送于 ${quote.sentAt}` : '商务流转终点'}
+            </span>
+          </div>
         </div>
-        {quote.stampNode.stampTime && <Text type="secondary" className="quotation-approval-node__meta">盖章时间：{quote.stampNode.stampTime}</Text>}
-        <Radio.Group value={documentSource} onChange={setDocumentSource} disabled={readonly || !isStamper || quote.status !== 'pending_stamp'}>
-          <Radio value="generated">系统生成 PDF</Radio>
-          <Radio value="scan">盖章扫描件</Radio>
-        </Radio.Group>
-        <ScanUpload quoteStatus={quote.status} scans={state.scans ?? []} onScansChange={handleScansChange} />
-        {!readonly && isStamper && quote.status === 'pending_stamp' && (
-          <Button type="primary" disabled={leadFrozen} onClick={handleStamp}>确认使用所选文件</Button>
-        )}
       </div>
     </Card>
   );
@@ -172,6 +194,12 @@ function QuoteDynamicPanel({
             <Text bold>{item.value}</Text>
           </div>
         ))}
+      </div>
+      <div style={{ marginTop: 10, padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 4, fontSize: 11, color: 'var(--color-text-3)', lineHeight: '16px' }}>
+        {currentStage === 1 && '💡 第 1 步：拆解功能需求，完成后交架构师评估'}
+        {currentStage === 2 && '💡 第 2 步：评估角色人天与工期，完成后交销售配置'}
+        {currentStage === 3 && '💡 第 3 步：配置增项与价格方案，完成后提交审批'}
+        {currentStage === 4 && '💡 第 4 步：会签审批与加盖公章，完成客户签约'}
       </div>
     </Card>
   );
@@ -331,6 +359,33 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
     }
   };
 
+  const stepsConfig = useMemo(() => {
+    return STAGES.map((s) => {
+      let desc: string | undefined;
+      if (s === 1) {
+        desc = '功能拆解与范围定义';
+      } else if (s === 2) {
+        desc = '研发角色人天评估';
+      } else if (s === 3) {
+        desc = '商务增项与阶梯定价';
+      } else if (s === 4) {
+        if (quote.status === 'auditing') desc = '会签审批中';
+        else if (quote.status === 'pending_stamp') desc = '待加盖企业公章';
+        else if (quote.status === 'stamped') desc = '已盖章 · 待发客';
+        else if (quote.status === 'sent') desc = '已发出 · 跟进成交';
+        else if (quote.status === 'confirmed') desc = '客户成交 · 闭环';
+        else if (quote.status === 'rejected') desc = '已驳回 · 待修改';
+        else if (quote.status === 'voided') desc = '已作废';
+        else desc = '正式公函与流转闭环';
+      }
+      return {
+        key: String(s),
+        title: flowStageNames[s],
+        description: desc,
+      };
+    });
+  }, [quote.status, flowStageNames]);
+
   return (
     <PageShell breadcrumbs={breadcrumbs} className={embedded ? 'quotation-workbench--embedded' : undefined}>
       {leadFrozen && (
@@ -360,7 +415,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
             )}
           </Space>
         )}
-        steps={STAGES.map((s) => ({ key: String(s), title: flowStageNames[s] }))}
+        steps={stepsConfig}
         currentStep={currentStage - 1}
       />
 
@@ -388,7 +443,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
             flowStageNames={flowStageNames}
             amountBreakdown={amountBreakdown}
           />
-          <ApprovalProcessPanel quote={quote} readonly={access !== 'editable'} leadFrozen={leadFrozen} />
+          <ApprovalProcessPanel quote={quote} currentStage={currentStage} />
         </ProcessWorkspaceAside>
       </ProcessWorkspace>
 

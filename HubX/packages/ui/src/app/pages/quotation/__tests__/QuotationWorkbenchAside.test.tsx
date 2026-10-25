@@ -107,4 +107,23 @@ describe('报价工作台最右侧【报价动态】与【审批流程】高密�
     expect(html).toContain('技术负责人-罗总');
     expect(html).toContain('财务部-赵主管');
   });
+
+  it('2. 顶部步进条包含四阶段引导描述，侧边栏审批流程纯只读无冗余操作按钮并带全景闭环节点', () => {
+    const html = renderToStaticMarkup(createElement(QuotationWorkbench));
+
+    // 顶部步进条阶段引导描述
+    expect(html).toContain('功能拆解与范围定义');
+    expect(html).toContain('研发角色人天评估');
+    expect(html).toContain('商务增项与阶梯定价');
+
+    // 侧边栏审批全景只读闭环节点
+    expect(html).toContain('公章管理员');
+    expect(html).toContain('企业公章加盖');
+    expect(html).toContain('客户成交闭环');
+
+    // 彻底消灭侧边栏重复操作表单与按钮
+    expect(html).not.toContain('同意并通过');
+    expect(html).not.toContain('驳回报价');
+    expect(html).not.toContain('确认使用所选文件');
+  });
 });

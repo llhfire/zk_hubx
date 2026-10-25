@@ -1,6 +1,8 @@
 import { lazy, type ComponentType } from "react";
 import { createBrowserRouter, redirect } from "react-router";
 import { MainLayout } from "./components/MainLayout";
+import { NotFound } from "./pages/support/system/NotFound";
+import { RouteErrorBoundary } from "./pages/support/system/RouteErrorBoundary";
 import {
   AttendanceManagement,
   EmployeeDetail,
@@ -104,6 +106,8 @@ export const router = createBrowserRouter([
   {
     path: "/",
     Component: MainLayout,
+    // 渲染期异常兜底：没有它时任一页面抛错都会卸载整棵树变成白屏
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, Component: Dashboard },
       { path: "workbench", Component: PersonalWorkbench },
@@ -208,6 +212,9 @@ export const router = createBrowserRouter([
         loader: ({ params }) => redirect(`/financial-delivery/cases/${params.id}?tab=post-mortem`),
       },
       { path: "ui-library", Component: UiComponentLibraryPage },
+
+      // 兜底：未知路径不再白屏。必须放最后，React Router 按顺序匹配。
+      { path: "*", Component: NotFound },
     ],
   },
 ]);

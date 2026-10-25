@@ -39,11 +39,12 @@ npm run dev
 npm run build
 npm test
 npm run test:reminders
+npm run typecheck
 npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试名称"
 ```
 
 说明：
-- 当前没有 `lint` 或 `typecheck` 脚本。
+- 没有 `lint` 脚本；`npm run typecheck` 是类型检查门禁，串行跑 `typecheck:ui`（`packages/ui`，配置见根目录 `tsconfig.ui.json`）和 `typecheck:api`（`apps/api`）。**改完页面/服务先跑它**，Arco 未知 prop 会被静默丢弃、不会报运行时错误，只有 tsc 能拦。
 - 常规验证优先跑 `npm run build`；改动提醒逻辑时再补 `npm test` 或 `npm run test:reminders`。
 - 仓库虽有 `pnpm-workspace.yaml`，但 README 与现有脚本都以 `npm` 为准。
 - `react-router@7.13.0` 声明需要 Node `>=20.0.0`；在 Node 18 下 `npm install` 会出现 `EBADENGINE` 警告。当前 Node 18.17.0 下构建和测试能通过，但长期建议使用 Node 20+。

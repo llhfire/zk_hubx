@@ -11,6 +11,9 @@
     "build": "npm run build --workspace apps/prototype",
     "test": "npm run test --workspace apps/prototype",
     "test:reminders": "npm run test:reminders --workspace apps/prototype",
+    "typecheck": "npm run typecheck:ui && npm run typecheck:api",
+    "typecheck:ui": "tsc --noEmit -p tsconfig.ui.json",
+    "typecheck:api": "tsc --noEmit -p apps/api/tsconfig.json",
     "db": "node scripts/db.js",
     "db:status": "node scripts/db.js status",
     "db:seed": "node scripts/db.js seed"
@@ -22,7 +25,8 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "jsdom": "^30.0.1"
+    "jsdom": "^30.0.1",
+    "typescript": "^5.9.3"
   },
   "overrides": {
     "@babel/core": "7.29.7",

@@ -61,7 +61,7 @@ npm test             # vitest run，跑全部单测
 npm run test:reminders  # 只跑提醒系统单测
 ```
 
-- 没有 `lint` / `typecheck` 脚本；单测用 Vitest。
+- 没有 `lint` 脚本；类型检查用 `npm run typecheck`（`typecheck:ui` + `typecheck:api`），单测用 Vitest。
 - 跑单个测试文件：`npx vitest run <文件路径> -t "测试名"`。
 - `react-router@7` 要求 Node `>=20`（Node 18 下 `npm install` 会有 `EBADENGINE` 警告，但当前仍能构建/测试通过）。
 - 仓库虽有 `pnpm-workspace.yaml`，但 README 与现有脚本均以 `npm` 为准。

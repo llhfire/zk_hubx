@@ -454,7 +454,7 @@ export function TripDetail() {
         title="差旅申请与综合结项凭证套打预览"
         visible={printModalVisible}
         onCancel={() => setPrintModalVisible(false)}
-        width={720}
+        style={{ width: 720 }}
         footer={(
           <Space>
             <Button onClick={() => setPrintModalVisible(false)}>取消</Button>

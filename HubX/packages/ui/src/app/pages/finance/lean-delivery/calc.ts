@@ -4,8 +4,10 @@
 // 页面不要直接加总，一律调这些函数
 // ========================================
 
+// CaseStatus 是 enum（既有类型也有值），状态机映射表要引用它的成员，
+// 因此不能走 import type —— 单独按值导入。
+import { CaseStatus } from './types';
 import type {
-  CaseStatus,
   LeanRole,
   CaseCostItem,
   EvalSheet,
@@ -52,14 +54,14 @@ export const WIP_DAYS_YELLOW = 14;
 
 /** 合法下一态映射 */
 export const CASE_STATUS_TRANSITIONS: Record<CaseStatus, CaseStatus[]> = {
-  drafting:     ['quoting', 'terminated'],
-  quoting:      ['negotiating', 'drafting', 'terminated'],
-  negotiating:  ['signed', 'quoting', 'terminated'],
-  signed:       ['in_progress', 'terminated'],
-  in_progress:  ['suspended', 'accepting', 'collecting', 'terminated'],
-  suspended:    ['in_progress', 'terminated'],
-  accepting:    ['collecting', 'in_progress'],
-  collecting:   ['completed', 'in_progress'],
+  drafting:     [CaseStatus.QUOTING, CaseStatus.TERMINATED],
+  quoting:      [CaseStatus.NEGOTIATING, CaseStatus.DRAFTING, CaseStatus.TERMINATED],
+  negotiating:  [CaseStatus.SIGNED, CaseStatus.QUOTING, CaseStatus.TERMINATED],
+  signed:       [CaseStatus.IN_PROGRESS, CaseStatus.TERMINATED],
+  in_progress:  [CaseStatus.SUSPENDED, CaseStatus.ACCEPTING, CaseStatus.COLLECTING, CaseStatus.TERMINATED],
+  suspended:    [CaseStatus.IN_PROGRESS, CaseStatus.TERMINATED],
+  accepting:    [CaseStatus.COLLECTING, CaseStatus.IN_PROGRESS],
+  collecting:   [CaseStatus.COMPLETED, CaseStatus.IN_PROGRESS],
   completed:    [],
   terminated:   [],
 };
@@ -365,11 +367,11 @@ export function buildLifecycleTrack(
   status: CaseStatus,
   supplements: SupplementContractSummary[],
 ): LifecycleNode[] {
-  const canonical: CaseStatus[] = ['drafting', 'quoting', 'negotiating', 'signed', 'in_progress', 'accepting', 'collecting', 'completed'];
-  const allStatuses: CaseStatus[] = status === 'suspended'
-    ? ['drafting', 'quoting', 'negotiating', 'signed', 'in_progress', 'suspended']
-    : status === 'terminated'
-      ? ['drafting', 'terminated']
+  const canonical: CaseStatus[] = [CaseStatus.DRAFTING, CaseStatus.QUOTING, CaseStatus.NEGOTIATING, CaseStatus.SIGNED, CaseStatus.IN_PROGRESS, CaseStatus.ACCEPTING, CaseStatus.COLLECTING, CaseStatus.COMPLETED];
+  const allStatuses: CaseStatus[] = status === CaseStatus.SUSPENDED
+    ? [CaseStatus.DRAFTING, CaseStatus.QUOTING, CaseStatus.NEGOTIATING, CaseStatus.SIGNED, CaseStatus.IN_PROGRESS, CaseStatus.SUSPENDED]
+    : status === CaseStatus.TERMINATED
+      ? [CaseStatus.DRAFTING, CaseStatus.TERMINATED]
       : canonical;
   const labels: Record<CaseStatus, string> = {
     drafting: '草拟', quoting: '报价', negotiating: '洽谈', signed: '签约',
@@ -441,7 +443,7 @@ export function buildOperatingHints(
   }
 
   // 逾期催款提示
-  if (suggestCollecting('in_progress', plans, collections, asOf)) {
+  if (suggestCollecting(CaseStatus.IN_PROGRESS, plans, collections, asOf)) {
     hints.push('有逾期期次未收，建议催款');
   }
 

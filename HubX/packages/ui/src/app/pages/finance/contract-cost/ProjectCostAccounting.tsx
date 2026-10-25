@@ -390,7 +390,7 @@ export function ProjectCostAccounting() {
               value={summary.alertCount}
               suffix="个"
               prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />}
-              valueStyle={{ color: summary.alertCount > 0 ? 'var(--destructive-500)' : 'var(--success-500)' }}
+              styleValue={{ color: summary.alertCount > 0 ? 'var(--destructive-500)' : 'var(--success-500)' }}
             />
           </Card>
         </Col>
@@ -550,7 +550,7 @@ function ProjectIncomeExpenseDetail({
           <Table
             size="small"
             pagination={false}
-            rowKey={(_, i) => `in-${i}`}
+            rowKey={(record) => `in-${record.type}-${record.name}`}
             data={incomeLines}
             columns={[
               { title: '类型', dataIndex: 'type', width: 100 },
@@ -595,7 +595,7 @@ function ProjectIncomeExpenseDetail({
           <Table
             size="small"
             pagination={false}
-            rowKey={(_, i) => `ex-${i}`}
+            rowKey={(record) => `ex-${record.type}-${record.name}`}
             data={expenseLines}
             columns={[
               { title: '类型', dataIndex: 'type', width: 100 },

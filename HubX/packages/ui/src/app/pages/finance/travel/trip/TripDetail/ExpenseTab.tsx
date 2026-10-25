@@ -575,7 +575,7 @@ export function ExpenseTab({
               selectedRowKeys,
               onChange: (keys) => setSelectedRowKeys(keys as string[]),
             }}
-            noDataContent="暂无费用记录"
+            noDataElement="暂无费用记录"
           />
         ) : (
           <TimelineView
@@ -644,7 +644,7 @@ export function ExpenseTab({
               <Input
                 type="number"
                 placeholder="¥0"
-                value={form.amount || ''}
+                value={form.amount ? String(form.amount) : ''}
                 onChange={(value) => setForm({ ...form, amount: Number(value) })}
               />
             </Col>

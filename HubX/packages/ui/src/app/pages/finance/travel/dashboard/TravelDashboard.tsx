@@ -17,7 +17,6 @@ import {
 import {
   IconDashboard,
   IconUser,
-  IconBarChart,
   IconCheckCircle,
   IconExclamationCircle,
   IconRight,
@@ -459,7 +458,7 @@ export function TravelDashboard() {
                             </span>
                             <div className="travel-dash-rank-info">
                               <span className="travel-dash-rank-name">{item.city}</span>
-                              <Tag size="mini">{item.trips || 6}次出差</Tag>
+                              <Tag size="small">{item.trips || 6}次出差</Tag>
                               <div className="travel-dash-rank-bar-wrap">
                                 <Progress
                                   percent={deptStats?.totalExpense ? Math.round(((item.amount ?? 0) / deptStats.totalExpense) * 100) : 0}
@@ -577,7 +576,7 @@ export function TravelDashboard() {
                             </span>
                             <div className="travel-dash-rank-info">
                               <span style={{ fontWeight: 600, fontSize: 13 }}>{item.person}</span>
-                              <Tag size="mini">{item.dept || '交付部'} · {item.empId || '001'}</Tag>
+                              <Tag size="small">{item.dept || '交付部'} · {item.empId || '001'}</Tag>
                             </div>
                             <span className="travel-dash-rank-amount">¥{(item.amount ?? 0).toLocaleString()}</span>
                           </div>

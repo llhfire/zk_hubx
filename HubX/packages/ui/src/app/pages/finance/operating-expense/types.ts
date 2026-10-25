@@ -50,6 +50,8 @@ export interface ExpenseRecord {
   departmentId?: string;
   projectId?: string;
   channelId?: string;
+  /** 挂线索来源（差旅报销按线索归集时投影进来，供 lead_channel 口径追溯） */
+  leadId?: string;
   source: ExpenseSource;
   sourceRefId?: string;
   templateId?: string;

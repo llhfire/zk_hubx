@@ -216,7 +216,7 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
               }}
             >
               <Space size={6}>
-                <IconCalendar style={{ color: 'var(--color-primary-6)' }} />
+                <IconCalendar style={{ color: 'rgb(var(--primary-6))' }} />
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{calendarMonth} 异地出差打卡核验日历</span>
               </Space>
               <Tag size="small" color="blue">点击日期可查具体打卡轨迹</Tag>
@@ -319,7 +319,7 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                   borderBottom: '1px solid var(--color-border-1, #f2f3f5)',
                 }}
               >
-                <IconStorage style={{ color: 'var(--color-primary-6)' }} />
+                <IconStorage style={{ color: 'rgb(var(--primary-6))' }} />
                 <span>津贴测算公式与发放依据</span>
               </div>
 
@@ -327,7 +327,7 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                 <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>公式推演</div>
                 <div style={{ fontSize: 14 }}>
                   ¥{subsidy?.standard} (日标准) × {effectiveDays} (有效天数) ={' '}
-                  <strong style={{ color: 'var(--color-primary-6)', fontSize: 16 }}>
+                  <strong style={{ color: 'rgb(var(--primary-6))', fontSize: 16 }}>
                     ¥{subsidy?.totalAmount.toLocaleString()}
                   </strong>
                 </div>

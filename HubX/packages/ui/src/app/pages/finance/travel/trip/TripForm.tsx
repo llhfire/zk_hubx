@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ReactElement } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Button,
@@ -76,7 +76,7 @@ const TRANSPORT_OPTIONS: {
   value: TransportMode;
   title: string;
   desc: string;
-  icon: (size: number) => JSX.Element;
+  icon: (size: number) => ReactElement;
 }[] = [
   {
     value: 'high_speed_rail',
@@ -727,10 +727,11 @@ export function TripForm() {
                   <label style={{ display: 'block', fontSize: 13, marginBottom: 6, color: 'var(--color-text-1)' }}>
                     往返日期范围 <span style={{ color: '#f53f3f' }}>*</span>
                   </label>
+                  {/* RangePicker 第一个参数才是 string[]，原写法取到的是 Dayjs[]。 */}
                   <RangePicker
                     style={{ width: '100%' }}
                     value={[form.startDate, form.endDate]}
-                    onChange={(_, dateStrings) => {
+                    onChange={(dateStrings) => {
                       setForm((prev) => ({
                         ...prev,
                         startDate: dateStrings[0] || '',

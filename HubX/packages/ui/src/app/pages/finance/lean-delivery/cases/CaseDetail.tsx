@@ -59,6 +59,7 @@ import { CaseStatus } from '../types';
 import { buildBriefRows, downloadCsv, toCsv } from './detail/briefExport';
 import { ManageParamsModal } from './detail/ManageParamsModal';
 import './caseDetail.css';
+import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title } = Typography;
 const { TabPane } = Tabs;
@@ -138,10 +139,6 @@ interface CaseParams {
   commercialCap: number;
 }
 
-function money(value: number): string {
-  return `¥${value.toLocaleString('zh-CN')}`;
-}
-
 function percent(value: number | null): string {
   return value === null ? '-' : `${(value * 100).toFixed(1)}%`;
 }
@@ -162,8 +159,10 @@ export default function CaseDetail() {
   const [parameterOverrides, setParameterOverrides] = useState<Record<string, CaseParams>>({});
 
   const caseData = useMemo(() => mockCases.find((item) => item.id === id), [id]);
-  const currentStatus = (id && statusOverrides[id]) ?? caseData?.status ?? CaseStatus.DRAFTING;
-  const currentParams = (id && parameterOverrides[id]) ?? {
+  // id 是路由参数（string | undefined）。不要写成 `id && overrides[id]`：
+  // id 为空串时该表达式求值为 ""，会污染整个状态类型（原先 17 处报错都源于此）。
+  const currentStatus: CaseStatus = (id ? statusOverrides[id] : undefined) ?? caseData?.status ?? CaseStatus.DRAFTING;
+  const currentParams: CaseParams = (id ? parameterOverrides[id] : undefined) ?? {
     targetMargin: caseData?.targetMargin ?? 30,
     budgetCap: caseData?.budgetCap ?? 0,
     commercialCap: caseData?.commercialCap ?? 0,
@@ -411,6 +410,9 @@ export default function CaseDetail() {
                       <div className="case-detail__cost-layout">
                         <ResponsiveContainer width="100%" height={240}>
                           <PieChart>
+                            {/* recharts 会把原始数据项字段一并透传给 label，但 `PieLabelRenderProps`
+                                只声明了 name/percent 等标准字段。这里按真实数据形状补充声明；
+                                不要改成读 `name`/`percent`——数据里的 percentage 是 0-100，不是 0-1。 */}
                             <Pie
                               data={costStructureData[costStructureView]}
                               dataKey="amount"
@@ -418,11 +420,14 @@ export default function CaseDetail() {
                               cx="50%"
                               cy="50%"
                               outerRadius={78}
-                              label={({ category, percentage }) => `${category} ${percentage}%`}
+                              label={(props) => {
+                                const row = props as typeof props & { category: string; percentage: number };
+                                return `${row.category} ${row.percentage}%`;
+                              }}
                             >
                               {costStructureData[costStructureView].map((entry) => <Cell key={entry.category} fill={entry.color} />)}
                             </Pie>
-                            <Tooltip formatter={(value: number) => money(value)} />
+                            <Tooltip formatter={(value) => money(Number(value))} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="case-detail__cost-legend">
@@ -447,7 +452,7 @@ export default function CaseDetail() {
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e6eb" />
                           <XAxis dataKey="month" />
                           <YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
-                          <Tooltip formatter={(value: number) => money(value)} />
+                          <Tooltip formatter={(value) => money(Number(value))} />
                           <Legend />
                           <Line type="monotone" dataKey="receivable" name="应收" stroke="#165dff" strokeWidth={2} dot={false} />
                           <Line type="monotone" dataKey="collected" name="实收" stroke="#00b42a" strokeWidth={2} dot={false} />

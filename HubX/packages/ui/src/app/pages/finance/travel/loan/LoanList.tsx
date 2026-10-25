@@ -110,10 +110,9 @@ export function LoanList() {
         type: values.type || 'travel',
         amount,
         remainingAmount: amount,
-        repaymentPlan: {
-          dueDate: values.expectedRepayDate || now,
-          method: 'reimbursement_offset',
-        },
+        offsetAmount: 0,
+        expectedRepayDate: values.expectedRepayDate || now,
+        payMethod: values.payMethod || 'bank',
         reason: values.reason,
         status: 'pending',
         createDate: now,
@@ -153,7 +152,7 @@ export function LoanList() {
       if (searchForm.keyword.trim()) {
         const kw = searchForm.keyword.toLowerCase();
         const matchNo = item.loanNo.toLowerCase().includes(kw);
-        const matchTrip = item.tripNo.toLowerCase().includes(kw);
+        const matchTrip = (item.tripNo ?? '').toLowerCase().includes(kw);
         const matchName = item.applicantName.toLowerCase().includes(kw);
         const matchReason = item.reason?.toLowerCase().includes(kw);
         if (!matchNo && !matchTrip && !matchName && !matchReason) {
@@ -588,10 +587,11 @@ export function LoanList() {
               <Option value="行政部">行政部</Option>
             </Select>
 
+            {/* RangePicker 第一个参数才是 string[]，原写法取到的是 Dayjs[]。 */}
             <RangePicker
               style={{ width: 240 }}
               value={[searchForm.startDate, searchForm.endDate]}
-              onChange={(_, dateStrings) => {
+              onChange={(dateStrings) => {
                 setSearchForm((prev) => ({
                   ...prev,
                   startDate: dateStrings[0] || '',
@@ -978,6 +978,15 @@ export function LoanList() {
               </Form.Item>
             </Col>
           </Row>
+
+          {/* payMethod 是 Loan 的必填字段且列表会展示，此前表单没采集，新建单一律只能靠代码写死。 */}
+          <Form.Item label="打款方式" field="payMethod" initialValue="bank" rules={[{ required: true }]}>
+            <Select>
+              <Option value="bank">银行转账</Option>
+              <Option value="cash">现金支取</Option>
+              <Option value="other">其他方式</Option>
+            </Select>
+          </Form.Item>
 
           <Form.Item
             label="借款用途与事由说明"

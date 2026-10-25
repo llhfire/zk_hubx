@@ -286,7 +286,7 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
           rowKey="id"
           scroll={{ x: 900 }}
           pagination={false}
-          noDataContent="暂无借款记录"
+          noDataElement="暂无借款记录"
         />
 
         {/* 冲抵记录 */}

@@ -52,7 +52,7 @@ export function OverheadTab() {
           <Text>÷</Text>
           <Text>编制工时 {hours}h</Text>
           <Text>=</Text>
-          <Text bold style={{ color: 'var(--color-primary-6)' }}>¥{rate.toFixed(2)}/工时</Text>
+          <Text bold style={{ color: 'rgb(var(--primary-6))' }}>¥{rate.toFixed(2)}/工时</Text>
           <Text type="secondary" style={{ marginLeft: 16 }}>
             人数 {empCount}（展示用，费率不按人头）
           </Text>

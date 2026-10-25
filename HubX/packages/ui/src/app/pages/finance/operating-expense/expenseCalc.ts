@@ -5,6 +5,7 @@
 import type {
   ExpenseRecord,
   RecurringExpenseTemplate,
+  Attribution,
 } from './types';
 
 export {

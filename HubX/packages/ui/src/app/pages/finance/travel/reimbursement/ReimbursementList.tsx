@@ -546,10 +546,11 @@ export function ReimbursementList() {
               <Option value="财务部">财务部</Option>
             </Select>
 
+            {/* RangePicker 第一个参数才是 string[]，原写法取到的是 Dayjs[]。 */}
             <RangePicker
               style={{ width: 240 }}
               value={[searchForm.startDate, searchForm.endDate]}
-              onChange={(_, dateStrings) => {
+              onChange={(dateStrings) => {
                 setSearchForm((prev) => ({
                   ...prev,
                   startDate: dateStrings[0] || '',

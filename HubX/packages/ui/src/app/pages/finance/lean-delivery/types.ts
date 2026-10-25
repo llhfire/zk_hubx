@@ -309,6 +309,8 @@ export interface CostVariance {
   thirdPartyVariance: number;
   laborReasons: string[];
   commercialReasons: string[];
+  /** 推广类的偏差原因。与 promotionVariance 配套；其余三类暂不要求填写原因。 */
+  promotionReasons?: string[];
 }
 
 // 根因分析接口

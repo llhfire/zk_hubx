@@ -58,7 +58,8 @@ export function detectAnomalies(args: {
   // 2. 固定模板本月未生成
   if (canGenerate) {
     for (const t of templates) {
-      if (!t.active || t.kind !== 'fixed') continue;
+      // 模板用 status 表达启停（'active' | 'paused'），没有 active 布尔字段。
+      if (t.status !== 'active' || t.kind !== 'fixed') continue;
       if (canGenerate(t, currentMonth, records)) {
         anomalies.push({
           kind: 'fixed_not_generated',

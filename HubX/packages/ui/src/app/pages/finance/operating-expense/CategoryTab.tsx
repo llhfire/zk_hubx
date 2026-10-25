@@ -86,7 +86,7 @@ export function CategoryTab() {
     >
       <Tree
         blockNode
-        defaultExpandAll
+        defaultExpandedKeys={treeData.map((node) => String(node.key))}
         treeData={treeData}
         selectedKeys={selectedKey ? [selectedKey] : []}
         onSelect={(keys) => setSelectedKey(keys[0] ? String(keys[0]) : undefined)}

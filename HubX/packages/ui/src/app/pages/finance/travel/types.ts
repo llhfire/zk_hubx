@@ -223,6 +223,11 @@ export interface Trip {
   loanReason?: string;
   // 状态
   status: TripStatus;
+  /**
+   * 出差类型：项目履约 / 售前支持 / 日常行政。
+   * 详情页头部标签据此分色，缺省按「日常行政差旅」兜底。
+   */
+  tripType?: 'project' | 'pre_sales' | 'daily';
   purpose: string;          // 出差目的
   createDate: string;
   updateDate: string;
@@ -296,6 +301,8 @@ export interface Loan {
   amount: number;           // 借款金额
   reason: string;           // 借款理由
   expectedPayDate?: string; // 期望打款日期
+  /** 预计还款/冲抵日期（借款单创建表单采集；与 expectedPayDate 不是同一个口径） */
+  expectedRepayDate?: string;
   payMethod: 'bank' | 'cash' | 'other'; // 打款方式
   // 状态
   status: LoanStatus;
@@ -497,6 +504,14 @@ export interface StandardDetail {
   subsidyCalcMode: SubsidyCalcMode;
   subsidyAmount: number;    // 元/天
 }
+
+/**
+ * 补贴的计天口径。
+ *
+ * 现有标准数据全部是 `calendar_day`（按自然日计）。保留联合类型而不是
+ * 直接用 string，是为了让后续新增口径（例如按工作日）在切换处编译可见。
+ */
+export type SubsidyCalcMode = 'calendar_day';
 
 // 费用标准
 export interface ExpenseStandard {

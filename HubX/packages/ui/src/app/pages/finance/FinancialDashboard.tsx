@@ -287,10 +287,10 @@ export function FinancialDashboard() {
             <Card title="支出分布">
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={(props) => `${String(props.name ?? '')} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`}>
                     {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
-                  <RechartTooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
+                  <RechartTooltip formatter={(v) => `¥${Number(v).toLocaleString()}`} />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
@@ -302,7 +302,7 @@ export function FinancialDashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-2)" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${v / 1000}k`} />
-                  <RechartTooltip formatter={(v: number) => `¥${v.toLocaleString()}`} />
+                  <RechartTooltip formatter={(v) => `¥${Number(v).toLocaleString()}`} />
                   <Legend />
                   {['房租物业', '水电网络', '行政杂费', '设备维护'].map((key, i) => (
                     <Line key={key} type="monotone" dataKey={key} stroke={PIE_COLORS[i]} strokeWidth={2} dot={false} />

@@ -117,7 +117,7 @@ export function TripJourneyTimeline({
       transportDetail: segment.transportDetail || '',
       transportCost: segment.transportCost,
       accommodationHotel: segment.accommodation?.hotelName || '',
-      accommodationDays: segment.accommodation?.days || 1,
+      accommodationDays: segment.accommodation?.nights || 1,
       accommodationCost: segment.accommodation?.totalAmount || 0,
     });
     setFormVisible(true);
@@ -218,7 +218,7 @@ export function TripJourneyTimeline({
                       )}
                     </Space>
 
-                    <Space size={2} onClick={(e) => e.stopPropagation()}>
+                    <div onClick={(e) => e.stopPropagation()}><Space size={2}>
                       <Button
                         type="text"
                         size="mini"
@@ -232,7 +232,7 @@ export function TripJourneyTimeline({
                         icon={<IconDelete />}
                         onClick={() => handleDelete(segment)}
                       />
-                    </Space>
+                    </Space></div>
                   </div>
 
                   {/* 核心城市路线与动感航线 */}
@@ -267,7 +267,7 @@ export function TripJourneyTimeline({
                       {segment.accommodation?.hotelName ? (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           <IconHome style={{ fontSize: 12 }} />
-                          {segment.accommodation.hotelName} ({segment.accommodation.days}晚)
+                          {segment.accommodation.hotelName} ({segment.accommodation.nights}晚)
                         </span>
                       ) : (
                         <span>交通支出：{formatMoney(segment.transportCost)}</span>

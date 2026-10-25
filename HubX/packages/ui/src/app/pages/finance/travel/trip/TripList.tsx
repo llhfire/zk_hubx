@@ -660,10 +660,13 @@ export function TripList() {
               <Option value="产品部">产品部</Option>
             </Select>
 
+            {/* RangePicker 的 onChange 是 (dateString: string[], date: Dayjs[])：第一个参数才是
+                格式化后的字符串。原写法取的是第二个参数（Dayjs 对象），把 Dayjs 塞进了 string
+                字段，搜索条件因此永远匹配不上。 */}
             <RangePicker
               style={{ width: 240 }}
               value={[searchForm.startDate, searchForm.endDate]}
-              onChange={(_, dateStrings) => {
+              onChange={(dateStrings) => {
                 setSearchForm((prev) => ({
                   ...prev,
                   startDate: dateStrings[0] || '',

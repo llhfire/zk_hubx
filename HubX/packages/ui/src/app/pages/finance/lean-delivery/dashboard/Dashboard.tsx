@@ -121,7 +121,7 @@ export default function Dashboard() {
     },
     {
       title: '状态', dataIndex: 'status', width: 100,
-      render: (v: string) => <Tag color={caseStatusMap[v]?.color === 'success' ? 'green' : 'blue'}>{caseStatusMap[v]?.label}</Tag>,
+      render: (v: string) => <Tag color={caseStatusMap[v as keyof typeof caseStatusMap]?.color === 'success' ? 'green' : 'blue'}>{caseStatusMap[v as keyof typeof caseStatusMap]?.label}</Tag>,
     },
     { title: '更新时间', dataIndex: 'updatedAt', width: 120, render: (v: string) => new Date(v).toLocaleDateString() },
   ];

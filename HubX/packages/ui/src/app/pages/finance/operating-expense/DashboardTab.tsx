@@ -55,7 +55,7 @@ export function DashboardTab() {
           <Radio value={true}>含人力</Radio>
           <Radio value={false}>不含人力</Radio>
         </Radio.Group>
-        <a onClick={handleExport} style={{ cursor: 'pointer', color: 'var(--color-primary-6)' }}>导出当月台账</a>
+        <a onClick={handleExport} style={{ cursor: 'pointer', color: 'rgb(var(--primary-6))' }}>导出当月台账</a>
       </div>
 
       {/* 头条 KPI */}

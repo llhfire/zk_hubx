@@ -63,8 +63,25 @@ export const SEAT_CLASS_LABELS: Record<string, string> = {
 };
 
 // 安全格式化货币
+
+/**
+ * 费用标准/预算表格用：空值显示 ¥0（表格求和的语义），不是破折号。
+ * 与 app/utils/money 的 formatMoney 刻意不同，勿合并。
+ */
 export function formatCurrency(val?: number | null): string {
-  return `¥${Number(val ?? 0).toLocaleString()}`;
+  return `¥${Number(val ?? 0).toLocaleString('zh-CN')}`;
+}
+
+/** 跨版本明细对照表的行：城市等级维度下的当前值 vs 对比值。 */
+interface StandardCompareRow {
+  cityLevel: string;
+  cityName: string;
+  curHotel: number;
+  cmpHotel: number;
+  curSubsidy: number;
+  cmpSubsidy: number;
+  curTransport: number;
+  cmpTransport: number;
 }
 
 export function StandardList() {
@@ -1227,7 +1244,7 @@ export function StandardList() {
                             },
                             {
                               title: '骨干/高管住宿限额 (当前 vs 对比)',
-                              render: (_: unknown, row: { curHotel: number; cmpHotel: number }) => {
+                              render: (_: unknown, row: StandardCompareRow) => {
                                 const diff = row.curHotel - row.cmpHotel;
                                 return (
                                   <Space>
@@ -1244,7 +1261,7 @@ export function StandardList() {
                             },
                             {
                               title: '单日综合津贴 (当前 vs 对比)',
-                              render: (_: unknown, row: { curSubsidy: number; cmpSubsidy: number }) => {
+                              render: (_: unknown, row: StandardCompareRow) => {
                                 const diff = row.curSubsidy - row.cmpSubsidy;
                                 return (
                                   <Space>
@@ -1261,7 +1278,7 @@ export function StandardList() {
                             },
                             {
                               title: '市内交通包干 (当前 vs 对比)',
-                              render: (_: unknown, row: { curTransport: number; cmpTransport: number }) => {
+                              render: (_: unknown, row: StandardCompareRow) => {
                                 const diff = row.curTransport - row.cmpTransport;
                                 return (
                                   <Space>

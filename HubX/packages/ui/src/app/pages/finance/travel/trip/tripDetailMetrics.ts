@@ -105,9 +105,8 @@ export interface TripResolvedLinks {
 }
 
 /** 格式化金额 */
-export function formatMoney(amount: number): string {
-  return `¥${Math.round(amount).toLocaleString('zh-CN')}`;
-}
+import { formatMoney } from '../../../../utils/money';
+export { formatMoney } from '../../../../utils/money';
 
 /** 提取所有旅程段费用总额 */
 export function sumRecordedExpenses(trip: Trip): number {

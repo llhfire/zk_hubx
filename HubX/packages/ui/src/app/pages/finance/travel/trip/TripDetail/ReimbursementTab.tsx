@@ -380,7 +380,7 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
           rowKey="id"
           scroll={{ x: 800 }}
           pagination={false}
-          noDataContent="暂无报销记录"
+          noDataElement="暂无报销记录"
         />
       </div>
       <Modal title="新增报销" visible={createVisible} onOk={handleSave} onCancel={() => setCreateVisible(false)} okText="保存草稿">

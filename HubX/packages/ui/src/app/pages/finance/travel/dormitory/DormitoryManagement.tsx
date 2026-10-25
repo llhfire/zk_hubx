@@ -862,11 +862,12 @@ export function DormitoryManagement() {
       Message.error('请填写完整的费用金额与计费周期');
       return;
     }
+    // expenseForm 里也有 buildingId，必须放在展开之后再覆盖，否则前面的赋值会被冲掉。
     const record: DormitoryExpense = {
+      ...expenseForm,
       id: editingExpenseId || `dorm-exp-${Date.now()}`,
       buildingId: building.id,
       buildingName: building.name,
-      ...expenseForm,
     };
     setExpenses((prev) =>
       editingExpenseId ? prev.map((item) => (item.id === editingExpenseId ? record : item)) : [record, ...prev]
@@ -939,12 +940,13 @@ export function DormitoryManagement() {
       return;
     }
     const room = building.floors?.flatMap((f) => f.rooms || []).find((r) => r.roomNumber === maintenanceForm.roomNumber);
+    // 同上：maintenanceForm 里也有 buildingId，展开必须在前。
     const record: DormitoryMaintenance = {
+      ...maintenanceForm,
       id: editingMaintenanceId || `maintenance-${Date.now()}`,
       buildingId: building.id,
       buildingName: building.name,
       roomId: room?.id,
-      ...maintenanceForm,
     };
     setMaintenances((prev) =>
       editingMaintenanceId ? prev.map((item) => (item.id === editingMaintenanceId ? record : item)) : [record, ...prev]
@@ -1128,7 +1130,7 @@ export function DormitoryManagement() {
                             <IconHome style={{ color: isActive ? 'rgb(var(--primary-6))' : '#86909c', flexShrink: 0 }} />
                             <span className="dorm-building-card__name">{building.name}</span>
                           </div>
-                          <Space size={2} className="dorm-building-card__actions" onClick={(e) => e.stopPropagation()}>
+                          <div onClick={(e) => e.stopPropagation()}><Space size={2} className="dorm-building-card__actions">
                             <Tooltip content="编辑楼栋档案">
                               <Button
                                 aria-label={`编辑${building.name}`}
@@ -1161,12 +1163,12 @@ export function DormitoryManagement() {
                                 />
                               </Tooltip>
                             </Popconfirm>
-                          </Space>
+                          </Space></div>
                         </div>
 
                         {/* 2. 城市行政区与社区门牌 */}
                         <div className="dorm-building-card__sub">
-                          <Tag size="mini" color="arcoblue" style={{ flexShrink: 0 }}>
+                          <Tag size="small" color="arcoblue" style={{ flexShrink: 0 }}>
                             {building.city}·{building.district}
                           </Tag>
                           <span className="dorm-building-card__address" title={building.community || building.address}>
@@ -1429,8 +1431,9 @@ export function DormitoryManagement() {
                                       <Tag size="small" color={room.roomType === 'single' ? 'orange' : room.roomType === 'double' ? 'arcoblue' : 'purple'}>
                                         {room.roomType === 'single' ? '单人间' : room.roomType === 'double' ? '双人间' : '四人间'}
                                       </Tag>
+                                      {/* Arco Badge 的 text 只接受字符串，传元素会被丢弃 */}
                                       {isUnderMaintenance && (
-                                        <Badge status="warning" text={<span style={{ fontSize: 11, color: 'rgb(var(--warning-7))' }}>维修中</span>} />
+                                        <Badge status="warning" text="维修中" />
                                       )}
                                     </div>
                                     <Tooltip content="登记房间报修">
@@ -1450,7 +1453,7 @@ export function DormitoryManagement() {
 
                                   <div className="dorm-room-facilities">
                                     {room.facilities.map((fac) => (
-                                      <Tag key={fac} size="mini" bordered>
+                                      <Tag key={fac} size="small" bordered>
                                         {fac}
                                       </Tag>
                                     ))}
@@ -1487,7 +1490,7 @@ export function DormitoryManagement() {
                                                 <span className="dorm-bed-occupant-name">
                                                   {bed.occupantName || checkInRecord?.employeeName || '在住员工'}
                                                 </span>
-                                                <Tag size="mini" color={bed.tripId ? 'purple' : 'blue'}>
+                                                <Tag size="small" color={bed.tripId ? 'purple' : 'blue'}>
                                                   {bed.tripId ? '出差借宿' : '长期员工'}
                                                 </Tag>
                                               </Space>
@@ -1698,7 +1701,7 @@ export function DormitoryManagement() {
               data={filteredCheckIns}
               rowKey="id"
               pagination={{ pageSize: 8 }}
-              noDataContent="暂无入住登记记录"
+              noDataElement="暂无入住登记记录"
             />
           </Card>
         </TabPane>
@@ -1876,7 +1879,7 @@ export function DormitoryManagement() {
               data={filteredExpenses}
               rowKey="id"
               pagination={{ pageSize: 8 }}
-              noDataContent="暂无宿舍费用记录"
+              noDataElement="暂无宿舍费用记录"
             />
           </Card>
         </TabPane>
@@ -2056,7 +2059,7 @@ export function DormitoryManagement() {
               data={filteredMaintenances}
               rowKey="id"
               pagination={{ pageSize: 8 }}
-              noDataContent="暂无报修与维护记录"
+              noDataElement="暂无报修与维护记录"
             />
           </Card>
         </TabPane>
@@ -2497,9 +2500,9 @@ export function DormitoryManagement() {
                                   {isOccupied ? (
                                     <span style={{ fontSize: 11 }}>已占({bed.occupantName})</span>
                                   ) : isSelected ? (
-                                    <Tag size="mini" color="arcoblue">已选定</Tag>
+                                    <Tag size="small" color="arcoblue">已选定</Tag>
                                   ) : (
-                                    <Tag size="mini" color="green">空闲</Tag>
+                                    <Tag size="small" color="green">空闲</Tag>
                                   )}
                                 </span>
                               </div>

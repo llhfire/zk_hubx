@@ -70,8 +70,8 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
               width: 24,
               height: 24,
               borderRadius: 4,
-              backgroundColor: 'var(--color-primary-light-1, #e8f3ff)',
-              color: 'var(--color-primary-6, #165dff)',
+              backgroundColor: 'var(--color-primary-light-1)',
+              color: 'rgb(var(--primary-6))',
             }}
           >
             <IconCalendar />
@@ -130,10 +130,10 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
                 padding: '8px 14px',
                 borderRadius: 6,
                 border: isActive
-                  ? '1px solid var(--color-primary-6, #165dff)'
+                  ? '1px solid rgb(var(--primary-6))'
                   : '1px solid var(--color-border-2, #e5e6eb)',
                 backgroundColor: isActive
-                  ? 'var(--color-primary-light-1, #e8f3ff)'
+                  ? 'var(--color-primary-light-1)'
                   : 'var(--color-bg-2, #ffffff)',
                 boxShadow: isActive ? '0 1px 4px rgba(22, 93, 255, 0.15)' : 'none',
                 transition: 'all 0.2s ease',
@@ -155,7 +155,7 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
                     fontSize: 13,
                     fontWeight: isActive ? 600 : 500,
                     color: isActive
-                      ? 'var(--color-primary-6, #165dff)'
+                      ? 'rgb(var(--primary-6))'
                       : 'var(--color-text-1, #1d2129)',
                   }}
                 >
@@ -175,7 +175,7 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
                 style={{
                   fontSize: 11,
                   color: isActive
-                    ? 'var(--color-primary-5, #4080ff)'
+                    ? 'rgb(var(--primary-5))'
                     : 'var(--color-text-3, #86909c)',
                 }}
               >
@@ -189,7 +189,7 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
                   fontWeight: hasExpenses ? 600 : 400,
                   color: hasExpenses
                     ? isActive
-                      ? 'var(--color-primary-6, #165dff)'
+                      ? 'rgb(var(--primary-6))'
                       : 'var(--color-text-1, #1d2129)'
                     : 'var(--color-text-4, #c9cdd4)',
                 }}
@@ -215,7 +215,7 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
         }}
       >
         <Space size={4}>
-          <IconClockCircle style={{ color: 'var(--color-primary-6, #165dff)' }} />
+          <IconClockCircle style={{ color: 'rgb(var(--primary-6))' }} />
           <span>
             当前聚焦：<strong>{currentSegment.startDate}</strong> 至{' '}
             <strong>{currentSegment.endDate}</strong>（第{' '}

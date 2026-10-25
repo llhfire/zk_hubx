@@ -109,7 +109,9 @@ export function getSupplementSummaries(
   extraContractIds: string[],
   contracts: Contract[] = [],
 ): import('./types').SupplementContractSummary[] {
-  return extraContractIds.map(id => {
+  // 显式标注回调返回类型：不标时推断出的对象里 signingDate 是 `any`、status 是字面量联合，
+  // 整体不满足 SupplementContractSummary，下游 `s is SupplementContractSummary` 也不可赋值。
+  return extraContractIds.map((id): import('./types').SupplementContractSummary | null => {
     const contract = getContract(id, contracts) as any;
     if (!contract) return null;
     const amount = effectiveAmount(contract);
@@ -129,4 +131,5 @@ export function getSupplementSummaries(
       sourceQuoteId: contract.sourceQuoteId,
     };
   }).filter((s): s is import('./types').SupplementContractSummary => s !== null);
+
 }

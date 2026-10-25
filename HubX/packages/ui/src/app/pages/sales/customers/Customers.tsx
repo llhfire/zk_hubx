@@ -4,6 +4,10 @@ import { IconEdit, IconEye, IconPlus, IconSearch, IconSwap } from '@arco-design/
 import { useNavigate } from 'react-router';
 import { FilterBar, PageHeader, PageShell } from '../../../components/ui';
 import { useContracts } from '../contracts/ContractsContext';
+import { useCollections } from '../../../collections/CollectionContext';
+import { withCollectionLedger } from '../../../../services/collectionMutations';
+import { getReceivedAmount } from '../contracts/paymentUtils';
+import { formatMoney as fmtMoney } from '../../../utils/money';
 import { useProjects } from '../../delivery/project/ProjectContext';
 import { useCustomers } from './CustomerContext';
 import { deriveCustomerStatus, findCustomerDuplicate } from './customerModel';
@@ -12,14 +16,16 @@ import type { Customer, CustomerCreateInput } from './types';
 const Row = Grid.Row;
 const Col = Grid.Col;
 
+/** 客户列表：0 元显示破折号（无业务意义的零不占视觉位）。 */
 function money(value: number) {
-  return value ? `¥${value.toLocaleString('zh-CN')}` : '—';
+  return value ? fmtMoney(value) : '—';
 }
 
 export function Customers() {
   const navigate = useNavigate();
   const { customers, createCustomer, updateCustomer, setCustomerActive, mergeCustomer } = useCustomers();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const { projects } = useProjects();
   const [form] = Form.useForm();
   const [mergeForm] = Form.useForm();
@@ -29,10 +35,12 @@ export function Customers() {
   const [filters, setFilters] = useState({ keyword: '', kind: '', level: '', status: '', includeDisabled: false });
 
   const rows = useMemo(() => customers.map((customer) => {
-    const customerContracts = contracts.filter((contract) => contract.customerId === customer.id || contract.current.customerName === customer.name);
+    const customerContracts = contracts
+      .filter((contract) => contract.customerId === customer.id || contract.current.customerName === customer.name)
+      .map((contract) => withCollectionLedger(contract, collections));
     const projectIds = new Set(customerContracts.map((contract) => contract.projectId).filter(Boolean));
     const hasActiveProject = projects.some((project) => projectIds.has(project.id) && !['completed', 'cancelled', '已完成', '已取消'].includes(String(project.status)));
-    const outstanding = customerContracts.reduce((sum, contract) => sum + Math.max(0, contract.current.totalAmount - (contract.receivedAmount ?? 0)), 0);
+    const outstanding = customerContracts.reduce((sum, contract) => sum + Math.max(0, contract.current.totalAmount - getReceivedAmount(contract)), 0);
     const contractAmount = customerContracts.filter((item) => item.status !== 'voided').reduce((sum, item) => sum + item.current.totalAmount, 0);
     const status = deriveCustomerStatus({
       activeMainContractCount: customerContracts.filter((item) => item.kind !== 'supplement' && item.status !== 'draft' && item.status !== 'voided').length,
@@ -43,7 +51,7 @@ export function Customers() {
     });
     const primary = customer.contacts.find((item) => item.isPrimary && item.active);
     return { ...customer, primary, status, contractCount: customerContracts.length, contractAmount, outstanding };
-  }), [contracts, customers, projects]);
+  }), [collections, contracts, customers, projects]);
 
   const filteredRows = useMemo(() => rows.filter((row) => {
     const keyword = filters.keyword.trim().toLowerCase();

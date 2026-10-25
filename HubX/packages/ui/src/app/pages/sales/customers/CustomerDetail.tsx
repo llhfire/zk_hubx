@@ -55,6 +55,10 @@ import { useLeads } from '../../../leads/LeadContext';
 import { useQuotation } from '../quotation/QuotationContext';
 import { QUOTE_STATUS_LABELS } from '../quotation/types';
 import { useContracts } from '../contracts/ContractsContext';
+import { useCollections } from '../../../collections/CollectionContext';
+import { withCollectionLedger } from '../../../../services/collectionMutations';
+import { getReceivedAmount } from '../contracts/paymentUtils';
+import { formatMoney as money } from '../../../utils/money';
 import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../contracts/utils';
 import type { ContractStatus } from '../contracts/types';
 import { useProjects } from '../../delivery/project/ProjectContext';
@@ -70,10 +74,6 @@ const SIDE_TABS = ['profile', 'invoice', 'finance'] as const;
 
 type MainTab = typeof MAIN_TABS[number];
 type SideTab = typeof SIDE_TABS[number];
-
-function money(value: number) {
-  return `¥${value.toLocaleString('zh-CN')}`;
-}
 
 function normalizeLeadId(id?: string) {
   return id?.replace(/^lead-/, '');
@@ -97,6 +97,7 @@ export function CustomerDetail() {
   const { leads } = useLeads();
   const { quotes } = useQuotation();
   const { contracts } = useContracts();
+  const { collections } = useCollections();
   const { projects } = useProjects();
 
   const customer = getCustomer(id);
@@ -147,12 +148,16 @@ export function CustomerDetail() {
         quote.customerId === customer.id ||
         quote.basicInfo.customerName === customer.name
     );
-    const customerContracts = contracts.filter(
-      (contract) =>
-        contract.customerId === customer.id ||
-        contract.current.customerName === customer.name ||
-        leadIds.has(normalizeLeadId(contract.leadId))
-    );
+    // 金额口径统一走台账投影（CONTEXT.md §实收：金额事实来自独立实收台账）。
+    // 投影后 receivedAmount / collectionRecords 都来自 collections，不再读合同上的兼容字段。
+    const customerContracts = contracts
+      .filter(
+        (contract) =>
+          contract.customerId === customer.id ||
+          contract.current.customerName === customer.name ||
+          leadIds.has(normalizeLeadId(contract.leadId))
+      )
+      .map((contract) => withCollectionLedger(contract, collections));
     const contractIds = new Set(customerContracts.map((contract) => contract.id));
     const customerProjects = projects.filter(
       (project) =>
@@ -166,7 +171,7 @@ export function CustomerDetail() {
       contracts: customerContracts,
       projects: customerProjects,
     };
-  }, [contracts, customer, leads, projects, quotes]);
+  }, [collections, contracts, customer, leads, projects, quotes]);
 
   if (!customer) {
     return (
@@ -174,9 +179,7 @@ export function CustomerDetail() {
         breadcrumbs={[{ label: '客户管理', to: '/customers' }, { label: '客户不存在' }]}
       >
         <Card>
-          <Empty description="未找到该客户，可能已被合并或链接已失效">
-            <Button onClick={() => navigate('/customers')}>返回客户列表</Button>
-          </Empty>
+          <Empty description={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}><span>未找到该客户，可能已被合并或链接已失效</span><Button onClick={() => navigate('/customers')}>返回客户列表</Button></div>} />
         </Card>
       </PageShell>
     );
@@ -187,14 +190,7 @@ export function CustomerDetail() {
     .filter((item) => item.status !== 'voided')
     .reduce((sum, item) => sum + item.current.totalAmount, 0);
 
-  const received = related.contracts.reduce(
-    (sum, item) =>
-      sum +
-      (item.receivedAmount ??
-        item.collectionRecords?.reduce((inner, record) => inner + record.amount, 0) ??
-        0),
-    0
-  );
+  const received = related.contracts.reduce((sum, item) => sum + getReceivedAmount(item), 0);
 
   const outstanding = Math.max(0, contractAmount - received);
   const collectionRate = contractAmount > 0 ? Math.min(100, Math.round((received / contractAmount) * 100)) : 0;
@@ -623,7 +619,7 @@ export function CustomerDetail() {
                             {money(
                               chain.contracts.reduce(
                                 (sum, item) =>
-                                  sum + Math.max(0, item.current.totalAmount - (item.receivedAmount ?? 0)),
+                                  sum + Math.max(0, item.current.totalAmount - getReceivedAmount(item)),
                                 0
                               )
                             )}
@@ -753,7 +749,7 @@ export function CustomerDetail() {
                         width: 180,
                         render: (_: unknown, record) => {
                           const amt = record.current.totalAmount;
-                          const rec = record.receivedAmount ?? 0;
+                          const rec = getReceivedAmount(record);
                           const pct = amt > 0 ? Math.min(100, Math.round((rec / amt) * 100)) : 0;
                           return (
                             <div>

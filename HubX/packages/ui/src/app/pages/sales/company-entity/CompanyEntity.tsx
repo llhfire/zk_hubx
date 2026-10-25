@@ -54,7 +54,7 @@ export function CompanyEntity() {
           )}
           {companyEntityPermissions.delete && (
             <Tooltip content="删除">
-              <Popconfirm title="确定要删除该主体吗?" onOk={() => Message.success('删除成功')}>
+              <Popconfirm title="确定要删除该主体吗?" onOk={() => { Message.success('删除成功'); }}>
                 <Button className="hubx-icon-action" type="text" size="small" status="danger" icon={<IconDelete />} aria-label={`删除公司主体${record.name}`} />
               </Popconfirm>
             </Tooltip>

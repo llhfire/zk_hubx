@@ -5,6 +5,7 @@ import { CustomerProvider } from '../CustomerContext';
 import { ContractsProvider } from '../../contracts/ContractsContext';
 import { LeadsProvider } from '../../../../leads/LeadContext';
 import { ProjectProvider } from '../../../delivery/project/ProjectContext';
+import { CollectionProvider } from '../../../../collections/CollectionContext';
 import { QuotationProvider } from '../../quotation/QuotationContext';
 import { CustomerDetail } from '../CustomerDetail';
 
@@ -16,9 +17,11 @@ function renderCustomerPage(initialEntry: string) {
           <LeadsProvider>
             <ProjectProvider>
               <QuotationProvider>
-                <Routes>
-                  <Route path="/customers/:id" element={<CustomerDetail />} />
-                </Routes>
+                <CollectionProvider>
+                  <Routes>
+                    <Route path="/customers/:id" element={<CustomerDetail />} />
+                  </Routes>
+                </CollectionProvider>
               </QuotationProvider>
             </ProjectProvider>
           </LeadsProvider>

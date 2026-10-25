@@ -14,9 +14,9 @@ import {
   Tabs,
   Tag,
   Upload,
-  type UploadItem,
 } from '@arco-design/web-react';
 import { IconDelete, IconDownload, IconEdit, IconPlus, IconUpload } from '@arco-design/web-react/icon';
+import type { UploadItem } from '@arco-design/web-react/es/Upload/interface';
 import type {
   CompanyEntityPermissions,
   CompanyEntityRecord,

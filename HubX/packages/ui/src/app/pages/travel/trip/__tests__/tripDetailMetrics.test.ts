@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import type { Trip } from '../../../types';
+import type { Trip } from '../../types';
 import {
   computeBudgetExecution,
   computeReimbursementRatio,

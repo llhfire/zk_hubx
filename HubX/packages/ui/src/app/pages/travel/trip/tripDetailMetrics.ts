@@ -7,7 +7,7 @@ import {
   IconFolder,
   IconSafe,
 } from '@arco-design/web-react/icon';
-import type { Trip } from '../../types';
+import type { Trip } from '../types';
 import type { ProcessMetricItem, ProcessMetricTone } from '@/app/components/ui';
 
 function renderMetricTitle(IconComponent: ComponentType<{ className?: string }>, text: string): ReactNode {

@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button, Popover, Tag, Typography } from '@arco-design/web-react';
 import { IconCheck, IconClockCircle, IconDown, IconInfoCircle, IconRight } from '@arco-design/web-react/icon';
-import type { TripStageCheck, TripStageSummary } from './tripStageSummary';
-import type { TripMainTabKey, TripSideTabKey } from './tripDetailMetrics';
+import type { TripStageCheck, TripStageSummary } from '../tripStageSummary';
+import type { TripMainTabKey, TripSideTabKey } from '../tripDetailMetrics';
 
 const { Text } = Typography;
 

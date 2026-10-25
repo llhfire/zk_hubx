@@ -5,7 +5,7 @@ import {
   buildTenDaySegments,
   generateDateRange,
 } from '../TripDetail/timeSegmentUtils';
-import type { Expense } from '../../../types';
+import type { Expense } from '../../types';
 
 describe('timeSegmentUtils 每10天分段与周期判定', () => {
   test('diffDays 正确计算连续天数跨度', () => {

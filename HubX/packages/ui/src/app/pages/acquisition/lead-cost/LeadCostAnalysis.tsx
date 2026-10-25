@@ -160,7 +160,7 @@ export function LeadCostAnalysis() {
       </Row>
 
       <Card title="渠道综合明细">
-        <Table columns={columns} data={rankedSummaries} scroll={{ x: 1500 }} pagination={false} noDataContent="当前筛选条件下暂无数据" />
+        <Table columns={columns} data={rankedSummaries} scroll={{ x: 1500 }} pagination={false} noDataElement="当前筛选条件下暂无数据" />
       </Card>
     </div>
   );

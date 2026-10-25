@@ -17,7 +17,7 @@ import {
   Modal,
   Form,
   Input,
-  TextArea,
+  Progress,
 } from '@arco-design/web-react';
 import {
   IconApps,
@@ -164,12 +164,12 @@ export function AIDriven() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 顶部摘要 */}
       <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="AI 拆解任务" value={summary.totalTasks} suffix="个" icon={<IconApps style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="已分配" value={summary.assigned} suffix="个" icon={<IconCheckCircle style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="高风险节点" value={summary.highRiskMilestones} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} valueStyle={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title="待确认会议" value={summary.suggestedMeetings} suffix="场" icon={<IconCalendar style={{ color: 'var(--warning-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="人员匹配" value={mockPersonnelMatches.length} suffix="项" icon={<IconUser style={{ color: 'var(--chart-5)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="AI 建议" value={mockMilestones.length} suffix="条" icon={<IconExperiment style={{ color: 'var(--info-500)' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconApps style={{ color: 'var(--primary)' }} />AI 拆解任务</span>} value={summary.totalTasks} suffix="个" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />已分配</span>} value={summary.assigned} suffix="个" /></Card></Col>
+        <Col span={4}><Card><Statistic title="高风险节点" value={summary.highRiskMilestones} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} styleValue={{ color: 'var(--destructive-500)' }} /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--warning-500)' }} />待确认会议</span>} value={summary.suggestedMeetings} suffix="场" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconUser style={{ color: 'var(--chart-5)' }} />人员匹配</span>} value={mockPersonnelMatches.length} suffix="项" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconExperiment style={{ color: 'var(--info-500)' }} />AI 建议</span>} value={mockMilestones.length} suffix="条" /></Card></Col>
       </Row>
 
       {/* 主体 Tab */}
@@ -244,7 +244,7 @@ export function AIDriven() {
                       <Col span={8} key={c.name}>
                         <Card size="small" style={{ borderColor: c.matchScore >= 90 ? 'var(--success-500)' : 'var(--color-border)', borderWidth: c.matchScore >= 90 ? 2 : 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <Avatar size={32} color="arcoblue">{c.name.slice(0, 1)}</Avatar>
+                            <Avatar size={32} style={{ backgroundColor: 'rgb(var(--primary-6))', color: '#fff' }}>{c.name.slice(0, 1)}</Avatar>
                             <div>
                               <div style={{ fontWeight: 600 }}>{c.name}</div>
                               <Tag color={c.matchScore >= 90 ? 'var(--success-500)' : c.matchScore >= 70 ? 'var(--warning-500)' : 'var(--muted-foreground)'}  size="small">

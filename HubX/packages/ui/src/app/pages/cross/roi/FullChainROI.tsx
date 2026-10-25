@@ -128,12 +128,12 @@ export function FullChainROI() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 摘要栏 */}
       <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="广告总消耗" value={summary.totalSpend} prefix="¥" icon={<IconExperiment style={{ color: 'var(--warning-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="总营收" value={summary.totalRevenue} prefix="¥" icon={<IconTrophy style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="总利润" value={summary.totalProfit} prefix="¥" icon={<IconFile style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="平均利润率" value={summary.avgMargin} suffix="%" icon={<IconCalendar style={{ color: 'var(--chart-5)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="总线索数" value={summary.totalLeads} suffix="条" icon={<IconUser style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="整体ROI" value={Math.round((summary.totalProfit / Math.max(summary.totalSpend, 1)) * 100)} suffix="%" icon={<IconArrowRight style={{ color: 'var(--info-500)' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconExperiment style={{ color: 'var(--warning-500)' }} />广告总消耗</span>} value={summary.totalSpend} prefix="¥" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconTrophy style={{ color: 'var(--success-500)' }} />总营收</span>} value={summary.totalRevenue} prefix="¥" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconFile style={{ color: 'var(--primary)' }} />总利润</span>} value={summary.totalProfit} prefix="¥" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--chart-5)' }} />平均利润率</span>} value={summary.avgMargin} suffix="%" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconUser style={{ color: 'var(--primary)' }} />总线索数</span>} value={summary.totalLeads} suffix="条" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconArrowRight style={{ color: 'var(--info-500)' }} />整体ROI</span>} value={Math.round((summary.totalProfit / Math.max(summary.totalSpend, 1)) * 100)} suffix="%" /></Card></Col>
       </Row>
 
       {/* 主体 Tab */}

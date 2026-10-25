@@ -145,6 +145,4 @@ export function calculateCompositeScore(summary: ChannelSummary, allSummaries: C
   return Math.round(costScore * 0.3 + validRateScore * 0.25 + volumeScore * 0.2 + qualityScore * 0.25);
 }
 
-export function formatCurrency(value: number) {
-  return `¥${value.toFixed(2)}`;
-}
+export { formatMoney as formatCurrency } from '../../../utils/money';

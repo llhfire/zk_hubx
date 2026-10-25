@@ -191,7 +191,7 @@ export function TodoCenter() {
           <Col span={6}><Statistic title="全部待处理" value={mergedActive.length} suffix="项" /></Col>
           <Col span={6}><Statistic title="高优先级" value={mergedActive.filter((item) => item.priority === 'high').length} suffix="项" /></Col>
           <Col span={6}><Statistic title="今日截止" value={todayDeadlineCount} suffix="项" /></Col>
-          <Col span={6}><Statistic title="已逾期" value={overdueCount} suffix="项" valueStyle={{ color: overdueCount ? 'rgb(var(--red-6))' : undefined }} /></Col>
+          <Col span={6}><Statistic title="已逾期" value={overdueCount} suffix="项" styleValue={{ color: overdueCount ? 'rgb(var(--red-6))' : undefined }} /></Col>
         </Row>
       </Card>
 

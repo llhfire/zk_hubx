@@ -14,7 +14,6 @@ import {
   Input,
   Select,
   DatePicker,
-  TextArea,
   Typography,
   Popconfirm,
   Avatar,
@@ -214,12 +213,12 @@ export function MeetingManagement() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 摘要栏 */}
       <Row gutter={16}>
-        <Col span={4}><Card><Statistic title="会议室" value={summary.totalRooms} suffix="间" icon={<IconLocation style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="空闲" value={summary.availableRooms} suffix="间" icon={<IconCheckCircle style={{ color: 'var(--success-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="今日会议" value={summary.todayMeetings} suffix="场" icon={<IconCalendar style={{ color: 'var(--warning-500)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="待开会议" value={summary.upcomingMeetings} suffix="场" icon={<IconClockCircle style={{ color: 'var(--primary)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="会议总数" value={summary.totalMeetings} suffix="场" icon={<IconFile style={{ color: 'var(--chart-5)' }} />} /></Card></Col>
-        <Col span={4}><Card><Statistic title="已完成" value={summary.completedMeetings} suffix="场" icon={<IconCheckCircle style={{ color: 'var(--success-500)' }} />} /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconLocation style={{ color: 'var(--primary)' }} />会议室</span>} value={summary.totalRooms} suffix="间" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />空闲</span>} value={summary.availableRooms} suffix="间" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--warning-500)' }} />今日会议</span>} value={summary.todayMeetings} suffix="场" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconClockCircle style={{ color: 'var(--primary)' }} />待开会议</span>} value={summary.upcomingMeetings} suffix="场" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconFile style={{ color: 'var(--chart-5)' }} />会议总数</span>} value={summary.totalMeetings} suffix="场" /></Card></Col>
+        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />已完成</span>} value={summary.completedMeetings} suffix="场" /></Card></Col>
       </Row>
 
       {/* 主体 Tab */}
@@ -352,6 +351,8 @@ export function MeetingManagement() {
                     {min.actionItems.length > 0 && (
                       <div>
                         <Typography.Text style={{ fontWeight: 600, fontSize: 14 }}>行动项：</Typography.Text>
+                        {/* Arco 的 rowKey 只支持 string 或 (record) => Key，拿不到下标；
+                            这里先把下标烘进行数据，保证同一会议内多次出现同名待办也不撞 key。 */}
                         <Table
                           size="small"
                           columns={[
@@ -363,8 +364,8 @@ export function MeetingManagement() {
                               render: (done: boolean) => done ? <Tag color="var(--success-500)" size="small">已完成</Tag> : <Tag color="var(--warning-500)" size="small">待办</Tag>,
                             },
                           ] as any}
-                          data={min.actionItems}
-                          rowKey={(item, idx) => `${min.id}-${idx}`}
+                          data={min.actionItems.map((item, idx) => ({ ...item, __rowKey: `${min.id}-${idx}` }))}
+                          rowKey="__rowKey"
                           pagination={false}
                           style={{ marginTop: 8 }}
                         />

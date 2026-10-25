@@ -276,11 +276,12 @@ export function PerformanceManagement() {
               min={0}
               max={100}
               value={kpiScore}
-              onChange={(v: number) => {
+              onChange={(raw: number | number[]) => {
+                const v = Array.isArray(raw) ? raw[0] : raw;
                 setKpiScore(v);
                 form.setFieldValue('kpiScore', v);
               }}
-              onAfterChange={(v: number) => form.setFieldValue('kpiScore', v)}
+              onAfterChange={(raw: number | number[]) => form.setFieldValue('kpiScore', Array.isArray(raw) ? raw[0] : raw)}
               formatTooltip={(value) => <span style={{ fontWeight: 600 }}>{value} 分</span>}
               marks={{ 0: '0', 60: '60', 80: '80', 100: '100' }}
             />
@@ -295,11 +296,12 @@ export function PerformanceManagement() {
               min={0}
               max={100}
               value={behaviorScore}
-              onChange={(v: number) => {
+              onChange={(raw: number | number[]) => {
+                const v = Array.isArray(raw) ? raw[0] : raw;
                 setBehaviorScore(v);
                 form.setFieldValue('behaviorScore', v);
               }}
-              onAfterChange={(v: number) => form.setFieldValue('behaviorScore', v)}
+              onAfterChange={(raw: number | number[]) => form.setFieldValue('behaviorScore', Array.isArray(raw) ? raw[0] : raw)}
               formatTooltip={(value) => <span style={{ fontWeight: 600 }}>{value} 分</span>}
               marks={{ 0: '0', 60: '60', 80: '80', 100: '100' }}
             />

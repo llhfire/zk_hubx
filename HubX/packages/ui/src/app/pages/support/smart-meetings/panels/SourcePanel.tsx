@@ -29,7 +29,6 @@ const PARSE_STATUS_COLOR: Record<SourceParseStatus, string> = {
   none: 'gray',
   parsed: 'green',
   partial: 'orange',
-  red: 'red',
   failed: 'red',
   unsupported: 'red',
 };

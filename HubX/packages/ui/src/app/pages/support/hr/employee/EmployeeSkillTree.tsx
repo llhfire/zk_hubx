@@ -137,14 +137,17 @@ function SkillFullCard({ skill, empScore, allSkills, allScores }: SkillCardProps
     const pScore = allScores[p.domain] || 0;
     return p.requiredScore ? pScore >= p.requiredScore : true;
   });
-  const scoreMet = skill.requiredScore ? empScore >= skill.requiredScore : false;
+  // 先取局部变量：`skill.requiredScore` 是可选的，直接在三目里重复读会让
+  // 分支处的窄化失效（TS 不会跨三元表达式保留判断结果）。
+  const requiredScore = skill.requiredScore;
+  const scoreMet = requiredScore ? empScore >= requiredScore : false;
   const unlocked = prereqsMet && scoreMet;
   const mastery = unlocked
-    ? (skill.requiredScore && empScore / skill.requiredScore >= 1.4 ? '精通专家' : empScore / skill.requiredScore >= 1.15 ? '熟练运用' : '基础入门')
+    ? (!requiredScore ? '基础入门' : empScore / requiredScore >= 1.4 ? '精通专家' : empScore / requiredScore >= 1.15 ? '熟练运用' : '基础入门')
     : '尚未解锁';
 
-  const progressPercent = skill.requiredScore
-    ? Math.min(100, Math.round((empScore / skill.requiredScore) * 100))
+  const progressPercent = requiredScore
+    ? Math.min(100, Math.round((empScore / requiredScore) * 100))
     : 100;
 
   return (
@@ -303,11 +306,9 @@ export function EmployeeSkillTree() {
         ]}
       >
         <Card>
-          <Empty description="未找到该员工档案或链接已失效">
-            <Button type="primary" onClick={() => navigate('/employees')}>
+          <Empty description={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}><span>未找到该员工档案或链接已失效</span><Button type="primary" onClick={() => navigate('/employees')}>
               返回员工列表
-            </Button>
-          </Empty>
+            </Button></div>} />
         </Card>
       </PageShell>
     );

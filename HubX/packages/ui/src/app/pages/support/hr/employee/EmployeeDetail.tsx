@@ -53,7 +53,7 @@ import {
   BigFiveProfile,
   DISCProfile,
   EnneagramProfile,
-  type AttendanceType,
+  type LeaveType,
 } from './mockData';
 import { initialProjects, initialDailyReports } from '../../../delivery/project/mockData';
 import {
@@ -214,9 +214,7 @@ export function EmployeeDetail() {
     return (
       <PageShell breadcrumbs={[{ label: '员工管理', to: '/employees' }, { label: '员工列表', to: '/employees' }, { label: '员工不存在' }]}>
         <Card>
-          <Empty description="未找到该员工档案或链接已失效">
-            <Button type="primary" onClick={() => navigate('/employees')}>返回员工列表</Button>
-          </Empty>
+          <Empty description={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}><span>未找到该员工档案或链接已失效</span><Button type="primary" onClick={() => navigate('/employees')}>返回员工列表</Button></div>} />
         </Card>
       </PageShell>
     );
@@ -249,6 +247,7 @@ export function EmployeeDetail() {
         days: Number(values.days),
         reason: values.reason,
         status: '待审批',
+        createdAt: new Date().toISOString(),
       });
       Message.success('请假申请已提交，等待主管审批');
       setLeaveModalVisible(false);
@@ -889,7 +888,7 @@ export function EmployeeDetail() {
         <Form form={leaveForm} layout="vertical">
           <FormItem label="请假类型" field="type" rules={[{ required: true }]}>
             <Select placeholder="选择请假种类">
-              {(['年假', '事假', '病假', '调休', '婚假', '产假', '丧假'] as AttendanceType[]).map((t) => (
+              {(['年假', '事假', '病假', '调休', '婚假', '产假', '丧假'] as LeaveType[]).map((t) => (
                 <Select.Option key={t} value={t}>{t}</Select.Option>
               ))}
             </Select>

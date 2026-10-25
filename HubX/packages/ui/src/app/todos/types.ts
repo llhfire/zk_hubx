@@ -25,6 +25,8 @@ export interface TodoItem {
   status: TodoStatus;
   priority: TodoPriority;
   createdAt: string;
+  /** 最近一次字段同步时间（智能会议纪要回写时写入） */
+  updatedAt?: string;
   deadline?: string;
   completedAt?: string;
   canceledAt?: string;

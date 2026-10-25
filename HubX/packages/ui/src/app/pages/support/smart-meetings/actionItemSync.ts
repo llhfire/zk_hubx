@@ -99,8 +99,8 @@ export function diffActionItemsToTodo(
     if (mapPriority(action.priority) !== existing.priority) patch.priority = mapPriority(action.priority);
     if ((action.dueDate ?? undefined) !== existing.deadline) patch.deadline = action.dueDate ?? undefined;
 
-    // completed -> update status
-    if (action.status === 'completed' && existing.status !== 'completed') {
+    // 已完成在 L90 已 continue，这里的 second check 是恒真条件，去掉。
+    if (action.status === 'completed') {
       patch.status = 'completed';
     }
 

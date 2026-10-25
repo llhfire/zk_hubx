@@ -219,7 +219,11 @@ export function EmployeeList() {
     try {
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(new Uint8Array(await file.arrayBuffer()));
+      // ExcelJS 的类型声明要求 Node 的 Buffer，但浏览器里没有这个全局类型；
+      // 运行时 load 只按字节读，Uint8Array 完全够用。用 Parameters 取它声明的入参类型，
+      // 避免为了一个类型去引 @types/node。
+      type XlsxLoadInput = Parameters<typeof workbook.xlsx.load>[0];
+      await workbook.xlsx.load(new Uint8Array(await file.arrayBuffer()) as unknown as XlsxLoadInput);
       const worksheet = workbook.worksheets[0];
       if (!worksheet) throw new Error('Excel 中没有可读取的工作表');
       const headerIndexes = new Map<string, number>();

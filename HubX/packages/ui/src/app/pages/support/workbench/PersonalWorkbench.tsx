@@ -176,7 +176,7 @@ export function PersonalWorkbench() {
         </Col>
         <Col span={4}>
           <Card>
-            <Statistic title="参与项目" value={stats.myProjects} suffix="个" icon={<IconFile style={{ color: 'rgb(var(--primary-6))' }} />} />
+            <Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconFile style={{ color: 'rgb(var(--primary-6))' }} />参与项目</span>} value={stats.myProjects} suffix="个" />
           </Card>
         </Col>
         <Col span={4}>

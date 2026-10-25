@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import {
   Button,
   Card,
@@ -19,7 +19,7 @@ import { IconSearch, IconEye, IconCheck, IconArrowRight } from '@arco-design/web
 import { useNavigate } from 'react-router';
 import { useApprovals } from '../../../approvals/ApprovalContext';
 import type { ApprovalRecord, ApprovalStatus } from '../../../approvals/types';
-import { LeadDetail } from '../../sales/leads/LeadDetail';
+import { LeadDetail360 } from '../../sales/leads/LeadDetail360';
 
 const Text = Typography.Text;
 const statusMeta: Record<ApprovalStatus, { label: string; color: string }> = {
@@ -145,15 +145,20 @@ export function ApprovalCenter() {
       </Card>
 
       <Modal
+        className="hubx-modal"
         title={detail?.typeCode === 'QUOTATION' ? '报价审批详情' : '审批详情'}
         visible={Boolean(detail) && !decision}
         onCancel={() => setDetail(null)}
-        style={detail?.typeCode === 'QUOTATION'
-          ? { width: 'calc(100vw - 64px)', maxWidth: 1480 }
-          : { width: 720 }}
-        bodyStyle={detail?.typeCode === 'QUOTATION'
-          ? { height: 'calc(100vh - 190px)', padding: 0, overflow: 'auto', background: 'var(--color-fill-1)' }
-          : undefined}
+        style={(detail?.typeCode === 'QUOTATION'
+          ? {
+              width: 'calc(100vw - 64px)',
+              maxWidth: 1480,
+              '--modal-content-max-height': 'calc(100vh - 190px)',
+              '--modal-content-overflow': 'auto',
+              '--modal-content-padding': 0,
+              '--modal-content-bg': 'var(--color-fill-1)',
+            }
+          : { width: 720 }) as CSSProperties}
         footer={detail?.source === 'hubx' && detail.status === 'approving' && detail.currentApprover === '张三'
           ? (
             <Space>
@@ -165,7 +170,7 @@ export function ApprovalCenter() {
           : <Button onClick={() => setDetail(null)}>关闭</Button>}
       >
         {detail?.typeCode === 'QUOTATION' && detail.route ? (
-          <LeadDetail leadId={detail.route.match(/\/leads\/([^/?#]+)/)?.[1]} initialSideTab="quotation" />
+          <LeadDetail360 leadId={detail.route.match(/\/leads\/([^/?#]+)/)?.[1]} initialSideTab="quotation" />
         ) : detail && (
           <Space direction="vertical" size={20} style={{ width: '100%' }}>
             {detail.source === 'wecom' ? <Tag color="green">企业微信审批 · 只读</Tag> : <Tag color="arcoblue">HubX 业务审批</Tag>}

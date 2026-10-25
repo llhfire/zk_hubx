@@ -52,7 +52,6 @@ export function ContentPanel({
           <Button
             size="mini"
             type={mode === 'edit' ? 'primary' : 'text'}
-            status={mode === 'edit' ? 'primary' : 'default'}
             icon={<IconEdit />}
             onClick={() => setMode('edit')}
             disabled={readonly}
@@ -60,7 +59,6 @@ export function ContentPanel({
           <Button
             size="mini"
             type={mode === 'preview' ? 'primary' : 'text'}
-            status={mode === 'preview' ? 'primary' : 'default'}
             icon={<IconEye />}
             onClick={() => setMode('preview')}
           />

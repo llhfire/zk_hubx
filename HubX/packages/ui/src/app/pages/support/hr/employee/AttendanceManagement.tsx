@@ -217,7 +217,8 @@ export function AttendanceManagement() {
             className="employee-admin-month"
             placeholder="选择月份"
             value={filterMonth}
-            onChange={(_, dateStr) => setFilterMonth(dateStr as string)}
+            // MonthPicker 的 onChange 是 (dateString: string, date: Dayjs)：第一个参数才是字符串。
+            onChange={(dateStr) => setFilterMonth(dateStr)}
           />
           <Select
             className="employee-admin-select"

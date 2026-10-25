@@ -390,11 +390,7 @@ export function calcWorkDays(hireDateStr: string): number {
   return Math.floor((now.getTime() - hire.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function formatCurrency(n: number | undefined | null): string {
-  if (n === undefined || n === null) return '¥0';
-  const rounded = Math.round(n * 100) / 100;
-  return `¥${rounded.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
+export { formatMoney as formatCurrency } from '../../../../utils/money';
 
 export function getLevelColor(level: JobLevel): string {
   const l = parseInt(level.replace('L', ''), 10);

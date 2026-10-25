@@ -1,11 +1,11 @@
 import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { getRecentWorkRecordLabels, getRecentWorkRecords, SalesDailyTemplate } from '@/app/pages/daily-report/SalesDailyTemplate'
-import type { DailyReport } from '@/app/pages/daily-report/types'
-import { GeneralDailyTemplate } from '@/app/pages/daily-report/GeneralDailyTemplate'
-import { includeSelectedAttributionOption } from '@/app/pages/daily-report/WorkAttributionSelector'
-import { mockReminderData } from '@/app/reminders/mockData'
+import { getRecentWorkRecordLabels, getRecentWorkRecords, SalesDailyTemplate } from '../../pages/delivery/daily-report/SalesDailyTemplate'
+import type { DailyReport } from '../../pages/delivery/daily-report/types'
+import { GeneralDailyTemplate } from '../../pages/delivery/daily-report/GeneralDailyTemplate'
+import { includeSelectedAttributionOption } from '../../pages/delivery/daily-report/WorkAttributionSelector'
+import { mockReminderData } from '../mockData'
 
 function renderSalesFirstFrame() {
   return renderToStaticMarkup(

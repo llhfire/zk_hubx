@@ -12,7 +12,7 @@ import {
   ProcessWorkspaceAside,
   ProcessWorkspaceMain,
   WeChatIcon,
-} from '../index';
+} from '..';
 
 function renderInRouter(element: ReturnType<typeof createElement>) {
   return renderToStaticMarkup(

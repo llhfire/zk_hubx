@@ -2,8 +2,8 @@ import { createElement } from 'react';
 import { describe, expect, test } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { ProjectProvider } from '../project-management/ProjectContext';
-import { ProjectWorkItemsPage } from '../project-management/ProjectWorkItemsPage';
+import { ProjectProvider } from '../delivery/project/ProjectContext';
+import { ProjectWorkItemsPage } from '../delivery/project/ProjectWorkItemsPage';
 
 function render(path: string) {
   return renderToStaticMarkup(createElement(

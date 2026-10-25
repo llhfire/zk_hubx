@@ -1,20 +1,20 @@
 // 报价域「状态变更」共享纯函数：mock 与 http 两个 service 复用同一套业务逻辑，
 // 区别只在「改完存到哪」（内存/localStorage vs HTTP）。这样接后端时不会出现两套口径。
 
-import { buildDefaultFeatureList } from '@/app/pages/quotation/defaultFeatures';
+import { buildDefaultFeatureList } from '../app/pages/sales/quotation/defaultFeatures';
 import {
   buildInitialUnits,
   computeAmountBreakdown,
   nextVersion,
   resetAuditNodes,
   resolveAuditOutcome,
-} from '@/app/pages/quotation/quoteFlow';
+} from '../app/pages/sales/quotation/quoteFlow';
 import {
   QUOTE_ROLE_ACTORS,
   QUOTE_ROLES,
   buildInitialAuditNodes,
-} from '@/app/pages/quotation/types';
-import { ZKRT_QUOTE_TEMPLATE } from '@/app/pages/quotation/quoteDocumentTemplate';
+} from '../app/pages/sales/quotation/types';
+import { ZKRT_QUOTE_TEMPLATE } from '../app/pages/sales/quotation/quoteDocumentTemplate';
 import type {
   EvalSheet,
   FeatureModule,
@@ -23,7 +23,7 @@ import type {
   QuoteRole,
   QuoteStatus,
   QuoteTimelineEvent,
-} from '@/app/pages/quotation/types';
+} from '../app/pages/sales/quotation/types';
 
 export function now(): string {
   return new Date().toISOString().slice(0, 16).replace('T', ' ');

@@ -1,18 +1,18 @@
 import { describe, expect, test } from 'vitest';
-import type { FeedbackItem } from '@/app/feedback/FeedbackContext';
+import type { FeedbackItem } from '../../feedback/FeedbackContext';
 import {
   calculateFeedbackMetrics,
   EMPTY_FEEDBACK_FILTERS,
   filterFeedbackItems,
   hasFeedbackFilters,
-} from '../feedbackManagementModel';
+} from '../support/feedback/feedbackManagementModel';
 import {
   calculateSystemLogMetrics,
   EMPTY_LOG_FILTERS,
   filterLoginLogs,
   filterOperationLogs,
   hasLogFilters,
-} from '../systemLogModel';
+} from '../support/system/systemLogModel';
 
 const operationLogs = [
   { username: 'admin', name: '管理员', module: '用户管理', operation: '新建用户', method: 'POST /api/users', ip: '10.0.0.1', location: '北京', status: '成功', time: '2026-08-27 10:00:00' },

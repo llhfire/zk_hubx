@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { buildReminders } from '../buildReminders'
 import { mockReminderData } from '../mockData'
 import type { ReminderData } from '../mockData'
-import type { DailyReport } from '@/app/pages/daily-report/types'
+import type { DailyReport } from '../../pages/delivery/daily-report/types'
 
 describe('buildReminders', () => {
   test('builds first-phase reminders in the expected sorted type order', () => {

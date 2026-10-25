@@ -10,8 +10,8 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { createMockCollectionService, type CollectionService } from '@/services/collectionService';
-import type { CollectionLedgerEntry } from '@/services/collectionMutations';
+import { createMockCollectionService, type CollectionService } from '../../services/collectionService';
+import type { CollectionLedgerEntry } from '../../services/collectionMutations';
 
 interface CollectionContextValue {
   collections: CollectionLedgerEntry[];

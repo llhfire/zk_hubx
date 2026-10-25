@@ -1,6 +1,6 @@
 // 回款实收台账纯函数（B4）。期次计划仍长在合同 paymentPlans 上；本层只处理实际到账款。
 
-import type { CollectionRecord, Contract, PaymentPlanItem } from '../app/pages/contracts/types';
+import type { CollectionRecord, Contract, PaymentPlanItem } from '../app/pages/sales/contracts/types';
 
 export type CollectionLedgerEntry = CollectionRecord & { projectId?: string };
 

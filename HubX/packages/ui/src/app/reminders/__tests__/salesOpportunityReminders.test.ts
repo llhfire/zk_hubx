@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getSalesOpportunityReminders } from '../adapters/getSalesOpportunityReminders';
-import { DEFAULT_SALES_BUSINESS_CONFIG } from '@/app/pages/systemConfigStore';
-import { INITIAL_CUSTOMERS } from '@/app/pages/customers/mockData';
+import { DEFAULT_SALES_BUSINESS_CONFIG } from '../../pages/support/system/systemConfigStore';
+import { INITIAL_CUSTOMERS } from '../../pages/sales/customers/mockData';
 
 describe('sales opportunity reminders', () => {
   it('按联系人和触发日生成稳定生日提醒，停用联系人不触发', () => {

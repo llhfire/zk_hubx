@@ -32,7 +32,7 @@ import {
   ProcessWorkspace,
   ProcessWorkspaceAside,
   ProcessWorkspaceMain,
-} from '@/app/components/ui';
+} from '../../components/ui';
 import './UiComponentLibraryPage.css';
 
 const TabPane = Tabs.TabPane;

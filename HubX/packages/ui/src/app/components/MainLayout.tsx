@@ -1,6 +1,6 @@
 import { Suspense, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
-import logo from '@/assets/zk-hubx-logo.png';
+import logo from '../../assets/zk-hubx-logo.png';
 import { Layout, Menu, Avatar, Dropdown, Badge, Spin, Tag } from '@arco-design/web-react';
 import {
   IconHome,
@@ -20,16 +20,16 @@ import {
   IconQuote,
   IconSearch,
 } from '@arco-design/web-react/icon';
-import { DailyReportModal } from '../pages/daily-report/DailyReportModal';
-import { DailyReport } from '../pages/daily-report/types';
-import { RoleSelectModal } from '../pages/daily-report/RoleSelectModal';
-import { getDailyReportRuleForUser } from '../pages/daily-report/templateConfig';
+import { DailyReportModal } from '../pages/delivery/daily-report/DailyReportModal';
+import { DailyReport } from '../pages/delivery/daily-report/types';
+import { RoleSelectModal } from '../pages/delivery/daily-report/RoleSelectModal';
+import { getDailyReportRuleForUser } from '../pages/delivery/daily-report/templateConfig';
 import { ReminderBell, hasDailyReportUnsubmittedReminder } from '../reminders/components/ReminderBell';
 import { useReminders } from '../reminders/ReminderContext';
 import { FeedbackModal } from '../feedback/FeedbackModal';
-import { useQuotation } from '../pages/quotation/QuotationContext';
-import { QUOTE_ROLES, QUOTE_ROLE_ACTORS } from '../pages/quotation/types';
-import type { QuoteRole } from '../pages/quotation/types';
+import { useQuotation } from '../pages/sales/quotation/QuotationContext';
+import { QUOTE_ROLES, QUOTE_ROLE_ACTORS } from '../pages/sales/quotation/types';
+import type { QuoteRole } from '../pages/sales/quotation/types';
 import { useAppVersion } from '../version/AppVersionContext';
 import { VERSION_LABELS, VERSION_TAG_COLORS } from '../version/versionMatrix';
 import { VersionCompareModal } from '../version/VersionCompareModal';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import app from '../index';
+import app from '..';
 
 describe('Hono API Routes with Database Adapter Layer', () => {
   it('GET / 返回健康检查与服务标识', async () => {

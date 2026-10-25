@@ -6,7 +6,7 @@ import {
   hasDictionaryFilters,
   type DictionaryItem,
   type DictionaryType,
-} from '../dictionaryModel';
+} from '../support/system/dictionaryModel';
 
 const types: DictionaryType[] = [
   { id: '1', code: 'customer_source', name: '客户来源', description: '客户渠道分类', status: '启用', createTime: '2026-01-01' },

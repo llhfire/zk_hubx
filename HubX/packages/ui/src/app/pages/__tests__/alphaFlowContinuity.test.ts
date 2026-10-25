@@ -6,7 +6,7 @@ import {
   emptyDeliveryClosure,
   isAfterSalesHandoffReady,
   submitDeliveryAcceptance,
-} from '../alphaFlowContinuity';
+} from '../sales/leads/alphaFlowContinuity';
 
 describe('α 后半程流程接缝', () => {
   test('交付物未归档时不能提交验收，且验收必须先提交再确认', () => {

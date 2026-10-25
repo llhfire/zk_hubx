@@ -1,4 +1,4 @@
-import trashLeadIcon from '@/assets/trash-lead-apple-core-no-leaf-14x14.svg';
+import trashLeadIcon from '../../../assets/trash-lead-apple-core-no-leaf-14x14.svg';
 import './uiFoundation.css';
 
 export interface TrashLeadIconProps {

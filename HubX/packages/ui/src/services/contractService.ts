@@ -2,8 +2,8 @@
 // UI 只依赖本接口；α版注入 mock，β版注入 http（/api/contracts）。业务逻辑在 contractMutations.ts 共用。
 
 import { Message } from '@arco-design/web-react';
-import { buildInitialContracts } from '@/app/pages/contracts/mockData';
-import { buildRecoveryBoardContracts } from '@/app/pages/contracts/recoveryBoardData';
+import { buildInitialContracts } from '../app/pages/sales/contracts/mockData';
+import { buildRecoveryBoardContracts } from '../app/pages/sales/contracts/recoveryBoardData';
 import {
   applyAddBlocker,
   applyAddCollection,
@@ -40,10 +40,10 @@ import type {
   ScanFile,
   UploadedWordContract,
   WizardInput,
-} from '@/app/pages/contracts/types';
-import { getContractNumberPrefix } from '@/app/pages/company-entity/companyEntityData';
-import { generateContractNo } from '@/app/pages/contracts/utils';
-import type { ElectronicSigningPackage } from '@/app/pages/sales-compliance/types';
+} from '../app/pages/sales/contracts/types';
+import { getContractNumberPrefix } from '../app/pages/sales/company-entity/companyEntityData';
+import { generateContractNo } from '../app/pages/sales/contracts/utils';
+import type { ElectronicSigningPackage } from '../app/pages/sales/compliance/types';
 
 export interface ContractService {
   list(): Promise<Contract[]>;

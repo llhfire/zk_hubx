@@ -9,7 +9,7 @@ import type {
   PresalesQuoteRecord,
   UnconfirmedProject,
 } from './types';
-import type { Project } from '@/app/pages/project-management/mockData';
+import type { Project } from '../pages/delivery/project/mockData';
 
 export type {
   BusinessCase,

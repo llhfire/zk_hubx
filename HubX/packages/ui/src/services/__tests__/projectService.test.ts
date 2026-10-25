@@ -3,7 +3,7 @@ import { Message } from '@arco-design/web-react';
 
 vi.mock('@arco-design/web-react', () => ({ Message: { warning: vi.fn(), success: vi.fn(), error: vi.fn() } }));
 
-import { initialProjects } from '@/app/pages/project-management/mockData';
+import { initialProjects } from '../../app/pages/delivery/project/mockData';
 import { createMockProjectService, createHttpProjectService } from '../projectService';
 
 type Call = { method: string; url: string; body?: unknown; headers?: Record<string, string> };

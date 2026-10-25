@@ -11,10 +11,10 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import type { FollowUpRecord, LeadDetailInfo, LeadListItem, TransferRecord, CustomerLevel } from '@/app/pages/leads/types';
-import { createMockLeadService, type LeadService } from '@/services/leadService';
-import type { LeadCreateInput, FollowUpInput, DispatchInput } from '@/services/leadMutations';
-import { useOptionalCustomers } from '@/app/pages/customers/CustomerContext';
+import type { FollowUpRecord, LeadDetailInfo, LeadListItem, TransferRecord, CustomerLevel } from '../pages/sales/leads/types';
+import { createMockLeadService, type LeadService } from '../../services/leadService';
+import type { LeadCreateInput, FollowUpInput, DispatchInput } from '../../services/leadMutations';
+import { useOptionalCustomers } from '../pages/sales/customers/CustomerContext';
 
 interface LeadsContextValue {
   leads: LeadListItem[];

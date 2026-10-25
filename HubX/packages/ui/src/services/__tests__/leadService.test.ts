@@ -6,9 +6,9 @@ import { Message } from '@arco-design/web-react';
 
 vi.mock('@arco-design/web-react', () => ({ Message: { warning: vi.fn(), success: vi.fn() } }));
 
-import type { LeadListItem } from '@/app/pages/leads/types';
+import type { LeadListItem } from '../../app/pages/sales/leads/types';
 import { createMockLeadService, createHttpLeadService, seedFallback } from '../leadService';
-import { PUBLIC_LEADS, MY_LEADS } from '@/app/pages/leads/mockData';
+import { PUBLIC_LEADS, MY_LEADS } from '../../app/pages/sales/leads/mockData';
 
 type Call = { method: string; url: string; body?: unknown; headers?: Record<string, string> };
 

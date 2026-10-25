@@ -8,8 +8,8 @@
 // 业务逻辑（状态迁移/会签/版本）抽在 quotationMutations.ts，mock 与 http 共用，保证口径一致。
 
 import { Message } from '@arco-design/web-react';
-import { initialQuotes } from '@/app/pages/quotation/mockData';
-import { resetAuditNodes } from '@/app/pages/quotation/quoteFlow';
+import { initialQuotes } from '../app/pages/sales/quotation/mockData';
+import { resetAuditNodes } from '../app/pages/sales/quotation/quoteFlow';
 import {
   applyDecideAudit,
   applyNewVersion,
@@ -25,9 +25,9 @@ import {
   now,
   canTransition,
 } from './quotationMutations';
-import { canDeleteQuote, isTerminalStatus } from '@/app/pages/quotation/quoteAccess';
-import type { EvalSheet, FeatureModule, Quote } from '@/app/pages/quotation/types';
-import { buildSupplementQuote } from '@/app/pages/quotation/supplementQuote';
+import { canDeleteQuote, isTerminalStatus } from '../app/pages/sales/quotation/quoteAccess';
+import type { EvalSheet, FeatureModule, Quote } from '../app/pages/sales/quotation/types';
+import { buildSupplementQuote } from '../app/pages/sales/quotation/supplementQuote';
 
 export interface CreateQuoteOptions {
   flowMode?: Quote['flowMode'];
@@ -61,7 +61,7 @@ export interface QuotationService {
 
   // ── 阶段三：销售报价配置 ──
   returnToTech(quoteId: string, reason: string): Promise<void>;
-  submitForAudit(quoteId: string, auditSnapshot?: { auditNodes: import('@/app/pages/quotation/types').AuditNode[]; stampNode: import('@/app/pages/quotation/types').StampNode }): Promise<void>;
+  submitForAudit(quoteId: string, auditSnapshot?: { auditNodes: import('../app/pages/sales/quotation/types').AuditNode[]; stampNode: import('../app/pages/sales/quotation/types').StampNode }): Promise<void>;
   withdrawAudit(quoteId: string, reason: string): Promise<void>;
 
   // ── 阶段四：审批与盖章 ──

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Project } from '@/app/pages/project-management/mockData';
+import type { Project } from '../../app/pages/delivery/project/mockData';
 import {
   applyAdvanceStatus,
   applyConfirmAssign,

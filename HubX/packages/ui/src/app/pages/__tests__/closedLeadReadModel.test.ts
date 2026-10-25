@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { seedCollectionsFromContracts } from '../../../services/collectionMutations';
-import { buildClosedLeadRows } from '../closedLeadReadModel';
-import { buildInitialContracts } from '../contracts/mockData';
-import { CLOSED_LEADS } from '../leads/mockData';
-import { initialProjects } from '../project-management/mockData';
+import { buildClosedLeadRows } from '../sales/leads/closedLeadReadModel';
+import { buildInitialContracts } from '../sales/contracts/mockData';
+import { CLOSED_LEADS } from '../sales/leads/mockData';
+import { initialProjects } from '../delivery/project/mockData';
 
 describe('buildClosedLeadRows', () => {
   it('把已成交线索关联到真实合同、项目和实收台账', () => {

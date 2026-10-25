@@ -13,13 +13,13 @@ import {
   TRANSFER_RECORDS,
   getLeadDetailInfo,
   getTransferRecordsByLeadId,
-} from '@/app/pages/leads/mockData';
+} from '../app/pages/sales/leads/mockData';
 import type {
   FollowUpRecord,
   LeadDetailInfo,
   LeadListItem,
   TransferRecord,
-} from '@/app/pages/leads/types';
+} from '../app/pages/sales/leads/types';
 import {
   applyAddFollowUp,
   applyAssignLead,
@@ -42,8 +42,8 @@ import {
   type FollowUpInput,
   type DispatchInput,
 } from './leadMutations';
-import type { CustomerLevel } from '@/app/pages/leads/types';
-import { generateEventId } from '@/app/pages/lead-dispatch/eventLog';
+import type { CustomerLevel } from '../app/pages/sales/leads/types';
+import { generateEventId } from '../app/pages/sales/lead-dispatch/eventLog';
 
 export interface LeadService {
   /** 全部线索（含各池；UI 按 clueType 切片） */

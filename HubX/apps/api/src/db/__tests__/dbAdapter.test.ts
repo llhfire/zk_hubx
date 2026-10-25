@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getDbAdapter, MemoryAdapter, D1Adapter, SupabaseAdapter } from '../index';
+import { getDbAdapter, MemoryAdapter, D1Adapter, SupabaseAdapter } from '..';
 
 describe('Database Adapter Layer (Supabase / D1 / Memory)', () => {
   it('优先根据 SUPABASE_URL 和 SUPABASE_KEY 返回 SupabaseAdapter', () => {

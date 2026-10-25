@@ -4,11 +4,11 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { CollectionProvider } from '@/app/collections/CollectionContext';
-import { ContractDetail } from '../ContractDetail';
-import { ContractsProvider } from '../contracts/ContractsContext';
-import { ProjectProvider } from '../project-management/ProjectContext';
-import { QuotationProvider } from '../quotation/QuotationContext';
+import { CollectionProvider } from '../../collections/CollectionContext';
+import { ContractDetail } from '../sales/contracts/ContractDetail';
+import { ContractsProvider } from '../sales/contracts/ContractsContext';
+import { ProjectProvider } from '../delivery/project/ProjectContext';
+import { QuotationProvider } from '../sales/quotation/QuotationContext';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 

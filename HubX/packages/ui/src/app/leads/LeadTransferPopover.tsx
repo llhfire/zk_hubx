@@ -1,9 +1,9 @@
 // 线索「流转记录」Popover 共享组件：从 LeadContext 读取流转记录（mock/http 同构）。
 import { Popover, Tag, Tooltip } from '@arco-design/web-react';
 import { useState } from 'react';
-import { TRANSFER_ACTION_LABEL, TRANSFER_ACTION_COLOR } from '@/app/pages/leads/types';
-import { useLeads } from '@/app/leads/LeadContext';
-import type { TransferRecord } from '@/app/pages/leads/types';
+import { TRANSFER_ACTION_LABEL, TRANSFER_ACTION_COLOR } from '../pages/sales/leads/types';
+import { useLeads } from './LeadContext';
+import type { TransferRecord } from '../pages/sales/leads/types';
 
 interface Props {
   leadId: string;

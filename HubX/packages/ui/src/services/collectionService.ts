@@ -4,9 +4,9 @@
 //  - β：createHttpCollectionService(baseUrl) —— /api/collections
 
 import { Message } from '@arco-design/web-react';
-import { buildInitialContracts } from '@/app/pages/contracts/mockData';
-import { buildRecoveryBoardContracts } from '@/app/pages/contracts/recoveryBoardData';
-import { FINANCIAL_DELIVERY_COLLECTION_SEED } from '@/app/pages/financial-delivery/collectionSeed';
+import { buildInitialContracts } from '../app/pages/sales/contracts/mockData';
+import { buildRecoveryBoardContracts } from '../app/pages/sales/contracts/recoveryBoardData';
+import { FINANCIAL_DELIVERY_COLLECTION_SEED } from '../app/pages/finance/lean-delivery/collectionSeed';
 import {
   buildCollectionRecord,
   generateCollectionId,

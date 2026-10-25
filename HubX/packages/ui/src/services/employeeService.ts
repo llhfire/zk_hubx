@@ -2,8 +2,8 @@
 //  - α版（纯前端）：createMockEmployeeService() —— 内存，以 initialEmployees 作种子
 //  - β版（前后端）：createHttpEmployeeService(baseUrl) —— 调 Cloudflare Workers 的 /api/employees
 
-import { initialEmployees } from '@/app/pages/employee/mockData';
-import type { Employee } from '@/app/pages/employee/mockData';
+import { initialEmployees } from '../app/pages/support/hr/employee/mockData';
+import type { Employee } from '../app/pages/support/hr/employee/mockData';
 
 export interface EmployeeService {
   list(): Promise<Employee[]>;

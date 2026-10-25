@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { seedCollectionsFromContracts } from '../../../services/collectionMutations';
-import { buildInitialContracts } from '../contracts/mockData';
-import type { ProjectInvoiceApplication } from '../finance/ProjectInvoiceContext';
-import { CLOSED_LEADS } from '../leads/mockData';
-import { buildPaymentInvoiceRows } from '../paymentInvoiceReadModel';
-import type { Contract } from '../contracts/types';
+import { buildInitialContracts } from '../sales/contracts/mockData';
+import type { ProjectInvoiceApplication } from '../finance/invoice/ProjectInvoiceContext';
+import { CLOSED_LEADS } from '../sales/leads/mockData';
+import { buildPaymentInvoiceRows } from '../finance/paymentInvoiceReadModel';
+import type { Contract } from '../sales/contracts/types';
 
 function invoice(overrides: Partial<ProjectInvoiceApplication>): ProjectInvoiceApplication {
   return {

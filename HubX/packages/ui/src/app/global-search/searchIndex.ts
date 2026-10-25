@@ -8,12 +8,12 @@
  */
 
 import { useMemo } from 'react';
-import { useLeads } from '@/app/leads/LeadContext';
-import { useQuotation } from '@/app/pages/quotation/QuotationContext';
-import { useContracts } from '@/app/pages/contracts/ContractsContext';
-import { useProjects } from '@/app/pages/project-management/ProjectContext';
-import { useEmployee } from '@/app/pages/employee/EmployeeContext';
-import { useCustomers } from '@/app/pages/customers/CustomerContext';
+import { useLeads } from '../leads/LeadContext';
+import { useQuotation } from '../pages/sales/quotation/QuotationContext';
+import { useContracts } from '../pages/sales/contracts/ContractsContext';
+import { useProjects } from '../pages/delivery/project/ProjectContext';
+import { useEmployee } from '../pages/support/hr/employee/EmployeeContext';
+import { useCustomers } from '../pages/sales/customers/CustomerContext';
 import type { SearchItem, SearchEntityKind } from './types';
 
 /** 六域 → SearchItem[] 映射（useMemo 汇总，任一 Context 变化自动重算） */

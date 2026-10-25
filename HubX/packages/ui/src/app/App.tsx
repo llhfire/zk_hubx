@@ -1,31 +1,31 @@
 import { useCallback, type ReactNode } from 'react';
 import { RouterProvider } from 'react-router';
 import { ReminderProvider } from './reminders/ReminderContext';
-import { ContractsProvider } from './pages/contracts/ContractsContext';
-import { EmployeeProvider } from './pages/employee';
-import { JobWorkConfigProvider } from './pages/daily-report/JobWorkConfigContext';
+import { ContractsProvider } from './pages/sales/contracts/ContractsContext';
+import { EmployeeProvider } from './pages/support/hr/employee';
+import { JobWorkConfigProvider } from './pages/delivery/daily-report/JobWorkConfigContext';
 import { FeedbackProvider } from './feedback/FeedbackContext';
 import { IntegrationProvider } from './integrations/IntegrationContext';
 import { ApprovalProvider } from './approvals/ApprovalContext';
 import { TodoProvider } from './todos/TodoContext';
 import { router } from './routes';
-import { ProjectInvoiceProvider } from './pages/finance/ProjectInvoiceContext';
-import { QuotationProvider } from './pages/quotation/QuotationContext';
-import { ProjectProvider } from './pages/project-management/ProjectContext';
+import { ProjectInvoiceProvider } from './pages/finance/invoice/ProjectInvoiceContext';
+import { QuotationProvider } from './pages/sales/quotation/QuotationContext';
+import { ProjectProvider } from './pages/delivery/project/ProjectContext';
 import { BusinessCaseProvider } from './business-case/BusinessCaseContext';
-import { SmartMeetingProvider } from './pages/smart-meetings/SmartMeetingContext';
-import { SigningOpenBridge } from './pages/contracts/ApprovalDeliveryBridge';
-import type { QuotationService } from '@/services/quotationService';
-import type { ContractService } from '@/services/contractService';
-import type { LeadService } from '@/services/leadService';
-import type { ProjectService } from '@/services/projectService';
-import type { CollectionService } from '@/services/collectionService';
-import type { EmployeeService } from '@/services/employeeService';
+import { SmartMeetingProvider } from './pages/support/smart-meetings/SmartMeetingContext';
+import { SigningOpenBridge } from './pages/sales/contracts/ApprovalDeliveryBridge';
+import type { QuotationService } from '../services/quotationService';
+import type { ContractService } from '../services/contractService';
+import type { LeadService } from '../services/leadService';
+import type { ProjectService } from '../services/projectService';
+import type { CollectionService } from '../services/collectionService';
+import type { EmployeeService } from '../services/employeeService';
 import { LeadsProvider, useLeads } from './leads/LeadContext';
 import { CollectionProvider } from './collections/CollectionContext';
 import { AppVersionProvider } from './version/AppVersionContext';
 import type { AppVersion } from './version/versionMatrix';
-import { CustomerProvider } from './pages/customers/CustomerContext';
+import { CustomerProvider } from './pages/sales/customers/CustomerContext';
 
 interface AppProps {
   /** 报价数据源：α版注入 mock，β版注入 http。缺省 mock。 */

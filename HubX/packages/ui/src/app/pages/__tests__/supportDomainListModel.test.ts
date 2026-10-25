@@ -5,7 +5,7 @@ import {
   filterSupplierRecords,
   hasAssetFilters,
   hasSupplierFilters,
-} from '../supportDomainListModel';
+} from '../support/system/supportDomainListModel';
 
 describe('支撑域列表模型', () => {
   test('资产页签、关键词、类型和状态筛选可组合生效', () => {

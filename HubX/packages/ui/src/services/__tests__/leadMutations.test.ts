@@ -1,7 +1,7 @@
 // 线索域操作纯函数（B2）行为单测。
 // 规则对齐 PRD-线索管理模块：8 态漏斗、24h 限制、退回第 3 次自动进垃圾、重复检查、软删除。
 import { describe, it, expect } from 'vitest';
-import type { LeadListItem, FollowUpRecord } from '@/app/pages/leads/types';
+import type { LeadListItem, FollowUpRecord } from '../../app/pages/sales/leads/types';
 import {
   canClaimLead,
   canAssignLead,

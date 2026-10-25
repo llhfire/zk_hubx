@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildInitialContracts } from '../../app/pages/contracts/mockData';
+import { buildInitialContracts } from '../../app/pages/sales/contracts/mockData';
 import { applyCreateFromWizard } from '../contractMutations';
 
 function supplementInput() {

@@ -6,7 +6,7 @@ vi.mock('@arco-design/web-react', () => ({ Message: { warning: vi.fn() } }));
 
 import { Message } from '@arco-design/web-react';
 import { createHttpQuotationService } from '../quotationService';
-import type { Quote } from '@/app/pages/quotation/types';
+import type { Quote } from '../../app/pages/sales/quotation/types';
 
 function makeQuote(overrides: Partial<Quote> = {}): Quote & { version?: number } {
   return {

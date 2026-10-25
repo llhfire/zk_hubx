@@ -8,7 +8,7 @@ import {
   canReassignProject,
   isSameLeadIdentity,
 } from '../app/business-case/caseUtils';
-import type { Project, ProjectStatus } from '../app/pages/project-management/mockData';
+import type { Project, ProjectStatus } from '../app/pages/delivery/project/mockData';
 
 export const PROJECT_ADVANCE: Record<ProjectStatus, ProjectStatus[]> = {
   未确认: [], // 必须走 confirmAssign

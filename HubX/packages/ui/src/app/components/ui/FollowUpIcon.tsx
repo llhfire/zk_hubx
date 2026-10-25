@@ -1,4 +1,4 @@
-import followUpIcon from '@/assets/project-follow-up-14x14.svg';
+import followUpIcon from '../../../assets/project-follow-up-14x14.svg';
 import './uiFoundation.css';
 
 export interface FollowUpIconProps {

@@ -3,7 +3,7 @@ import { Message } from '@arco-design/web-react';
 
 vi.mock('@arco-design/web-react', () => ({ Message: { warning: vi.fn(), success: vi.fn(), error: vi.fn() } }));
 
-import { buildInitialContracts } from '@/app/pages/contracts/mockData';
+import { buildInitialContracts } from '../../app/pages/sales/contracts/mockData';
 import { collectionsForProject, seedCollectionsFromContracts, sumReceived, registerMainPaymentDualWrite, withCollectionLedger } from '../collectionMutations';
 import { createMockCollectionService, createHttpCollectionService } from '../collectionService';
 

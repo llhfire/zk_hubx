@@ -1,5 +1,5 @@
 import type { ReminderItem } from '../types'
-import type { DailyReport, DailyReportComment } from '@/app/pages/daily-report/types'
+import type { DailyReport, DailyReportComment } from '../../pages/delivery/daily-report/types'
 import type { ReminderData } from '../mockData'
 
 function getLocalDateString(date: Date): string {

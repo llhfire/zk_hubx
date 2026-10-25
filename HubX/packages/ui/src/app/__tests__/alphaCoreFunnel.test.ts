@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { buildUnconfirmedProject, startDelivery, unconfirmedProjectId } from '@/app/business-case';
-import { buildInitialContracts } from '@/app/pages/contracts/mockData';
-import { applyDealQuotePrefill, buildDealQuotePrefill } from '@/app/pages/contracts/dealQuotePrefill';
-import { diffContractEvents } from '@/app/pages/contracts/signingOpenEvents';
-import type { ContractSnapshotEntry } from '@/app/pages/contracts/signingOpenEvents';
-import { initialQuotes } from '@/app/pages/quotation/mockData';
+import { buildUnconfirmedProject, startDelivery, unconfirmedProjectId } from '../business-case';
+import { buildInitialContracts } from '../pages/sales/contracts/mockData';
+import { applyDealQuotePrefill, buildDealQuotePrefill } from '../pages/sales/contracts/dealQuotePrefill';
+import { diffContractEvents } from '../pages/sales/contracts/signingOpenEvents';
+import type { ContractSnapshotEntry } from '../pages/sales/contracts/signingOpenEvents';
+import { initialQuotes } from '../pages/sales/quotation/mockData';
 import {
   QUOTE_APPROVAL_BINDING,
   QUOTE_PARALLEL_TEMPLATE,
   buildAuditSnapshotFromConfig,
-} from '@/app/pages/quotation/quoteAuditSnapshot';
-import { collectionsForProject, registerMainPaymentDualWrite } from '@/services/collectionMutations';
-import { createMockCollectionService } from '@/services/collectionService';
-import { createMockContractService } from '@/services/contractService';
-import { createMockLeadService } from '@/services/leadService';
-import { createMockProjectService } from '@/services/projectService';
-import { createMockQuotationService } from '@/services/quotationService';
+} from '../pages/sales/quotation/quoteAuditSnapshot';
+import { collectionsForProject, registerMainPaymentDualWrite } from '../../services/collectionMutations';
+import { createMockCollectionService } from '../../services/collectionService';
+import { createMockContractService } from '../../services/contractService';
+import { createMockLeadService } from '../../services/leadService';
+import { createMockProjectService } from '../../services/projectService';
+import { createMockQuotationService } from '../../services/quotationService';
 
 function contractSnapshot(contracts: Awaited<ReturnType<ReturnType<typeof createMockContractService>['list']>>) {
   return Object.fromEntries(contracts.map((contract) => [

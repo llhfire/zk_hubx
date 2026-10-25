@@ -1,10 +1,10 @@
 // 合同域「状态变更」共享纯函数：mock 与 http 两个 service 复用同一套业务逻辑。
 // 每个 applyXxx 接收当前合同 + 参数，返回变更后的合同（不含 updatedAt，由外层统一加）。
 
-import { getContractApprovalRounds } from '@/app/pages/contracts/contractHistory';
-import { renderContractDocument } from '@/app/pages/contracts/templates';
-import { canTransitionTo, generateContractNo, getNextVersionNo } from '@/app/pages/contracts/utils';
-import { getContractNumberPrefix } from '@/app/pages/company-entity/companyEntityData';
+import { getContractApprovalRounds } from '../app/pages/sales/contracts/contractHistory';
+import { renderContractDocument } from '../app/pages/sales/contracts/templates';
+import { canTransitionTo, generateContractNo, getNextVersionNo } from '../app/pages/sales/contracts/utils';
+import { getContractNumberPrefix } from '../app/pages/sales/company-entity/companyEntityData';
 import type {
   ApprovalNode,
   CollectionRecord,
@@ -17,7 +17,7 @@ import type {
   ScanArchiveEntry,
   UploadedWordContract,
   WizardInput,
-} from '@/app/pages/contracts/types';
+} from '../app/pages/sales/contracts/types';
 
 const DEFAULT_APPROVERS: Record<ApprovalNode['step'], string> = {
   发起申请: '张三',

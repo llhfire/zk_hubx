@@ -4,9 +4,9 @@ import { IconCheckSquare, IconMessage, IconNotification } from '@arco-design/web
 import { useNavigate } from 'react-router';
 import type { ReminderItem } from '../types';
 import { ReminderSnoozeMenu } from './ReminderSnoozeMenu';
-import { useIntegration } from '@/app/integrations/IntegrationContext';
-import { useTodos } from '@/app/todos/TodoContext';
-import { useQuotation } from '@/app/pages/quotation/QuotationContext';
+import { useIntegration } from '../../integrations/IntegrationContext';
+import { useTodos } from '../../todos/TodoContext';
+import { useQuotation } from '../../pages/sales/quotation/QuotationContext';
 
 const Text = Typography.Text;
 const Paragraph = Typography.Paragraph;

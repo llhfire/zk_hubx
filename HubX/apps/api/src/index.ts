@@ -8,7 +8,7 @@ import { cors } from 'hono/cors';
 import { getDbAdapter, type DatabaseAdapter, type ApiEnvBindings } from './db';
 
 // B3 签约联动（ADR-0093）：单源导入 packages/ui 纯函数，禁止复制
-import { diffContractEvents, prevSnapshotForWrite, shouldEnsureUnconfirmedProject } from '../../../packages/ui/src/app/pages/contracts/signingOpenEvents';
+import { diffContractEvents, prevSnapshotForWrite, shouldEnsureUnconfirmedProject } from '../../../packages/ui/src/app/pages/sales/contracts/signingOpenEvents';
 import {
   spawnUnconfirmedProject,
   buildUnconfirmedProject,
@@ -25,7 +25,7 @@ import {
   applyUrge,
   buildLeadDetailInfo,
 } from '../../../packages/ui/src/services/leadMutations';
-import type { LeadListItem, CustomerLevel } from '../../../packages/ui/src/app/pages/leads/types';
+import type { LeadListItem, CustomerLevel } from '../../../packages/ui/src/app/pages/sales/leads/types';
 import type { DispatchInput } from '../../../packages/ui/src/services/leadMutations';
 
 type Env = ApiEnvBindings;
@@ -357,7 +357,7 @@ app.put('/api/contracts/:id', async (c) => {
   // B3 签约联动（ADR-0093）：合同写入后检测事件，在同一请求内完成 spawn / startDelivery / shelve
   const oldDoc = old ? (old.data as Record<string, unknown>) : null;
   const prevSnapshot = prevSnapshotForWrite(id, oldDoc ? { approvedAt: oldDoc.approvedAt as string | undefined, status: oldDoc.status as string | undefined } : null);
-  const nextContract = { id, ...data } as import('../../../packages/ui/src/app/pages/contracts/types').Contract;
+  const nextContract = { id, ...data } as import('../../../packages/ui/src/app/pages/sales/contracts/types').Contract;
   const events = diffContractEvents(prevSnapshot, [nextContract]);
 
   if (events.created.length > 0 || events.approved.length > 0 || events.voided.length > 0) {

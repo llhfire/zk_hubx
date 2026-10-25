@@ -1,4 +1,4 @@
-import type { QuoteRole } from '@/app/pages/quotation/types';
+import type { QuoteRole } from '../pages/sales/quotation/types';
 
 export type ApproveStrategy = '单人审批' | '或签' | '会签';
 export type RejectPolicy = '驳回至发起人';
@@ -49,7 +49,7 @@ import {
   QUOTE_PARALLEL_TEMPLATE,
   QUOTE_APPROVAL_BINDING,
   SUPPLEMENT_QUOTE_APPROVAL_BINDING,
-} from '@/app/pages/quotation/quoteAuditSnapshot';
+} from '../pages/sales/quotation/quoteAuditSnapshot';
 
 export const defaultWorkflowTemplates: WorkflowTemplateDefinition[] = [
   {

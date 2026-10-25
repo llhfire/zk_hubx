@@ -1,5 +1,5 @@
-import type { DailyReport } from '@/app/pages/daily-report/types'
-import type { DailyReportComment } from '@/app/pages/daily-report/types'
+import type { DailyReport } from '../pages/delivery/daily-report/types'
+import type { DailyReportComment } from '../pages/delivery/daily-report/types'
 
 export interface Approval {
   id: string

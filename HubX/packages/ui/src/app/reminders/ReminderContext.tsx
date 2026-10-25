@@ -7,16 +7,16 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react'
-import type { DailyReport } from '@/app/pages/daily-report/types'
+import type { DailyReport } from '../pages/delivery/daily-report/types'
 import { buildReminders } from './buildReminders'
 import { mockReminderData, type ReminderData } from './mockData'
 import type { ReminderItem, SnoozeOptionId } from './types'
 import { resolveSnoozeUntil } from './utils'
-import { useOptionalCustomers } from '@/app/pages/customers/CustomerContext'
-import { useOptionalContracts } from '@/app/pages/contracts/ContractsContext'
+import { useOptionalCustomers } from '../pages/sales/customers/CustomerContext'
+import { useOptionalContracts } from '../pages/sales/contracts/ContractsContext'
 import { getSalesOpportunityReminders } from './adapters/getSalesOpportunityReminders'
-import { readSalesBusinessConfig } from '@/app/pages/systemConfigStore'
-import { useOptionalTodos } from '@/app/todos/TodoContext'
+import { readSalesBusinessConfig } from '../pages/support/system/systemConfigStore'
+import { useOptionalTodos } from '../todos/TodoContext'
 
 interface ReminderContextValue {
   reminders: ReminderItem[]

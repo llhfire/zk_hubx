@@ -3,14 +3,14 @@ import { createElement } from 'react'
 import { describe, expect, test } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { ProjectDetail360 } from '../ProjectDetail360'
-import { ContractsProvider, useContracts } from '../contracts/ContractsContext'
-import { buildInitialContracts } from '../contracts/mockData'
-import { ProjectProvider } from '../project-management/ProjectContext'
-import { CollectionProvider } from '@/app/collections/CollectionContext'
-import { QuotationProvider } from '../quotation/QuotationContext'
-import { initialProjects } from '../project-management/mockData'
-import { PROJECT_LIST } from '../project-management/projectMockData'
+import { ProjectDetail360 } from '../delivery/project/ProjectDetail360'
+import { ContractsProvider, useContracts } from '../sales/contracts/ContractsContext'
+import { buildInitialContracts } from '../sales/contracts/mockData'
+import { ProjectProvider } from '../delivery/project/ProjectContext'
+import { CollectionProvider } from '../../collections/CollectionContext'
+import { QuotationProvider } from '../sales/quotation/QuotationContext'
+import { initialProjects } from '../delivery/project/mockData'
+import { PROJECT_LIST } from '../delivery/project/projectMockData'
 
 function renderProjectDetail360Markup(path = '/projects/1') {
   return renderToStaticMarkup(
@@ -167,7 +167,7 @@ describe('项目数据层统一（PROJECT_LIST 唯一事实源）', () => {
   })
 
   test('详情域台账共享 mock 按 projectId 提供数据', async () => {
-    const { getMeetingsByProjectId, getConfirmationsByProjectId, getDemoEnvsByProjectId } = await import('../project-management/projectMockData')
+    const { getMeetingsByProjectId, getConfirmationsByProjectId, getDemoEnvsByProjectId } = await import('../delivery/project/projectMockData')
 
     expect(getMeetingsByProjectId('1').length).toBeGreaterThan(0)
     expect(getConfirmationsByProjectId('1').length).toBeGreaterThan(0)

@@ -6,9 +6,9 @@
 // 业务规则在 projectMutations.ts / caseUtils.ts，mock 与 http 共用。
 
 import { Message } from '@arco-design/web-react';
-import { initialProjects, type Project, type ProjectStatus } from '@/app/pages/project-management/mockData';
-import { buildInitialContracts } from '@/app/pages/contracts/mockData';
-import type { Contract } from '@/app/pages/contracts/types';
+import { initialProjects, type Project, type ProjectStatus } from '../app/pages/delivery/project/mockData';
+import { buildInitialContracts } from '../app/pages/sales/contracts/mockData';
+import type { Contract } from '../app/pages/sales/contracts/types';
 import type { CollectionLedgerEntry } from './collectionMutations';
 import {
   applyAdvanceStatus,

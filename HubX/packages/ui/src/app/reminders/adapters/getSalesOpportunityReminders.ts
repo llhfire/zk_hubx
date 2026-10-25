@@ -1,7 +1,7 @@
-import type { Customer } from '@/app/pages/customers/types';
-import type { Contract } from '@/app/pages/contracts/types';
-import type { SalesBusinessConfig } from '@/app/pages/systemConfigStore';
-import { parseReminderOffsets } from '@/app/pages/systemConfigStore';
+import type { Customer } from '../../pages/sales/customers/types';
+import type { Contract } from '../../pages/sales/contracts/types';
+import type { SalesBusinessConfig } from '../../pages/support/system/systemConfigStore';
+import { parseReminderOffsets } from '../../pages/support/system/systemConfigStore';
 import type { ReminderItem } from '../types';
 
 function dateOnly(date: Date) {

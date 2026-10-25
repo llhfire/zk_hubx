@@ -462,7 +462,10 @@ export class SupabaseAdapter implements DatabaseAdapter {
     updatedAt: string,
     transfer?: { id: string; leadId: string; data: Record<string, unknown> } | null,
   ): Promise<void> {
-    const tasks: Promise<{ error: unknown }>[] = [
+    // Supabase 的 PostgrestFilterBuilder 是 thenable，但不是严格 Promise
+    // （缺 finally / Symbol.toStringTag）。运行时 await 正常，此处放宽标注。
+    type Thenable = PromiseLike<{ error: unknown }>;
+    const tasks: Thenable[] = [
       this.client.from('leads').upsert(
         { id, data: updatedLead, version: nextVersion, updated_at: updatedAt },
         { onConflict: 'id' },

@@ -141,6 +141,31 @@ function domainNow(): string {
   return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 }
 
+/**
+ * 乐观锁校验（ADR-0094）：已存在的记录，PUT 请求体**必须**带数字 version，
+ * 且与库内当前值一致，否则 409。
+ *
+ * 历史实现写作 `typeof body.version === 'number' && body.version !== currentVersion`，
+ * 导致「不带 version 字段」直接跳过校验 —— 任何客户端省略该字段即可静默覆盖他人修改，
+ * 等于乐观锁形同虚设。此处改为：old 存在时，缺失或类型错误一律视为冲突。
+ *
+ * 注意两个曾经踩过的坑：
+ * 1. 判据必须是「行是否存在」，不能是「version 是否为 undefined」——
+ *    否则老行（无 version 列值）会被当成新建而跳过校验。
+ * 2. 不要用返回 null 兼作「通过」：若库内 version 恰好是 null，返回值也和「通过」同形，
+ *    冲突会被静默吞掉。这里用显式的判别对象。
+ */
+export type VersionCheck = { conflict: false } | { conflict: true; currentVersion: number };
+
+export function checkVersion(existing: { version?: number | null } | undefined | null, bodyVersion: unknown): VersionCheck {
+  if (!existing) return { conflict: false }; // 新建记录，无令牌可言
+  const currentVersion = existing.version ?? 0; // 老行没有 version 列值，按 0 起算
+  if (typeof bodyVersion !== 'number' || bodyVersion !== currentVersion) {
+    return { conflict: true, currentVersion };
+  }
+  return { conflict: false };
+}
+
 app.get('/', (c) => {
   const db = getDbAdapter(c.env);
   return c.json({ ok: true, service: 'zkhubx-api', engine: db.engine });
@@ -171,8 +196,9 @@ app.put('/api/quotes/:id', async (c) => {
   const currentVersion = old?.version ?? 0;
 
   // 乐观锁（ADR-0094）：请求携带的 version 与库内不一致 -> 409，客户端提示刷新重试
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
+  const versionCheck = checkVersion(old, body.version);
+  if (versionCheck.conflict) {
+    return c.json({ error: 'version conflict', currentVersion: versionCheck.currentVersion }, 409);
   }
 
   // 服务端校验状态迁移：读旧状态，比对新状态是否合法（防止"胖客户端"跳过步骤）
@@ -238,7 +264,7 @@ async function handleSigningLinkage(db: DatabaseAdapter, events: { created: Cont
       today,
     });
     await Promise.all([
-      db.insertProjectIfMissing(projectId, fullProject, 0, new Date().toISOString()),
+      db.insertProjectIfMissing(projectId, fullProject as unknown as Record<string, unknown>, 0, new Date().toISOString()),
       db.insertCaseIfMissing(bizCase.id, { ...bizCase, contractId }, 0, new Date().toISOString()),
     ]);
   }
@@ -329,7 +355,7 @@ async function ensureUnconfirmedProjectIfMissing(db: DatabaseAdapter, contract: 
     today,
   });
   await Promise.all([
-    db.insertProjectIfMissing(projectId, fullProject, 0, new Date().toISOString()),
+    db.insertProjectIfMissing(projectId, fullProject as unknown as Record<string, unknown>, 0, new Date().toISOString()),
     db.insertCaseIfMissing(bizCase.id, { ...bizCase, contractId }, 0, new Date().toISOString()),
   ]);
 }
@@ -345,8 +371,9 @@ app.put('/api/contracts/:id', async (c) => {
   const currentVersion = old?.version ?? 0;
 
   // 乐观锁（ADR-0094）：与报价同规则
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
+  const versionCheck = checkVersion(old, body.version);
+  if (versionCheck.conflict) {
+    return c.json({ error: 'version conflict', currentVersion: versionCheck.currentVersion }, 409);
   }
 
   // version 不落进 data；updatedAt 由服务端时钟覆盖；确保 id 保留在文档对象中
@@ -365,7 +392,7 @@ app.put('/api/contracts/:id', async (c) => {
   }
 
   // 洞 C ③：草稿/未批准且非作废，该 lead 还没有项目 → 再 spawn（幂等）
-  await ensureUnconfirmedProjectIfMissing(db, nextContract as ContractLike, serverUpdatedAt);
+  await ensureUnconfirmedProjectIfMissing(db, nextContract as unknown as ContractLike, serverUpdatedAt);
 
   return c.json({ ok: true, id, version: currentVersion + 1, serverUpdatedAt, actor });
 });
@@ -434,8 +461,9 @@ app.put('/api/projects/:id', async (c) => {
   const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
   const old = await db.getProject(id);
   const currentVersion = old?.version ?? 0;
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
+  const versionCheck = checkVersion(old, body.version);
+  if (versionCheck.conflict) {
+    return c.json({ error: 'version conflict', currentVersion: versionCheck.currentVersion }, 409);
   }
   if (old) {
     const oldDoc = old.data as Record<string, unknown>;
@@ -503,8 +531,9 @@ app.put('/api/cases/:id', async (c) => {
   const body = (await c.req.json()) as Record<string, unknown> & { version?: number };
   const old = await db.getCase(id);
   const currentVersion = old?.version ?? 0;
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
+  const versionCheck = checkVersion(old, body.version);
+  if (versionCheck.conflict) {
+    return c.json({ error: 'version conflict', currentVersion: versionCheck.currentVersion }, 409);
   }
   const { version: _v, ...data } = body;
   const serverUpdatedAt = domainNow();
@@ -571,8 +600,9 @@ app.put('/api/leads/:id', async (c) => {
   const old = await db.getLead(id);
   const currentVersion = old?.version ?? 0;
 
-  if (old && typeof body.version === 'number' && body.version !== currentVersion) {
-    return c.json({ error: 'version conflict', currentVersion }, 409);
+  const versionCheck = checkVersion(old, body.version);
+  if (versionCheck.conflict) {
+    return c.json({ error: 'version conflict', currentVersion: versionCheck.currentVersion }, 409);
   }
 
   if (old) {
@@ -680,7 +710,7 @@ app.get('/api/leads/:id/detail', async (c) => {
   const db = getDbAdapter(c.env);
   const row = await db.getLead(c.req.param('id'));
   if (!row) return c.json({ error: 'not found' }, 404);
-  const lead = row.data as LeadListItem & { leadEvents?: unknown[] };
+  const lead = row.data as unknown as LeadListItem & { leadEvents?: unknown[] };
   return c.json({
     detail: buildLeadDetailInfo(lead),
     events: lead.leadEvents ?? [],
@@ -760,7 +790,7 @@ app.get('/api/leads/:id/events', async (c) => {
   const db = getDbAdapter(c.env);
   const row = await db.getLead(c.req.param('id'));
   if (!row) return c.json({ error: 'not found' }, 404);
-  const lead = row.data as LeadListItem & { leadEvents?: unknown[] };
+  const lead = row.data as unknown as LeadListItem & { leadEvents?: unknown[] };
   return c.json({ events: lead.leadEvents ?? [] });
 });
 

@@ -44,6 +44,7 @@ import { useProjects } from '../../delivery/project/ProjectContext';
 import {
   type ContractStatus,
   type ContractVersion,
+  type ScanArchiveEntry,
 } from './types';
 import {
   PageShell,
@@ -61,6 +62,7 @@ import { CURRENT_LOGIN_USER } from '../../../currentUser';
 import { compareContractVersions } from './contractVersionDiff';
 import { advanceSigningPackage } from '../compliance/complianceModel';
 import type { ElectronicSigningPackage, ElectronicSigningStatus } from '../compliance/types';
+import { formatMoney } from '../../../utils/money';
 
 const { TabPane } = Tabs;
 const { Text } = Typography;
@@ -93,12 +95,6 @@ const mockFollowUps: FollowUpRecord[] = [
 ];
 
 // ─── 格式化工具 ─────────────────────────────────────────────
-
-function formatMoney(n: number | undefined | null): string {
-  if (n === undefined || n === null) return '¥0';
-  const rounded = Math.round(n * 100) / 100;
-  return `¥${rounded.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
 
 function displayValue(value: ReactNode | null | undefined): ReactNode {
   if (value == null || String(value).trim() === '') return '-';
@@ -160,7 +156,9 @@ export function ContractDetail() {
   const [ledgerRetryId, setLedgerRetryId] = useState<string>('');
   const [lastDualWriteStatus, setLastDualWriteStatus] = useState<DualWriteStatus | null>(null);
   const [paymentBreakdownVisible, setPaymentBreakdownVisible] = useState(false);
-  const { collections, add: addLedgerEntry } = useCollections();
+  // Context 暴露的是 addCollection。原写法解构 `add` 拿到的是 undefined，
+  // 结果每次「登记主合同回款」调 addLedgerEntry(entry) 都会抛 TypeError。
+  const { collections, addCollection: addLedgerEntry } = useCollections();
   const { getProjectByLeadId } = useProjects();
 
   // 跟进记录
@@ -237,7 +235,10 @@ export function ContractDetail() {
   const handleRegisterMainPayment = async () => {
     try {
       const values = await mainPaymentForm.validate();
-      const periodValue = values.period === 'other' ? 'other' : Number(values.period) || undefined;
+      // values 来自 Arco Form（any），不加注会让 'other' 被推断成 string，
+      // 与 CollectionRecord['period'] 的 number | 'other' 对不上。
+      const periodValue: number | 'other' | undefined =
+        values.period === 'other' ? 'other' : Number(values.period) || undefined;
       const record = {
         period: periodValue,
         amount: Number(values.amount) || 0,
@@ -544,10 +545,12 @@ export function ContractDetail() {
                 {scanRows.length > 0 ? (
                   <Table
                     columns={[
-                      { title: '文件', dataIndex: 'fileName', render: (_: unknown, entry: { files: Array<{ fileName: string; blobUrl?: string }> }) => entry.files.map((f) => <Button key={f.fileName} type="text" onClick={() => setViewer({ title: f.fileName, url: f.blobUrl })}>{f.fileName}</Button>) },
+                      // 两列 render 的行参必须用同一行类型，否则 Arco Table 会按较窄的那一列
+                      // 反推泛型，导致另一列不可赋值。
+                      { title: '文件', dataIndex: 'fileName', render: (_: unknown, entry: ScanArchiveEntry) => entry.files.map((f) => <Button key={f.fileName} type="text" onClick={() => setViewer({ title: f.fileName, url: f.blobUrl })}>{f.fileName}</Button>) },
                       { title: '上传时间', dataIndex: 'uploadedAt' },
                       { title: '上传人', dataIndex: 'uploadedBy' },
-                      { title: '操作', width: 120, fixed: 'right' as const, render: (_: unknown, entry: { id: string; files: Array<{ fileName: string; blobUrl?: string }> }) => <Space>
+                      { title: '操作', width: 120, fixed: 'right' as const, render: (_: unknown, entry: ScanArchiveEntry) => <Space>
                         <Button aria-label="查看扫描件" type="text" icon={<IconEye />} onClick={() => setViewer({ title: entry.files[0]?.fileName || '扫描件', url: entry.files[0]?.blobUrl })} />
                         <Button aria-label="删除扫描件" type="text" status="danger" icon={<IconDelete />} onClick={() => setScanRows((rows) => rows.filter((row) => row.id !== entry.id))} />
                       </Space> },

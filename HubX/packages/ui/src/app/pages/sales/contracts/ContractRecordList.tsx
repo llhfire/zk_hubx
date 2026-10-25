@@ -10,7 +10,8 @@ export function ContractRecordList() {
   const [searchForm, setSearchForm] = useState({
     keyword: '',
     status: '',
-    dateRange: [],
+    // 不标注的话 `[]` 会被推断成 never[]，RangePicker 回传的 string[] 无法写入。
+    dateRange: [] as string[],
   });
   const [appliedSearch, setAppliedSearch] = useState(searchForm);
   const [detailVisible, setDetailVisible] = useState(false);

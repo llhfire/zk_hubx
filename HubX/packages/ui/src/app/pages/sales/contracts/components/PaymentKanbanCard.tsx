@@ -13,14 +13,6 @@ const STATUS_COLORS: Record<PaymentStatus, string> = {
   settled: 'var(--success-500)',
 };
 
-const STATUS_ACCENTS: Record<PaymentStatus, string> = {
-  normal: 'var(--brand-500)',
-  upcoming: 'var(--warning-500)',
-  overdue: 'var(--destructive-500)',
-  blocked: 'var(--destructive-600)',
-  settled: 'var(--success-500)',
-};
-
 const STATUS_LABELS: Record<PaymentStatus, string> = {
   normal: '正常',
   upcoming: '即将到期',
@@ -54,7 +46,7 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       className="payment-lane-card"
       hoverable
       onClick={() => onClick(contract)}
-      style={{ '--card-accent': STATUS_ACCENTS[status] } as CSSProperties}
+      style={{ '--card-accent': STATUS_COLORS[status] } as CSSProperties}
     >
       <div className="payment-lane-card__header">
         <div className="payment-lane-card__project-name" title={contract.current.contractName}>

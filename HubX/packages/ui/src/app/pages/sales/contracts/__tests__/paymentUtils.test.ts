@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getLatestDunning, getPaymentPeriodLabel, PLAN_STATUS_META } from '../paymentUtils';
+import { computePaymentStatus, computeKanbanSummary, computePlanStatusRows, effectiveAmount, getReceivedAmount, getLatestDunning, getPaymentPeriodLabel, PLAN_STATUS_META } from '../paymentUtils';
+import { withCollectionLedger } from '../../../../../services/collectionMutations';
 import type { Contract } from '../types';
 import { buildRecoveryBoardContracts } from '../recoveryBoardData';
 
@@ -234,5 +235,53 @@ describe('computePlanStatusRows（阶段 3 回款 Tab）', () => {
 
     const rows = computePlanStatusRows(c, new Date('2026-04-01'));
     expect(rows.map((row) => row.allocated)).toEqual([0, 50_000]);
+  });
+});
+
+// ─── 回款金额口径（P0-4） ─────────────────────────────────────────
+// 领域硬约束（CONTEXT.md §实收）：金额事实来自独立实收台账；
+// 合同的 receivedAmount 只是投影结果，禁止作为第二套口径。
+// 未经过 withCollectionLedger 投影的原始合同，读 collectionRecords 即可，
+// 不得回退到 receivedAmount —— 否则同一合同在不同页面会出现两个数。
+
+describe('getReceivedAmount 口径', () => {
+  it('以 collectionRecords 合计为准，忽略 receivedAmount 字段', () => {
+    const c = makeContract({
+      receivedAmount: 800000,
+      collectionRecords: [
+        { id: 'r1', contractId: 'test-1', amount: 320000, date: '2026-04-14', method: '银行汇款', note: '' },
+        { id: 'r2', contractId: 'test-1', amount: 160000, date: '2026-06-10', method: '银行汇款', note: '' },
+      ],
+    });
+    expect(getReceivedAmount(c)).toBe(480000);
+  });
+
+  it('无 collectionRecords 时为 0，不回退 receivedAmount（兼容字段不是金额事实）', () => {
+    const c = makeContract({ receivedAmount: 550000, collectionRecords: [] });
+    expect(getReceivedAmount(c)).toBe(0);
+  });
+
+  it('collectionRecords 缺席（undefined）时为 0', () => {
+    const c = makeContract({ receivedAmount: 400000 });
+    delete (c as { collectionRecords?: unknown }).collectionRecords;
+    expect(getReceivedAmount(c)).toBe(0);
+  });
+
+  it('记录数组非空但合计为 0 时返回 0，不得回退字段', () => {
+    const c = makeContract({
+      receivedAmount: 100000,
+      collectionRecords: [{ id: 'r1', contractId: 'test-1', amount: 0, date: '2026-01-01', method: '', note: '' }],
+    });
+    expect(getReceivedAmount(c)).toBe(0);
+  });
+
+  it('经过 withCollectionLedger 投影后，receivedAmount 与记录合计一致', () => {
+    const c = makeContract({ receivedAmount: 800000, collectionRecords: [] });
+    const ledger = [
+      { id: 'r1', contractId: 'test-1', projectId: 'p1', amount: 320000, date: '2026-04-14', method: '银行汇款', note: '', createdAt: '', updatedAt: '' },
+    ] as Parameters<typeof withCollectionLedger>[1];
+    const projected = withCollectionLedger(c, ledger);
+    expect(projected.receivedAmount).toBe(320000);
+    expect(getReceivedAmount(projected)).toBe(320000);
   });
 });

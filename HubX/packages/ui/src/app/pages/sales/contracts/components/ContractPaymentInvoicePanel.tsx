@@ -24,6 +24,7 @@ import {
 } from '../../../../../services/collectionMutations';
 import type { Contract } from '../types';
 import { computePlanStatusRows, PLAN_STATUS_META } from '../paymentUtils';
+import { formatMoney as money } from '../../../../utils/money';
 
 const { Text } = Typography;
 
@@ -51,10 +52,6 @@ interface ContractPaymentInvoicePanelProps {
   onRedInvoice: (invoice: PaymentInvoiceRecord) => void;
   onCorrectInvoice: (invoice: PaymentInvoiceRecord) => void;
   onDeleteInvoice: (invoice: PaymentInvoiceRecord) => void;
-}
-
-function money(value: number) {
-  return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
 }
 
 function contractWithCollections(contract: Contract, collections: CollectionLedgerEntry[]): Contract {

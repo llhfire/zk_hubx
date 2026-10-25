@@ -14,7 +14,9 @@ export function getReceivedAmount(c: Contract): number {
  */
 export function effectiveAmount(main: Contract, supplements: Contract[]): number {
   const archivedSupplementAmount = supplements
-    .filter(s => s.kind === 'supplement' && s.status === 'archived' && s.status !== 'voided')
+    // status 是单值字段，`=== 'archived'` 已经排除了 'voided'，
+    // 原来追加的 `status !== 'voided'` 是恒真条件（tsc 直接判为无重叠比较）。
+    .filter(s => s.kind === 'supplement' && s.status === 'archived')
     .reduce((sum, s) => sum + (s.current?.totalAmount ?? 0), 0);
   return (main.current?.totalAmount ?? 0) + archivedSupplementAmount;
 }

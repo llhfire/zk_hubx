@@ -5,13 +5,13 @@ import { Card, Select, Space, Typography, Tag, Button, Modal, Input, Message } f
 import { buildGanttNodes, getOverdueWarningLevel } from './paymentCalc';
 import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
 import type { Task } from 'gantt-task-react';
-import type { Contract } from '../types';
+import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastNode, ForecastOverride } from './types';
 
 const { Text } = Typography;
 
 interface Props {
-  contracts: Contract[];
+  contracts: PaymentAnalysisContract[];
   projectDelayMap?: Record<string, number>;
   overrides: ForecastOverride[];
   onOverride: (override: ForecastOverride) => void;
@@ -38,7 +38,7 @@ const OVERDUE_STYLES: Record<string, { backgroundColor: string; progressColor: s
 export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOverride }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
   const [expandedAll, setExpandedAll] = useState(true);
-  const [editModal, setEditModal] = useState<{ node: ForecastNode; newDate: string } | null>(null);
+  const [editModal, setEditModal] = useState<{ node: ForecastNode; newDate: string; reason: string } | null>(null);
 
   const nodes = useMemo(
     () => buildGanttNodes(contracts, overrides, projectDelayMap),
@@ -110,7 +110,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
     if (!node) return;
     const newDate = task.start.toISOString().slice(0, 10);
     if (newDate === node.forecastDate) return;
-    setEditModal({ node, newDate });
+    setEditModal({ node, newDate, reason: '' });
   };
 
   const confirmOverride = () => {

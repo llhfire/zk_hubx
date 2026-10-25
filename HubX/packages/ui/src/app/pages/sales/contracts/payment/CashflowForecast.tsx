@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react';
 import { Card, Select, Space, Typography } from '@arco-design/web-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { aggregateCashflow } from './paymentCalc';
-import type { Contract } from '../types';
+import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastOverride } from './types';
 
 const { Text } = Typography;
 
 interface Props {
-  contracts: Contract[];
+  contracts: PaymentAnalysisContract[];
   overrides?: ForecastOverride[];
   projectDelayMap?: Record<string, number>;
 }
@@ -63,8 +63,8 @@ export function CashflowForecast({ contracts, overrides = [], projectDelayMap = 
           <XAxis dataKey="month" />
           <YAxis label={{ value: '万元', angle: -90, position: 'insideLeft' }} />
           <Tooltip
-            formatter={(value: number, name: string) => [`¥${value}万`, name]}
-            labelFormatter={(label: string) => `${label}`}
+            formatter={(value, name) => [`¥${Number(value)}万`, String(name)]}
+            labelFormatter={(label) => String(label)}
           />
           <Legend />
           <Bar dataKey="高确信" stackId="a" fill="rgb(var(--success-6))" />

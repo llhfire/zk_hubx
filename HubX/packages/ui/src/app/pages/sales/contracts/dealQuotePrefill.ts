@@ -50,7 +50,9 @@ export function paymentTermsToPlans(summary: QuoteSummary | undefined): PaymentP
     const calculatedAmount = isLast
       ? Math.round((total - allocated) * 100) / 100
       : Math.round((total * term.percent)) / 100;
-    const amount = term.amount > 0 ? term.amount : calculatedAmount;
+    // 报价条款里的 amount 可能缺省（undefined），先归一再判断是否采用。
+    const termAmount = term.amount ?? 0;
+    const amount = termAmount > 0 ? termAmount : calculatedAmount;
     allocated = Math.round((allocated + amount) * 100) / 100;
     return ({
     period: index + 1,

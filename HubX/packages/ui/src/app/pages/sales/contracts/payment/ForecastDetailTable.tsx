@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react';
 import { Card, Table, Select, Space, Tag, Typography, Button, Modal, Input, Message } from '@arco-design/web-react';
 import { buildGanttNodes } from './paymentCalc';
 import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
-import type { Contract } from '../types';
+import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastNode, ForecastOverride, ForecastCertaintyLevel } from './types';
 import { FilterBar } from '../../../../components/ui';
 
 const { Text } = Typography;
 
 interface Props {
-  contracts: Contract[];
+  contracts: PaymentAnalysisContract[];
   overrides?: ForecastOverride[];
   projectDelayMap?: Record<string, number>;
   onOverride?: (override: ForecastOverride) => void;
@@ -17,7 +17,7 @@ interface Props {
 
 export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap = {}, onOverride }: Props) {
   const [certaintyFilter, setCertaintyFilter] = useState<'all' | ForecastCertaintyLevel>('all');
-  const [editModal, setEditModal] = useState<{ node: ForecastNode; newDate: string } | null>(null);
+  const [editModal, setEditModal] = useState<{ node: ForecastNode; newDate: string; reason: string } | null>(null);
 
   const nodes = useMemo(() => {
     const all = buildGanttNodes(contracts, overrides, projectDelayMap);
@@ -26,7 +26,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
   }, [contracts, overrides, projectDelayMap, certaintyFilter]);
 
   const handleDateChange = (node: ForecastNode, newDate: string) => {
-    setEditModal({ node, newDate });
+    setEditModal({ node, newDate, reason: '' });
   };
 
   const confirmOverride = () => {

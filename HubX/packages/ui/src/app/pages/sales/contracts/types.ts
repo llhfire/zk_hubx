@@ -41,6 +41,7 @@ export interface ContractApprovalRound {
 export type PaymentPlanPeriodName =
   | '首付款'
   | '首期款'
+  | 'UI确认款'
   | '二期款'
   | '三期款'
   | '四期款'
@@ -200,6 +201,8 @@ export interface ScanArchiveEntry {
 
 export interface Contract {
   id: string;
+  /** 服务端并发版本（ADR-0094），由 GET 返回、PUT 回传；不落进 data */
+  version?: number;
   contractNo: string; // CT202606001
   /** mock 数据来源标记；用于让回款工作台切换到外部看板快照。 */
   dataSource?: 'default' | 'recovery-board';

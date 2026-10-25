@@ -17,6 +17,7 @@ import type {
   ForecastOverride,
 } from './types';
 import { CERTAINTY_WEIGHTS } from './types';
+import type { PaymentAnalysisContract } from './contractPaymentProjection';
 
 // ==================== 看板五态派生 ====================
 
@@ -25,7 +26,7 @@ import { CERTAINTY_WEIGHTS } from './types';
  * 优先级：settled > blocked > overdue > upcoming > normal
  */
 export function derivePaymentStatus(
-  contract: Contract,
+  contract: PaymentAnalysisContract,
   today: string = new Date().toISOString().slice(0, 10),
 ): KanbanColumn {
   const plans = contract.paymentPlans ?? [];
@@ -65,7 +66,7 @@ export function derivePaymentStatus(
  * 派生合同付款节点的确定性等级
  */
 export function deriveCertaintyLevel(
-  contract: Contract,
+  contract: PaymentAnalysisContract,
   projectDelayDays: number = 0,
   hasActiveBlockers: boolean = false,
 ): ForecastCertaintyLevel {
@@ -78,7 +79,7 @@ export function deriveCertaintyLevel(
 // ==================== 回款进度 ====================
 
 /** 回款进度摘要 */
-export function deriveCollectionProgress(contract: Contract): {
+export function deriveCollectionProgress(contract: PaymentAnalysisContract): {
   received: number;
   total: number;
   percentage: number;
@@ -94,9 +95,13 @@ export function deriveCollectionProgress(contract: Contract): {
   };
 }
 
+/** 付款期次（投影形态）：`toPaymentAnalysisContract` 把 current.paymentPlans 的
+ * `period` 额外映射为 `periodNo`，回款图表的期次口径统一用 periodNo。 */
+type ProjectedPlan = PaymentPlanItem & { periodNo: number };
+
 /** 找当前待付期次（第一个未全额收到的） */
 export function findNextPayPeriod(
-  plans: PaymentPlanItem[],
+  plans: ProjectedPlan[],
   collections: CollectionRecord[],
 ): PaymentPlanItem | null {
   const sorted = [...plans].sort((a, b) => a.periodNo - b.periodNo);
@@ -122,7 +127,7 @@ export function periodReceivedAmount(
 
 /** 从合同列表构建甘特图节点 */
 export function buildGanttNodes(
-  contracts: Contract[],
+  contracts: PaymentAnalysisContract[],
   overrides: ForecastOverride[] = [],
   projectDelayMap: Record<string, number> = {},
 ): ForecastNode[] {
@@ -188,7 +193,7 @@ export function buildGanttNodes(
  * 按月按确定性分级聚合现金流
  */
 export function aggregateCashflow(
-  contracts: Contract[],
+  contracts: PaymentAnalysisContract[],
   months: string[],
   overrides: ForecastOverride[] = [],
   projectDelayMap: Record<string, number> = {},
@@ -243,7 +248,7 @@ export function aggregateCashflow(
 
 /** 看板 7 大 KPI */
 export function deriveKanbanSummary(
-  contracts: Contract[],
+  contracts: PaymentAnalysisContract[],
   today: string = new Date().toISOString().slice(0, 10),
 ): {
   totalContracts: number;

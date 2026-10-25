@@ -95,8 +95,10 @@ export function createMockContractService(): ContractService {
     return generateContractNo(now, (seq[key] ?? 0) + 1, prefix);
   }
 
-  function update(id: string, mutate: (c: Contract) => Contract) {
+  function update(id: string, mutate: (c: Contract) => Contract): boolean {
+    const exists = contracts.some((c) => c.id === id);
     contracts = contracts.map((c) => (c.id === id ? { ...mutate(c), updatedAt: nowString() } : c));
+    return exists;
   }
 
   return {
@@ -117,16 +119,16 @@ export function createMockContractService(): ContractService {
         : null;
       update(id, (c) => applySaveDraft(c, formData, reallocated));
     },
-    saveAsVersion: async (id, formData, label) => update(id, (c) => applySaveAsVersion(c, formData, label)),
-    saveDocumentPreviewVersion: async (id, input) => update(id, (c) => applySaveDocumentPreviewVersion(c, input)),
-    saveVersionWithDetails: async (id, input) => update(id, (c) => applySaveVersionWithDetails(c, input)),
-    submitForApproval: async (id, formData) => update(id, (c) => applySubmitForApproval(c, formData)),
-    submitLatestVersionForApproval: async (id, note) => update(id, (c) => applySubmitLatestVersionForApproval(c, note)),
-    submitVersionForApproval: async (id, versionNo, note, mode) => update(id, (c) => applySubmitVersionForApproval(c, versionNo, note, mode)),
-    withdrawApproval: async (id) => update(id, applyWithdrawApproval),
-    approveStep: async (id, stepIndex, comment) => update(id, (c) => applyApproveStep(c, stepIndex, comment)),
-    rejectStep: async (id, stepIndex, comment) => update(id, (c) => applyRejectStep(c, stepIndex, comment)),
-    markMailed: async (id) => update(id, applyMarkMailed),
+    saveAsVersion: async (id, formData, label) => { await update(id, (c) => applySaveAsVersion(c, formData, label)); },
+    saveDocumentPreviewVersion: async (id, input) => { await update(id, (c) => applySaveDocumentPreviewVersion(c, input)); },
+    saveVersionWithDetails: async (id, input) => { await update(id, (c) => applySaveVersionWithDetails(c, input)); },
+    submitForApproval: async (id, formData) => { await update(id, (c) => applySubmitForApproval(c, formData)); },
+    submitLatestVersionForApproval: async (id, note) => { await update(id, (c) => applySubmitLatestVersionForApproval(c, note)); },
+    submitVersionForApproval: async (id, versionNo, note, mode) => { await update(id, (c) => applySubmitVersionForApproval(c, versionNo, note, mode)); },
+    withdrawApproval: async (id) => { await update(id, applyWithdrawApproval); },
+    approveStep: async (id, stepIndex, comment) => { await update(id, (c) => applyApproveStep(c, stepIndex, comment)); },
+    rejectStep: async (id, stepIndex, comment) => { await update(id, (c) => applyRejectStep(c, stepIndex, comment)); },
+    markMailed: async (id) => { await update(id, applyMarkMailed); },
 
     uploadScan: async (id, files, note) => {
       const cur = contracts.find((c) => c.id === id);
@@ -147,14 +149,14 @@ export function createMockContractService(): ContractService {
       return entry;
     },
 
-    uploadWordContract: async (id, file) => update(id, (c) => applyUploadWordContract(c, file)),
-    setPrimaryScan: async (id, entryId) => update(id, (c) => applySetPrimaryScan(c, entryId)),
-    voidContract: async (id, reason) => update(id, (c) => applyVoidContract(c, reason)),
-    addCollection: async (contractId, record) => { await update(contractId, (c) => applyAddCollection(c, record, contractId)); return true; },
-    addBlocker: async (contractId, blocker) => update(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
-    resolveBlocker: async (contractId, blockerId) => update(contractId, (c) => applyResolveBlocker(c, blockerId)),
-    addDunning: async (contractId, record) => update(contractId, (c) => applyAddDunning(c, record, contractId)),
-    updateSigningPackage: async (contractId, updater) => update(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })),
+    uploadWordContract: async (id, file) => { await update(id, (c) => applyUploadWordContract(c, file)); },
+    setPrimaryScan: async (id, entryId) => { await update(id, (c) => applySetPrimaryScan(c, entryId)); },
+    voidContract: async (id, reason) => { await update(id, (c) => applyVoidContract(c, reason)); },
+    addCollection: async (contractId, record) => update(contractId, (c) => applyAddCollection(c, record, contractId)),
+    addBlocker: async (contractId, blocker) => { await update(contractId, (c) => applyAddBlocker(c, blocker, contractId)); },
+    resolveBlocker: async (contractId, blockerId) => { await update(contractId, (c) => applyResolveBlocker(c, blockerId)); },
+    addDunning: async (contractId, record) => { await update(contractId, (c) => applyAddDunning(c, record, contractId)); },
+    updateSigningPackage: async (contractId, updater) => { await update(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })); },
   };
 }
 
@@ -188,9 +190,10 @@ export function createHttpContractService(baseUrl: string, opts?: { actor?: stri
     return r.ok;
   }
 
-  async function mutate(id: string, fn: (c: Contract) => Contract): Promise<void> {
+  async function mutate(id: string, fn: (c: Contract) => Contract): Promise<boolean> {
     const c = await getOne(id);
-    if (c) await saveOne(fn(c));
+    if (!c) return false;
+    return saveOne(fn(c));
   }
 
   return {
@@ -212,16 +215,16 @@ export function createHttpContractService(baseUrl: string, opts?: { actor?: stri
         : null;
       await saveOne({ ...applySaveDraft(c, formData, reallocated), updatedAt: nowString() });
     },
-    saveAsVersion: async (id, formData, label) => mutate(id, (c) => applySaveAsVersion(c, formData, label)),
-    saveDocumentPreviewVersion: async (id, input) => mutate(id, (c) => applySaveDocumentPreviewVersion(c, input)),
-    saveVersionWithDetails: async (id, input) => mutate(id, (c) => applySaveVersionWithDetails(c, input)),
-    submitForApproval: async (id, formData) => mutate(id, (c) => applySubmitForApproval(c, formData)),
-    submitLatestVersionForApproval: async (id, note) => mutate(id, (c) => applySubmitLatestVersionForApproval(c, note)),
-    submitVersionForApproval: async (id, versionNo, note, mode) => mutate(id, (c) => applySubmitVersionForApproval(c, versionNo, note, mode)),
-    withdrawApproval: async (id) => mutate(id, applyWithdrawApproval),
-    approveStep: async (id, stepIndex, comment) => mutate(id, (c) => applyApproveStep(c, stepIndex, comment)),
-    rejectStep: async (id, stepIndex, comment) => mutate(id, (c) => applyRejectStep(c, stepIndex, comment)),
-    markMailed: async (id) => mutate(id, applyMarkMailed),
+    saveAsVersion: async (id, formData, label) => { await mutate(id, (c) => applySaveAsVersion(c, formData, label)); },
+    saveDocumentPreviewVersion: async (id, input) => { await mutate(id, (c) => applySaveDocumentPreviewVersion(c, input)); },
+    saveVersionWithDetails: async (id, input) => { await mutate(id, (c) => applySaveVersionWithDetails(c, input)); },
+    submitForApproval: async (id, formData) => { await mutate(id, (c) => applySubmitForApproval(c, formData)); },
+    submitLatestVersionForApproval: async (id, note) => { await mutate(id, (c) => applySubmitLatestVersionForApproval(c, note)); },
+    submitVersionForApproval: async (id, versionNo, note, mode) => { await mutate(id, (c) => applySubmitVersionForApproval(c, versionNo, note, mode)); },
+    withdrawApproval: async (id) => { await mutate(id, applyWithdrawApproval); },
+    approveStep: async (id, stepIndex, comment) => { await mutate(id, (c) => applyApproveStep(c, stepIndex, comment)); },
+    rejectStep: async (id, stepIndex, comment) => { await mutate(id, (c) => applyRejectStep(c, stepIndex, comment)); },
+    markMailed: async (id) => { await mutate(id, applyMarkMailed); },
 
     uploadScan: async (id, files, note) => {
       const cur = await getOne(id);
@@ -242,16 +245,13 @@ export function createHttpContractService(baseUrl: string, opts?: { actor?: stri
       return entry;
     },
 
-    uploadWordContract: async (id, file) => mutate(id, (c) => applyUploadWordContract(c, file)),
-    setPrimaryScan: async (id, entryId) => mutate(id, (c) => applySetPrimaryScan(c, entryId)),
-    voidContract: async (id, reason) => mutate(id, (c) => applyVoidContract(c, reason)),
-    addCollection: async (contractId, record) => {
-      await mutate(contractId, (c) => applyAddCollection(c, record, contractId));
-      return true;
-    },
-    addBlocker: async (contractId, blocker) => mutate(contractId, (c) => applyAddBlocker(c, blocker, contractId)),
-    resolveBlocker: async (contractId, blockerId) => mutate(contractId, (c) => applyResolveBlocker(c, blockerId)),
-    addDunning: async (contractId, record) => mutate(contractId, (c) => applyAddDunning(c, record, contractId)),
-    updateSigningPackage: async (contractId, updater) => mutate(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })),
+    uploadWordContract: async (id, file) => { await mutate(id, (c) => applyUploadWordContract(c, file)); },
+    setPrimaryScan: async (id, entryId) => { await mutate(id, (c) => applySetPrimaryScan(c, entryId)); },
+    voidContract: async (id, reason) => { await mutate(id, (c) => applyVoidContract(c, reason)); },
+    addCollection: (contractId, record) => mutate(contractId, (c) => applyAddCollection(c, record, contractId)),
+    addBlocker: async (contractId, blocker) => { await mutate(contractId, (c) => applyAddBlocker(c, blocker, contractId)); },
+    resolveBlocker: async (contractId, blockerId) => { await mutate(contractId, (c) => applyResolveBlocker(c, blockerId)); },
+    addDunning: async (contractId, record) => { await mutate(contractId, (c) => applyAddDunning(c, record, contractId)); },
+    updateSigningPackage: async (contractId, updater) => { await mutate(contractId, (c) => ({ ...c, signingPackage: updater(c.signingPackage) })); },
   };
 }

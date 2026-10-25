@@ -9,6 +9,7 @@ import type { Contract } from './types';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import './ContractKanban.css';
+import { formatMoneyCompact as money } from '../../../utils/money';
 
 const Text = Typography.Text;
 
@@ -30,10 +31,6 @@ const statusItems = [
 ];
 
 const stageItems = ['需求调研', 'UI / 原型设计', '开发中', '测试中', '待验收'];
-
-function money(value: number) {
-  return `¥${(value / 10000).toFixed(1)}万`;
-}
 
 function monthStart(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);

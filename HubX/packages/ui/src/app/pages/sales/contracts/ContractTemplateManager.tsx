@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Drawer, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Table, Tag } from '@arco-design/web-react';
+import { Alert, Badge, Button, Card, Drawer, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Switch, Table, Tag } from '@arco-design/web-react';
 import { IconCopy, IconPlus } from '@arco-design/web-react/icon';
 import { PageHeader, PageShell, ProcessMetricGrid, RichTextEditor } from '../../../components/ui';
 import { contractSigningEntities } from '../company-entity/companyEntityData';
@@ -80,7 +80,7 @@ export function ContractTemplateManager() {
       <Alert type="info" content="已发布版本不可覆盖。发布后再编辑会生成下一版本，历史合同继续使用原正文快照。" showIcon />
       <Form form={form} layout="vertical" className="contract-template-form"><Row gutter={16}>
         <Col span={16}><Form.Item label="模板名称" field="name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-        <Col span={8}><Form.Item label="设为默认模板" field="isDefault"><Select><Select.Option value={true}>是</Select.Option><Select.Option value={false}>否</Select.Option></Select></Form.Item></Col>
+        <Col span={8}><Form.Item label="设为默认模板" field="isDefault" triggerPropName="checked"><Switch /></Form.Item></Col>
         <Col span={12}><Form.Item label="适用签约主体" field="signingEntity" rules={[{ required: true }]}><Select>{contractSigningEntities.map((item) => <Select.Option key={item.id} value={item.shortName}>{item.shortName}</Select.Option>)}</Select></Form.Item></Col>
         <Col span={12}><Form.Item label="产品分类" field="productCategories" rules={[{ required: true }]}><Select mode="multiple" allowCreate>{['软件开发', '系统集成', '技术服务', '云服务', '移民服务'].map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></Form.Item></Col>
       </Row></Form>

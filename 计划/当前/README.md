@@ -1,78 +1,60 @@
 # 计划/当前/
 
-正在执行或刚定稿、还要对照着做的实现计划。
+**还在推进、需要对照着做的**实现计划。已完成的移入 `计划/历史/已完成/`。
 
-## 当前待办（2026-08-31）
+> 更新：2026-10-25（目录整理：44 份 → 11 份；33 份已完成计划归档）
 
-- [x] **销售域 α 完成**：客户主档、合同模板、跟进待办/提醒、报价协作与合规、线索治理已按锁定口径补齐；详细计划见 `sales-domain-alpha-completion.md`，验证记录见 `HubX/docs/2026-08-31-销售域α收口日志.md`。
+## 一、尚未闭环（真待办）
 
-- [x] **α 版报价流程 4.1–4.8 收口**：完成十状态状态机、权限与线索冻结、计价、审批快照、数据/文件双流转、客户报价单、补充报价及合同联动；验证记录见 `HubX/docs/2026-08-28-α版报价流程收口日志.md`。
-- [x] **α 核心漏斗自动化冒烟**：已贯通“线索录入→派发→首联→报价→主合同→指派→批准开工→实收”，并统一主回款页面的实收台账投影；记录见 `HubX/docs/2026-08-28-α核心漏斗冒烟日志.md`。
-- [x] **α 未确认项目唯一 ID 收口**：线索进入“合同洽谈/已签单”即以 `ap-lead-{leadId}` 幂等生成未确认项目；后建合同只绑定原项目，不再产生 `lead-spawn-*` 或第二个项目。记录见 `HubX/docs/2026-08-28-α未确认项目唯一ID收口日志.md`。
-
-- [x] **UI 修改 08261727**：A–F 六阶段 16 组界面调整已全部完成，详见 `UI修改08261727-实施计划.md`。
-- [x] **α 交互与文件闭环收口**：客户与合同记录筛选、新建/编辑、渠道分析导出、系统配置持久化/备份恢复、报价清单 Excel 双向流转、正式 PDF、合同扫描件、差旅报销/借款详情及项目/决算下钻已补齐；记录见 `HubX/docs/2026-08-31-α交互与文件闭环收口日志.md`。
-- [x] **UI 一致性检查**：以“我的线索列表”和“线索详情”为基准，已覆盖全部已注册页面的静态扫描及各域代表路由抽检，结论见 `全页面风格一致性检查.md`。
-- [x] **UI 组件库与首批框架统一**：新增一级菜单 `/ui-library`，分基础 UI、模块组件、页面框架三层；已抽取共享组件并统一线索详情、项目详情，规范见 `HubX/DESIGN.md`。
-- [x] **P1 其余长流程页面迁移**：合同详情、报价工作台、交付计划、出差详情、业务单详情和智能会议工作台已全部接入统一长流程框架；智能会议收口记录见 `HubX/docs/2026-08-28-α智能会议长流程框架收口日志.md`。
-- [x] **P1 全站列表与页面层级收口**：支撑域、管理看板、成交线索、合同看板、业务单、差旅、回款、人资、系统配置与消息集成均已统一页头、摘要、状态语义、二级面包屑和窄屏框架；旧 `/hr/expenses` 已归并运营费用。最终记录见 `HubX/docs/2026-08-28-α六项收口与最终复检日志.md`。
-- [ ] **P0 核心漏斗真实闭环**：α 自动化冒烟和未确认项目唯一 ID 已完成；下一步只剩 β 真实数据阶段 3、4与 B5 签约联动，并验证刷新后的持久化与幂等。
-- [x] **P0 消除双账**：实收共享事实源、“补充报价→补充合同”唯一变更链、动态公摊费率及差旅/商务独立分类均已收口。
-- [x] **P1 α 交付与财务后半程**：α 已打通交付计划→任务→项目日报→交付物归档→验收，以及回款期次→逾期处理→开票/红冲→售后移交；β Service/D1 持久化、权限与刷新幂等另列入 P0 真实数据阶段。
-- [ ] **P2 生产支撑底座**：实施登录会话、用户目录、RBAC、路由/API 权限、服务端审批/待办/提醒持久化及共享工天服务。
-- [ ] **P3 资源与运维域**：分别补齐资源生命周期、运维工单 PRD 与状态机，再接现有资产和维护页面。
-
-详细依据见 `全域流程完整性评估.md`；核心漏斗通过前，暂缓新增独立页面和管理驾驶舱能力。
-
-- `quote-flow-prd-implementation.md`：报价流程按 PRD grill 收口（阶段 4，α 版 4.1–4.8 已完成）
-- `报价双轨分离-PLAN.md`：数据流转 / 文件流转事实源与审批前路径分离（已 grill 锁定，待按阶段 A–E 实施）
-- `unified-view-implementation.md`：线索·项目·合同统一视图（α 已完成，β 持久化接缝另列）
-- `operating-expense-dev-plan.md`：运营费用阶段 A–E（文件级已展开，已全部编码完成）
-- `operating-expense-restyle.md`：运营费用菜单重构（grill 已收束）
-- `operating-expense-restyle-design.md`：运营费用菜单重构详细设计（评审 0 issue，待按 P0–P6 编码，不写生产代码阶段已完成）
-- `lean-delivery-dataline-dev-plan.md`：精益交付 L1–L4（文件级已展开，已全部编码完成）
-- `travel-dev-plan.md`：差旅 T1–T4（文件级已展开，已全部编码完成）
-- `phase3-deal-to-delivery.md`：销售域阶段 3（已完成；立项 spawn 点将被 U1 改回签约开启）
-- `feature-board-existing-features.md`：功能看板既有功能核对
-- `payment-kanban-dev-plan.md`：合同回款看板与甘特图（α P1–P5 已实现并接入当前合同/实收台账；β 持久化仍待 B5）
-- `beta-foundation-dev-plan.md`：β 版平台底座与漏斗主线接缝（B0–B4 编码完成；B5 待开工。B4 实收台账已接，回款看板 P1–P5 UI 仍待独立计划）
-- `beta-foundation-b5-design.md`：B5 β 上线收口详细设计（2026-08-22，Approved 待编码。评审 0 issue；`productionOn` 目标已口头确认，P3 冒烟后执行）
-- `conflict-spawn-and-collections.md`：立项时机与实收口径冲突决议（ADR-0095；U1 接线改 Lead 写时；回款看板进度读台账）
-- `remaining-conflicts.md`：其余冲突/含糊点存档（α 未确认项目 ID 已关闭；β 持久化和 SOP 仍待收口）
-- `lead-dispatch-dev-plan.md`：线索派发工作台（阶段 A–E 与渠道词表迁移均已完成；β 仅余企微接缝）
-- `global-search-dev-plan.md`：全局搜索（S1–S3 已完成，⌘K 六实体检索直达）
-- `global-search-design.md`：全局搜索详细设计（已按六域 Context、客户数据提取、组件/键盘/测试规格完成编码）
-- `case-detail-prototype-restyle.md`：业务单详情原型重构 grill 锁定记录（2026-08-21，7 项决策；原型已归档 `HubX/docs/prototype/ZKHubX-业务单详情全景.html`）
-- `case-detail-dev-plan.md`：业务单详情原型重构详细开发计划（阶段 1–3 已完成；项目决算旧地址统一重定向到业务单详情页签）
-
----
-
-## 合同回款看板：α 已接线（β 持久化待 B5）
-
-| 阶段 | 内容 | 状态 |
-|---|---|---|
-| P1 | 纯函数 + 类型 | ✅ α 完成 |
-| P2 | 看板 UI | ✅ α 完成 |
-| P3 | 侧边抽屉 | ✅ α 完成 |
-| P4 | 甘特图 + 预测 | ✅ α 完成 |
-| P5 | 路由 + 菜单 | ✅ α 完成 |
-
----
-
-## 财务三线：建议开工顺序与接缝
-
-**三线已全部完成（2026-08-19）。**
-
-| 序 | 阶段 | 状态 |
-|---|---|---|
-| 1 | 差旅 T1–T4 | ✅ 已完成 |
-| 2 | 精益交付 L1–L4 | ✅ 已完成 |
-| 3 | 运营费用 A–E | ✅ 已完成 |
-
-| 接缝 | 主人 | 文件 | 后落的一方怎么接 |
+| 优先级 | 事项 | 依据 | 状态 |
 |---|---|---|---|
-| 时薪公摊率 | `pages/finance-shared/overhead.ts` 定义唯一公式 | `R_hour = 当月公共运营池 ÷ 全公司在职编制工时` | 运营费用、合同成本与精益交付均读取共享公式；α 数据适配位于 `finance-shared/alphaOverhead.ts` |
-| 报销双出口 | 差旅 T3 定义签名 | `pages/travel/expenseExits.ts`：`emitExpenseLedgerEntry` / `emitCostItem` | 精益消费成本流水；运营费用 B 消费台账投影。T3 之前精益报销通道降级 manual |
-| TRAVEL 归属 | ADR-0089 | 有 `projectId` → `project`；仅 `leadId` → `lead_channel`；**禁止 pool** | 运营费用阶段 A/B 已按此修订 |
+| **P0** | 核心漏斗真实闭环：β 真实数据阶段 3、4 + B5 签约联动，验证刷新后持久化与幂等 | `beta-realdata-dev-plan.md`、`beta-foundation-b5-design.md` | 待开工 |
+| **P2** | 生产支撑底座：登录会话、用户目录、RBAC、路由/API 权限、服务端审批/待办/提醒持久化、共享工天服务 | — | 未立项 |
+| **P3** | 资源与运维域：资源生命周期、运维工单 PRD 与状态机 | — | 未立项 |
 
-跨域 ID **不搞全局统一**：报价继续 `q1/q2`，合同继续 `'1'`–`'9'`；精益 L2 只 **追加** `fd-q-*` / `fd-ht-*`。日报模块本轮不改（精益 PRD 七）。
+详细依据见 `全域流程完整性评估.md`。核心漏斗通过前，暂缓新增独立页面和管理驾驶舱能力。
+
+## 二、计划文件一览（11 份）
+
+**待实施 / 设计已定稿待编码**
+
+- `报价双轨分离-PLAN.md` — 数据流转 / 文件流转事实源与审批前路径分离（已 grill 锁定，阶段 A–E 待实施）
+- `项目确认书流程-PLAN.md` — 确认书状态机与归档流程
+- `beta-foundation-b5-design.md` — B5 β 上线收口详细设计（Approved 待编码；`productionOn` 目标已确认，P3 冒烟后执行）
+- `operating-expense-restyle-design.md` — 运营费用菜单重构详细设计（评审 0 issue，P0–P6 待编码）
+- `operating-expense-restyle.md` — 运营费用菜单重构（grill 已收束）
+
+**进行中 / 滚动对照**
+
+- `beta-foundation-dev-plan.md` — β 平台底座与漏斗主线接缝（B0–B4 编码完成，B5 待开工）
+- `beta-realdata-dev-plan.md` — β 真实数据推进
+- `payment-kanban-dev-plan.md` — 合同回款看板与甘特图（α P1–P5 已实现，β 持久化待 B5）
+
+**参照性文档（长期有效，非一次性计划）**
+
+- `全域流程完整性评估.md` — 全局缺口评估，P0/P2/P3 的依据
+- `feature-board-existing-features.md` — 功能看板既有功能核对口径
+
+## 三、已归档（`计划/历史/已完成/`，33 份）
+
+销售域 α、报价流程 4.1–4.8、统一视图 U1–U6、精益交付 L1–L4、差旅 T1–T4、运营费用 A–E、线索派发 A–E、全局搜索 S1–S3、智能会议、业务单详情、UI 08261727、全页面一致性检查等，均已完成落地。
+
+对应验证记录在 `HubX/docs/logs/`（30 份按日期命名的收口日志）。
+
+## 四、代码结构速查（2026-10-25 重构后）
+
+`packages/ui/src/app/pages/` 已按功能看板的 8 大业务域分层：
+
+```
+sales/        leads · lead-dispatch · quotation · contracts · customers · company-entity · compliance
+delivery/     project · daily-report · plan
+finance/      operating-expense · travel · lean-delivery · contract-cost · invoice · overhead
+acquisition/  lead-cost
+support/      approvals · hr/employee · system · workbench · meetings · smart-meetings · feedback · todos
+resource/     assets · suppliers · knowledge
+ops/          maintenance
+cross/        roi · ai · reports · integrations · components
+ui-library/
+```
+
+领域词以 `HubX/CONTEXT.md` 为准，硬决策见 `HubX/docs/adr/`。

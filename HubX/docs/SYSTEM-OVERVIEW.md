@@ -42,11 +42,11 @@ main.tsx → App.tsx（10 个 Context Provider 嵌套）→ RouterProvider → M
 | TodoProvider | `todos/TodoContext.tsx` | 待办中心 |
 | FeedbackProvider | `feedback/FeedbackContext.tsx` | 意见反馈 |
 | ReminderProvider | `reminders/ReminderContext.tsx` | 提醒（每分钟刷新） |
-| EmployeeProvider | `pages/employee/EmployeeContext.tsx` | 员工/考勤/绩效/职级时薪 |
-| JobWorkConfigProvider | `pages/daily-report/JobWorkConfigContext.tsx` | 日报工作种类配置 |
-| ContractsProvider | `pages/contracts/ContractsContext.tsx` | 合同全生命周期 |
+| EmployeeProvider | `pages/support/hr/employee/EmployeeContext.tsx` | 员工/考勤/绩效/职级时薪 |
+| JobWorkConfigProvider | `pages/delivery/daily-report/JobWorkConfigContext.tsx` | 日报工作种类配置 |
+| ContractsProvider | `pages/sales/contracts/ContractsContext.tsx` | 合同全生命周期 |
 | ProjectInvoiceProvider | `pages/finance/ProjectInvoiceContext.tsx` | 项目开票 |
-| QuotationProvider | `pages/quotation/QuotationContext.tsx` | 报价单全生命周期 |
+| QuotationProvider | `pages/sales/quotation/QuotationContext.tsx` | 报价单全生命周期 |
 
 （注：`ARCHITECTURE.md` 写「9 个」，实际已含 `QuotationProvider`，共 10 个。）
 

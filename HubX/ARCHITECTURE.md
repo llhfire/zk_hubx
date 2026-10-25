@@ -59,16 +59,16 @@ main.tsx (挂载点)
 | `TodoProvider` | `todos/TodoContext.tsx` | 待办中心 |
 | `FeedbackProvider` | `feedback/FeedbackContext.tsx` | 意见反馈 |
 | `ReminderProvider` | `reminders/ReminderContext.tsx` | 提醒（每分钟刷新） |
-| `EmployeeProvider` | `pages/employee/EmployeeContext.tsx` | 员工/考勤/绩效/职级时薪 |
-| `JobWorkConfigProvider` | `pages/daily-report/JobWorkConfigContext.tsx` | 日报工作种类配置 |
-| `ContractsProvider` | `pages/contracts/ContractsContext.tsx` | 合同全生命周期 |
+| `EmployeeProvider` | `pages/support/hr/employee/EmployeeContext.tsx` | 员工/考勤/绩效/职级时薪 |
+| `JobWorkConfigProvider` | `pages/delivery/daily-report/JobWorkConfigContext.tsx` | 日报工作种类配置 |
+| `ContractsProvider` | `pages/sales/contracts/ContractsContext.tsx` | 合同全生命周期 |
 | `ProjectInvoiceProvider` | `pages/finance/ProjectInvoiceContext.tsx` | 项目开票 |
 
 ---
 
 ## 四、核心模块拆解
 
-### 1. 合同模块（`pages/contracts/`，43 文件）—— 状态机 + 版本快照 + 模板渲染
+### 1. 合同模块（`pages/sales/contracts/`，43 文件）—— 状态机 + 版本快照 + 模板渲染
 
 - **数据模型**：`Contract` 一个对象挂全部生命周期数据——`current`(可编辑表单) + `versionHistory`(版本快照) + `approvalFlow`/`approvalRounds`(审批) + `archivedScans`(扫描归档) + 回款扩展。
 - **状态机**：`draft → approving → pending_mail → pending_return → archived → voided`。
@@ -85,7 +85,7 @@ main.tsx (挂载点)
 - **纯函数**（`utils.ts`）：`isLeadOverdue`(三级判断) / `resolveSnoozeUntil` / `sortReminders` / `filterVisibleReminders`。
 - **Context**：每分钟 `setNow` 触发 `useMemo` 重算提醒。
 
-### 3. 日报系统（`pages/daily-report/`，16 文件）—— 类型驱动 + 三级建模
+### 3. 日报系统（`pages/delivery/daily-report/`，16 文件）—— 类型驱动 + 三级建模
 
 - **三级建模**：岗位(position) → 规则(`DailyReportRule`，决定 templateType/workKinds/costBucket) → 模板(`DailyTemplate`，fields 数组) → 内容(`DailyReportContent` 联合类型)。
 - **8 种 `FieldType`**：text/textarea/lead-tracking/project-task-list/date/select/number/ad-delivery-table，表单控件由字段类型决定。
@@ -93,7 +93,7 @@ main.tsx (挂载点)
 - **`DailyReportModal`**（558 行）：会话态初始化、日期切换、模板选择、校验、提交组装；被 `MainLayout` 和 `Dashboard` 复用。
 - **对外辐射**：`WORK_KIND_ABILITY_MAP`(12 工种→能力维度+经验值，驱动员工能力成长)；`DailyCostBucket`(成本桶，驱动项目成本核算)。
 
-### 4. 线索模块（`pages/leads/` + 根散页，~7000 行）—— 业务枢纽
+### 4. 线索模块（`pages/sales/leads/` + 根散页，~7000 行）—— 业务枢纽
 
 - **`LeadDetail`**（2186 行，全仓最大单文件之一）消费 `Reminder`/`Contract`/`Employee` 三个 Context，组装 8 个面板。
 - **纯函数层**：`quotationPricing.ts`(报价计算) / `paymentInvoiceModel.ts`(回款/开票状态机) / `leadDetailContracts.ts`(合同→卡片映射)。
@@ -119,13 +119,13 @@ main.tsx (挂载点)
 - `TodoItem` 带 `route`(跳转) + `snoozedUntil`(小睡) + `external`(企业微信外部待办)。
 - 持久化：`localStorage`（key `hubx-todo-center-v1`）。
 
-### 8. 员工能力建模（`pages/employee/`，8 文件）
+### 8. 员工能力建模（`pages/support/hr/employee/`，8 文件）
 
 - `EmployeeProvider` 管 5 类数据：employees(含五维能力值)/attendance/performanceReviews/levelRates/positions。
 - **级联更新**：`updateLevelRate` 更新职级时薪时，同步级联更新该职级该职位下员工的 `standardHourlyRate`（喂给成本核算）。
 - 页面：`EmployeeList`(942)/`EmployeeDetail`(592，能力面板)/`AttendanceManagement`/`PerformanceManagement`/`LevelRateSettings`(时薪配置)。
 
-### 9. 交付计划（`pages/delivery-plan/`，13 文件）—— SOP 七大板块
+### 9. 交付计划（`pages/delivery/plan/`，13 文件）—— SOP 七大板块
 
 - **七大板块**：合同交接 → 项目启动准备 → 项目交付执行 → 资质备案&上架 → 测试验收 → 运维支持 → 项目总结。
 - **`DeliveryType`**（7 种交付类型）决定板块四的适用步骤（`DELIVERY_TYPE_PHASE4_STEPS`）。

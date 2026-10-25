@@ -89,20 +89,20 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 ### 日报系统
 
 - 日报是“角色决定模板、模板决定内容结构”的前端建模。
-- `packages/ui/src/app/pages/daily-report/templateConfig.ts` 定义销售模板、通用模板、模拟用户与模板选择逻辑。
-- `packages/ui/src/app/pages/daily-report/DailyReportModal.tsx` 负责会话态初始化、日期切换、必填校验和提交对象组装。
+- `packages/ui/src/app/pages/delivery/daily-report/templateConfig.ts` 定义销售模板、通用模板、模拟用户与模板选择逻辑。
+- `packages/ui/src/app/pages/delivery/daily-report/DailyReportModal.tsx` 负责会话态初始化、日期切换、必填校验和提交对象组装。
 - `SalesDailyTemplate` 与 `GeneralDailyTemplate` 分别对应不同内容结构；新增字段时通常要同步修改 `types.ts`、模板配置、模板组件和提交逻辑。
 - 当前日报提交仍是前端内存态：`submitDailyReport` 只是把结果写回提醒上下文持有的 mock 数据。
 
 ### 线索成本模块
 
-- `packages/ui/src/app/pages/lead-cost/mockData.ts` 不只是模拟数据文件，也集中定义该模块的类型和核心计算函数，例如成本、有效率、渠道汇总、综合评分。
+- `packages/ui/src/app/pages/acquisition/lead-cost/mockData.ts` 不只是模拟数据文件，也集中定义该模块的类型和核心计算函数，例如成本、有效率、渠道汇总、综合评分。
 - 修改线索成本看板、日报、充值记录、渠道分析等页面的口径或公式时，优先改这里的共享函数，避免在页面中重复计算。
 
 ### 项目管理与合同成本
 
-- `packages/ui/src/app/pages/project-management/mockData.ts` 集中定义项目、项目跟进、线索关联、项目日报、项目文档、工时等数据结构和初始数据。
-- `packages/ui/src/app/pages/contract-cost/contractCostData.ts` 直接复用了项目管理模块中的日报/工时相关数据，说明合同成本口径依赖项目管理的数据模型。
+- `packages/ui/src/app/pages/delivery/project/mockData.ts` 集中定义项目、项目跟进、线索关联、项目日报、项目文档、工时等数据结构和初始数据。
+- `packages/ui/src/app/pages/finance/contract-cost/contractCostData.ts` 直接复用了项目管理模块中的日报/工时相关数据，说明合同成本口径依赖项目管理的数据模型。
 - 涉及项目字段扩展、工时口径或合同映射调整时，优先先看这两个文件，而不是只改单个页面。
 
 ## 跨模块联动

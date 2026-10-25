@@ -278,7 +278,7 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '项目任务管理', description: 'ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。' },
     { name: '项目成本核算', description: 'ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。' },
     { name: '项目报价配置', description: 'ProjectQuotationConfigurator.tsx：项目与报价关联配置。' },
-    { name: '项目详情信息优先级与精选活动流', description: '项目详情默认聚焦项目动态与跟进；六项指标使用里程碑、时间轴、工时方块和回款进度表达，阶段弹层只展示付款节点、已完成和待完成事项；项目动态依 ADR-0097 生成精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/当前/project-detail-360-prototype-restyle.md' },
+    { name: '项目详情信息优先级与精选活动流', description: '项目详情默认聚焦项目动态与跟进；六项指标使用里程碑、时间轴、工时方块和回款进度表达，阶段弹层只展示付款节点、已完成和待完成事项；项目动态依 ADR-0097 生成精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/历史/已完成/project-detail-360-prototype-restyle.md' },
   ],
   '日报工时': [
     { name: '日报填写', description: 'DailyReportModal.tsx：选择项目/工作种类，填写工时，工时×时薪自动计算成本。' },

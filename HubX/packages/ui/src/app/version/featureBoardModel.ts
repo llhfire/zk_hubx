@@ -459,7 +459,9 @@ const PLANNED_SEED: Record<string, string[]> = {
 
 export function createSeedBoard(): FeatureBoard {
   // 架构图全部 37 模块（18 现有 + 19 规划），按领域优先级排列
-  const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: ExistingFeature[]; planned?: string[]; note: string }> = [
+  // features 这里只声明不带 alpha 的种子形态：α 勾选在第 517 行统一补齐，
+  // 若此处标成 ExistingFeature[]，每一条 seed 都得重复写三个 false。
+  const ALL_MODULES: Array<{ module: string; domain: Domain; isPlanned: boolean; scope?: string; features: Omit<ExistingFeature, 'alpha'>[]; planned?: string[]; note: string }> = [
     // === 销售域（优先级 1）===
     { module: '线索全流程', domain: '销售域', isPlanned: false, features: FEATURES_SEED['线索全流程'] ?? [], note: '五池流转+线索类型维度+客户等级SABC+跟进自动同步+操作规则+重复检查+24h限制+3次退回自动垃圾+复合列压缩+倒计时胶囊+色彩降噪+快捷模板+高级筛选Popover+枚举映射层' },
     { module: '报价工作台', domain: '销售域', isPlanned: false, features: FEATURES_SEED['报价工作台'] ?? [], note: 'α 已明确文件流转与数据流转为独立轨迹，系统审批盖章为公共汇合节点；β版报价单落 D1，含状态迁移校验；已上线 http+D1' },
@@ -563,7 +565,10 @@ function asAlphaUpdateMeta(value: unknown): AlphaUpdateMeta {
 
 /** 容错解析：字段缺失/非法时回退默认值，单个模块坏行直接丢弃 */
 export function normalizeFeatureBoard(value: unknown): FeatureBoard {
-  const raw = (value && typeof value === 'object' && Array.isArray((value as FeatureBoard).modules))
+  // 声明成 unknown[] 而不是 FeatureBoardModule[]：这是「校验未知输入」的入口，
+  // 若沿用期望类型，后面每一层的 `entry is Record<string, unknown>` 都不可赋值
+  // （Record 不是 FeatureBoardModule 的子类型），整个容错解析链会编译失败。
+  const raw: unknown[] = (value && typeof value === 'object' && Array.isArray((value as FeatureBoard).modules))
     ? (value as FeatureBoard).modules
     : [];
   const modules = raw

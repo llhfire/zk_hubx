@@ -49,7 +49,8 @@ export function useGlobalSearchIndex(): SearchItem[] {
         route: `/customers/${c.id}`,
         title: c.name,
         meta: `${c.level}级 · ${c.active ? '启用' : '停用'}`,
-        fields: [c.name, c.creditCode, contact?.name, contact?.phone, c.id].filter(Boolean),
+        // filter(Boolean) 不会窄化类型，补一个类型谓词，否则 (string|undefined)[] 无法赋给 string[]
+        fields: [c.name, c.creditCode, contact?.name, contact?.phone, c.id].filter((v): v is string => Boolean(v)),
         sortKey: c.createdAt,
       });
     }

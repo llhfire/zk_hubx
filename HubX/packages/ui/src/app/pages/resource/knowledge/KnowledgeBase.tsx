@@ -241,8 +241,10 @@ export function KnowledgeBase() {
         setDocuments((current) => current.map((document) => document.id === editingDoc.id ? {
           ...document,
           ...values,
-          fileName: replacement?.name || document.fileName,
-          fileSize: replacement?.size ? `${Math.max(1, Math.round(replacement.size / 1024))} KB` : document.fileSize,
+          fileName: replacement?.originFile?.name || document.fileName,
+          fileSize: replacement?.originFile?.size
+            ? `${Math.max(1, Math.round(replacement.originFile.size / 1024))} KB`
+            : document.fileSize,
           sourceFile: (replacement?.originFile as File | undefined) || document.sourceFile,
           updatedAt: '2026-07-29',
         } : document));
@@ -256,8 +258,8 @@ export function KnowledgeBase() {
           author: CURRENT_LOGIN_USER.name,
           department: selectedLabel,
           permission: values.permission,
-          fileName: file.name || values.title,
-          fileSize: file.size ? `${Math.max(1, Math.round(file.size / 1024))} KB` : '-',
+          fileName: file.originFile?.name || values.title,
+          fileSize: file.originFile?.size ? `${Math.max(1, Math.round(file.originFile.size / 1024))} KB` : '-',
           description: values.description || '',
           updatedAt: '2026-07-29',
           views: 0,
@@ -404,7 +406,7 @@ export function KnowledgeBase() {
         >
           <Tree
             blockNode
-            defaultExpandAll
+            defaultExpandedKeys={ORGANIZATION_TREE.map((node) => String(node.key))}
             selectedKeys={[selectedOrganization]}
             treeData={ORGANIZATION_TREE}
             onSelect={(keys) => keys[0] && setSelectedOrganization(String(keys[0]))}

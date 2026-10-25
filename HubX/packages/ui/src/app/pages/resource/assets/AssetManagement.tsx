@@ -77,13 +77,13 @@ interface InventoryRecord {
 // ---------- 工具 ----------
 
 const ASSET_TYPE_LABELS: Record<AssetType, { label: string; icon: React.ReactNode; color: string }> = {
-  server:           { label: '服务器',       icon: <IconCloud size={14} />,     color: 'var(--primary)' },
-  domain:           { label: '域名',         icon: <IconLanguage size={14} />,  color: 'var(--success-500)' },
-  ssl:              { label: 'SSL 证书',     icon: <IconLock size={14} />,      color: 'var(--chart-5)' },
-  device:           { label: '设备',         icon: <IconMobile size={14} />,    color: 'var(--warning-500)' },
-  license:          { label: '软件许可证',    icon: <IconFile size={14} />,      color: 'var(--info-500)' },
-  'software-copyright': { label: '软件著作权', icon: <IconCopyright size={14} />, color: 'var(--chart-5)' },
-  patent:           { label: '专利',         icon: <IconBulb size={14} />,      color: 'var(--warning-300)' },
+  server:           { label: '服务器',       icon: <IconCloud style={{ fontSize: 14 }} />,     color: 'var(--primary)' },
+  domain:           { label: '域名',         icon: <IconLanguage style={{ fontSize: 14 }} />,  color: 'var(--success-500)' },
+  ssl:              { label: 'SSL 证书',     icon: <IconLock style={{ fontSize: 14 }} />,      color: 'var(--chart-5)' },
+  device:           { label: '设备',         icon: <IconMobile style={{ fontSize: 14 }} />,    color: 'var(--warning-500)' },
+  license:          { label: '软件许可证',    icon: <IconFile style={{ fontSize: 14 }} />,      color: 'var(--info-500)' },
+  'software-copyright': { label: '软件著作权', icon: <IconCopyright style={{ fontSize: 14 }} />, color: 'var(--chart-5)' },
+  patent:           { label: '专利',         icon: <IconBulb style={{ fontSize: 14 }} />,      color: 'var(--warning-300)' },
 };
 
 const STATUS_LABELS: Record<AssetStatus, { label: string; color: string }> = {

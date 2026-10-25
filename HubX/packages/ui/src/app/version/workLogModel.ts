@@ -61,7 +61,9 @@ function asItem(value: unknown): WorkLogItem | null {
 }
 
 export function normalizeWorkLog(value: unknown): WorkLog {
-  const rawDays = (value && typeof value === 'object' && Array.isArray((value as WorkLog).days))
+  // 同 featureBoardModel：校验入口的元素类型必须是 unknown，
+  // 否则 `day is Record<string, unknown>` 与 WorkLogDay 不可赋值。
+  const rawDays: unknown[] = (value && typeof value === 'object' && Array.isArray((value as WorkLog).days))
     ? (value as WorkLog).days
     : [];
   const days = rawDays

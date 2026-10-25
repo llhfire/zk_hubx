@@ -486,12 +486,20 @@
         {
           "name": "跟进承诺待办",
           "description": "线索下次跟进承诺写入统一 Todo，并按业务键更新、完成和随负责人转交。",
-          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         },
         {
           "name": "销售机会提醒",
           "description": "联系人生日、合同到期和免费维护期到期进入统一 Reminder，支持稍后提醒与人工转待办，提前量由系统配置维护。",
-          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         }
       ],
       "planned": [
@@ -532,17 +540,29 @@
         {
           "name": "报价差异与补充影响",
           "description": "重新报价按 previousQuoteId 比较清单、人天、增值项、总价、工期、付款、质保与文件；补充报价按 parentQuoteId 独立展示相对有效合同影响。",
-          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         },
         {
           "name": "报价责任协作",
           "description": "销售/技术评估人可永久转交或设置限时代理，校验时间重叠并保留操作记录，未完成待办随责任人更新。",
-          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         },
         {
           "name": "α 签署演示与合规档案",
           "description": "明确标识无电子签名法律效力的演示状态机，可上传真实线下证据；合规档案只读投影已有证据并导出 HTML/JSON。",
-          "alpha": { "页面场景": true, "功能流程": true, "UX 优化": true }
+          "alpha": {
+            "页面场景": true,
+            "功能流程": true,
+            "UX 优化": true
+          }
         }
       ],
       "planned": [
@@ -629,15 +649,6 @@
         {
           "name": "项目报价配置",
           "description": "ProjectQuotationConfigurator.tsx：项目与报价关联配置。",
-          "alpha": {
-            "页面场景": false,
-            "功能流程": false,
-            "UX 优化": false
-          }
-        },
-        {
-          "name": "项目质量面板",
-          "description": "ProjectQualityPanel.tsx：项目质量指标跟踪。",
           "alpha": {
             "页面场景": false,
             "功能流程": false,
@@ -1526,7 +1537,7 @@
         "productionOn": false,
         "devStatus": "未开始"
       },
-      "note": "T1–T4 全部完成；本轮补齐出差详情内报销/借款新建与详情查看闭环。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock。",
+      "note": "T1–T4 全部完成；本轮补齐出差详情内报销/借款新建与详情查看闭环。travelCalc.ts 纯函数 + 打卡删除 + 城市分级统一 + 宿舍 mock。",
       "alphaMeta": {
         "updateCount": 1,
         "lastUpdatedAt": "2026-08-31"

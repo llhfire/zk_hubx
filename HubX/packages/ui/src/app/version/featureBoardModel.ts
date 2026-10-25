@@ -278,7 +278,6 @@ const FEATURES_SEED: Record<string, Omit<ExistingFeature, 'alpha'>[]> = {
     { name: '项目任务管理', description: 'ProjectTaskPanel.tsx：任务拆分/分配/状态跟踪，按成员筛选。' },
     { name: '项目成本核算', description: 'ProjectCostPanel.tsx / ProjectCostPage.tsx：人工+差旅+其他成本，利润率分析。' },
     { name: '项目报价配置', description: 'ProjectQuotationConfigurator.tsx：项目与报价关联配置。' },
-    { name: '项目质量面板', description: 'ProjectQualityPanel.tsx：项目质量指标跟踪。' },
     { name: '项目详情信息优先级与精选活动流', description: '项目详情默认聚焦项目动态与跟进；六项指标使用里程碑、时间轴、工时方块和回款进度表达，阶段弹层只展示付款节点、已完成和待完成事项；项目动态依 ADR-0097 生成精选投影。', usage: '项目管理 → 项目详情 → 查看六项指标与当前阶段 → 在项目动态切换大事记、查看来源或快速登记跟进。', referencePath: '计划/当前/project-detail-360-prototype-restyle.md' },
   ],
   '日报工时': [
@@ -480,7 +479,7 @@ export function createSeedBoard(): FeatureBoard {
     { module: '成本核算', domain: '财务域', isPlanned: false, features: FEATURES_SEED['成本核算'] ?? [], note: '按人员工时成本/差旅与商务独立归集/第三方/动态运营公摊' },
     { module: '运营费用', domain: '财务域', isPlanned: false, features: FEATURES_SEED['运营费用'] ?? [], note: 'A–E 已落地。2026-08-21 grill 收束菜单重构，计划：计划/当前/operating-expense-restyle.md。α UX 优化待编码。' },
     { module: '精益交付', domain: '财务域', isPlanned: false, features: FEATURES_SEED['精益交付'] ?? [], note: 'L1–L4 全部完成。calc.ts 纯函数层 + quoteSeam/contractSeam 接真实数据 + Dashboard/CaseList/CaseDetail 全面改造' },
-    { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: 'T1–T4 全部完成。travelCalc.ts 纯函数 + expenseExits.ts 双出口 + 打卡删除 + 城市分级统一 + 宿舍 mock' },
+    { module: '差旅管理', domain: '财务域', isPlanned: false, features: FEATURES_SEED['差旅管理'] ?? [], note: 'T1–T4 全部完成。travelCalc.ts 纯函数 + 报销投影归集（operating-expense/expenseMutations.importTravelReimbursement，ADR-0089）+ 打卡删除 + 城市分级统一 + 宿舍 mock' },
     { module: '财务视图', domain: '财务域', isPlanned: false, features: FEATURES_SEED['财务视图'] ?? [], note: '财务审批/报表/合同统计/项目成本/回款开票报表' },
     { module: '全期次视图', domain: '财务域', isPlanned: true, features: [], planned: ['一屏查看项目全期次回款与开票'], note: '规划中' },
     // === 获客域（优先级 4）===

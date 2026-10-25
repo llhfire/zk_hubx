@@ -72,10 +72,10 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 ## 数据与状态模式
 
-- 当前没有发现 `axios`、`fetch`、React Query、Redux、Zustand 等真实数据层或全局状态方案。
-- 大多数页面直接使用 `useState`、模块级 `mockData`、`types`、`utils`，以及少量 context。
-- 改页面前先确认数据属于“页面局部状态”还是“业务目录下的共享 mockData / types / utils”；不要默认去找 API 层。
-- 如果后续接入真实后端，接口适配层大概率需要新增，而不是在现有页面里做少量替换。
+- **已接真实后端（β 部分模块）**：`packages/ui/src/services/` 下有 6 个 http 服务（报价 / 合同 / 线索 / 项目 / 实收 / 员工），走 `apps/api` Workers → Supabase。无 axios / React Query / Redux / Zustand。
+- **数据来源由 `main.tsx` 注入决定**：`apps/prototype/src/main.tsx` 不传 service → 走模块级 `mockData`（α）；`apps/web/src/main.tsx` 注入 http service → 走真实 API（β）。同一份 UI，两种现实，**不要在页面里判断当前是 α 还是 β**。
+- 未被 service 覆盖的模块（差旅、运营费用、智能会议等）仍是 `useState` + 模块级 `mockData` + context。
+- 改页面前先确认该数据域**有没有 service**：有就改 `services/` 接口与实现；没有就按「业务目录下的共享 mockData / types / utils」处理。
 
 ## 关键模块
 
@@ -83,7 +83,7 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 - `packages/ui/src/app/reminders/ReminderContext.tsx` 在内存中维护提醒相关 mock 数据，并每分钟刷新当前时间。
 - `packages/ui/src/app/reminders/buildReminders.ts` 会把审批、日报、线索、合同四类提醒通过 adapters 聚合后统一排序。
-- `MainLayout` 顶栏中的 `ReminderBell`、日报未提交徽标，以及工作台中的 `ReminderTodoPanel` 都依赖这个上下文。
+- `MainLayout` 顶栏中的 `ReminderBell` 与日报未提交徽标依赖这个上下文；工作台的待办面板读的是 `todos/TodoContext`（`useTodos`），不是 reminders。（原 `ReminderTodoPanel` 已废弃删除）
 - 改提醒行为时，优先复用 `packages/ui/src/app/reminders/` 下已有纯函数，并补充现有 Vitest 测试，而不是把时间判断散落到页面组件里。
 
 ### 日报系统

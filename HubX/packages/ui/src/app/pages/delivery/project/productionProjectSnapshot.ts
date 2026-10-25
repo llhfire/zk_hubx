@@ -32,7 +32,8 @@ export interface ProductionProjectRecord {
   end_time: string | null;
   project_remark: string | null;
   last_record: string | null;
-  last_time: string | null;
+  /** 真实接口返回 Unix 秒级时间戳；快照里也存在 null。 */
+  last_time: number | string | null;
   last_user_id: number | string | null;
   delete_time: string | null;
   update_time: string | null;

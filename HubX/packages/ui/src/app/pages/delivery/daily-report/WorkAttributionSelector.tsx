@@ -91,7 +91,9 @@ export function WorkAttributionSelector({
         placeholder="请选择项目"
         style={{ width: '100%' }}
         filterOption={(inputValue, option) => {
-          const current = displayOptions.find(item => item.id === option.props.value);
+          // Arco 的 filterOption 把 option 声明为 unknown（实际是 ReactElement），需显式取 props。
+          const optionValue = (option.props as { value?: string }).value;
+          const current = displayOptions.find(item => item.id === optionValue);
           return (current?.keyword || '').toLowerCase().includes(inputValue.toLowerCase());
         }}
         onChange={(relationId) => {

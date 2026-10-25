@@ -29,7 +29,9 @@ import {
 export interface GanttChartProps {
   plan: DeliveryPlan;
   zoomLevel: GanttZoomLevel;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  // React 19 的 useRef<HTMLDivElement>(null) 返回 RefObject<HTMLDivElement | null>，
+  // 这里必须带上 null 分支，否则父组件传不进来。
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   expandedPhaseIds: string[];
   expandedStepIds: string[];
 }

@@ -68,6 +68,7 @@ import {
   formatAmount,
 } from './utils';
 import { FollowUpIcon, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { CUSTOMER_LEVEL_COLOR } from '../../sales/leads/types';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -81,7 +82,6 @@ const CUSTOMER_LEVEL_BY_NAME: Record<string, 'S' | 'A' | 'B' | 'C'> = {
   H教育: 'B',
 };
 
-const CUSTOMER_LEVEL_COLOR = { S: 'red', A: 'orange', B: 'blue', C: 'gray' } as const;
 
 function shortProjectNo(projectNo: string) {
   return `P${projectNo.slice(-6)}`;

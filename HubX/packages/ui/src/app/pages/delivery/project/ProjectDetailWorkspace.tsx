@@ -1171,7 +1171,6 @@ export function ProjectDetailWorkspace({
     quotationForm.resetFields();
     quotationForm.setFieldsValue({
       upliftType,
-      upliftValue,
       upliftRate,
       amount: calculateQuotationAmount(summary.totalAmount, upliftRate),
       period: String(summary.estimatedDays || ''),
@@ -1229,7 +1228,8 @@ export function ProjectDetailWorkspace({
         amount: amount.toLocaleString('zh-CN'),
         upliftRate,
         upliftType: values.upliftType,
-        upliftAmount: values.upliftType === 'fixed' ? Number(values.upliftValue) || 0 : undefined,
+        // QuotationDocumentData 上没有 upliftValue，金额口径就是 upliftAmount（fixed 时才有值）。
+        upliftAmount: values.upliftType === 'fixed' ? (values.upliftAmount ?? 0) : undefined,
         cost: configuredCost == null ? '-' : configuredCost.toLocaleString('zh-CN'),
         profit: configuredCost == null ? '-' : (amount - configuredCost).toLocaleString('zh-CN'),
         file: '-',

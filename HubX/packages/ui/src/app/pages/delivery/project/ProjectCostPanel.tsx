@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, DatePicker, Descriptions, Empty, Form, Grid, Input, InputNumber, Message, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
 import { IconDelete, IconDownload, IconEdit, IconEye, IconPlus, IconUpload } from '@arco-design/web-react/icon';
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip, type PieLabelRenderProps } from 'recharts';
 import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import { useEmployee } from '../../support/hr/employee';
 import { downloadAttachment, mapUploadFilesToAttachments, type ContractModAttachment } from '../../sales/contracts/contractModification';
@@ -81,7 +81,16 @@ const parseAmount = (value: string) => Number.isFinite(Number(value.replace(/,/g
 const getMockHourlyRate = (name: string) => 500 + Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 501;
 const formatLocalDate = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}-${`${date.getDate()}`.padStart(2, '0')}`;
 
-function renderCostPieLabel({ cx, cy, midAngle, outerRadius, name, percent }: { cx: number; cy: number; midAngle: number; outerRadius: number; name: string; percent: number }) {
+// recharts 回调的入参是 `PieLabelRenderProps`，几乎所有字段都是可选的（`midAngle?`、
+// `name?: string | number`、`cx?: number | string`）。此前的窄签名与它对不上，
+// `<Pie label={...}>` 直接编译失败。这里按 recharts 的宽口径接参，再在函数内部归一。
+function renderCostPieLabel(props: PieLabelRenderProps) {
+  const cx = Number(props.cx ?? 0);
+  const cy = Number(props.cy ?? 0);
+  const midAngle = Number(props.midAngle ?? 0);
+  const outerRadius = Number(props.outerRadius ?? 0);
+  const name = String(props.name ?? '');
+  const percent = Number(props.percent ?? 0);
   const angle = -midAngle * Math.PI / 180;
   const insideX = cx + outerRadius * 0.58 * Math.cos(angle);
   const insideY = cy + outerRadius * 0.58 * Math.sin(angle);
@@ -132,7 +141,9 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
   const [selectedCostItem, setSelectedCostItem] = useState<ProjectCostItem | null>(null);
   const [timeDimension, setTimeDimension] = useState<'日' | '月' | '年'>('月');
   const [rankingFilter, setRankingFilter] = useState<RankingFilter>('岗位');
-  const [items, setItems] = useState<ProjectCostItem[]>(() => [...SAMPLE_COST_ITEMS, ...reimbursementItems.filter(item => item.status === '已报销').map(item => ({
+  // 回调显式标注 ProjectCostItem：不标时字面量里的 '已核算' 会被推断成 string、
+  // 空数组会被推断成 never[]，整体不可赋值。
+  const [items, setItems] = useState<ProjectCostItem[]>(() => [...SAMPLE_COST_ITEMS, ...reimbursementItems.filter(item => item.status === '已报销').map((item): ProjectCostItem => ({
     id: `reimbursement-${item.id}`, category: '差旅成本', subcategory: item.expenseType || '交通', name: item.expenseType || '项目报销', amount: parseAmount(item.reimbursementAmount), expenseDate: item.createTime.slice(0, 10), handler: item.applicant, status: '已核算', remark: '来源：项目报销记录', attachments: [],
   }))]);
 
@@ -386,7 +397,7 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
                       <Pie data={costCompositionRows} dataKey="amount" nameKey="label" cx="50%" cy="50%" innerRadius={0} outerRadius={108} startAngle={90} endAngle={-270} paddingAngle={0} label={renderCostPieLabel} labelLine={false} isAnimationActive animationDuration={800} animationEasing="ease-out" onClick={(_, index) => setActiveTab(categoryTabMap[costCompositionRows[index].category])}>
                         {costCompositionRows.map(row => <Cell key={row.category} fill={COST_COLORS[row.category]} stroke="#fff" strokeWidth={2} />)}
                       </Pie>
-                      <ChartTooltip formatter={(value: number) => formatOverviewCurrency(value)} />
+                      <ChartTooltip formatter={(value) => formatOverviewCurrency(Number(value))} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

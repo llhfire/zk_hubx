@@ -120,6 +120,8 @@ import {
   type ProjectStageCheck,
 } from './projectStageSummary';
 import './detail/projectDetail360.css';
+import { formatMoney as money } from '../../../utils/money';
+import { CONTRACT_STATUS_COLOR as CONTRACT_STATUS_COLORS } from '../../sales/contracts/utils';
 
 const { Text } = Typography;
 const TabPane = Tabs.TabPane;
@@ -145,19 +147,6 @@ const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   archived: '已归档',
   voided: '已作废',
 };
-
-const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
-  draft: 'gray',
-  approving: 'orange',
-  pending_mail: 'gold',
-  pending_return: 'arcoblue',
-  archived: 'green',
-  voided: 'gray',
-};
-
-function money(n: number) {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
 
 const PAWKEY_PROJECT_ID = 'prod-112';
 
@@ -977,7 +966,7 @@ export function ProjectDetail360() {
                   data={dailyReports}
                   pagination={false}
                   rowKey="id"
-                  locale={{ emptyText: <Empty description="暂无日报记录" /> }}
+                  noDataElement={<Empty description="暂无日报记录" />}
                 />
               )}
 
@@ -1325,6 +1314,8 @@ export function ProjectDetail360() {
                 collaborators: [],
                 plannedEndDate: values.plannedEndDate ?? '',
                 progress: values.progress ?? 0,
+                description: values.description ?? '',
+                logs: [],
               }]);
               Message.success('任务已保存');
             }

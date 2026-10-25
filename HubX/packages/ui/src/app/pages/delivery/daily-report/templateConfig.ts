@@ -13,6 +13,7 @@ import {
 export const salesTemplate: DailyTemplate = {
   id: 'sales-template-default',
   name: '销售日报模板',
+  description: '销售岗默认日报：以线索跟进为主，附带明日计划与问题反馈。',
   type: 'sales',
   isDefault: true,
   fields: [
@@ -44,6 +45,7 @@ export const salesTemplate: DailyTemplate = {
 export const generalTemplate: DailyTemplate = {
   id: 'general-template-default',
   name: '通用日报模板',
+  description: '非销售岗默认日报：按项目/任务清单填报工时与进展。',
   type: 'general',
   isDefault: true,
   fields: [

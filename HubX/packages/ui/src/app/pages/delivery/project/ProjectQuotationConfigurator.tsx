@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   Button,
   Checkbox,
@@ -738,8 +738,14 @@ export function ProjectQuotationConfigurator({
       visible={visible}
       onCancel={onCancel}
       maskClosable={false}
-      style={{ width: 1200, maxWidth: 'calc(100vw - 32px)' }}
-      bodyStyle={{ padding: '0 20px 20px', maxHeight: 'calc(100vh - 210px)', overflow: 'auto' }}
+      className="hubx-modal"
+      style={{
+        width: 1200,
+        maxWidth: 'calc(100vw - 32px)',
+        '--modal-content-padding': '0 20px 20px',
+        '--modal-content-max-height': 'calc(100vh - 210px)',
+        '--modal-content-overflow': 'auto',
+      } as CSSProperties}
       footer={(
         <div className="project-quotation-config-footer">
           <Button onClick={onCancel}>取消</Button>

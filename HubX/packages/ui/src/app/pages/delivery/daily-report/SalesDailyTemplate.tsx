@@ -95,7 +95,7 @@ export function SalesDailyTemplate({ userId, department, initialContent, recentR
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Text strong>工作项</Text>
+      <Text bold>工作项</Text>
 
       {workItems.map(item => (
         <div

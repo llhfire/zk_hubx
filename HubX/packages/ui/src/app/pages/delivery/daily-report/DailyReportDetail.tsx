@@ -39,7 +39,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['work-items'] && content['work-items'].length > 0 && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>销售工作项</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>销售工作项</Text>
           <Table
             columns={[
               {
@@ -65,14 +65,14 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['lead-tracking'] && content['lead-tracking'].length > 0 && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>线索跟进情况</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>线索跟进情况</Text>
           {content['lead-tracking'].map((item: LeadTrackingItem) => (
             <Card key={item.leadId} size="small" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <Tag color={item.level === 'S' ? 'red' : item.level === 'A' ? 'orange' : item.level === 'B' ? 'blue' : 'green'}>
                   {item.level}
                 </Tag>
-                <Text strong>{item.leadName}</Text>
+                <Text bold>{item.leadName}</Text>
               </div>
               {item.statusChanges.length > 0 && (
                 <div style={{ marginTop: 4 }}>
@@ -94,7 +94,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['assistance-needed'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['assistance-needed']}
           </div>
@@ -102,7 +102,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['tomorrow-plan']}
           </div>
@@ -115,7 +115,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['project-tasks'] && content['project-tasks'].length > 0 && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>任务明细</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>任务明细</Text>
           <Table
             columns={[
               {
@@ -137,7 +137,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['today-summary'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>今日总结</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>今日总结</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['today-summary']}
           </div>
@@ -145,7 +145,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['problems-encountered'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>遇到的问题</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>遇到的问题</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['problems-encountered']}
           </div>
@@ -153,7 +153,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['tomorrow-plan']}
           </div>
@@ -166,7 +166,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['work-items'] && content['work-items'].length > 0 && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作项</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作项</Text>
           <Table
             columns={[
               {
@@ -209,7 +209,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['today-summary'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作内容</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作内容</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['today-summary']}
           </div>
@@ -217,7 +217,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['assistance-needed'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['assistance-needed']}
           </div>
@@ -225,7 +225,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text strong style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
           <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
             {content['tomorrow-plan']}
           </div>
@@ -268,7 +268,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
 
       {/* 评论区域 */}
       <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
-        <Text strong style={{ fontSize: 16, marginBottom: 12, display: 'block' }}>
+        <Text bold style={{ fontSize: 16, marginBottom: 12, display: 'block' }}>
           评论 ({reportComments.length})
         </Text>
 
@@ -278,7 +278,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
               <Card key={comment.id} size="small" style={{ marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <Avatar size={24}>{comment.userName[0]}</Avatar>
-                  <Text strong>{comment.userName}</Text>
+                  <Text bold>{comment.userName}</Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     {new Date(comment.createdAt).toLocaleString()}
                   </Text>

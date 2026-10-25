@@ -103,7 +103,7 @@ export function AdDeliveryDailyTemplate({ content, department, onChange, omitFol
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text strong>工作项</Text>
+        <Text bold>工作项</Text>
         <Space size={8} style={{ marginLeft: 'auto' }}>
           {ADD_ITEMS.map(item => (
             <Button key={item.key} size="mini" onClick={() => addWorkItem(item.key)}>

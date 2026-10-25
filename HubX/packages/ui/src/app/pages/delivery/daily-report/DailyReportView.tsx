@@ -17,7 +17,9 @@ import { PageShell } from '../../../components/ui';
 const CollapseItem = Collapse.Item;
 
 export function DailyReportView() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Arco DatePicker 的 value 是 Dayjs | string | number，不是 Date；
+  // onChange 的第一个参数就是格式化后的字符串，直接用它作为状态，避免存 Date 再隐式转换。
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [expandedKeys, setExpandedKeys] = useState<string[]>(['dept-sales']);
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [detailVisible, setDetailVisible] = useState(false);
@@ -82,7 +84,7 @@ export function DailyReportView() {
         extra={
           <DatePicker
             value={selectedDate}
-            onChange={setSelectedDate}
+            onChange={(dateString) => setSelectedDate(dateString)}
             style={{ width: 140 }}
             format="YYYY-MM-DD"
           />
@@ -110,6 +112,7 @@ export function DailyReportView() {
               return (
               <CollapseItem
                 key={index.toString()}
+                name={index.toString()}
                 header={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span>{report.reportDate} <Tag size="small" color="arcoblue">{getDailyReportTemplateLabel(report)}</Tag></span>
@@ -124,11 +127,11 @@ export function DailyReportView() {
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>工作项明细</div>
                     <Table
                       columns={[
-                        { title: '类型', dataIndex: 'type', render: (value) => WORK_ITEM_LABELS[value] || value },
+                        { title: '类型', dataIndex: 'type', render: (value) => WORK_ITEM_LABELS[value as keyof typeof WORK_ITEM_LABELS] || value },
                         {
                           title: '工作归属',
                           dataIndex: 'workAttributionType',
-                          render: (value) => value ? WORK_ATTRIBUTION_LABELS[value] : '-',
+                          render: (value) => value ? WORK_ATTRIBUTION_LABELS[value as keyof typeof WORK_ATTRIBUTION_LABELS] : '-',
                         },
                         {
                           title: '对象',

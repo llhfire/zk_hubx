@@ -39,7 +39,8 @@ export function GeneralDailyTemplate({ initialContent, department, onChange, omi
   }, [initialContent]);
 
   // 更新内容 - 使用 debounce 避免频繁触发
-  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 浏览器环境没有 NodeJS 命名空间；用 ReturnType<typeof setTimeout> 兼容浏览器与 Node 的返回值类型。
+  const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (updateTimeoutRef.current) {

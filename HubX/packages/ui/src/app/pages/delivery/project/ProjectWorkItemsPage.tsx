@@ -56,7 +56,17 @@ export function ProjectWorkItemsPage() {
     { title: '状态', dataIndex: 'status', width: 110, render: (value: string) => <Tag color={value === '已修复' ? 'green' : 'arcoblue'}>{value}</Tag> },
     { title: '更新时间', dataIndex: 'updatedAt', width: 120 }, operationColumn,
   ];
-  const currentRows = activeTab === 'requirements' ? requirementSeed.filter(matches) : activeTab === 'bugs' ? bugSeed.filter(matches) : tasks.filter((item) => matches(item as ProjectWorkTask));
+  // 三个页签的数据形状不同（需求/缺陷/任务），但都满足「id + title + status」。
+  // 用显式联合类型收口，避免三元表达式被推断成三个数组类型的并集、Table 无法接收。
+  type WorkItemRow =
+    | (typeof requirementSeed)[number]
+    | (typeof bugSeed)[number]
+    | ProjectWorkTask;
+  const currentRows: WorkItemRow[] = activeTab === 'requirements'
+    ? requirementSeed.filter(matches)
+    : activeTab === 'bugs'
+      ? bugSeed.filter(matches)
+      : tasks.filter((item) => matches(item));
 
   return <PageShell breadcrumbs={[{ label: '项目管理', to: '/projects' }, { label: project.name, to: `/projects/${id}` }, { label: '工作项列表' }]}>
     <PageHeader title={`${project.name} · 工作项`} description={`${project.projectNo} · 需求、任务与缺陷统一查询入口`} actions={<Button icon={<ArrowLeft size={18} />} onClick={() => navigate(`/projects/${id}`)}>返回项目</Button>} />

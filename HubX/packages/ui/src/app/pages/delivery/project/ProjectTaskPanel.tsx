@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useMemo, useRef, useState, type CSSProperties, type ChangeEvent } from 'react';
 import {
   Button,
   Card,
@@ -168,7 +168,7 @@ export function ProjectTaskPanel({ project }: { project: Project }) {
         />
       </Card>
 
-      <Modal title="新建并分派任务" visible={createVisible} onOk={createTask} onCancel={() => setCreateVisible(false)} style={{ width: 760 }} bodyStyle={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }} maskClosable={false}>
+      <Modal className="hubx-modal" title="新建并分派任务" visible={createVisible} onOk={createTask} onCancel={() => setCreateVisible(false)} style={{ width: 760, '--modal-content-max-height': 'calc(100vh - 220px)', '--modal-content-overflow': 'auto' } as CSSProperties} maskClosable={false}>
         <Form form={createForm} layout="vertical">
           <Grid.Row gutter={16}>
             <Grid.Col span={10}><FormItem label="任务名称" field="title" rules={[{ required: true, message: '请输入任务名称' }]}><Input maxLength={100} placeholder="例如：客户管理列表筛选交互开发" /></FormItem></Grid.Col>

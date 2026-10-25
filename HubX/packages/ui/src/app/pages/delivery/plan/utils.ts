@@ -11,6 +11,7 @@ import type {
   DeliveryConfig,
   GanttZoomLevel,
 } from './types';
+import type { SopStepTemplate } from './sopTemplate';
 
 import {
   STATUS_PRIORITY,

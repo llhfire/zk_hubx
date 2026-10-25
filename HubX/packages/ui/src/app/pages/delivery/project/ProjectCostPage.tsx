@@ -71,6 +71,8 @@ export function ProjectCostPage() {
 
       <Card>
         <ProjectCostPanel
+          projectName={project.name}
+          projectNo={project.projectNo}
           contractAmount={contract?.current.totalAmount}
           projectStartDate={project.startDate}
           projectEndDate={project.expectedEndDate}

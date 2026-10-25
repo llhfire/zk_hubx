@@ -149,7 +149,8 @@ const StepEditModal: React.FC<StepEditModalProps> = ({
                 allowClear
                 showSearch
                 filterOption={(input, option) =>
-                  (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                  // Arco 把 option 声明成 ReactElement，label 不在其类型上，需显式取值。
+                  (((option as { label?: string } | undefined)?.label) ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               />
             </Form.Item>

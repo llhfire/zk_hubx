@@ -6,14 +6,28 @@ import {
   BUSINESS_LINE_COLOR,
   PROJECT_RISK_LEVEL_COLOR,
   PROJECT_RISK_LEVEL_LABEL,
-  type ProjectListItem,
 } from '../types';
+import type { Project } from '../mockData';
 
 const { Text } = Typography;
 
+/**
+ * 归档摘要只需要项目的这些字段。
+ *
+ * 原先这里写的是 `ProjectListItem`（带 key/daysRemaining/isOverdue/healthStatus 的列表投影），
+ * 但详情页拿到的是 `Project` 本体，两者互不兼容。改成按需 Pick 后，
+ * `Project` 与 `ProjectListItem` 都能传入，也不再有「为了满足类型而伪造计算字段」的需求。
+ */
+type ProjectArchiveProject = Pick<Project,
+  | 'businessLine' | 'entity' | 'owner' | 'salesUsers'
+  | 'startDate' | 'expectedEndDate' | 'latestProgress' | 'createdAt'
+  | 'blockers' | 'riskLevel' | 'riskNote' | 'acceptanceCriteria'
+>;
+
 interface ProjectArchiveSummaryProps {
-  project: ProjectListItem;
-  customerName: string;
+  project: ProjectArchiveProject;
+  /** 详情页的 metrics 可能还没有客户名，允许为空 */
+  customerName?: string;
   budgetHoursLabel: string;
 }
 
@@ -81,7 +95,7 @@ export function ProjectArchiveSummary({
               </div>
             </div>
           )}
-          {project.acceptanceCriteria?.length > 0 && (
+          {project.acceptanceCriteria && project.acceptanceCriteria.length > 0 && (
             <div>
               <Text type="secondary">验收标准</Text>
               <ul>{project.acceptanceCriteria.map((item) => <li key={item}>{item}</li>)}</ul>

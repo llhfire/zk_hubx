@@ -2118,3 +2118,23 @@ body, html {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Modal 内容区自定义（替代 Arco 未实现的 bodyStyle）
+ *
+ * 背景：页面里曾广泛使用 `<Modal bodyStyle={{...}}>`。Arco 的 ModalProps 里
+ * 没有 bodyStyle，该属性被静默丢弃 —— 内边距、背景色、滚动限制从未生效，
+ * 直到引入 TypeScript 才暴露（6 处）。Arco 的内容区是内部节点，
+ * 只能通过 CSS 命中，故提供 `.hubx-modal-content` 这一表达方式：
+ *
+ *   <Modal className="hubx-modal" style={{ '--modal-content-padding': '0 20px 20px' }}>
+ *
+ * 用 CSS 自定义属性而不是把 padding 挂到 `.arco-modal` 上，是因为后者是弹窗
+ * 外框（含 header/footer），padding 会撑错层级。
+ * ------------------------------------------------------------------------- */
+.hubx-modal .arco-modal-content {
+  padding: var(--modal-content-padding, 24px 20px);
+  background: var(--modal-content-bg, transparent);
+  overflow-y: var(--modal-content-overflow, visible);
+  max-height: var(--modal-content-max-height, none);
+}

@@ -4,6 +4,7 @@ import { IconDownload, IconEye } from '@arco-design/web-react/icon';
 import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import type { QuoteAmountBreakdown } from '../quoteFlow';
 import { generateQuoteHtml } from '../quotePdfTemplate';
+import { useQuoteAssets } from '../useQuoteAssets';
 import { getQuoteTemplateMissingFields, ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 import type { Quote } from '../types';
 import { createDocxBlob, downloadBlob } from '../../../../documents/wordExport';
@@ -20,6 +21,7 @@ function sanitizeFileName(value: string): string {
 }
 
 export function QuoteTemplatePreviewPanel({ quote, breakdown }: QuoteTemplatePreviewPanelProps) {
+  const assets = useQuoteAssets();
   const [visible, setVisible] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const entity = findCompanyEntityByName(quote.signingEntity ?? ZKRT_QUOTE_TEMPLATE.signingEntity);
@@ -33,7 +35,8 @@ export function QuoteTemplatePreviewPanel({ quote, breakdown }: QuoteTemplatePre
       representative: entity?.legalPerson ?? '',
     },
     isSupplement: quote.isSupplement,
-  }), [breakdown, entity, quote]);
+    assets,
+  }), [assets, breakdown, entity, quote]);
   const missingFields = getQuoteTemplateMissingFields(quote);
 
   const download = async () => {

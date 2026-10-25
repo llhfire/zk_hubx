@@ -29,7 +29,8 @@ interface NumericInputProps {
   fillRef: React.MutableRefObject<{ unitId: string; roleKey: string; value: number } | null>;
   sortedUnits: EvaluationUnit[];
   activeRoleKeys: string[];
-  updateWorkload: (unitId: string, roleKey: string, value: number) => void;
+  /** isActualInput=false 表示程序性填充（方向键/Tab 联动），不触发寄存扣减。 */
+  updateWorkload: (unitId: string, roleKey: string, value: number, isActualInput?: boolean) => void;
   emptyCells: Set<string>;
   cellKey: string;
   setEmptyCells: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -177,6 +178,9 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
   // 快捷填充：记录当前聚焦的单元格及其值
   const fillRef = useRef<{ unitId: string; roleKey: string; value: number } | null>(null);
+  // 跨按键记忆最近一次方向键，供紧随其后的 Tab 判断"沿着刚才的方向继续填充"。
+  // 原先只用了没声明，任何人按方向键都会抛 ReferenceError 打崩评估表。
+  const arrowRef = useRef<'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | null>(null);
   // 验证：记录未填写的格子 set<string> = "unitId-roleKey"
   const [emptyCells, setEmptyCells] = useState<Set<string>>(new Set());
   const [customRoleVisible, setCustomRoleVisible] = useState(false);
@@ -496,7 +500,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
         const cellKey = `${record.id}-${role.key}`;
         const isEmpty = val === undefined || val === null || val === 0;
         const hasError = emptyCells.has(cellKey);
-        const isRemainder = record.isRemainder && record.granularity === 'SINGLE';
+        const isRemainder = Boolean(record.isRemainder && record.granularity === 'SINGLE');
         return (
           <NumericInput
             value={val}
@@ -767,7 +771,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                                 }
                                 return;
                               }
-                              if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { arrowRef.current = e.key as any; }
+                              if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { arrowRef.current = e.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'; }
                               if (e.key === 'Tab' && arrowRef.current && fillRef.current) {
                                 e.preventDefault(); e.stopPropagation();
                                 const dir = arrowRef.current;
@@ -783,12 +787,12 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                                   requestAnimationFrame(() => { const el = document.querySelector(`input[data-fill="${tUnit.id}-${tRole}"]`) as HTMLInputElement | null; if (el) { el.focus(); el.select(); } });
                                 }
                               }
-                            }} onKeyUp={(e) => { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) arrowRef.current = null; }}>
+                            }} onKeyUp={(e) => { const key = (e as unknown as KeyboardEvent).key; if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) arrowRef.current = null; }}>
                               <InputNumber size="small" min={0} step={0.1} precision={1}
-                                value={val && val > 0 ? val : null} placeholder=""
+                                value={val && val > 0 ? val : undefined} placeholder=""
                                 onFocus={() => { fillRef.current = { unitId: unit.id, roleKey: role.key, value: val ?? 0 }; }}
                                 onChange={(v) => { const num = typeof v === 'number' ? v : 0; updateWorkload(unit.id, role.key, num); fillRef.current = { unitId: unit.id, roleKey: role.key, value: num }; if (emptyCells.has(cellKey)) setEmptyCells((prev) => { const s = new Set(prev); s.delete(cellKey); return s; }); }}
-                                onKeyDown={(e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); } }}
+                                onKeyDown={(e) => { const key = (e as unknown as KeyboardEvent).key; if (key === 'ArrowUp' || key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); } }}
                                 data-fill={`${unit.id}-${role.key}`}
                                 style={{ width: 76, ...(hasError ? { borderColor: 'rgb(var(--red-5))', boxShadow: '0 0 0 1px rgb(var(--red-3))' } : {}), ...(isRemainder ? { borderColor: 'rgb(var(--red-5))', boxShadow: '0 0 0 1px rgb(var(--red-3))' } : {}) }}
                               />
@@ -894,7 +898,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                             return (
                               <Menu.Item key={u.id} onClick={() => {
                                 // 滚动到目标行并高亮
-                                const row = document.querySelector(`tr[data-unit-id="${u.id}"]`);
+                                const row = document.querySelector<HTMLElement>(`tr[data-unit-id="${u.id}"]`);
                                 if (row) {
                                   row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                   // 高亮闪烁效果
@@ -904,7 +908,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                                   setTimeout(() => { row.style.background = originalBg || ''; }, 800);
                                 }
                                 // 同时聚焦到第一个输入框
-                                const el = document.querySelector(`input[data-fill="${u.id}-${activeRoleKeys[0]}"]`);
+                                const el = document.querySelector<HTMLInputElement>(`input[data-fill="${u.id}-${activeRoleKeys[0]}"]`);
                                 if (el) setTimeout(() => { el.focus(); el.select(); }, 300);
                               }}>
                                 {subName || u.groupName || '未命名'}

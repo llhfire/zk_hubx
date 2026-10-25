@@ -16,6 +16,7 @@ import { QuoteTemplatePreviewPanel } from '../components/QuoteTemplatePreviewPan
 import { getQuoteTemplateMissingFields, ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 import { contractSigningEntities, findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import { generateQuoteHtml } from '../quotePdfTemplate';
+import { useQuoteAssets } from '../useQuoteAssets';
 import { createDocxBlob, downloadBlob } from '../../../../documents/wordExport';
 import {
   deleteCustomPaymentPreset,
@@ -24,12 +25,9 @@ import {
   saveCustomPaymentPreset,
 } from '../paymentPresetStore';
 import './Stage3WebAutomation.css';
+import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title } = Typography;
-
-function money(n: number): string {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
 
 function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -114,6 +112,7 @@ const FLOW_BAR_COLORS = [
 ];
 
 export function Stage3WebAutomation({ quote, readonly }: StageProps) {
+  const assets = useQuoteAssets();
   const { updateQuote, submitForAudit, isLeadFrozen } = useQuotation();
   const leadFrozen = isLeadFrozen(quote.id);
 
@@ -552,7 +551,8 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
       representative: entity?.legalPerson ?? '',
     },
     isSupplement: quote.isSupplement,
-  }), [breakdown, entity, quote.isSupplement, workingQuote]);
+    assets,
+  }), [assets, breakdown, entity, quote.isSupplement, workingQuote]);
 
   // 成本百分比计算
   const totalCostForBar = Math.max(breakdown.grandTotal, 1);
@@ -578,7 +578,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             />
             {entity && (
               <Tag color="arcoblue" style={{ fontSize: 12 }}>
-                信用代码: {entity.usci}
+                信用代码: {entity.taxNumber}
               </Tag>
             )}
             {quote.isSupplement ? (
@@ -903,7 +903,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     </div>
                     <div>
                       <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>小计</Text>
-                      <Text bold style={{ color: 'var(--color-danger-6)', fontSize: 13, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(role.subtotal)}</Text>
+                      <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(role.subtotal)}</Text>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       {!readonly && (
@@ -941,7 +941,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   </Text>
                   <Divider type="vertical" style={{ margin: '0 4px' }} />
                   <Text>增项小计：</Text>
-                  <Text bold style={{ color: 'var(--color-danger-6)', fontSize: 14 }}>{money(salesAddedRoles.reduce((s, r) => s + r.subtotal, 0))}</Text>
+                  <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 14 }}>{money(salesAddedRoles.reduce((s, r) => s + r.subtotal, 0))}</Text>
                 </div>
               )}
             </div>
@@ -973,7 +973,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     )}
                   </Space>
                   {travelOnsite.enableTravel && (
-                    <Text bold style={{ color: 'var(--color-danger-6)', fontSize: 13 }}>差旅小计: {money(travelOnsite.travelSubtotal)}</Text>
+                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>差旅小计: {money(travelOnsite.travelSubtotal)}</Text>
                   )}
                 </div>
 
@@ -1069,7 +1069,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     )}
                   </Space>
                   {travelOnsite.enableOnsite && (
-                    <Text bold style={{ color: 'var(--color-danger-6)', fontSize: 13 }}>驻场小计: {money(travelOnsite.onsiteSubtotal)}</Text>
+                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>驻场小计: {money(travelOnsite.onsiteSubtotal)}</Text>
                   )}
                 </div>
 
@@ -1620,13 +1620,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   {/* 1. 签约主体 */}
                   <div className={`stage3-check-item ${quote.signingEntity ? 'pass' : 'fail'}`}>
                     <span>1. 签约主体</span>
-                    <span>{quote.signingEntity ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : '未选择'}</span>
+                    <span>{quote.signingEntity ? <IconCheckCircleFill style={{ color: 'rgb(var(--success-6))' }} /> : '未选择'}</span>
                   </div>
 
                   {/* 2. 付款比例 */}
                   <div className={`stage3-check-item ${isPayment100 ? 'pass' : 'fail'}`}>
                     <span>2. 付款比例 100%</span>
-                    <span>{isPayment100 ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : `${paymentPercentTotal}% 异常`}</span>
+                    <span>{isPayment100 ? <IconCheckCircleFill style={{ color: 'rgb(var(--success-6))' }} /> : `${paymentPercentTotal}% 异常`}</span>
                   </div>
 
                   {/* 3. 毛利率底线 */}
@@ -1634,21 +1634,21 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     <span>3. 人力毛利红线 (≥45%)</span>
                     <span>
                       {profitRate != null && profitRate >= DEFAULT_MIN_PROFIT_RATE
-                        ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} />
-                        : <IconExclamationCircleFill style={{ color: 'var(--color-warning-6)' }} />}
+                        ? <IconCheckCircleFill style={{ color: 'rgb(var(--success-6))' }} />
+                        : <IconExclamationCircleFill style={{ color: 'rgb(var(--warning-6))' }} />}
                     </span>
                   </div>
 
                   {/* 4. 模版完整性 */}
                   <div className={`stage3-check-item ${templateMissingFields.length === 0 ? 'pass' : 'fail'}`}>
                     <span>4. 报价单模板字段</span>
-                    <span>{templateMissingFields.length === 0 ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : `缺 ${templateMissingFields.length} 项`}</span>
+                    <span>{templateMissingFields.length === 0 ? <IconCheckCircleFill style={{ color: 'rgb(var(--success-6))' }} /> : `缺 ${templateMissingFields.length} 项`}</span>
                   </div>
 
                   {/* 5. 线索冻结状态 */}
                   <div className={`stage3-check-item ${!leadFrozen ? 'pass' : 'fail'}`}>
                     <span>5. 线索流转状态</span>
-                    <span>{!leadFrozen ? <IconCheckCircleFill style={{ color: 'var(--color-success-6)' }} /> : '已冻结'}</span>
+                    <span>{!leadFrozen ? <IconCheckCircleFill style={{ color: 'rgb(var(--success-6))' }} /> : '已冻结'}</span>
                   </div>
                 </div>
               </div>
@@ -1777,7 +1777,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             <Divider style={{ margin: '8px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600 }}>
               <span>比例合计</span>
-              <span style={{ color: isPayment100 ? 'var(--color-success-6)' : 'var(--color-danger-6)' }}>
+              <span style={{ color: isPayment100 ? 'rgb(var(--success-6))' : 'rgb(var(--danger-6))' }}>
                 {paymentPercentTotal}% {isPayment100 ? '(达标)' : '(异常)'}
               </span>
             </div>

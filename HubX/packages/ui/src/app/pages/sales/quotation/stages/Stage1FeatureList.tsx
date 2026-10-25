@@ -316,7 +316,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
           <Input.TextArea
             id={`desc-${record.id}`}
             autoSize={{ minRows: 1, maxRows: 3 }}
-            size="small"
+            style={{ fontSize: 13 }}
             value={desc}
             onChange={(v) => updateField(record.moduleId, record.id, 'description', v)}
             placeholder="详细交互逻辑与范围边界"
@@ -383,7 +383,20 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
     if (!epFirstModId[epId]) epFirstModId[epId] = m.id;
   }
 
-  const rows = featureList.flatMap((m) => {
+  // flatMap 会把「占位行」和「真实子功能行」的联合类型合成为只含公共字段的形状，
+  // 导致 empty 标记在下游（465/613 行）不可见。显式标注返回类型以保留该标记。
+  const rows: Array<{
+    moduleId: string;
+    moduleName: string;
+    endpointId: string;
+    _isEndpointStart: boolean;
+    id: string;
+    name: string;
+    description: string;
+    remark?: string;
+    empty?: boolean;
+    seq: number;
+  }> = featureList.flatMap((m) => {
     const isFirstOfEndpoint = epFirstModId[m.endpointId] === m.id;
     if (m.subFeatures.length === 0) {
       seqCounter += 1;
@@ -594,7 +607,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                           <Input.TextArea
                             id={`desc-${row.id}`}
                             autoSize={{ minRows: 1, maxRows: 3 }}
-                            size="small"
+                            style={{ fontSize: 13 }}
                             value={row.description}
                             onChange={(v) => updateField(row.moduleId, row.id, 'description', v)}
                             placeholder="详细交互逻辑与范围边界"
@@ -681,7 +694,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                   ) : (
                     m.subFeatures.map((f) => (
                       <Menu.Item key={f.id} onClick={() => {
-                        const el = document.getElementById(`desc-${f.id}`);
+                        const el = document.getElementById(`desc-${f.id}`) as HTMLTextAreaElement | null;
                         if (el) {
                           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                           setTimeout(() => {

@@ -17,6 +17,7 @@ import {
   IconMenuUnfold,
 } from '@arco-design/web-react/icon';
 import { generateQuoteHtml, getDraftWatermark, type PdfTemplateData } from '../quotePdfTemplate';
+import { useQuoteAssets } from '../useQuoteAssets';
 import { canSubmitWithDocument, type OnlineDocument } from '../fileFlow';
 import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 import { QuotePageThumbnails } from './QuotePageThumbnails';
@@ -40,6 +41,7 @@ interface Props {
  * 6. 支持一键调起浏览器打印 / 导出标准 A4 PDF 与下载 HTML。
  */
 export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteStatus }: Props) {
+  const assets = useQuoteAssets();
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(true); // 默认打开即允许直接修改
   const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
@@ -59,18 +61,26 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
       generateQuoteHtml({
         ...data,
         watermark: getDraftWatermark(quoteStatus),
+        // assets 未加载完成时不要写 `assets: undefined`：那会把 data 上已有的图片一起盖掉，
+        // 首屏会先闪成占位图。
+        ...(assets ? { assets } : {}),
       })
     );
   };
 
   const [currentHtml, setCurrentHtml] = useState<string>(getInitialHtml);
 
-  // 当外部 data 变化且未保存过时，同步更新
+  // 当外部 data 变化、或内嵌图片资源首次到达且未保存过时，重新生成。
+  // assets 初始为 undefined（动态加载），到达后必须重建，否则文档会停在占位图版本。
+  //
+  // 但必须避开「用户正在改」的状态：assets 是异步到达的，
+  // 若此时 iframe 里已有未保存的编辑，重建会把用户刚敲的内容整段冲掉。
   useEffect(() => {
-    if (!document.content) {
-      setCurrentHtml(getInitialHtml());
-    }
-  }, [data, quoteStatus]);
+    if (document.content || hasUnsavedEdits) return;
+    setCurrentHtml(getInitialHtml());
+    // getInitialHtml 每次渲染都是新函数，故意不放依赖；真正的变量已列在下方。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, data, quoteStatus, hasUnsavedEdits]);
 
   // 设置 iframe 内的缩放与编辑状态
   const applyStateToIframe = (editable: boolean, zoom: number) => {
@@ -292,7 +302,9 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
 
     // 键盘快捷键翻页 (PageDown / PageUp / 方向键)
     const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = iframe.contentDocument?.activeElement || document.activeElement;
+      // 注意：本组件的 props 里有一个名为 `document` 的 OnlineDocument，它遮蔽了全局 document。
+      // 取浏览器文档必须显式走 window.document。
+      const activeEl = iframe.contentDocument?.activeElement || window.document.activeElement;
       const isTyping =
         activeEl &&
         (activeEl.tagName === 'INPUT' ||
@@ -381,6 +393,9 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
     const freshHtml = generateQuoteHtml({
       ...data,
       watermark: getDraftWatermark(quoteStatus),
+      // 与 getInitialHtml 同规则：资源没加载完就不要用 undefined 盖掉 data 上已有的图片。
+      // 这里如果不判，重置后会停在占位图，而 hasUnsavedEdits 被置 true 后又挡住了自动重建。
+      ...(assets ? { assets } : {}),
     });
     setCurrentHtml(freshHtml);
     setHasUnsavedEdits(true);
@@ -409,7 +424,9 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
     const content = document.content || currentHtml;
     const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    // 同上：`document` 是 props 里的 OnlineDocument，不是全局文档对象。
+    // 原写法 document.createElement 不存在，点「下载」会直接抛 TypeError。
+    const a = window.document.createElement('a');
     a.href = url;
     a.download = `报价单_${data.quote.quoteNo || '标准版'}.html`;
     a.click();

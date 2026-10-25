@@ -195,7 +195,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
       title: '子功能明细与描述',
       dataIndex: 'subFeatures',
       render: (subs: FeatureModule['subFeatures']) => (
-        <Space orientation="vertical" size={6} style={{ width: '100%' }}>
+        <Space direction="vertical" size={6} style={{ width: '100%' }}>
           {subs.map((s, idx) => (
             <div
               key={s.id || idx}

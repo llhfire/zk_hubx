@@ -108,14 +108,14 @@
 }
 
 .stage3-check-item.fail {
-  background: var(--color-danger-1);
-  color: var(--color-danger-6);
+  background: rgb(var(--danger-1));
+  color: rgb(var(--danger-6));
   font-weight: 500;
 }
 
 .stage3-check-item.warn {
-  background: var(--color-warning-1);
-  color: var(--color-warning-6);
+  background: rgb(var(--warning-1));
+  color: rgb(var(--warning-6));
 }
 
 /* 岗位费率卡片网格 */
@@ -224,14 +224,14 @@
 .stage3-flow-segment-warning {
   background: repeating-linear-gradient(
     -45deg,
-    var(--color-warning-2),
-    var(--color-warning-2) 6px,
-    var(--color-warning-1) 6px,
-    var(--color-warning-1) 12px
+    rgb(var(--warning-2)),
+    rgb(var(--warning-2)) 6px,
+    rgb(var(--warning-1)) 6px,
+    rgb(var(--warning-1)) 12px
   );
-  color: var(--color-warning-7);
+  color: rgb(var(--warning-7));
   font-weight: 600;
-  border-left: 1px dashed var(--color-warning-4);
+  border-left: 1px dashed rgb(var(--warning-4));
 }
 
 /* 优雅空状态提示占位 */

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Tag, Typography, Button, Tooltip } from '@arco-design/web-react';
 import { IconMenuFold, IconMenuUnfold } from '@arco-design/web-react/icon';
-import { ZK_GROUP_LOGO_BASE64, ZKRT_OFFICIAL_SEAL_BASE64 } from '../quoteAssets';
+import { useQuoteAssets } from '../useQuoteAssets';
 
 const { Text } = Typography;
 
@@ -45,9 +45,13 @@ function MiniPageContent({
   projectName?: string;
   grandTotal?: number;
 }) {
+  const assets = useQuoteAssets();
+  const logo = assets?.logo;
+  const seal = assets?.seal;
+
   const headerBar = (
     <div style={{ paddingBottom: 3, borderBottom: '1px solid #333', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-      <img src={ZK_GROUP_LOGO_BASE64} alt="中科" style={{ height: 9, width: 'auto' }} />
+      <img src={logo} alt="中科" style={{ height: 9, width: 'auto' }} />
       <span style={{ fontSize: 6.5, color: '#666', transform: 'scale(0.85)', transformOrigin: 'left center' }}>中科软通</span>
     </div>
   );
@@ -62,7 +66,7 @@ function MiniPageContent({
     case 1: // 封面
       return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '10px 6px' }}>
-          <img src={ZK_GROUP_LOGO_BASE64} alt="中科集团" style={{ height: 16, width: 'auto', marginBottom: 6 }} />
+          <img src={logo} alt="中科集团" style={{ height: 16, width: 'auto', marginBottom: 6 }} />
           <div style={{ fontSize: 7, color: '#444', fontWeight: 600, marginBottom: 8 }}>武汉中科软通软件技术有限公司</div>
           <div style={{ fontSize: 13, fontWeight: 'bold', color: '#0b3d88', letterSpacing: 2, marginBottom: 4 }}>报 价 单</div>
           <div style={{ height: 2, width: '65%', background: '#1351a8', margin: '0 auto 12px auto' }} />
@@ -101,7 +105,7 @@ function MiniPageContent({
 
           {/* 鲜红公章覆盖 */}
           <img
-            src={ZKRT_OFFICIAL_SEAL_BASE64}
+            src={seal}
             alt="公章"
             style={{ position: 'absolute', right: 4, bottom: 20, width: 44, height: 44, opacity: 0.92, pointerEvents: 'none' }}
           />
@@ -210,7 +214,7 @@ function MiniPageContent({
 
           {/* 鲜红公章覆盖 */}
           <img
-            src={ZKRT_OFFICIAL_SEAL_BASE64}
+            src={seal}
             alt="公章"
             style={{ position: 'absolute', right: 6, bottom: 22, width: 44, height: 44, opacity: 0.92, pointerEvents: 'none' }}
           />

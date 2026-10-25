@@ -29,15 +29,15 @@ import { FileFlowWorkbench } from './components/FileFlowWorkbench';
 import { ScanUpload } from './components/ScanUpload';
 import { useTodos } from '../../../todos/TodoContext';
 import './quotationWorkbench.css';
+import { formatMoney as fmtMoney } from '../../../utils/money';
 
 const { Text } = Typography;
 
 const STAGES: QuoteStage[] = [1, 2, 3, 4];
 
+/** 工作台：0 元显示破折号，避免大屏上到处是 ¥0。 */
 function money(value: number): string {
-  return value > 0
-    ? `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`
-    : '—';
+  return value > 0 ? fmtMoney(value) : '—';
 }
 
 function ApprovalProcessPanel({
@@ -76,7 +76,7 @@ function ApprovalProcessPanel({
     <Card title="审批流程" size="small">
       <div className="quotation-approval-status">
         <Text type="secondary">当前状态</Text>
-        <Tag color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag>
+        <Tag color={QUOTE_STATUS_COLORS[quote.status as keyof typeof QUOTE_STATUS_COLORS]}>{QUOTE_STATUS_LABELS[quote.status as keyof typeof QUOTE_STATUS_LABELS]}</Tag>
       </div>
 
       {/* 阶段指示与引导提示 */}
@@ -398,7 +398,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
       <ProcessOverview
         identifier={quote.quoteNo}
         title={quote.basicInfo.projectName}
-        tags={<><Tag color={quote.flowMode === 'file' ? 'purple' : 'arcoblue'}>{quote.flowMode === 'file' ? '文件流转' : '数据流转'}</Tag><Tag>{quote.version}</Tag><Tag color={QUOTE_STATUS_COLORS[quote.status]}>{QUOTE_STATUS_LABELS[quote.status]}</Tag></>}
+        tags={<><Tag color={quote.flowMode === 'file' ? 'purple' : 'arcoblue'}>{quote.flowMode === 'file' ? '文件流转' : '数据流转'}</Tag><Tag>{quote.version}</Tag><Tag color={QUOTE_STATUS_COLORS[quote.status as keyof typeof QUOTE_STATUS_COLORS]}>{QUOTE_STATUS_LABELS[quote.status as keyof typeof QUOTE_STATUS_LABELS]}</Tag></>}
         actions={(
           <Space wrap>
             {embedded && <Button size="small" icon={<IconLeft />} onClick={handleBack}>关闭工作台</Button>}
@@ -510,7 +510,7 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
               placeholder="输入姓名、工号或部门搜索系统用户"
               value={reassignValue}
               onChange={setReassignValue}
-              filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+              filterOption={(input, option) => String((option as { label?: string } | undefined)?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               options={employees.map((employee) => ({ value: employee.name, label: `${employee.name} · ${employee.jobNumber} · ${employee.department}` }))}
             />
           </div>

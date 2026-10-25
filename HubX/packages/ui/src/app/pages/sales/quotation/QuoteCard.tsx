@@ -4,12 +4,9 @@ import { IconArrowRight } from '@arco-design/web-react/icon';
 import { ProcessRecordCard } from '../../../components/ui';
 import { computeAmountBreakdown } from './quoteFlow';
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, type Quote } from './types';
+import { formatMoney as money } from '../../../utils/money';
 
 const { Text } = Typography;
-
-function money(n: number) {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
 
 export function QuoteCard({ quote, onOpen }: { quote: Quote; onOpen: () => void }) {
   const breakdown = computeAmountBreakdown(quote);

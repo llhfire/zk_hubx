@@ -3,7 +3,8 @@
 import { buildQuoteTemplateLines, ZKRT_QUOTE_TEMPLATE } from './quoteDocumentTemplate';
 import type { Quote } from './types';
 import type { QuoteAmountBreakdown } from './quoteFlow';
-import { ZK_GROUP_LOGO_BASE64, ZKRT_OFFICIAL_SEAL_BASE64 } from './quoteAssets';
+import type { QuoteAssetBundle } from './quoteAssets';
+import { formatAmountPlain as money } from '../../../utils/money';
 
 export interface PdfTemplateData {
   quote: Quote;
@@ -17,6 +18,11 @@ export interface PdfTemplateData {
   };
   isSupplement?: boolean;
   watermark?: string;
+  /**
+   * 内嵌图片资源（logo / 印章）。由调用方先 `await loadQuoteAssets()` 传入。
+   * 缺省时用 1x1 透明占位，保证函数保持同步；生产路径必须传入。
+   */
+  assets?: QuoteAssetBundle;
 }
 
 function escape(value: string | number | undefined | null): string {
@@ -26,10 +32,6 @@ function escape(value: string | number | undefined | null): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function money(value: number): string {
-  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function toChineseCurrency(num: number): string {
@@ -153,8 +155,14 @@ function renderFeatureTableRows(rows: StandardFeatureRow[]): string {
   return html;
 }
 
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 export function generateQuoteHtml(data: PdfTemplateData): string {
-  const { quote, breakdown, company, watermark, isSupplement } = data;
+  const { quote, breakdown, company, watermark, isSupplement, assets } = data;
+  // 资源未加载时退化为透明像素，避免输出 "undefined" 字符串。
+  const logo = assets?.logo || TRANSPARENT_PIXEL;
+  const seal = assets?.seal || TRANSPARENT_PIXEL;
   const projectName = quote.basicInfo.projectName || '微官网系统定制研发项目';
   const customerName = quote.basicInfo.customerName || '和昇塑料制品有限公司';
 
@@ -729,7 +737,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
     ${watermark ? `<div class="draft-watermark">${escape(watermark)}</div>` : ''}
 
     <div class="cover-logo-wrap">
-      <img src="${ZK_GROUP_LOGO_BASE64}" class="cover-logo-img" alt="中科集团" />
+      <img src="${logo}" class="cover-logo-img" alt="中科集团" />
     </div>
 
     <div class="cover-company-title">
@@ -764,7 +772,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
 
     <div class="page-header">
       <div class="header-content">
-        <img src="${ZK_GROUP_LOGO_BASE64}" class="header-logo" alt="中科集团" />
+        <img src="${logo}" class="header-logo" alt="中科集团" />
         <span class="header-divider">|</span>
         <span class="header-company-name">${escape(company.name.includes('中科') ? '中科软通' : company.name)}</span>
       </div>
@@ -798,7 +806,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
       </table>
 
       <!-- 整体报价公章覆盖 -->
-      <img src="${ZKRT_OFFICIAL_SEAL_BASE64}" class="seal-img-p2" alt="中科软通公章" />
+      <img src="${seal}" class="seal-img-p2" alt="中科软通公章" />
     </div>
 
     <div class="notes-block">
@@ -827,7 +835,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
 
     <div class="page-header">
       <div class="header-content">
-        <img src="${ZK_GROUP_LOGO_BASE64}" class="header-logo" alt="中科集团" />
+        <img src="${logo}" class="header-logo" alt="中科集团" />
         <span class="header-divider">|</span>
         <span class="header-company-name">${escape(company.name.includes('中科') ? '中科软通' : company.name)}</span>
       </div>
@@ -878,7 +886,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
 
     <div class="page-header">
       <div class="header-content">
-        <img src="${ZK_GROUP_LOGO_BASE64}" class="header-logo" alt="中科集团" />
+        <img src="${logo}" class="header-logo" alt="中科集团" />
         <span class="header-divider">|</span>
         <span class="header-company-name">${escape(company.name.includes('中科') ? '中科软通' : company.name)}</span>
       </div>
@@ -918,7 +926,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
 
     <div class="page-header">
       <div class="header-content">
-        <img src="${ZK_GROUP_LOGO_BASE64}" class="header-logo" alt="中科集团" />
+        <img src="${logo}" class="header-logo" alt="中科集团" />
         <span class="header-divider">|</span>
         <span class="header-company-name">${escape(company.name.includes('中科') ? '中科软通' : company.name)}</span>
       </div>
@@ -973,7 +981,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
 
     <div class="page-header">
       <div class="header-content">
-        <img src="${ZK_GROUP_LOGO_BASE64}" class="header-logo" alt="中科集团" />
+        <img src="${logo}" class="header-logo" alt="中科集团" />
         <span class="header-divider">|</span>
         <span class="header-company-name">${escape(company.name.includes('中科') ? '中科软通' : company.name)}</span>
       </div>
@@ -999,7 +1007,7 @@ export function generateQuoteHtml(data: PdfTemplateData): string {
       <div class="signature-hint">(此处加盖公章)</div>
 
       <!-- 落款公章覆盖 -->
-      <img src="${ZKRT_OFFICIAL_SEAL_BASE64}" class="seal-img-p6" alt="中科软通公章" />
+      <img src="${seal}" class="seal-img-p6" alt="中科软通公章" />
 
       <div class="signature-grid">
         <div class="signature-label">授权代表：</div>

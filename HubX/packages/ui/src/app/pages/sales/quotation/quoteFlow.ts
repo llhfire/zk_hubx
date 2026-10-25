@@ -17,6 +17,8 @@ import {
   type QuoteStage,
   type QuoteStatus,
   type SalesAddedRole,
+  type TravelDetail,
+  type OnsiteDetail,
   type TravelOnsiteConfig,
 } from './types';
 import type { TodoItem } from '../../../todos/types';
@@ -298,13 +300,13 @@ export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export function computeTravelSubtotal(detail: TravelOnsiteConfig['travelDetail']): number {
+export function computeTravelSubtotal(detail: TravelDetail): number {
   if (!detail) return 0;
   const { headcount, days, transportFee, hotelFeePerDay, allowancePerDay } = detail;
   return round2(transportFee * headcount + (hotelFeePerDay + allowancePerDay) * headcount * days);
 }
 
-export function computeOnsiteSubtotal(detail: TravelOnsiteConfig['onsiteDetail']): number {
+export function computeOnsiteSubtotal(detail: OnsiteDetail): number {
   if (!detail) return 0;
   return round2(detail.serviceFeePerDay * detail.headcount * detail.days);
 }
@@ -385,7 +387,7 @@ export function validateFeatureList(featureList: FeatureModule[]): ValidationIss
   const issues: ValidationIssue[] = [];
   const hasSub = featureList.some((m) => m.subFeatures.length > 0);
   if (featureList.length === 0 || !hasSub) {
-    issues.push({ code: 'no_eval', message: '至少需要 1 个功能模块及 1 个子功能' });
+    issues.push({ code: 'no_eval', message: '至少需要 1 个功能模块及 1 个子功能', severity: 'error' });
   }
   return issues;
 }

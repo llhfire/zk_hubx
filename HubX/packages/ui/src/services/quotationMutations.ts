@@ -222,7 +222,11 @@ export function buildNewQuote(
     roleDailyCosts: {},
     frontendConfig: { platforms: [] },
     backendConfig: { services: [], language: '' },
-    travelOnsite: { enableTravel: false, travelSubtotal: 0, enableOnsite: false, onsiteSubtotal: 0 },
+    travelOnsite: {
+      enableTravel: false, travelSubtotal: 0,
+      enableOnsite: false, onsiteSubtotal: 0,
+      travelDetails: [], onsiteDetails: [],
+    },
     otherCosts: [],
     summary: {
       totalLaborDays: 0,
@@ -383,7 +387,9 @@ export function migrateQuote(quote: Quote): Quote {
     },
     otherCosts: quote.otherCosts ?? [],
     timeline: timeline.map((event) =>
-      event.action === 'mark_deal'
+      // 'mark_deal' 是历史持久化数据里的旧动作名，已从 QuoteAction 词表移除。
+      // 这里比对的是「库里的脏数据」，所以先转成 string 再比，迁移后统一写成 mark_confirmed。
+      (event.action as string) === 'mark_deal'
         ? { ...event, action: 'mark_confirmed' as QuoteAction }
         : event,
     ),

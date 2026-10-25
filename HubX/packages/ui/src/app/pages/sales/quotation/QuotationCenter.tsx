@@ -14,12 +14,9 @@ import {
 } from './types';
 import type { Quote, QuoteStage, QuoteStatus } from './types';
 import { deriveStage } from './quoteFlow';
+import { formatMoney as money } from '../../../utils/money';
 
 const { Text, Title } = Typography;
-
-function money(n: number): string {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
 
 export function QuotationCenter() {
   const navigate = useNavigate();
@@ -113,9 +110,10 @@ export function QuotationCenter() {
       </Card>
 
       <Card>
-        <Tabs type="card" size="small" activeTab={stageFilter || 'all'} onChange={(value) => setStageFilter(value === 'all' ? '' : Number(value) as QuoteStage)} style={{ marginBottom: 12 }}>
+        {/* Tabs 的 activeTab 只接受 string；QuoteStage 是数字枚举，需转成字符串比较 */}
+        <Tabs type="card" size="small" activeTab={stageFilter ? String(stageFilter) : 'all'} onChange={(value) => setStageFilter(value === 'all' ? '' : Number(value) as QuoteStage)} style={{ marginBottom: 12 }}>
           <Tabs.TabPane key="all" title={`全部 · ${quotes.length}`} />
-          {([1, 2, 3, 4] as QuoteStage[]).map((stage) => <Tabs.TabPane key={stage} title={`${QUOTE_STAGE_NAMES[stage]} · ${stats[stage]}`} />)}
+          {([1, 2, 3, 4] as QuoteStage[]).map((stage) => <Tabs.TabPane key={String(stage)} title={`${QUOTE_STAGE_NAMES[stage]} · ${stats[stage]}`} />)}
         </Tabs>
         <Space style={{ marginBottom: 12 }} wrap>
           <Input

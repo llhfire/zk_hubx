@@ -4,9 +4,9 @@ import type { Quote, QuoteTimelineEvent } from '../types';
 
 const { Text } = Typography;
 
+// 只列 QuoteAction 里真实存在的动作。raise_tech_issue / resolve_tech_issue 是早期词表残留，
+// 全仓没有任何地方会产生这两个事件，已删除。
 const DOT_COLOR: Partial<Record<QuoteTimelineEvent['action'], string>> = {
-  raise_tech_issue: 'rgb(var(--red-6))',
-  resolve_tech_issue: 'rgb(var(--green-6))',
   audit_reject: 'rgb(var(--red-6))',
   return_to_tech: 'rgb(var(--orange-6))',
   withdraw_audit: 'rgb(var(--orange-6))',

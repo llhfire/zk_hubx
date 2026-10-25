@@ -17,21 +17,18 @@ import type { EvalRole, Quote } from '../types';
 import { buildDealQuotePrefill } from '../../contracts/dealQuotePrefill';
 import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import { generateQuoteHtml } from '../quotePdfTemplate';
+import { useQuoteAssets } from '../useQuoteAssets';
 import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
-import { ZKRT_OFFICIAL_SEAL_BASE64 } from '../quoteAssets';
 import { createDocxBlob, downloadBlob } from '../../../../documents/wordExport';
 import { buildQuoteDiff, QuoteDiffItem } from '../quoteDiff';
 import { computeProfitRate, DEFAULT_MIN_PROFIT_RATE } from '../quotePricing';
 import { ScanUpload } from '../components/ScanUpload';
 import type { ScanFile } from '../fileFlow';
 import './Stage4Approval.css';
+import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title, Paragraph } = Typography;
 const { TabPane } = Tabs;
-
-function money(n: number): string {
-  return `¥${n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
 
 function sanitizeFileName(value: string): string {
   return value.replace(/[\\/:*?"<>|]/g, '-');
@@ -58,6 +55,7 @@ export interface Stage4ApprovalProps extends StageProps {
 }
 
 export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalProps) {
+  const assets = useQuoteAssets();
   const {
     currentRole, markSent, markConfirmed, markVoided, withdrawSent,
     returnToStamp, returnToEditFeatures, isLeadFrozen, decideAudit, stampQuote,
@@ -134,8 +132,9 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
         representative: entity?.legalPerson ?? '',
       },
       isSupplement: quote.isSupplement,
+      assets,
     });
-  }, [breakdown, companyName, entity, quote]);
+  }, [assets, breakdown, companyName, entity, quote]);
 
   // ─── 审批与流转动作 ──────────────────────────────────────────
 
@@ -628,7 +627,7 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
                     <div className="stage4-risk-card-value">
                       {profitRate != null ? `${(profitRate * 100).toFixed(1)}%` : '—'}
                     </div>
-                    <Text style={{ fontSize: 11, color: profitRate != null && profitRate < DEFAULT_MIN_PROFIT_RATE ? 'var(--color-warning-6)' : 'var(--color-success-6)' }}>
+                    <Text style={{ fontSize: 11, color: profitRate != null && profitRate < DEFAULT_MIN_PROFIT_RATE ? 'rgb(var(--warning-6))' : 'rgb(var(--success-6))' }}>
                       {profitRate != null && profitRate < DEFAULT_MIN_PROFIT_RATE
                         ? `低于基准底线 ${(DEFAULT_MIN_PROFIT_RATE * 100)}%，请审核人审慎折让`
                         : `符合公司基准收益指标 (≥${(DEFAULT_MIN_PROFIT_RATE * 100)}%)`}
@@ -869,7 +868,7 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
 
             <div className="stage4-cockpit-item">
               <Text type="secondary">预估毛利率</Text>
-              <Text bold style={{ color: profitRate != null && profitRate < DEFAULT_MIN_PROFIT_RATE ? 'var(--color-warning-6)' : 'var(--color-success-6)' }}>
+              <Text bold style={{ color: profitRate != null && profitRate < DEFAULT_MIN_PROFIT_RATE ? 'rgb(var(--warning-6))' : 'rgb(var(--success-6))' }}>
                 {profitRate != null ? `${(profitRate * 100).toFixed(1)}%` : '—'}
               </Text>
             </div>

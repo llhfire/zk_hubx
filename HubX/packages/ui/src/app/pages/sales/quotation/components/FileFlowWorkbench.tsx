@@ -678,7 +678,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                       style={{
                         fontSize: 16,
                         fontWeight: 600,
-                        color: margin.grossProfit < 0 ? 'var(--color-danger-6)' : 'inherit',
+                        color: margin.grossProfit < 0 ? 'rgb(var(--danger-6))' : 'inherit',
                       }}
                     >
                       ¥{margin.grossProfit.toLocaleString()}
@@ -721,7 +721,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               </div>
 
               {margin.level === 'danger' && (
-                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-danger-6)' }}>
+                <div style={{ marginTop: 8, fontSize: 12, color: 'rgb(var(--danger-6))' }}>
                   ⚠️ 毛利率低于 15%，触碰公司商务底线红线。提交审批后将自动触发高管/财务一票否决权！
                 </div>
               )}

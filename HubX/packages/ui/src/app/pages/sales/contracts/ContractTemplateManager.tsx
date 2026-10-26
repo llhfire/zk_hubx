@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Drawer, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Switch, Table, Tag } from '@arco-design/web-react';
 import { IconCopy, IconPlus } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid, RichTextEditor } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid, RichTextEditor } from '@/design-system';
 import { contractSigningEntities } from '../company-entity/companyEntityData';
 import { CONTRACT_TEMPLATE_VARIABLES, loadContractTemplates, publishContractTemplate, saveContractTemplates, validateTemplateVariables, type VersionedContractTemplate } from './templateStore';
 import './contractTemplateManager.css';
@@ -73,7 +73,7 @@ export function ContractTemplateManager() {
 
   return <PageShell breadcrumbs={[{ label: '合同管理', to: '/contracts' }, { label: '合同模板' }]}>
     <PageHeader title="合同模板" description="按签约主体和产品分类维护可追溯的合同正文版本。" actions={<Button type="primary" icon={<IconPlus />} onClick={() => openEditor()}>新建模板</Button>} />
-    <ProcessMetricGrid items={[{ key: 'all', label: '模板', value: `${templates.length} 个` }, { key: 'published', label: '已发布', value: `${metrics.published} 个`, tone: 'success' }, { key: 'draft', label: '待发布草稿', value: `${metrics.draft} 个` }, { key: 'versions', label: '历史版本', value: `${metrics.versions} 版` }]} />
+    <MetricGrid items={[{ key: 'all', label: '模板', value: `${templates.length} 个` }, { key: 'published', label: '已发布', value: `${metrics.published} 个`, tone: 'success' }, { key: 'draft', label: '待发布草稿', value: `${metrics.draft} 个` }, { key: 'versions', label: '历史版本', value: `${metrics.versions} 版` }]} />
     <Card><Table rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 1160 }} /></Card>
 
     <Drawer title={editing?.versions.length ? `创建新版本 · ${editing.name}` : '新建合同模板'} visible={drawerVisible} width={760} onCancel={() => setDrawerVisible(false)} footer={<Space><Button onClick={() => setDrawerVisible(false)}>关闭</Button><Button onClick={saveDraft}>保存草稿</Button><Button type="primary" onClick={publish}>发布新版本</Button></Space>}>

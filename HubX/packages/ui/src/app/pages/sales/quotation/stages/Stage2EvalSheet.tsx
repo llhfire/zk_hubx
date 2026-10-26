@@ -158,7 +158,6 @@ function NumericInput({ value, unitId, roleKey, hasError, isRemainder, fillRef, 
         border: `1px solid ${hasError || isRemainder ? 'rgb(var(--red-5))' : 'var(--color-border-2)'}`,
         borderRadius: 4,
         fontSize: 13,
-        fontFamily: "'Inter Variable', Arial, sans-serif",
         outline: 'none',
         boxShadow: hasError || isRemainder ? '0 0 0 1px rgb(var(--red-3))' : undefined,
       }}
@@ -558,6 +557,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   return (
     <>
     <Card
+      className="hubx-numeral"
       title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台二 · 在线人天评估</Title>}
     >
       {/* 控制栏：新增岗位 + 切片操作 */}
@@ -970,8 +970,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                           {group.modules.map((m) => (
                             <tr key={m.name} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                               <td style={{ padding: '4px 8px', paddingLeft: 16 }}>{m.name}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{m.total.toFixed(1)}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{roleTotal > 0 ? ((m.total / roleTotal) * 100).toFixed(0) : 0}%</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', color: 'rgb(var(--arcoblue-6))' }}>{m.total.toFixed(1)}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{roleTotal > 0 ? ((m.total / roleTotal) * 100).toFixed(0) : 0}%</td>
                             </tr>
                           ))}
                         </React.Fragment>
@@ -995,7 +995,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                 return (
                   <div key={r.key} style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between' }}>
                     <span>{r.name}</span>
-                    <span style={{ fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{roleTotal.toFixed(1)} ({totalDays > 0 ? ((roleTotal / totalDays) * 100).toFixed(0) : 0}%)</span>
+                    <span style={{ color: 'rgb(var(--arcoblue-6))' }}>{roleTotal.toFixed(1)} ({totalDays > 0 ? ((roleTotal / totalDays) * 100).toFixed(0) : 0}%)</span>
                   </div>
                 );
               })}
@@ -1040,8 +1040,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                           return (
                             <tr key={r.key} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
                               <td style={{ padding: '4px 8px' }}>{r.name}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", color: 'rgb(var(--arcoblue-6))' }}>{roleVal.toFixed(1)}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif" }}>{val > 0 ? ((roleVal / val) * 100).toFixed(0) : 0}%</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right', color: 'rgb(var(--arcoblue-6))' }}>{roleVal.toFixed(1)}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{val > 0 ? ((roleVal / val) * 100).toFixed(0) : 0}%</td>
                             </tr>
                           );
                         })}

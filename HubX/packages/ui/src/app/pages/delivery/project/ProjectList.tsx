@@ -67,7 +67,7 @@ import {
   formatHours,
   formatAmount,
 } from './utils';
-import { FollowUpIcon, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FollowUpIcon, IdentifierText, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { CUSTOMER_LEVEL_COLOR } from '../../sales/leads/types';
 
 const { Text } = Typography;
@@ -220,11 +220,7 @@ export function ProjectList() {
       dataIndex: 'projectNo',
       width: 96,
       fixed: 'left' as const,
-      render: (v: string) => (
-        <Tooltip content={v}>
-          <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{shortProjectNo(v)}</span>
-        </Tooltip>
-      ),
+      render: (v: string) => <IdentifierText value={shortProjectNo(v)} title={v} size="sm" />,
     },
     {
       title: '项目名称',
@@ -394,7 +390,7 @@ export function ProjectList() {
     return (
       <div key={project.id} style={{ padding: 12, marginBottom: 8, background: 'var(--color-bg-2)', borderRadius: 8, border: '1px solid var(--color-border-2)', cursor: 'pointer' }} onClick={() => navigate(`/projects/${project.id}`)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, color: 'var(--color-text-3)', fontFamily: 'monospace' }}>{project.projectNo}</span>
+          <IdentifierText value={project.projectNo} size="sm" tone="muted" />
           <Tag color={PROJECT_PRIORITY_COLOR[project.priority]} size="small">{project.priority}</Tag>
         </div>
         <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{project.name}</div>
@@ -428,7 +424,7 @@ export function ProjectList() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={() => setDrawerVisible(true)}>新建项目</Button>}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'active',

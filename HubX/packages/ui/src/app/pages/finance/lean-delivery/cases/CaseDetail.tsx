@@ -36,12 +36,14 @@ import {
 } from 'recharts';
 import {
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+  StatusTag,
+  resolveStatus,
+} from '@/design-system';
 import { useCollections } from '../../../../collections/CollectionContext';
 import { useContracts } from '../../../sales/contracts/ContractsContext';
 import {
@@ -63,19 +65,6 @@ import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title } = Typography;
 const { TabPane } = Tabs;
-
-const STATUS_COLORS: Record<CaseStatus, string> = {
-  drafting: 'gray',
-  quoting: 'blue',
-  negotiating: 'blue',
-  signed: 'green',
-  in_progress: 'green',
-  suspended: 'orange',
-  accepting: 'cyan',
-  collecting: 'purple',
-  completed: 'green',
-  terminated: 'red',
-};
 
 const ROLE_LABELS: Record<string, string> = {
   pm_days: '产品经理',
@@ -325,7 +314,7 @@ export default function CaseDetail() {
         title={caseData.projectName || caseData.leadName || '未命名业务单'}
         tags={(
           <>
-            <Tag color={STATUS_COLORS[currentStatus]}>{caseStatusMap[currentStatus]?.label ?? currentStatus}</Tag>
+            <StatusTag meta={resolveStatus(caseStatusMap, currentStatus)} />
             <Tag color={health.color} icon={health.icon}>{health.label}</Tag>
             {caseData.industry && <Tag>{caseData.industry}</Tag>}
           </>
@@ -346,7 +335,7 @@ export default function CaseDetail() {
         currentStep={currentStep}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'contract', label: '有效标的额', value: money(metrics.contractAmount), detail: `1 主 ${supplements.length} 补` },
           { key: 'cost', label: '已发生成本', value: money(metrics.totalCost), detail: `预算 ${money(currentParams.budgetCap)}`, tone: costBudgetOverrun ? 'danger' : 'neutral' },
@@ -357,8 +346,8 @@ export default function CaseDetail() {
         ]}
       />
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <Card className="case-detail__tabs-card">
             <Tabs activeTab={activeTab} onChange={(tab) => {
               setActiveTab(tab);
@@ -595,15 +584,15 @@ export default function CaseDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card title="当前处理" size="small">
             <Space direction="vertical" size={12} className="case-detail__aside-stack">
               <div>
                 <Text type="secondary">当前阶段</Text>
                 <div className="case-detail__aside-value">
-                  <Tag color={STATUS_COLORS[currentStatus]}>{caseStatusMap[currentStatus]?.label ?? currentStatus}</Tag>
+                  <StatusTag meta={resolveStatus(caseStatusMap, currentStatus)} />
                 </div>
               </div>
               <Text>{STATUS_TASKS[currentStatus]}</Text>
@@ -659,8 +648,8 @@ export default function CaseDetail() {
               ]}
             />
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       <ManageParamsModal
         visible={paramsVisible}

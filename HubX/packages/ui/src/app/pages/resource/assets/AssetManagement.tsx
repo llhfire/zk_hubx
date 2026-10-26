@@ -36,7 +36,7 @@ import {
   IconRefresh,
   IconSearch,
 } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { filterAssetRecords, hasAssetFilters } from '../../support/system/supportDomainListModel';
 import '../../support/system/supportDomainLists.css';
 
@@ -217,7 +217,7 @@ export function AssetManagement() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增资产</Button>}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '资产总数', value: summary.total, detail: `总值 ¥${summary.totalValue.toLocaleString()}` },
         { key: 'active', label: '正常使用', value: summary.active, detail: '当前有效资产', tone: 'success' },
         { key: 'risk', label: '到期风险', value: summary.expiring + summary.expired, detail: `${summary.expiring} 件临期 · ${summary.expired} 件到期`, tone: summary.expiring + summary.expired ? 'warning' : 'neutral' },

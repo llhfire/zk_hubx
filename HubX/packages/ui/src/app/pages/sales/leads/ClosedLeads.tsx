@@ -28,7 +28,7 @@ import { useLeads } from '../../../leads/LeadContext';
 import { useContracts } from '../contracts/ContractsContext';
 import { useProjects } from '../../delivery/project/ProjectContext';
 import { useCollections } from '../../../collections/CollectionContext';
-import { PageHeader, PageShell, ProcessMetricGrid, WeChatIcon } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid, WeChatIcon } from '@/design-system';
 import { buildClosedLeadRows, type ClosedLeadRow } from './closedLeadReadModel';
 
 export function ClosedLeads() {
@@ -157,7 +157,7 @@ export function ClosedLeads() {
   return (
     <PageShell>
       <PageHeader title="已成交线索" description="统一查看线索成交后关联合同、项目与实收进度。" />
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'leads', label: '成交线索', value: `${filteredLeads.length} 条`, detail: filtersActive ? '当前筛选结果' : '已签单线索' },
         { key: 'contracts', label: '合同总额', value: `¥${totalAmount.toLocaleString()}`, detail: '已关联主合同' },
         { key: 'received', label: '已回款金额', value: `¥${receivedAmount.toLocaleString()}`, detail: totalAmount > 0 ? `回款率 ${((receivedAmount / totalAmount) * 100).toFixed(1)}%` : '暂无合同金额', tone: 'success' },

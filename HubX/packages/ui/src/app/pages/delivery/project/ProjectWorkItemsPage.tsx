@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { Button, Card, Empty, Input, Select, Space, Table, Tabs, Tag, Tooltip, Typography } from '@arco-design/web-react';
 import { ArrowLeft, Eye, PencilSimple } from '@phosphor-icons/react';
-import { PageHeader, PageShell } from '../../../components/ui';
+import { PageHeader, PageShell } from '@/design-system';
 import { useProjects } from './ProjectContext';
 import { getProjectTasks, type ProjectWorkTask } from './projectTasks';
 

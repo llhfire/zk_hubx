@@ -58,7 +58,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './utils';
-import { FollowUpIcon, TrashLeadIcon, WeChatIcon, PageShell, PageHeader, ProcessMetricGrid } from '../../../components/ui';
+import { FollowUpIcon, TrashLeadIcon, WeChatIcon, PageShell, PageHeader, MetricGrid } from '@/design-system';
 import { LeadFollowUpModal, type LeadFollowUpFormValues } from './components/LeadFollowUpModal';
 import { uploadItemsToLeadAttachments } from './leadAttachments';
 
@@ -386,7 +386,7 @@ export function MyLeads() {
         description="聚焦负责线索的跟进全周期，实时追踪首联时效、跟进倒计时与商机转化进展。"
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'totalMine',

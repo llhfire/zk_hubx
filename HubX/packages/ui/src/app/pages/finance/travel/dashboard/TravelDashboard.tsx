@@ -25,7 +25,7 @@ import {
   IconHome,
 } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import {
   getPersonalTravelStats,
   getDepartmentTravelStats,
@@ -257,7 +257,7 @@ export function TravelDashboard() {
       {viewRole === 'personal' && (
         <div className="travel-dash-container">
           {/* 4 大个人核心指标 */}
-          <ProcessMetricGrid
+          <MetricGrid
             items={[
               {
                 key: 'trips',
@@ -380,7 +380,7 @@ export function TravelDashboard() {
             {/* 1. 部门大盘分析 */}
             <TabPane key="department" title="部门差旅大盘">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <ProcessMetricGrid
+                <MetricGrid
                   items={[
                     {
                       key: 'expense',
@@ -505,7 +505,7 @@ export function TravelDashboard() {
             {/* 2. 项目成本穿透 */}
             <TabPane key="project" title="项目成本穿透">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <ProcessMetricGrid
+                <MetricGrid
                   items={[
                     {
                       key: 'expense',
@@ -591,7 +591,7 @@ export function TravelDashboard() {
             {/* 3. 合规风控与超标分析 */}
             <TabPane key="analysis" title="合规风控与超标分析">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <ProcessMetricGrid
+                <MetricGrid
                   items={[
                     {
                       key: 'total',

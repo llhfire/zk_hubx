@@ -10,7 +10,7 @@ import {
   SalesReportContent,
   WORK_KIND_LABELS,
 } from '../daily-report/types';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;

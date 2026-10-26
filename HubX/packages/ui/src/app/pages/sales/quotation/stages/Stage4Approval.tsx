@@ -278,7 +278,7 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
   }, [formalHtml, isStamped]);
 
   return (
-    <div className="stage4-container">
+    <div className="stage4-container hubx-numeral">
       {/* ── 1. 顶部：审批与流转指挥中心 (Approval Command Bar) ───────────── */}
       <div className="stage4-command-bar">
         <div className="stage4-command-header">
@@ -501,7 +501,7 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
             </div>
             <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
               客户名称：<Text bold>{quote.basicInfo.customerName || '未指定客户'}</Text> · 成交总金额：
-              <Text bold style={{ color: 'rgb(var(--red-6))', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+              <Text bold style={{ color: 'rgb(var(--red-6))' }}>
                 {money(breakdown.grandTotal)}
               </Text>
               {linkedContractId ? ' · 合同已建档关联' : ' · 建议立即一键生成主合同向导'}
@@ -788,11 +788,11 @@ export function Stage4Approval({ quote, readonly, defaultTab }: Stage4ApprovalPr
                                   )}
                                   <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
                                   {evalSheet.activeRoles.map((r: EvalRole) => (
-                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)' }}>
                                       {unit && (unit.manualWorkload[r.key] ?? 0) > 0 ? (unit.manualWorkload[r.key] ?? 0).toFixed(1) : '-'}
                                     </td>
                                   ))}
-                                  <td style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
+                                  <td style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontWeight: 500 }}>
                                     {totalDays > 0 ? totalDays.toFixed(1) : '-'}
                                   </td>
                                   <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>

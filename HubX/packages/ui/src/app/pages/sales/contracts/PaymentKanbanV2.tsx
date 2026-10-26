@@ -25,11 +25,11 @@ import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import {
   FilterBar,
-  ProcessMetricGrid,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../components/ui';
+  MetricGrid,
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import './payment/paymentConsistency.css';
 
 const Text = Typography.Text;
@@ -422,15 +422,15 @@ export function PaymentKanbanV2() {
         </Space>
       </div>
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'receivable', label: '未回款总额', value: currency(summary.receivableTotal), detail: `${summary.activeCount} 个待处理节点` },
         { key: 'next30', label: '30天内应收', value: currency(summary.next30Total), detail: '需要本月重点推进', tone: summary.next30Total > 0 ? 'warning' : 'neutral' },
         { key: 'overdue', label: '逾期与卡点', value: currency(summary.overdueTotal), detail: `平均逾期 ${summary.avgOverdueDays} 天`, tone: summary.overdueTotal > 0 ? 'danger' : 'success' },
         { key: 'received', label: '本月已回', value: currency(summary.receivedThisMonth), detail: '来自已登记实收台账', tone: 'success' },
       ]} />
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <Card title="回款队列">
             <FilterBar actions={filtersActive ? (
               <Button type="text" onClick={() => { setKeyword(''); setStageFilter('all'); }}>重置筛选</Button>
@@ -460,8 +460,8 @@ export function PaymentKanbanV2() {
               style={{ marginTop: 16 }}
             />
           </Card>
-        </ProcessWorkspaceMain>
-        <ProcessWorkspaceAside>
+        </SplitLayoutMain>
+        <SplitLayoutAside>
           <>
           <Card title="今日优先处理">
             <Space direction="vertical" size="medium" style={{ width: '100%' }}>
@@ -515,8 +515,8 @@ export function PaymentKanbanV2() {
             </Space>
           </Card>
           </>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
     </div>
   );
 }

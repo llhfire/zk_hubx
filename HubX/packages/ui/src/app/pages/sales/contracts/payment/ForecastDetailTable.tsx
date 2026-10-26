@@ -4,7 +4,7 @@ import { buildGanttNodes } from './paymentCalc';
 import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
 import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastNode, ForecastOverride, ForecastCertaintyLevel } from './types';
-import { FilterBar } from '../../../../components/ui';
+import { FilterBar } from '@/design-system';
 
 const { Text } = Typography;
 

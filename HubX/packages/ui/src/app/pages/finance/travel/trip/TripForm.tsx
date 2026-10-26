@@ -49,10 +49,10 @@ import {
   PageBreadcrumb,
   PageHeader,
   PageShell,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import './tripForm.css';
 
 const { Text } = Typography;
@@ -506,9 +506,9 @@ export function TripForm() {
         }
       />
 
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧 70% 主工作区表单流 */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           {/* 1. 事由与归属 */}
           <div className="trip-form-section">
             <div className="trip-form-section__header">
@@ -1125,10 +1125,10 @@ export function TripForm() {
               </div>
             </div>
           </div>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧 30% 智能差旅助手 Sticky */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <div className="trip-form-aside-sticky">
             {/* 卡片 1：预算执行与资金试算卡 */}
             <div className="trip-form-summary-card">
@@ -1245,8 +1245,8 @@ export function TripForm() {
               </div>
             </div>
           </div>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       {/* 底部吸底操作栏 */}
       <div className="trip-form-sticky-footer">

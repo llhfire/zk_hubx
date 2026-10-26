@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
-import { RichTextEditor, type RichTextEditorHandle } from '../../../components/ui';
+import { RichTextEditor, type RichTextEditorHandle } from '@/design-system';
 import type { Project } from './mockData';
 import {
   getProjectTasks,

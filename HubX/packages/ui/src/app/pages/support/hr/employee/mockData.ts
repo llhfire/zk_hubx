@@ -2,6 +2,8 @@
 // HubX 员工管理 — 统一数据模型 & 初始数据
 // ============================================================
 
+import type { StatusMap } from '@/design-system';
+
 // ---------- 基础枚举 ----------
 
 export type Position = string;
@@ -397,9 +399,13 @@ export function getLevelColor(level: JobLevel): string {
   return l >= 9 ? 'var(--chart-5)' : l >= 7 ? 'var(--primary)' : l >= 5 ? 'var(--success-500)' : l >= 3 ? 'var(--warning-500)' : 'var(--muted-foreground)';
 }
 
-export function getStatusColor(s: EmploymentStatus): string {
-  return { '已转正': 'var(--success-500)', '在职': 'var(--primary)', '试用期': 'var(--warning-500)', '休假中': 'var(--info-500)', '已离职': 'var(--muted-foreground)' }[s] || 'var(--muted-foreground)';
-}
+export const EMPLOYMENT_STATUS: StatusMap<EmploymentStatus> = {
+  '已转正': { label: '已转正', tone: 'success' },
+  '在职': { label: '在职', tone: 'info' },
+  '试用期': { label: '试用期', tone: 'warning' },
+  '休假中': { label: '休假中', tone: 'info' },
+  '已离职': { label: '已离职', tone: 'neutral' },
+};
 
 export function getRankColor(r: PerformanceRank): string {
   return { 'S': 'var(--chart-5)', 'A': 'var(--success-500)', 'B': 'var(--primary)', 'C': 'var(--warning-500)', 'D': 'var(--destructive-500)' }[r] || 'var(--muted-foreground)';

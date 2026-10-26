@@ -18,7 +18,7 @@ import { ContractStatusBadge } from './components/ContractStatusBadge';
 import { CONTRACT_STATUS_LABEL } from './utils';
 import type { Contract, ContractStatus } from './types';
 import { initialProjects } from '../../delivery/project/mockData';
-import { FilterBar, PageHeader, PageShell } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell } from '@/design-system';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 

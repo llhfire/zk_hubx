@@ -16,7 +16,8 @@
     "typecheck:api": "tsc --noEmit -p apps/api/tsconfig.json",
     "db": "node scripts/db.js",
     "db:status": "node scripts/db.js status",
-    "db:seed": "node scripts/db.js seed"
+    "db:seed": "node scripts/db.js seed",
+    "check:ds": "node scripts/check-design-system.mjs"
   },
   "dependencies": {
     "gantt-task-react": "^0.3.9",

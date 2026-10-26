@@ -46,7 +46,7 @@ import { LeadTransferPopover } from '../../../leads/LeadTransferPopover';
 import { searchLeads, getCountdownCapsule, COUNTDOWN_COLOR, COUNTDOWN_BG } from './utils';
 import { NewLeadModal, type NewLeadFormValues } from './components/NewLeadModal';
 import { uploadItemsToLeadAttachments } from './leadAttachments';
-import { PageShell, PageHeader, ProcessMetricGrid, TrashLeadIcon, WeChatIcon } from '../../../components/ui';
+import { PageShell, PageHeader, MetricGrid, TrashLeadIcon, WeChatIcon } from '@/design-system';
 
 const FormItem = Form.Item;
 
@@ -299,7 +299,7 @@ export function PublicLeads() {
         }
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'publicTotal',

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { PageBreadcrumb, type PageBreadcrumbItem } from './PageBreadcrumb';
-import './uiFoundation.css';
+import '../foundation.css';
 
 interface PageShellProps {
   breadcrumbs?: PageBreadcrumbItem[];

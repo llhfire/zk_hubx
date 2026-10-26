@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import './uiFoundation.css';
+import '../foundation.css';
 
 export interface ProcessRecordCardProps {
   title: ReactNode;

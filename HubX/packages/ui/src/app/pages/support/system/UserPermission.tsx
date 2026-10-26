@@ -18,7 +18,7 @@ import {
   Tooltip,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete, IconLock } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
@@ -382,7 +382,7 @@ export function UserPermission() {
         )}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'users', label: '系统用户', value: `${mockUsers.length} 人`, detail: '当前账号目录' },
         { key: 'active', label: '启用账号', value: `${mockUsers.filter(item => item.status === '启用').length} 人`, detail: '允许登录', tone: 'success' },
         { key: 'roles', label: '角色数量', value: `${mockRoles.length} 个`, detail: '权限组合' },

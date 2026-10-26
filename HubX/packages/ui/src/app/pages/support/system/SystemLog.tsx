@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button, Card, DatePicker, Empty, Input, Select, Table, Tabs, Tag } from '@arco-design/web-react';
 import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import {
   calculateSystemLogMetrics,
   EMPTY_LOG_FILTERS,
@@ -84,7 +84,7 @@ export function SystemLog() {
     <PageShell className="system-admin-list system-log-page">
       <PageHeader title="系统日志" description="集中查看操作与登录记录，快速定位异常行为和访问问题。" />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'operation', label: '操作日志', value: metrics.operationCount, detail: '业务与配置操作' },
         { key: 'login', label: '登录日志', value: metrics.loginCount, detail: '账号访问记录' },
         { key: 'failure', label: '失败记录', value: metrics.failureCount, detail: '操作与登录合计', tone: 'danger' },

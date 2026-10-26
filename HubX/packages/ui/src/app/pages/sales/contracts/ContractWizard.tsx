@@ -33,7 +33,7 @@ import { findLatestApprovedQuote } from './utils';
 import { applyDealQuotePrefill, type DealQuotePrefill } from './dealQuotePrefill';
 import { useQuotation } from '../quotation/QuotationContext';
 import { useBusinessCases } from '../../../business-case/BusinessCaseContext';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 import type { ContractFormData, QuotationRecord } from './types';
 import { findDefaultContractTemplate } from './templateStore';
 import { useCustomers } from '../customers/CustomerContext';

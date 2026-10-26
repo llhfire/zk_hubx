@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Badge, Button, Card, Descriptions, Message, Modal, Space, Table, Tabs, Tag } from '@arco-design/web-react';
 import { useNavigate } from 'react-router';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { useLeads } from '../../../leads/LeadContext';
 import { leadDispatchView, returnActorsOf } from '../lead-dispatch/kpiCalc';
 import { readSalesBusinessConfig } from '../../support/system/systemConfigStore';
@@ -50,7 +50,7 @@ export function LeadGovernance() {
 
   return <PageShell breadcrumbs={[{ label: '线索管理', to: '/leads/all' }, { label: '线索治理' }]}>
     <PageHeader title="线索治理" description="集中识别异常、重复与退回质检；所有处置均由管理员确认并留痕。" />
-    <ProcessMetricGrid items={[
+    <MetricGrid items={[
       { key: 'all', label: '治理范围', value: `${activeLeads.length} 条` },
       { key: 'exception', label: '时效异常', value: `${exceptions.length} 条`, tone: exceptions.length ? 'warning' : 'success' },
       { key: 'duplicate', label: '疑似重复', value: `${duplicates.length} 组`, tone: duplicates.length ? 'warning' : 'success' },

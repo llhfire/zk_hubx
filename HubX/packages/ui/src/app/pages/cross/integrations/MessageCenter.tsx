@@ -3,7 +3,7 @@ import { Button, Card, Input, Message, Modal, Select, Space, Table, Tag, Tooltip
 import { IconRefresh, IconSearch, IconDelete } from '@arco-design/web-react/icon';
 import { useIntegration } from '../../../integrations/IntegrationContext';
 import type { DeliveryLog, MessageChannel } from '../../../integrations/types';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const Text = Typography.Text;
@@ -111,7 +111,7 @@ export function MessageCenter() {
         title="消息中心"
         description="统一查看站内信、企业微信和阿里云短信的模拟投递结果。"
       />
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'all', label: '全部消息', value: logs.length, detail: '当前浏览器投递记录' },
         { key: 'success', label: '投递成功', value: logs.filter((log) => log.status === 'success').length, detail: '已送达目标通道', tone: 'success' },
         { key: 'failed', label: '投递失败', value: logs.filter((log) => log.status === 'failed').length, detail: '需要检查通道配置', tone: logs.some((log) => log.status === 'failed') ? 'danger' : 'neutral' },

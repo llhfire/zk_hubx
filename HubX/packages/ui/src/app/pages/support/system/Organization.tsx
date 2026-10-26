@@ -16,7 +16,7 @@ import {
   Tooltip,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
@@ -280,7 +280,7 @@ export function Organization() {
         )}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'departments', label: '部门节点', value: `${mockDepartments.length} 个`, detail: '含总公司与下属组织' },
         { key: 'enabled', label: '启用部门', value: `${mockDepartments.filter(item => item.status === '启用').length} 个`, detail: '当前有效组织', tone: 'success' },
         { key: 'members', label: '组织编制', value: `${mockDepartments[0]?.memberCount ?? 0} 人`, detail: '总公司统计口径' },

@@ -4,7 +4,7 @@ import { PaymentGantt } from './PaymentGantt';
 import { CashflowForecast } from './CashflowForecast';
 import { ForecastDetailTable } from './ForecastDetailTable';
 import type { ForecastOverride } from './types';
-import { PageHeader, PageShell } from '../../../../components/ui';
+import { PageHeader, PageShell } from '@/design-system';
 import { useContracts } from '../ContractsContext';
 import { useCollections } from '../../../../collections/CollectionContext';
 import { toPaymentAnalysisContract } from './contractPaymentProjection';

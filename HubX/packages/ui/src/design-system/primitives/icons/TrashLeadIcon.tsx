@@ -1,5 +1,5 @@
-import trashLeadIcon from '../../../assets/trash-lead-apple-core-no-leaf-14x14.svg';
-import './uiFoundation.css';
+import trashLeadIcon from '@/assets/trash-lead-apple-core-no-leaf-14x14.svg';
+import '../../foundation.css';
 
 export interface TrashLeadIconProps {
   className?: string;

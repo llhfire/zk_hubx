@@ -75,7 +75,7 @@ describe('LeadDetail360 信息架构全面重构验证', () => {
     expect(markup).toContain('A公司CRM系统开发需求');
     expect(markup).toContain('A公司');
 
-    // 统一指标网格 ProcessMetricGrid
+    // 统一指标网格 MetricGrid
     expect(markup).toContain('hubx-process-metrics');
     expect(markup).toContain('负责人');
     expect(markup).toContain('对接人');

@@ -1,0 +1,45 @@
+/**
+ * 设计系统专用变量。
+ *
+ * 基础变量（间距 --space-*、字号 --text-*、字重、色阶 --grey/--success/--warning）
+ * 已由 styles/theme.css 提供，这里不重复定义，只补设计系统需要的语义别名。
+ */
+
+:root {
+  /* 数字字体栈（M-022）：金额、数量、日期统一使用，禁止在各页面自行声明 font-family */
+  --ds-numeral-font: "Inter Variable", Arial, sans-serif;
+
+  /* 状态语义色，直接映射 Arco 的运行时色值，保证与 Arco 组件同色系 */
+  --ds-tone-neutral-bg: var(--color-fill-2);
+  --ds-tone-neutral-fg: var(--color-text-2);
+  --ds-tone-neutral-border: var(--color-border-2);
+
+  --ds-tone-info-bg: rgb(var(--primary-1));
+  --ds-tone-info-fg: rgb(var(--primary-6));
+  --ds-tone-info-border: rgb(var(--primary-3));
+
+  --ds-tone-success-bg: rgb(var(--success-1));
+  --ds-tone-success-fg: rgb(var(--success-7));
+  --ds-tone-success-border: rgb(var(--success-3));
+
+  --ds-tone-warning-bg: rgb(var(--warning-1));
+  --ds-tone-warning-fg: rgb(var(--warning-7));
+  --ds-tone-warning-border: rgb(var(--warning-3));
+
+  --ds-tone-danger-bg: rgb(var(--danger-1));
+  --ds-tone-danger-fg: rgb(var(--danger-7));
+  --ds-tone-danger-border: rgb(var(--danger-3));
+
+  --ds-tone-purple-bg: rgb(var(--purple-1, 245 240 255));
+  --ds-tone-purple-fg: rgb(var(--purple-7, 110 60 200));
+  --ds-tone-purple-border: rgb(var(--purple-3, 205 185 240));
+
+  /* 组件尺寸 */
+  --ds-control-height-sm: 28px;
+  --ds-control-height: 32px;
+
+  /* 文本色（Arco 运行时变量别名，避免页面直接写 --color-text-N） */
+  --ds-text-primary: var(--color-text-1);
+  --ds-text-secondary: var(--color-text-2);
+  --ds-text-tertiary: var(--color-text-3);
+}

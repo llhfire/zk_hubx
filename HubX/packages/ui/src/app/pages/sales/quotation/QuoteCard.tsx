@@ -1,7 +1,7 @@
 // 报价卡片：线索详情 / 项目详情共用的报价摘要卡，进入四阶段工作台。
 import { Tag, Tooltip, Typography } from '@arco-design/web-react';
 import { IconArrowRight } from '@arco-design/web-react/icon';
-import { ProcessRecordCard } from '../../../components/ui';
+import { ProcessRecordCard } from '@/design-system';
 import { computeAmountBreakdown } from './quoteFlow';
 import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS, type Quote } from './types';
 import { formatMoney as money } from '../../../utils/money';

@@ -24,19 +24,20 @@ import {
 import {
   PageShell,
   ProcessOverview,
-  ProcessMetricGrid,
-  ProcessWorkspace,
-  ProcessWorkspaceMain,
-  ProcessWorkspaceAside,
-  type ProcessMetricItem,
+  MetricGrid,
+  SplitLayout,
+  SplitLayoutMain,
+  SplitLayoutAside,
+  StatusTag,
+  type MetricItem,
   type ProcessOverviewStep,
-} from '../../../../components/ui';
+} from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   ABILITY_DIMENSION_COLORS,
   ABILITY_DIMENSION_LABELS,
   getLevelColor,
-  getStatusColor,
+  EMPLOYMENT_STATUS,
   AbilityDimension,
   SkillNode,
 } from './mockData';
@@ -315,7 +316,7 @@ export function EmployeeSkillTree() {
   }
 
   // 顶部 4 大技能微指标
-  const skillMetrics: ProcessMetricItem[] = [
+  const skillMetrics: MetricItem[] = [
     {
       key: 'unlockRate',
       label: (
@@ -422,7 +423,7 @@ export function EmployeeSkillTree() {
           <>
             <Tag color="arcoblue">{employee.department} · {employee.position}</Tag>
             <Tag color={getLevelColor(employee.level)} style={{ fontWeight: 600 }}>{employee.level}</Tag>
-            <Tag color={getStatusColor(employee.employmentStatus)}>{employee.employmentStatus}</Tag>
+            <StatusTag meta={EMPLOYMENT_STATUS[employee.employmentStatus]} />
             <Tag color="purple"><IconExperiment /> 技能图谱</Tag>
           </>
         }
@@ -452,12 +453,12 @@ export function EmployeeSkillTree() {
       />
 
       {/* 技能树微可视化指标卡 */}
-      <ProcessMetricGrid items={skillMetrics} />
+      <MetricGrid items={skillMetrics} />
 
       {/* 主双栏工作区 */}
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧 Main：技能树图谱主体与筛选器 */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           <Card
             bordered={false}
             title={
@@ -547,10 +548,10 @@ export function EmployeeSkillTree() {
               <Empty description="该筛选条件下暂无技能节点" />
             )}
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧 Aside：雷达图谱与领域掌控度面板 */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card bordered={false} title="五维能力模型与掌控度">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
               <RadarChart scores={scores} size={230} />
@@ -600,8 +601,8 @@ export function EmployeeSkillTree() {
               </Space>
             </div>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
     </PageShell>
   );
 }

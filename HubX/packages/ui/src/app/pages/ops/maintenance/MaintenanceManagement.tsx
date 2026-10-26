@@ -27,7 +27,7 @@ import {
   IconRefresh,
   IconSearch,
 } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { filterRecordsByKeyword } from '../../support/system/supportDomainListModel';
 import { loadAfterSalesHandoffs } from '../../sales/leads/alphaFlowContinuity';
 import '../../support/system/supportDomainLists.css';
@@ -266,7 +266,7 @@ export function MaintenanceManagement() {
         actions={pageAction}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'projects', label: '维护项目', value: summary.totalProjects, detail: `${summary.active} 个维护期中` },
         { key: 'expiry', label: '到期风险', value: summary.expiring + summary.expired, detail: `${summary.expiring} 个临期 · ${summary.expired} 个到期`, tone: summary.expiring + summary.expired ? 'warning' : 'neutral' },
         { key: 'tickets', label: '待处理工单', value: summary.openTickets, detail: `${summary.criticalTickets} 个紧急`, tone: summary.criticalTickets ? 'danger' : 'neutral' },

@@ -39,7 +39,7 @@ import {
   getPaymentPlanPeriodLabel,
 } from './utils';
 import { QuoteMismatchAlert } from './components/QuoteMismatchAlert';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 import {
   contractSigningEntities,
   findCompanyEntityByName,

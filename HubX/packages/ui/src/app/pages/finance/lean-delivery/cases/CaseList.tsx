@@ -9,7 +9,7 @@ import { deriveTotalCost, deriveEac, deriveLifecycleMargin, deriveWip, deriveHea
 import { getContract, totalCollected } from '../contractSeam';
 import { useContracts } from '../../../sales/contracts/ContractsContext';
 import { useCollections } from '../../../../collections/CollectionContext';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus } from '@/design-system';
 
 export default function CaseList() {
   const navigate = useNavigate();
@@ -103,7 +103,7 @@ export default function CaseList() {
     },
     {
       title: '状态', dataIndex: 'status', width: 100,
-      render: (v: CaseStatus) => { const cfg = caseStatusMap[v]; return <Tag color={cfg.color === 'success' ? 'green' : cfg.color === 'warning' ? 'orange' : 'blue'}>{cfg.label}</Tag>; },
+      render: (v: CaseStatus) => <StatusTag meta={resolveStatus(caseStatusMap, v)} />,
     },
     {
       title: '健康状态', dataIndex: 'health', width: 100,
@@ -149,7 +149,7 @@ export default function CaseList() {
         )}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '业务单总数', value: `${statistics.total} 单`, detail: filtersActive ? '当前筛选结果' : '全部业务单' },
         { key: 'progress', label: '进行中', value: `${statistics.inProgress} 单`, detail: '持续监控成本与 WIP' },
         { key: 'completed', label: '已完结', value: `${statistics.completed} 单`, detail: '已进入复盘或归档' },

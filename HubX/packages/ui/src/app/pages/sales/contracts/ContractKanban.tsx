@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, Card, Space, Typography } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { useContracts } from './ContractsContext';
 import { computeKanbanSummary, getReceivedAmount } from './paymentUtils';
 import type { Contract } from './types';
@@ -188,7 +188,7 @@ export function ContractKanban() {
         </Space>
       </FilterBar>
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '合同总额', value: money(data.total), detail: `${data.summary.totalContracts} 份有效合同` },
         { key: 'received', label: '已回款', value: money(data.received), detail: `回款率 ${collectionRate}%`, tone: 'success' },
         { key: 'pending', label: '待回款', value: money(Math.max(0, data.total - data.received)), detail: `未来 30 天 ${money(data.next30)}`, tone: 'warning' },

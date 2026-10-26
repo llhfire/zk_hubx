@@ -90,13 +90,13 @@ import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from '../../sales/quotation/
 import { getLeadDetailProfile } from '../../sales/leads/leadDetailProfiles';
 import {
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-  type ProcessMetricItem,
-} from '../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+  type MetricItem,
+} from '@/design-system';
 import {
   CollectionRecordModal,
   ContractPaymentInvoicePanel,
@@ -602,7 +602,7 @@ export function ProjectDetail360() {
     setFollowModalVisible(true);
   };
 
-  const overviewMetrics: ProcessMetricItem[] = [
+  const overviewMetrics: MetricItem[] = [
     {
       key: 'progress',
       label: (
@@ -797,12 +797,12 @@ export function ProjectDetail360() {
         })}
       />
 
-      <ProcessMetricGrid items={overviewMetrics} />
+      <MetricGrid items={overviewMetrics} />
 
       {/* ========== 主体区域：70:30 分栏 ========== */}
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧主区域 (70%) */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           <ProjectArchiveSummary
             project={project}
             customerName={metrics.customerName}
@@ -1002,10 +1002,10 @@ export function ProjectDetail360() {
               )}
             </div>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧业务过程 (30%) */}
-        <ProcessWorkspaceAside className="project-detail-360__aside">
+        <SplitLayoutAside className="project-detail-360__aside">
           <Card size="small" style={{ flex: 1 }}>
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
               <TabPane key="follow" title="跟进" />
@@ -1290,8 +1290,8 @@ export function ProjectDetail360() {
               )}
             </div>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       {/* 新建/编辑任务 Modal */}
       <Modal

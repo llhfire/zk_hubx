@@ -11,7 +11,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Badge, Button, Card, Empty, Input, Select, Spin, Tag, Typography } from '@arco-design/web-react';
 import { IconSearch, IconPlus, IconCalendar, IconUser, IconFile } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, type StatusMap } from '@/design-system';
 import { useSmartMeeting } from './SmartMeetingContext';
 import { summarizeMinutes, filterMinutes, monthDeposited, type MinuteListQuery } from './boardQueries';
 import { MOCK_USERS } from './mockData';
@@ -28,11 +28,11 @@ const STATUS_LABEL: Record<MinuteStatus, string> = {
   archived: '已归档',
 };
 
-const STATUS_COLOR: Record<MinuteStatus, string> = {
-  draft: 'gray',
-  pending_review: 'orange',
-  confirmed: 'blue',
-  archived: 'default',
+const MINUTE_STATUS: StatusMap<MinuteStatus> = {
+  draft: { label: STATUS_LABEL.draft, tone: 'neutral' },
+  pending_review: { label: STATUS_LABEL.pending_review, tone: 'warning' },
+  confirmed: { label: STATUS_LABEL.confirmed, tone: 'info' },
+  archived: { label: STATUS_LABEL.archived, tone: 'neutral' },
 };
 
 /** 默认查看者（α 模拟登录：管理员视角） */
@@ -99,7 +99,7 @@ export function SmartMeetingListPage() {
         )}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'deposited', label: `${currentMonth.replace('-', '年')}月已沉淀`, value: `${depositedCount} 篇`, detail: '不含草稿' },
           { key: 'pending', label: '待确认', value: `${stats.pending_review} 篇`, detail: '等待确认人处理', tone: stats.pending_review > 0 ? 'warning' : 'neutral' },
@@ -133,7 +133,7 @@ export function SmartMeetingListPage() {
           >
             {(Object.keys(STATUS_LABEL) as MinuteStatus[]).map((status) => (
               <Option key={status} value={status}>
-                <Tag color={STATUS_COLOR[status]} size="small">{STATUS_LABEL[status]}</Tag>
+                <StatusTag meta={MINUTE_STATUS[status]} size="small" />
               </Option>
             ))}
           </Select>
@@ -172,7 +172,7 @@ export function SmartMeetingListPage() {
               >
                 <div className="smart-meeting-list__item-main">
                   <div className="smart-meeting-list__title-row">
-                    <Tag color={STATUS_COLOR[summary.status]} size="small">{STATUS_LABEL[summary.status]}</Tag>
+                    <StatusTag meta={MINUTE_STATUS[summary.status]} size="small" />
                     <span className="smart-meeting-list__item-title">{summary.title}</span>
                   </div>
 

@@ -20,10 +20,10 @@ import { computeAmountBreakdown, deriveStage, getPendingOwner, getStageAccess, i
 import {
   PageShell,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import { useEmployee } from '../../support/hr/employee/EmployeeContext';
 import { FileFlowWorkbench } from './components/FileFlowWorkbench';
 import { ScanUpload } from './components/ScanUpload';
@@ -419,8 +419,8 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
         currentStep={currentStage - 1}
       />
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           {access === 'readonly' && stage === currentStage && currentRole !== 'assistant' && (
             <Alert
               type="info"
@@ -434,9 +434,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
           ) : renderStage()}
 
           <ActionBar quote={quote} />
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
-        <ProcessWorkspaceAside className="quotation-workbench__aside">
+        <SplitLayoutAside className="quotation-workbench__aside">
           <QuoteDynamicPanel
             quote={quote}
             currentStage={currentStage}
@@ -444,8 +444,8 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
             amountBreakdown={amountBreakdown}
           />
           <ApprovalProcessPanel quote={quote} currentStage={currentStage} />
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       <Drawer
         title="流转轨迹"

@@ -9,7 +9,7 @@ import {
   type CompanyEntityRecord,
   updateMockCompanyEntity,
 } from './companyEntityData';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 export function CompanyEntity() {
@@ -77,7 +77,7 @@ export function CompanyEntity() {
         ) : undefined}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '主体总数', value: `${companyEntities.length} 家`, detail: '当前主体台账' },
         { key: 'active', label: '启用主体', value: `${companyEntities.filter(item => item.status === '启用').length} 家`, detail: '可用于业务单据', tone: 'success' },
         { key: 'accounts', label: '对公账户', value: `${companyEntities.reduce((sum, item) => sum + item.publicAccounts.length, 0)} 个`, detail: '全部主体账户' },

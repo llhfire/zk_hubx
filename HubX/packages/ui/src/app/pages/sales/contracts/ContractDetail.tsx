@@ -49,12 +49,12 @@ import {
 import {
   PageShell,
   DocumentViewerModal,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import { useQuotation } from '../quotation/QuotationContext';
 import { canCreateSupplementQuote } from '../quotation/supplementQuote';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
@@ -440,7 +440,7 @@ export function ContractDetail() {
         }))}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'customer', label: '客户', value: displayValue(cd.customerName) },
           { key: 'entity', label: '签约主体', value: displayValue(cd.signingEntity) },
@@ -452,9 +452,9 @@ export function ContractDetail() {
         ]}
       />
 
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 主内容区 */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           {/* 基础信息 */}
           <Card title="基础信息">
             <Descriptions
@@ -565,10 +565,10 @@ export function ContractDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧跟进记录边栏 */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card
             title="跟进记录"
             extra={<Button type="primary" size="small" icon={<IconEdit />} onClick={() => setFollowUpModalVisible(true)}>记录</Button>}
@@ -715,8 +715,8 @@ export function ContractDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       <Modal title={`合同版本差异 · ${versionDiffTarget ?? ''}`} visible={Boolean(versionDiffTarget)} onCancel={() => setVersionDiffTarget(undefined)} footer={<Button onClick={() => setVersionDiffTarget(undefined)}>关闭</Button>} style={{ width: 820 }}>
         {(() => {

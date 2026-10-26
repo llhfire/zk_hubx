@@ -14,7 +14,7 @@ import { AllLeads } from '../AllLeads';
 import { ClosedLeads } from '../ClosedLeads';
 
 describe('线索各池工作台页面规范化与微指标测试', () => {
-  test('公海线索池 PublicLeads 具备统一 PageShell、PageHeader 与 ProcessMetricGrid', () => {
+  test('公海线索池 PublicLeads 具备统一 PageShell、PageHeader 与 MetricGrid', () => {
     const markup = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -46,7 +46,7 @@ describe('线索各池工作台页面规范化与微指标测试', () => {
     expect(markup).toContain('客户等级');
   });
 
-  test('我的线索 MyLeads 具备统一 PageShell、PageHeader 与 ProcessMetricGrid', () => {
+  test('我的线索 MyLeads 具备统一 PageShell、PageHeader 与 MetricGrid', () => {
     const markup = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -82,7 +82,7 @@ describe('线索各池工作台页面规范化与微指标测试', () => {
     expect(markup).toContain('全部对接主体');
   });
 
-  test('垃圾线索池 TrashLeads 具备统一 PageShell、PageHeader 与 ProcessMetricGrid', () => {
+  test('垃圾线索池 TrashLeads 具备统一 PageShell、PageHeader 与 MetricGrid', () => {
     const markup = renderToStaticMarkup(
       createElement(
         MemoryRouter,
@@ -111,7 +111,7 @@ describe('线索各池工作台页面规范化与微指标测试', () => {
     expect(markup).toContain('退回次数');
   });
 
-  test('全部线索池 AllLeads 具备统一 PageShell、PageHeader 与 ProcessMetricGrid', () => {
+  test('全部线索池 AllLeads 具备统一 PageShell、PageHeader 与 MetricGrid', () => {
     const markup = renderToStaticMarkup(
       createElement(
         MemoryRouter,

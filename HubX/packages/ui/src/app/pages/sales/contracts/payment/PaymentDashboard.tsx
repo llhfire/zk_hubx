@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router';
 import { Tabs } from '@arco-design/web-react';
-import { PageHeader, PageShell } from '../../../../components/ui';
+import { PageHeader, PageShell } from '@/design-system';
 import PaymentKanban from '../PaymentKanban';
 import { PaymentKanbanV2 } from '../PaymentKanbanV2';
 import { PaymentForecastContent } from './PaymentForecastPage';

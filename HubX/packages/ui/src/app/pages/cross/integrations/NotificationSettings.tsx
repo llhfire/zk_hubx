@@ -22,7 +22,7 @@ import {
 import { IconPlus, IconSend, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '../../../integrations/IntegrationContext';
 import type { MessageChannel, NotificationRule, SmsConfig } from '../../../integrations/types';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const FormItem = Form.Item;
@@ -113,7 +113,7 @@ export function NotificationSettings() {
         description="统一配置业务事件的接收人、发送通道和超时升级策略。"
       />
       <Alert type="info" showIcon content="当前企业微信和阿里云短信均为模拟投递；站内信会真实写入当前浏览器的消息中心。" />
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'rules', label: '消息规则', value: rules.length, detail: '覆盖各业务模块' },
         { key: 'enabled', label: '已启用', value: rules.filter((rule) => rule.enabled).length, detail: `停用 ${rules.filter((rule) => !rule.enabled).length} 条`, tone: 'success' },
         { key: 'high', label: '高优先级', value: rules.filter((rule) => rule.priority === 'high').length, detail: '支持超时升级', tone: 'warning' },

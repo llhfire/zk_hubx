@@ -4,7 +4,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
-import { PageBreadcrumb } from '../PageBreadcrumb';
+import { PageBreadcrumb } from '../layout/PageBreadcrumb';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 

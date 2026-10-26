@@ -19,7 +19,7 @@ import {
   formatCurrency,
   getLevelColor,
 } from './mockData';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const TabPane = Tabs.TabPane;
@@ -210,7 +210,7 @@ export function LevelRateSettings() {
         )}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'positions', label: '职位总数', value: `${positions.length} 个`, detail: '当前职位目录' },
           { key: 'active', label: '当前职位', value: activePosition, detail: '正在维护' },

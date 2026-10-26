@@ -23,7 +23,7 @@ import {
 import { IconRefresh, IconSafe, IconSync, IconEdit } from '@arco-design/web-react/icon';
 import { useIntegration } from '../../../integrations/IntegrationContext';
 import type { SyncDiff, SyncPolicy, WeComConfig } from '../../../integrations/types';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const FormItem = Form.Item;
@@ -127,7 +127,7 @@ export function WeComIntegration() {
         content="当前不会连接真实企业微信。你可以先通过预检同步体验新增、更新、停用和冲突处理流程。"
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'connection', label: '连接状态', value: '未连接', detail: '等待自建应用凭证', tone: 'warning' },
         { key: 'mode', label: '运行模式', value: '模拟', detail: '不会访问真实企业微信' },
         { key: 'sync', label: '自动同步', value: wecomConfig.autoSync ? wecomConfig.syncTime : '已关闭', detail: '可在连接设置中调整' },
@@ -148,7 +148,7 @@ export function WeComIntegration() {
               </Space>
             </div>
 
-            <ProcessMetricGrid items={[
+            <MetricGrid items={[
               { key: 'create', label: '待新增', value: stats.create, tone: stats.create ? 'success' : 'neutral' },
               { key: 'update', label: '待更新', value: stats.update },
               { key: 'disable', label: '待停用', value: stats.disable, tone: stats.disable ? 'warning' : 'neutral' },

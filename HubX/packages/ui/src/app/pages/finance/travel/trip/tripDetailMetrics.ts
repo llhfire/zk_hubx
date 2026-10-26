@@ -8,7 +8,7 @@ import {
   IconSafe,
 } from '@arco-design/web-react/icon';
 import type { Trip } from '../types';
-import type { ProcessMetricItem, ProcessMetricTone } from '../../../../components/ui';
+import type { MetricItem, MetricTone } from '@/design-system';
 
 function renderMetricTitle(IconComponent: ComponentType<{ className?: string }>, text: string): ReactNode {
   return createElement(
@@ -59,7 +59,7 @@ export interface BudgetExecutionInfo {
   recordedExpense: number;
   estimatedTotalCost: number;
   isOverBudget: boolean;
-  tone: ProcessMetricTone;
+  tone: MetricTone;
   value: string;
   detail: string;
 }
@@ -67,7 +67,7 @@ export interface BudgetExecutionInfo {
 export interface ReimbursementRatioInfo {
   ratioLabel: string;
   detail: string;
-  tone: ProcessMetricTone;
+  tone: MetricTone;
   offsetAmount: number;
   loanAmount: number;
   reimbursementTotal: number;
@@ -79,7 +79,7 @@ export interface ApprovalComplianceInfo {
   total: number;
   isAllPassed: boolean;
   hasOverStandard: boolean;
-  tone: ProcessMetricTone;
+  tone: MetricTone;
   value: string;
   detail: string;
 }
@@ -88,7 +88,7 @@ export interface CostDepositionInfo {
   totalCost: number;
   targetType: 'project' | 'lead' | 'general';
   targetName: string;
-  tone: ProcessMetricTone;
+  tone: MetricTone;
   value: string;
   detail: string;
 }
@@ -123,7 +123,7 @@ export function computeBudgetExecution(trip: Trip): BudgetExecutionInfo {
   const rate = estimated > 0 ? Math.round((recorded / estimated) * 100) : 0;
   const isOverBudget = estimated > 0 && recorded > estimated;
 
-  let tone: ProcessMetricTone = 'neutral';
+  let tone: MetricTone = 'neutral';
   if (isOverBudget) {
     tone = 'danger';
   } else if (rate >= 85) {
@@ -442,11 +442,11 @@ export function buildEnhancedProcessSteps(trip: Trip) {
   ];
 }
 
-/** 构建标准 6 维 ProcessMetricGrid 项（点击双向驱动切换对应左右 Tab） */
+/** 构建标准 6 维 MetricGrid 项（点击双向驱动切换对应左右 Tab） */
 export function buildTripProcessMetrics(
   trip: Trip,
   onNavigateTab?: (target: { main?: TripMainTabKey; side?: TripSideTabKey }) => void,
-): ProcessMetricItem[] {
+): MetricItem[] {
   const budget = computeBudgetExecution(trip);
   const reimb = computeReimbursementRatio(trip);
   const approval = computeApprovalCompliance(trip);
@@ -462,7 +462,7 @@ export function buildTripProcessMetrics(
   const subsidyDetail = subsidy
     ? (subsidy.isPaid ? '已随工资打款发放' : `${subsidy.days}天 · 待随当月薪资发放`)
     : '根据异地打卡核定补贴';
-  const subsidyTone: ProcessMetricTone = subsidy?.isPaid ? 'success' : 'neutral';
+  const subsidyTone: MetricTone = subsidy?.isPaid ? 'success' : 'neutral';
 
   return [
     {

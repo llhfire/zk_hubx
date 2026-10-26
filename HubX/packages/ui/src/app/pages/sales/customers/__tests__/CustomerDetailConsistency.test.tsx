@@ -31,7 +31,7 @@ function renderCustomerPage(initialEntry: string) {
   );
 }
 
-describe('α 客户详情页 ProcessWorkspace 标杆规范', () => {
+describe('α 客户详情页 SplitLayout 标杆规范', () => {
   it('渲染顶部 ProcessOverview、4 大微可视化指标与双栏框架', () => {
     const html = renderCustomerPage('/customers/customer-pawkey');
     // ProcessOverview

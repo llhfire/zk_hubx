@@ -27,7 +27,7 @@ import {
   calcPerformance,
   getRankColor,
 } from './mockData';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
@@ -179,7 +179,7 @@ export function PerformanceManagement() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增考核</Button>}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'month', label: '本月考核', value: `${stats.monthCount} 人`, detail: '月度考核记录' },
           { key: 'quarter', label: '本季度考核', value: `${stats.quarterCount} 人`, detail: '季度考核记录' },

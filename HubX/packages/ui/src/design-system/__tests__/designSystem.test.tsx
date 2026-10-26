@@ -5,12 +5,12 @@ import { describe, expect, test } from 'vitest';
 import {
   PageHeader,
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
   ProcessRecordCard,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
   WeChatIcon,
 } from '..';
 
@@ -20,7 +20,7 @@ function renderInRouter(element: ReturnType<typeof createElement>) {
   );
 }
 
-describe('HubX UI foundation', () => {
+describe('HubX 设计系统基础组件', () => {
   test('PageShell renders linked ancestors and the current breadcrumb item', () => {
     const markup = renderInRouter(
       createElement(
@@ -57,7 +57,7 @@ describe('HubX UI foundation', () => {
     expect(markup).toContain('新建客户');
   });
 
-  test('ProcessOverview and ProcessMetricGrid expose the shared long-flow structure', () => {
+  test('ProcessOverview and MetricGrid expose the shared long-flow structure', () => {
     const overview = renderInRouter(
       createElement(ProcessOverview, {
         identifier: 'PRJ-001',
@@ -71,7 +71,7 @@ describe('HubX UI foundation', () => {
       }),
     );
     const metrics = renderInRouter(
-      createElement(ProcessMetricGrid, {
+      createElement(MetricGrid, {
         items: [
           { key: 'owner', label: '负责人', value: '张三' },
           { key: 'risk', label: '风险', value: '1 项', tone: 'danger' },
@@ -102,13 +102,13 @@ describe('HubX UI foundation', () => {
     expect(markup).not.toContain('hubx-process-overview__steps');
   });
 
-  test('ProcessWorkspace exposes the shared 70:30 content regions', () => {
+  test('SplitLayout exposes the shared 70:30 content regions', () => {
     const markup = renderInRouter(
       createElement(
-        ProcessWorkspace,
+        SplitLayout,
         null,
-        createElement(ProcessWorkspaceMain, null, '主工作区'),
-        createElement(ProcessWorkspaceAside, null, '业务过程区'),
+        createElement(SplitLayoutMain, null, '主工作区'),
+        createElement(SplitLayoutAside, null, '业务过程区'),
       ),
     );
 

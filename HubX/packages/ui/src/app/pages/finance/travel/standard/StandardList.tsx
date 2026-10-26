@@ -35,7 +35,7 @@ import {
 import type { ExpenseStandard, StandardDetail, CityLevel } from '../types';
 import { getExpenseStandardList } from '../travel-api';
 import { mockExpenseStandards } from '../mock-data';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../travelAdminConsistency.css';
 
 const { Text, Title } = Typography;
@@ -649,7 +649,7 @@ export function StandardList() {
       />
 
       {/* 4 维微指标中枢 */}
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'versions',

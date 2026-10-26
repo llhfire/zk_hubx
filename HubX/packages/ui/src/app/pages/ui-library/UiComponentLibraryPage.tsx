@@ -26,13 +26,13 @@ import {
   FilterBar,
   PageHeader,
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
   ProcessRecordCard,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import './UiComponentLibraryPage.css';
 
 const TabPane = Tabs.TabPane;
@@ -47,14 +47,37 @@ const foundationRows = [
 ];
 
 const moduleRows = [
-  { key: 'breadcrumb', component: 'PageBreadcrumb', purpose: '二级及以上页面层级导航', source: 'components/ui/PageBreadcrumb.tsx' },
-  { key: 'header', component: 'PageHeader', purpose: '普通列表、配置和看板页头', source: 'components/ui/PageHeader.tsx' },
-  { key: 'filter', component: 'FilterBar', purpose: '搜索、筛选与批量动作排列', source: 'components/ui/FilterBar.tsx' },
-  { key: 'overview', component: 'ProcessOverview', purpose: '长周期业务对象的身份、操作与流程', source: 'components/ui/ProcessOverview.tsx' },
-  { key: 'metrics', component: 'ProcessMetricGrid', purpose: '长流程页面的关键摘要指标', source: 'components/ui/ProcessMetricGrid.tsx' },
-  { key: 'record-card', component: 'ProcessRecordCard', purpose: '业务过程区的报价、合同、资料、出差等记录摘要', source: 'components/ui/ProcessRecordCard.tsx' },
-  { key: 'workspace', component: 'ProcessWorkspace', purpose: '长流程详情的 70:30 主辅工作区', source: 'components/ui/ProcessWorkspace.tsx' },
-  { key: 'shell', component: 'PageShell', purpose: '统一面包屑、页面纵向节奏和内容起点', source: 'components/ui/PageShell.tsx' },
+  { key: 'money', category: '原子', component: 'MoneyText', purpose: '金额展示唯一入口：格式、空值、万单位、数字字体', source: 'design-system/primitives/MoneyText.tsx' },
+  { key: 'status', category: '原子', component: 'StatusTag', purpose: '状态 → 文案 + 语义色，业务域只提供映射表', source: 'design-system/primitives/StatusTag.tsx' },
+  { key: 'grade', category: '原子', component: 'GradeTag', purpose: 'S/A/B/C 只显示字母，未定显示 ?', source: 'design-system/primitives/GradeTag.tsx' },
+  { key: 'date', category: '原子', component: 'DateText', purpose: '日期与区间，单行不折行', source: 'design-system/primitives/DateText.tsx' },
+  { key: 'countdown', category: '原子', component: 'CountdownTag', purpose: '余 X 天 / 逾期 X 天，不塞日期', source: 'design-system/primitives/CountdownTag.tsx' },
+  { key: 'identifier', category: '原子', component: 'IdentifierText', purpose: '编号/账号单行省略 + 悬停完整值', source: 'design-system/primitives/IdentifierText.tsx' },
+  { key: 'entity-link', category: '原子', component: 'EntityLink', purpose: '关联对象名称跳转，按稳定 ID', source: 'design-system/primitives/EntityLink.tsx' },
+  { key: 'shell', category: '骨架', component: 'PageShell', purpose: '统一面包屑、页面纵向节奏和内容起点', source: 'design-system/layout/PageShell.tsx' },
+  { key: 'header', category: '骨架', component: 'PageHeader', purpose: '普通列表、配置和看板页头', source: 'design-system/layout/PageHeader.tsx' },
+  { key: 'breadcrumb', category: '骨架', component: 'PageBreadcrumb', purpose: '二级及以上页面层级导航', source: 'design-system/layout/PageBreadcrumb.tsx' },
+  { key: 'section', category: '骨架', component: 'SectionCard', purpose: '区块卡片，主操作固定在标题行右侧', source: 'design-system/layout/SectionCard.tsx' },
+  { key: 'detail-header', category: '骨架', component: 'DetailHeader', purpose: '详情页头：返回、标题、状态、单号、步骤、操作', source: 'design-system/layout/DetailHeader.tsx' },
+  { key: 'workspace', category: '骨架', component: 'SplitLayout', purpose: '长流程详情的 70:30 主辅工作区', source: 'design-system/layout/SplitLayout.tsx' },
+  { key: 'table', category: '展示', component: 'DataTable', purpose: '表格唯一入口：rowKey、空态、工具栏、加载', source: 'design-system/data-display/DataTable.tsx' },
+  { key: 'metrics', category: '展示', component: 'MetricGrid', purpose: '一排摘要指标', source: 'design-system/data-display/MetricGrid.tsx' },
+  { key: 'metric-card', category: '展示', component: 'MetricCard', purpose: '两行指标卡：标签一行 + 值一行', source: 'design-system/data-display/MetricCard.tsx' },
+  { key: 'descriptions', category: '展示', component: 'DescriptionsCard', purpose: '字段区，长字段自动整行', source: 'design-system/data-display/DescriptionsCard.tsx' },
+  { key: 'empty', category: '展示', component: 'EmptyState', purpose: '空态：说明 + 引导操作', source: 'design-system/data-display/EmptyState.tsx' },
+  { key: 'progress', category: '展示', component: 'ProgressBar', purpose: '比例进度，去掉装饰性圆环', source: 'design-system/data-display/ProgressBar.tsx' },
+  { key: 'file-list', category: '展示', component: 'FileList', purpose: '文件行：身份在左、元数据在下、图标操作在右', source: 'design-system/data-display/FileList.tsx' },
+  { key: 'filter', category: '录入', component: 'FilterBar', purpose: '搜索、筛选与批量动作排列', source: 'design-system/forms/FilterBar.tsx' },
+  { key: 'form-grid', category: '录入', component: 'FormGrid', purpose: '字段网格，替代手写 Row/Col', source: 'design-system/forms/FormGrid.tsx' },
+  { key: 'form-section', category: '录入', component: 'FormSection', purpose: '字段分组标题与内容', source: 'design-system/forms/FormSection.tsx' },
+  { key: 'upload', category: '录入', component: 'UploadPanel', purpose: '拖拽上传区：边框、点击面积、拖入反馈', source: 'design-system/forms/UploadPanel.tsx' },
+  { key: 'rich-text', category: '录入', component: 'RichTextEditor', purpose: '富文本编辑器', source: 'design-system/forms/RichTextEditor.tsx' },
+  { key: 'confirm', category: '反馈', component: 'confirmAction / ConfirmModal', purpose: '二次确认，危险操作使用危险语义色', source: 'design-system/feedback/ConfirmModal.tsx' },
+  { key: 'alert', category: '反馈', component: 'AlertBanner', purpose: '可临时关闭的提醒，关闭不等于已处理', source: 'design-system/feedback/AlertBanner.tsx' },
+  { key: 'async', category: '反馈', component: 'AsyncState', purpose: '加载 / 失败 / 无权限三态', source: 'design-system/feedback/AsyncState.tsx' },
+  { key: 'overview', category: '业务', component: 'ProcessOverview', purpose: '长周期业务对象的身份、操作与流程', source: 'design-system/business/ProcessOverview.tsx' },
+  { key: 'record-card', category: '业务', component: 'ProcessRecordCard', purpose: '业务过程区的报价、合同、资料、出差等记录摘要', source: 'design-system/business/ProcessRecordCard.tsx' },
+  { key: 'document-viewer', category: '业务', component: 'DocumentViewerModal', purpose: '全屏文件阅读器，单页/双页切换', source: 'design-system/business/DocumentViewerModal.tsx' },
 ];
 
 const librarySteps = [
@@ -122,13 +145,14 @@ function FoundationComponents() {
 function ModuleComponents() {
   return (
     <div className="ui-library-section-stack">
-      <Card title="模块组件目录">
+      <Card title="设计系统组件目录">
         <Table
           rowKey="key"
           pagination={false}
           data={moduleRows}
           columns={[
-            { title: '组件', dataIndex: 'component', width: 190 },
+            { title: '分类', dataIndex: 'category', width: 80 },
+            { title: '组件', dataIndex: 'component', width: 220 },
             { title: '用途', dataIndex: 'purpose' },
             { title: '代码位置', dataIndex: 'source', render: (value: string) => <span className="ui-library-code-path">{value}</span> },
           ]}
@@ -156,7 +180,7 @@ function ModuleComponents() {
         steps={librarySteps}
         currentStep={2}
       />
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'owner', label: '负责人', value: '张三' },
           { key: 'customer', label: '客户', value: '示例客户' },
@@ -180,14 +204,14 @@ function ModuleComponents() {
           />
         </div>
       </Card>
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <Card title="主工作区">承载档案、明细表、任务或交付内容。</Card>
-        </ProcessWorkspaceMain>
-        <ProcessWorkspaceAside>
+        </SplitLayoutMain>
+        <SplitLayoutAside>
           <Card title="业务过程区">承载跟进、审批、回款和版本记录。</Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
     </div>
   );
 }
@@ -210,7 +234,7 @@ function PageFrameworks() {
         <ol className="ui-library-flow-list">
           <li>PageBreadcrumb</li>
           <li>ProcessOverview</li>
-          <li>ProcessMetricGrid</li>
+          <li>MetricGrid</li>
           <li>70:30 主辅区</li>
           <li>Tab / 任务板块</li>
         </ol>

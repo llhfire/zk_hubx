@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconEdit, IconEye, IconPlus } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell } from '../../../components/ui';
+import { PageHeader, PageShell } from '@/design-system';
 import {
   loadBusinessApprovals,
   loadWorkflowTemplates,

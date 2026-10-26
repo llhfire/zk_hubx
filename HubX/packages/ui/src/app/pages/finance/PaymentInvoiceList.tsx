@@ -5,7 +5,7 @@ import {
   Select, Space, Table, Tag, Tooltip,
 } from '@arco-design/web-react';
 import { IconEye } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid, ProcessOverview } from '../../components/ui';
+import { PageHeader, PageShell, MetricGrid, ProcessOverview, StatusTag, type StatusMap } from '@/design-system';
 import { useCollections } from '../../collections/CollectionContext';
 import { useLeads } from '../../leads/LeadContext';
 import { useContracts } from '../sales/contracts/ContractsContext';
@@ -24,8 +24,11 @@ import {
 
 const { RangePicker } = DatePicker;
 
-const STATUS_COLOR: Record<PaymentInvoiceStatus, string> = {
-  待收款: 'gray', 部分收款: 'orange', 逾期: 'red', 已完成: 'green',
+const PAYMENT_INVOICE_STATUS: StatusMap<PaymentInvoiceStatus> = {
+  待收款: { label: '待收款', tone: 'neutral' },
+  部分收款: { label: '部分收款', tone: 'warning' },
+  逾期: { label: '逾期', tone: 'danger' },
+  已完成: { label: '已完成', tone: 'success' },
 };
 
 interface SearchForm {
@@ -111,7 +114,7 @@ export function PaymentInvoiceList() {
     { title: '开票进度', dataIndex: 'invoicedRate', width: 150, render: (rate: number) => <Progress percent={rate} size="small" /> },
     {
       title: '状态', dataIndex: 'status', width: 100,
-      render: (status: PaymentInvoiceStatus) => <Tag color={STATUS_COLOR[status]}>{status}</Tag>,
+      render: (status: PaymentInvoiceStatus) => <StatusTag meta={PAYMENT_INVOICE_STATUS[status]} />,
     },
     { title: '最新日期', dataIndex: 'latestDate', width: 120 },
     {
@@ -150,7 +153,7 @@ export function PaymentInvoiceList() {
         currentStep={afterSalesHandoffs.length ? 3 : invoiceCount ? 2 : overdueCount ? 1 : 0}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'periods', label: '回款期次', value: paymentPeriodCount, detail: `${rows.length} 份履约合同` },
         { key: 'overdue', label: '逾期期次', value: overdueCount, detail: overdueCount ? '需催收或登记卡点' : '当前无阻断', tone: overdueCount ? 'danger' : 'success' },
         { key: 'invoices', label: '开票记录', value: invoiceCount, detail: `含 ${redFlushCount} 条红冲`, tone: redFlushCount ? 'warning' : 'neutral' },
@@ -175,7 +178,7 @@ export function PaymentInvoiceList() {
           <Select
             style={{ width: 130 }} placeholder="选择状态" value={searchForm.status}
             onChange={status => setSearchForm(current => ({ ...current, status }))}
-            allowClear options={Object.keys(STATUS_COLOR).map(status => ({ label: status, value: status }))}
+            allowClear options={Object.keys(PAYMENT_INVOICE_STATUS).map(status => ({ label: status, value: status }))}
           />
           <RangePicker
             style={{ width: 260 }} placeholder={['开始日期', '结束日期']}
@@ -200,7 +203,7 @@ export function PaymentInvoiceList() {
         {selectedRecord && (
           <div>
             <Card size="small" title="后半程流程接缝" style={{ marginBottom: 20 }}>
-              <ProcessMetricGrid items={[
+              <MetricGrid items={[
                 { key: 'period', label: '回款期次', value: selectedRecord.payments.length, detail: `${selectedOverdueCount} 个逾期`, tone: selectedOverdueCount ? 'danger' : 'success' },
                 { key: 'payment', label: '回款完成', value: `${selectedRecord.receivedRate}%`, detail: '按有效合同金额计算' },
                 { key: 'invoice', label: '开票完成', value: `${selectedRecord.invoicedRate}%`, detail: selectedRecord.invoices.some((invoice) => invoice.status === '开票中') ? '存在开票中记录' : `红冲 ${selectedRecord.invoices.filter((invoice) => invoice.status === '已冲红').length} 条` },
@@ -224,7 +227,7 @@ export function PaymentInvoiceList() {
                 { label: '合同总额', value: `¥${selectedRecord.totalAmount.toLocaleString()}` },
                 { label: '已收金额', value: `¥${selectedRecord.receivedAmount.toLocaleString()}（${selectedRecord.receivedRate}%）` },
                 { label: '已开票金额', value: `¥${selectedRecord.invoicedAmount.toLocaleString()}（${selectedRecord.invoicedRate}%）` },
-                { label: '状态', value: <Tag color={STATUS_COLOR[selectedRecord.status]}>{selectedRecord.status}</Tag> },
+                { label: '状态', value: <StatusTag meta={PAYMENT_INVOICE_STATUS[selectedRecord.status]} /> },
               ]}
               style={{ marginBottom: 24 }}
             />

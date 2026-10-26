@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Card, Steps } from '@arco-design/web-react';
-import './uiFoundation.css';
+import '../foundation.css';
 
 const Step = Steps.Step;
 

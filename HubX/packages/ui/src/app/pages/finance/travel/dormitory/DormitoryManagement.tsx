@@ -42,7 +42,7 @@ import {
 import type { DormitoryBuilding, DormitoryCheckIn, DormitoryExpense, DormitoryMaintenance, DormitoryBed } from '../types';
 import { getDormitoryList } from '../travel-api';
 import { mockDormitories, mockTrips } from '../mock-data';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../travelAdminConsistency.css';
 import './dormitoryManagement.css';
 
@@ -1050,7 +1050,7 @@ export function DormitoryManagement() {
       />
 
       {/* 4 大核心指标中枢 */}
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'buildings',

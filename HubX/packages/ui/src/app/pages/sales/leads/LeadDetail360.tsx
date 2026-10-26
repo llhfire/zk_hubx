@@ -74,7 +74,7 @@ import { LeadFollowUpModal, type LeadFollowUpFormValues } from './components/Lea
 import { LeadFinalContractPanel } from './components/LeadFinalContractPanel';
 import { LeadStagePopover, type LeadStageSopInfo } from './components/LeadStagePopover';
 import { SelectQuoteModeModal } from './components/SelectQuoteModeModal';
-import { WeChatIcon } from '../../../components/ui';
+import { WeChatIcon } from '@/design-system';
 import './components/NewLeadModal.css';
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
@@ -105,13 +105,13 @@ import {
 } from './components/LeadQuotationManager';
 import {
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
   ProcessRecordCard,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import {
   CollectionRecordModal,
   ContractPaymentInvoicePanel,
@@ -1198,7 +1198,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
         })}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'owner',
@@ -1228,9 +1228,9 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
       />
 
       {/* ========== 主体区域：70:30 分栏 ========== */}
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧主区域 (70%) */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           {/* 关键信息档案卡 */}
           <Card
             size="small"
@@ -1720,10 +1720,10 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               )}
             </div>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧互动流与协同 (30%) */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           {/* 售前聊天群分析 */}
           {lead.presalesGroupName && (
             <Card size="small" title="售前聊天群分析" style={{ marginBottom: 14 }}>
@@ -1857,8 +1857,8 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               )}
             </div>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       <Modal
         title={leadOperation === 'transfer' ? '转移给他人' : leadOperation === 'return' ? '扔回公海' : '标记为垃圾'}

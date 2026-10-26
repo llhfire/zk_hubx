@@ -47,7 +47,7 @@ import {
 import { FinanceAuditDashboard } from '../components/FinanceAuditDashboard';
 import type { Reimbursement, ReimbursementStatus } from '../types';
 import { getReimbursementList, approveReimbursement, payReimbursement } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './reimbursementList.css';
 
 const { Text } = Typography;
@@ -442,7 +442,7 @@ export function ReimbursementList() {
       />
 
       {/* 顶部指标卡：支持点击直接筛选对应状态 */}
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'total',

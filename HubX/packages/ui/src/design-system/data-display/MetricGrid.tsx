@@ -1,24 +1,28 @@
 import type { ReactNode } from 'react';
 import { Card } from '@arco-design/web-react';
-import './uiFoundation.css';
+import '../foundation.css';
 
-export type ProcessMetricTone = 'neutral' | 'success' | 'warning' | 'danger';
+export type MetricTone = 'neutral' | 'success' | 'warning' | 'danger';
 
-export interface ProcessMetricItem {
+export interface MetricItem {
   key: string;
   label: ReactNode;
   value: ReactNode;
   detail?: ReactNode;
-  tone?: ProcessMetricTone;
+  tone?: MetricTone;
   onClick?: () => void;
   ariaLabel?: string;
 }
 
-interface ProcessMetricGridProps {
-  items: ProcessMetricItem[];
+interface MetricGridProps {
+  items: MetricItem[];
 }
 
-export function ProcessMetricGrid({ items }: ProcessMetricGridProps) {
+/**
+ * 指标网格。所有「一排统计卡」都走它，不要再用 <Statistic> 或手拼 Card 网格。
+ * 两行结构（标签一行 + 值一行）由 CSS 保证，见 M-043。
+ */
+export function MetricGrid({ items }: MetricGridProps) {
   return (
     <Card className="hubx-process-metrics" size="small">
       <div className="hubx-process-metrics__grid">

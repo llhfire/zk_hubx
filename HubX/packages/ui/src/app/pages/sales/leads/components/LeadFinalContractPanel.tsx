@@ -15,7 +15,7 @@ import {
 import type { Contract, ContractVersion } from '../../contracts/types';
 import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../../contracts/utils';
 import { renderContractDocument } from '../../contracts/templates';
-import { DocumentViewerModal } from '../../../../components/ui';
+import { DocumentViewerModal } from '@/design-system';
 import './LeadFinalContractPanel.css';
 import { formatMoney as formatCurrency } from '../../../../utils/money';
 

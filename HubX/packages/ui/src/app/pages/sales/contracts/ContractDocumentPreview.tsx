@@ -24,7 +24,7 @@ import {
 import { initialProjects } from '../../delivery/project/mockData';
 import { useContracts } from './ContractsContext';
 import { contractTemplates, renderContractDocument } from './templates';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 import type { ContractFormData, ContractVersionAttachment } from './types';
 import { createDocxBlob } from '../../../documents/wordExport';
 

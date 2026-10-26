@@ -27,7 +27,7 @@ import {
   IconRefresh,
   IconSearch,
 } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { filterSupplierRecords, hasSupplierFilters } from '../../support/system/supportDomainListModel';
 import '../../support/system/supportDomainLists.css';
 
@@ -178,7 +178,7 @@ export function SupplierManagement() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增供应商</Button>}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'suppliers', label: '供应商', value: summary.totalSuppliers, detail: `平均评级 ${(suppliers.reduce((sum, supplier) => sum + supplier.rating, 0) / Math.max(suppliers.length, 1)).toFixed(1)} ★` },
         { key: 'contracts', label: '分包合同', value: summary.totalContracts, detail: `总额 ¥${summary.totalAmount.toLocaleString()}` },
         { key: 'unpaid', label: '待付金额', value: `¥${summary.unpaidAmount.toLocaleString()}`, detail: '未付款计划', tone: summary.unpaidAmount ? 'warning' : 'neutral' },

@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconDelete, IconEdit, IconEye, IconPlus, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import {
   calculateDictionaryMetrics,
   EMPTY_DICTIONARY_FILTERS,
@@ -261,7 +261,7 @@ export function Dictionary() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={handleAddType}>新建分类</Button>}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'types', label: '分类总数', value: `${metrics.typeCount} 个`, detail: '当前 α 会话' },
           { key: 'active-types', label: '启用分类', value: `${metrics.activeTypeCount} 个`, detail: '可用于业务字段', tone: 'success' },

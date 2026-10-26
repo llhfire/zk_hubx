@@ -7,8 +7,8 @@ import {
 import { IconDelete } from '@arco-design/web-react/icon';
 import { differenceInDays } from 'date-fns';
 import {
-  PageShell, ProcessOverview, ProcessWorkspace, ProcessWorkspaceMain,
-} from '../../../components/ui';
+  PageShell, ProcessOverview, SplitLayout, SplitLayoutMain,
+} from '@/design-system';
 import { useProjects } from '../project/ProjectContext';
 import { useOptionalContracts } from '../../sales/contracts/ContractsContext';
 import type { ProjectStatus } from '../project/mockData';
@@ -257,8 +257,8 @@ export default function DeliveryPlanPage() {
         )}
       />
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <Card size="small" className="delivery-plan__toolbar-card">
             <div className="delivery-plan__toolbar">
               <div><Text bold>交付排期</Text><Text type="secondary">左侧管理步骤，右侧查看时间轴</Text></div>
@@ -291,9 +291,9 @@ export default function DeliveryPlanPage() {
               </div>
             </div>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
-      </ProcessWorkspace>
+      </SplitLayout>
 
       <DeliveryConfigModal visible={configModalVisible} onCancel={() => setConfigModalVisible(false)}
         onConfirm={handleConfigConfirm} contractId={project.contractId} deliveryType={contractDeliveryType}

@@ -34,7 +34,7 @@ import {
   type DepartmentRoutineConfig,
   findJobPosition,
 } from './jobWorkConfigData';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 import './JobWorkConfigPage.css';
 
 const { Title, Text } = Typography;

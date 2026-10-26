@@ -1,6 +1,6 @@
 import { Breadcrumb } from '@arco-design/web-react';
 import { Link } from 'react-router';
-import './uiFoundation.css';
+import '../foundation.css';
 
 export interface PageBreadcrumbItem {
   label: string;

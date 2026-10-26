@@ -21,7 +21,7 @@ import {
   IconLocation,
   IconClockCircle,
 } from '@arco-design/web-react/icon';
-import { ProcessMetricGrid } from '../../../../components/ui';
+import { MetricGrid } from '@/design-system';
 import '../travelAdminConsistency.css';
 
 const { Text } = Typography;
@@ -382,7 +382,7 @@ export function FinanceAuditDashboard() {
         <div className="travel-audit__description">三方比对：出差申请 vs 打卡记录 vs 报销发票</div>
       </div>
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'pending', label: '待审核', value: `${MOCK_AUDIT_CASES.length} 单`, detail: '当前 AI 稽核样本' },
         { key: 'pass', label: '推荐通过', value: `${passCount} 单`, detail: '申请、打卡与发票匹配', tone: 'success' },
         { key: 'partial', label: '部分扣减', value: `${partialCount} 单`, detail: '存在可修正异常', tone: 'warning' },

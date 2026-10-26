@@ -40,14 +40,14 @@ import {
 } from '@arco-design/web-react/icon';
 import {
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-  type ProcessMetricItem,
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+  type MetricItem,
   type ProcessOverviewStep,
-} from '../../../components/ui';
+} from '@/design-system';
 import { useCustomers } from './CustomerContext';
 import { deriveCustomerStatus } from './customerModel';
 import type { CustomerContact } from './types';
@@ -285,7 +285,7 @@ export function CustomerDetail() {
   }, [customer, related.contracts]);
 
   // 顶部 4 大微可视化指标卡
-  const overviewMetrics: ProcessMetricItem[] = [
+  const overviewMetrics: MetricItem[] = [
     {
       key: 'contracts',
       label: (
@@ -545,12 +545,12 @@ export function CustomerDetail() {
       />
 
       {/* 顶部 4 大微可视化指标卡 */}
-      <ProcessMetricGrid items={overviewMetrics} />
+      <MetricGrid items={overviewMetrics} />
 
       {/* 主次分流双栏工作区 */}
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧 Main：业务流转与交付协同 */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           <Card className="customer-detail-main" bordered={false}>
             <Tabs activeTab={activeMainTab} onChange={setActiveMainTab}>
               {/* Tab 1: 全链路业务机会 */}
@@ -938,10 +938,10 @@ export function CustomerDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧 Aside：工商档案与开票税务伴生 */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card bordered={false}>
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab}>
               {/* Aside Tab 1: 工商基础资料 */}
@@ -1057,8 +1057,8 @@ export function CustomerDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       {/* 模态弹窗：编辑客户资料 */}
       <Modal

@@ -45,7 +45,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Loan, LoanStatus } from '../types';
 import { getLoanList, approveLoan, payLoan } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './loanList.css';
 
 const { Text } = Typography;
@@ -474,7 +474,7 @@ export function LoanList() {
       />
 
       {/* 顶部指标卡：支持点击直接筛选状态 */}
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'total',

@@ -51,7 +51,7 @@ import {
   endTrip,
   deleteTrip,
 } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './tripList.css';
 
 const { Text } = Typography;
@@ -559,7 +559,7 @@ export function TripList() {
       />
 
       {/* 顶部指标卡：支持点击直接筛选状态 */}
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'all',

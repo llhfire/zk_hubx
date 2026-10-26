@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, Card, Descriptions, Empty, Input, Message, Modal, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
 import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import { IconCopy, IconEye, IconFile, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { useProjectInvoices, type ProjectInvoiceApplication } from './ProjectInvoiceContext';
 import {
   calculateProjectInvoiceListMetrics,
@@ -146,7 +146,7 @@ export function ProjectInvoicePage() {
         description="集中处理项目提交的开票申请，核对客户与回款信息，并回传发票附件。"
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'applications', label: '申请总数', value: `${metrics.applicationCount} 条`, detail: '当前可查看范围' },
           { key: 'pending', label: '待开票', value: `${metrics.pendingCount} 条`, detail: '等待财务处理', tone: metrics.pendingCount > 0 ? 'warning' : 'neutral' },

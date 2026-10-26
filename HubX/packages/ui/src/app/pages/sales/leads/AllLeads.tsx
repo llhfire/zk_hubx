@@ -51,7 +51,7 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './utils';
-import { TrashLeadIcon, WeChatIcon, PageShell, PageHeader, ProcessMetricGrid } from '../../../components/ui';
+import { TrashLeadIcon, WeChatIcon, PageShell, PageHeader, MetricGrid } from '@/design-system';
 
 export function AllLeads() {
   const navigate = useNavigate();
@@ -344,7 +344,7 @@ export function AllLeads() {
         description="全息透视公司各渠道、各主体与责任人的线索流动全貌，支持复合多维检索与全局流转把控。"
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'allTotal',

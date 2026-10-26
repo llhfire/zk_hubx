@@ -12,7 +12,7 @@ import {
   WORK_ITEM_LABELS,
 } from './mockData';
 import { WORK_ATTRIBUTION_LABELS } from './workAttribution';
-import { PageShell } from '../../../components/ui';
+import { PageShell } from '@/design-system';
 
 const CollapseItem = Collapse.Item;
 

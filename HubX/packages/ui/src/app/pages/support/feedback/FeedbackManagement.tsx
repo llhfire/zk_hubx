@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@arco-design/web-react';
 import { IconCheckCircle, IconDownload, IconEye, IconFile, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import {
   formatFeedbackAttachmentSize,
   getFeedbackAttachmentFile,
@@ -144,7 +144,7 @@ export function FeedbackManagement() {
     <PageShell className="system-admin-list feedback-management-page">
       <PageHeader title="意见反馈管理" description="查看员工提交的使用问题和功能建议，并记录处理结果。" />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '全部反馈', value: metrics.total, detail: '当前已收集' },
         { key: 'pending', label: '待处理', value: metrics.pending, detail: '需要跟进', tone: metrics.pending ? 'warning' : 'neutral' },
         { key: 'processed', label: '已处理', value: metrics.processed, detail: '已完成闭环', tone: 'success' },

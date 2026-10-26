@@ -561,7 +561,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   const deliveryPercent = Math.round(((breakdown.travelSubtotal + breakdown.onsiteSubtotal) / totalCostForBar) * 100);
 
   return (
-    <div className="stage3-container">
+    <div className="stage3-container hubx-numeral">
       {/* 顶栏：签约法人主体与增补信息轻量横栏 */}
       <Card size="small" style={{ marginBottom: 16, background: 'var(--color-bg-2)', borderRadius: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
@@ -751,11 +751,11 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                                     )}
                                     <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
                                     {evalSheet.activeRoles.map((r: EvalRole, ri) => (
-                                      <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                                      <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)' }}>
                                         {roleDays[ri] > 0 ? roleDays[ri].toFixed(1) : '-'}
                                       </td>
                                     ))}
-                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontFamily: "'Inter Variable', Arial, sans-serif", fontWeight: 500 }}>
+                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 500 }}>
                                       {totalDays > 0 ? totalDays.toFixed(1) : '-'}
                                     </td>
                                   </tr>
@@ -770,13 +770,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                                   const rDays = (evalSheet?.evaluationUnits || []).reduce((s, u) => s + (u.manualWorkload[r.key] ?? 0), 0);
                                   const rCost = rDays * (roleDailyCosts[r.key] ?? 0);
                                   return (
-                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif", fontSize: 11 }}>
+                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontSize: 11 }}>
                                       <div>{rDays.toFixed(1)}</div>
                                       <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>{money(rCost)}</div>
                                     </td>
                                   );
                                 })}
-                                <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                                <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)' }}>
                                   {grandDays.toFixed(1)}
                                 </td>
                               </tr>
@@ -903,7 +903,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     </div>
                     <div>
                       <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>小计</Text>
-                      <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13, fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(role.subtotal)}</Text>
+                      <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>{money(role.subtotal)}</Text>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       {!readonly && (
@@ -1007,7 +1007,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                               )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)' }}>
                                 单地小计: {money(destSubtotal)}
                               </span>
                               {!readonly && (
@@ -1100,7 +1100,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                               )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)', fontFamily: "'Inter Variable', Arial, sans-serif" }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)' }}>
                                 单地小计: {money(siteSubtotal)}
                               </span>
                               {!readonly && (
@@ -1156,7 +1156,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 </Space>
                 {otherCosts.length > 0 && (
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    自费总额：<Text bold style={{ fontFamily: "'Inter Variable', Arial, sans-serif" }}>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
+                    自费总额：<Text bold>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
                   </Text>
                 )}
               </div>
@@ -1455,7 +1455,6 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                             fontWeight: 600,
                             fontSize: 12,
                             color: 'var(--color-text-1)',
-                            fontFamily: "'Inter Variable', Arial, sans-serif",
                             whiteSpace: 'nowrap',
                           }}
                         >

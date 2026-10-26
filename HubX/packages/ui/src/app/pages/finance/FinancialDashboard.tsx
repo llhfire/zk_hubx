@@ -16,7 +16,7 @@ import {
   Message,
   Popconfirm,
 } from '@arco-design/web-react';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { contractCostPermissions } from './contract-cost/contractCostData';
 import {
   PieChart, Pie, Cell, Tooltip as RechartTooltip, Legend,
@@ -217,7 +217,7 @@ export function FinancialDashboard() {
         description="统一查看合同回款、成本利润与运营费用，支持从汇总指标穿透到合同费用明细。"
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={activeTab === 'contract' ? [
           { key: 'contract', label: '合同总额', value: `¥${(totalContract / 10000).toFixed(0)}万`, detail: `${contractData.length} 份合同` },
           { key: 'received', label: '到账金额', value: `¥${(totalReceived / 10000).toFixed(0)}万`, detail: `回款率 ${collectionRate.toFixed(1)}%`, tone: 'success' },

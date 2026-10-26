@@ -28,7 +28,7 @@ import {
   AttendanceStatus,
   ALL_LEAVE_TYPES,
 } from './mockData';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus, type StatusMap } from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
@@ -45,16 +45,12 @@ const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   '加班': 'var(--success-500)',
 };
 
-const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  '已批准': 'var(--success-500)',
-  '待审批': 'var(--warning-500)',
-  '已拒绝': 'var(--destructive-500)',
-  '已撤销': 'var(--grey-400)',
+const ATTENDANCE_STATUS: StatusMap<AttendanceStatus> = {
+  '已批准': { label: '已批准', tone: 'success' },
+  '待审批': { label: '待审批', tone: 'warning' },
+  '已拒绝': { label: '已拒绝', tone: 'danger' },
+  '已撤销': { label: '已撤销', tone: 'neutral' },
 };
-
-function getStatusColor(s: AttendanceStatus) {
-  return ATTENDANCE_STATUS_COLORS[s] || 'var(--grey-400)';
-}
 
 export function AttendanceManagement() {
   const { attendance, employees, addAttendance, approveAttendance, rejectAttendance } = useEmployee();
@@ -149,7 +145,7 @@ export function AttendanceManagement() {
       dataIndex: 'status',
       width: 80,
       render: (s: AttendanceStatus) => (
-        <Tag color={getStatusColor(s)}>{s}</Tag>
+        <StatusTag meta={resolveStatus(ATTENDANCE_STATUS, s)} />
       ),
     },
     {
@@ -198,7 +194,7 @@ export function AttendanceManagement() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={handleAdd}>新增申请</Button>}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'leave', label: '本月请假', value: `${stats.totalLeaveDays} 天`, detail: currentMonth },
           { key: 'overtime', label: '本月加班', value: `${stats.totalOvertimeHours} 小时`, detail: currentMonth, tone: 'success' },

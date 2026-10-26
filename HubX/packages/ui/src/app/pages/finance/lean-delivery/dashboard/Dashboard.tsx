@@ -12,7 +12,7 @@ import {
   Statistic,
   Message,
 } from '@arco-design/web-react';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus } from '@/design-system';
 import {
   mockCases,
   mockCostItems,
@@ -121,7 +121,7 @@ export default function Dashboard() {
     },
     {
       title: '状态', dataIndex: 'status', width: 100,
-      render: (v: string) => <Tag color={caseStatusMap[v as keyof typeof caseStatusMap]?.color === 'success' ? 'green' : 'blue'}>{caseStatusMap[v as keyof typeof caseStatusMap]?.label}</Tag>,
+      render: (v: string) => <StatusTag meta={resolveStatus(caseStatusMap, v)} />,
     },
     { title: '更新时间', dataIndex: 'updatedAt', width: 120, render: (v: string) => new Date(v).toLocaleDateString() },
   ];
@@ -139,7 +139,7 @@ export default function Dashboard() {
         )}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         {
           key: 'cases',
           label: '业务单总数',

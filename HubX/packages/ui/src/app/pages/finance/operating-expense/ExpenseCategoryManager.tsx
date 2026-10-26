@@ -15,7 +15,7 @@ import {
   Message,
 } from '@arco-design/web-react';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const RadioGroup = Radio.Group;
@@ -179,7 +179,7 @@ export function ExpenseCategoryManager() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={() => openCreate(1)}>新增一级分类</Button>}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'parents', label: '一级分类', value: tree.length, detail: '成本归集主类' },
         { key: 'children', label: '二级分类', value: categories.filter((category) => category.level === 2).length, detail: '费用核算小项' },
         { key: 'enabled', label: '已启用', value: enabledCount, detail: `共 ${categories.length} 项`, tone: 'success' },

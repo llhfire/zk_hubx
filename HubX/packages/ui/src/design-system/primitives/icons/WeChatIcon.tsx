@@ -1,5 +1,5 @@
-import wechatIcon from '../../../assets/wechat.svg';
-import './uiFoundation.css';
+import wechatIcon from '@/assets/wechat.svg';
+import '../../foundation.css';
 
 export interface WeChatIconProps {
   className?: string;

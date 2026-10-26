@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
 import { Button, Card, DatePicker, Empty, Input, Select, Space, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
 import { IconEye, IconPlus, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import { DailyReportDetail } from './DailyReportDetail';
 import type { DailyReport, DailyReportComment } from './types';
 import { getDailyReportTotalHours, getDailyReportWorkTypeText, mockDailyReports } from './mockData';
@@ -157,7 +157,7 @@ export function DailyReportList() {
         )}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'reports', label: '日报总数', value: `${metrics.reportCount} 份`, detail: '当前可查看范围' },
           { key: 'reporters', label: '汇报人数', value: `${metrics.reporterCount} 人`, detail: '按员工去重' },

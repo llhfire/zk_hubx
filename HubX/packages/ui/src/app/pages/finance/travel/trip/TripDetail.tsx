@@ -28,12 +28,12 @@ import {
 import {
   PageBreadcrumb,
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+} from '@/design-system';
 import type { Trip, TripStatus } from '../types';
 import { closeTrip, endTrip, getTripDetail, startTrip } from '../travel-api';
 import { TripCoreProfileCard } from './TripDetail/TripCoreProfileCard';
@@ -329,10 +329,10 @@ export function TripDetail() {
         }
       />
 
-      <ProcessMetricGrid items={processMetrics} />
+      <MetricGrid items={processMetrics} />
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <TripCoreProfileCard trip={trip} />
 
           <Card size="small" className="trip-detail__tabs-card">
@@ -363,9 +363,9 @@ export function TripDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card size="small" className="trip-detail__aside-tabs-card trip-detail__aside-timeline-card">
             <Tabs activeTab={activeSideTab} onChange={handleSideTabChange}>
               <TabPane key="itinerary" title={SIDE_TAB_LABELS.itinerary}>
@@ -446,8 +446,8 @@ export function TripDetail() {
               </div>
             </Space>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       {/* 打印差旅单凭证套打模态框 */}
       <Modal

@@ -32,7 +32,7 @@ import {
   IconRefresh,
   IconSearch,
 } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
 import '../../support/system/supportDomainLists.css';
 
 const Row = Grid.Row;
@@ -390,7 +390,7 @@ export function KnowledgeBase() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={openUpload}>上传至{selectedLabel}</Button>}
       />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'total', label: '全部文档', value: documents.length, detail: '当前知识资产' },
         { key: 'organization', label: '当前组织', value: departmentDocuments.length, detail: selectedLabel },
         { key: 'public', label: '全员可见', value: publicDocuments, detail: '跨组织共享文档', tone: 'success' },

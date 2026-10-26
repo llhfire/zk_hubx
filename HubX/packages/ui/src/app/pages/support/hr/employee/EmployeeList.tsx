@@ -37,12 +37,12 @@ import {
   ALL_EMPLOYMENT_STATUSES,
   DEPARTMENTS,
   formatCurrency,
-  getStatusColor,
+  EMPLOYMENT_STATUS,
   calcWorkDays,
 } from './mockData';
 import type { Employee, EmploymentStatus, JobLevel } from './mockData';
 import { useIntegration } from '../../../../integrations/IntegrationContext';
-import { FilterBar, PageHeader, PageShell, ProcessMetricGrid } from '../../../../components/ui';
+import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag } from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
@@ -334,11 +334,7 @@ export function EmployeeList() {
       title: '状态',
       dataIndex: 'employmentStatus',
       width: 80,
-      render: (status: EmploymentStatus) => (
-        <Tag color={getStatusColor(status)}>
-          {status}
-        </Tag>
-      ),
+      render: (status: EmploymentStatus) => <StatusTag meta={EMPLOYMENT_STATUS[status]} />,
     },
     {
       title: '企业微信',
@@ -501,7 +497,7 @@ export function EmployeeList() {
           )}
         />
 
-        <ProcessMetricGrid
+        <MetricGrid
           items={[
             { key: 'active', label: '在职员工', value: `${stats.total} 人`, detail: '不含已离职员工' },
             { key: 'joined', label: '本月入职', value: `${stats.thisMonthHire} 人`, detail: currentMonth, tone: 'success' },

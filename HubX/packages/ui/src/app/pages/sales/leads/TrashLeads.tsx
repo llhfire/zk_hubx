@@ -29,7 +29,7 @@ import {
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
 import { searchLeads } from './utils';
-import { PageShell, PageHeader, ProcessMetricGrid } from '../../../components/ui';
+import { PageShell, PageHeader, MetricGrid } from '@/design-system';
 
 export function TrashLeads() {
   const navigate = useNavigate();
@@ -157,7 +157,7 @@ export function TrashLeads() {
         description="收纳退回、无效或报废线索；支持质检核查、挽回重新认领或释放回公海池。"
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           {
             key: 'trashTotal',

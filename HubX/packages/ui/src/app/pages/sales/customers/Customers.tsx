@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Badge, Button, Card, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Switch, Table, Tooltip } from '@arco-design/web-react';
 import { IconEdit, IconEye, IconPlus, IconSearch, IconSwap } from '@arco-design/web-react/icon';
 import { useNavigate } from 'react-router';
-import { FilterBar, PageHeader, PageShell } from '../../../components/ui';
+import { FilterBar, PageHeader, PageShell } from '@/design-system';
 import { useContracts } from '../contracts/ContractsContext';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';

@@ -14,7 +14,7 @@ import {
   Popconfirm,
 } from '@arco-design/web-react';
 import { IconSave } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, ProcessMetricGrid } from '../../../components/ui';
+import { PageHeader, PageShell, MetricGrid } from '@/design-system';
 import './systemConfigConsistency.css';
 import { DEFAULT_SALES_BUSINESS_CONFIG, SYSTEM_CONFIG_STORAGE_KEY } from './systemConfigStore';
 
@@ -138,7 +138,7 @@ export function SystemConfig() {
       />
       <input ref={restoreInputRef} type="file" accept="application/json,.json" hidden onChange={(event) => handleRestoreFile(event.target.files?.[0])} />
 
-      <ProcessMetricGrid items={[
+      <MetricGrid items={[
         { key: 'channels', label: '消息渠道', value: '3 类', detail: '企业微信、邮件、短信' },
         { key: 'backup', label: '自动备份', value: '每日 02:00', detail: '保留 30 天', tone: 'success' },
         { key: 'lead', label: '派发 / 首联 SLA', value: '30 / 120 分钟', detail: '只告警和催办，不自动回收' },

@@ -4,21 +4,14 @@ import { IconUser } from '@arco-design/web-react/icon';
 import type { Contract, PaymentStatus } from '../types';
 import { computePaymentStatus, getReceivedAmount, getLatestDunning, getPaymentPeriodLabel } from '../paymentUtils';
 import { BLOCKER_TYPE_LABELS } from '../types';
+import { MoneyText, STATUS_TONE_VARS, type StatusMap } from '@/design-system';
 
-const STATUS_COLORS: Record<PaymentStatus, string> = {
-  normal: 'var(--brand-500)',
-  upcoming: 'var(--warning-500)',
-  overdue: 'var(--destructive-500)',
-  blocked: 'var(--destructive-600)',
-  settled: 'var(--success-500)',
-};
-
-const STATUS_LABELS: Record<PaymentStatus, string> = {
-  normal: '正常',
-  upcoming: '即将到期',
-  overdue: '已逾期',
-  blocked: '卡点阻塞',
-  settled: '已结清',
+const PAYMENT_STATUS: StatusMap<PaymentStatus> = {
+  normal: { label: '正常', tone: 'info' },
+  upcoming: { label: '即将到期', tone: 'warning' },
+  overdue: { label: '已逾期', tone: 'danger' },
+  blocked: { label: '卡点阻塞', tone: 'danger' },
+  settled: { label: '已结清', tone: 'success' },
 };
 
 interface Props {
@@ -33,6 +26,8 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
   const pct = total > 0 ? Math.round((received / total) * 100) : 0;
   const latestDunning = getLatestDunning(contract.dunningRecords ?? []);
   const activeBlockers = (contract.paymentBlockers ?? []).filter(b => !b.resolvedAt);
+  const statusMeta = PAYMENT_STATUS[status];
+  const accent = STATUS_TONE_VARS[statusMeta.tone].fg;
 
   const pendingPlan = contract.current.paymentPlans?.find((_plan, i) => {
     let acc = 0;
@@ -46,13 +41,13 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       className="payment-lane-card"
       hoverable
       onClick={() => onClick(contract)}
-      style={{ '--card-accent': STATUS_COLORS[status] } as CSSProperties}
+      style={{ '--card-accent': accent } as CSSProperties}
     >
       <div className="payment-lane-card__header">
         <div className="payment-lane-card__project-name" title={contract.current.contractName}>
           {contract.current.contractName || '未命名项目'}
         </div>
-        <span className="payment-lane-card__status">{STATUS_LABELS[status]}</span>
+        <span className="payment-lane-card__status">{statusMeta.label}</span>
       </div>
       <div className="payment-lane-card__contract-meta">
         <span className="payment-lane-card__contract-no">合同编号 {contract.contractNo}</span>
@@ -62,21 +57,21 @@ export function PaymentKanbanCard({ contract, onClick }: Props) {
       <div className="payment-lane-card__progress">
         <Progress
           percent={pct}
-          color={STATUS_COLORS[status]}
+          color={accent}
           size="small"
           showText={false}
         />
         <div className="payment-lane-card__progress-meta">
-          <span style={{ color: STATUS_COLORS[status], fontWeight: 600 }}>
-            ¥{received.toLocaleString()} / ¥{total.toLocaleString()}
+          <span className="hubx-numeral">
+            <MoneyText value={received} /> / <MoneyText value={total} />
           </span>
-          <span style={{ color: 'var(--grey-400)' }}>{pct}%</span>
+          <span className="hubx-metric-card__suffix">{pct}%</span>
         </div>
       </div>
 
       {pendingPlan && status !== 'settled' && (
         <div className="payment-lane-card__next-payment">
-          下期：¥{pendingPlan.amount.toLocaleString()}  {pendingPlan.expectedDate}
+          下期：<MoneyText value={pendingPlan.amount} /> {pendingPlan.expectedDate}
         </div>
       )}
 

@@ -40,7 +40,7 @@ import { useEmployee } from './EmployeeContext';
 import {
   formatCurrency,
   getLevelColor,
-  getStatusColor,
+  EMPLOYMENT_STATUS,
   getRankColor,
   calcWorkDays,
   calcPromotionProgress,
@@ -59,13 +59,14 @@ import { initialProjects, initialDailyReports } from '../../../delivery/project/
 import {
   PageShell,
   ProcessOverview,
-  ProcessMetricGrid,
-  ProcessWorkspace,
-  ProcessWorkspaceMain,
-  ProcessWorkspaceAside,
-  type ProcessMetricItem,
+  MetricGrid,
+  SplitLayout,
+  SplitLayoutMain,
+  SplitLayoutAside,
+  StatusTag,
+  type MetricItem,
   type ProcessOverviewStep,
-} from '../../../../components/ui';
+} from '@/design-system';
 import './employeeDetail.css';
 
 const TabPane = Tabs.TabPane;
@@ -256,7 +257,7 @@ export function EmployeeDetail() {
   };
 
   // 顶部 4 大微可视化指标卡
-  const overviewMetrics: ProcessMetricItem[] = [
+  const overviewMetrics: MetricItem[] = [
     {
       key: 'capability',
       label: (
@@ -379,7 +380,7 @@ export function EmployeeDetail() {
           <>
             <Tag color="arcoblue">{employee.department} · {employee.position}</Tag>
             <Tag color={getLevelColor(employee.level)} style={{ fontWeight: 600 }}>{employee.level}</Tag>
-            <Tag color={getStatusColor(employee.employmentStatus)}>{employee.employmentStatus}</Tag>
+            <StatusTag meta={EMPLOYMENT_STATUS[employee.employmentStatus]} />
             {cap?.promotionEligible && <Tag color="var(--warning-500)">🌟 具备晋升资格</Tag>}
           </>
         }
@@ -429,12 +430,12 @@ export function EmployeeDetail() {
       />
 
       {/* 4 大核心微可视化指标卡 */}
-      <ProcessMetricGrid items={overviewMetrics} />
+      <MetricGrid items={overviewMetrics} />
 
       {/* 主次分流双栏工作区 */}
-      <ProcessWorkspace>
+      <SplitLayout>
         {/* 左侧 Main 交付与成长干道 */}
-        <ProcessWorkspaceMain>
+        <SplitLayoutMain>
           <Card bordered={false}>
             <Tabs activeTab={activeMainTab} onChange={setActiveMainTab}>
               <TabPane
@@ -684,10 +685,10 @@ export function EmployeeDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
         {/* 右侧 Aside 档案与画像伴生 */}
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card bordered={false}>
             <Tabs activeTab={activeSideTab} onChange={setActiveSideTab}>
               <TabPane key="profile" title="人事档案">
@@ -713,9 +714,7 @@ export function EmployeeDetail() {
                         <span className="employee-avatar-badge employee-avatar-profile">
                           {employee.name.slice(0, 1)}
                         </span>
-                        <Tag size="small" color={getStatusColor(employee.employmentStatus)} style={{ marginTop: 8 }}>
-                          {employee.employmentStatus}
-                        </Tag>
+                        <StatusTag meta={EMPLOYMENT_STATUS[employee.employmentStatus]} size="small" />
                       </div>
                     </div>
                   </div>
@@ -820,8 +819,8 @@ export function EmployeeDetail() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       {/* 编辑员工资料弹窗 */}
       <Modal

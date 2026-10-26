@@ -1,6 +1,8 @@
 // 财务与交付管理模块 Mock 数据
 // 类型从 types.ts 导入（L1 拆分）
 
+import type { StatusMap } from '@/design-system';
+
 export {
   CaseStatus, HealthStatus, FeatureListStatus, FeatureCategory,
   QuotationStatus, ServiceCategory,
@@ -1096,17 +1098,17 @@ export const mockPostMortems: CasePostMortem[] = [
 
 // Mock 数据：仪表盘数据
 // 状态显示映射
-export const caseStatusMap: Record<CaseStatus, { label: string; color: string }> = {
-  [CaseStatus.DRAFTING]: { label: '草拟中', color: 'default' },
-  [CaseStatus.QUOTING]: { label: '报价中', color: 'processing' },
-  [CaseStatus.NEGOTIATING]: { label: '协商中', color: 'processing' },
-  [CaseStatus.SIGNED]: { label: '已签单', color: 'success' },
-  [CaseStatus.IN_PROGRESS]: { label: '交付中', color: 'processing' },
-  [CaseStatus.SUSPENDED]: { label: '挂起', color: 'warning' },
-  [CaseStatus.ACCEPTING]: { label: '验收中', color: 'processing' },
-  [CaseStatus.COLLECTING]: { label: '催款中', color: 'warning' },
-  [CaseStatus.COMPLETED]: { label: '已完结', color: 'success' },
-  [CaseStatus.TERMINATED]: { label: '已终止', color: 'error' },
+export const caseStatusMap: StatusMap<CaseStatus> = {
+  [CaseStatus.DRAFTING]: { label: '草拟中', tone: 'neutral' },
+  [CaseStatus.QUOTING]: { label: '报价中', tone: 'info' },
+  [CaseStatus.NEGOTIATING]: { label: '协商中', tone: 'info' },
+  [CaseStatus.SIGNED]: { label: '已签单', tone: 'success' },
+  [CaseStatus.IN_PROGRESS]: { label: '交付中', tone: 'info' },
+  [CaseStatus.SUSPENDED]: { label: '挂起', tone: 'warning' },
+  [CaseStatus.ACCEPTING]: { label: '验收中', tone: 'info' },
+  [CaseStatus.COLLECTING]: { label: '催款中', tone: 'warning' },
+  [CaseStatus.COMPLETED]: { label: '已完结', tone: 'success' },
+  [CaseStatus.TERMINATED]: { label: '已终止', tone: 'danger' },
 };
 
 // 健康状态显示映射

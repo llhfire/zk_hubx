@@ -15,12 +15,14 @@ import { Button, Card, Descriptions, Message, Result, Space, Spin, Tabs, Tag, Ty
 import { IconSave, IconSend, IconDelete, IconCheck, IconUndo, IconArchive, IconCopy, IconBrush } from '@arco-design/web-react/icon';
 import {
   PageShell,
-  ProcessMetricGrid,
+  MetricGrid,
   ProcessOverview,
-  ProcessWorkspace,
-  ProcessWorkspaceAside,
-  ProcessWorkspaceMain,
-} from '../../../components/ui';
+  SplitLayout,
+  SplitLayoutAside,
+  SplitLayoutMain,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 import { useSmartMeeting } from './SmartMeetingContext';
 import { viewMinute, type ViewerContext } from './accessControl';
 import { buildVersion } from './versioning';
@@ -55,11 +57,11 @@ const STATUS_LABEL: Record<string, string> = {
   archived: '已归档',
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  draft: 'gray',
-  pending_review: 'orange',
-  confirmed: 'blue',
-  archived: 'default',
+const MINUTE_STATUS: StatusMap<string> = {
+  draft: { label: STATUS_LABEL.draft, tone: 'neutral' },
+  pending_review: { label: STATUS_LABEL.pending_review, tone: 'warning' },
+  confirmed: { label: STATUS_LABEL.confirmed, tone: 'info' },
+  archived: { label: STATUS_LABEL.archived, tone: 'neutral' },
 };
 
 const PROCESS_STEPS = [
@@ -384,7 +386,7 @@ export function SmartMeetingWorkbench() {
         title={isNew ? '新建会议纪要' : title || '未命名纪要'}
         tags={(
           <>
-            <Tag color={STATUS_COLOR[status]}>{STATUS_LABEL[status]}</Tag>
+            <StatusTag meta={MINUTE_STATUS[status]} />
             {activeMinute.adminSource && <Tag color="cyan">来自行政会议</Tag>}
             <Tag color={isReadonly ? 'gray' : 'green'}>{isReadonly ? '只读' : '可编辑'}</Tag>
           </>
@@ -407,7 +409,7 @@ export function SmartMeetingWorkbench() {
         currentStep={STATUS_STEP[status] ?? 0}
       />
 
-      <ProcessMetricGrid
+      <MetricGrid
         items={[
           { key: 'time', label: '会议时间', value: formatMeetingTime(meetingTime) },
           { key: 'attendees', label: '参会人数', value: `${attendeeIds.length} 人`, detail: attendeeIds.map(userName).join('、') || '待添加' },
@@ -425,8 +427,8 @@ export function SmartMeetingWorkbench() {
         <div className="smart-meeting-workbench__source-alert smart-meeting-workbench__source-alert--danger">来源行政会议已删除，纪要继续保留。</div>
       )}
 
-      <ProcessWorkspace>
-        <ProcessWorkspaceMain>
+      <SplitLayout>
+        <SplitLayoutMain>
           <Card className="smart-meeting-workbench__tabs-card">
             <Tabs activeTab={activeWorkspace} onChange={setActiveWorkspace}>
               <TabPane key="prepare" title="会议整理">
@@ -465,14 +467,14 @@ export function SmartMeetingWorkbench() {
               </TabPane>
             </Tabs>
           </Card>
-        </ProcessWorkspaceMain>
+        </SplitLayoutMain>
 
-        <ProcessWorkspaceAside>
+        <SplitLayoutAside>
           <Card title="当前处理" size="small">
             <Space direction="vertical" size={12} className="smart-meeting-workbench__aside-stack">
               <div>
                 <Text type="secondary">当前阶段</Text>
-                <div className="smart-meeting-workbench__aside-value"><Tag color={STATUS_COLOR[status]}>{STATUS_LABEL[status]}</Tag></div>
+                <div className="smart-meeting-workbench__aside-value"><StatusTag meta={MINUTE_STATUS[status]} /></div>
               </div>
               <Text>{STATUS_TASK[status]}</Text>
               <div>
@@ -522,8 +524,8 @@ export function SmartMeetingWorkbench() {
               { label: '同步就绪', value: `${syncReadyCount} 项` },
             ]} />
           </Card>
-        </ProcessWorkspaceAside>
-      </ProcessWorkspace>
+        </SplitLayoutAside>
+      </SplitLayout>
 
       <VersionDrawer visible={versionDrawerVisible} versions={activeMinute.versions} onClose={() => setVersionDrawerVisible(false)} />
       <ConfirmFlowModals

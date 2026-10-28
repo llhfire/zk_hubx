@@ -59,9 +59,12 @@ npx vitest run packages/ui/src/app/reminders/__tests__/utils.test.ts -t "测试�
 
 - React 18 + Vite 7
 - React Router 7.18（`createBrowserRouter`）
-- Arco Design 作为主要业务 UI 组件库
+- Arco Design 作为设计系统的底层实现材料；页面 UI 的唯一来源是 `@/design-system`，页面不得直接以 Arco、原生 HTML、页面级 JSX/CSS 或业务目录局部组件替代设计系统组件。
 - Tailwind CSS v4 + 全局主题变量
-- `packages/ui/src/app/components/ui/` 下有一套 shadcn / Radix 风格通用组件，但业务页面目前更多直接使用 Arco 组件
+- **设计系统**在 `packages/ui/src/design-system/`（`primitives` / `layout` / `data-display` / `forms` / `feedback` / `business`），唯一导出入口 `@/design-system`。原 `app/components/ui/` **已删除**，禁止再引用。
+  - **铁律**：已有组件不恰当时，先在设计系统中补受限 `variant` / `tone` / `size` 或新建组件，完成实现、token/CSS、测试、导出、`/ui-library` 实样和门禁后，页面才能使用；禁止“先在页面里临时写，以后再抽”。
+  - 规范：`docs/design-system/设计系统规范.md`；清单：`docs/design-system/组件清单.md`；实样：`/ui-library` 四层——「基础 UI」（原子/录入）+「模块组件」（组合块，六类分页签）+「页面框架」（骨架）+「业务样板」（真实切片）。
+  - 门禁：`npm run check:ds` + `npm run check:ds:strict`。严格门禁要求页面侧直接 Arco import 为 0；现有门禁还会拦 `<Card>` / `<Alert>` / `<Progress>` / `<Tag color>`、内联硬编码色和重复状态色映射。
 
 ## 应用结构
 

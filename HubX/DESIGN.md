@@ -2,15 +2,17 @@
 
 > 适用范围：`packages/ui/src/app`。运行时组件目录页：`/ui-library`。
 
+> **组件库铁律：页面 UI 只能从 `@/design-system` 取用。**如果现有组件不恰当，先补受限变体或新组件，并完成导出、测试、实样和门禁；不得直接在页面里用 Arco、原生 HTML、局部 JSX/CSS 拼出替代品。
+
 ## 组件分层
 
-### 1. 基础 UI
+### 1. 设计系统组件
 
-基础控件统一来自 `@arco-design/web-react`，包括 Button、Input、Select、Form、Card、Table、Tabs、Tag、Modal、Drawer 等。不得为调整少量样式重新绘制同类控件；优先使用 Arco 属性、语义色和全局 token。
+页面组件统一来自 `@/design-system`，包括布局、表单、表格、反馈、状态、指标和业务语义组件。Arco 的 Button、Input、Select、Form、Card、Table、Tabs、Tag、Modal、Drawer 等只能作为设计系统内部实现，页面不得直接 import 或重新拼装。
 
-### 2. 模块组件
+### 2. 组件分层
 
-共享模块位于 `packages/ui/src/app/components/ui/`：
+共享组件位于 `packages/ui/src/design-system/`，按 `primitives` / `layout` / `data-display` / `forms` / `feedback` / `business` 分层：
 
 | 组件 | 用途 |
 |---|---|
@@ -18,17 +20,26 @@
 | `PageBreadcrumb` | 二级及以上页面层级导航 |
 | `PageHeader` | 普通列表、配置和看板页头 |
 | `FilterBar` | 搜索、筛选和批量操作排列 |
+| `SectionTabs` | 分区页签、数量角标和页签内容承载 |
 | `ProcessOverview` | 长周期对象的身份、动作和全宽流程 |
-| `ProcessMetricGrid` | 长流程页面等宽关键摘要 |
+| `ProcessPanelSection` | 业务过程侧栏页签的动作栏与内容间距 |
+| `MetricGrid` | 长流程页面等宽关键摘要 |
 | `ProcessRecordCard` | 业务过程区的记录标题、状态、编号、摘要和操作 |
-| `ProcessWorkspace` | 长流程详情的响应式 70:30 主辅工作区 |
+| `SplitLayout` | 长流程详情的响应式主辅工作区 |
+| `FeatureWorkloadMatrix` | 报价研发工时矩阵，统一端/模块/子功能分组、岗位工时和合计 |
+| `RiskRadarGrid` | 风控体检指标，统一结果、风险边界和解释文本 |
+| `ProcessStepper` | 指挥栏横向流程条，统一节点、状态和快捷详情 |
+| `RoleRateGrid` | 岗位人天、日均成本和岗位小计的统一编辑网格 |
+| `EvaluationWorkloadTable` | 在线人天评估表，统一端分组、岗位列、选择、备注和操作 |
+| `WorkloadNumericInput` | 评估表数字输入，统一光标步进、WASD/方向键漫游和错误态 |
+| `DormitoryRoomBoard` | 宿舍楼层、房间、床位房态矩阵，统一过滤和入住/退宿动作 |
 
-新增模块组件必须具有至少三个明确复用场景，提供 TypeScript 接口、组件库页面示例和测试。一次性业务内容保留在业务模块中。
+新增组件必须先证明它是稳定的 UI 语汇或跨页面语义，提供 TypeScript 接口、组件库页面示例和测试。一次性业务内容保留在业务模块中；不能因为“暂时只用一次”就在页面里绕过组件库。
 
 ### 3. 页面框架
 
 - **列表页**：`PageHeader → 一级页签（可选）→ FilterBar → Table/List → 分页或批量操作`。
-- **长流程详情页**：`PageBreadcrumb → ProcessOverview → ProcessMetricGrid → 70:30 主辅区 → Tab/任务板块`。
+- **长流程详情页**：`PageBreadcrumb → ProcessOverview → MetricGrid → 70:30 主辅区 → Tab/任务板块`。
 - **表单页**：`PageBreadcrumb → PageHeader → 分组表单 → 固定提交区`；有未保存内容时保留取消/返回。
 
 ### 4. 成熟业务样板
@@ -44,15 +55,16 @@
 - 步骤条占满可用宽度；窄屏横向滚动，不压缩阶段文字。
 - 摘要指标等宽排列，标签 12px、值 14–16px；异常使用浅语义背景，不使用粗彩色侧边条。
 - 页面外边距由主框架提供，板块间距统一为 16px。
-- 主体使用 `ProcessWorkspace`；宽屏保持 70:30，1200px 以下自动纵向排列。
+- 主体使用 `SplitLayout`；宽屏保持主辅区比例，1200px 以下自动纵向排列。
 - 业务过程区的报价、合同、资料、出差等记录使用 `ProcessRecordCard`；标题与状态同排，编号降为辅助信息，摘要不超过一行信息组，主操作固定在右侧。
+- 业务过程侧栏的每个页签使用 `ProcessPanelSection` 承载动作栏和内容；不得在页面重复拼装右对齐动作区与底部间距。
 
 ## 页面构建与检查顺序
 
-1. 先在 Arco 中选择基础 UI。
-2. 再访问 `/ui-library`，选择已有模块组件。
-3. 再选择页面框架并注入业务数据与动作。
-4. 只有现有组件无法表达不同的交互目的时才新增组件；新增后必须同步本文件与组件库页面。
+1. 先阅读 `docs/design-system/设计系统规范.md` 与 `组件清单.md`，确定需要的 UI 语汇。
+2. 再访问 `/ui-library`，从 `@/design-system` 选择已有组件。
+3. 现有组件不恰当时，先增加受限变体或新建组件，完成导出、测试、实样和门禁后再改页面。
+4. 选择页面框架并注入业务数据与动作；页面只负责组件编排，不负责重新定义 UI。
 5. 检查桌面宽屏、1440px 和窄屏换行，验证空态、加载、错误、禁用、长文本和危险操作。
 
 ## 禁止事项

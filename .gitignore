@@ -14,3 +14,6 @@ PLAN.md
 文档/会议/**/*.aac
 文档/会议/**/*.ogg
 文档/会议/**/*.flac
+
+# 本地 UI 审计工具产物（impeccable）
+.impeccable/

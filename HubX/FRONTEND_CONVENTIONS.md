@@ -5,11 +5,12 @@
 
 ## 一、组件库
 
-**业务组件一律用 Arco Design**（`@arco-design/web-react`）。
+**页面 UI 一律从设计系统唯一入口 `@/design-system` 导入。**Arco Design（`@arco-design/web-react`）是设计系统的底层实现材料，不是页面级组件来源。
 
-- 表单、表格、弹窗、菜单、布局、消息提示等统一用 Arco 组件；图标用 `@arco-design/web-react/icon`。
-- `packages/ui/src/app/components/ui/` 下的 shadcn/Radix 组件及其依赖已于 2026-08-13 清除（git tag `pre-cleanup-20260813` 可回滚）；不要重新引入 shadcn/Radix 或第三方 UI 库。
-- 需要 Arco 没有的通用组件时，优先用 Arco 组件组合实现，其次才在 `packages/ui/src/app/components/` 下自建（遵循 Arco 风格），不要引入新的第三方 UI 库。
+- 表单、表格、弹窗、菜单、布局、消息提示等先从 `@/design-system` 选择；图标也由设计系统组件统一提供，设计系统内部才使用 Arco 图标。
+- `packages/ui/src/app/components/ui/` 已删除，禁止重新引入 shadcn/Radix 或第三方 UI 库。
+- 如果设计系统没有合适组件，或现有组件的语义、结构、交互、视觉不合适，**不得在页面里临时拼一个替代品**：同一语义增加受限 `variant` / `tone` / `size`，语义不同则在 `packages/ui/src/design-system/` 新建组件，然后补齐导出、测试、`/ui-library` 实样和门禁。
+- “先写页面，之后再抽组件”视为违规；组件未补齐前暂停页面实现。
 
 ## 二、命名与文件组织
 
@@ -30,10 +31,10 @@
 
 **优先 CSS 变量主题 + `className`，减少 inline style。**
 
-- 用 `className` 承载样式；`style={{...}}` 仅用于少量动态值（如计算出的尺寸/位置），避免大段内联样式。
-- 颜色、间距、字号优先用 Arco/主题的 CSS 变量（`var(--arcoblue-*)`、`var(--color-*)` 等），不写死具体色值。
+- 用 `className` 承载布局；`style={{...}}` 仅用于少量外部布局动态值（如计算出的尺寸/位置），避免页面编写视觉样式。
+- 颜色、间距、字号、圆角、阴影统一使用设计系统 token；页面不得写硬编码视觉值或私有视觉类。
 - 全局样式统一放 `packages/ui/src/styles/`（`index.css` 按 Arco → 字体 → Tailwind → 主题 → 全局 的顺序引入，勿改顺序）；模块级样式放同域的 `.css` 文件。
-- 新写代码以 Arco 组件 + 主题变量为主，不引入新的 CSS-in-JS 或额外样式框架。
+- 新写代码以设计系统组件 + 设计系统 token 为主，不引入新的 CSS-in-JS 或额外样式框架。
 
 ## 四、数据与状态
 

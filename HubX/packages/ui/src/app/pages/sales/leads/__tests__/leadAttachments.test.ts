@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+import type { UploadItem } from '@/design-system';
 import {
   formatLeadAttachmentSize,
   leadAttachmentsToUploadItems,

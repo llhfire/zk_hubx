@@ -1,42 +1,50 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Empty,
-  Grid,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Progress,
-  Alert,
-  Tooltip,
-  Popconfirm,
   Badge,
-} from '@arco-design/web-react';
-import {
+  Button,
+  CountdownTag,
+  DatePicker,
+  DateText,
+  Form,
+  FormGrid,
+  IconApps,
+  IconBulb,
+  IconCalendar,
   IconCloud,
+  IconCopyright,
+  IconDelete,
+  IconEdit,
+  IconExclamationCircle,
+  IconFile,
   IconLanguage,
   IconLock,
   IconMobile,
-  IconFile,
-  IconApps,
   IconPlus,
-  IconEdit,
-  IconDelete,
-  IconExclamationCircle,
-  IconCalendar,
-  IconCopyright,
-  IconBulb,
   IconRefresh,
   IconSearch,
-} from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+  Input,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Tabs,
+  Tooltip,
+} from '@/design-system';
+import {
+  FilterBar,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  MoneyText,
+  EmptyState,
+  DataTable,
+  AlertBanner,
+  ProgressBar,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { filterAssetRecords, hasAssetFilters } from '../../support/system/supportDomainListModel';
 import '../../support/system/supportDomainLists.css';
 
@@ -76,22 +84,22 @@ interface InventoryRecord {
 
 // ---------- 工具 ----------
 
-const ASSET_TYPE_LABELS: Record<AssetType, { label: string; icon: React.ReactNode; color: string }> = {
-  server:           { label: '服务器',       icon: <IconCloud style={{ fontSize: 14 }} />,     color: 'var(--primary)' },
-  domain:           { label: '域名',         icon: <IconLanguage style={{ fontSize: 14 }} />,  color: 'var(--success-500)' },
-  ssl:              { label: 'SSL 证书',     icon: <IconLock style={{ fontSize: 14 }} />,      color: 'var(--chart-5)' },
-  device:           { label: '设备',         icon: <IconMobile style={{ fontSize: 14 }} />,    color: 'var(--warning-500)' },
-  license:          { label: '软件许可证',    icon: <IconFile style={{ fontSize: 14 }} />,      color: 'var(--info-500)' },
-  'software-copyright': { label: '软件著作权', icon: <IconCopyright style={{ fontSize: 14 }} />, color: 'var(--chart-5)' },
-  patent:           { label: '专利',         icon: <IconBulb style={{ fontSize: 14 }} />,      color: 'var(--warning-300)' },
+const ASSET_TYPE_LABELS: Record<AssetType, { label: string; icon: React.ReactNode; tone: StatusTone }> = {
+  server:           { label: '服务器',       icon: <IconCloud style={{ fontSize: 'var(--text-sm)' }} />,     tone: 'info' },
+  domain:           { label: '域名',         icon: <IconLanguage style={{ fontSize: 'var(--text-sm)' }} />,  tone: 'success' },
+  ssl:              { label: 'SSL 证书',     icon: <IconLock style={{ fontSize: 'var(--text-sm)' }} />,      tone: 'cyan' },
+  device:           { label: '设备',         icon: <IconMobile style={{ fontSize: 'var(--text-sm)' }} />,    tone: 'warning' },
+  license:          { label: '软件许可证',    icon: <IconFile style={{ fontSize: 'var(--text-sm)' }} />,      tone: 'purple' },
+  'software-copyright': { label: '软件著作权', icon: <IconCopyright style={{ fontSize: 'var(--text-sm)' }} />, tone: 'pink' },
+  patent:           { label: '专利',         icon: <IconBulb style={{ fontSize: 'var(--text-sm)' }} />,      tone: 'gold' },
 };
 
-const STATUS_LABELS: Record<AssetStatus, { label: string; color: string }> = {
-  active:     { label: '正常使用', color: 'var(--success-500)' },
-  expiring:   { label: '即将到期', color: 'var(--warning-500)' },
-  expired:    { label: '已到期',   color: 'var(--destructive-500)' },
-  transferred: { label: '已转让',   color: 'var(--muted-foreground)' },
-  returned:   { label: '已归还',   color: 'var(--primary)' },
+const STATUS_LABELS: Record<AssetStatus, { label: string; tone: StatusTone }> = {
+  active:     { label: '正常使用', tone: 'success' },
+  expiring:   { label: '即将到期', tone: 'warning' },
+  expired:    { label: '已到期',   tone: 'danger' },
+  transferred: { label: '已转让',   tone: 'neutral' },
+  returned:   { label: '已归还',   tone: 'info' },
 };
 
 function getDaysUntil(dateStr: string): number {
@@ -218,7 +226,7 @@ export function AssetManagement() {
       />
 
       <MetricGrid items={[
-        { key: 'total', label: '资产总数', value: summary.total, detail: `总值 ¥${summary.totalValue.toLocaleString()}` },
+        { key: 'total', label: '资产总数', value: summary.total, detail: <>总值 <MoneyText value={summary.totalValue} variant="compact" /></> },
         { key: 'active', label: '正常使用', value: summary.active, detail: '当前有效资产', tone: 'success' },
         { key: 'risk', label: '到期风险', value: summary.expiring + summary.expired, detail: `${summary.expiring} 件临期 · ${summary.expired} 件到期`, tone: summary.expiring + summary.expired ? 'warning' : 'neutral' },
         { key: 'result', label: '当前结果', value: filteredAssets.length, detail: filtersActive ? '筛选结果' : '全部资产' },
@@ -226,26 +234,27 @@ export function AssetManagement() {
 
       {/* 到期预警 */}
       {(summary.expiring > 0 || summary.expired > 0) && (
-        <Alert
-          type="warning"
-          content={
+        <AlertBanner tone="warning">{
             <span>
-              有 <strong style={{ color: 'var(--destructive-500)' }}>{summary.expired} 件</strong> 资产已到期，
-              <strong style={{ color: 'var(--warning-500)' }}>{summary.expiring} 件</strong> 即将在 30 天内到期，请及时处理续费或回收。
+              有 <strong>{summary.expired} 件</strong> 资产已到期，
+              <strong>{summary.expiring} 件</strong> 即将在 30 天内到期，请及时处理续费或回收。
             </span>
-          }
-          icon={<IconExclamationCircle />}
-        />
+          }</AlertBanner>
       )}
 
       {/* 主体 Tab */}
-      <Card bordered={false} className="support-domain-list__card">
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="all" title={<span><IconApps /> 全部资产</span>} />
-          {Object.entries(ASSET_TYPE_LABELS).map(([key, meta]) => (
-            <TabPane key={key} title={<span>{meta.icon} {meta.label} ({assetsByType[key as AssetType].length})</span>} />
-          ))}
-        </Tabs>
+      <SectionCard bordered={false} className="support-domain-list__card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'all', label: <span><IconApps /> 全部资产</span> },
+            ...Object.entries(ASSET_TYPE_LABELS).map(([key, meta]) => ({
+              key,
+              label: <span>{meta.icon} {meta.label}（{assetsByType[key as AssetType].length}）</span>,
+            })),
+          ]}
+        />
 
         <div style={{ paddingTop: 16 }}>
           {/* 筛选 + 操作 */}
@@ -262,38 +271,39 @@ export function AssetManagement() {
           <div className="support-domain-list__result-summary"><span>共 {filteredAssets.length} 件资产</span>{filtersActive && <span>已按当前条件筛选</span>}</div>
 
           {/* 资产表格 */}
-          {filteredAssets.length ? <Table
+          {filteredAssets.length ? <DataTable
             columns={[
               {
                 title: '名称', dataIndex: 'name', width: 180,
                 render: (_: unknown, row: Asset) => (
                   <Space>
-                    <span style={{ fontSize: 16 }}>{ASSET_TYPE_LABELS[row.type].icon}</span>
+                    <span style={{ fontSize: 'var(--text-base)' }}>{ASSET_TYPE_LABELS[row.type].icon}</span>
                     <span style={{ fontWeight: 600 }}>{row.name}</span>
                   </Space>
                 ),
               },
               {
                 title: '类型', dataIndex: 'type', width: 90,
-                render: (t: AssetType) => <Tag color={ASSET_TYPE_LABELS[t].color}>{ASSET_TYPE_LABELS[t].label}</Tag>,
+                render: (t: AssetType) => <StatusTag tone={ASSET_TYPE_LABELS[t].tone}>{ASSET_TYPE_LABELS[t].label}</StatusTag>,
               },
               { title: '供应商', dataIndex: 'vendor', width: 100 },
               {
                 title: '到期日', dataIndex: 'expiryDate', width: 110,
                 render: (v: string, row: Asset) => {
                   const days = getDaysUntil(v);
-                  if (days < 0) return <span style={{ color: 'var(--destructive-500)' }}>{v} (已到期)</span>;
-                  if (days <= 30) return <span style={{ color: 'var(--warning-500)' }}>{v} ({days}天)</span>;
-                  return v;
+                  if (days <= 30) {
+                    return <Space size={4}><DateText value={v} /><CountdownTag days={days} warningWithin={30} /></Space>;
+                  }
+                  return <DateText value={v} />;
                 },
               },
               {
                 title: '状态', dataIndex: 'status', width: 90,
-                render: (s: AssetStatus) => <Tag color={STATUS_LABELS[s].color}>{STATUS_LABELS[s].label}</Tag>,
+                render: (s: AssetStatus) => <StatusTag tone={STATUS_LABELS[s].tone}>{STATUS_LABELS[s].label}</StatusTag>,
               },
               { title: '使用人', dataIndex: 'assignee', width: 80, render: (v: string) => v || '—' },
               { title: '部门', dataIndex: 'department', width: 80, render: (v: string) => v || '—' },
-              { title: '成本', dataIndex: 'cost', width: 90, render: (v: number) => `¥${v.toLocaleString()}` },
+              { title: '成本', dataIndex: 'cost', width: 90, render: (v: number) => <MoneyText value={v} /> },
               {
                 title: '操作', width: 120,
                 render: (_: unknown, row: Asset) => (
@@ -314,13 +324,13 @@ export function AssetManagement() {
             rowKey="id"
             pagination={{ pageSize: 10, showTotal: true }}
             scroll={{ x: 980 }}
-          /> : <div className="support-domain-list__empty"><Empty description="没有符合当前条件的资产" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
+          /> : <div className="support-domain-list__empty"><EmptyState description="没有符合当前条件的资产" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 盘点记录 */}
-      <Card bordered={false} title={<span><IconCalendar /> 盘点记录</span>}>
-        <Table
+      <SectionCard bordered={false} title={<span><IconCalendar /> 盘点记录</span>}>
+        <DataTable
           columns={[
             { title: '盘点日期', dataIndex: 'date', width: 120 },
             { title: '操作人', dataIndex: 'operator', width: 80 },
@@ -329,12 +339,12 @@ export function AssetManagement() {
             {
               title: '完成率', width: 120,
               render: (_: unknown, row: InventoryRecord) => (
-                <Progress percent={Math.round((row.checkedAssets / Math.max(row.totalAssets, 1)) * 100)} size="small" />
+                <ProgressBar percent={Math.round((row.checkedAssets / Math.max(row.totalAssets, 1)) * 100)} size="small" />
               ),
             },
             {
               title: '异常', dataIndex: 'anomalies', width: 70,
-              render: (v: number) => v > 0 ? <Tag color="red">{v}项</Tag> : <Tag color="green">无</Tag>,
+              render: (v: number) => v > 0 ? <StatusTag tone="danger">{v}项</StatusTag> : <StatusTag tone="success">无</StatusTag>,
             },
             { title: '备注', dataIndex: 'notes' },
           ] as any}
@@ -342,7 +352,7 @@ export function AssetManagement() {
           rowKey="id"
           pagination={false}
         />
-      </Card>
+      </SectionCard>
 
       {/* 新增/编辑弹窗 */}
       <Modal
@@ -355,56 +365,40 @@ export function AssetManagement() {
         style={{ width: 560 }}
       >
         <Form form={form} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="资产名称" field="name" rules={[{ required: true, message: '请输入名称' }]}>
                 <Input placeholder="如：阿里云ECS服务器" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="资产类型" field="type" rules={[{ required: true }]}>
                 <Select placeholder="选择类型">
                   {Object.entries(ASSET_TYPE_LABELS).map(([k, m]) => <SelectOption key={k} value={k}>{m.icon} {m.label}</SelectOption>)}
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="供应商" field="vendor" rules={[{ required: true, message: '请输入供应商' }]}>
                 <Input placeholder="如：阿里云" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="成本（元）" field="cost" rules={[{ required: true, message: '请输入成本' }]}>
                 <Input type="number" placeholder="0" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="购买日期" field="purchaseDate" rules={[{ required: true }]}>
                 <DatePicker placeholder="选择日期" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="到期日期" field="expiryDate" rules={[{ required: true }]}>
                 <DatePicker placeholder="选择日期" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="使用人" field="assignee">
                 <Input placeholder="如：张三" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="所属部门" field="department">
                 <Input placeholder="如：技术部" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="序列号" field="serialNumber">
             <Input placeholder="设备序列号（可选）" />
           </FormItem>

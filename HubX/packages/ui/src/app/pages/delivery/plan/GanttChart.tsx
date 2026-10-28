@@ -167,7 +167,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
         flexDirection: 'column',
         minWidth: 0,
         height: '100%',
-        background: '#fff',
+        background: 'var(--color-white)',
       }}
     >
       {/* Scrollable area */}
@@ -201,7 +201,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                   position: 'absolute',
                   left: col.offset,
                   width: col.width,
-                  fontSize: 12,
+                  fontSize: 'var(--text-xs)',
                   color: col.weekend ? 'var(--grey-300)' : 'var(--grey-400)',
                   textAlign: 'center',
                   paddingBottom: 6,
@@ -239,7 +239,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                     position: 'absolute',
                     top: -GANTT_HEADER_HEIGHT + 4,
                     left: 4,
-                    fontSize: 12,
+                    fontSize: 'var(--text-xs)',
                     color: 'rgb(var(--red-6))',
                     whiteSpace: 'nowrap',
                     fontWeight: 600,
@@ -278,11 +278,11 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         width: barWidth,
                         height: GANTT_ROW_HEIGHT - 12,
                         background: bgColor,
-                        borderRadius: 4,
+                        borderRadius: 'var(--radius-xs)',
                         display: 'flex',
                         alignItems: 'center',
                         paddingLeft: 8,
-                        fontSize: 12,
+                        fontSize: 'var(--text-xs)',
                         fontWeight: 600,
                         color: 'var(--grey-600)',
                         overflow: 'hidden',
@@ -328,7 +328,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                 if (overdue) barBg = 'rgb(var(--red-6))';
 
                 const evergreenPattern = step.isEvergreen
-                  ? `repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.25) 4px, rgba(255,255,255,0.25) 8px)`
+                  ? `repeating-linear-gradient(45deg, transparent, transparent 4px, color-mix(in srgb, var(--color-white) 25%, transparent) 4px, color-mix(in srgb, var(--color-white) 25%, transparent) 8px)`
                   : undefined;
 
                 return (
@@ -340,7 +340,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                       left: 0,
                       right: 0,
                       height,
-                      background: '#fff',
+                      background: 'var(--color-white)',
                       borderBottom: '1px solid var(--grey-100)',
                     }}
                   >
@@ -357,13 +357,13 @@ const GanttChart: React.FC<GanttChartProps> = ({
                             ? evergreenPattern
                             : barBg,
                         backgroundColor: isSkipped ? undefined : barBg,
-                        borderRadius: 3,
+                        borderRadius: 'var(--radius-xs)',
                         display: 'flex',
                         alignItems: 'center',
                         paddingLeft: 6,
                         paddingRight: 4,
-                        fontSize: 12,
-                        color: '#fff',
+                        fontSize: 'var(--text-xs)',
+                        color: 'var(--color-white)',
                         overflow: 'hidden',
                         whiteSpace: 'nowrap',
                         textOverflow: 'ellipsis',
@@ -380,9 +380,9 @@ const GanttChart: React.FC<GanttChartProps> = ({
                             justifyContent: 'center',
                             width: 14,
                             height: 14,
-                            borderRadius: 2,
-                            background: 'rgba(255,255,255,0.35)',
-                            fontSize: 12,
+                            borderRadius: 'var(--radius-xs)',
+                            background: 'color-mix(in srgb, var(--color-white) 35%, transparent)',
+                            fontSize: 'var(--text-xs)',
                             fontWeight: 700,
                             marginRight: 3,
                             flexShrink: 0,
@@ -401,7 +401,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         {step.stepName}
                       </span>
                       {overdue && (
-                        <span style={{ marginLeft: 'auto', flexShrink: 0, fontSize: 14 }}>
+                        <span style={{ marginLeft: 'auto', flexShrink: 0, fontSize: 'var(--text-sm)' }}>
                           ⚠
                         </span>
                       )}
@@ -439,7 +439,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         height: diamondSize,
                         background: diamondColor,
                         transform: 'rotate(45deg)',
-                        borderRadius: 2,
+                        borderRadius: 'var(--radius-xs)',
                       }}
                     />
                     <span
@@ -450,7 +450,7 @@ const GanttChart: React.FC<GanttChartProps> = ({
                         height: GANTT_ROW_HEIGHT,
                         display: 'flex',
                         alignItems: 'center',
-                        fontSize: 12,
+                        fontSize: 'var(--text-xs)',
                         color: 'var(--grey-600)',
                         whiteSpace: 'nowrap',
                       }}

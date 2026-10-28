@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
-  Card,
   Tabs,
-  Table,
   Button,
   Space,
   Modal,
@@ -11,18 +9,31 @@ import {
   Select,
   Message,
   Popconfirm,
-  Tag,
-  Transfer,
   Tree,
-  Checkbox,
   Tooltip,
-} from '@arco-design/web-react';
-import { IconPlus, IconEdit, IconDelete, IconLock } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+} from '@/design-system';
+import { IconPlus, IconEdit, IconDelete, IconLock } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
+
+const ACCOUNT_STATUS: StatusMap<string> = {
+  启用: { label: '启用', tone: 'success' },
+  禁用: { label: '禁用', tone: 'danger' },
+};
 
 // 模拟用户数据
 const mockUsers = [
@@ -212,7 +223,7 @@ export function UserPermission() {
       render: (roles: string[]) => (
         <Space>
           {roles.map((role, idx) => (
-            <Tag key={idx} color="blue">{role}</Tag>
+            <StatusTag key={idx} tone="info">{role}</StatusTag>
           ))}
         </Space>
       ),
@@ -220,11 +231,9 @@ export function UserPermission() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (status: string) => (
-        <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>
-      ),
+      render: (status: string) => <StatusTag meta={resolveStatus(ACCOUNT_STATUS, status)} />,
     },
-    { title: '创建时间', dataIndex: 'createTime' },
+    { title: '创建时间', dataIndex: 'createTime', render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       render: (_: any, record: any) => (
@@ -269,11 +278,9 @@ export function UserPermission() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (status: string) => (
-        <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>
-      ),
+      render: (status: string) => <StatusTag meta={resolveStatus(ACCOUNT_STATUS, status)} />,
     },
-    { title: '创建时间', dataIndex: 'createTime' },
+    { title: '创建时间', dataIndex: 'createTime', render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       render: (_: any, record: any) => (
@@ -389,30 +396,48 @@ export function UserPermission() {
         { key: 'disabled', label: '禁用账号', value: `${mockUsers.filter(item => item.status === '禁用').length} 人`, detail: '需要定期复核', tone: mockUsers.some(item => item.status === '禁用') ? 'warning' : 'neutral' },
       ]} />
 
-      <Card bordered={false} title="账号与角色" className="system-config-card">
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="user" title="用户管理">
-            <div className="system-config-result-summary">共 {mockUsers.length} 个账号</div>
-            <Table
-              columns={userColumns}
-              data={mockUsers}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 980 }}
-            />
-          </TabPane>
-          <TabPane key="role" title="角色管理">
-            <div className="system-config-result-summary">共 {mockRoles.length} 个角色</div>
-            <Table
-              columns={roleColumns}
-              data={mockRoles}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 900 }}
-            />
-          </TabPane>
-        </Tabs>
-      </Card>
+      <SectionCard title="账号与角色" className="system-config-card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'user',
+              label: "用户管理",
+              content: (
+                <>
+                      <div className="system-config-result-summary">共 {mockUsers.length} 个账号</div>
+                      <DataTable
+                        columns={userColumns}
+                        data={mockUsers}
+                        rowKey="id"
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 980 }}
+                      />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'role',
+              label: "角色管理",
+              content: (
+                <>
+                      <div className="system-config-result-summary">共 {mockRoles.length} 个角色</div>
+                      <DataTable
+                        columns={roleColumns}
+                        data={mockRoles}
+                        rowKey="id"
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 900 }}
+                      />
+                    
+                </>
+              ),
+            },
+          ]}
+        />
+      </SectionCard>
 
       {/* 用户编辑弹窗 */}
       <Modal

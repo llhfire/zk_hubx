@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
   Button,
   Input,
-  Tag,
   Modal,
   Select,
   Table,
@@ -19,35 +17,44 @@ import {
   Radio,
   Checkbox,
   Badge,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
+  Airplane,
+  ArrowRight,
+  Bank,
+  Buildings,
+  CheckCircle,
+  Clock,
+  Coins,
+  CurrencyCny,
+  FileText,
   IconSearch,
   IconPlus,
   IconCheck,
   IconClose,
   IconEye,
-  IconDownload,
   IconSafe,
   IconRefresh,
   IconFile,
   IconPrinter,
-} from '@arco-design/web-react/icon';
-import {
   Receipt,
-  Airplane,
-  Buildings,
-  ArrowRight,
-  CurrencyCny,
-  Bank,
-  CheckCircle,
-  FileText,
-  Clock,
-  Coins,
-} from '@phosphor-icons/react';
+} from '@/design-system';
 import { FinanceAuditDashboard } from '../components/FinanceAuditDashboard';
 import type { Reimbursement, ReimbursementStatus } from '../types';
 import { getReimbursementList, approveReimbursement, payReimbursement } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  FileList,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 import './reimbursementList.css';
 
 const { Text } = Typography;
@@ -55,14 +62,14 @@ const { Option } = Select;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
-const statusConfig: Record<ReimbursementStatus, { color: string; text: string }> = {
-  draft: { color: 'gray', text: '草稿' },
-  pending: { color: 'orange', text: '待审批' },
-  dept_approved: { color: 'arcoblue', text: '部门已审' },
-  finance_approved: { color: 'blue', text: '待财务打款' },
-  paid: { color: 'green', text: '已打款' },
-  completed: { color: 'green', text: '已结项' },
-  rejected: { color: 'red', text: '已驳回' },
+const REIMBURSEMENT_STATUS: StatusMap<ReimbursementStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending: { label: '待审批', tone: 'warning' },
+  dept_approved: { label: '部门已审', tone: 'info' },
+  finance_approved: { label: '待财务打款', tone: 'purple' },
+  paid: { label: '已打款', tone: 'success' },
+  completed: { label: '已结项', tone: 'success' },
+  rejected: { label: '已驳回', tone: 'danger' },
 };
 
 export function ReimbursementList() {
@@ -313,12 +320,12 @@ export function ReimbursementList() {
       width: 130,
       render: (name: string, record: Reimbursement) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--color-text-1)' }}>
+          <div style={{ fontWeight: 500, fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)' }}>
             {name}
           </div>
-          <Tag size="small" color="arcoblue" style={{ padding: '0 6px', fontSize: 11, width: 'fit-content' }}>
+          <StatusTag size="small" tone="info" style={{ padding: '0 6px', fontSize: 'var(--ds-text-caption)', width: 'fit-content' }}>
             {record.department || '未分配'}
-          </Tag>
+          </StatusTag>
         </div>
       ),
     },
@@ -331,12 +338,12 @@ export function ReimbursementList() {
         const descriptions = items?.map((i) => i.description).slice(0, 2).join('、') || '差旅费用报销';
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontSize: 12, color: 'var(--color-text-1)', fontWeight: 500 }}>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-1)', fontWeight: 500 }}>
               共 {count} 笔费用支出
             </span>
             <span
               style={{
-                fontSize: 11,
+                fontSize: 'var(--ds-text-caption)',
                 color: 'var(--color-text-3)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -358,14 +365,14 @@ export function ReimbursementList() {
       render: (_: unknown, record: Reimbursement) => (
         <div className="reimb-cell-calc">
           <div className="reimb-cell-calc__net">
-            实付 ¥{record.netAmount.toLocaleString()}
+            实付 <MoneyText value={record.netAmount} />
           </div>
           <div className="reimb-cell-calc__sub">
-            <span>报销 ¥{record.totalAmount.toLocaleString()}</span>
+            <span>报销 <MoneyText value={record.totalAmount} /></span>
             {record.offsetAmount > 0 ? (
-              <Tag size="small" color="orange" style={{ padding: '0 4px', fontSize: 10 }}>
-                冲借款 -¥{record.offsetAmount.toLocaleString()}
-              </Tag>
+              <StatusTag size="small" tone="warning" style={{ padding: '0 4px', fontSize: 'var(--ds-text-micro)' }}>
+                冲借款 -<MoneyText value={record.offsetAmount} />
+              </StatusTag>
             ) : (
               <span style={{ color: 'var(--color-text-4)' }}>无冲抵</span>
             )}
@@ -380,12 +387,12 @@ export function ReimbursementList() {
       render: (attachments: Reimbursement['attachments']) => {
         const count = attachments?.length || 0;
         return count > 0 ? (
-          <Tag size="small" color="arcoblue" style={{ cursor: 'pointer' }}>
+          <StatusTag size="small" tone="info" style={{ cursor: 'pointer' }}>
             <IconFile style={{ marginRight: 4 }} />
             {count} 份附件
-          </Tag>
+          </StatusTag>
         ) : (
-          <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>无电子票</span>
+          <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-4)' }}>无电子票</span>
         );
       },
     },
@@ -393,17 +400,13 @@ export function ReimbursementList() {
       title: '状态',
       dataIndex: 'status',
       width: 120,
-      render: (value: ReimbursementStatus) => (
-        <Tag color={statusConfig[value].color}>
-          {statusConfig[value].text}
-        </Tag>
-      ),
+      render: (value: ReimbursementStatus) => <StatusTag meta={REIMBURSEMENT_STATUS[value]} />,
     },
     {
       title: '申请日期',
       dataIndex: 'createDate',
       width: 110,
-      render: (date: string) => <span style={{ fontSize: 12, color: 'var(--color-text-2)' }}>{date}</span>,
+      render: (date: string) => <DateText value={date} />,
     },
     {
       title: '操作',
@@ -479,8 +482,8 @@ export function ReimbursementList() {
           {
             key: 'amount',
             label: '最终实付总额',
-            value: `¥${netAmount.toLocaleString()}`,
-            detail: `已冲抵借款 ¥${totalOffset.toLocaleString()}`,
+            value: <MoneyText value={netAmount} />,
+            detail: <>已冲抵借款 <MoneyText value={totalOffset} /></>,
           },
         ]}
       />
@@ -489,7 +492,7 @@ export function ReimbursementList() {
       {auditOpen && <FinanceAuditDashboard />}
 
       {/* 搜索与快捷状态条卡片 */}
-      <Card className="reimb-list-filter-card">
+      <SectionCard className="reimb-list-filter-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* 状态快速分段胶囊 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -516,7 +519,7 @@ export function ReimbursementList() {
                   重置筛选条件
                 </Button>
               )}
-              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                 找到 <strong>{filteredReimbursements.length}</strong> 条报销单据
               </span>
             </div>
@@ -567,11 +570,11 @@ export function ReimbursementList() {
             </Checkbox>
           </FilterBar>
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 列表主体卡片 */}
-      <Card className="reimb-list-table-card" title="差旅报销申请台账">
-        <Table
+      <SectionCard className="reimb-list-table-card" title="差旅报销申请台账">
+        <DataTable
           columns={columns}
           data={filteredReimbursements}
           loading={loading}
@@ -584,7 +587,7 @@ export function ReimbursementList() {
             sizeCanChange: true,
           }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 报销详情与审批协同专业抽屉 */}
       <Drawer
@@ -592,11 +595,7 @@ export function ReimbursementList() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Receipt size={20} weight="duotone" style={{ color: 'rgb(var(--primary-6))' }} />
             <span style={{ fontWeight: 600 }}>出差报销申请详情</span>
-            {selectedReimbursement && (
-              <Tag size="small" color={statusConfig[selectedReimbursement.status].color}>
-                {statusConfig[selectedReimbursement.status].text}
-              </Tag>
-            )}
+            {selectedReimbursement && <StatusTag meta={REIMBURSEMENT_STATUS[selectedReimbursement.status]} />}
           </div>
         }
         visible={detailVisible}
@@ -612,7 +611,7 @@ export function ReimbursementList() {
                 <div className="reimb-drawer-calc-node">
                   <span className="reimb-drawer-calc-node__label">报销核准总额</span>
                   <span className="reimb-drawer-calc-node__val">
-                    ¥{selectedReimbursement.totalAmount.toLocaleString()}
+                    <MoneyText value={selectedReimbursement.totalAmount} />
                   </span>
                 </div>
 
@@ -620,8 +619,8 @@ export function ReimbursementList() {
 
                 <div className="reimb-drawer-calc-node">
                   <span className="reimb-drawer-calc-node__label">冲抵备用借款</span>
-                  <span className="reimb-drawer-calc-node__val" style={{ color: '#ff7d00' }}>
-                    ¥{selectedReimbursement.offsetAmount.toLocaleString()}
+                  <span className="reimb-drawer-calc-node__val">
+                    <MoneyText value={selectedReimbursement.offsetAmount} tone="danger" />
                   </span>
                 </div>
 
@@ -630,14 +629,14 @@ export function ReimbursementList() {
                 <div className="reimb-drawer-calc-node">
                   <span className="reimb-drawer-calc-node__label">最终实付 / 退款</span>
                   <span className="reimb-drawer-calc-node__val reimb-drawer-calc-node__val--net">
-                    ¥{selectedReimbursement.netAmount.toLocaleString()}
+                    <MoneyText value={selectedReimbursement.netAmount} />
                   </span>
                 </div>
               </div>
 
-              <Tag color="green" size="medium">
+              <StatusTag tone="success" size="default">
                 合规审核通过
-              </Tag>
+              </StatusTag>
             </div>
 
             {/* 基本要素卡片 */}
@@ -647,37 +646,37 @@ export function ReimbursementList() {
               </div>
               <Grid.Row gutter={[16, 16]}>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>报销单号</Text>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>报销单号</Text>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>
                     {selectedReimbursement.reimbursementNo}
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>关联出差单</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>关联出差单</Text>
                   <div
-                    style={{ fontWeight: 600, fontSize: 13, marginTop: 2, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
+                    style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
                     onClick={() => navigate(`/travel/trips/${selectedReimbursement.tripId}`)}
                   >
                     {selectedReimbursement.tripNo} ↗
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>申请人 / 部门</Text>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>申请人 / 部门</Text>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>
                     {selectedReimbursement.applicantName} ({selectedReimbursement.department})
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>打款账户</Text>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>招商银行 · 尾号 8892</div>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>打款账户</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>招商银行 · 尾号 8892</div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>申请时间</Text>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>{selectedReimbursement.createDate}</div>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>申请时间</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2 }}><DateText value={selectedReimbursement.createDate} /></div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>发票验真</Text>
-                  <div style={{ fontSize: 13, marginTop: 2, color: '#00b42a' }}>全额增值税电子发票已验真</div>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>发票验真</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2, color: 'rgb(var(--success-6))' }}>全额增值税电子发票已验真</div>
                 </Grid.Col>
               </Grid.Row>
             </div>
@@ -687,7 +686,7 @@ export function ReimbursementList() {
               <div className="reimb-drawer-section__title">
                 <Coins size={16} /> 费用明细清单
               </div>
-              <Table
+              <DataTable
                 columns={[
                   {
                     title: '科目',
@@ -701,7 +700,7 @@ export function ReimbursementList() {
                         meal: '餐饮津贴',
                         other: '其他杂费',
                       };
-                      return <Tag color="arcoblue">{map[v] || v}</Tag>;
+                      return <StatusTag tone="info">{map[v] || v}</StatusTag>;
                     },
                   },
                   { title: '费用说明与明细', dataIndex: 'description' },
@@ -712,7 +711,7 @@ export function ReimbursementList() {
                     width: 110,
                     align: 'right' as const,
                     render: (v: number) => (
-                      <span style={{ fontWeight: 600 }}>¥{v.toLocaleString()}</span>
+                      <span style={{ fontWeight: 600 }}><MoneyText value={v} /></span>
                     ),
                   },
                 ]}
@@ -726,7 +725,7 @@ export function ReimbursementList() {
                         核报总额
                       </Table.Summary.Cell>
                       <Table.Summary.Cell style={{ textAlign: 'right', fontWeight: 700, color: 'rgb(var(--primary-6))' }}>
-                        ¥{selectedReimbursement.totalAmount.toLocaleString()}
+                        <MoneyText value={selectedReimbursement.totalAmount} />
                       </Table.Summary.Cell>
                     </Table.Summary.Row>
                   </Table.Summary>
@@ -740,36 +739,14 @@ export function ReimbursementList() {
                 <div className="reimb-drawer-section__title">
                   <IconFile /> 票据凭证与附件
                 </div>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                  {selectedReimbursement.attachments.map((file) => (
-                    <div
-                      key={file.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '10px 14px',
-                        background: 'var(--color-fill-1)',
-                        border: '1px solid var(--color-border-2)',
-                        borderRadius: 6,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <IconFile style={{ color: 'rgb(var(--primary-6))' }} />
-                        <Text style={{ fontWeight: 500, fontSize: 13 }}>{file.name}</Text>
-                        <Tag size="small">{file.size}</Tag>
-                      </div>
-                      <Button
-                        type="outline"
-                        size="small"
-                        icon={<IconDownload />}
-                        onClick={() => Message.success(`正在下载电子票据「${file.name}」`)}
-                      >
-                        查验凭证
-                      </Button>
-                    </div>
-                  ))}
-                </Space>
+                <FileList
+                  items={selectedReimbursement.attachments.map((file) => ({
+                    key: file.id,
+                    name: file.name,
+                    meta: file.size,
+                    onDownload: () => Message.success(`正在下载电子票据「${file.name}」`),
+                  }))}
+                />
               </div>
             )}
 
@@ -841,7 +818,7 @@ export function ReimbursementList() {
                     icon={<Bank size={16} />}
                     onClick={() => handlePay(selectedReimbursement)}
                   >
-                    确认网银打款 (¥{selectedReimbursement.netAmount.toLocaleString()})
+                    确认网银打款 (<MoneyText value={selectedReimbursement.netAmount} />)
                   </Button>
                 )}
 

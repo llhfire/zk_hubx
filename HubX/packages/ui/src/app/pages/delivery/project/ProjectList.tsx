@@ -1,18 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
-  Table,
   Button,
   Input,
   Select,
   Space,
-  Tag,
   Tooltip,
-  Tabs,
-  Grid,
+  FormGrid,
   Typography,
-  Progress,
   Popover,
   Drawer,
   Form,
@@ -20,7 +15,7 @@ import {
   InputNumber,
   Message,
   Modal,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconSearch,
   IconEye,
@@ -30,8 +25,8 @@ import {
   IconList,
   IconLayout,
   IconFilter,
-} from '@arco-design/web-react/icon';
-import { UserSwitch } from '@phosphor-icons/react';
+  UserSwitch,
+} from '@/design-system';
 import type {
   ProjectListItem,
   ProjectStatus,
@@ -42,14 +37,15 @@ import type {
 } from './types';
 import {
   PROJECT_STATUS_LIST,
-  PROJECT_STATUS_COLOR,
+  PROJECT_STATUS_META,
   PROJECT_PRIORITY_LIST,
-  PROJECT_PRIORITY_COLOR,
+  PROJECT_PRIORITY_META,
   BUSINESS_LINE_LIST,
-  BUSINESS_LINE_COLOR,
+  BUSINESS_LINE_META,
   COMPANY_ENTITY_LIST,
   PROJECT_QUICK_FILTER_LABEL,
   KANBAN_LANES,
+  type HealthStatus,
 } from './types';
 import { PROJECT_LIST } from './projectMockData';
 import { useProjects } from './ProjectContext';
@@ -67,11 +63,29 @@ import {
   formatHours,
   formatAmount,
 } from './utils';
-import { FollowUpIcon, IdentifierText, PageHeader, PageShell, MetricGrid } from '@/design-system';
-import { CUSTOMER_LEVEL_COLOR } from '../../sales/leads/types';
+import {
+  CountdownTag,
+  DataTable,
+  DateText,
+  EmptyState,
+  EntityLink,
+  FilterBar,
+  FollowUpIcon,
+  GradeTag,
+  IdentifierText,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  SectionTabs,
+  FormSection,
+  StatusTag,
+  resolveStatus,
+  type StatusMeta,
+  ProgressBar,
+} from '@/design-system';
 
 const { Text } = Typography;
-const TabPane = Tabs.TabPane;
 
 const CUSTOMER_LEVEL_BY_NAME: Record<string, 'S' | 'A' | 'B' | 'C'> = {
   A公司: 'A',
@@ -80,6 +94,12 @@ const CUSTOMER_LEVEL_BY_NAME: Record<string, 'S' | 'A' | 'B' | 'C'> = {
   E平台: 'A',
   G公司: 'S',
   H教育: 'B',
+};
+
+/** 列表里的健康度只用两种提醒语义，文案比 HEALTH_LABEL 更适合表格列。 */
+const HEALTH_TAG_META: Record<Exclude<HealthStatus, 'normal'>, StatusMeta> = {
+  danger: { label: '项目预警', tone: 'danger' },
+  warning: { label: '需要关注', tone: 'warning' },
 };
 
 
@@ -228,10 +248,10 @@ export function ProjectList() {
       fixed: 'left' as const,
       render: (_: unknown, r: ProjectListItem) => (
         <div>
-          <a onClick={() => navigate(`/projects/${r.id}`)} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
+          <EntityLink to={`/projects/${r.id}`}>{r.name}</EntityLink>
           <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
-            <Tag color={BUSINESS_LINE_COLOR[r.businessLine]} size="small">{r.businessLine}</Tag>
-            <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.entity}</span>
+            <StatusTag meta={resolveStatus(BUSINESS_LINE_META, r.businessLine)} />
+            <Text type="secondary">{r.entity}</Text>
           </div>
         </div>
       ),
@@ -240,7 +260,7 @@ export function ProjectList() {
       title: '负责人',
       width: 100,
       render: (_: unknown, r: ProjectListItem) => (
-        <span>{r.owner || <span style={{ color: 'var(--color-text-4)' }}>待指派</span>}</span>
+        r.owner ? <span>{r.owner}</span> : <Text type="secondary">待指派</Text>
       ),
     },
     {
@@ -250,10 +270,10 @@ export function ProjectList() {
         const customerLevel = r.customerName ? CUSTOMER_LEVEL_BY_NAME[r.customerName] : undefined;
         return (
           <Space size={4}>
-            <Tag color={customerLevel ? CUSTOMER_LEVEL_COLOR[customerLevel] : 'gray'} size="small">
-              {customerLevel ?? '未分级'}
-            </Tag>
-            <Tag color={PROJECT_PRIORITY_COLOR[r.priority]} size="small">{r.priority}</Tag>
+            {customerLevel
+              ? <GradeTag grade={customerLevel} />
+              : <StatusTag tone="neutral" size="small">未分级</StatusTag>}
+            <StatusTag meta={resolveStatus(PROJECT_PRIORITY_META, r.priority)} />
           </Space>
         );
       },
@@ -265,12 +285,8 @@ export function ProjectList() {
         const health = r.healthStatus;
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-            <Tag color={PROJECT_STATUS_COLOR[r.status]} size="small">{r.status}</Tag>
-            {health !== 'normal' && (
-              <Tag size="small" color={health === 'danger' ? 'red' : 'orange'}>
-                {health === 'danger' ? '项目预警' : '需要关注'}
-              </Tag>
-            )}
+            <StatusTag meta={resolveStatus(PROJECT_STATUS_META, r.status)} />
+            {health !== 'normal' && <StatusTag meta={HEALTH_TAG_META[health]} />}
           </div>
         );
       },
@@ -279,10 +295,7 @@ export function ProjectList() {
       title: '交付进度',
       width: 120,
       render: (_: unknown, r: ProjectListItem) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ fontSize: 12 }}>{r.progress}%</span>
-          <Progress percent={r.progress} size="small" showText={false} color={r.progress >= 80 ? 'rgb(var(--success-6))' : 'rgb(var(--primary-6))'} />
-        </div>
+        <ProgressBar percent={r.progress} tone={r.progress >= 80 ? 'success' : 'info'} />
       ),
     },
     {
@@ -290,15 +303,9 @@ export function ProjectList() {
       width: 100,
       render: (_: unknown, r: ProjectListItem) => {
         const hasBug = r.bugP0Count > 0 || r.bugP1Count > 0;
-        return (
-          <div style={{ fontSize: 12 }}>
-            {hasBug ? (
-              <Tag color="red">P0:{r.bugP0Count} P1:{r.bugP1Count}</Tag>
-            ) : (
-              <Tag color="green">无缺陷</Tag>
-            )}
-          </div>
-        );
+        return hasBug
+          ? <StatusTag tone="danger">P0:{r.bugP0Count} P1:{r.bugP1Count}</StatusTag>
+          : <StatusTag tone="success">无缺陷</StatusTag>;
       },
     },
     {
@@ -306,23 +313,11 @@ export function ProjectList() {
       width: 150,
       render: (_: unknown, r: ProjectListItem) => {
         const cd = getProjectCountdown(r.startDate, r.expectedEndDate);
-        if (!r.expectedEndDate) return <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>;
-        const tone = cd.isOverdue ? 'danger' : cd.daysRemaining <= 7 ? 'warning' : 'normal';
+        if (!r.expectedEndDate) return <Text type="secondary">-</Text>;
         return (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-            <span style={{
-              padding: '2px 8px',
-              borderRadius: 999,
-              border: `1px solid ${tone === 'danger' ? 'rgb(var(--danger-3))' : tone === 'warning' ? 'rgb(var(--warning-3))' : 'var(--color-border-2)'}`,
-              background: tone === 'danger' ? 'rgb(var(--danger-1))' : tone === 'warning' ? 'rgb(var(--warning-1))' : 'var(--color-fill-2)',
-              color: tone === 'danger' ? 'rgb(var(--danger-6))' : tone === 'warning' ? 'rgb(var(--warning-6))' : 'var(--color-text-2)',
-              fontSize: 12,
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-            }}>
-              {cd.isOverdue ? `逾期${Math.abs(cd.daysRemaining)}天` : `余${cd.daysRemaining}天`}
-            </span>
-            <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{r.expectedEndDate}</span>
+            <CountdownTag days={cd.daysRemaining} warningWithin={7} />
+            <Text type="secondary"><DateText value={r.expectedEndDate} /></Text>
           </div>
         );
       },
@@ -332,13 +327,14 @@ export function ProjectList() {
       width: 132,
       render: (_: unknown, r: ProjectListItem) => {
         const ratio = r.budgetHours > 0 ? r.totalHours / r.budgetHours : 0;
+        const totalTone = ratio > 1 ? 'danger' : ratio >= 0.9 ? 'warning' : undefined;
         return (
-          <span style={{ fontSize: 12, color: 'var(--color-text-1)' }}>
-            <strong style={{ color: ratio > 1 ? 'rgb(var(--danger-6))' : ratio >= 0.9 ? 'rgb(var(--warning-6))' : 'var(--color-text-2)', fontWeight: ratio >= 0.9 ? 600 : 400 }}>
+          <Text>
+            <Text bold={ratio >= 0.9} style={totalTone ? { color: `rgb(var(--${totalTone}-6))` } : undefined}>
               {formatHours(r.totalHours)}
-            </strong>
+            </Text>
             {' / '}{r.budgetHours > 0 ? formatHours(r.budgetHours) : '未设置'}
-          </span>
+          </Text>
         );
       },
     },
@@ -346,11 +342,7 @@ export function ProjectList() {
       title: '最新进展',
       width: 200,
       render: (_: unknown, r: ProjectListItem) => (
-        <Tooltip content={r.latestProgress}>
-          <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
-            {r.latestProgress || '-'}
-          </div>
-        </Tooltip>
+        <IdentifierText value={r.latestProgress || '-'} maxWidth={180} size="sm" tone="muted" />
       ),
     },
     {
@@ -376,7 +368,7 @@ export function ProjectList() {
   const advancedFilterContent = (
     <div style={{ width: 240, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
-        <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>签约主体</div>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>签约主体</div>
         <Select placeholder="签约主体（全部）" style={{ width: '100%' }} allowClear value={entityFilter || undefined} onChange={setEntityFilter}>
           {COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}
         </Select>
@@ -388,20 +380,20 @@ export function ProjectList() {
   const renderKanbanCard = (project: ProjectListItem) => {
     const cd = getProjectCountdown(project.startDate, project.expectedEndDate);
     return (
-      <div key={project.id} style={{ padding: 12, marginBottom: 8, background: 'var(--color-bg-2)', borderRadius: 8, border: '1px solid var(--color-border-2)', cursor: 'pointer' }} onClick={() => navigate(`/projects/${project.id}`)}>
+      <div key={project.id} style={{ padding: 12, marginBottom: 8, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-2)', cursor: 'pointer' }} onClick={() => navigate(`/projects/${project.id}`)}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <IdentifierText value={project.projectNo} size="sm" tone="muted" />
-          <Tag color={PROJECT_PRIORITY_COLOR[project.priority]} size="small">{project.priority}</Tag>
+          <StatusTag meta={resolveStatus(PROJECT_PRIORITY_META, project.priority)} />
         </div>
-        <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{project.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>
+        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 8 }}>{project.name}</div>
+        <Text type="secondary">
           {project.owner || '待指派'} · {project.businessLine} · {project.entity}
+        </Text>
+        <div style={{ margin: '8px 0' }}>
+          <ProgressBar percent={project.progress} tone={project.progress >= 80 ? 'success' : 'info'} />
         </div>
-        <Progress percent={project.progress} size="small" style={{ marginBottom: 8 }} />
         {project.expectedEndDate && (
-          <div style={{ fontSize: 12, color: cd.isOverdue ? 'rgb(var(--danger-6))' : 'var(--color-text-3)' }}>
-            {cd.label}
-          </div>
+          <CountdownTag days={cd.daysRemaining} warningWithin={7} />
         )}
       </div>
     );
@@ -415,6 +407,42 @@ export function ProjectList() {
       form.resetFields();
     });
   };
+
+  // 3. 搜索与筛选控件（表格走 DataTable toolbar，看板直接铺在 FilterBar 里）
+  const filterControls = (
+    <>
+      <Input style={{ width: 280 }} placeholder="搜索编号、名称、客户" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
+      <Select placeholder="项目状态（全部）" style={{ width: 150 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
+        {PROJECT_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
+      </Select>
+      <Select placeholder="负责人（全部）" style={{ width: 140 }} allowClear>
+        <Select.Option value="李四">李四</Select.Option>
+        <Select.Option value="王五">王五</Select.Option>
+        <Select.Option value="赵六">赵六</Select.Option>
+        <Select.Option value="孙七">孙七</Select.Option>
+      </Select>
+      <Select placeholder="业务线（全部）" style={{ width: 140 }} allowClear value={lineFilter || undefined} onChange={setLineFilter}>
+        {BUSINESS_LINE_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
+      </Select>
+      <Select placeholder="优先级（全部）" style={{ width: 140 }} allowClear value={priorityFilter || undefined} onChange={setPriorityFilter}>
+        {PROJECT_PRIORITY_LIST.map((p) => <Select.Option key={p} value={p}>{p}</Select.Option>)}
+      </Select>
+      <Popover content={advancedFilterContent} trigger="click">
+        <Button icon={<IconFilter />}>高级筛选</Button>
+      </Popover>
+      {[keyword, statusFilter, priorityFilter, lineFilter, entityFilter].some(Boolean) && (
+        <Button type="text" onClick={() => { setKeyword(''); setStatusFilter(''); setPriorityFilter(''); setLineFilter(''); setEntityFilter(''); }}>重置</Button>
+      )}
+    </>
+  );
+
+  // 4. 视图切换
+  const viewSwitch = (
+    <Space>
+      <Button icon={<IconList />} type={viewMode === 'table' ? 'primary' : 'default'} onClick={() => setViewMode('table')}>表格</Button>
+      <Button icon={<IconLayout />} type={viewMode === 'kanban' ? 'primary' : 'default'} onClick={() => setViewMode('kanban')}>看板</Button>
+    </Space>
+  );
 
   return (
     <PageShell>
@@ -457,77 +485,58 @@ export function ProjectList() {
 
       {/* 2. 快捷分栏 */}
       <div style={{ marginBottom: 12 }}>
-        <Tabs type="card" activeTab={quickFilter} onChange={(v) => setQuickFilter(v as ProjectQuickFilter)}>
-          {Object.entries(PROJECT_QUICK_FILTER_LABEL).map(([key, label]) => (
-            <TabPane key={key} title={`${label} (${filterCounts[key as ProjectQuickFilter]})`} />
-          ))}
-        </Tabs>
+        <SectionTabs
+          variant="card"
+          activeKey={quickFilter}
+          onChange={(v) => setQuickFilter(v as ProjectQuickFilter)}
+          items={Object.entries(PROJECT_QUICK_FILTER_LABEL).map(([key, label]) => ({
+            key,
+            label,
+            count: filterCounts[key as ProjectQuickFilter],
+          }))}
+        />
       </div>
 
-      <Card>
-        {/* 3. 搜索栏 */}
-        <div className="flex flex-wrap gap-3" style={{ marginBottom: 16 }}>
-          <Input style={{ width: 280 }} placeholder="搜索编号、名称、客户" prefix={<IconSearch />} value={keyword} onChange={setKeyword} allowClear />
-          <Select placeholder="项目状态（全部）" style={{ width: 150 }} allowClear value={statusFilter || undefined} onChange={setStatusFilter}>
-            {PROJECT_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
-          </Select>
-          <Select placeholder="负责人（全部）" style={{ width: 140 }} allowClear>
-            <Select.Option value="李四">李四</Select.Option>
-            <Select.Option value="王五">王五</Select.Option>
-            <Select.Option value="赵六">赵六</Select.Option>
-            <Select.Option value="孙七">孙七</Select.Option>
-          </Select>
-          <Select placeholder="业务线（全部）" style={{ width: 140 }} allowClear value={lineFilter || undefined} onChange={setLineFilter}>
-            {BUSINESS_LINE_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}
-          </Select>
-          <Select placeholder="优先级（全部）" style={{ width: 140 }} allowClear value={priorityFilter || undefined} onChange={setPriorityFilter}>
-            {PROJECT_PRIORITY_LIST.map((p) => <Select.Option key={p} value={p}>{p}</Select.Option>)}
-          </Select>
-          <Popover content={advancedFilterContent} trigger="click">
-            <Button icon={<IconFilter />}>高级筛选</Button>
-          </Popover>
-          {[keyword, statusFilter, priorityFilter, lineFilter, entityFilter].some(Boolean) && (
-            <Button type="text" onClick={() => { setKeyword(''); setStatusFilter(''); setPriorityFilter(''); setLineFilter(''); setEntityFilter(''); }}>重置</Button>
-          )}
-          <div style={{ flex: 1 }} />
-          <Space>
-            <Button icon={<IconList />} type={viewMode === 'table' ? 'primary' : 'default'} onClick={() => setViewMode('table')}>表格</Button>
-            <Button icon={<IconLayout />} type={viewMode === 'kanban' ? 'primary' : 'default'} onClick={() => setViewMode('kanban')}>看板</Button>
-          </Space>
-        </div>
-
-        {/* 4. 双视图 */}
+      <SectionCard>
+        {/* 3. 双视图 */}
         {viewMode === 'table' ? (
-          <Table
+          <DataTable
             columns={columns}
             data={filteredProjects}
+            rowKey="id"
             scroll={{ x: 1600 }}
             rowClassName={(r: ProjectListItem) => r.isOverdue ? 'arco-table-row-warning' : ''}
             pagination={{ total: filteredProjects.length, pageSize: 10, showTotal: true, showJumper: true }}
+            toolbar={<FilterBar>{filterControls}</FilterBar>}
+            actions={viewSwitch}
+            emptyDescription="没有符合当前条件的项目"
           />
         ) : (
-          <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <FilterBar actions={viewSwitch}>{filterControls}</FilterBar>
+            <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
             {KANBAN_LANES.filter((l) => l.key !== 'shelved').map((lane) => (
               <div key={lane.key} style={{ minWidth: 260, flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6 }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-sm)' }}>
                   {lane.label} ({kanbanData[lane.key].length})
                 </div>
                 {kanbanData[lane.key].map(renderKanbanCard)}
                 {kanbanData[lane.key].length === 0 && (
-                  <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)', fontSize: 12 }}>暂无项目</div>
+                  <EmptyState description="暂无项目" />
                 )}
               </div>
             ))}
             {/* 搁置/延迟侧栏 */}
             <div style={{ minWidth: 220, flex: 0.8, borderLeft: '2px dashed var(--color-border-3)', paddingLeft: 16 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 6, color: 'var(--color-text-3)' }}>
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-3)' }}>
                 搁置/延迟 ({kanbanData.shelved.length})
               </div>
               {kanbanData.shelved.map(renderKanbanCard)}
             </div>
+            </div>
           </div>
         )}
-      </Card>
+      </SectionCard>
 
       {/* 新建/编辑项目 Drawer */}
       <Drawer
@@ -540,54 +549,50 @@ export function ProjectList() {
       >
         <Form form={form} layout="vertical">
           {/* 第一步：基础信息与客户 */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: 'var(--color-text-1)' }}>基础信息与客户</div>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}><Form.Item label="项目名称" field="name" rules={[{ required: true, message: '请输入项目名称' }]}><Input placeholder="请输入项目名称" maxLength={50} showWordLimit /></Form.Item></Grid.Col>
-              <Grid.Col span={6}><Form.Item label="业务线" field="businessLine" rules={[{ required: true, message: '请选择业务线' }]}><Select placeholder="请选择">{BUSINESS_LINE_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}</Select></Form.Item></Grid.Col>
-              <Grid.Col span={6}><Form.Item label="优先级" field="priority" rules={[{ required: true, message: '请选择优先级' }]}><Select placeholder="请选择">{PROJECT_PRIORITY_LIST.map((p) => <Select.Option key={p} value={p}>{p}</Select.Option>)}</Select></Form.Item></Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}><Form.Item label="签约主体" field="entity"><Select placeholder="请选择">{COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item></Grid.Col>
-              <Grid.Col span={12}><Form.Item label="关联客户" field="customerName"><Input placeholder="请输入客户名称" /></Form.Item></Grid.Col>
-            </Grid.Row>
-          </div>
+          <FormSection title="基础信息与客户">
+            <FormGrid template="2-1-1">
+              <Form.Item label="项目名称" field="name" rules={[{ required: true, message: '请输入项目名称' }]}><Input placeholder="请输入项目名称" maxLength={50} showWordLimit /></Form.Item>
+              <Form.Item label="业务线" field="businessLine" rules={[{ required: true, message: '请选择业务线' }]}><Select placeholder="请选择">{BUSINESS_LINE_LIST.map((l) => <Select.Option key={l} value={l}>{l}</Select.Option>)}</Select></Form.Item>
+              <Form.Item label="优先级" field="priority" rules={[{ required: true, message: '请选择优先级' }]}><Select placeholder="请选择">{PROJECT_PRIORITY_LIST.map((p) => <Select.Option key={p} value={p}>{p}</Select.Option>)}</Select></Form.Item>
+            </FormGrid>
+            <FormGrid columns={2}>
+              <Form.Item label="签约主体" field="entity"><Select placeholder="请选择">{COMPANY_ENTITY_LIST.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item>
+              <Form.Item label="关联客户" field="customerName"><Input placeholder="请输入客户名称" /></Form.Item>
+            </FormGrid>
+          </FormSection>
 
           {/* 第二步：交付周期与预算 */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: 'var(--color-text-1)' }}>交付周期与预算</div>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={8}><Form.Item label="计划开始日期" field="startDate"><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-              <Grid.Col span={8}><Form.Item label="计划结束日期" field="expectedEndDate"><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-              <Grid.Col span={8}><Form.Item label="预算总工时(h)" field="budgetHours"><InputNumber min={0} placeholder="0" style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={12}><Form.Item label="关联合同标的额(¥)" field="contractAmount"><InputNumber min={0} placeholder="0" style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            </Grid.Row>
-          </div>
+          <FormSection title="交付周期与预算">
+            <FormGrid columns={3}>
+              <Form.Item label="计划开始日期" field="startDate"><DatePicker style={{ width: '100%' }} /></Form.Item>
+              <Form.Item label="计划结束日期" field="expectedEndDate"><DatePicker style={{ width: '100%' }} /></Form.Item>
+              <Form.Item label="预算总工时(h)" field="budgetHours"><InputNumber min={0} placeholder="0" style={{ width: '100%' }} /></Form.Item>
+            </FormGrid>
+            <FormGrid columns={2}>
+              <Form.Item label="关联合同标的额(¥)" field="contractAmount"><InputNumber min={0} placeholder="0" style={{ width: '100%' }} /></Form.Item>
+            </FormGrid>
+          </FormSection>
 
           {/* 第三步：团队组织与负责人 */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: 'var(--color-text-1)' }}>团队组织与负责人</div>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={8}><Form.Item label="项目经理 PM" field="owner" rules={[{ required: true, message: '请选择PM' }]}><Select placeholder="请选择"><Select.Option value="李四">李四</Select.Option><Select.Option value="王五">王五</Select.Option><Select.Option value="赵六">赵六</Select.Option></Select></Form.Item></Grid.Col>
-              <Grid.Col span={8}><Form.Item label="商务/销售" field="salesUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="张三">张三</Select.Option><Select.Option value="李四">李四</Select.Option></Select></Form.Item></Grid.Col>
-              <Grid.Col span={8}><Form.Item label="产品" field="productUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="李四">李四</Select.Option><Select.Option value="孙七">孙七</Select.Option></Select></Form.Item></Grid.Col>
-            </Grid.Row>
-            <Grid.Row gutter={16}>
-              <Grid.Col span={6}><Form.Item label="UI" field="uiUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="孙七">孙七</Select.Option></Select></Form.Item></Grid.Col>
-              <Grid.Col span={6}><Form.Item label="前端" field="frontendUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="王五">王五</Select.Option></Select></Form.Item></Grid.Col>
-              <Grid.Col span={6}><Form.Item label="后端" field="backendUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="赵六">赵六</Select.Option></Select></Form.Item></Grid.Col>
-              <Grid.Col span={6}><Form.Item label="测试" field="testUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="钱九">钱九</Select.Option></Select></Form.Item></Grid.Col>
-            </Grid.Row>
-          </div>
+          <FormSection title="团队组织与负责人">
+            <FormGrid columns={3}>
+              <Form.Item label="项目经理 PM" field="owner" rules={[{ required: true, message: '请选择PM' }]}><Select placeholder="请选择"><Select.Option value="李四">李四</Select.Option><Select.Option value="王五">王五</Select.Option><Select.Option value="赵六">赵六</Select.Option></Select></Form.Item>
+              <Form.Item label="商务/销售" field="salesUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="张三">张三</Select.Option><Select.Option value="李四">李四</Select.Option></Select></Form.Item>
+              <Form.Item label="产品" field="productUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="李四">李四</Select.Option><Select.Option value="孙七">孙七</Select.Option></Select></Form.Item>
+            </FormGrid>
+            <FormGrid columns={4}>
+              <Form.Item label="UI" field="uiUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="孙七">孙七</Select.Option></Select></Form.Item>
+              <Form.Item label="前端" field="frontendUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="王五">王五</Select.Option></Select></Form.Item>
+              <Form.Item label="后端" field="backendUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="赵六">赵六</Select.Option></Select></Form.Item>
+              <Form.Item label="测试" field="testUsers"><Select mode="multiple" placeholder="可选"><Select.Option value="钱九">钱九</Select.Option></Select></Form.Item>
+            </FormGrid>
+          </FormSection>
 
           {/* 第四步：最新进展与初始资料 */}
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 12, color: 'var(--color-text-1)' }}>最新进展与初始资料</div>
+          <FormSection title="最新进展与初始资料">
             <Form.Item label="交付目标描述" field="remark"><Input.TextArea rows={3} placeholder="请输入交付目标" /></Form.Item>
             <Form.Item label="最新进展" field="latestProgress"><Input.TextArea rows={3} placeholder="请输入最新进展" /></Form.Item>
-          </div>
+          </FormSection>
         </Form>
       </Drawer>
 
@@ -624,20 +629,16 @@ export function ProjectList() {
         style={{ width: 620 }}
       >
         <Form form={followForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <Form.Item label="项目状态" field="status" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择">
                   {PROJECT_STATUS_LIST.map((s) => <Select.Option key={s} value={s}>{s}</Select.Option>)}
                 </Select>
               </Form.Item>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <Form.Item label="进度(%)" field="progress">
                 <InputNumber min={0} max={100} placeholder="0-100" style={{ width: '100%' }} />
               </Form.Item>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <Form.Item label="跟进内容" field="content" rules={[{ required: true, message: '请输入跟进内容' }]}>
             <Input.TextArea placeholder="请记录本次跟进内容" rows={4} maxLength={1000} showWordLimit />
           </Form.Item>

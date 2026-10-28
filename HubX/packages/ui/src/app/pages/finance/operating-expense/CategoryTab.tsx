@@ -1,5 +1,6 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import { Button, Card, Input, Message, Modal, Space, Tag, Tree, Typography } from '@arco-design/web-react';
+import { Button, Input, Message, Modal, Space, Tree, Typography } from '@/design-system';
+import { SectionCard, StatusTag } from '@/design-system';
 import { CATEGORY_SEED } from './categorySeed';
 import {
   getSnapshot,
@@ -33,7 +34,7 @@ export function CategoryTab() {
     title: primary.id === 'LABOR' ? (
       <Space size={8}>
         <span>{primary.name}</span>
-        <Tag color="red" size="small">只读</Tag>
+        <StatusTag tone="danger" size="small">只读</StatusTag>
       </Space>
     ) : primary.name,
     children: (primary.children ?? []).map(secondary => ({ key: secondary.id, title: secondary.name })),
@@ -71,7 +72,7 @@ export function CategoryTab() {
   };
 
   return (
-    <Card
+    <SectionCard
       title="费用科目树"
       extra={(
         <Space>
@@ -91,7 +92,7 @@ export function CategoryTab() {
         selectedKeys={selectedKey ? [selectedKey] : []}
         onSelect={(keys) => setSelectedKey(keys[0] ? String(keys[0]) : undefined)}
       />
-      <Text type="secondary" style={{ fontSize: 12, marginTop: 12, display: 'block' }}>
+      <Text type="secondary" style={{ fontSize: 'var(--text-xs)', marginTop: 12, display: 'block' }}>
         选择一级科目可新增子科目；选择二级科目可重命名。人力成本为系统内置科目，不允许修改。
       </Text>
 
@@ -103,6 +104,6 @@ export function CategoryTab() {
       >
         <Input value={draftName} onChange={setDraftName} placeholder="请输入科目名称" maxLength={30} showWordLimit />
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

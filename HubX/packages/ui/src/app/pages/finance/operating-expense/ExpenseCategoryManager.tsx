@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import {
-  Card,
   Button,
   Switch,
-  Tag,
   Space,
   Tooltip,
   Modal,
@@ -13,9 +11,9 @@ import {
   Radio,
   Popconfirm,
   Message,
-} from '@arco-design/web-react';
-import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+} from '@/design-system';
+import { IconPlus, IconEdit, IconDelete } from '@/design-system';
+import { DataTable, PageHeader, PageShell, MetricGrid, confirmAction, SectionCard, StatusTag } from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const RadioGroup = Radio.Group;
@@ -117,10 +115,10 @@ export function ExpenseCategoryManager() {
     if (record.level === 1) {
       const childCount = categories.filter((c) => c.parentId === record.id).length;
       if (childCount > 0) {
-        Modal.confirm({
+        confirmAction({
           title: '确认删除',
           content: `该分类下包含 ${childCount} 个二级分类，删除将导致关联业务报错，是否确认？`,
-          okButtonProps: { status: 'danger' },
+          tone: 'danger',
           onOk: () => {
             setCategories((prev) => prev.filter((c) => c.id !== record.id && c.parentId !== record.id));
             if (selectedParentId === record.id) {
@@ -187,7 +185,7 @@ export function ExpenseCategoryManager() {
       ]} />
 
       <div className="system-config-master-detail">
-        <Card className="system-config-card" title="一级分类" bodyStyle={{ padding: 8 }}>
+        <SectionCard className="system-config-card" title="一级分类" bodyStyle={{ padding: 8 }}>
           <div className="system-config-master-list">
             {tree.map((parent) => {
               const isLocked = parent.id === LABOR_CATEGORY_ID;
@@ -203,17 +201,17 @@ export function ExpenseCategoryManager() {
                 >
                   <span>{parent.name}</span>
                   <Space size={4}>
-                    {isLocked && <Tag size="small" color="gray">系统</Tag>}
-                    {!parent.status && <Tag size="small" color="gray">停用</Tag>}
+                    {isLocked && <StatusTag size="small" tone="neutral">系统</StatusTag>}
+                    {!parent.status && <StatusTag size="small" tone="neutral">停用</StatusTag>}
                     <span>{parent.children.length}</span>
                   </Space>
                 </button>
               );
             })}
           </div>
-        </Card>
+        </SectionCard>
 
-        <Card
+        <SectionCard
           className="system-config-card"
           title={selectedParent ? `${selectedParent.name} · 二级分类` : '二级分类'}
           extra={selectedParent && (
@@ -237,59 +235,47 @@ export function ExpenseCategoryManager() {
             <span>当前共 {displayList.length} 个二级分类</span>
             <span>{selectedParent?.status ? '一级分类已启用' : '一级分类已停用'}</span>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-          <table className="system-config-category-table">
-            <thead>
-              <tr>
-                {['分类名称', '编码', '状态', '操作'].map((h) => (
-                  <th key={h}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {displayList.map((item) => {
-                return (
-                  <tr key={item.id}>
-                    <td>
-                      <strong>{item.name}</strong>
-                    </td>
-                    <td className="system-config-category-table__code">
-                      {item.code}
-                    </td>
-                    <td>
-                      <Switch
-                        checked={item.status}
-                        size="small"
-                        onChange={(v) => handleToggleStatus(item.id, v)}
-                      />
-                    </td>
-                    <td>
-                      <Space>
-                        <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEdit(item)}>编辑</Button>
-                        <Popconfirm
-                          title="确认删除该分类？"
-                          onOk={() => handleDelete(item)}
-                        >
-                          <Button type="text" size="small" icon={<IconDelete />} status="danger" aria-label={`删除${item.name}`} />
-                        </Popconfirm>
-                      </Space>
-                    </td>
-                  </tr>
-                );
-              })}
-              {displayList.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="system-config-category-empty">
-                    暂无数据
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          </div>
-        </Card>
+          <DataTable<ExpenseCategory>
+            rowKey="id"
+            pagination={false}
+            data={displayList}
+            emptyDescription="暂无数据"
+            columns={[
+              {
+                title: '分类名称',
+                dataIndex: 'name',
+                render: (value: string) => <strong>{value}</strong>,
+              },
+              {
+                title: '编码',
+                dataIndex: 'code',
+                className: 'system-config-category-table__code',
+              },
+              {
+                title: '状态',
+                dataIndex: 'status',
+                render: (_: boolean, item: ExpenseCategory) => (
+                  <Switch
+                    checked={item.status}
+                    size="small"
+                    onChange={(checked) => handleToggleStatus(item.id, checked)}
+                  />
+                ),
+              },
+              {
+                title: '操作',
+                render: (_: unknown, item: ExpenseCategory) => (
+                  <Space>
+                    <Button type="text" size="small" icon={<IconEdit />} onClick={() => openEdit(item)}>编辑</Button>
+                    <Popconfirm title="确认删除该分类？" onOk={() => handleDelete(item)}>
+                      <Button type="text" size="small" icon={<IconDelete />} status="danger" aria-label={`删除${item.name}`} />
+                    </Popconfirm>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </SectionCard>
       </div>
 
       <Modal

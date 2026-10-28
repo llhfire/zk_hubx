@@ -1,33 +1,37 @@
 import { useMemo } from 'react';
 import {
-  Alert,
-  Badge,
+  AlertBanner,
+  DataTable,
+  DateText,
+  DocumentActionRow,
+  FileList,
+  FormGrid,
+  MoneyText,
+  SectionCard,
+  StatusTag,
+  UploadPanel,
+} from '@/design-system';
+import {
   Button,
-  Card,
   Divider,
+  Form,
   Grid,
   Input,
   InputNumber,
   Message,
   Select,
   Space,
-  Table,
-  Tag,
-  Tooltip,
   Typography,
   Upload,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
-  IconCheckCircle,
   IconDownload,
-  IconExclamationCircle,
   IconFile,
   IconPlus,
   IconDelete,
   IconSend,
-  IconUpload,
   IconFolder,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useQuotation } from '../QuotationContext';
 import { computeAmountBreakdown } from '../quoteFlow';
 import {
@@ -43,9 +47,10 @@ import { Stage4Approval } from '../stages/Stage4Approval';
 import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import { ZKRT_QUOTE_TEMPLATE } from '../quoteDocumentTemplate';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 const { Row, Col } = Grid;
 const { TextArea } = Input;
+const FormItem = Form.Item;
 
 interface Props {
   quote: Quote;
@@ -59,6 +64,13 @@ function formatFileSize(bytes?: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+}
+
+function downloadFile(url: string, fileName: string): void {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
 }
 
 export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
@@ -103,7 +115,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
     const totalSubs = quote.featureList.reduce((sum, module) => sum + module.subFeatures.length, 0);
 
     return (
-      <Card
+      <SectionCard
         title={
           <Space>
             <IconFolder style={{ color: 'var(--primary-6)' }} />
@@ -112,23 +124,20 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
         }
       >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            content="文件流转模式下，您可通过 Excel 标准模板批量导入两级功能清单。系统将完成结构化校验，原文件将作为流转附件全程留存。"
-          />
+          <AlertBanner tone="info">文件流转模式下，您可通过 Excel 标准模板批量导入两级功能清单。系统将完成结构化校验，原文件将作为流转附件全程留存。</AlertBanner>
 
           {readonly ? (
             <div
               style={{
                 padding: '16px',
                 background: 'var(--color-fill-2)',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
               }}
             >
               <Text bold>已归档功能清单：</Text>
               <Space style={{ marginTop: 8 }} wrap>
-                <Tag color="arcoblue">一级模块：{quote.featureList.length} 个</Tag>
-                <Tag color="cyan">细分功能：{totalSubs} 项</Tag>
+                <StatusTag tone="info">一级模块：{quote.featureList.length} 个</StatusTag>
+                <StatusTag tone="cyan">细分功能：{totalSubs} 项</StatusTag>
               </Space>
             </div>
           ) : (
@@ -158,7 +167,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             </div>
           )}
         </Space>
-      </Card>
+      </SectionCard>
     );
   }
 
@@ -169,9 +178,25 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
     );
     const totalDays = state.evaluationTotalDays ?? 0;
     const baseCost = Math.round(totalDays * 600);
+    const handleEvaluationUpload = (file: File) => {
+      const url = URL.createObjectURL(file);
+      patchState({
+        evaluationFileName: file.name,
+        evaluationAttachment: {
+          id: `att-eval-${Date.now()}`,
+          name: file.name,
+          size: file.size,
+          url,
+          uploadedAt: new Date().toISOString(),
+          uploadedBy: '技术负责人',
+        },
+      });
+      Message.success(`评估文件已暂存：${file.name}`);
+      return false;
+    };
 
     return (
-      <Card
+      <SectionCard
         title={
           <Space>
             <IconFile style={{ color: 'var(--primary-6)' }} />
@@ -180,17 +205,14 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
         }
       >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            content="技术团队评估完成后，请上传技术评估表或估算文件。系统支持存证溯源，并作为后续销售底线成本核算依据。"
-          />
+          <AlertBanner tone="info">技术团队评估完成后，请上传技术评估表或估算文件。系统支持存证溯源，并作为后续销售底线成本核算依据。</AlertBanner>
 
           {/* 评估文件上传与存证卡片 */}
           <div
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -199,98 +221,56 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             </Text>
 
             {state.evaluationFileName ? (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  background: 'var(--color-fill-2)',
-                  borderRadius: 6,
-                }}
-              >
-                <Space size={12}>
-                  <IconFile style={{ fontSize: 24, color: 'var(--primary-6)' }} />
-                  <div>
-                    <Text bold>{state.evaluationFileName}</Text>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>
-                      {formatFileSize(state.evaluationAttachment?.size)} · 上传时间：
-                      {state.evaluationAttachment?.uploadedAt
-                        ? new Date(state.evaluationAttachment.uploadedAt).toLocaleString()
-                        : '已保存'}
-                    </div>
-                  </div>
-                </Space>
-
-                <Space>
-                  {state.evaluationAttachment?.url && (
-                    <Button
-                      size="small"
-                      icon={<IconDownload />}
-                      onClick={() => {
-                        const a = document.createElement('a');
-                        a.href = state.evaluationAttachment!.url!;
-                        a.download = state.evaluationFileName!;
-                        a.click();
-                      }}
-                    >
-                      下载原件
-                    </Button>
-                  )}
-                  {!readonly && (
-                    <Upload
-                      accept=".xlsx,.xls,.pdf,.doc,.docx"
-                      showUploadList={false}
-                      beforeUpload={(file) => {
-                        const url = URL.createObjectURL(file);
-                        patchState({
-                          evaluationFileName: file.name,
-                          evaluationAttachment: {
-                            id: `att-eval-${Date.now()}`,
-                            name: file.name,
-                            size: file.size,
-                            url,
-                            uploadedAt: new Date().toISOString(),
-                            uploadedBy: '技术负责人',
-                          },
-                        });
-                        Message.success(`已更新评估文件：${file.name}`);
-                        return false;
-                      }}
-                    >
-                      <Button size="small" type="outline">
-                        替换文件
+              <DocumentActionRow
+                context="技术评估表原始附件"
+                name={state.evaluationFileName}
+                meta={
+                  <>
+                    {formatFileSize(state.evaluationAttachment?.size)} · 上传时间：
+                    <DateText
+                      value={state.evaluationAttachment?.uploadedAt}
+                      mode="datetime"
+                      placeholder="已保存"
+                    />
+                  </>
+                }
+                actions={
+                  <Space wrap>
+                    {state.evaluationAttachment?.url && (
+                      <Button
+                        size="small"
+                        icon={<IconDownload />}
+                        aria-label={`下载 ${state.evaluationFileName}`}
+                        onClick={() =>
+                          downloadFile(state.evaluationAttachment!.url!, state.evaluationFileName!)
+                        }
+                      >
+                        下载原件
                       </Button>
-                    </Upload>
-                  )}
-                </Space>
-              </div>
+                    )}
+                    {!readonly && (
+                      <Upload
+                        accept=".xlsx,.xls,.pdf,.doc,.docx"
+                        showUploadList={false}
+                        beforeUpload={handleEvaluationUpload}
+                      >
+                        <Button size="small" type="outline">
+                          替换文件
+                        </Button>
+                      </Upload>
+                    )}
+                  </Space>
+                }
+              />
             ) : (
-              <Upload
+              <UploadPanel
                 accept=".xlsx,.xls,.pdf,.doc,.docx"
                 showUploadList={false}
                 disabled={readonly}
-                beforeUpload={(file) => {
-                  const url = URL.createObjectURL(file);
-                  patchState({
-                    evaluationFileName: file.name,
-                    evaluationAttachment: {
-                      id: `att-eval-${Date.now()}`,
-                      name: file.name,
-                      size: file.size,
-                      url,
-                      uploadedAt: new Date().toISOString(),
-                      uploadedBy: '技术负责人',
-                    },
-                  });
-                  Message.success(`评估文件已暂存：${file.name}`);
-                  return false;
-                }}
-              >
-                <Button icon={<IconUpload />} type="primary" disabled={readonly}>
-                  上传技术评估文件（Excel / PDF / Word）
-                </Button>
-              </Upload>
+                hint="点击或拖拽技术评估文件到此处上传"
+                description="支持 Excel、PDF、Word 文件"
+                beforeUpload={handleEvaluationUpload}
+              />
             )}
           </div>
 
@@ -299,7 +279,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -307,11 +287,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               2. 工期与总人天确认
             </Text>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>评估交付工期（工作日）*</Text>
-                </div>
+            <FormGrid columns={2}>
+              <FormItem label="评估交付工期（工作日）" required>
                 <InputNumber
                   style={{ width: '100%' }}
                   min={1}
@@ -323,11 +300,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                     patchState({ evaluationWorkDays: Number(value) || undefined })
                   }
                 />
-              </Col>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>评估研发总人天（人天）*</Text>
-                </div>
+              </FormItem>
+              <FormItem label="评估研发总人天（人天）" required>
                 <InputNumber
                   style={{ width: '100%' }}
                   min={0.1}
@@ -340,8 +314,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                     patchState({ evaluationTotalDays: Number(value) || undefined })
                   }
                 />
-              </Col>
-            </Row>
+              </FormItem>
+            </FormGrid>
 
             {totalDays > 0 && (
               <div
@@ -349,19 +323,19 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                   marginTop: 12,
                   padding: '10px 14px',
                   background: 'var(--color-primary-light-1)',
-                  borderRadius: 4,
+                  borderRadius: 'var(--radius-xs)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                 }}
               >
-                <Text style={{ fontSize: 13, color: 'var(--primary-6)' }}>
-                  基准研发底线成本：¥{baseCost.toLocaleString()}
-                  <span style={{ fontSize: 12, color: 'var(--color-text-3)', marginLeft: 8 }}>
+                <Text style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--primary-6)' }}>
+                  基准研发底线成本：<MoneyText value={baseCost} />
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginLeft: 8 }}>
                     (按 {totalDays} 人天 × 600元/天日成本测算)
                   </span>
                 </Text>
-                <Tag color="blue">供销售阶段毛利预警参考</Tag>
+                <StatusTag tone="info">供销售阶段毛利预警参考</StatusTag>
               </div>
             )}
           </div>
@@ -371,7 +345,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -415,7 +389,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             </div>
           )}
         </Space>
-      </Card>
+      </SectionCard>
     );
   }
 
@@ -527,7 +501,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
         width: 150,
         render: (_: any, record: PaymentMilestone) => {
           const amt = state.quoteAmount ? Math.round((state.quoteAmount * record.ratio) / 100) : 0;
-          return <Text bold>¥{amt.toLocaleString()}</Text>;
+          return <Text bold><MoneyText value={amt} /></Text>;
         },
       },
       {
@@ -570,7 +544,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
       isRatioValid;
 
     return (
-      <Card
+      <SectionCard
         title={
           <Space>
             <IconFile style={{ color: 'var(--primary-6)' }} />
@@ -584,7 +558,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -592,11 +566,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               1. 核心商务报价与毛利率测算（ADR-0014 底线管控）
             </Text>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>商务报价总额（元）*</Text>
-                </div>
+            <FormGrid columns={2}>
+              <FormItem label="商务报价总额（元）" required>
                 <InputNumber
                   style={{ width: '100%' }}
                   min={quote.isSupplement ? undefined : 0}
@@ -611,11 +582,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                     })
                   }
                 />
-              </Col>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>承诺交付工期（工作日）*</Text>
-                </div>
+              </FormItem>
+              <FormItem label="承诺交付工期（工作日）" required>
                 <InputNumber
                   style={{ width: '100%' }}
                   min={1}
@@ -627,15 +595,15 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                     patchPricingState({ quoteWorkDays: Number(value) || undefined })
                   }
                 />
-              </Col>
-            </Row>
+              </FormItem>
+            </FormGrid>
 
             {/* 毛利与成本分析卡片 */}
             <div
               style={{
                 marginTop: 16,
                 padding: '12px 16px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 background:
                   margin.level === 'healthy'
                     ? 'rgba(0, 180, 42, 0.06)'
@@ -662,36 +630,35 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               >
                 <Space size={20} wrap>
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
                       技术底线成本 (评估 {evalDays} 人天)
                     </Text>
-                    <div style={{ fontSize: 16, fontWeight: 600 }}>
-                      ¥{margin.cost.toLocaleString()}
+                    <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>
+                      <MoneyText value={margin.cost} />
                     </div>
                   </div>
                   <Divider type="vertical" style={{ height: 28 }} />
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
                       预估毛利润
                     </Text>
                     <div
                       style={{
-                        fontSize: 16,
+                        fontSize: 'var(--text-base)',
                         fontWeight: 600,
-                        color: margin.grossProfit < 0 ? 'rgb(var(--danger-6))' : 'inherit',
                       }}
                     >
-                      ¥{margin.grossProfit.toLocaleString()}
+                      <MoneyText value={margin.grossProfit} tone={margin.grossProfit < 0 ? 'danger' : 'default'} />
                     </div>
                   </div>
                   <Divider type="vertical" style={{ height: 28 }} />
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
                       预估毛利率
                     </Text>
                     <div
                       style={{
-                        fontSize: 18,
+                        fontSize: 'var(--text-lg)',
                         fontWeight: 700,
                         color:
                           margin.level === 'healthy'
@@ -706,22 +673,19 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                   </div>
                 </Space>
 
-                <Tag
-                  color={
+                <StatusTag tone={
                     margin.level === 'healthy'
-                      ? 'green'
+                      ? 'success'
                       : margin.level === 'warning'
-                      ? 'orange'
-                      : 'red'
-                  }
-                  size="large"
-                >
+                      ? 'warning'
+                      : 'danger'
+                  }>
                   {margin.label}
-                </Tag>
+                </StatusTag>
               </div>
 
               {margin.level === 'danger' && (
-                <div style={{ marginTop: 8, fontSize: 12, color: 'rgb(var(--danger-6))' }}>
+                <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'rgb(var(--danger-6))' }}>
                   ⚠️ 毛利率低于 15%，触碰公司商务底线红线。提交审批后将自动触发高管/财务一票否决权！
                 </div>
               )}
@@ -733,7 +697,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -770,7 +734,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               )}
             </div>
 
-            <Table
+            <DataTable
               data={currentMilestones}
               columns={milestoneColumns}
               pagination={false}
@@ -786,17 +750,17 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                 alignItems: 'center',
                 padding: '6px 12px',
                 background: isRatioValid ? 'var(--color-fill-2)' : 'rgba(255, 125, 0, 0.1)',
-                borderRadius: 4,
+                borderRadius: 'var(--radius-xs)',
               }}
             >
-              <Text type={isRatioValid ? 'secondary' : 'warning'} style={{ fontSize: 12 }}>
+              <Text type={isRatioValid ? 'secondary' : 'warning'} style={{ fontSize: 'var(--text-xs)' }}>
                 {isRatioValid
                   ? '各期付款比例总和为 100%，符合财务合规要求'
                   : `当前各期比例总和为 ${totalRatio}%，必须调整至 100% 才能提交审批`}
               </Text>
-              <Tag color={isRatioValid ? 'green' : 'orange'}>
+              <StatusTag tone={isRatioValid ? 'success' : 'warning'}>
                 总比例：{totalRatio}% / 100%
-              </Tag>
+              </StatusTag>
             </div>
           </div>
 
@@ -805,7 +769,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             style={{
               padding: '16px',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--color-bg-2)',
             }}
           >
@@ -813,11 +777,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               3. 商务交付与维保条款
             </Text>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>免费质保期</Text>
-                </div>
+            <FormGrid columns={2}>
+              <FormItem label="免费质保期">
                 <Select
                   style={{ width: '100%' }}
                   value={state.warrantyYears ?? 1}
@@ -829,11 +790,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                   <Select.Option value={2}>2 年免费质保</Select.Option>
                   <Select.Option value={3}>3 年免费质保</Select.Option>
                 </Select>
-              </Col>
-              <Col span={12}>
-                <div style={{ marginBottom: 4 }}>
-                  <Text>发票类型</Text>
-                </div>
+              </FormItem>
+              <FormItem label="发票类型">
                 <Select
                   style={{ width: '100%' }}
                   value={state.invoiceType ?? '专票6%'}
@@ -844,8 +802,8 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
                   <Select.Option value="普票">增值税普通发票 (免税/零税率)</Select.Option>
                   <Select.Option value="专票13%">增值税专用发票 (软硬件集成 13%)</Select.Option>
                 </Select>
-              </Col>
-            </Row>
+              </FormItem>
+            </FormGrid>
           </div>
 
           {/* 4. 在线报价文档终稿预览与生成 */}
@@ -863,17 +821,14 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
 
           {/* 提交审批门禁提示 */}
           {!readonly && !canSubmitAudit && (
-            <Alert
-              type="warning"
-              content={`提交审批前请补齐以下必备事项：${[
+            <AlertBanner tone="warning">{`提交审批前请补齐以下必备事项：${[
                 !documentSaved ? '在上方点击保存报价文档终稿' : '',
                 !state.quoteWorkDays ? '承诺交付工期' : '',
                 !amountValid ? '商务报价总额' : '',
                 !isRatioValid ? '分期付款比例凑齐 100%' : '',
               ]
                 .filter(Boolean)
-                .join('、')}`}
-            />
+                .join('、')}`}</AlertBanner>
           )}
 
           {!readonly && (
@@ -896,7 +851,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
             </div>
           )}
         </Space>
-      </Card>
+      </SectionCard>
     );
   }
 
@@ -909,7 +864,7 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 全套流转文件袋（File Dossier）穿透卡片 */}
-      <Card
+      <SectionCard
         title={
           <Space>
             <IconFolder style={{ color: 'var(--primary-6)' }} />
@@ -924,20 +879,20 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               style={{
                 padding: '12px',
                 border: '1px solid var(--color-border-2)',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--color-fill-1)',
               }}
             >
-              <Text bold style={{ display: 'block', fontSize: 13 }}>
+              <Text bold style={{ display: 'block', fontSize: 'var(--ds-text-dense)' }}>
                 📂 1. 结构化功能清单
               </Text>
-              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-2)' }}>
+              <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                 一级模块：{quote.featureList.length} 个<br />
                 细分功能：{totalSubs} 项
               </div>
-              <Tag size="small" color="arcoblue" style={{ marginTop: 8 }}>
+              <StatusTag size="small" tone="info" style={{ marginTop: 8 }}>
                 已锁定入库
-              </Tag>
+              </StatusTag>
             </div>
           </Col>
 
@@ -947,47 +902,51 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               style={{
                 padding: '12px',
                 border: '1px solid var(--color-border-2)',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--color-fill-1)',
               }}
             >
-              <Text bold style={{ display: 'block', fontSize: 13 }}>
+              <Text bold style={{ display: 'block', fontSize: 'var(--ds-text-dense)' }}>
                 📄 2. 技术评估原件
               </Text>
-              <div
-                style={{
-                  marginTop: 6,
-                  fontSize: 12,
-                  color: 'var(--color-text-2)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {state.evaluationFileName ?? '暂无附件'}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>
-                工期：{state.evaluationWorkDays ?? '-'} 天 · 人天：{evalDays}
-              </div>
-              {state.evaluationAttachment?.url ? (
-                <Button
-                  size="mini"
-                  type="outline"
-                  icon={<IconDownload />}
-                  style={{ marginTop: 6 }}
-                  onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = state.evaluationAttachment!.url!;
-                    a.download = state.evaluationFileName!;
-                    a.click();
-                  }}
-                >
-                  下载原件
-                </Button>
-              ) : (
-                <Tag size="small" color="gray" style={{ marginTop: 6 }}>
+              <FileList
+                items={
+                  state.evaluationFileName
+                    ? [
+                        {
+                          key: state.evaluationAttachment?.id ?? state.evaluationFileName,
+                          name: state.evaluationFileName,
+                          meta: (
+                            <>
+                              工期：{state.evaluationWorkDays ?? '-'} 天 · 人天：{evalDays}
+                              {state.evaluationAttachment?.uploadedAt && (
+                                <>
+                                  {' · 上传于 '}
+                                  <DateText
+                                    value={state.evaluationAttachment.uploadedAt}
+                                    mode="datetime"
+                                  />
+                                </>
+                              )}
+                            </>
+                          ),
+                          onDownload: state.evaluationAttachment?.url
+                            ? () =>
+                                downloadFile(
+                                  state.evaluationAttachment!.url!,
+                                  state.evaluationFileName!,
+                                )
+                            : undefined,
+                        },
+                      ]
+                    : []
+                }
+                emptyDescription="暂无附件"
+              />
+              {!state.evaluationAttachment?.url && (
+                <StatusTag size="small" tone="neutral" style={{ marginTop: 6 }}>
                   无在线链接
-                </Tag>
+                </StatusTag>
               )}
             </div>
           </Col>
@@ -998,31 +957,27 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               style={{
                 padding: '12px',
                 border: '1px solid var(--color-border-2)',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--color-fill-1)',
               }}
             >
-              <Text bold style={{ display: 'block', fontSize: 13 }}>
+              <Text bold style={{ display: 'block', fontSize: 'var(--ds-text-dense)' }}>
                 💼 3. 商务财务分析
               </Text>
-              <div style={{ marginTop: 6, fontSize: 12 }}>
-                报价：<Text bold>¥{(state.quoteAmount ?? 0).toLocaleString()}</Text>
+              <div style={{ marginTop: 6, fontSize: 'var(--text-xs)' }}>
+                报价：<Text bold><MoneyText value={state.quoteAmount ?? 0} /></Text>
                 <br />
-                毛利：{margin.marginRate}% (¥{margin.grossProfit.toLocaleString()})
+                毛利：{margin.marginRate}% (<MoneyText value={margin.grossProfit} tone={margin.grossProfit < 0 ? 'danger' : 'default'} />)
               </div>
-              <Tag
-                size="small"
-                color={
+              <StatusTag size="small" tone={
                   margin.level === 'healthy'
-                    ? 'green'
+                    ? 'success'
                     : margin.level === 'warning'
-                    ? 'orange'
-                    : 'red'
-                }
-                style={{ marginTop: 8 }}
-              >
+                    ? 'warning'
+                    : 'danger'
+                } style={{ marginTop: 8 }}>
                 {margin.label}
-              </Tag>
+              </StatusTag>
             </div>
           </Col>
 
@@ -1032,28 +987,28 @@ export function FileFlowWorkbench({ quote, stage, readonly }: Props) {
               style={{
                 padding: '12px',
                 border: '1px solid var(--color-border-2)',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--color-fill-1)',
               }}
             >
-              <Text bold style={{ display: 'block', fontSize: 13 }}>
+              <Text bold style={{ display: 'block', fontSize: 'var(--ds-text-dense)' }}>
                 📝 4. 付款方式与条款
               </Text>
-              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-2)' }}>
+              <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                 分期：{milestones.map((m) => `${m.ratio}%`).join(' : ')}
                 <br />
                 质保：{state.warrantyYears ?? 1} 年 ({state.invoiceType ?? '专票6%'})
               </div>
-              <Tag size="small" color="cyan" style={{ marginTop: 8 }}>
+              <StatusTag size="small" tone="cyan" style={{ marginTop: 8 }}>
                 {state.onlineDocument.status === 'saved' ||
                 state.onlineDocument.status === 'finalized'
                   ? '终稿文档已就绪'
                   : '草稿状态'}
-              </Tag>
+              </StatusTag>
             </div>
           </Col>
         </Row>
-      </Card>
+      </SectionCard>
 
       {/* 原有审批流转组件 */}
       <Stage4Approval quote={quote} readonly={readonly} />

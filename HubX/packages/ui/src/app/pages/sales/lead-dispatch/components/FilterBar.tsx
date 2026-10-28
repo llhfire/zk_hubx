@@ -2,7 +2,7 @@
 // 关键词/主体/渠道/部门/等级在此栏；业务线与时间范围、排序在页面第二行
 // 批量派发按钮：勾选行后可点，弹窗在阶段 C 接入（DispatchModal）
 
-import { Button, Input, Select, Space, Tooltip } from '@arco-design/web-react';
+import { Button, Input, Select, Space, Tooltip } from '@/design-system';
 import { LEAD_SOURCE_LIST, LEAD_SOURCE_LABEL, COMPANY_ENTITY_LIST, CUSTOMER_LEVEL_LIST } from '../../leads/types';
 
 export interface DispatchFilterState {

@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import {
-  Alert,
-  Button,
-  Card,
-  Empty,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Tag,
-  Tooltip,
-  Upload,
-} from '@arco-design/web-react';
+  EmptyState,
+  DescriptionsCard,
+  StatusTag,
+  type StatusMap,
+  type StatusMeta,
+  ApprovalFlow,
+  UploadPanel,
+  AlertBanner,
+  SectionCard,
+  FileArchivePanel,
+  FileList,
+} from '@/design-system';
+import type { UploadItem } from '@/design-system';
+import { Button, Form, Input, Message, Modal, Select, Space, Tooltip, Upload } from '@/design-system';
 import {
-  IconDownload,
   IconDown,
   IconEdit,
   IconEye,
@@ -24,7 +22,7 @@ import {
   IconPlus,
   IconRight,
   IconUpload,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useContracts } from '../../contracts/ContractsContext';
 import { getContractApprovalRounds } from '../../contracts/contractHistory';
 import {
@@ -73,31 +71,29 @@ function getApprovingStepLabel(round?: ContractApprovalRound) {
   return `${pendingStep.replace('审核', '')}审批中`;
 }
 
-function getRoundStatusLabel(round: ContractApprovalRound, includeApprovingStep = false) {
-  if (round.status === 'approved') return '已通过';
-  if (round.status === 'rejected') return '已驳回';
-  if (round.status === 'withdrawn') return '已撤回';
-  return includeApprovingStep ? getApprovingStepLabel(round) : '审批中';
+const ROUND_STATUS: StatusMap<ContractApprovalRound['status']> = {
+  approving: { label: '审批中', tone: 'warning' },
+  approved: { label: '已通过', tone: 'success' },
+  rejected: { label: '已驳回', tone: 'danger' },
+  withdrawn: { label: '已撤回', tone: 'neutral' },
+};
+
+const NODE_STATUS: StatusMap<ApprovalNode['status']> = {
+  pending: { label: '待处理', tone: 'warning' },
+  approved: { label: '已通过', tone: 'success' },
+  rejected: { label: '已驳回', tone: 'danger' },
+};
+
+function getRoundStatusMeta(round: ContractApprovalRound, includeApprovingStep = false): StatusMeta {
+  const meta = ROUND_STATUS[round.status];
+  if (round.status !== 'approving' || !includeApprovingStep) return meta;
+  return { ...meta, label: getApprovingStepLabel(round) };
 }
 
-function getRoundStatusColor(status: ContractApprovalRound['status']) {
-  if (status === 'approved') return 'green';
-  if (status === 'rejected') return 'red';
-  if (status === 'withdrawn') return 'gray';
-  return 'orange';
-}
-
-function getNodeStatusLabel(node: ApprovalNode) {
-  if (node.step === '发起申请' && node.status === 'approved') return '已提交';
-  if (node.status === 'approved') return '已通过';
-  if (node.status === 'rejected') return '已驳回';
-  return '待处理';
-}
-
-function getNodeStatusColor(status: ApprovalNode['status']) {
-  if (status === 'approved') return 'green';
-  if (status === 'rejected') return 'red';
-  return 'orange';
+function getNodeStatusMeta(node: ApprovalNode): StatusMeta {
+  const meta = NODE_STATUS[node.status];
+  if (node.step === '发起申请' && node.status === 'approved') return { ...meta, label: '已提交' };
+  return meta;
 }
 
 function getSortedApprovalNodes(round: ContractApprovalRound) {
@@ -119,32 +115,32 @@ function getVersionStatus(
   version: ContractVersion,
   rounds: ContractApprovalRound[],
   includeApprovingStep = false,
-) {
+): StatusMeta {
   if (version.versionNo === contract.approvedVersionNo) {
-    return { label: '终稿', color: 'green' };
+    return { label: '终稿', tone: 'success' };
   }
   const latestRound = rounds[0];
-  if (latestRound?.status === 'approved') return { label: '已审批通过', color: 'green' };
+  if (latestRound?.status === 'approved') return { label: '已审批通过', tone: 'success' };
   if (latestRound?.status === 'approving') {
-    return { label: includeApprovingStep ? getApprovingStepLabel(latestRound) : '审批中', color: 'orange' };
+    return { label: includeApprovingStep ? getApprovingStepLabel(latestRound) : '审批中', tone: 'warning' };
   }
-  if (latestRound?.status === 'rejected') return { label: '审批驳回', color: 'red' };
-  if (latestRound?.status === 'withdrawn') return { label: '审批已撤回', color: 'gray' };
-  return { label: '未提交审批', color: 'arcoblue' };
+  if (latestRound?.status === 'rejected') return { label: '审批驳回', tone: 'danger' };
+  if (latestRound?.status === 'withdrawn') return { label: '审批已撤回', tone: 'neutral' };
+  return { label: '未提交审批', tone: 'info' };
 }
 
 function getContractStatus(
   contract: Contract,
   latestVersion: ContractVersion | undefined,
   activeRound: ContractApprovalRound | undefined,
-) {
-  if (contract.status === 'voided') return { label: '已作废', color: 'red' };
-  if (activeRound) return { label: `${activeRound.versionNo} 审批中`, color: 'orange' };
+): StatusMeta {
+  if (contract.status === 'voided') return { label: '已作废', tone: 'danger' };
+  if (activeRound) return { label: `${activeRound.versionNo} 审批中`, tone: 'warning' };
   if (contract.approvedVersionNo === latestVersion?.versionNo) {
-    return { label: '已形成终稿', color: 'green' };
+    return { label: '已形成终稿', tone: 'success' };
   }
-  if (contract.approvedVersionNo) return { label: '有新版本待审批', color: 'arcoblue' };
-  return { label: '待提交审批', color: 'arcoblue' };
+  if (contract.approvedVersionNo) return { label: '有新版本待审批', tone: 'info' };
+  return { label: '待提交审批', tone: 'info' };
 }
 
 function mapUploadFilesToScans(uploadList: LocalUploadItem[]): ScanFile[] {
@@ -403,13 +399,13 @@ export function LeadContractHistoryPanel({
 
   return (
     <>
-      <Card
+      <SectionCard
         bordered={false}
         className={`lead-contract-history-card${projectCompactVersionLayout && !showFinalArchive ? ' is-final-archive-hidden' : ''}`}
       >
         {!contract ? (
           <div className="lead-contract-history-empty-state">
-            <Empty description="暂无合同记录" />
+            <EmptyState description="暂无合同记录" />
             <Button type="primary" size="small" icon={<IconPlus />} onClick={onCreateContract}>
               创建合同
             </Button>
@@ -469,28 +465,15 @@ export function LeadContractHistoryPanel({
 
             {!hideHistorySummary && (
               <div className="lead-contract-history-summary">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>最新版本</th>
-                      <th>审批状态</th>
-                      <th>最后更新</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <strong>{latestVersion?.versionNo || '-'}</strong>
-                      </td>
-                      <td>
-                        <Tag color={currentStatus?.color}>{currentStatus?.label}</Tag>
-                      </td>
-                      <td>
-                        <strong>{contract.updatedAt}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <DescriptionsCard
+                  bare
+                  columns={3}
+                  items={[
+                    { key: 'latest', label: '最新版本', value: latestVersion?.versionNo || '-' },
+                    { key: 'status', label: '审批状态', value: <StatusTag meta={currentStatus} /> },
+                    { key: 'updated', label: '最后更新', value: contract.updatedAt },
+                  ]}
+                />
               </div>
             )}
 
@@ -530,7 +513,7 @@ export function LeadContractHistoryPanel({
             </div>
           </>
         )}
-      </Card>
+      </SectionCard>
 
       <Modal
         title={`上传 Word 合同版本 ${nextVersionNo}`}
@@ -581,11 +564,7 @@ export function LeadContractHistoryPanel({
         style={{ width: 680, maxWidth: 'calc(100vw - 32px)' }}
       >
         {activeRound ? (
-          <Alert
-            type="warning"
-            content={`当前 ${activeRound.versionNo} 正在审批中，创建新版本后本轮审批将自动撤回。`}
-            style={{ marginBottom: 16 }}
-          />
+          <AlertBanner tone="warning" style={{ marginBottom: 16 }}>{`当前 ${activeRound.versionNo} 正在审批中，创建新版本后本轮审批将自动撤回。`}</AlertBanner>
         ) : null}
         <div className="lead-contract-version-number">
           <span>版本号</span>
@@ -629,18 +608,12 @@ export function LeadContractHistoryPanel({
             triggerPropName="fileList"
             rules={[{ required: true, message: '请上传合同文件' }]}
           >
-            <Upload
+            <UploadPanel
               accept=".pdf,.doc,.docx"
               autoUpload={false}
               limit={1}
-              drag
-              tip="支持 PDF、DOC、DOCX，单个版本保留一份合同文件"
-            >
-              <div className="lead-contract-version-upload">
-                <IconUpload />
-                <span>点击或拖拽合同文件到此处上传</span>
-              </div>
-            </Upload>
+              description="支持 PDF、DOC、DOCX，单个版本保留一份合同文件"
+            />
           </FormItem>
         </Form>
       </Modal>
@@ -725,19 +698,14 @@ export function LeadContractHistoryPanel({
             triggerPropName="fileList"
             rules={[{ required: true, message: '请上传归档文件' }]}
           >
-            <Upload
+            <UploadPanel
               accept=".pdf,.doc,.docx"
               autoUpload={false}
               multiple
               limit={5}
-              drag
-              tip="支持 PDF、DOC、DOCX，最多 5 个文件"
-            >
-              <div className="lead-contract-version-upload">
-                <IconUpload />
-                <span>点击或拖拽终稿文件到此处上传</span>
-              </div>
-            </Upload>
+              hint="点击或拖拽终稿文件到此处上传"
+              description="支持 PDF、DOC、DOCX，最多 5 个文件"
+            />
           </FormItem>
           <FormItem label="归档备注" field="note">
             <Input.TextArea
@@ -847,9 +815,9 @@ function ContractVersionItem({
           <div>
             <div className="lead-contract-version-item-title">
               <strong>{version.versionNo}</strong>
-              {isLatest ? <Tag color="arcoblue" size="small">最新版本</Tag> : null}
+              {isLatest ? <StatusTag tone="info" size="small">最新版本</StatusTag> : null}
               {(!projectCompactVersionLayout || isLatest || versionStatus.label !== '未提交审批') && (
-                <Tag color={versionStatus.color} size="small">{versionStatus.label}</Tag>
+                <StatusTag meta={versionStatus} />
               )}
             </div>
             <p>{projectCompactVersionLayout ? (version.changeSummary || version.label) : version.label}</p>
@@ -919,7 +887,7 @@ function ContractVersionItem({
                     <span>修改类型</span>
                     <div>
                       {version.changeTypes?.length
-                        ? version.changeTypes.map(type => <Tag key={type} size="small">{type}</Tag>)
+                        ? version.changeTypes.map(type => <StatusTag key={type} size="small">{type}</StatusTag>)
                         : <span className="lead-contract-history-empty-text">-</span>}
                     </div>
                   </div>
@@ -983,26 +951,14 @@ function ContractVersionAttachmentList({ attachments }: { attachments?: Contract
   }
 
   return (
-    <div className="lead-contract-history-files">
-      {attachments.map(file => (
-        <div key={file.id}>
-          <span className="lead-contract-history-file-icon"><IconFile /></span>
-          <div>
-            <strong>{file.name}</strong>
-            <span>{file.size}</span>
-          </div>
-          <Tooltip content="下载合同文件">
-            <Button
-              type="text"
-              size="small"
-              icon={<IconDownload />}
-              aria-label="下载合同文件"
-              onClick={() => downloadAttachment(file)}
-            />
-          </Tooltip>
-        </div>
-      ))}
-    </div>
+    <FileList
+      items={attachments.map(file => ({
+        key: file.id,
+        name: file.name,
+        meta: file.size,
+        onDownload: () => downloadAttachment(file),
+      }))}
+    />
   );
 }
 
@@ -1024,9 +980,7 @@ function ContractApprovalOverview({
           <strong>审批记录</strong>
           <span>共 {sortedRounds.length} 轮</span>
         </div>
-        <Tag color={getRoundStatusColor(sortedRounds[0].status)} size="small">
-          {getRoundStatusLabel(sortedRounds[0], includeApprovingStep)}
-        </Tag>
+        <StatusTag meta={getRoundStatusMeta(sortedRounds[0], includeApprovingStep)} />
       </div>
 
       <div className="lead-contract-approval-overview-rounds">
@@ -1059,9 +1013,7 @@ function ContractApprovalOverview({
             <div className="lead-contract-approval-overview-round-head">
               <div>
                 <strong>第 {round.roundNo} 轮 · {round.versionNo}</strong>
-                <Tag color={getRoundStatusColor(round.status)} size="small">
-                  {getRoundStatusLabel(round, includeApprovingStep)}
-                </Tag>
+                <StatusTag meta={getRoundStatusMeta(round, includeApprovingStep)} />
               </div>
               <span>{round.updatedAt || round.submittedAt}</span>
             </div>
@@ -1081,9 +1033,7 @@ function ContractApprovalOverview({
                           ? '审批驳回'
                           : '等待审批'
                     : node.step}</strong>
-                  <Tag color={getNodeStatusColor(node.status)} size="small">
-                    {getNodeStatusLabel(node)}
-                  </Tag>
+                  <StatusTag meta={getNodeStatusMeta(node)} />
                   <small>{node.approver || '-'}</small>
                   <time>{node.time || '-'}</time>
                 </div>
@@ -1120,9 +1070,7 @@ function ApprovalRoundItem({
         <span className="lead-contract-approval-round-main">
           <span>
             <strong>第 {round.roundNo} 轮审批</strong>
-            <Tag color={getRoundStatusColor(round.status)} size="small">
-              {getRoundStatusLabel(round, includeApprovingStep)}
-            </Tag>
+            <StatusTag meta={getRoundStatusMeta(round, includeApprovingStep)} />
           </span>
           <small>
             {round.status === 'rejected'
@@ -1136,34 +1084,17 @@ function ApprovalRoundItem({
       </button>
 
       {expanded ? (
-        <div className="lead-contract-approval-node-list">
-          {sortedNodes.map((node, index) => (
-            <div
-              key={`${round.id}-${node.step}-${index}`}
-              className={`lead-contract-approval-node is-${node.status}`}
-            >
-              <span className="lead-contract-approval-node-dot" />
-              <div>
-                <div className="lead-contract-approval-node-title">
-                  <strong>{node.step}</strong>
-                  <Tag color={getNodeStatusColor(node.status)} size="small">
-                    {getNodeStatusLabel(node)}
-                  </Tag>
-                </div>
-                <div className="lead-contract-approval-node-meta">
-                  <span>{node.step === '发起申请' ? '申请人' : '审批人'}：{node.approver}</span>
-                  <span>操作时间：{node.time || '-'}</span>
-                </div>
-                {node.comment ? (
-                  <div className={`lead-contract-approval-node-comment${node.status === 'rejected' ? ' is-rejected' : ''}`}>
-                    <span>{node.status === 'rejected' ? '驳回原因' : '审批意见'}</span>
-                    <p>{node.comment}</p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ApprovalFlow
+          className="lead-contract-approval-node-list"
+          nodes={sortedNodes.map((node, index) => ({
+            key: `${round.id}-${node.step}-${index}`,
+            title: node.step,
+            status: node.status,
+            note: node.step === '发起申请' ? `申请人：${node.approver}` : `审批人：${node.approver}`,
+            time: node.time,
+            comment: node.comment,
+          }))}
+        />
       ) : null}
     </section>
   );
@@ -1185,91 +1116,50 @@ function FinalContractArchive({
   onPreviewFile: (file: ScanFile) => void;
 }) {
   return (
-    <section className={`lead-contract-final-archive${isLeading ? ' is-leading' : ''}`}>
-      <div className="lead-contract-final-archive-head">
-        <div>
-          <strong>合同归档</strong>
-          <span>终稿文件与归档记录</span>
+    <FileArchivePanel
+      className={`lead-contract-final-archive${isLeading ? ' is-leading' : ''}`}
+      title="合同归档"
+      description="终稿文件与归档记录"
+      action={contract.approvedVersionNo && contract.status !== 'voided' ? (
+        <Button size="small" icon={<IconUpload />} onClick={onUpload}>
+          {entries.length ? '补充归档' : '上传归档'}
+        </Button>
+      ) : undefined}
+      headerMeta={contract.approvedVersionNo && !hideFinalVersionInfo ? (
+        <div className="lead-contract-final-version-info">
+          <span>当前终稿</span>
+          <strong>{contract.approvedVersionNo}</strong>
+          <span>{contract.approvedAt ? `审批通过于 ${contract.approvedAt}` : '已审批通过'}</span>
         </div>
-        {contract.approvedVersionNo && contract.status !== 'voided' ? (
-          <Button size="small" icon={<IconUpload />} onClick={onUpload}>
-            {entries.length ? '补充归档' : '上传归档'}
-          </Button>
-        ) : null}
-      </div>
-
-      {!contract.approvedVersionNo ? (
-        <div className="lead-contract-final-archive-empty">
-          <Empty description="合同审批通过并形成终稿后可上传归档" />
-        </div>
-      ) : (
-        <>
-          {!hideFinalVersionInfo ? (
-            <div className="lead-contract-final-version-info">
-              <span>当前终稿</span>
-              <strong>{contract.approvedVersionNo}</strong>
-              <span>{contract.approvedAt ? `审批通过于 ${contract.approvedAt}` : '已审批通过'}</span>
-            </div>
-          ) : null}
-          {entries.length ? (
-            <div className="lead-contract-archive-entry-list">
-              {entries.map(entry => (
-                <article key={entry.id} className="lead-contract-archive-entry">
-                  <div className="lead-contract-archive-entry-head">
-                    <div>
-                      <strong>{entry.linkedVersionNo} 归档</strong>
-                      {entry.linkedVersionNo === contract.approvedVersionNo ? (
-                        <Tag color="green" size="small">当前终稿</Tag>
-                      ) : null}
-                      {entry.isPrimary ? <Tag color="arcoblue" size="small">主归档</Tag> : null}
-                    </div>
-                    <span>{entry.uploadedAt}</span>
-                  </div>
-                  <div className="lead-contract-archive-entry-meta">
-                    <span>上传人：{entry.uploadedBy}</span>
-                    {entry.note ? <span>备注：{entry.note}</span> : null}
-                  </div>
-                  <div className="lead-contract-history-files">
-                    {entry.files.map(file => (
-                      <div key={file.id}>
-                        <span className="lead-contract-history-file-icon"><IconFile /></span>
-                        <div>
-                          <strong>{file.fileName}</strong>
-                          <span>{formatFileSize(file.fileSize)}</span>
-                        </div>
-                        <Tooltip content="预览归档文件">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<IconEye />}
-                            aria-label="预览归档文件"
-                            onClick={() => onPreviewFile(file)}
-                          />
-                        </Tooltip>
-                        <Tooltip content="下载归档文件">
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<IconDownload />}
-                            aria-label="下载归档文件"
-                            onClick={() => downloadAttachment({
-                              name: file.fileName,
-                              url: file.blobUrl,
-                            })}
-                          />
-                        </Tooltip>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="lead-contract-history-empty-line">当前终稿尚未上传归档文件</div>
-          )}
-        </>
-      )}
-    </section>
+      ) : undefined}
+      entries={entries.map((entry) => ({
+        key: entry.id,
+        title: `${entry.linkedVersionNo} 归档`,
+        badges: (
+          <>
+            {entry.linkedVersionNo === contract.approvedVersionNo ? (
+              <StatusTag tone="success" size="small">当前终稿</StatusTag>
+            ) : null}
+            {entry.isPrimary ? <StatusTag tone="info" size="small">主归档</StatusTag> : null}
+          </>
+        ),
+        timestamp: entry.uploadedAt,
+        meta: (
+          <>
+            <span>上传人：{entry.uploadedBy}</span>
+            {entry.note ? <span>备注：{entry.note}</span> : null}
+          </>
+        ),
+        files: entry.files.map((file) => ({
+          key: file.id,
+          name: file.fileName,
+          meta: formatFileSize(file.fileSize),
+          onPreview: () => onPreviewFile(file),
+          onDownload: () => downloadAttachment({ name: file.fileName, url: file.blobUrl }),
+        })),
+      }))}
+      emptyDescription={contract.approvedVersionNo ? '当前终稿尚未上传归档文件' : '合同审批通过并形成终稿后可上传归档'}
+    />
   );
 }
 
@@ -1292,13 +1182,12 @@ function ArchiveFilePreview({ file }: { file: ScanFile }) {
 
   return (
     <div className="lead-contract-archive-preview-empty">
-      <Empty
+      <EmptyState
         description={
           file.blobUrl
             ? '该文件类型当前不支持直接在线预览，可下载后查看。'
             : '演示数据暂无可用预览文件，真实环境中将从文件服务读取。'
-        }
-      />
+        } />
       <div className="lead-contract-archive-preview-meta">
         <span>文件名称：{file.fileName}</span>
         <span>文件大小：{formatFileSize(file.fileSize)}</span>

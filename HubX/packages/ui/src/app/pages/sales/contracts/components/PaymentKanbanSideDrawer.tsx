@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Drawer, Tabs } from '@arco-design/web-react';
-import { IconFile } from '@arco-design/web-react/icon';
+import { Button, Drawer, SectionTabs, Tabs } from '@/design-system';
+import { IconFile } from '@/design-system';
 import type { Contract } from '../types';
 import { PaymentTimeline } from './PaymentTimeline';
 import { ContractTextViewer } from './ContractTextViewer';
@@ -49,16 +49,34 @@ export function PaymentKanbanSideDrawer({ visible, contract, onClose }: Props) {
         </span>
       </div>
 
-      <Tabs activeTab={activeTab} onChange={setActiveTab}>
-        <TabPane key="timeline" title="回款时间线">
-          <div className="payment-kanban-side-drawer__timeline">
-            <PaymentTimeline contract={contract} />
-          </div>
-        </TabPane>
-        <TabPane key="blockers" title="卡点 / 催款">
-          <BlockerDunningPanel contract={contract} />
-        </TabPane>
-      </Tabs>
+      <SectionTabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'timeline',
+            label: "回款时间线",
+            content: (
+              <>
+                  <div className="payment-kanban-side-drawer__timeline">
+                    <PaymentTimeline contract={contract} />
+                  </div>
+                
+              </>
+            ),
+          },
+          {
+            key: 'blockers',
+            label: "卡点 / 催款",
+            content: (
+              <>
+                  <BlockerDunningPanel contract={contract} />
+                
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Drawer
         className="payment-kanban-contract-viewer payment-kanban-contract-viewer--adjacent"

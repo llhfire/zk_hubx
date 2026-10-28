@@ -1,8 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
-  Table,
   Button,
   Input,
   Select,
@@ -14,8 +12,8 @@ import {
   Tag,
   Tooltip,
   Popover,
-} from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye, IconUserAdd, IconRefresh } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconSearch, IconPlus, IconEye, IconUserAdd, IconRefresh } from '@/design-system';
 import { CompanyEntityInfoModal } from '../company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -25,19 +23,18 @@ import {
 import type { LeadListItem } from './types';
 import {
   CLUE_TYPE_LABEL,
-  SALES_STATUS_COLOR,
   SALES_STATUS_STEPS,
   getSalesStatusIndex,
-  CUSTOMER_LEVEL_COLOR,
-  INTENTION_LEVEL_COLOR,
+  INTENTION_LEVEL_TONE,
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_LABEL,
-  LEAD_SOURCE_COLOR,
+  LEAD_SOURCE_TONE,
   COMPANY_ENTITY_LIST,
   TRANSFER_ACTION_LABEL,
   TRANSFER_ACTION_COLOR,
   SALES_STATUS_LIST,
   INTENTION_LEVEL_LIST,
+  SLA_STATUS_TONE,
 } from './types';
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
@@ -46,7 +43,17 @@ import { LeadTransferPopover } from '../../../leads/LeadTransferPopover';
 import { searchLeads, getCountdownCapsule, COUNTDOWN_COLOR, COUNTDOWN_BG } from './utils';
 import { NewLeadModal, type NewLeadFormValues } from './components/NewLeadModal';
 import { uploadItemsToLeadAttachments } from './leadAttachments';
-import { PageShell, PageHeader, MetricGrid, TrashLeadIcon, WeChatIcon } from '@/design-system';
+import {
+  PageShell,
+  PageHeader,
+  MetricGrid,
+  TrashLeadIcon,
+  WeChatIcon,
+  DataTable,
+  GradeTag,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 
 const FormItem = Form.Item;
 
@@ -147,11 +154,11 @@ export function PublicLeads() {
         const stepIndex = getSalesStatusIndex(r.status);
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 12 }}>{r.status}</span>
+            <span style={{ fontSize: 'var(--text-xs)' }}>{r.status}</span>
             {stepIndex >= 0 && (
               <div style={{ display: 'flex', gap: 2, width: 56 }}>
                 {SALES_STATUS_STEPS.map((_, i) => (
-                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 1, backgroundColor: i <= stepIndex ? 'rgb(var(--primary-4))' : 'var(--color-fill-2)' }} />
+                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 'var(--radius-xs)', backgroundColor: i <= stepIndex ? 'rgb(var(--primary-4))' : 'var(--color-fill-2)' }} />
                 ))}
               </div>
             )}
@@ -167,12 +174,12 @@ export function PublicLeads() {
           <a onClick={() => navigate(`/leads/${r.key}?from=public`, { state: { from: 'public' } })} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
           {r.presalesGroupName && (
             <Tooltip content="点击复制群名">
-              <div style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }} onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }} onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}>
                 <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.contact}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{r.contact}</div>
         </div>
       ),
     },
@@ -180,7 +187,7 @@ export function PublicLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 14 }}>
+        <div style={{ fontSize: 'var(--text-sm)' }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>
@@ -191,8 +198,8 @@ export function PublicLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
-          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
+          <StatusTag tone={LEAD_SOURCE_TONE[r.source as keyof typeof LEAD_SOURCE_TONE] || 'neutral'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</StatusTag>
+          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>{r.entity}</a>
         </Space>
       ),
     },
@@ -201,8 +208,8 @@ export function PublicLeads() {
       width: 100,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={4}>
-          {r.customerLevel && <Tag color={CUSTOMER_LEVEL_COLOR[r.customerLevel as keyof typeof CUSTOMER_LEVEL_COLOR]}>{r.customerLevel}</Tag>}
-          <Tag color={INTENTION_LEVEL_COLOR[r.level as keyof typeof INTENTION_LEVEL_COLOR]}>{r.level}</Tag>
+          {r.customerLevel && <GradeTag grade={r.customerLevel} />}
+          <StatusTag tone={INTENTION_LEVEL_TONE[r.level as keyof typeof INTENTION_LEVEL_TONE]}>{r.level}</StatusTag>
         </Space>
       ),
     },
@@ -212,30 +219,29 @@ export function PublicLeads() {
       render: (_: unknown, r: LeadListItem) => {
         const c = getCountdownCapsule(r.nextFollowTime);
         const view = dispatchViews.get(r.id);
-        const SLA_COLOR: Record<string, string> = { normal: 'green', warning: 'orange', overdue: 'red', contacted: 'green' };
         const hasSla = view && r.dispatchedAt;
         const capsule = c.status === 'none' && !hasSla
-          ? <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>
+          ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>-</span>
           : c.status === 'none'
             ? null
             : c.status === 'today' || c.status === 'overdue'
               ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                  <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', color: COUNTDOWN_COLOR[c.status], backgroundColor: COUNTDOWN_BG[c.status], border: c.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))' }}>
+                  <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 'var(--radius-lg)', fontSize: 'var(--text-xs)', fontWeight: 500, whiteSpace: 'nowrap', color: COUNTDOWN_COLOR[c.status], backgroundColor: COUNTDOWN_BG[c.status], border: c.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))' }}>
                     {c.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
                     {c.label}
                   </span>
-                  {c.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
+                  {c.subLabel && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
                 </div>
               )
-              : <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>{c.label} {c.subLabel}</span>;
+              : <span style={{ fontSize: 'var(--text-xs)', color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>{c.label} {c.subLabel}</span>;
         if (!hasSla) return capsule;
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {capsule}
             <div style={{ display: 'flex', gap: 2 }}>
-              <Tag size="small" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
-              <Tag size="small" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+              <StatusTag size="small" tone={SLA_STATUS_TONE[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</StatusTag>
+              <StatusTag size="small" tone={SLA_STATUS_TONE[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</StatusTag>
             </div>
           </div>
         );
@@ -330,7 +336,7 @@ export function PublicLeads() {
         ]}
       />
 
-      <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
+      <SectionCard style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
         <div
           style={{
             marginBottom: 16,
@@ -364,8 +370,8 @@ export function PublicLeads() {
           )}
         </div>
 
-        <Table columns={columns} data={filteredLeads} scroll={{ x: 1300 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
-      </Card>
+        <DataTable columns={columns} data={filteredLeads} scroll={{ x: 1300 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
+      </SectionCard>
 
       <NewLeadModal visible={visible} onSubmit={handleCreateLead} onCancel={() => setVisible(false)} />
 
@@ -376,14 +382,14 @@ export function PublicLeads() {
         onCancel={() => { setTrashVisible(false); setSelectedTrashLead(null); trashForm.resetFields(); }}
         style={{ width: 500 }}
       >
-        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(var(--warning-1), 0.5)', border: '1px solid rgb(var(--warning-2))', borderRadius: 4, fontSize: 12, color: 'rgb(var(--warning-7))' }}>
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(var(--warning-1), 0.5)', border: '1px solid rgb(var(--warning-2))', borderRadius: 'var(--radius-xs)', fontSize: 'var(--text-xs)', color: 'rgb(var(--warning-7))' }}>
           提示：标记为垃圾后将自动从公海移入垃圾线索池；历史退回质检记录将被保留。
         </div>
         <Form form={trashForm} layout="vertical">
           <FormItem label="快捷原因" style={{ marginBottom: 8 }}>
             <Space wrap size={6}>
               {['电话空号/错号', '暂无采购意向', '预算严重不足', '同行测试/调研', '业务范围不匹配'].map((r) => (
-                <Tag
+                <StatusTag
                   key={r}
                   style={{ cursor: 'pointer' }}
                   onClick={() => {
@@ -392,7 +398,7 @@ export function PublicLeads() {
                   }}
                 >
                   {r}
-                </Tag>
+                </StatusTag>
               ))}
             </Space>
           </FormItem>

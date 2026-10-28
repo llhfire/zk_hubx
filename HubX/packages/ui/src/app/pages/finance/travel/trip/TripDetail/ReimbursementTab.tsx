@@ -1,23 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
-  Card,
   Button,
-  Tag,
-  Table,
   Space,
   Typography,
-  Grid,
   Message,
-  Spin,
   Drawer,
-  Descriptions,
   Divider,
   Timeline,
   Modal,
   Form,
   Input,
   InputNumber,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconPlus,
   IconEye,
@@ -26,29 +20,27 @@ import {
   IconClockCircle,
   IconCheckCircle,
   IconSafe,
-  IconDown,
-  IconUp,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip, Reimbursement, ReimbursementStatus } from '../../types';
 import { getReimbursementList } from '../../travel-api';
 import { ComplianceGuide } from '../../components/ComplianceGuide';
+import { DataTable, DateText, DescriptionsCard, MetricCard, MoneyText, StatusTag, type StatusMap } from '@/design-system';
 
-const { Text, Title } = Typography;
-const { Row, Col } = Grid;
+const { Text } = Typography;
 
 interface ReimbursementTabProps {
   trip: Trip;
   onUpdate: () => void;
 }
 
-const statusConfig: Record<ReimbursementStatus, { color: string; text: string }> = {
-  draft: { color: 'gray', text: '草稿' },
-  pending: { color: 'orange', text: '待审批' },
-  dept_approved: { color: 'blue', text: '部门已审' },
-  finance_approved: { color: 'blue', text: '财务已审' },
-  paid: { color: 'green', text: '已打款' },
-  completed: { color: 'green', text: '已完成' },
-  rejected: { color: 'red', text: '已拒绝' },
+const REIMBURSEMENT_STATUS: StatusMap<ReimbursementStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending: { label: '待审批', tone: 'warning' },
+  dept_approved: { label: '部门已审', tone: 'info' },
+  finance_approved: { label: '财务已审', tone: 'info' },
+  paid: { label: '已打款', tone: 'success' },
+  completed: { label: '已完成', tone: 'success' },
+  rejected: { label: '已拒绝', tone: 'danger' },
 };
 
 export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
@@ -117,8 +109,8 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
       width: 120,
       render: (value: number) => (
         <Space size={4}>
-          <IconStorage style={{ color: '#86909c' }} />
-          <span>¥{value.toLocaleString()}</span>
+          <IconStorage style={{ color: 'var(--color-text-3)' }} />
+          <MoneyText value={value} />
         </Space>
       ),
     },
@@ -127,29 +119,28 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
       dataIndex: 'offsetAmount',
       width: 120,
       render: (value: number) => (
-        value > 0 ? <span style={{ color: '#ff7d00' }}>-¥{value.toLocaleString()}</span> : '-'
+        value > 0 ? <MoneyText value={-value} tone="danger" /> : '-'
       ),
     },
     {
       title: '实付金额',
       dataIndex: 'netAmount',
       width: 120,
-      render: (value: number) => <Text style={{ fontWeight: 500 }}>¥{value.toLocaleString()}</Text>,
+      render: (value: number) => <Text style={{ fontWeight: 500 }}><MoneyText value={value} /></Text>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 100,
       render: (value: ReimbursementStatus) => (
-        <Tag color={statusConfig[value].color}>
-          {statusConfig[value].text}
-        </Tag>
+        <StatusTag meta={REIMBURSEMENT_STATUS[value]} />
       ),
     },
     {
       title: '创建日期',
       dataIndex: 'createDate',
       width: 120,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '操作',
@@ -186,11 +177,11 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
       <div className="trip-settlement-board">
         <div className="trip-settlement-board__header">
           <div className="trip-settlement-board__title">
-            <IconSafe style={{ color: '#165dff' }} />
+            <IconSafe style={{ color: 'rgb(var(--primary-6))' }} />
             <span>差旅资金综合轧差清算看板</span>
-            <Tag size="small" color="arcoblue">三账合一</Tag>
+            <StatusTag size="small" tone="info">三账合一</StatusTag>
           </div>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             公式：实际应退补 = 申报报销总额 + 免税出差津贴 - 已领备用借款
           </Text>
         </div>
@@ -198,13 +189,13 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
         <div className="trip-settlement-formula">
           <div className="trip-settlement-cell">
             <span className="trip-settlement-cell__label">
-              <IconFile style={{ color: '#165dff' }} /> 报销申报总额
+              <IconFile style={{ color: 'rgb(var(--primary-6))' }} /> 报销申报总额
             </span>
-            <span className="trip-settlement-cell__value" style={{ color: '#165dff' }}>
-              ¥{totalApplied.toLocaleString()}
+            <span className="trip-settlement-cell__value" style={{ color: 'rgb(var(--primary-6))' }}>
+              <MoneyText value={totalApplied} />
             </span>
             <span className="trip-settlement-cell__meta">
-              已结打款 ¥{totalReimbursed.toLocaleString()}
+              已结打款 <MoneyText value={totalReimbursed} />
             </span>
           </div>
 
@@ -212,10 +203,10 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
 
           <div className="trip-settlement-cell">
             <span className="trip-settlement-cell__label">
-              <IconCheckCircle style={{ color: '#722ed1' }} /> 异地考勤津贴
+              <IconCheckCircle style={{ color: 'var(--ds-tone-purple-fg)' }} /> 异地考勤津贴
             </span>
-            <span className="trip-settlement-cell__value" style={{ color: '#722ed1' }}>
-              ¥{subsidyTotal.toLocaleString()}
+            <span className="trip-settlement-cell__value" style={{ color: 'var(--ds-tone-purple-fg)' }}>
+              <MoneyText value={subsidyTotal} />
             </span>
             <span className="trip-settlement-cell__meta">
               随薪资个税免征核发
@@ -226,13 +217,13 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
 
           <div className="trip-settlement-cell">
             <span className="trip-settlement-cell__label">
-              <IconClockCircle style={{ color: '#ff7d00' }} /> 已领备用金借款
+              <IconClockCircle style={{ color: 'var(--ds-tone-warning-fg)' }} /> 已领备用金借款
             </span>
-            <span className="trip-settlement-cell__value" style={{ color: '#ff7d00' }}>
-              ¥{loanTotal.toLocaleString()}
+            <span className="trip-settlement-cell__value" style={{ color: 'var(--ds-tone-warning-fg)' }}>
+              <MoneyText value={loanTotal} />
             </span>
             <span className="trip-settlement-cell__meta">
-              已冲抵 ¥{totalOffset.toLocaleString()}
+              已冲抵 <MoneyText value={totalOffset} />
             </span>
           </div>
 
@@ -251,7 +242,9 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
               {netBalance > 0 ? '公司待付员工净额' : netBalance < 0 ? '员工待退公司款项' : '资金完全结清平衡'}
             </span>
             <span className="trip-settlement-cell__value">
-              {netBalance !== 0 ? `¥${Math.abs(netBalance).toLocaleString()}` : '¥0.00'}
+              {netBalance !== 0
+                ? <MoneyText value={Math.abs(netBalance)} />
+                : <MoneyText value={0} fractionDigits={2} />}
             </span>
             <span className="trip-settlement-cell__meta">
               {netBalance > 0 ? '待财务安排付款' : netBalance < 0 ? '请向财务退还余款' : '账目平衡'}
@@ -260,87 +253,39 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
         </div>
       </div>
 
-      {/* 顶部专业微指标卡片组（4列对齐） */}
+      {/* 顶部专业微指标卡片组（保留资金口径，由 MetricCard 承接同构结构） */}
       <div className="trip-stat-grid">
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8f3ff', color: '#165dff' }}>
-                <IconFile />
-              </span>
-              报销总额
-            </span>
-            <Tag size="small" color="blue">累计申报</Tag>
-          </div>
-          <div className="trip-stat-card__value">
-            ¥{totalApplied.toLocaleString()}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>共计 {reimbursements.length} 笔单据</span>
-            <span>已打款 ¥{totalReimbursed.toLocaleString()}</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-info-bg)', color: 'rgb(var(--primary-6))' }}><IconFile /></span>报销总额</>}
+          value={<MoneyText value={totalApplied} />}
+          badge={<StatusTag size="small" tone="info">累计申报</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>共计 {reimbursements.length} 笔单据</span><span>已打款 <MoneyText value={totalReimbursed} /></span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#fff7e6', color: '#fa8c16' }}>
-                <IconClockCircle />
-              </span>
-              待审批在途款项
-            </span>
-            <Tag size="small" color={pendingAmount > 0 ? 'orange' : 'gray'}>
-              {pendingCount > 0 ? `${pendingCount} 笔审批中` : '暂无在途'}
-            </Tag>
-          </div>
-          <div className="trip-stat-card__value" style={{ color: pendingAmount > 0 ? '#ff7d00' : 'inherit' }}>
-            ¥{pendingAmount.toLocaleString()}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>部门/财务核决中</span>
-            <span>实付款将扣减借款</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-warning-bg)', color: 'var(--ds-tone-warning-fg)' }}><IconClockCircle /></span>待审批在途款项</>}
+          value={<span style={{ color: pendingAmount > 0 ? 'var(--ds-tone-warning-fg)' : 'inherit' }}><MoneyText value={pendingAmount} /></span>}
+          badge={<StatusTag meta={{ label: pendingCount > 0 ? `${pendingCount} 笔审批中` : '暂无在途', tone: pendingAmount > 0 ? 'warning' : 'neutral' }} />}
+          detail={<span className="trip-stat-card__meta"><span>部门/财务核决中</span><span>实付款将扣减借款</span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8ffea', color: '#00b42a' }}>
-                <IconStorage />
-              </span>
-              累计冲抵借款
-            </span>
-            <Tag size="small" color="green">自动冲账</Tag>
-          </div>
-          <div className="trip-stat-card__value" style={{ color: totalOffset > 0 ? '#ff7d00' : 'inherit' }}>
-            {totalOffset > 0 ? `-¥${totalOffset.toLocaleString()}` : '¥0'}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>实际打款：¥{totalNet.toLocaleString()}</span>
-            <span>余款转借款核销</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-success-bg)', color: 'var(--ds-tone-success-fg)' }}><IconStorage /></span>累计冲抵借款</>}
+          value={totalOffset > 0 ? <MoneyText value={-totalOffset} tone="danger" /> : <MoneyText value={0} />}
+          badge={<StatusTag size="small" tone="success">自动冲账</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>实际打款：<MoneyText value={totalNet} /></span><span>余款转借款核销</span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8f3ff', color: '#165dff' }}>
-                <IconCheckCircle />
-              </span>
-              报销结清进度
-            </span>
-            <Tag size="small" color={completionRate === 100 ? 'green' : 'arcoblue'}>
-              {completionRate}%
-            </Tag>
-          </div>
-          <div className="trip-stat-card__value">
-            {completionRate}%
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>已付 {reimbursements.filter(r => r.status === 'completed' || r.status === 'paid').length} 笔</span>
-            <span>流程推进顺畅</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-info-bg)', color: 'rgb(var(--primary-6))' }}><IconCheckCircle /></span>报销结清进度</>}
+          value={`${completionRate}%`}
+          badge={<StatusTag meta={{ label: `${completionRate}%`, tone: completionRate === 100 ? 'success' : 'info' }} />}
+          detail={<span className="trip-stat-card__meta"><span>已付 {reimbursements.filter(r => r.status === 'completed' || r.status === 'paid').length} 笔</span><span>流程推进顺畅</span></span>}
+        />
       </div>
 
       {/* 报销合规制度与限额指引 */}
@@ -359,9 +304,9 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
       <div className="trip-section-toolbar">
         <div className="trip-section-toolbar__title">
           <span>报销记录明细</span>
-          <Tag size="small" color="gray">
+          <StatusTag size="small" tone="neutral">
             共 {reimbursements.length} 笔单据
-          </Tag>
+          </StatusTag>
         </div>
 
         <div className="trip-section-toolbar__actions">
@@ -373,14 +318,15 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
 
       {/* 主体表格视图 */}
       <div style={{ marginTop: 8 }}>
-        <Table
+        <DataTable
           columns={columns}
           data={reimbursements}
           loading={loading}
           rowKey="id"
+          size="default"
           scroll={{ x: 800 }}
           pagination={false}
-          noDataElement="暂无报销记录"
+          emptyDescription="暂无报销记录"
         />
       </div>
       <Modal title="新增报销" visible={createVisible} onOk={handleSave} onCancel={() => setCreateVisible(false)} okText="保存草稿">
@@ -390,11 +336,17 @@ export function ReimbursementTab({ trip, onUpdate }: ReimbursementTabProps) {
         </Form>
       </Modal>
       <Drawer title="报销详情与审批流" width={520} visible={Boolean(selectedReimbursement)} onCancel={() => setSelectedReimbursement(null)} footer={null}>
-        {selectedReimbursement && <><Descriptions column={1} data={[
-          { label: '报销单号', value: selectedReimbursement.reimbursementNo }, { label: '申请人', value: selectedReimbursement.applicantName },
-          { label: '报销金额', value: `¥${selectedReimbursement.totalAmount.toLocaleString()}` }, { label: '冲抵借款', value: `¥${selectedReimbursement.offsetAmount.toLocaleString()}` },
-          { label: '实付金额', value: `¥${selectedReimbursement.netAmount.toLocaleString()}` }, { label: '说明', value: selectedReimbursement.remark || '-' },
-        ]} /><Divider /><Timeline><Timeline.Item dotColor="green">创建报销单 · {selectedReimbursement.createDate}</Timeline.Item><Timeline.Item dotColor={selectedReimbursement.status === 'draft' ? 'gray' : 'green'}>{statusConfig[selectedReimbursement.status].text}</Timeline.Item></Timeline></>}
+        {selectedReimbursement && <><DescriptionsCard
+  columns={1}
+  items={[
+  { key: '报销单号', label: '报销单号', value: selectedReimbursement.reimbursementNo },
+  { key: '申请人', label: '申请人', value: selectedReimbursement.applicantName },
+  { key: '报销金额', label: '报销金额', value: <MoneyText value={selectedReimbursement.totalAmount} /> },
+  { key: '冲抵借款', label: '冲抵借款', value: <MoneyText value={selectedReimbursement.offsetAmount} /> },
+  { key: '实付金额', label: '实付金额', value: <MoneyText value={selectedReimbursement.netAmount} /> },
+  { key: '说明', label: '说明', value: selectedReimbursement.remark || '-' },
+]}
+/><Divider /><Timeline><Timeline.Item dotColor="green">创建报销单 · <DateText value={selectedReimbursement.createDate} /></Timeline.Item><Timeline.Item dotColor={selectedReimbursement.status === 'draft' ? 'gray' : 'green'}>{REIMBURSEMENT_STATUS[selectedReimbursement.status].label}</Timeline.Item></Timeline></>}
       </Drawer>
     </div>
   );

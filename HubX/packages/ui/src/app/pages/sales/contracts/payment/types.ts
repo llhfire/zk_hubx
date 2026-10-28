@@ -4,6 +4,7 @@
 // ========================================
 
 import type { PaymentStatus, BlockerType } from '../types';
+import type { StatusMap } from '@/design-system';
 
 // ==================== 确定性分级（独立于 PaymentStatus） ====================
 
@@ -26,13 +27,21 @@ export const CERTAINTY_LABELS: Record<ForecastCertaintyLevel, string> = {
   blocked: '卡点阻滞',
 };
 
-/** 确定性等级颜色 */
+/** 确定性等级颜色（旧 Arco Tag 色，仅甘特图等可视化兼容保留） */
 export const CERTAINTY_COLORS: Record<ForecastCertaintyLevel, string> = {
   high: 'green',
   medium: 'blue',
   low: 'orange',
   blocked: 'red',
 };
+
+/** 确定性等级的语义色，StatusTag 统一从此取值 */
+export const CERTAINTY_TONES = {
+  high: 'success',
+  medium: 'info',
+  low: 'warning',
+  blocked: 'danger',
+} as const;
 
 // ==================== 预测调期 ====================
 
@@ -101,12 +110,12 @@ export interface CashflowMetric {
 export type KanbanColumn = 'normal' | 'upcoming' | 'overdue' | 'blocked' | 'settled';
 
 /** 看板列元数据 */
-export const KANBAN_COLUMNS: Record<KanbanColumn, { label: string; color: string }> = {
-  normal: { label: '正常回款', color: 'blue' },
-  upcoming: { label: '即将到期', color: 'orange' },
-  overdue: { label: '已逾期', color: 'red' },
-  blocked: { label: '卡点阻塞', color: 'red' },
-  settled: { label: '已结清', color: 'green' },
+export const KANBAN_COLUMNS: StatusMap<KanbanColumn> = {
+  normal: { label: '正常回款', tone: 'info' },
+  upcoming: { label: '即将到期', tone: 'warning' },
+  overdue: { label: '已逾期', tone: 'danger' },
+  blocked: { label: '卡点阻塞', tone: 'danger' },
+  settled: { label: '已结清', tone: 'success' },
 };
 
 /** 看板列排序优先级（blocked 最高） */

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Card, Modal, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconDownload, IconEye } from '@arco-design/web-react/icon';
+import { Button, Modal, Space, Typography } from '@/design-system';
+import { IconDownload, IconEye } from '@/design-system';
+import { SectionCard, AlertBanner, StatusTag } from '@/design-system';
 import { findCompanyEntityByName } from '../../company-entity/companyEntityData';
 import type { QuoteAmountBreakdown } from '../quoteFlow';
 import { generateQuoteHtml } from '../quotePdfTemplate';
@@ -51,7 +52,7 @@ export function QuoteTemplatePreviewPanel({ quote, breakdown }: QuoteTemplatePre
   };
 
   return (
-    <Card size="small" title="报价模板适配">
+    <SectionCard title="报价模板适配">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
@@ -66,18 +67,18 @@ export function QuoteTemplatePreviewPanel({ quote, breakdown }: QuoteTemplatePre
           </Space>
         </div>
         <Space wrap>
-          {ZKRT_QUOTE_TEMPLATE.sections.map((section) => <Tag key={section}>{section}</Tag>)}
+          {ZKRT_QUOTE_TEMPLATE.sections.map((section) => <StatusTag key={section}>{section}</StatusTag>)}
         </Space>
         {missingFields.length > 0 ? (
-          <Alert type="warning" content={`模板仍缺少：${missingFields.join('、')}。补齐后再提交审批。`} />
+          <AlertBanner tone="warning">{`模板仍缺少：${missingFields.join('、')}。补齐后再提交审批。`}</AlertBanner>
         ) : (
-          <Alert type="success" content="模板字段已完整映射，可生成客户版报价单。" />
+          <AlertBanner tone="success">模板字段已完整映射，可生成客户版报价单。</AlertBanner>
         )}
       </Space>
 
       <Modal title={`${ZKRT_QUOTE_TEMPLATE.name} · 预览`} visible={visible} onCancel={() => setVisible(false)} footer={null} style={{ width: 'min(920px, calc(100vw - 32px))' }}>
         <div style={{ maxHeight: 'calc(100vh - 180px)', overflow: 'auto', background: 'var(--color-fill-1)', padding: 16 }} dangerouslySetInnerHTML={{ __html: html }} />
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

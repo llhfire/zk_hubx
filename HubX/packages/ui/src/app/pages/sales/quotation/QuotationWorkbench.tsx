@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Alert, Button, Card, Drawer, Input, Message, Modal, Radio, Result, Select, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconCheck, IconClose, IconLeft, IconHistory, IconUser } from '@arco-design/web-react/icon';
+import {
+  AsyncState,
+  Button,
+  Drawer,
+  Input,
+  Message,
+  Modal,
+  Result,
+  Space,
+  Typography,
+  UserPicker,
+} from '@/design-system';
+import { IconCheck, IconClose, IconLeft, IconHistory, IconUser } from '@/design-system';
 import { useQuotation } from './QuotationContext';
 import { QuoteTimeline } from './components/QuoteTimeline';
 import { Stage1FeatureList } from './stages/Stage1FeatureList';
@@ -12,33 +23,56 @@ import { canDeleteQuote, canViewQuote } from './quoteAccess';
 import { canTransition } from '../../../../services/quotationMutations';
 import {
   QUOTE_FLOW_STAGE_NAMES,
-  QUOTE_STATUS_COLORS,
-  QUOTE_STATUS_LABELS,
+  QUOTE_STATUS,
 } from './types';
 import type { Quote, QuoteStage } from './types';
 import { computeAmountBreakdown, deriveStage, getPendingOwner, getStageAccess, isTerminalStatus } from './quoteFlow';
 import {
+  AlertBanner,
+  ConfirmModal,
+  EntityLink,
+  IdentifierText,
+  MoneyText,
   PageShell,
   ProcessOverview,
+  SectionCard,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
+  StatusTag,
+  confirmAction,
+  resolveStatus,
+  type StatusMap,
 } from '@/design-system';
 import { useEmployee } from '../../support/hr/employee/EmployeeContext';
 import { FileFlowWorkbench } from './components/FileFlowWorkbench';
 import { ScanUpload } from './components/ScanUpload';
 import { useTodos } from '../../../todos/TodoContext';
 import './quotationWorkbench.css';
-import { formatMoney as fmtMoney } from '../../../utils/money';
 
 const { Text } = Typography;
 
 const STAGES: QuoteStage[] = [1, 2, 3, 4];
 
-/** 工作台：0 元显示破折号，避免大屏上到处是 ¥0。 */
-function money(value: number): string {
-  return value > 0 ? fmtMoney(value) : '—';
-}
+/** 会签节点、盖章节点、成交闭环节点的状态映射，统一走 StatusTag。 */
+const AUDIT_STATUS: StatusMap<string> = {
+  APPROVED: { label: '已通过', tone: 'success' },
+  REJECTED: { label: '已驳回', tone: 'danger' },
+  PENDING: { label: '待审批', tone: 'neutral' },
+};
+
+const STAMP_STATUS: StatusMap<string> = {
+  COMPLETED: { label: '已盖章', tone: 'success' },
+  PENDING_STAMP: { label: '待盖章', tone: 'warning' },
+  NOT_REACHED: { label: '未到盖章环节', tone: 'neutral' },
+};
+
+const CLOSED_STATUS: StatusMap<string> = {
+  confirmed: { label: '已成交', tone: 'success' },
+  sent: { label: '已发送客户', tone: 'info' },
+  voided: { label: '已废止', tone: 'danger' },
+  pending: { label: '待达成', tone: 'neutral' },
+};
 
 function ApprovalProcessPanel({
   quote,
@@ -50,14 +84,6 @@ function ApprovalProcessPanel({
   const { currentRole } = useQuotation();
   const myAuditNode = quote.auditNodes.find((node) => node.quoteRole === currentRole);
   const isStamper = currentRole === (quote.stampNode.stamperRole ?? 'assistant') || quote.stampNode.stamperName === currentRole;
-  const auditLabel = (status: string) => status === 'APPROVED' ? '已通过' : status === 'REJECTED' ? '已驳回' : '待审批';
-  const auditColor = (status: string) => status === 'APPROVED' ? 'green' : status === 'REJECTED' ? 'red' : 'gray';
-  const stampLabel = quote.stampNode.status === 'COMPLETED'
-    ? '已盖章'
-    : quote.stampNode.status === 'PENDING_STAMP' ? '待盖章' : '未到盖章环节';
-  const stampColor = quote.stampNode.status === 'COMPLETED'
-    ? 'green'
-    : quote.stampNode.status === 'PENDING_STAMP' ? 'orange' : 'gray';
 
   // 关键：只有当前用户节点处于待审 (PENDING) 时才提示；确认通过或驳回后，提示立即消失！
   const isPendingMyAudit = Boolean(
@@ -73,21 +99,21 @@ function ApprovalProcessPanel({
   );
 
   return (
-    <Card title="审批流程" size="small">
+    <SectionCard title="审批流程">
       <div className="quotation-approval-status">
         <Text type="secondary">当前状态</Text>
-        <Tag color={QUOTE_STATUS_COLORS[quote.status as keyof typeof QUOTE_STATUS_COLORS]}>{QUOTE_STATUS_LABELS[quote.status as keyof typeof QUOTE_STATUS_LABELS]}</Tag>
+        <StatusTag meta={resolveStatus(QUOTE_STATUS, quote.status)} />
       </div>
 
       {/* 阶段指示与引导提示 */}
       {currentStage < 4 ? (
-        <div style={{ padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 4, margin: '8px 0', fontSize: 11, color: 'var(--color-text-3)', lineHeight: '16px' }}>
+        <AlertBanner tone="info">
           前置商务配置阶段 · 提交后正式激活下方会签流转
-        </div>
+        </AlertBanner>
       ) : (isPendingMyAudit || isPendingMyStamp) ? (
-        <div style={{ padding: '6px 8px', background: 'rgb(var(--arcoblue-1))', border: '1px solid rgb(var(--arcoblue-3))', borderRadius: 4, margin: '8px 0', fontSize: 11, color: 'rgb(var(--arcoblue-7))', lineHeight: '16px' }}>
+        <AlertBanner tone="info">
           👉 当前等待您处理，请在主工作区公函上方执行审批/盖章决策
-        </div>
+        </AlertBanner>
       ) : null}
 
       {/* 会签审批节点列表（只读全景时间线） */}
@@ -103,12 +129,12 @@ function ApprovalProcessPanel({
               <div className="quotation-approval-node__body">
                 <div className="quotation-approval-node__head">
                   <Text bold>{node.auditorName}</Text>
-                  <Tag color={auditColor(node.status)} size="small">{auditLabel(node.status)}</Tag>
+                  <StatusTag meta={resolveStatus(AUDIT_STATUS, node.status)} />
                 </div>
                 <span className="quotation-approval-node__meta">{node.role}</span>
                 {node.comment && <span className="quotation-approval-node__comment">{node.comment}</span>}
                 {node.auditTime && (
-                  <span style={{ fontSize: 10, color: 'var(--color-text-4)' }}>批复于 {node.auditTime}</span>
+                  <span style={{ fontSize: 'var(--ds-text-micro)', color: 'var(--color-text-4)' }}>批复于 {node.auditTime}</span>
                 )}
               </div>
             </div>
@@ -125,7 +151,7 @@ function ApprovalProcessPanel({
           <div className="quotation-approval-node__body">
             <div className="quotation-approval-node__head">
               <Text bold>{quote.stampNode.stamperName || '公章管理员'}</Text>
-              <Tag color={stampColor} size="small">{stampLabel}</Tag>
+              <StatusTag meta={resolveStatus(STAMP_STATUS, quote.stampNode.status, '未到盖章环节')} />
             </div>
             <span className="quotation-approval-node__meta">
               {quote.stampNode.status === 'COMPLETED'
@@ -135,7 +161,7 @@ function ApprovalProcessPanel({
                 : '企业公章加盖'}
             </span>
             {quote.stampNode.stampTime && (
-              <span style={{ fontSize: 10, color: 'var(--color-text-4)' }}>加盖于 {quote.stampNode.stampTime}</span>
+              <span style={{ fontSize: 'var(--ds-text-micro)', color: 'var(--color-text-4)' }}>加盖于 {quote.stampNode.stampTime}</span>
             )}
           </div>
         </div>
@@ -148,12 +174,12 @@ function ApprovalProcessPanel({
           <div className="quotation-approval-node__body">
             <div className="quotation-approval-node__head">
               <Text bold>客户成交闭环</Text>
-              <Tag
-                size="small"
-                color={quote.status === 'confirmed' ? 'green' : quote.status === 'sent' ? 'arcoblue' : quote.status === 'voided' ? 'red' : 'gray'}
-              >
-                {quote.status === 'confirmed' ? '已成交' : quote.status === 'sent' ? '已发送客户' : quote.status === 'voided' ? '已废止' : '待达成'}
-              </Tag>
+              <StatusTag
+                meta={resolveStatus(
+                  CLOSED_STATUS,
+                  quote.status === 'confirmed' || quote.status === 'sent' || quote.status === 'voided' ? quote.status : 'pending',
+                )}
+              />
             </div>
             <span className="quotation-approval-node__meta">
               {quote.status === 'confirmed' ? '已确认成交并关联合同' : quote.sentAt ? `发送于 ${quote.sentAt}` : '商务流转终点'}
@@ -161,7 +187,7 @@ function ApprovalProcessPanel({
           </div>
         </div>
       </div>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -177,16 +203,26 @@ function QuoteDynamicPanel({
   amountBreakdown: ReturnType<typeof computeAmountBreakdown>;
 }) {
   const items = [
-    { label: '客户', value: quote.basicInfo.customerName || '—' },
+    {
+      label: '客户',
+      value: (
+        <EntityLink
+          to={quote.customerId ? `/customers/${quote.customerId}` : undefined}
+          disabled={!quote.customerId}
+        >
+          {quote.basicInfo.customerName || '—'}
+        </EntityLink>
+      ),
+    },
     { label: '当前阶段', value: flowStageNames[currentStage] },
-    { label: '总报价', value: money(amountBreakdown.grandTotal) },
+    { label: '总报价', value: <MoneyText value={amountBreakdown.grandTotal > 0 ? amountBreakdown.grandTotal : null} /> },
     { label: '评估人天', value: amountBreakdown.totalLaborDays > 0 ? `${amountBreakdown.totalLaborDays} 人天` : '—' },
     { label: '当前待办人', value: getPendingOwner(quote) },
     { label: '报价有效期', value: `${quote.basicInfo.quoteValidityDays} 天` },
   ];
 
   return (
-    <Card title="报价动态" size="small">
+    <SectionCard title="报价动态">
       <div className="quotation-workbench__dynamic-list">
         {items.map((item) => (
           <div className="quotation-workbench__dynamic-item" key={item.label}>
@@ -195,13 +231,13 @@ function QuoteDynamicPanel({
           </div>
         ))}
       </div>
-      <div style={{ marginTop: 10, padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 4, fontSize: 11, color: 'var(--color-text-3)', lineHeight: '16px' }}>
+      <AlertBanner tone="info">
         {currentStage === 1 && '💡 第 1 步：拆解功能需求，完成后交架构师评估'}
         {currentStage === 2 && '💡 第 2 步：评估角色人天与工期，完成后交销售配置'}
         {currentStage === 3 && '💡 第 3 步：配置增项与价格方案，完成后提交审批'}
         {currentStage === 4 && '💡 第 4 步：会签审批与加盖公章，完成客户签约'}
-      </div>
-    </Card>
+      </AlertBanner>
+    </SectionCard>
   );
 }
 
@@ -245,7 +281,16 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   const [voidReason, setVoidReason] = useState('');
   const [reassignVisible, setReassignVisible] = useState(false);
   const [reassignField, setReassignField] = useState<'salesOwnerName' | 'techEvaluatorName'>('salesOwnerName');
-  const [reassignValue, setReassignValue] = useState('');
+  const [reassignValue, setReassignValue] = useState<string | undefined>();
+  const userPickerOptions = useMemo(
+    () => employees.map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      jobNumber: employee.jobNumber,
+      department: employee.department,
+    })),
+    [employees],
+  );
 
   const flowMode = quote?.flowMode === 'file' ? 'file' : 'online';
   const flowStageNames = QUOTE_FLOW_STAGE_NAMES[flowMode];
@@ -272,23 +317,26 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
 
   const handleReassign = async () => {
     if (!quote) return;
-    if (!reassignValue.trim()) { Message.warning('请填写目标人员姓名'); return; }
-    await reassignOwner(quote.id, reassignField, reassignValue.trim());
+    const selectedEmployee = employees.find((employee) => employee.id === reassignValue);
+    if (!selectedEmployee) { Message.warning('请选择目标人员'); return; }
+    // 报价旧服务仍以姓名字段落库；选择器和待办先统一保存稳定 employee.id，
+    // 仅在这个兼容边界转换为姓名，待报价模型完成 ID 迁移后可直接透传。
+    await reassignOwner(quote.id, reassignField, selectedEmployee.name);
     activeTodos
       .filter((todo) => todo.source === 'quotation' && todo.sourceId === quote.id)
-      .forEach((todo) => updateTodo(todo.id, { assigneeId: reassignValue.trim(), assigneeName: reassignValue.trim() }));
+      .forEach((todo) => updateTodo(todo.id, { assigneeId: selectedEmployee.id, assigneeName: selectedEmployee.name }));
     setReassignVisible(false);
-    setReassignValue('');
-    Message.success(`已改指${reassignField === 'salesOwnerName' ? '销售' : '评估人'}为 ${reassignValue.trim()}`);
+    setReassignValue(undefined);
+    Message.success(`已改指${reassignField === 'salesOwnerName' ? '销售' : '评估人'}为 ${selectedEmployee.name}`);
   };
 
   const handleDelete = () => {
     if (!quote) return;
-    Modal.confirm({
+    confirmAction({
       title: '删除草稿报价',
       content: '该报价从未提交，可直接删除。删除后无法恢复，是否继续？',
       okText: '确认删除',
-      okButtonProps: { status: 'danger' },
+      tone: 'danger',
       onOk: async () => {
         await deleteQuote(quote.id);
         Message.success('草稿报价已删除');
@@ -309,7 +357,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   if (loading) {
     return (
       <PageShell breadcrumbs={breadcrumbs}>
-        <div className="quotation-workbench__state">报价单加载中…</div>
+        <div className="quotation-workbench__state">
+          <AsyncState status="loading" loadingText="报价单加载中…" />
+        </div>
       </PageShell>
     );
   }
@@ -330,12 +380,10 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   if (!embedded && !canViewQuote(quote, currentViewer, isAdmin)) {
     return (
       <PageShell breadcrumbs={breadcrumbs}>
-        <Result
-          status="403"
-          title="无权访问"
-          subTitle="您没有权限查看此报价单"
-          extra={<Button type="primary" onClick={handleBack}>返回报价中心</Button>}
-        />
+        <div className="quotation-workbench__state">
+          <AsyncState status="forbidden" forbiddenText="您没有权限查看此报价单" />
+          <Button type="primary" onClick={handleBack}>返回报价中心</Button>
+        </div>
       </PageShell>
     );
   }
@@ -389,16 +437,15 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
   return (
     <PageShell breadcrumbs={breadcrumbs} className={embedded ? 'quotation-workbench--embedded' : undefined}>
       {leadFrozen && (
-        <Alert
-          type="warning"
-          content="关联线索已终止：当前内容仍可查看和修改，但提交、审批通过、盖章、发送、成交及作废等前进动作已冻结。恢复线索后自动解冻。"
-        />
+        <AlertBanner tone="warning">
+          关联线索已终止：当前内容仍可查看和修改，但提交、审批通过、盖章、发送、成交及作废等前进动作已冻结。恢复线索后自动解冻。
+        </AlertBanner>
       )}
 
       <ProcessOverview
-        identifier={quote.quoteNo}
+        identifier={<IdentifierText value={quote.quoteNo} />}
         title={quote.basicInfo.projectName}
-        tags={<><Tag color={quote.flowMode === 'file' ? 'purple' : 'arcoblue'}>{quote.flowMode === 'file' ? '文件流转' : '数据流转'}</Tag><Tag>{quote.version}</Tag><Tag color={QUOTE_STATUS_COLORS[quote.status as keyof typeof QUOTE_STATUS_COLORS]}>{QUOTE_STATUS_LABELS[quote.status as keyof typeof QUOTE_STATUS_LABELS]}</Tag></>}
+        tags={<><StatusTag tone={quote.flowMode === 'file' ? 'purple' : 'info'}>{quote.flowMode === 'file' ? '文件流转' : '数据流转'}</StatusTag><StatusTag>{quote.version}</StatusTag><StatusTag meta={resolveStatus(QUOTE_STATUS, quote.status)} /></>}
         actions={(
           <Space wrap>
             {embedded && <Button size="small" icon={<IconLeft />} onClick={handleBack}>关闭工作台</Button>}
@@ -422,11 +469,9 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
       <SplitLayout>
         <SplitLayoutMain>
           {access === 'readonly' && stage === currentStage && currentRole !== 'assistant' && (
-            <Alert
-              type="info"
-              icon={<IconUser />}
-              content="当前阶段由其他角色处理，你为只读视角。请在顶栏切换当前身份以处理对应环节。"
-            />
+            <AlertBanner tone="info">
+              <IconUser /> 当前阶段由其他角色处理，你为只读视角。请在顶栏切换当前身份以处理对应环节。
+            </AlertBanner>
           )}
 
           {quote.flowMode === 'file' ? (
@@ -457,30 +502,33 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
         <QuoteTimeline quote={quote} />
       </Drawer>
 
-      <Modal
+      <ConfirmModal
         title="作废报价单"
         visible={voidVisible}
         onOk={handleVoid}
         onCancel={() => setVoidVisible(false)}
         okText="确认作废"
-        okButtonProps={{ status: 'danger' }}
-      >
-        <div style={{ marginBottom: 8 }}>
-          <Text type="secondary">作废后该报价单将不再参与后续流程，历史版本保留不可删除。</Text>
-        </div>
-        <Input.TextArea
-          rows={3}
-          placeholder="请填写作废原因（必填）"
-          value={voidReason}
-          onChange={setVoidReason}
-        />
-      </Modal>
+        tone="danger"
+        content={(
+          <>
+            <div style={{ marginBottom: 8 }}>
+              <Text type="secondary">作废后该报价单将不再参与后续流程，历史版本保留不可删除。</Text>
+            </div>
+            <Input.TextArea
+              rows={3}
+              placeholder="请填写作废原因（必填）"
+              value={voidReason}
+              onChange={setVoidReason}
+            />
+          </>
+        )}
+      />
 
       <Modal
         title="改指负责人"
         visible={reassignVisible}
         onOk={handleReassign}
-        onCancel={() => { setReassignVisible(false); setReassignValue(''); }}
+        onCancel={() => { setReassignVisible(false); setReassignValue(undefined); }}
         okText="确认改指"
       >
         <div style={{ marginBottom: 8 }}>
@@ -504,14 +552,12 @@ export function QuotationWorkbench({ embedded, quoteId: propQuoteId, onClose }: 
           </div>
           <div>
             <Text bold style={{ display: 'block', marginBottom: 4 }}>目标人员</Text>
-            <Select
-              showSearch
-              allowClear
+            <UserPicker
               placeholder="输入姓名、工号或部门搜索系统用户"
               value={reassignValue}
               onChange={setReassignValue}
-              filterOption={(input, option) => String((option as { label?: string } | undefined)?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              options={employees.map((employee) => ({ value: employee.name, label: `${employee.name} · ${employee.jobNumber} · ${employee.department}` }))}
+              allowClear
+              options={userPickerOptions}
             />
           </div>
         </Space>

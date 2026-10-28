@@ -1,16 +1,15 @@
 import { useMemo } from 'react';
 import {
-  Card,
-  Tag,
   Space,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconCheckCircle,
   IconCloseCircle,
   IconExclamationCircle,
   IconSafe,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { SectionCard, StatusTag, STATUS_TONE_VARS, type StatusMap } from '@/design-system';
 
 const { Text } = Typography;
 
@@ -25,6 +24,12 @@ interface TravelRuleEngineProps {
 }
 
 type RuleLevel = 'error' | 'warning' | 'info';
+
+const RULE_LEVEL: StatusMap<RuleLevel> = {
+  error: { label: '阻断', tone: 'danger' },
+  warning: { label: '警告', tone: 'warning' },
+  info: { label: '通过', tone: 'success' },
+};
 
 interface RuleResult {
   id: string;
@@ -265,49 +270,35 @@ export function TravelRuleEngine({
   const levelIcon = (level: RuleLevel) => {
     switch (level) {
       case 'error':
-        return <IconCloseCircle style={{ color: '#f53f3f' }} />;
+        return <IconCloseCircle style={{ color: 'rgb(var(--danger-6))' }} />;
       case 'warning':
-        return <IconExclamationCircle style={{ color: '#ff7d00' }} />;
+        return <IconExclamationCircle style={{ color: 'rgb(var(--warning-6))' }} />;
       case 'info':
-        return <IconCheckCircle style={{ color: '#00b42a' }} />;
+        return <IconCheckCircle style={{ color: 'rgb(var(--success-6))' }} />;
     }
   };
 
-  const levelTag = (level: RuleLevel) => {
-    switch (level) {
-      case 'error':
-        return <Tag color="red" size="small">阻断</Tag>;
-      case 'warning':
-        return <Tag color="orange" size="small">警告</Tag>;
-      case 'info':
-        return <Tag color="green" size="small">通过</Tag>;
-    }
-  };
-
-  const levelBg = (level: RuleLevel) => {
-    switch (level) {
-      case 'error':
-        return { background: '#fff0f0', border: '1px solid #ffc9c9' };
-      case 'warning':
-        return { background: '#fff7e6', border: '1px solid #ffd591' };
-      case 'info':
-        return { background: '#e8ffea', border: '1px solid #aff0b5' };
-    }
-  };
+  const levelBg = (level: RuleLevel) => ({
+    background: STATUS_TONE_VARS[RULE_LEVEL[level].tone].bg,
+    border: `1px solid ${STATUS_TONE_VARS[RULE_LEVEL[level].tone].border}`,
+  });
 
   return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+    <SectionCard
+      title={
         <Space>
-          <IconSafe style={{ color: '#165dff' }} />
-          <Text style={{ fontWeight: 600 }}>AI 规则引擎校验</Text>
+          <IconSafe style={{ color: 'rgb(var(--primary-6))' }} />
+          <span>AI 规则引擎校验</span>
         </Space>
+      }
+      extra={
         <Space>
-          {errorCount > 0 && <Tag color="red">{errorCount} 项阻断</Tag>}
-          {warningCount > 0 && <Tag color="orange">{warningCount} 项警告</Tag>}
-          <Tag color="green">{passCount} 项通过</Tag>
+          {errorCount > 0 && <StatusTag meta={{ label: `${errorCount} 项阻断`, tone: 'danger' }} />}
+          {warningCount > 0 && <StatusTag meta={{ label: `${warningCount} 项警告`, tone: 'warning' }} />}
+          <StatusTag meta={{ label: `${passCount} 项通过`, tone: 'success' }} />
         </Space>
-      </div>
+      }
+    >
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
         {results.map((result) => (
           <div
@@ -315,7 +306,7 @@ export function TravelRuleEngine({
             style={{
               display: 'flex',
               gap: 12,
-              borderRadius: 8,
+              borderRadius: 'var(--radius-md)',
               padding: 12,
               ...levelBg(result.level),
             }}
@@ -324,16 +315,16 @@ export function TravelRuleEngine({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Text style={{ fontWeight: 500 }}>{result.ruleName}</Text>
-                {levelTag(result.level)}
+                <StatusTag meta={RULE_LEVEL[result.level]} />
               </div>
-              <div style={{ fontSize: 14, color: '#1d2129' }}>{result.message}</div>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)' }}>{result.message}</div>
               {result.suggestion && (
-                <div style={{ fontSize: 12, color: '#86909c', marginTop: 4 }}>{result.suggestion}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 4 }}>{result.suggestion}</div>
               )}
             </div>
           </div>
         ))}
       </Space>
-    </Card>
+    </SectionCard>
   );
 }

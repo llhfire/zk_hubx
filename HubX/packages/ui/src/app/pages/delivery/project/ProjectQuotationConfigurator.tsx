@@ -1,18 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import {
-  Button,
-  Checkbox,
-  Input,
-  InputNumber,
-  Message,
-  Modal,
-  Space,
-  Switch,
-  Tabs,
-  Tag,
-  Typography,
-} from '@arco-design/web-react';
-import { IconDelete, IconPlus } from '@arco-design/web-react/icon';
+import { Button, Checkbox, Input, InputNumber, Message, Modal, SectionTabs, Space, Switch, Tabs, Typography } from '@/design-system';
+import { IconDelete, IconPlus } from '@/design-system';
+import { StatusTag } from '@/design-system';
 import {
   calculateLaborItemCost,
   calculateOnsiteItemCost,
@@ -690,7 +679,7 @@ export function ProjectQuotationConfigurator({
       <section className="project-quotation-config-section project-quotation-config-summary-section">
         <div className="project-quotation-config-section-head">
           <div><h3>报价汇总</h3><Text type="secondary">实时汇总六个配置模块，确认后带入报价记录。</Text></div>
-          <Tag color="arcoblue">实时计算</Tag>
+          <StatusTag tone="info">实时计算</StatusTag>
         </div>
         <div className="project-quotation-config-summary-meta">
           <QuotationMetric label="总人天" value={`${summary.totalPersonDays} 人天`} />
@@ -762,14 +751,67 @@ export function ProjectQuotationConfigurator({
         <QuotationMetric label="其他成本" value={formatAmount(summary.otherCost)} />
         <QuotationMetric label="报价总额" value={formatAmount(summary.totalAmount)} primary />
       </div>
-      <Tabs activeTab={activeTab} onChange={key => setActiveTab(key as QuotationConfigTab)} className="project-quotation-config-tabs">
-        <TabPane key="frontend" title="前端配置">{renderPlatformTab('frontend', '选择前端平台，每个平台可添加多个角色端（如用户端、商家端），并选择开发语言')}</TabPane>
-        <TabPane key="backend" title="后端配置">{renderPlatformTab('backend', '选择后端服务和数据库技术栈，可添加自定义开发语言')}</TabPane>
-        <TabPane key="otherRoles" title="其他岗位">{renderOtherRoles()}</TabPane>
-        <TabPane key="travel" title="出差驻场"><section className="project-quotation-config-section"><div className="project-quotation-config-section-head"><div><h3>出差驻场配置</h3><Text type="secondary">出差和驻场分别配置，按不同成本规则自动计算。</Text></div></div><div className="project-quotation-travel-list">{renderTravelBlock('travel')}{renderTravelBlock('onsite')}</div></section></TabPane>
-        <TabPane key="otherCosts" title="其他成本">{renderOtherCosts()}</TabPane>
-        <TabPane key="summary" title="报价汇总">{renderSummary()}</TabPane>
-      </Tabs>
+      <SectionTabs
+        activeKey={activeTab}
+        onChange={key => setActiveTab(key as QuotationConfigTab)}
+        className={"project-quotation-config-tabs"}
+        items={[
+          {
+            key: 'frontend',
+            label: "前端配置",
+            content: (
+              <>
+        {renderPlatformTab('frontend', '选择前端平台，每个平台可添加多个角色端（如用户端、商家端），并选择开发语言')}
+              </>
+            ),
+          },
+          {
+            key: 'backend',
+            label: "后端配置",
+            content: (
+              <>
+        {renderPlatformTab('backend', '选择后端服务和数据库技术栈，可添加自定义开发语言')}
+              </>
+            ),
+          },
+          {
+            key: 'otherRoles',
+            label: "其他岗位",
+            content: (
+              <>
+        {renderOtherRoles()}
+              </>
+            ),
+          },
+          {
+            key: 'travel',
+            label: "出差驻场",
+            content: (
+              <>
+        <section className="project-quotation-config-section"><div className="project-quotation-config-section-head"><div><h3>出差驻场配置</h3><Text type="secondary">出差和驻场分别配置，按不同成本规则自动计算。</Text></div></div><div className="project-quotation-travel-list">{renderTravelBlock('travel')}{renderTravelBlock('onsite')}</div></section>
+              </>
+            ),
+          },
+          {
+            key: 'otherCosts',
+            label: "其他成本",
+            content: (
+              <>
+        {renderOtherCosts()}
+              </>
+            ),
+          },
+          {
+            key: 'summary',
+            label: "报价汇总",
+            content: (
+              <>
+        {renderSummary()}
+              </>
+            ),
+          },
+        ]}
+      />
     </Modal>
   );
 }

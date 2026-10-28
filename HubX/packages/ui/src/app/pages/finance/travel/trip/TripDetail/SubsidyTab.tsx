@@ -1,24 +1,14 @@
 import { useState } from 'react';
-import {
-  Card,
-  Tag,
-  Button,
-  Divider,
-  Space,
-  Typography,
-  Grid,
-  Message,
-  Spin,
-  Modal,
-} from '@arco-design/web-react';
+import { Button, Divider, Space, Typography, Grid, Message, Spin, Modal } from '@/design-system';
 import {
   IconStorage,
   IconCalendar,
   IconClockCircle,
   IconLocation,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip, TravelSubsidy } from '../../types';
 import { calculateSubsidy } from '../../travel-api';
+import { DateText, MoneyText, StatusTag } from '@/design-system';
 
 const { Text, Title } = Typography;
 const { Row, Col } = Grid;
@@ -107,17 +97,17 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
         <div className="trip-stat-card">
           <div className="trip-stat-card__header">
             <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8f3ff', color: '#165dff' }}>
+              <span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-info-bg)', color: 'rgb(var(--primary-6))' }}>
                 <IconStorage />
               </span>
               差旅补贴核定总额
             </span>
-            <Tag size="small" color={subsidy?.isPaid ? 'green' : 'orange'}>
-              {subsidy?.isPaid ? '已发放' : '待发放'}
-            </Tag>
+            <StatusTag
+              meta={{ label: subsidy?.isPaid ? '已发放' : '待发放', tone: subsidy?.isPaid ? 'success' : 'warning' }}
+            />
           </div>
           <div className="trip-stat-card__value">
-            ¥{subsidy?.totalAmount.toLocaleString() || '0'}
+            <MoneyText value={subsidy?.totalAmount ?? 0} />
           </div>
           <div className="trip-stat-card__meta">
             <span>发放渠道：随当月工资</span>
@@ -128,17 +118,17 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
         <div className="trip-stat-card">
           <div className="trip-stat-card__header">
             <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#f5e8ff', color: '#722ed1' }}>
+              <span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-purple-bg)', color: 'var(--ds-tone-purple-fg)' }}>
                 <IconLocation />
               </span>
               补贴核定标准
             </span>
-            <Tag size="small" color="purple">
+            <StatusTag size="small" tone="purple">
               {subsidy?.cityLevel === 'first_tier' ? '一线定额' : '二线定额'}
-            </Tag>
+            </StatusTag>
           </div>
           <div className="trip-stat-card__value">
-            ¥{subsidy?.standard || 0} / 天
+            <MoneyText value={subsidy?.standard || 0} /> / 天
           </div>
           <div className="trip-stat-card__meta">
             <span>目的地：{trip.destinations?.[0] || '默认城市'}</span>
@@ -149,12 +139,12 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
         <div className="trip-stat-card">
           <div className="trip-stat-card__header">
             <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8ffea', color: '#00b42a' }}>
+              <span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-success-bg)', color: 'var(--ds-tone-success-fg)' }}>
                 <IconCalendar />
               </span>
               有效考勤天数
             </span>
-            <Tag size="small" color="green">已核定</Tag>
+            <StatusTag meta={{ label: '已核定', tone: 'success' }} />
           </div>
           <div className="trip-stat-card__value">
             {effectiveDays} 天
@@ -171,19 +161,22 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
               <span
                 className="trip-stat-card__icon"
                 style={{
-                  background: abnormalCount > 0 ? '#ffece8' : '#e8ffea',
-                  color: abnormalCount > 0 ? '#f53f3f' : '#00b42a',
+                  background: abnormalCount > 0 ? '#ffece8' : 'var(--ds-tone-success-bg)',
+                  color: abnormalCount > 0 ? 'var(--ds-tone-danger-fg)' : 'var(--ds-tone-success-fg)',
                 }}
               >
                 <IconClockCircle />
               </span>
               异地打卡核验率
             </span>
-            <Tag size="small" color={abnormalCount > 0 ? 'red' : 'green'}>
-              {abnormalCount > 0 ? `${abnormalCount} 天异常` : '考勤完整'}
-            </Tag>
+            <StatusTag
+              meta={{
+                label: abnormalCount > 0 ? `${abnormalCount} 天异常` : '考勤完整',
+                tone: abnormalCount > 0 ? 'danger' : 'success',
+              }}
+            />
           </div>
-          <div className="trip-stat-card__value" style={{ color: abnormalCount > 0 ? '#f53f3f' : '#00b42a' }}>
+          <div className="trip-stat-card__value" style={{ color: abnormalCount > 0 ? 'var(--ds-tone-danger-fg)' : 'var(--ds-tone-success-fg)' }}>
             {attendanceRate}%
           </div>
           <div className="trip-stat-card__meta">
@@ -199,9 +192,9 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
         <Col span={14}>
           <div
             style={{
-              background: 'var(--color-bg-2, #ffffff)',
-              border: '1px solid var(--color-border-2, #e5e6eb)',
-              borderRadius: 6,
+              background: 'var(--color-bg-2)',
+              border: '1px solid var(--color-border-2)',
+              borderRadius: 'var(--radius-sm)',
               padding: '14px 16px',
             }}
           >
@@ -212,19 +205,19 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                 alignItems: 'center',
                 marginBottom: 12,
                 paddingBottom: 8,
-                borderBottom: '1px solid var(--color-border-1, #f2f3f5)',
+                borderBottom: '1px solid var(--color-border-1)',
               }}
             >
               <Space size={6}>
                 <IconCalendar style={{ color: 'rgb(var(--primary-6))' }} />
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{calendarMonth} 异地出差打卡核验日历</span>
+                <span style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>{calendarMonth} 异地出差打卡核验日历</span>
               </Space>
-              <Tag size="small" color="blue">点击日期可查具体打卡轨迹</Tag>
+              <StatusTag size="small" tone="info">点击日期可查具体打卡轨迹</StatusTag>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
               {['日', '一', '二', '三', '四', '五', '六'].map(day => (
-                <div key={day} style={{ color: 'var(--color-text-3)', fontSize: 12, textAlign: 'center', fontWeight: 500 }}>
+                <div key={day} style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)', textAlign: 'center', fontWeight: 500 }}>
                   {day}
                 </div>
               ))}
@@ -244,11 +237,11 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                       minHeight: 38,
                       padding: 4,
                       border: attendance ? `1px solid ${attendance.valid ? 'rgb(var(--success-3))' : 'rgb(var(--danger-3))'}` : '1px solid transparent',
-                      borderRadius: 6,
+                      borderRadius: 'var(--radius-sm)',
                       background: attendance ? (attendance.valid ? 'rgb(var(--success-1))' : 'rgb(var(--danger-1))') : 'transparent',
                       color: attendance ? 'var(--color-text-1)' : 'var(--color-text-4)',
                       cursor: attendance ? 'pointer' : 'default',
-                      fontSize: 12,
+                      fontSize: 'var(--text-xs)',
                       transition: 'all 0.15s ease',
                     }}
                   >
@@ -257,7 +250,7 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                       <span
                         style={{
                           display: 'block',
-                          fontSize: 10,
+                          fontSize: 'var(--ds-text-micro)',
                           color: attendance.valid ? 'rgb(var(--success-6))' : 'rgb(var(--danger-6))',
                           marginTop: 2,
                         }}
@@ -275,7 +268,7 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                 marginTop: 12,
                 paddingTop: 10,
                 borderTop: '1px solid var(--color-border-2)',
-                fontSize: 12,
+                fontSize: 'var(--text-xs)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -295,9 +288,9 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
         <Col span={10}>
           <div
             style={{
-              background: 'var(--color-bg-2, #ffffff)',
-              border: '1px solid var(--color-border-2, #e5e6eb)',
-              borderRadius: 6,
+              background: 'var(--color-bg-2)',
+              border: '1px solid var(--color-border-2)',
+              borderRadius: 'var(--radius-sm)',
               padding: '14px 16px',
               height: '100%',
               boxSizing: 'border-box',
@@ -313,27 +306,27 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
                   alignItems: 'center',
                   gap: 6,
                   fontWeight: 600,
-                  fontSize: 13,
+                  fontSize: 'var(--ds-text-dense)',
                   marginBottom: 12,
                   paddingBottom: 8,
-                  borderBottom: '1px solid var(--color-border-1, #f2f3f5)',
+                  borderBottom: '1px solid var(--color-border-1)',
                 }}
               >
                 <IconStorage style={{ color: 'rgb(var(--primary-6))' }} />
                 <span>津贴测算公式与发放依据</span>
               </div>
 
-              <div style={{ padding: '10px 12px', background: 'var(--color-fill-1)', borderRadius: 6, marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>公式推演</div>
-                <div style={{ fontSize: 14 }}>
-                  ¥{subsidy?.standard} (日标准) × {effectiveDays} (有效天数) ={' '}
-                  <strong style={{ color: 'rgb(var(--primary-6))', fontSize: 16 }}>
-                    ¥{subsidy?.totalAmount.toLocaleString()}
+              <div style={{ padding: '10px 12px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-sm)', marginBottom: 12 }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>公式推演</div>
+                <div style={{ fontSize: 'var(--text-sm)' }}>
+                  <MoneyText value={subsidy?.standard} /> (日标准) × {effectiveDays} (有效天数) ={' '}
+                  <strong style={{ color: 'rgb(var(--primary-6))', fontSize: 'var(--text-base)' }}>
+                    <MoneyText value={subsidy?.totalAmount} />
                   </strong>
                 </div>
               </div>
 
-              <div style={{ fontSize: 12, color: 'var(--color-text-2)', lineHeight: '22px' }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', lineHeight: '22px' }}>
                 <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--color-text-1)' }}>发放规则说明：</div>
                 <div>• 差旅补贴随当月工资一并发放，出差单归档后自动同步薪酬系统；</div>
                 <div>• 本津贴属于国家规定范围内的差旅交通餐饮补贴，不扣减日常考勤绩效；</div>
@@ -352,14 +345,14 @@ export function SubsidyTab({ trip, onUpdate }: SubsidyTabProps) {
       </Row>
 
       <Modal
-        title={selectedAttendance ? `打卡详情 · ${selectedAttendance.date}` : '打卡详情'}
+        title={selectedAttendance ? <>打卡详情 · <DateText value={selectedAttendance.date} /></> : '打卡详情'}
         visible={Boolean(selectedAttendance)}
         footer={null}
         onCancel={() => setSelectedAttendance(null)}
       >
         {selectedAttendance && (
           <Space direction="vertical" size={10} style={{ width: '100%' }}>
-            <Tag color={selectedAttendance.valid ? 'green' : 'red'}>{selectedAttendance.status}</Tag>
+            <StatusTag meta={{ label: selectedAttendance.status, tone: selectedAttendance.valid ? 'success' : 'danger' }} />
             <div><Text type="secondary">打卡时间：</Text>{selectedAttendance.time}</div>
             <div><Text type="secondary">打卡位置：</Text>{selectedAttendance.location}</div>
             <div><Text type="secondary">核验说明：</Text>{selectedAttendance.note}</div>

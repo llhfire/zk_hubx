@@ -1,28 +1,26 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
-  Button,
-  Card,
-  Empty,
-  Input,
-  Message,
-  Modal,
-  Space,
-  Tag,
-  Tooltip,
-  Upload,
-} from '@arco-design/web-react';
+  EmptyState,
+  StatusTag,
+  type StatusMeta,
+  ApprovalFlow,
+  SectionCard,
+  FileList,
+  DocumentActionRow,
+  type StatusTone,
+} from '@/design-system';
+import { Button, Input, Message, Modal, Space, Tooltip, Upload } from '@/design-system';
 import {
   IconDelete,
   IconDown,
   IconDownload,
   IconEdit,
-  IconFile,
   IconPlus,
   IconQuestionCircle,
   IconRight,
   IconUpload,
-} from '@arco-design/web-react/icon';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+} from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import type { LeadQuotationItem } from '../leadDetailProfiles';
 import { LeadQuotationSummaryTable } from './LeadQuotationSummaryTable';
 import './LeadQuotationHistoryPanel.css';
@@ -64,10 +62,10 @@ function getApprovalStatus(quotation: LeadQuotationItem) {
   return quotation.flowStatus;
 }
 
-function getApprovalColor(status: string) {
-  if (status === '已审核' || status === '已通过') return 'green';
-  if (status === '已驳回') return 'red';
-  return 'orange';
+function getApprovalTone(status: string): StatusTone {
+  if (status === '已审核' || status === '已通过') return 'success';
+  if (status === '已驳回') return 'danger';
+  return 'warning';
 }
 
 function canEditProjectQuotation(approvalStatus: string) {
@@ -119,19 +117,18 @@ const QUOTATION_FLOW_STEPS = [
   },
 ] as const;
 
-function getNodeStatusLabel(step: string, status: string) {
-  if (step === '发起申请' && status === 'approved') return '已申请';
-  if (status === 'approved') return '已通过';
-  if (status === 'pending') return '待处理';
-  if (status === 'rejected') return '已驳回';
-  return '未到达';
-}
+const NODE_STATUS: Record<string, StatusMeta> = {
+  approved: { label: '已通过', tone: 'success' },
+  pending: { label: '待处理', tone: 'warning' },
+  rejected: { label: '已驳回', tone: 'danger' },
+};
 
-function getNodeStatusColor(status: string) {
-  if (status === 'approved') return 'green';
-  if (status === 'pending') return 'orange';
-  if (status === 'rejected') return 'red';
-  return 'gray';
+const NODE_STATUS_UNREACHED: StatusMeta = { label: '未到达', tone: 'neutral' };
+
+function getNodeStatusMeta(step: string, status: string): StatusMeta {
+  const meta = NODE_STATUS[status] ?? NODE_STATUS_UNREACHED;
+  if (step === '发起申请' && status === 'approved') return { ...meta, label: '已申请' };
+  return meta;
 }
 
 function downloadQuotationFile(fileName: string, fileUrl?: string) {
@@ -159,18 +156,21 @@ function downloadQuotationReportImage(url: string, fileName: string) {
 
 function QuotationReportImageLink({ url, fileName }: { url: string; fileName: string }) {
   return (
-    <section className="lead-quotation-history-project-file-block">
-      <div className="lead-quotation-history-project-file-label">
-        <strong>报价系统记录</strong>
-      </div>
-      <div className="lead-quotation-history-report-link-row">
-        <IconFile />
-        <a href={url} target="_blank" rel="noreferrer">{fileName}</a>
-        <Tooltip content="下载报价系统记录">
-          <Button type="text" size="mini" icon={<IconDownload />} aria-label="下载报价系统记录" onClick={() => downloadQuotationReportImage(url, fileName)} />
-        </Tooltip>
-      </div>
-    </section>
+    <DocumentActionRow
+      variant="quiet"
+      context="报价系统记录"
+      name={fileName}
+      actions={(
+        <>
+          <Button type="primary" size="small" onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}>
+            在线查看
+          </Button>
+          <Button size="small" icon={<IconDownload />} onClick={() => downloadQuotationReportImage(url, fileName)}>
+            下载报价系统记录
+          </Button>
+        </>
+      )}
+    />
   );
 }
 
@@ -207,40 +207,18 @@ function ProjectQuotationFileBlock({
           </Upload>
         ) : null}
       </div>
-      <div className="lead-quotation-history-project-file-list">
-        {files.length ? files.map(file => (
-          <div className="lead-quotation-history-project-file-row" key={file}>
-            <button type="button" className="lead-quotation-history-project-file-name" title={fileUrls?.[file] ? `预览 ${file}` : '演示文件仅保留元数据'} disabled={!fileUrls?.[file]} onClick={() => onPreview(file, fileUrls?.[file])}>
-              <IconFile />
-              <span>{file}</span>
-            </button>
-            <Space size={2}>
-              {onRemove ? (
-                <Tooltip content="删除文件">
-                  <Button
-                    type="text"
-                    size="mini"
-                    status="danger"
-                    icon={<IconDelete />}
-                    aria-label={`删除${file}`}
-                    onClick={() => onRemove(file)}
-                  />
-                </Tooltip>
-              ) : null}
-              <Tooltip content="下载文件">
-                <Button
-                  type="text"
-                  size="mini"
-                  icon={<IconDownload />}
-                  aria-label={`下载${file}`}
-                  disabled={!fileUrls?.[file]}
-                  onClick={() => downloadQuotationFile(file, fileUrls?.[file])}
-                />
-              </Tooltip>
-            </Space>
-          </div>
-        )) : <span className="lead-quotation-history-project-file-empty">暂无文件</span>}
-      </div>
+      <FileList
+        className="lead-quotation-history-project-file-list"
+        emptyDescription="暂无文件"
+        items={files.map(file => ({
+          key: file,
+          name: file,
+          meta: fileUrls?.[file] ? undefined : '演示文件仅保留元数据',
+          onPreview: fileUrls?.[file] ? () => onPreview(file, fileUrls[file]) : undefined,
+          onDownload: fileUrls?.[file] ? () => downloadQuotationFile(file, fileUrls[file]) : undefined,
+          onDelete: onRemove ? () => onRemove(file) : undefined,
+        }))}
+      />
     </section>
   );
 }
@@ -311,7 +289,7 @@ export function LeadQuotationHistoryPanel({
 
   return (
     <>
-      <Card
+      <SectionCard
       bordered={false}
       className="lead-quotation-history-card"
       title={(
@@ -346,9 +324,9 @@ export function LeadQuotationHistoryPanel({
               <strong>审批记录</strong>
               <span>共 {quotationsWithApproval.length} 条</span>
             </div>
-            <Tag color={getApprovalColor(getApprovalStatus(quotationsWithApproval[0]))} size="small">
+            <StatusTag tone={getApprovalTone(getApprovalStatus(quotationsWithApproval[0]))} size="small">
               {getApprovalStatus(quotationsWithApproval[0])}
-            </Tag>
+            </StatusTag>
           </div>
           <div className="lead-quotation-approval-overview-list">
             {quotationsWithApproval.map(quotation => {
@@ -371,7 +349,7 @@ export function LeadQuotationHistoryPanel({
                   <div className="lead-quotation-approval-overview-round-head">
                     <div>
                       <strong>{quotation.name}</strong>
-                      <Tag color={getApprovalColor(approvalStatus)} size="small">{approvalStatus}</Tag>
+                      <StatusTag tone={getApprovalTone(approvalStatus)} size="small">{approvalStatus}</StatusTag>
                     </div>
                     <span>{operationNode?.time || submittedNode?.time || quotation.createTime}</span>
                   </div>
@@ -379,7 +357,7 @@ export function LeadQuotationHistoryPanel({
                     <div className="lead-quotation-approval-overview-node is-approved">
                       <span className="lead-quotation-approval-overview-node-dot" />
                       <strong>提交审批</strong>
-                      <Tag color="green" size="small">已提交</Tag>
+                      <StatusTag tone="success" size="small">已提交</StatusTag>
                       <small>{quotation.operator}</small>
                       <time>{submittedNode?.time || quotation.createTime || '-'}</time>
                     </div>
@@ -390,9 +368,7 @@ export function LeadQuotationHistoryPanel({
                         : nodeStatus === 'rejected'
                           ? '审批驳回'
                           : '等待审批'}</strong>
-                      <Tag color={getNodeStatusColor(nodeStatus)} size="small">
-                        {getNodeStatusLabel('总经理审批', nodeStatus)}
-                      </Tag>
+                      <StatusTag meta={getNodeStatusMeta('总经理审批', nodeStatus)} />
                       <small>赵总 - 总经理</small>
                       <time>{operationNode?.time || '-'}</time>
                     </div>
@@ -405,7 +381,7 @@ export function LeadQuotationHistoryPanel({
       ) : null}
 
       {sortedQuotations.length === 0 ? (
-        <Empty description="暂无报价记录" />
+        <EmptyState description="暂无报价记录" />
       ) : (
         <div className="lead-quotation-history-list">
           {sortedQuotations.map((quotation, index) => {
@@ -424,6 +400,7 @@ export function LeadQuotationHistoryPanel({
             const needsRequiredProjectFile = needsTechnicalEvaluationFile
               || (!hideQuotationUpload && needsQuotationFile);
             const canManageFiles = isLatest && canEditProjectQuotation(approvalStatus);
+            const quotationFileUrl = quotation.file ? quotation.quotationFileUrls?.[quotation.file] : undefined;
 
             return (
               <section
@@ -435,13 +412,13 @@ export function LeadQuotationHistoryPanel({
                     <div className="lead-quotation-history-title-content">
                       <div className="lead-quotation-history-name-row">
                         <h4>{quotation.name}</h4>
-                        {isLatest ? <Tag color="arcoblue" size="small">最新报价</Tag> : null}
+                        {isLatest ? <StatusTag tone="info" size="small">最新报价</StatusTag> : null}
                       </div>
                       <div className="lead-quotation-history-tags">
-                        {quotation.status !== '已报价' ? <Tag color="orange" size="small">{quotation.status}</Tag> : null}
-                        <Tag color={getApprovalColor(approvalStatus)} size="small">
+                        {quotation.status !== '已报价' ? <StatusTag tone="warning" size="small">{quotation.status}</StatusTag> : null}
+                        <StatusTag tone={getApprovalTone(approvalStatus)} size="small">
                           {approvalStatus}
-                        </Tag>
+                        </StatusTag>
                       </div>
                     </div>
 
@@ -686,25 +663,21 @@ export function LeadQuotationHistoryPanel({
                           </div>
                         </div>
 
-                        <div className="lead-quotation-history-file">
-                          <div className="lead-quotation-history-file-main">
-                            <span className="lead-quotation-history-file-icon"><IconFile /></span>
-                            <div>
-                              <span className="lead-quotation-history-file-label">报价文件</span>
-                              <strong>{quotation.file || '-'}</strong>
-                            </div>
-                          </div>
-                          <Tooltip content="下载报价文件">
+                        <DocumentActionRow
+                          variant="quiet"
+                          context="报价文件"
+                          name={quotation.file || '-'}
+                          meta={quotation.file && !quotationFileUrl ? '演示文件仅保留元数据' : undefined}
+                          actions={quotationFileUrl ? (
                             <Button
-                              type="text"
                               size="small"
                               icon={<IconDownload />}
-                              aria-label="下载报价文件"
-                              disabled={!quotation.file || !quotation.quotationFileUrls?.[quotation.file]}
-                              onClick={() => quotation.file && downloadQuotationFile(quotation.file, quotation.quotationFileUrls?.[quotation.file])}
-                            />
-                          </Tooltip>
-                        </div>
+                              onClick={() => downloadQuotationFile(quotation.file!, quotationFileUrl)}
+                            >
+                              下载报价文件
+                            </Button>
+                          ) : undefined}
+                        />
                       </>
                     )}
 
@@ -714,34 +687,17 @@ export function LeadQuotationHistoryPanel({
                           <span>审批记录</span>
                           <span>{quotation.approvalFlow.length} 个节点</span>
                         </div>
-                        <ol className="lead-quotation-approval-list">
-                          {quotation.approvalFlow.map((node, nodeIndex) => (
-                            <li
-                              key={`${quotation.id}-${node.step}-${nodeIndex}`}
-                              className={`lead-quotation-approval-node is-${node.status}`}
-                            >
-                              <span className="lead-quotation-approval-dot" />
-                              <div className="lead-quotation-approval-content">
-                                <div className="lead-quotation-approval-title">
-                                  <strong>{node.step}</strong>
-                                  <Tag color={getNodeStatusColor(node.status)} size="small">
-                                    {getNodeStatusLabel(node.step, node.status)}
-                                  </Tag>
-                                </div>
-                                <div className="lead-quotation-approval-meta">
-                                  <span>{node.step === '发起申请' ? '申请人' : '审批人'}：{node.approver}</span>
-                                  <span>操作时间：{node.time || '-'}</span>
-                                </div>
-                                {node.comment ? (
-                                  <div className={`lead-quotation-approval-comment${node.status === 'rejected' ? ' is-rejected' : ''}`}>
-                                    <span>{node.status === 'rejected' ? '驳回原因' : '审批意见'}</span>
-                                    <p>{node.comment}</p>
-                                  </div>
-                                ) : null}
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
+                        <ApprovalFlow
+                          nodes={quotation.approvalFlow.map((node, nodeIndex) => ({
+                            key: `${quotation.id}-${node.step}-${nodeIndex}`,
+                            title: node.step,
+                            status: node.status === 'approved' || node.status === 'rejected' || node.status === 'pending' ? node.status : 'skipped',
+                            statusLabel: getNodeStatusMeta(node.step, node.status).label,
+                            note: `${node.step === '发起申请' ? '申请人' : '审批人'}：${node.approver}`,
+                            time: node.time,
+                            comment: node.comment,
+                          }))}
+                        />
                       </div>
                     ) : null}
                   </div>
@@ -751,7 +707,7 @@ export function LeadQuotationHistoryPanel({
           })}
         </div>
       )}
-      </Card>
+      </SectionCard>
       <Modal className="hubx-modal"
         title="报价操作流程说明"
         visible={flowDescriptionVisible}
@@ -801,7 +757,7 @@ export function LeadQuotationHistoryPanel({
         onCancel={() => setPreviewFile(null)}
         style={{ width: 680, maxWidth: 'calc(100vw - 32px)' }}
       >
-        {previewFile && <iframe title={previewFile.name} src={previewFile.url} style={{ width: '100%', minHeight: 560, border: '1px solid var(--color-border-2)', borderRadius: 6 }} />}
+        {previewFile && <iframe title={previewFile.name} src={previewFile.url} style={{ width: '100%', minHeight: 560, border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-sm)' }} />}
       </Modal>
       <Modal
         title={approvalAction?.decision === 'approve' ? '同意报价审批' : '拒绝报价审批'}

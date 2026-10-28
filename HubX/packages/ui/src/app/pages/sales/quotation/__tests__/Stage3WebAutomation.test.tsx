@@ -142,7 +142,7 @@ describe('Stage 3 Web Automation 在线报价配置页面重构 (Stage3WebAutoma
     const html = renderToStaticMarkup(createElement(Stage3WebAutomation, { quote, readonly: false }));
 
     // 岗位费率卡片网格
-    expect(html).toContain('stage3-role-grid');
+    expect(html).toContain('hubx-role-rate-grid');
     expect(html).toContain('前端开发工程师');
     expect(html).toContain('后端开发工程师');
     expect(html).toContain('10.0 人天');

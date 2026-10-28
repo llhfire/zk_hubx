@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Descriptions, Message, Modal, Space, Table, Tabs, Tag } from '@arco-design/web-react';
+import { Badge, Button, Message, Modal, Space } from '@/design-system';
 import { useNavigate } from 'react-router';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  confirmAction,
+  DataTable,
+  DescriptionsCard,
+  AlertBanner,
+  SectionCard,
+  SectionTabs,
+  StatusTag,
+} from '@/design-system';
 import { useLeads } from '../../../leads/LeadContext';
 import { leadDispatchView, returnActorsOf } from '../lead-dispatch/kpiCalc';
 import { readSalesBusinessConfig } from '../../support/system/systemConfigStore';
@@ -56,42 +67,70 @@ export function LeadGovernance() {
       { key: 'duplicate', label: '疑似重复', value: `${duplicates.length} 组`, tone: duplicates.length ? 'warning' : 'success' },
       { key: 'quality', label: '退回待确认', value: `${pendingQuality.length} 条`, tone: pendingQuality.length ? 'warning' : 'success' },
     ]} />
-    <Card>
-      <Tabs activeTab={tab} onChange={setTab}>
-        <Tabs.TabPane key="exceptions" title="线索异常">
-          <Alert type="info" content="异常只触发标红、站内提醒和人工催办，不会自动回收、自动处罚或改写线索状态。" showIcon />
-          <Table rowKey={(row) => row.lead.id} data={exceptions} columns={exceptionColumns} pagination={false} scroll={{ x: 1000 }} noDataElement="当前没有派发或首联异常" />
-        </Tabs.TabPane>
-        <Tabs.TabPane key="duplicates" title="重复线索">
-          <Table rowKey="key" data={duplicates} pagination={false} columns={[
-            { title: '保留主线索', width: 250, render: (_: unknown, row: typeof duplicates[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.master.id}`)}>{row.master.name}<div className="table-secondary-text">{row.master.id} · {row.master.createTime}</div></a> },
-            { title: '疑似重复', width: 250, render: (_: unknown, row: typeof duplicates[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.duplicate.id}`)}>{row.duplicate.name}<div className="table-secondary-text">{row.duplicate.id} · {row.duplicate.createTime}</div></a> },
-            { title: '命中原因', dataIndex: 'reason', width: 150, render: (value: string, row: typeof duplicates[number]) => <Space><Tag color={row.strong ? 'red' : 'orange'}>{row.strong ? '强匹配' : '相似提醒'}</Tag>{value}</Space> },
-            { title: '操作', width: 150, render: (_: unknown, row: typeof duplicates[number]) => <Button size="small" onClick={() => Modal.confirm({ title: '合并重复线索', content: `保留“${row.master.name}”，将“${row.duplicate.name}”标记为已合并。历史线索 ID 和事件仍可回看。`, onOk: async () => { await updateLead(row.duplicate.id, (lead) => ({ ...lead, mergedIntoLeadId: row.master.id, deleted: true })); Message.success('重复线索已合并，来源历史已保留'); } })}>确认合并</Button> },
-          ]} />
-        </Tabs.TabPane>
-        <Tabs.TabPane key="quality" title="退回质检">
-          <Alert type="info" content="按不同销售去重计数；满三位销售退回后仍需管理员确认，系统不会自动转入垃圾池。" showIcon />
-          <Table rowKey={(row) => row.lead.id} data={quality} pagination={false} columns={[
-            { title: '线索', render: (_: unknown, row: typeof quality[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.lead.id}`)}>{row.lead.name}</a> },
-            { title: '退回销售', render: (_: unknown, row: typeof quality[number]) => Array.from(new Set(returnActorsOf(row.lead))).join('、') || '—' },
-            { title: '质检分桶', render: (_: unknown, row: typeof quality[number]) => <Badge status={row.view.returnQuality.bucket === 'pending_confirm' ? 'warning' : 'default'} text={row.view.returnQuality.label} /> },
-            { title: '操作', width: 180, render: (_: unknown, row: typeof quality[number]) => row.view.returnQuality.bucket === 'pending_confirm' ? <Button size="small" status="danger" onClick={() => Modal.confirm({ title: '确认转入垃圾池', content: '该线索已由三位不同销售退回。确认后才会进入垃圾池并写入事件流水。', okButtonProps: { status: 'danger' }, onOk: async () => { await confirmQuality(row.lead.id, '张三', '三人三轮退回质检确认'); Message.success('质检已确认，线索已转入垃圾池'); } })}>管理员确认</Button> : <span className="table-secondary-text">未达到三人</span> },
-          ]} />
-        </Tabs.TabPane>
-        <Tabs.TabPane key="rules" title="规则概览">
-          <Alert type="info" content="这里仅展示系统唯一规则来源。修改阈值请进入系统配置，治理页不保存私有规则。" showIcon />
-          <Descriptions column={2} data={[
-            { label: '待派发 SLA', value: `${config.dispatchSlaMinutes} 分钟；超时告警与催办` },
-            { label: '首联 SLA', value: `${config.firstContactSlaMinutes} 分钟；提前 ${config.firstContactWarningMinutes} 分钟提醒` },
-            { label: '等级调整', value: '升级即时生效；降级进入审批中心' },
-            { label: '退回质检', value: '三位不同销售退回后由管理员确认' },
-            { label: '自动处置', value: '关闭；不自动派发、回收、处罚或进垃圾池' },
-            { label: '客户判重', value: config.enableDuplicateCheck ? '启用强标识判重' : '已关闭' },
-          ]} />
-          <Button type="primary" onClick={() => navigate('/system/config')}>前往系统配置</Button>
-        </Tabs.TabPane>
-      </Tabs>
-    </Card>
+    <SectionCard>
+      <SectionTabs
+        activeKey={tab}
+        onChange={setTab}
+        items={[
+          {
+            key: 'exceptions',
+            label: '线索异常',
+            content: (
+              <>
+        <AlertBanner tone="info">异常只触发标红、站内提醒和人工催办，不会自动回收、自动处罚或改写线索状态。</AlertBanner>
+        <DataTable rowKey={(row) => row.lead.id} data={exceptions} columns={exceptionColumns} pagination={false} scroll={{ x: 1000 }} emptyDescription="当前没有派发或首联异常" />
+              </>
+            ),
+          },
+          {
+            key: 'duplicates',
+            label: '重复线索',
+            content: (
+              <>
+        <DataTable rowKey="key" data={duplicates} pagination={false} columns={[
+          { title: '保留主线索', width: 250, render: (_: unknown, row: typeof duplicates[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.master.id}`)}>{row.master.name}<div className="table-secondary-text">{row.master.id} · {row.master.createTime}</div></a> },
+          { title: '疑似重复', width: 250, render: (_: unknown, row: typeof duplicates[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.duplicate.id}`)}>{row.duplicate.name}<div className="table-secondary-text">{row.duplicate.id} · {row.duplicate.createTime}</div></a> },
+          { title: '命中原因', dataIndex: 'reason', width: 150, render: (value: string, row: typeof duplicates[number]) => <Space><StatusTag tone={row.strong ? 'danger' : 'warning'}>{row.strong ? '强匹配' : '相似提醒'}</StatusTag>{value}</Space> },
+          { title: '操作', width: 150, render: (_: unknown, row: typeof duplicates[number]) => <Button size="small" onClick={() => confirmAction({ title: '合并重复线索', content: `保留“${row.master.name}”，将“${row.duplicate.name}”标记为已合并。历史线索 ID 和事件仍可回看。`, onOk: async () => { await updateLead(row.duplicate.id, (lead) => ({ ...lead, mergedIntoLeadId: row.master.id, deleted: true })); Message.success('重复线索已合并，来源历史已保留'); } })}>确认合并</Button> },
+        ]} />
+              </>
+            ),
+          },
+          {
+            key: 'quality',
+            label: '退回质检',
+            content: (
+              <>
+        <AlertBanner tone="info">按不同销售去重计数；满三位销售退回后仍需管理员确认，系统不会自动转入垃圾池。</AlertBanner>
+        <DataTable rowKey={(row) => row.lead.id} data={quality} pagination={false} columns={[
+          { title: '线索', render: (_: unknown, row: typeof quality[number]) => <a className="table-primary-link" onClick={() => navigate(`/leads/${row.lead.id}`)}>{row.lead.name}</a> },
+          { title: '退回销售', render: (_: unknown, row: typeof quality[number]) => Array.from(new Set(returnActorsOf(row.lead))).join('、') || '—' },
+          { title: '质检分桶', render: (_: unknown, row: typeof quality[number]) => <Badge status={row.view.returnQuality.bucket === 'pending_confirm' ? 'warning' : 'default'} text={row.view.returnQuality.label} /> },
+          { title: '操作', width: 180, render: (_: unknown, row: typeof quality[number]) => row.view.returnQuality.bucket === 'pending_confirm' ? <Button size="small" status="danger" onClick={() => confirmAction({ title: '确认转入垃圾池', content: '该线索已由三位不同销售退回。确认后才会进入垃圾池并写入事件流水。', tone: 'danger', onOk: async () => { await confirmQuality(row.lead.id, '张三', '三人三轮退回质检确认'); Message.success('质检已确认，线索已转入垃圾池'); } })}>管理员确认</Button> : <span className="table-secondary-text">未达到三人</span> },
+        ]} />
+              </>
+            ),
+          },
+          {
+            key: 'rules',
+            label: '规则概览',
+            content: (
+              <>
+        <AlertBanner tone="info">这里仅展示系统唯一规则来源。修改阈值请进入系统配置，治理页不保存私有规则。</AlertBanner>
+        <DescriptionsCard columns={2} items={[
+          { key: '待派发 SLA', label: '待派发 SLA', value: `${config.dispatchSlaMinutes} 分钟；超时告警与催办` },
+          { key: '首联 SLA', label: '首联 SLA', value: `${config.firstContactSlaMinutes} 分钟；提前 ${config.firstContactWarningMinutes} 分钟提醒` },
+          { key: '等级调整', label: '等级调整', value: '升级即时生效；降级进入审批中心' },
+          { key: '退回质检', label: '退回质检', value: '三位不同销售退回后由管理员确认' },
+          { key: '自动处置', label: '自动处置', value: '关闭；不自动派发、回收、处罚或进垃圾池' },
+          { key: '客户判重', label: '客户判重', value: config.enableDuplicateCheck ? '启用强标识判重' : '已关闭' },
+        ]} />
+        <Button type="primary" onClick={() => navigate('/system/config')}>前往系统配置</Button>
+              </>
+            ),
+          },
+        ]}
+      />
+    </SectionCard>
   </PageShell>;
 }

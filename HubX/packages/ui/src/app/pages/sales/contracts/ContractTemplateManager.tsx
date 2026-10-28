@@ -1,13 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Drawer, Form, Grid, Input, Message, Modal, Popconfirm, Select, Space, Switch, Table, Tag } from '@arco-design/web-react';
-import { IconCopy, IconPlus } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, MetricGrid, RichTextEditor } from '@/design-system';
+import {
+  Button,
+  Drawer,
+  Form,
+  FormGrid,
+  Input,
+  Message,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Switch,
+} from '@/design-system';
+import { IconCopy, IconPlus } from '@/design-system';
+import {
+  AlertBanner,
+  DataTable,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  RichTextEditor,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 import { contractSigningEntities } from '../company-entity/companyEntityData';
 import { CONTRACT_TEMPLATE_VARIABLES, loadContractTemplates, publishContractTemplate, saveContractTemplates, validateTemplateVariables, type VersionedContractTemplate } from './templateStore';
 import './contractTemplateManager.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
+const TEMPLATE_STATUS = {
+  published: { label: '已发布', tone: 'success' },
+  draft: { label: '草稿', tone: 'info' },
+  disabled: { label: '已停用', tone: 'neutral' },
+} as const;
 
 export function ContractTemplateManager() {
   const [templates, setTemplates] = useState(loadContractTemplates);
@@ -59,10 +83,10 @@ export function ContractTemplateManager() {
   const columns = [
     { title: '模板', dataIndex: 'name', width: 240, render: (_: string, record: VersionedContractTemplate) => <div><strong>{record.name}</strong><div className="table-secondary-text">{record.id}</div></div> },
     { title: '适用签约主体', dataIndex: 'signingEntity', width: 160 },
-    { title: '产品分类', width: 220, render: (_: unknown, record: VersionedContractTemplate) => <Space wrap size={4}>{record.productCategories.map((item) => <Tag key={item}>{item}</Tag>)}</Space> },
-    { title: '状态', width: 110, render: (_: unknown, record: VersionedContractTemplate) => <Badge status={record.status === 'published' ? 'success' : record.status === 'draft' ? 'processing' : 'default'} text={record.status === 'published' ? '已发布' : record.status === 'draft' ? '草稿' : '已停用'} /> },
+    { title: '产品分类', width: 220, render: (_: unknown, record: VersionedContractTemplate) => <Space wrap size={4}>{record.productCategories.map((item) => <StatusTag key={item}>{item}</StatusTag>)}</Space> },
+    { title: '状态', width: 110, render: (_: unknown, record: VersionedContractTemplate) => <StatusTag meta={TEMPLATE_STATUS[record.status]} /> },
     { title: '版本', width: 100, render: (_: unknown, record: VersionedContractTemplate) => record.versions.length ? `V${record.versions.at(-1)?.versionNo}` : '—' },
-    { title: '默认', width: 80, render: (_: unknown, record: VersionedContractTemplate) => record.isDefault ? <Tag color="green">默认</Tag> : '—' },
+    { title: '默认', width: 80, render: (_: unknown, record: VersionedContractTemplate) => record.isDefault ? <StatusTag tone="success">默认</StatusTag> : '—' },
     { title: '操作', width: 240, fixed: 'right' as const, render: (_: unknown, record: VersionedContractTemplate) => <Space size={4}>
       <Button type="text" size="small" onClick={() => openEditor(record)}>{record.status === 'published' ? '创建新版本' : '编辑'}</Button>
       <Button type="text" size="small" onClick={() => { setEditing(record); setHistoryVisible(true); }}>历史</Button>
@@ -74,16 +98,18 @@ export function ContractTemplateManager() {
   return <PageShell breadcrumbs={[{ label: '合同管理', to: '/contracts' }, { label: '合同模板' }]}>
     <PageHeader title="合同模板" description="按签约主体和产品分类维护可追溯的合同正文版本。" actions={<Button type="primary" icon={<IconPlus />} onClick={() => openEditor()}>新建模板</Button>} />
     <MetricGrid items={[{ key: 'all', label: '模板', value: `${templates.length} 个` }, { key: 'published', label: '已发布', value: `${metrics.published} 个`, tone: 'success' }, { key: 'draft', label: '待发布草稿', value: `${metrics.draft} 个` }, { key: 'versions', label: '历史版本', value: `${metrics.versions} 版` }]} />
-    <Card><Table rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 1160 }} /></Card>
+    <SectionCard><DataTable rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 1160 }} /></SectionCard>
 
     <Drawer title={editing?.versions.length ? `创建新版本 · ${editing.name}` : '新建合同模板'} visible={drawerVisible} width={760} onCancel={() => setDrawerVisible(false)} footer={<Space><Button onClick={() => setDrawerVisible(false)}>关闭</Button><Button onClick={saveDraft}>保存草稿</Button><Button type="primary" onClick={publish}>发布新版本</Button></Space>}>
-      <Alert type="info" content="已发布版本不可覆盖。发布后再编辑会生成下一版本，历史合同继续使用原正文快照。" showIcon />
-      <Form form={form} layout="vertical" className="contract-template-form"><Row gutter={16}>
-        <Col span={16}><Form.Item label="模板名称" field="name" rules={[{ required: true }]}><Input /></Form.Item></Col>
-        <Col span={8}><Form.Item label="设为默认模板" field="isDefault" triggerPropName="checked"><Switch /></Form.Item></Col>
-        <Col span={12}><Form.Item label="适用签约主体" field="signingEntity" rules={[{ required: true }]}><Select>{contractSigningEntities.map((item) => <Select.Option key={item.id} value={item.shortName}>{item.shortName}</Select.Option>)}</Select></Form.Item></Col>
-        <Col span={12}><Form.Item label="产品分类" field="productCategories" rules={[{ required: true }]}><Select mode="multiple" allowCreate>{['软件开发', '系统集成', '技术服务', '云服务', '移民服务'].map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></Form.Item></Col>
-      </Row></Form>
+      <AlertBanner tone="info">已发布版本不可覆盖。发布后再编辑会生成下一版本，历史合同继续使用原正文快照。</AlertBanner>
+      <Form form={form} layout="vertical" className="contract-template-form">
+        <FormGrid columns={2}>
+          <Form.Item label="模板名称" field="name" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item label="设为默认模板" field="isDefault" triggerPropName="checked"><Switch /></Form.Item>
+          <Form.Item label="适用签约主体" field="signingEntity" rules={[{ required: true }]}><Select>{contractSigningEntities.map((item) => <Select.Option key={item.id} value={item.shortName}>{item.shortName}</Select.Option>)}</Select></Form.Item>
+          <Form.Item label="产品分类" field="productCategories" rules={[{ required: true }]}><Select mode="multiple" allowCreate>{['软件开发', '系统集成', '技术服务', '云服务', '移民服务'].map((item) => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></Form.Item>
+        </FormGrid>
+      </Form>
       <div className="contract-template-variable-bar"><span>可用变量</span><Space wrap size={4}>{CONTRACT_TEMPLATE_VARIABLES.map((variable) => <Button key={variable} size="mini" onClick={() => setHtml((value) => `${value}<span>{{${variable}}}</span>`)}>{`{{${variable}}}`}</Button>)}</Space></div>
       <RichTextEditor theme="snow" value={html} onChange={setHtml} className="contract-template-editor" modules={{ toolbar: [[{ header: [2, 3, false] }], ['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']] }} />
     </Drawer>

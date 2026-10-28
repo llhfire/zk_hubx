@@ -10,27 +10,20 @@
  */
 
 import { useState } from 'react';
-import { Card, Button, Upload, Input, Tag, Message, Space, Typography } from '@arco-design/web-react';
-import { IconUpload, IconPaste, IconFile } from '@arco-design/web-react/icon';
+import { Button, Input, Message, Space, Typography } from '@/design-system';
+import { IconPaste, IconFile } from '@/design-system';
+import { DateText, SectionCard, StatusTag, type StatusMap } from '@/design-system';
 import type { MinuteSourceText, SourceParseStatus } from '../types';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
-const PARSE_STATUS_LABEL: Record<SourceParseStatus, string> = {
-  none: '未解析',
-  parsed: '已解析',
-  partial: '部分解析',
-  failed: '解析失败',
-  unsupported: '不支持的格式',
-};
-
-const PARSE_STATUS_COLOR: Record<SourceParseStatus, string> = {
-  none: 'gray',
-  parsed: 'green',
-  partial: 'orange',
-  failed: 'red',
-  unsupported: 'red',
+const PARSE_STATUS: StatusMap<SourceParseStatus> = {
+  none: { label: '未解析', tone: 'neutral' },
+  parsed: { label: '已解析', tone: 'success' },
+  partial: { label: '部分解析', tone: 'warning' },
+  failed: { label: '解析失败', tone: 'danger' },
+  unsupported: { label: '不支持的格式', tone: 'danger' },
 };
 
 /** 允许的文件扩展名 */
@@ -102,27 +95,22 @@ export function SourcePanel({ source, canSee, readonly, onImport }: SourcePanelP
   };
 
   return (
-    <Card
-      size="small"
+    <div style={{ marginBottom: 12 }}>
+    <SectionCard
       title={
         <Space>
           <IconFile />
           <span>会议文本源</span>
-          {source && (
-            <Tag color={PARSE_STATUS_COLOR[source.parseStatus]} size="small">
-              {PARSE_STATUS_LABEL[source.parseStatus]}
-            </Tag>
-          )}
+          {source && <StatusTag meta={PARSE_STATUS[source.parseStatus]} />}
         </Space>
       }
-      style={{ marginBottom: 12 }}
     >
       {source ? (
         /* 已有文本：展示摘要 */
         <div>
           {source.fileName && (
-            <Text style={{ fontSize: 13, color: 'var(--grey-500)' }}>
-              文件：{source.fileName} · 上传于 {new Date(source.uploadedAt).toLocaleString()}
+            <Text style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--grey-500)' }}>
+              文件：{source.fileName} · 上传于 <DateText value={source.uploadedAt} mode="datetime" />
             </Text>
           )}
           <div
@@ -130,8 +118,8 @@ export function SourcePanel({ source, canSee, readonly, onImport }: SourcePanelP
               marginTop: 8,
               padding: 8,
               background: 'var(--grey-50)',
-              borderRadius: 6,
-              fontSize: 13,
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--ds-text-dense)',
               color: 'var(--grey-600)',
               maxHeight: 120,
               overflow: 'auto',
@@ -177,6 +165,7 @@ export function SourcePanel({ source, canSee, readonly, onImport }: SourcePanelP
           )}
         </div>
       )}
-    </Card>
+    </SectionCard>
+    </div>
   );
 }

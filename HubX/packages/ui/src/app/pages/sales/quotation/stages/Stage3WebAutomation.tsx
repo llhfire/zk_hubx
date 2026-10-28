@@ -1,11 +1,33 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert, Button, Card, DatePicker, Divider, Empty, Input, InputNumber, Message, Modal, Progress, Select, Space, Switch, Tag, Tooltip, Typography,
-} from '@arco-design/web-react';
+  Button,
+  DatePicker,
+  Divider,
+  Input,
+  InputNumber,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Switch,
+  Tooltip,
+  Typography,
+} from '@/design-system';
+import {
+  AlertBanner,
+  DateText,
+  EmptyState,
+  FeatureWorkloadMatrix,
+  MetricCard,
+  MoneyText,
+  RoleRateGrid,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 import {
   IconPlus, IconDelete, IconSend, IconApps, IconEye, IconCheckCircleFill, IconCloseCircleFill,
-  IconExclamationCircleFill, IconRefresh, IconDown, IconUp, IconFile, IconCheck, IconCopy, IconSave,
-} from '@arco-design/web-react/icon';
+  IconExclamationCircleFill, IconRefresh, IconDown, IconUp, IconFile, IconCopy, IconSave,
+} from '@/design-system';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
 import { computeAmountBreakdown, sumEvalDaysByRole, TECH_DAILY_RATE, validateBeforeAudit } from '../quoteFlow';
@@ -25,7 +47,6 @@ import {
   saveCustomPaymentPreset,
 } from '../paymentPresetStore';
 import './Stage3WebAutomation.css';
-import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title } = Typography;
 
@@ -292,8 +313,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   };
 
   // 删除自定义模版
-  const handleDeleteCustomPreset = (presetId: string, presetName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteCustomPreset = (presetId: string, presetName: string) => {
     deleteCustomPaymentPreset(presetId);
     setPaymentPresetsRevision((v) => v + 1);
     Message.info(`已删除自定义模版「${presetName}」`);
@@ -563,10 +583,10 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
   return (
     <div className="stage3-container hubx-numeral">
       {/* 顶栏：签约法人主体与增补信息轻量横栏 */}
-      <Card size="small" style={{ marginBottom: 16, background: 'var(--color-bg-2)', borderRadius: 8 }}>
+      <SectionCard size="small" style={{ marginBottom: 16, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <Text bold style={{ fontSize: 14 }}>签约主体：</Text>
+            <Text bold style={{ fontSize: 'var(--text-sm)' }}>签约主体：</Text>
             <Select
               aria-label="报价单签约主体"
               value={quote.signingEntity || undefined}
@@ -577,20 +597,20 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               onChange={(signingEntity) => persist({ signingEntity })}
             />
             {entity && (
-              <Tag color="arcoblue" style={{ fontSize: 12 }}>
+              <StatusTag tone="info" style={{ fontSize: 'var(--text-xs)' }}>
                 信用代码: {entity.taxNumber}
-              </Tag>
+              </StatusTag>
             )}
             {quote.isSupplement ? (
-              <Tag color="purple">增补合同报价</Tag>
+              <StatusTag tone="purple">增补合同报价</StatusTag>
             ) : (
-              <Tag color="gray">标准首版报价</Tag>
+              <StatusTag tone="neutral">标准首版报价</StatusTag>
             )}
           </div>
 
           {quote.isSupplement && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Text type="secondary" style={{ fontSize: 13 }}>本次变更增减额：</Text>
+              <Text type="secondary" style={{ fontSize: 'var(--ds-text-dense)' }}>本次变更增减额：</Text>
               <InputNumber
                 style={{ width: 140 }}
                 value={quote.supplementChangeAmount ?? 0}
@@ -602,7 +622,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             </div>
           )}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 72:28 双栏主体结构 */}
       <div className="stage3-layout">
@@ -610,7 +630,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
         <div className="stage3-main">
 
           {/* 模块 1：研发成本与岗位费率调优器（核心卡片网格 + 渐进展开明细） */}
-          <Card
+          <SectionCard
             size="small"
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
@@ -618,9 +638,9 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   <IconApps style={{ color: 'rgb(var(--arcoblue-6))' }} />
                   <span style={{ fontWeight: 600 }}>研发人力成本与岗位费率</span>
                   {evalSheet && (
-                    <Tag size="small" color="blue">
+                    <StatusTag size="small" tone="info">
                       总工期 {evalSheet.manualWorkDays || '-'} 工作日 / 共 {grandTotalDays.toFixed(1)} 人天
-                    </Tag>
+                    </StatusTag>
                   )}
                 </div>
                 <Space size={8}>
@@ -644,178 +664,71 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             {/* 岗位费率紧凑卡片网格 */}
             {evalSheet && evalSheet.activeRoles.length > 0 ? (
               <>
-                <div className="stage3-role-grid">
-                  {evalSheet.activeRoles.map((role: EvalRole) => {
-                    const days = roleTotals[role.key] || 0;
-                    const dailyRate = roleDailyCosts[role.key] ?? TECH_DAILY_RATE;
-                    const roleSubtotal = days * dailyRate;
-                    return (
-                      <div key={role.key} className="stage3-role-card">
-                        <div className="stage3-role-header">
-                          <Tag size="small" color="arcoblue" style={{ fontWeight: 600 }}>{role.name}</Tag>
-                          <span className="stage3-role-days">{days.toFixed(1)} 人天</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '8px 0' }}>
-                          <Text type="secondary" style={{ fontSize: 12 }}>日均单价:</Text>
-                          <InputNumber
-                            size="mini"
-                            min={0}
-                            step={100}
-                            value={dailyRate}
-                            disabled={readonly}
-                            prefix="¥"
-                            style={{ width: 95 }}
-                            onChange={(v) => updateRoleDailyCost(role.key, v || 0)}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 6, borderTop: '1px dashed var(--color-border-2)' }}>
-                          <Text type="secondary" style={{ fontSize: 11 }}>岗位小计</Text>
-                          <span className="stage3-role-subtotal">{money(roleSubtotal)}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <RoleRateGrid
+                  items={evalSheet.activeRoles.map((role: EvalRole) => ({
+                    key: role.key,
+                    name: role.name,
+                    days: roleTotals[role.key] || 0,
+                    dailyRate: roleDailyCosts[role.key] ?? TECH_DAILY_RATE,
+                  }))}
+                  readonly={readonly}
+                  onDailyRateChange={(roleKey, dailyRate) => updateRoleDailyCost(roleKey, dailyRate)}
+                />
 
                 {/* 渐进展开：完整功能工时明细表格 */}
                 {showFeatureDetail && (
-                  <div style={{ marginTop: 16, borderTop: '1px solid var(--color-border-2)', paddingTop: 12 }}>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                        <thead>
-                          <tr style={{ background: 'var(--color-fill-1)' }}>
-                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>端</th>
-                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>模块</th>
-                            <th style={{ padding: '6px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>子功能</th>
-                            {evalSheet.activeRoles.map((r: EvalRole) => (
-                              <th key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 80, whiteSpace: 'nowrap' }}>
-                                <div>{r.name}</div>
-                                <div style={{ fontSize: 10, color: 'var(--color-text-3)', fontWeight: 400 }}>
-                                  ¥{roleDailyCosts[r.key]?.toFixed(0)}/天
-                                </div>
-                              </th>
-                            ))}
-                            <th style={{ padding: '6px 10px', textAlign: 'right', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 60, whiteSpace: 'nowrap' }}>人天</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(() => {
-                            const unitMap = new Map<string, typeof evalSheet.evaluationUnits[0]>();
-                            evalSheet.evaluationUnits.forEach((u) => {
-                              u.boundSubFeatureIds.forEach((subId) => { unitMap.set(subId, u); });
-                            });
-                            const epRowSpans: Record<string, number> = {};
-                            const epFirstIdx: Record<string, number> = {};
-                            let idx = 0;
-                            featureList.forEach((m) => {
-                              const epId = m.endpointId || '';
-                              if (!(epId in epFirstIdx)) { epFirstIdx[epId] = idx; epRowSpans[epId] = 0; }
-                              epRowSpans[epId] += Math.max(m.subFeatures.length, 1);
-                              idx += Math.max(m.subFeatures.length, 1);
-                            });
-                            let rowIdx = 0;
-                            let grandDays = 0;
-                            let grandCost = 0;
-                            const rows = featureList.flatMap((m) => {
-                              const ep = endpointConfigs.find((e) => e.id === m.endpointId);
-                              const isFirstOfEp = epFirstIdx[m.endpointId || ''] === rowIdx;
-                              const subs = m.subFeatures.length > 0 ? m.subFeatures : [{ id: 'empty', name: '（暂无子功能）', description: '' }];
-                              const moduleRowSpan = subs.length;
-                              return subs.map((f, fIdx) => {
-                                rowIdx++;
-                                const unit = unitMap.get(f.id);
-                                const roleDays = unit ? evalSheet.activeRoles.map((r) => unit.manualWorkload[r.key] ?? 0) : evalSheet.activeRoles.map(() => 0);
-                                const totalDays = unit?.totalDays ?? 0;
-                                let itemCost = 0;
-                                evalSheet.activeRoles.forEach((r: EvalRole, ri) => {
-                                  itemCost += roleDays[ri] * (roleDailyCosts[r.key] ?? 0);
-                                });
-                                grandDays += totalDays;
-                                grandCost += itemCost;
-                                return (
-                                  <tr key={f.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                                    {isFirstOfEp && fIdx === 0 && (
-                                      <td rowSpan={epRowSpans[m.endpointId || ''] || 1} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 600, borderRight: '1px solid var(--color-border-2)', fontSize: 12 }}>
-                                        {ep?.name || '-'}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
-                                          {(ep?.platforms || []).map((pid) => (
-                                            <Tag key={pid} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>
-                                              {PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid}
-                                            </Tag>
-                                          ))}
-                                        </div>
-                                      </td>
-                                    )}
-                                    {fIdx === 0 && (
-                                      <td rowSpan={moduleRowSpan} style={{ padding: '6px 10px', verticalAlign: 'top', fontWeight: 500, borderRight: '1px solid var(--color-border-2)' }}>{m.name}</td>
-                                    )}
-                                    <td style={{ padding: '6px 10px', borderRight: '1px solid var(--color-border-2)' }}>{f.name}</td>
-                                    {evalSheet.activeRoles.map((r: EvalRole, ri) => (
-                                      <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderRight: '1px solid var(--color-border-2)' }}>
-                                        {roleDays[ri] > 0 ? roleDays[ri].toFixed(1) : '-'}
-                                      </td>
-                                    ))}
-                                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 500 }}>
-                                      {totalDays > 0 ? totalDays.toFixed(1) : '-'}
-                                    </td>
-                                  </tr>
-                                );
-                              });
-                            });
-                            rows.push(
-                              <tr key="total" style={{ background: 'var(--color-fill-1)', fontWeight: 600 }}>
-                                <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)', whiteSpace: 'nowrap' }}>研发人天合计</td>
-                                <td style={{ padding: '6px 10px', borderTop: '2px solid var(--color-border-2)' }} colSpan={2} />
-                                {evalSheet.activeRoles.map((r: EvalRole) => {
-                                  const rDays = (evalSheet?.evaluationUnits || []).reduce((s, u) => s + (u.manualWorkload[r.key] ?? 0), 0);
-                                  const rCost = rDays * (roleDailyCosts[r.key] ?? 0);
-                                  return (
-                                    <td key={r.key} style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)', fontSize: 11 }}>
-                                      <div>{rDays.toFixed(1)}</div>
-                                      <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>{money(rCost)}</div>
-                                    </td>
-                                  );
-                                })}
-                                <td style={{ padding: '6px 10px', textAlign: 'right', borderTop: '2px solid var(--color-border-2)' }}>
-                                  {grandDays.toFixed(1)}
-                                </td>
-                              </tr>
-                            );
-                            return rows;
-                          })()}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <FeatureWorkloadMatrix
+                    endpoints={endpointConfigs.map((endpoint) => ({
+                      key: endpoint.id,
+                      name: endpoint.name,
+                      platforms: endpoint.platforms.map((platformId) => PLATFORM_OPTIONS.find((platform) => platform.id === platformId)?.name || platformId),
+                    }))}
+                    modules={featureList.map((module) => ({
+                      key: module.id,
+                      endpointKey: module.endpointId,
+                      name: module.name,
+                      subFeatures: module.subFeatures.map((feature) => ({ key: feature.id, name: feature.name })),
+                    }))}
+                    roles={evalSheet.activeRoles.map((role) => ({
+                      key: role.key,
+                      name: role.name,
+                      dailyRate: roleDailyCosts[role.key] ?? TECH_DAILY_RATE,
+                    }))}
+                    units={evalSheet.evaluationUnits.map((unit) => ({
+                      subFeatureKeys: unit.boundSubFeatureIds,
+                      totalDays: unit.totalDays,
+                      workloads: unit.manualWorkload,
+                    }))}
+                  />
                 )}
               </>
             ) : (
-              <Empty description="暂无评估数据" />
+              <EmptyState description="暂无评估数据" />
             )}
-          </Card>
+          </SectionCard>
 
           {/* 模块 2：销售增项岗位配置 */}
-          <Card
+          <SectionCard
             size="small"
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <span style={{ fontWeight: 600 }}>销售商务增项</span>
-                  <Tag size="small" color="orange">计入总价 · 不占研发人天</Tag>
+                  <StatusTag size="small" tone="warning">计入总价 · 不占研发人天</StatusTag>
                 </Space>
                 {!readonly && (
                   <Space size={6}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>快捷添加:</Text>
+                    <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>快捷添加:</Text>
                     {SALES_ROLE_PRESETS.map((p) => (
-                      <Tag
+                      <StatusTag
                         key={p.roleName}
                         size="small"
-                        color="arcoblue"
+                        tone="info"
                         className="stage3-preset-btn"
                         onClick={() => addSalesRolePreset(p)}
                       >
                         + {p.roleName}
-                      </Tag>
+                      </StatusTag>
                     ))}
                   </Space>
                 )}
@@ -828,10 +741,10 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               </div>
             ) : (
               salesAddedRoles.map((role) => (
-                <div key={role.id} style={{ padding: '10px 12px', border: '1px solid var(--color-border-2)', borderRadius: 6, marginBottom: 8, background: 'var(--color-fill-1)' }}>
+                <div key={role.id} style={{ padding: '10px 12px', border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-sm)', marginBottom: 8, background: 'var(--color-fill-1)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.2fr) minmax(180px, 1.6fr) 70px 70px 105px 95px 68px', gap: 10, alignItems: 'center' }}>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>岗位名称</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>岗位名称</Text>
                       <Input
                         size="small"
                         value={role.roleName}
@@ -845,7 +758,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       />
                     </div>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>增项事由</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>增项事由</Text>
                       <Input
                         size="small"
                         value={role.reason}
@@ -859,7 +772,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       />
                     </div>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>人数</Text>
                       <InputNumber
                         size="small"
                         min={1}
@@ -873,7 +786,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       />
                     </div>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>天数</Text>
                       <InputNumber
                         size="small"
                         min={1}
@@ -887,7 +800,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       />
                     </div>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>日单价</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>日单价</Text>
                       <InputNumber
                         size="small"
                         min={0}
@@ -902,8 +815,8 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       />
                     </div>
                     <div>
-                      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>小计</Text>
-                      <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>{money(role.subtotal)}</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>小计</Text>
+                      <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 'var(--ds-text-dense)' }}><MoneyText value={role.subtotal} tone="danger" /></Text>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       {!readonly && (
@@ -935,45 +848,45 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 </Button>
               )}
               {salesAddedRoles.length > 0 && (
-                <div style={{ padding: '6px 12px', background: 'var(--color-fill-1)', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
+                <div style={{ padding: '6px 12px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-xs)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
                     共 {salesAddedRoles.reduce((s, r) => s + r.headcount * r.days, 0)} 人天
                   </Text>
                   <Divider type="vertical" style={{ margin: '0 4px' }} />
                   <Text>增项小计：</Text>
-                  <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 14 }}>{money(salesAddedRoles.reduce((s, r) => s + r.subtotal, 0))}</Text>
+                  <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 'var(--text-sm)' }}><MoneyText value={salesAddedRoles.reduce((s, r) => s + r.subtotal, 0)} tone="danger" /></Text>
                 </div>
               )}
             </div>
-          </Card>
+          </SectionCard>
 
           {/* 模块 3：交付履约配置（出差与驻场服务合并卡片） */}
-          <Card
+          <SectionCard
             size="small"
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <span style={{ fontWeight: 600 }}>交付履约服务（出差与驻场）</span>
-                  <Tag size="small" color={travelOnsite.enableTravel || travelOnsite.enableOnsite ? 'green' : 'gray'}>
-                    履约合计: {money(breakdown.travelSubtotal + breakdown.onsiteSubtotal)}
-                  </Tag>
+                  <StatusTag size="small" tone={travelOnsite.enableTravel || travelOnsite.enableOnsite ? 'success' : 'neutral'}>
+                    履约合计: <MoneyText value={breakdown.travelSubtotal + breakdown.onsiteSubtotal} />
+                  </StatusTag>
                 </Space>
               </div>
             }
           >
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               {/* 出差区域 */}
-              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12, background: travelOnsite.enableTravel ? 'transparent' : 'var(--color-fill-1)' }}>
+              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: 12, background: travelOnsite.enableTravel ? 'transparent' : 'var(--color-fill-1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: travelOnsite.enableTravel ? 12 : 0 }}>
                   <Space align="center">
                     <Switch checked={travelOnsite.enableTravel} onChange={toggleTravel} disabled={readonly} />
                     <Text bold>异地出差服务</Text>
                     {travelOnsite.enableTravel && (
-                      <Tag size="small" color="blue">{travelOnsite.travelDetails.length} 个目的地</Tag>
+                      <StatusTag size="small" tone="info">{travelOnsite.travelDetails.length} 个目的地</StatusTag>
                     )}
                   </Space>
                   {travelOnsite.enableTravel && (
-                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>差旅小计: {money(travelOnsite.travelSubtotal)}</Text>
+                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 'var(--ds-text-dense)' }}>差旅小计: <MoneyText value={travelOnsite.travelSubtotal} tone="danger" /></Text>
                   )}
                 </div>
 
@@ -985,30 +898,30 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       const destAllowance = (detail.allowancePerDay || 0) * (detail.headcount || 1) * (detail.days || 1);
                       const destSubtotal = destTransport + destHotel + destAllowance;
                       return (
-                        <div key={idx} style={{ padding: '10px 12px', background: 'var(--color-fill-1)', border: '1px solid var(--color-border-2)', borderRadius: 6, marginBottom: 10 }}>
+                        <div key={idx} style={{ padding: '10px 12px', background: 'var(--color-fill-1)', border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-sm)', marginBottom: 10 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <Text bold style={{ fontSize: 12 }}>出差目的地 {idx + 1}: {detail.location || '待定'}</Text>
+                              <Text bold style={{ fontSize: 'var(--text-xs)' }}>出差目的地 {idx + 1}: {detail.location || '待定'}</Text>
                               {!readonly && (
                                 <Space size={4}>
-                                  <Text type="secondary" style={{ fontSize: 11 }}>套用标准:</Text>
+                                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>套用标准:</Text>
                                   {TRAVEL_STANDARDS.map((std) => (
-                                    <Tag
+                                    <StatusTag
                                       key={std.name}
                                       size="small"
-                                      color="arcoblue"
+                                      tone="info"
                                       className="stage3-action-chip"
                                       onClick={() => applyTravelStandard(idx, std)}
                                     >
                                       {std.name}
-                                    </Tag>
+                                    </StatusTag>
                                   ))}
                                 </Space>
                               )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)' }}>
-                                单地小计: {money(destSubtotal)}
+                              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-1)' }}>
+                                单地小计: <MoneyText value={destSubtotal} />
                               </span>
                               {!readonly && (
                                 <Space size={4}>
@@ -1024,27 +937,27 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>出差地点</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>出差地点</Text>
                               <Input size="small" value={detail.location} onChange={(v) => updateTravelDetail(idx, 'location', v)} placeholder="如：北京、上海" disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>人数</Text>
                               <InputNumber size="small" min={1} value={detail.headcount} onChange={(v) => updateTravelDetail(idx, 'headcount', v || 1)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>天数</Text>
                               <InputNumber size="small" min={1} value={detail.days} onChange={(v) => updateTravelDetail(idx, 'days', v || 1)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>往返交通/人</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>往返交通/人</Text>
                               <InputNumber size="small" min={0} prefix="¥" value={detail.transportFee} onChange={(v) => updateTravelDetail(idx, 'transportFee', v || 0)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>住宿费/天/人</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>住宿费/天/人</Text>
                               <InputNumber size="small" min={0} prefix="¥" value={detail.hotelFeePerDay} onChange={(v) => updateTravelDetail(idx, 'hotelFeePerDay', v || 0)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>补贴/天/人</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>补贴/天/人</Text>
                               <InputNumber size="small" min={0} prefix="¥" value={detail.allowancePerDay} onChange={(v) => updateTravelDetail(idx, 'allowancePerDay', v || 0)} disabled={readonly} />
                             </div>
                           </div>
@@ -1059,17 +972,17 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               </div>
 
               {/* 驻场区域 */}
-              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12, background: travelOnsite.enableOnsite ? 'transparent' : 'var(--color-fill-1)' }}>
+              <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: 12, background: travelOnsite.enableOnsite ? 'transparent' : 'var(--color-fill-1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: travelOnsite.enableOnsite ? 12 : 0 }}>
                   <Space align="center">
                     <Switch checked={travelOnsite.enableOnsite} onChange={toggleOnsite} disabled={readonly} />
                     <Text bold>现场驻场技术服务</Text>
                     {travelOnsite.enableOnsite && (
-                      <Tag size="small" color="blue">{travelOnsite.onsiteDetails.length} 个驻场地</Tag>
+                      <StatusTag size="small" tone="info">{travelOnsite.onsiteDetails.length} 个驻场地</StatusTag>
                     )}
                   </Space>
                   {travelOnsite.enableOnsite && (
-                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 13 }}>驻场小计: {money(travelOnsite.onsiteSubtotal)}</Text>
+                    <Text bold style={{ color: 'rgb(var(--danger-6))', fontSize: 'var(--ds-text-dense)' }}>驻场小计: <MoneyText value={travelOnsite.onsiteSubtotal} tone="danger" /></Text>
                   )}
                 </div>
 
@@ -1078,30 +991,30 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     {travelOnsite.onsiteDetails.map((detail, idx) => {
                       const siteSubtotal = (detail.serviceFeePerDay || 0) * (detail.headcount || 1) * (detail.days || 1);
                       return (
-                        <div key={idx} style={{ padding: '10px 12px', background: 'var(--color-fill-1)', border: '1px solid var(--color-border-2)', borderRadius: 6, marginBottom: 10 }}>
+                        <div key={idx} style={{ padding: '10px 12px', background: 'var(--color-fill-1)', border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-sm)', marginBottom: 10 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <Text bold style={{ fontSize: 12 }}>驻场地点 {idx + 1}: {detail.location || '客户现场'}</Text>
+                              <Text bold style={{ fontSize: 'var(--text-xs)' }}>驻场地点 {idx + 1}: {detail.location || '客户现场'}</Text>
                               {!readonly && (
                                 <Space size={4}>
-                                  <Text type="secondary" style={{ fontSize: 11 }}>日单价参考:</Text>
+                                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>日单价参考:</Text>
                                   {[800, 1000, 1200, 1500].map((rate) => (
-                                    <Tag
+                                    <StatusTag
                                       key={rate}
                                       size="small"
-                                      color="arcoblue"
+                                      tone="info"
                                       className="stage3-action-chip"
                                       onClick={() => updateOnsiteDetail(idx, 'serviceFeePerDay', rate)}
                                     >
                                       ¥{rate}/天
-                                    </Tag>
+                                    </StatusTag>
                                   ))}
                                 </Space>
                               )}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-1)' }}>
-                                单地小计: {money(siteSubtotal)}
+                              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-1)' }}>
+                                单地小计: <MoneyText value={siteSubtotal} />
                               </span>
                               {!readonly && (
                                 <Space size={4}>
@@ -1117,19 +1030,19 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>驻场地点 / 场景</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>驻场地点 / 场景</Text>
                               <Input size="small" value={detail.location} onChange={(v) => updateOnsiteDetail(idx, 'location', v)} placeholder="如：客户数据中心机房" disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>人数</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>人数</Text>
                               <InputNumber size="small" min={1} value={detail.headcount} onChange={(v) => updateOnsiteDetail(idx, 'headcount', v || 1)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>天数</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>天数</Text>
                               <InputNumber size="small" min={1} value={detail.days} onChange={(v) => updateOnsiteDetail(idx, 'days', v || 1)} disabled={readonly} />
                             </div>
                             <div>
-                              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 2 }}>技术服务费/天/人</Text>
+                              <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', display: 'block', marginBottom: 2 }}>技术服务费/天/人</Text>
                               <InputNumber size="small" min={0} prefix="¥" value={detail.serviceFeePerDay} onChange={(v) => updateOnsiteDetail(idx, 'serviceFeePerDay', v || 0)} disabled={readonly} />
                             </div>
                           </div>
@@ -1143,20 +1056,20 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 )}
               </div>
             </Space>
-          </Card>
+          </SectionCard>
 
           {/* 模块 4：第三方自费或代采项目 */}
-          <Card
+          <SectionCard
             size="small"
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <span style={{ fontWeight: 600 }}>外部自费与代采项目</span>
-                  <Tag size="small" color="gray">客户自费/代采 · 不计入我方报价</Tag>
+                  <StatusTag size="small" tone="neutral">客户自费/代采 · 不计入我方报价</StatusTag>
                 </Space>
                 {otherCosts.length > 0 && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    自费总额：<Text bold>{money(otherCosts.reduce((s, c) => s + c.amount, 0))}</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
+                    自费总额：<Text bold><MoneyText value={otherCosts.reduce((s, c) => s + c.amount, 0)} /></Text>
                   </Text>
                 )}
               </div>
@@ -1165,17 +1078,17 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             {/* 常用高频自费与代采快捷芯片 */}
             {!readonly && (
               <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>快捷添加常用代采:</Text>
+                <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>快捷添加常用代采:</Text>
                 {PRESET_PROCUREMENT_ITEMS.map((item) => (
-                  <Tag
+                  <StatusTag
                     key={item.name}
                     size="small"
-                    color="gray"
+                    tone="neutral"
                     className="stage3-action-chip"
                     onClick={() => addPresetProcurementItem(item)}
                   >
                     + {item.name}
-                  </Tag>
+                  </StatusTag>
                 ))}
               </div>
             )}
@@ -1188,10 +1101,10 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               <div style={{ marginBottom: 10 }}>
                 {/* 统一表头行 */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(140px, 1.2fr) 110px minmax(180px, 1.6fr) 36px', gap: 10, marginBottom: 6, padding: '0 2px' }}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>费用名称</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>金额</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>备注说明 / 采购属性</Text>
-                  <Text type="secondary" style={{ fontSize: 11, textAlign: 'center' }}>操作</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>费用名称</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>金额</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>备注说明 / 采购属性</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', textAlign: 'center' }}>操作</Text>
                 </div>
                 {/* 条目列表 */}
                 {otherCosts.map((cost) => (
@@ -1212,10 +1125,10 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             {!readonly && (
               <Button size="mini" icon={<IconPlus />} onClick={addCost}>添加自费项目</Button>
             )}
-          </Card>
+          </SectionCard>
 
           {/* 模块 5：商务结算条款与付款计划预设 */}
-          <Card
+          <SectionCard
             size="small"
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -1243,7 +1156,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       },
                     })}
                   />
-                  <Tag size="small" color="arcoblue">含税人民币</Tag>
+                  <StatusTag size="small" tone="info">含税人民币</StatusTag>
                   <Select
                     size="mini"
                     style={{ width: 130 }}
@@ -1276,7 +1189,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             {!readonly && (
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>快捷套用付款比例：</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>快捷套用付款比例：</Text>
                   <Button
                     size="mini"
                     type="text"
@@ -1289,17 +1202,16 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 <div className="stage3-preset-tags">
                   {allPaymentPresets.map((preset) => (
                     <Tooltip key={preset.id || preset.name} content={preset.description} position="top">
-                      <Tag
+                      <StatusTag
                         size="small"
-                        color={preset.isCustom ? 'purple' : 'arcoblue'}
+                        tone={preset.isCustom ? 'purple' : 'info'}
                         className={`stage3-preset-btn ${preset.isCustom ? 'stage3-preset-btn-custom' : ''}`}
-                        closable={preset.isCustom}
-                        onClose={(e) => handleDeleteCustomPreset(preset.id, preset.name, e)}
+                        onClose={preset.isCustom ? () => handleDeleteCustomPreset(preset.id, preset.name) : undefined}
                         onClick={() => applyPaymentPreset(preset)}
                       >
                         {preset.name}
                         {preset.isCustom && ' (自定义)'}
-                      </Tag>
+                      </StatusTag>
                     </Tooltip>
                   ))}
                 </div>
@@ -1315,7 +1227,11 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   return (
                     <Tooltip
                       key={`bar-${term.stage}-${index}`}
-                      content={`${term.stage || `第 ${index + 1} 期`}: ${term.percent}% (约 ${money(termAmount)})`}
+                      content={(
+                        <>
+                          {term.stage || `第 ${index + 1} 期`}: {term.percent}% (约 <MoneyText value={termAmount} />)
+                        </>
+                      )}
                     >
                       <div
                         className="stage3-flow-segment"
@@ -1355,12 +1271,12 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                     padding: '0 2px',
                   }}
                 >
-                  <Text type="secondary" style={{ fontSize: 11 }}>期数 / 阶段名称</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>预计回款日期</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>回款条件（自然日/工作日）</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>回款比例</Text>
-                  <Text type="secondary" style={{ fontSize: 11, textAlign: 'right' }}>回款金额</Text>
-                  <Text type="secondary" style={{ fontSize: 11, textAlign: 'center' }}>操作</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>期数 / 阶段名称</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>预计回款日期</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>回款条件（自然日/工作日）</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>回款比例</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', textAlign: 'right' }}>回款金额</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', textAlign: 'center' }}>操作</Text>
                 </div>
 
                 {/* 每一期付款项 */}
@@ -1379,9 +1295,9 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       >
                         {/* 1. 期数与阶段名称 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Tag size="small" color="arcoblue" style={{ flexShrink: 0, fontWeight: 600 }}>
+                          <StatusTag size="small" tone="info" style={{ flexShrink: 0, fontWeight: 600 }}>
                             第{index + 1}期
-                          </Tag>
+                          </StatusTag>
                           <Input
                             size="small"
                             aria-label={`第 ${index + 1} 期付款节点`}
@@ -1453,12 +1369,12 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                           style={{
                             textAlign: 'right',
                             fontWeight: 600,
-                            fontSize: 12,
+                            fontSize: 'var(--text-xs)',
                             color: 'var(--color-text-1)',
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {money(termAmount)}
+                          <MoneyText value={termAmount} />
                         </div>
 
                         {/* 操作：删除 */}
@@ -1493,11 +1409,11 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               </div>
               <div>
                 {isPayment100 ? (
-                  <Text type="success" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Text type="success" style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <IconCheckCircleFill /> 比例合计 100%（合规达标）
                   </Text>
                 ) : (
-                  <Text type="error" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Text type="error" style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <IconCloseCircleFill />
                     比例合计 {paymentPercentTotal}%
                     {paymentPercentTotal < 100 ? ` (还差 ${100 - paymentPercentTotal}%)` : ` (超出 ${paymentPercentTotal - 100}%)`}
@@ -1505,7 +1421,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                 )}
               </div>
             </div>
-          </Card>
+          </SectionCard>
 
           {/* 模块 6：报价模板适配与导出面板 */}
           <QuoteTemplatePreviewPanel quote={workingQuote} breakdown={breakdown} />
@@ -1518,13 +1434,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             {/* 驾驶舱 Header：总报价 */}
             <div className="stage3-cockpit-header">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                <Text type="secondary" style={{ fontSize: 11, fontWeight: 500 }}>对外总报价 (含税)</Text>
-                <Tag size="small" color="arcoblue" style={{ fontSize: 10, padding: '0 4px', height: 18, lineHeight: '18px' }}>
+                <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)', fontWeight: 500 }}>对外总报价 (含税)</Text>
+                <StatusTag size="small" tone="info" style={{ fontSize: 'var(--ds-text-micro)', padding: '0 4px', height: 18, lineHeight: '18px' }}>
                   {quote.summary?.invoiceType ?? '专票'}
-                </Tag>
+                </StatusTag>
               </div>
               <div className="stage3-total-price">
-                {money(breakdown.grandTotal)}
+                <MoneyText value={breakdown.grandTotal} />
               </div>
             </div>
 
@@ -1533,48 +1449,42 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
               {/* 核心指标卡 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                <div className="stage3-metric-tile">
-                  <Text type="secondary" style={{ fontSize: 11 }}>人力毛利率</Text>
-                  <div style={{ marginTop: 2 }}>
-                    {profitRate == null ? (
-                      <Text type="secondary" style={{ fontSize: 11 }}>无法计算</Text>
-                    ) : (
-                      <Tag
-                        size="small"
-                        color={
-                          profitRate >= DEFAULT_MIN_PROFIT_RATE
-                            ? 'green'
-                            : profitRate >= 0.4
-                              ? 'blue'
-                              : 'orange'
-                        }
-                        style={{ fontWeight: 600, fontSize: 11, padding: '0 4px', height: 20, lineHeight: '20px' }}
-                      >
-                        {(profitRate * 100).toFixed(1)}%
-                      </Tag>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-3)', marginTop: 2 }}>
-                    底线: {(DEFAULT_MIN_PROFIT_RATE * 100).toFixed(0)}%
-                  </div>
-                </div>
-
-                <div className="stage3-metric-tile">
-                  <Text type="secondary" style={{ fontSize: 11 }}>交付工期</Text>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
-                    {evalSheet?.manualWorkDays || '-'} 工作日
-                  </div>
-                  {expectedEndDate && (
-                    <div style={{ fontSize: 10, color: 'var(--color-text-3)', marginTop: 2 }}>
-                      预计 {expectedEndDate}
-                    </div>
+                <MetricCard
+                  className="stage3-metric-tile"
+                  label="人力毛利率"
+                  value={profitRate == null ? (
+                    <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>无法计算</Text>
+                  ) : (
+                    <StatusTag
+                      size="small"
+                      tone={
+                        profitRate >= DEFAULT_MIN_PROFIT_RATE
+                          ? 'success'
+                          : profitRate >= 0.4
+                            ? 'info'
+                            : 'warning'
+                      }
+                      style={{ fontWeight: 600, fontSize: 'var(--ds-text-caption)', padding: '0 4px', height: 20, lineHeight: '20px' }}
+                    >
+                      {(profitRate * 100).toFixed(1)}%
+                    </StatusTag>
                   )}
-                </div>
+                  detail={`底线: ${(DEFAULT_MIN_PROFIT_RATE * 100).toFixed(0)}%`}
+                  tone={profitRate == null ? 'default' : profitRate >= DEFAULT_MIN_PROFIT_RATE ? 'success' : 'warning'}
+                />
+
+                <MetricCard
+                  className="stage3-metric-tile"
+                  label="交付工期"
+                  value={evalSheet?.manualWorkDays || '-'}
+                  suffix="工作日"
+                  detail={expectedEndDate ? <>预计 <DateText value={expectedEndDate} /></> : undefined}
+                />
               </div>
 
               {/* 成本积木多维构成条 */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-2)' }}>
                   <span>成本构成</span>
                   <span>{breakdown.totalLaborDays.toFixed(1)} 人天</span>
                 </div>
@@ -1583,23 +1493,23 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   <div className="stage3-brick-segment" style={{ width: `${addedPercent}%`, background: 'rgb(var(--orange-6))' }} />
                   <div className="stage3-brick-segment" style={{ width: `${deliveryPercent}%`, background: 'rgb(var(--green-6))' }} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 'var(--ds-text-caption)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--arcoblue-6))', marginRight: 4 }} />技术人力</span>
-                    <span style={{ fontWeight: 500 }}>{money(breakdown.techLaborCost)}</span>
+                    <span style={{ fontWeight: 500 }}><MoneyText value={breakdown.techLaborCost} /></span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--orange-6))', marginRight: 4 }} />商务增项</span>
-                    <span style={{ fontWeight: 500 }}>{money(breakdown.addedCost)}</span>
+                    <span style={{ fontWeight: 500 }}><MoneyText value={breakdown.addedCost} /></span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'rgb(var(--green-6))', marginRight: 4 }} />差旅驻场</span>
-                    <span style={{ fontWeight: 500 }}>{money(breakdown.travelSubtotal + breakdown.onsiteSubtotal)}</span>
+                    <span style={{ fontWeight: 500 }}><MoneyText value={breakdown.travelSubtotal + breakdown.onsiteSubtotal} /></span>
                   </div>
                   {breakdown.selfPaidSubtotal > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-3)' }}>
                       <span>客户自费</span>
-                      <span>{money(breakdown.selfPaidSubtotal)}</span>
+                      <span><MoneyText value={breakdown.selfPaidSubtotal} /></span>
                     </div>
                   )}
                 </div>
@@ -1610,9 +1520,9 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               {/* 内审合规体检清单 (Pre-flight Checklist) */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <Text bold style={{ fontSize: 11 }}>内审合规体检</Text>
+                  <Text bold style={{ fontSize: 'var(--ds-text-caption)' }}>内审合规体检</Text>
                   {isPayment100 && quote.signingEntity && templateMissingFields.length === 0 && !leadFrozen && (
-                    <Tag size="small" color="green" style={{ fontSize: 10, padding: '0 4px', height: 18, lineHeight: '18px' }}>合格</Tag>
+                    <StatusTag size="small" tone="success" style={{ fontSize: 'var(--ds-text-micro)', padding: '0 4px', height: 18, lineHeight: '18px' }}>合格</StatusTag>
                   )}
                 </div>
                 <div className="stage3-checklist">
@@ -1654,13 +1564,13 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
 
               {/* 异常警示提示 */}
               {blockingIssues.length > 0 && (
-                <Alert type="error" title="提交条件未满足" content={blockingIssues.map((i) => i.message).join('；')} />
+                <AlertBanner tone="danger" title="提交条件未满足">{blockingIssues.map((i) => i.message).join('；')}</AlertBanner>
               )}
               {warningIssues.length > 0 && (
-                <Alert type="warning" title="请确认以下数字" content={`${warningIssues.map((i) => i.message).join('；')}。黄灯项不阻止提交。`} />
+                <AlertBanner tone="warning" title="请确认以下数字">{`${warningIssues.map((i) => i.message).join('；')}。黄灯项不阻止提交。`}</AlertBanner>
               )}
               {templateMissingFields.length > 0 && (
-                <Alert type="error" title="客户版报价单未完整" content={`还需补齐：${templateMissingFields.join('、')}`} />
+                <AlertBanner tone="danger" title="客户版报价单未完整">{`还需补齐：${templateMissingFields.join('、')}`}</AlertBanner>
               )}
 
               {/* 行动按钮 */}
@@ -1670,7 +1580,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                   type="outline"
                   icon={<IconEye />}
                   onClick={() => setPreviewModalVisible(true)}
-                  style={{ width: '100%', height: 34, fontSize: 13 }}
+                  style={{ width: '100%', height: 34, fontSize: 'var(--ds-text-dense)' }}
                 >
                   预览客户版报价单
                 </Button>
@@ -1683,7 +1593,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
                       icon={<IconSend />}
                       disabled={leadFrozen || blockingIssues.length > 0 || templateMissingFields.length > 0}
                       onClick={handleSubmit}
-                      style={{ width: '100%', height: 36, fontSize: 13, fontWeight: 600 }}
+                      style={{ width: '100%', height: 36, fontSize: 'var(--ds-text-dense)', fontWeight: 600 }}
                     >
                       提交审批
                     </Button>
@@ -1711,14 +1621,14 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
         cancelButtonProps={{ style: { display: 'none' } }}
         style={{ width: '88vw', maxWidth: 1080 }}
       >
-        <div style={{ maxHeight: '72vh', overflowY: 'auto', padding: '12px 16px', background: '#f8fafc', borderRadius: 8 }}>
+        <div style={{ maxHeight: '72vh', overflowY: 'auto', padding: '12px 16px', background: "var(--ds-doc-paper-tint)", borderRadius: 'var(--radius-md)' }}>
           <div
             dangerouslySetInnerHTML={{ __html: quoteHtml }}
             style={{
-              background: '#fff',
+              background: "var(--ds-doc-paper)",
               padding: '24px 32px',
-              borderRadius: 6,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              borderRadius: 'var(--radius-sm)',
+              boxShadow: 'var(--ds-shadow-panel)',
             }}
           />
         </div>
@@ -1741,7 +1651,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
           <div>
-            <Text bold style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>模版名称（必填）</Text>
+            <Text bold style={{ fontSize: 'var(--ds-text-dense)', display: 'block', marginBottom: 4 }}>模版名称（必填）</Text>
             <Input
               placeholder="如：政企四期分付、老客户信贷 6:4"
               value={newPresetName}
@@ -1749,22 +1659,22 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             />
           </div>
           <div>
-            <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>方案场景说明（可选）</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--ds-text-dense)', display: 'block', marginBottom: 4 }}>方案场景说明（可选）</Text>
             <Input
               placeholder="如：首付款较高或阶段验收周期长项目专用"
               value={newPresetDesc}
               onChange={(val) => setNewPresetDesc(val)}
             />
           </div>
-          <div style={{ background: 'var(--color-fill-1)', padding: '10px 12px', borderRadius: 6 }}>
-            <Text bold style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>当前期数构成预览：</Text>
+          <div style={{ background: 'var(--color-fill-1)', padding: '10px 12px', borderRadius: 'var(--radius-sm)' }}>
+            <Text bold style={{ fontSize: 'var(--text-xs)', display: 'block', marginBottom: 6 }}>当前期数构成预览：</Text>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {paymentTerms.map((t, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-xs)' }}>
                   <span>
                     {t.stage || `第 ${idx + 1} 期`}
                     {t.conditionDays ? (
-                      <span style={{ color: 'var(--color-text-3)', marginLeft: 6, fontSize: 11 }}>
+                      <span style={{ color: 'var(--color-text-3)', marginLeft: 6, fontSize: 'var(--ds-text-caption)' }}>
                         ({t.conditionDesc ? `${t.conditionDesc} · ` : ''}{t.conditionDays}{t.conditionType === 'calendar_day' ? '自然日' : '工作日'})
                       </span>
                     ) : null}
@@ -1774,7 +1684,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
               ))}
             </div>
             <Divider style={{ margin: '8px 0' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
               <span>比例合计</span>
               <span style={{ color: isPayment100 ? 'rgb(var(--success-6))' : 'rgb(var(--danger-6))' }}>
                 {paymentPercentTotal}% {isPayment100 ? '(达标)' : '(异常)'}
@@ -1782,10 +1692,7 @@ export function Stage3WebAutomation({ quote, readonly }: StageProps) {
             </div>
           </div>
           {!isPayment100 && (
-            <Alert
-              type="warning"
-              content={`当前比例合计为 ${paymentPercentTotal}%，建议平账至 100% 后保存，避免在其他报价单引用时触发内审校验拦截。`}
-            />
+            <AlertBanner tone="warning">{`当前比例合计为 ${paymentPercentTotal}%，建议平账至 100% 后保存，避免在其他报价单引用时触发内审校验拦截。`}</AlertBanner>
           )}
         </Space>
       </Modal>

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Button, Popover, Tag } from '@arco-design/web-react';
-import { IconCheck, IconClockCircle, IconDown, IconRight } from '@arco-design/web-react/icon';
+import { Button, Popover } from '@/design-system';
+import { IconCheck, IconClockCircle, IconDown, IconRight } from '@/design-system';
 import './LeadStagePopover.css';
+import { StatusTag } from '@/design-system';
 
 export interface LeadStageCheckItem {
   id: string;
@@ -72,12 +73,12 @@ export function LeadStagePopoverContent({
       {/* 头部：阶段标签与状态 */}
       <div className="lead-stage-popover__header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontWeight: 600, fontSize: 14 }}>{sopInfo.label}</span>
-          {isCompleted && <Tag color="green" size="small">已达成</Tag>}
-          {isCurrent && <Tag color="arcoblue" size="small">进行中 · 已停留 {daysHeld} 天</Tag>}
-          {isPending && <Tag color="gray" size="small">未开始</Tag>}
+          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{sopInfo.label}</span>
+          {isCompleted && <StatusTag tone="success" size="small">已达成</StatusTag>}
+          {isCurrent && <StatusTag tone="info" size="small">进行中 · 已停留 {daysHeld} 天</StatusTag>}
+          {isPending && <StatusTag tone="neutral" size="small">未开始</StatusTag>}
         </div>
-        <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>阶段 SOP 指引</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>阶段 SOP 指引</span>
       </div>
 
       {/* 核心目标 */}

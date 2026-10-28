@@ -100,10 +100,11 @@ describe('ProjectDetail360 重构（对齐线索详情结构）', () => {
   test('基础信息使用三列摘要，并将长文本字段放在独立行', () => {
     const markup = renderProjectDetail360Markup('/projects/prod-112?main=basic')
 
-    expect(markup).toContain('project-basic-information__grid')
-    expect(markup).toContain('arco-descriptions-layout-inline-horizontal')
-    expect(markup).toContain('project-basic-information__long-list')
-    expect(markup.match(/project-basic-information__long-row/g)).toHaveLength(4)
+    // 短字段三列网格 + 长字段独占整行（DescriptionsCard 的固定结构）
+    expect(markup).toContain('project-basic-information')
+    expect(markup).toContain('hubx-descriptions--3')
+    expect(markup).toContain('hubx-descriptions--long')
+    expect(markup.match(/hubx-descriptions__item--long/g)).toHaveLength(4)
     expect(markup).toContain('重庆绮算法科技有限公司')
     expect(markup).toContain('风险备注')
   })

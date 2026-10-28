@@ -1,4 +1,4 @@
-import { Card, Grid, Statistic, Select, Typography, Tabs } from '@arco-design/web-react';
+import { Grid, IconArrowRise, MetricGrid, PageHeader, PageShell, SectionCard, SectionTabs, Select, Tabs, Typography } from '@/design-system';
 import {
   BarChart,
   Bar,
@@ -14,7 +14,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { IconArrowRise } from '@arco-design/web-react/icon';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -54,7 +53,7 @@ export function Reports() {
     { name: '抖音', value: 125, color: 'var(--success-500)' },
     { name: '小红书', value: 95, color: 'var(--warning-500)' },
     { name: '微信推广', value: 78, color: 'var(--destructive-500)' },
-    { name: '其他', value: 52, color: '#722ed1' },
+    { name: '其他', value: 52, color: 'rgb(var(--purple-6))' },
   ];
 
   const projectCostData = [
@@ -66,218 +65,194 @@ export function Reports() {
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
-        <Select defaultValue="current-month" style={{ width: 180 }}>
-          <Select.Option value="current-month">本月</Select.Option>
-          <Select.Option value="last-month">上月</Select.Option>
-          <Select.Option value="current-quarter">本季度</Select.Option>
-          <Select.Option value="current-year">本年度</Select.Option>
-        </Select>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="数据报表"
+        description="按销售、交付与财务维度汇总经营数据。"
+        actions={(
+          <Select defaultValue="current-month" style={{ width: 180 }}>
+            <Select.Option value="current-month">本月</Select.Option>
+            <Select.Option value="last-month">上月</Select.Option>
+            <Select.Option value="current-quarter">本季度</Select.Option>
+            <Select.Option value="current-year">本年度</Select.Option>
+          </Select>
+        )}
+      />
 
-      <Tabs defaultActiveTab="sales">
-        <TabPane key="sales" title="销售分析">
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="总线索数"
-                  value={450}
-                  suffix={
-                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
-                      <IconArrowRise />
-                      12.5%
-                    </span>
-                  }
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="签约数"
-                  value={42}
-                  suffix={
-                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
-                      <IconArrowRise />
-                      18.2%
-                    </span>
-                  }
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="签约金额"
-                  value="560万"
-                  suffix={
-                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
-                      <IconArrowRise />
-                      15.7%
-                    </span>
-                  }
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card>
-                <Statistic
-                  title="转化率"
-                  value="9.3%"
-                  suffix={
-                    <span style={{ fontSize: 14, color: 'var(--success-500)' }}>
-                      <IconArrowRise />
-                      2.1%
-                    </span>
-                  }
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={16}>
-              <Card title="销售漏斗分析">
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={salesFunnelData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="stage" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="var(--primary)" name="数量" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card title="线索来源分布">
-                <ResponsiveContainer width="100%" height={350}>
-                  <PieChart>
-                    <Pie
-                      data={leadSourceData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(entry) => `${entry.name}: ${entry.value}`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {leadSourceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={24}>
-              <Card title="销售趋势">
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={salesTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      key="leads-line"
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="leads"
-                      stroke="var(--primary)"
-                      name="线索数"
-                    />
-                    <Line
-                      key="contracts-line"
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="contracts"
-                      stroke="var(--success-500)"
-                      name="签约数"
-                    />
-                    <Line
-                      key="amount-line"
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="var(--warning-500)"
-                      name="签约金额(万)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
-        </TabPane>
-
-        <TabPane key="performance" title="人员业绩">
-          <Card title="销售人员业绩排行">
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={salesPersonData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="leads" fill="var(--primary)" name="线索数" />
-                <Bar dataKey="contracts" fill="var(--success-500)" name="签约数" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card title="销售金额排行" style={{ marginTop: 16 }}>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={salesPersonData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="amount" fill="var(--warning-500)" name="签约金额(万)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </TabPane>
-
-        <TabPane key="project" title="项目成本">
-          <Card title="项目成本与利润分析">
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={projectCostData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="contract" fill="var(--primary)" name="合同金额(万)" />
-                <Bar dataKey="cost" fill="var(--destructive-500)" name="成本(万)" />
-                <Bar dataKey="profit" fill="var(--success-500)" name="利润(万)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card title="项目利润率分析" style={{ marginTop: 16 }}>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={projectCostData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="profitRate" fill="var(--success-500)" name="利润率(%)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </TabPane>
-      </Tabs>
-    </div>
+      <SectionTabs
+        defaultActiveKey={"sales"}
+        items={[
+          {
+            key: 'sales',
+            label: "销售分析",
+            content: (
+              <>
+                  <MetricGrid
+                    items={[
+                      { key: 'leads', label: '总线索数', value: '450', detail: <><IconArrowRise /> 12.5%</> },
+                      { key: 'signed', label: '签约数', value: '42', detail: <><IconArrowRise /> 18.2%</> },
+                      { key: 'amount', label: '签约金额', value: '560 万', detail: <><IconArrowRise /> 15.7%</> },
+                      { key: 'rate', label: '转化率', value: '9.3%', detail: <><IconArrowRise /> 2.1%</> },
+                    ]}
+                  />
+        
+                  <Row gutter={16} style={{ marginBottom: 16 }}>
+                    <Col span={16}>
+                      <SectionCard title="销售漏斗分析">
+                        <ResponsiveContainer width="100%" height={350}>
+                          <BarChart data={salesFunnelData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="stage" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="count" fill="var(--primary)" name="数量" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </SectionCard>
+                    </Col>
+                    <Col span={8}>
+                      <SectionCard title="线索来源分布">
+                        <ResponsiveContainer width="100%" height={350}>
+                          <PieChart>
+                            <Pie
+                              data={leadSourceData}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={(entry) => `${entry.name}: ${entry.value}`}
+                              outerRadius={100}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              {leadSourceData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </SectionCard>
+                    </Col>
+                  </Row>
+        
+                  <Row gutter={16}>
+                    <Col span={24}>
+                      <SectionCard title="销售趋势">
+                        <ResponsiveContainer width="100%" height={350}>
+                          <LineChart data={salesTrendData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip />
+                            <Legend />
+                            <Line
+                              key="leads-line"
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="leads"
+                              stroke="var(--primary)"
+                              name="线索数"
+                            />
+                            <Line
+                              key="contracts-line"
+                              yAxisId="left"
+                              type="monotone"
+                              dataKey="contracts"
+                              stroke="var(--success-500)"
+                              name="签约数"
+                            />
+                            <Line
+                              key="amount-line"
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="amount"
+                              stroke="var(--warning-500)"
+                              name="签约金额(万)"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </SectionCard>
+                    </Col>
+                  </Row>
+                
+              </>
+            ),
+          },
+          {
+            key: 'performance',
+            label: "人员业绩",
+            content: (
+              <>
+                  <SectionCard title="销售人员业绩排行">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={salesPersonData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="leads" fill="var(--primary)" name="线索数" />
+                        <Bar dataKey="contracts" fill="var(--success-500)" name="签约数" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+        
+                  <SectionCard title="销售金额排行" style={{ marginTop: 16 }}>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={salesPersonData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="amount" fill="var(--warning-500)" name="签约金额(万)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+                
+              </>
+            ),
+          },
+          {
+            key: 'project',
+            label: "项目成本",
+            content: (
+              <>
+                  <SectionCard title="项目成本与利润分析">
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={projectCostData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="contract" fill="var(--primary)" name="合同金额(万)" />
+                        <Bar dataKey="cost" fill="var(--destructive-500)" name="成本(万)" />
+                        <Bar dataKey="profit" fill="var(--success-500)" name="利润(万)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+        
+                  <SectionCard title="项目利润率分析" style={{ marginTop: 16 }}>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={projectCostData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="profitRate" fill="var(--success-500)" name="利润率(%)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+                
+              </>
+            ),
+          },
+        ]}
+      />
+    </PageShell>
   );
 }

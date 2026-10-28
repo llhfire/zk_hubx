@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Button, Card, Tag, Typography } from '@arco-design/web-react';
+import { Button, Typography } from '@/design-system';
+import { DateText, SectionCard, StatusTag, resolveStatus } from '@/design-system';
 import {
-  BLOCKER_SEVERITY_COLOR,
-  BLOCKER_SEVERITY_LABEL,
-  BUSINESS_LINE_COLOR,
-  PROJECT_RISK_LEVEL_COLOR,
-  PROJECT_RISK_LEVEL_LABEL,
+  BLOCKER_SEVERITY_META,
+  BUSINESS_LINE_META,
+  PROJECT_RISK_LEVEL_META,
 } from '../types';
 import type { Project } from '../mockData';
 
@@ -40,30 +39,28 @@ export function ProjectArchiveSummary({
   const activeBlockers = (project.blockers ?? []).filter((item) => !item.resolved);
 
   return (
-    <Card size="small" className="project-archive-summary">
+    <SectionCard className="project-archive-summary">
       <div className="project-archive-summary__rows">
         <div className="project-archive-summary__row">
           <div><Text type="secondary">客户</Text><strong>{customerName || '-'}</strong></div>
-          <div><Text type="secondary">业务线</Text><Tag size="small" color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag></div>
+          <div><Text type="secondary">业务线</Text><StatusTag meta={resolveStatus(BUSINESS_LINE_META, project.businessLine)} /></div>
           <div><Text type="secondary">签约主体</Text><strong>{project.entity}</strong></div>
           <div><Text type="secondary">项目经理</Text><strong>{project.owner || '待指派'}</strong></div>
         </div>
         <div className="project-archive-summary__row project-archive-summary__row--secondary">
-          <div><Text type="secondary">项目周期</Text><span>{project.startDate || '-'} 至 {project.expectedEndDate || '-'}</span></div>
+          <div><Text type="secondary">项目周期</Text><span><DateText value={project.startDate} /> 至 <DateText value={project.expectedEndDate} /></span></div>
           <div><Text type="secondary">预算工时</Text><span>{budgetHoursLabel}</span></div>
           <div><Text type="secondary">销售</Text><span>{project.salesUsers.join('、') || '-'}</span></div>
-          <div><Text type="secondary">创建时间</Text><span>{project.createdAt}</span></div>
+          <div><Text type="secondary">创建时间</Text><span><DateText value={project.createdAt} mode="datetime" /></span></div>
         </div>
       </div>
 
       {(activeBlockers.length > 0 || (project.riskLevel && project.riskLevel !== 'none')) && (
         <div className="project-archive-summary__alert" id="project-risk">
           {project.riskLevel && project.riskLevel !== 'none' && (
-            <Tag size="small" color={PROJECT_RISK_LEVEL_COLOR[project.riskLevel]}>
-              {PROJECT_RISK_LEVEL_LABEL[project.riskLevel]}
-            </Tag>
+            <StatusTag meta={resolveStatus(PROJECT_RISK_LEVEL_META, project.riskLevel)} />
           )}
-          {activeBlockers.length > 0 && <Tag size="small" color="red">{activeBlockers.length} 项阻塞</Tag>}
+          {activeBlockers.length > 0 && <StatusTag tone="danger">{activeBlockers.length} 项阻塞</StatusTag>}
           <span>{activeBlockers[0]?.title || project.riskNote || '风险处理中'}</span>
         </div>
       )}
@@ -85,11 +82,9 @@ export function ProjectArchiveSummary({
               <div className="project-archive-summary__blockers">
                 {activeBlockers.map((blocker) => (
                   <div key={blocker.id}>
-                    <Tag size="small" color={BLOCKER_SEVERITY_COLOR[blocker.severity]}>
-                      {BLOCKER_SEVERITY_LABEL[blocker.severity]}
-                    </Tag>
+                    <StatusTag meta={resolveStatus(BLOCKER_SEVERITY_META, blocker.severity)} />
                     <span>{blocker.title}</span>
-                    <Text type="secondary">预计解除：{blocker.expectedResolveDate || blocker.customerEta || '未设置'}</Text>
+                    <Text type="secondary">预计解除：<DateText value={blocker.expectedResolveDate || blocker.customerEta} placeholder="未设置" /></Text>
                   </div>
                 ))}
               </div>
@@ -103,6 +98,6 @@ export function ProjectArchiveSummary({
           )}
         </div>
       )}
-    </Card>
+    </SectionCard>
   );
 }

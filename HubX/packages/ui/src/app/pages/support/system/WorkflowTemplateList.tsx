@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
   Button,
-  Card,
   Form,
   Input,
   Message,
@@ -12,13 +11,19 @@ import {
   Select,
   Space,
   Switch,
-  Table,
-  Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconArrowRight, IconCopy, IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell } from '@/design-system';
+} from '@/design-system';
+import { IconArrowRight, IconCopy, IconDelete, IconEdit, IconPlus } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  PageHeader,
+  PageShell,
+  StatusTag,
+  type StatusMap,
+  SectionCard,
+} from '@/design-system';
 import {
   loadBusinessApprovals,
   loadWorkflowTemplates,
@@ -30,24 +35,24 @@ import {
 const Text = Typography.Text;
 type ApprovalNode = WorkflowTemplateDefinition['nodes'][number];
 
-const strategyColor: Record<ApproveStrategy, string> = {
-  单人审批: 'arcoblue',
-  或签: 'orange',
-  会签: 'purple',
+const APPROVE_STRATEGY: StatusMap<ApproveStrategy> = {
+  单人审批: { label: '单人审批', tone: 'info' },
+  或签: { label: '或签', tone: 'warning' },
+  会签: { label: '会签', tone: 'purple' },
 };
 
 function FlowPreview({ nodes }: { nodes: ApprovalNode[] }) {
   return (
     <div className="flex items-center flex-wrap gap-1">
-      <Tag color="green">发起</Tag>
+      <StatusTag tone="success">发起</StatusTag>
       {nodes.map((node) => (
         <span key={node.id} className="flex items-center gap-1">
           <IconArrowRight style={{ color: 'var(--color-text-4)' }} />
-          <Tag color={strategyColor[node.strategy]}>{node.name}</Tag>
+          <StatusTag tone={APPROVE_STRATEGY[node.strategy].tone}>{node.name}</StatusTag>
         </span>
       ))}
       <IconArrowRight style={{ color: 'var(--color-text-4)' }} />
-      <Tag color="gray">结束</Tag>
+      <StatusTag tone="neutral">结束</StatusTag>
     </div>
   );
 }
@@ -171,7 +176,7 @@ export function WorkflowTemplateList() {
         <Switch size="small" checked={template.enabled} onChange={(value) => toggleTemplate(template, value)} />
       ),
     },
-    { title: '最后更新', dataIndex: 'updatedAt', width: 130 },
+    { title: '最后更新', dataIndex: 'updatedAt', width: 130, render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       width: 120,
@@ -204,9 +209,7 @@ export function WorkflowTemplateList() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={openCreate}>新建审批模板</Button>}
       />
 
-      <Card bordered={false}>
-        <Table rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 960 }} />
-      </Card>
+      <DataTable rowKey="id" columns={columns} data={templates} pagination={false} scroll={{ x: 960 }} />
 
       <Modal
         title={editing ? '编辑审批模板' : '新建审批模板'}
@@ -232,9 +235,9 @@ export function WorkflowTemplateList() {
         </div>
         <Space direction="vertical" size={10} style={{ width: '100%' }}>
           {nodes.map((node, index) => (
-            <Card key={node.id} size="small" bodyStyle={{ padding: 12 }}>
+            <SectionCard key={node.id} size="small" bodyStyle={{ padding: 12 }}>
               <div className="flex items-center gap-3">
-                <Tag color="arcoblue">节点 {index + 1}</Tag>
+                <StatusTag tone="info">节点 {index + 1}</StatusTag>
                 <Input
                   value={node.name}
                   onChange={(value) => updateNode(node.id, 'name', value)}
@@ -254,7 +257,7 @@ export function WorkflowTemplateList() {
                   onClick={() => setNodes((current) => current.filter((item) => item.id !== node.id))}
                 />
               </div>
-            </Card>
+            </SectionCard>
           ))}
           <Button
             type="dashed"

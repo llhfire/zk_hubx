@@ -1,4 +1,4 @@
-import { Button, Result } from '@arco-design/web-react';
+import { Button, PageHeader, PageShell, Result } from '@/design-system';
 import { useNavigate } from 'react-router';
 
 /**
@@ -11,15 +11,17 @@ import { useNavigate } from 'react-router';
 export function NotFound() {
   const navigate = useNavigate();
   return (
-    <Result
-      status="404"
-      title="页面不存在"
-      subTitle="地址可能有误，或该页面已被移除。"
-      extra={
-        <Button type="primary" onClick={() => navigate('/')}>
-          返回工作台
-        </Button>
-      }
-    />
+    <PageShell>
+      <PageHeader title="页面不存在" />
+      <Result
+        status="404"
+        subTitle="地址可能有误，或该页面已被移除。"
+        extra={
+          <Button type="primary" onClick={() => navigate('/')}>
+            返回工作台
+          </Button>
+        }
+      />
+    </PageShell>
   );
 }

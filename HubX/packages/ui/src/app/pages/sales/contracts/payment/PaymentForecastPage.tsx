@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Space } from '@arco-design/web-react';
+import { Button, Space } from '@/design-system';
 import { PaymentGantt } from './PaymentGantt';
 import { CashflowForecast } from './CashflowForecast';
 import { ForecastDetailTable } from './ForecastDetailTable';

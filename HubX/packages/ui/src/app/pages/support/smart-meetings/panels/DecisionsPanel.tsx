@@ -6,8 +6,9 @@
  * - AI 解析结果先填充此处（草稿态），人工增删改
  */
 
-import { Card, Button, Input, Space, Typography } from '@arco-design/web-react';
-import { IconPlus, IconDelete, IconUp, IconDown } from '@arco-design/web-react/icon';
+import { Button, Input, Space, Typography } from '@/design-system';
+import { IconPlus, IconDelete, IconUp, IconDown } from '@/design-system';
+import { SectionCard } from '@/design-system';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -42,10 +43,9 @@ export function DecisionsPanel({ decisions, readonly, onChange }: DecisionsPanel
   };
 
   return (
-    <Card
-      size="small"
+    <div style={{ marginBottom: 12 }}>
+    <SectionCard
       title="💡 核心决议"
-      style={{ marginBottom: 12 }}
       extra={
         !readonly && (
           <Button size="mini" type="text" icon={<IconPlus />} onClick={handleAdd}>
@@ -55,18 +55,18 @@ export function DecisionsPanel({ decisions, readonly, onChange }: DecisionsPanel
       }
     >
       {decisions.length === 0 ? (
-        <Text style={{ fontSize: 13, color: 'var(--grey-400)' }}>
+        <Text style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--grey-400)' }}>
           {readonly ? '无核心决议' : '点击「添加」录入核心决议'}
         </Text>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {decisions.map((d, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span style={{ fontSize: 13, color: 'var(--grey-400)', marginTop: 6, minWidth: 20 }}>
+              <span style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--grey-400)', marginTop: 6, minWidth: 20 }}>
                 {i + 1}.
               </span>
               {readonly ? (
-                <Text style={{ flex: 1, fontSize: 13 }}>{d}</Text>
+                <Text style={{ flex: 1, fontSize: 'var(--ds-text-dense)' }}>{d}</Text>
               ) : (
                 <>
                   <TextArea
@@ -105,6 +105,7 @@ export function DecisionsPanel({ decisions, readonly, onChange }: DecisionsPanel
           ))}
         </div>
       )}
-    </Card>
+    </SectionCard>
+    </div>
   );
 }

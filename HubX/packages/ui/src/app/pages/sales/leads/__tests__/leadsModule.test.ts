@@ -1,3 +1,4 @@
+import { GRADE_TONE } from '@/design-system';
 // ============================================================
 // 线索管理模块 — 测试
 // ============================================================
@@ -8,7 +9,6 @@ import {
   CLUE_TYPE_LABEL,
   SALES_STATUS_LIST,
   CUSTOMER_LEVEL_LIST,
-  CUSTOMER_LEVEL_COLOR,
   LEAD_SOURCE_LIST,
   QUICK_FILTER_LABEL,
 } from '../types';
@@ -55,11 +55,11 @@ describe('线索类型定义', () => {
     expect(CUSTOMER_LEVEL_LIST).toEqual(['S', 'A', 'B', 'C']);
   });
 
-  it('CUSTOMER_LEVEL_COLOR 有对应颜色', () => {
-    expect(CUSTOMER_LEVEL_COLOR.S).toBe('green');
-    expect(CUSTOMER_LEVEL_COLOR.A).toBe('blue');
-    expect(CUSTOMER_LEVEL_COLOR.B).toBe('gray');
-    expect(CUSTOMER_LEVEL_COLOR.C).toBe('gray');
+  it('等级语义色由设计系统 GRADE_TONE 提供（S 是 success，不是 danger）', () => {
+    expect(GRADE_TONE.S).toBe('success');
+    expect(GRADE_TONE.A).toBe('info');
+    expect(GRADE_TONE.B).toBe('neutral');
+    expect(GRADE_TONE.C).toBe('neutral');
   });
 
   it('LEAD_SOURCE_LIST 与渠道数据字典对齐（5 值英文 key）', () => {

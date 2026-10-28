@@ -1,27 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
+  AlertBanner,
   Button,
-  Card,
-  Descriptions,
-  Empty,
+  DataTable,
+  DescriptionsCard,
+  EmptyState,
+  FileList,
+  FilterBar,
   Form,
-  Grid,
-  Input,
-  Message,
-  Modal,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tree,
-  Tooltip,
-  Typography,
-  Upload,
-} from '@arco-design/web-react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
-import { CURRENT_LOGIN_USER } from '../../../currentUser';
-import {
+  FormGrid,
   IconBranch,
   IconDelete,
   IconDownload,
@@ -31,12 +18,27 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
-} from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+  Input,
+  Message,
+  MetricGrid,
+  Modal,
+  PageHeader,
+  PageShell,
+  Popconfirm,
+  Select,
+  SectionCard,
+  Space,
+  StatusTag,
+  Tree,
+  Tooltip,
+  Typography,
+  UploadPanel,
+  type StatusMeta,
+  type UploadItem,
+} from '@/design-system';
+import { CURRENT_LOGIN_USER } from '../../../currentUser';
 import '../../support/system/supportDomainLists.css';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const FormItem = Form.Item;
 const SelectOption = Select.Option;
 const Text = Typography.Text;
@@ -124,15 +126,15 @@ const CATEGORY_LABELS: Record<DocCategory, string> = {
   other: '其他',
 };
 
-const PERMISSION_META: Record<Permission, { label: string; color: string; description: string }> = {
+const PERMISSION_META: Record<Permission, StatusMeta & { description: string }> = {
   internal: {
     label: '内部公开',
-    color: 'arcoblue',
+    tone: 'info',
     description: '仅归属部门及下级组织成员可查看',
   },
   all: {
     label: '所有人可查看',
-    color: 'green',
+    tone: 'success',
     description: 'HubX 内所有员工均可查看',
   },
 };
@@ -310,21 +312,21 @@ export function KnowledgeBase() {
       dataIndex: 'title',
       render: (_: unknown, document: KnowledgeDocument) => (
         <div className="flex items-center gap-3">
-          <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--color-primary-light-1)', color: 'rgb(var(--primary-6))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: 'var(--color-primary-light-1)', color: 'rgb(var(--primary-6))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <IconFile />
           </div>
-          <div style={{ minWidth: 0 }}>
-            <Button type="text" style={{ height: 'auto', padding: 0, fontWeight: 500 }} onClick={() => openDocument(document)}>
+          <Space direction="vertical" size={0} align="start" style={{ minWidth: 0 }}>
+            <Button type="text" size="small" onClick={() => openDocument(document)}>
               {document.title}
             </Button>
-            <button
-              type="button"
+            <Button
+              type="text"
+              size="mini"
               onClick={() => openDocument(document)}
-              style={{ display: 'block', marginTop: 4, padding: 0, border: 0, background: 'transparent', color: 'var(--color-text-3)', fontSize: 12, cursor: 'pointer' }}
             >
-              {document.fileName} · {document.fileSize}
-            </button>
-          </div>
+              <Text type="secondary">{document.fileName} · {document.fileSize}</Text>
+            </Button>
+          </Space>
         </div>
       ),
     },
@@ -332,7 +334,7 @@ export function KnowledgeBase() {
       title: '分类',
       dataIndex: 'category',
       width: 105,
-      render: (category: DocCategory) => <Tag>{CATEGORY_LABELS[category]}</Tag>,
+      render: (category: DocCategory) => <StatusTag>{CATEGORY_LABELS[category]}</StatusTag>,
     },
     {
       title: '归属组织',
@@ -343,7 +345,7 @@ export function KnowledgeBase() {
       title: '查看权限',
       dataIndex: 'permission',
       width: 125,
-      render: (permission: Permission) => <Tag color={PERMISSION_META[permission].color}>{PERMISSION_META[permission].label}</Tag>,
+      render: (permission: Permission) => <StatusTag meta={PERMISSION_META[permission]} />,
     },
     {
       title: '上传人',
@@ -398,7 +400,7 @@ export function KnowledgeBase() {
       ]} />
 
       <div className="knowledge-base__layout">
-        <Card
+        <SectionCard
           className="knowledge-base__organization-card"
           title={<Space><IconBranch /><span>组织架构</span></Space>}
           style={{ position: 'sticky', top: 16, borderRadius: 'var(--radius-lg)' }}
@@ -419,10 +421,10 @@ export function KnowledgeBase() {
                   style={{
                     minWidth: 22,
                     padding: '1px 6px',
-                    borderRadius: 10,
+                    borderRadius: 'var(--radius-lg)',
                     background: 'var(--color-fill-2)',
                     color: 'var(--color-text-3)',
-                    fontSize: 12,
+                    fontSize: 'var(--text-xs)',
                     lineHeight: '18px',
                     textAlign: 'center',
                   }}
@@ -433,10 +435,10 @@ export function KnowledgeBase() {
               );
             }}
           />
-        </Card>
+        </SectionCard>
 
         <Space direction="vertical" size={16} style={{ width: '100%', minWidth: 0 }}>
-          <Card
+          <SectionCard
             title={
               <Space>
                 <IconFolder />
@@ -448,7 +450,7 @@ export function KnowledgeBase() {
           >
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border-2)' }}>
               <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置</Button> : undefined}>
-                <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} allowClear prefix={<IconSearch />} placeholder="搜索文档名称或文件名" />
+                <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} allowClear prefix={<IconSearch />} aria-label="搜索文档名称或文件名" placeholder="搜索文档名称或文件名" />
               </FilterBar>
               <div className="knowledge-base__categories" style={{ display: 'flex', gap: 8, marginTop: 14 }}>
                 {(['all', 'tech', 'sop', 'template', 'review', 'other'] as const).map((category) => (
@@ -456,6 +458,7 @@ export function KnowledgeBase() {
                     key={category}
                     size="small"
                     type={activeCategory === category ? 'primary' : 'secondary'}
+                    aria-pressed={activeCategory === category}
                     onClick={() => setActiveCategory(category)}
                   >
                     {category === 'all' ? '全部文档' : CATEGORY_LABELS[category]}
@@ -467,9 +470,9 @@ export function KnowledgeBase() {
             <div className="support-domain-list__result-summary" style={{ padding: '12px 20px 0' }}><span>{selectedLabel}共 {filteredDocuments.length} 份文档</span>{filtersActive && <span>已按组织、分类或关键词筛选</span>}</div>
 
             {filteredDocuments.length === 0 ? (
-              <div className="support-domain-list__empty"><Empty description="当前条件下暂无文档" />{filtersActive && <Button type="text" onClick={resetFilters}>清除筛选</Button>}</div>
+              <div className="support-domain-list__empty"><EmptyState description="当前条件下暂无文档" />{filtersActive && <Button type="text" onClick={resetFilters}>清除筛选</Button>}</div>
             ) : (
-              <Table
+              <DataTable
                 columns={columns}
                 data={filteredDocuments}
                 rowKey="id"
@@ -478,7 +481,7 @@ export function KnowledgeBase() {
                 scroll={{ x: 900 }}
               />
             )}
-          </Card>
+          </SectionCard>
         </Space>
       </div>
 
@@ -494,47 +497,39 @@ export function KnowledgeBase() {
         <Form form={form} layout="vertical">
           {!editingDoc ? (
             <FormItem label="选择文件" required>
-              <Upload
-                drag
+              <UploadPanel
                 autoUpload={false}
                 limit={1}
                 fileList={fileList}
                 onChange={setFileList}
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.png,.jpg,.jpeg,.gif,.webp,.svg,.zip,.rar,.7z,.exe,.dmg,.apk"
-                tip="支持文档、图片、压缩包及安装包，当前为前端模拟上传"
+                description="支持文档、图片、压缩包及安装包，当前为前端模拟上传"
               />
             </FormItem>
           ) : (
             <FormItem label="附件">
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 {!originalAttachmentRemoved ? (
-                  <div className="flex items-center justify-between" style={{ padding: '10px 12px', border: '1px solid var(--color-border-2)', borderRadius: 6, background: 'var(--color-fill-1)' }}>
-                    <Space>
-                      <IconFile style={{ color: 'rgb(var(--primary-6))' }} />
-                      <div>
-                        <div style={{ fontSize: 14 }}>{editingDoc.fileName}</div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>{editingDoc.fileSize}</Text>
-                      </div>
-                    </Space>
-                    <Button type="text" size="small" status="danger" icon={<IconDelete />} onClick={() => setOriginalAttachmentRemoved(true)}>
-                      删除
-                    </Button>
-                  </div>
+                  <FileList items={[{
+                    key: editingDoc.id,
+                    name: editingDoc.fileName,
+                    meta: editingDoc.fileSize,
+                    onDelete: () => setOriginalAttachmentRemoved(true),
+                  }]} />
                 ) : null}
                 {originalAttachmentRemoved && fileList.length === 0 ? (
-                  <div style={{ padding: '8px 12px', borderRadius: 6, background: 'var(--color-danger-light-1)', color: 'rgb(var(--danger-6))', fontSize: 14 }}>
+                  <AlertBanner tone="danger" compact>
                     原附件已移除，请上传新文件后保存。
-                  </div>
+                  </AlertBanner>
                 ) : null}
                 {originalAttachmentRemoved ? (
-                  <Upload
-                    drag
+                  <UploadPanel
                     autoUpload={false}
                     limit={1}
                     fileList={fileList}
                     onChange={setFileList}
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.csv,.png,.jpg,.jpeg,.gif,.webp,.svg,.zip,.rar,.7z,.exe,.dmg,.apk"
-                    tip="请选择新的附件"
+                    hint="请选择新的附件"
                   />
                 ) : null}
               </Space>
@@ -543,29 +538,25 @@ export function KnowledgeBase() {
           <FormItem label="文档名称" field="title" rules={[{ required: true, message: '请输入文档名称' }]}>
             <Input placeholder="请输入便于检索的文档名称" />
           </FormItem>
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="归属组织">
-                <div style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', borderRadius: 4, background: 'var(--color-fill-2)', color: 'var(--color-text-2)' }}>
+                <div style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', borderRadius: 'var(--radius-xs)', background: 'var(--color-fill-2)', color: 'var(--color-text-2)' }}>
                   {editingDoc?.department || selectedLabel}
                 </div>
               </FormItem>
-            </Col>
-            <Col span={12}>
               <FormItem label="文档分类" field="category" rules={[{ required: true, message: '请选择文档分类' }]}>
                 <Select placeholder="请选择分类">
                   {Object.entries(CATEGORY_LABELS).map(([key, label]) => <SelectOption key={key} value={key}>{label}</SelectOption>)}
                 </Select>
               </FormItem>
-            </Col>
-          </Row>
+          </FormGrid>
           <FormItem label="查看权限" field="permission" rules={[{ required: true, message: '请选择查看权限' }]}>
             <Select placeholder="请选择查看权限">
               {Object.entries(PERMISSION_META).map(([key, meta]) => (
                 <SelectOption key={key} value={key}>
                   <div>
                     <div>{meta.label}</div>
-                    <div style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{meta.description}</div>
+                    <div style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>{meta.description}</div>
                   </div>
                 </SelectOption>
               ))}
@@ -592,32 +583,32 @@ export function KnowledgeBase() {
         {previewDoc && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Space wrap>
-              <Tag>{CATEGORY_LABELS[previewDoc.category]}</Tag>
-              <Tag color={PERMISSION_META[previewDoc.permission].color}>{PERMISSION_META[previewDoc.permission].label}</Tag>
+              <StatusTag>{CATEGORY_LABELS[previewDoc.category]}</StatusTag>
+              <StatusTag meta={PERMISSION_META[previewDoc.permission]} />
             </Space>
-            <Descriptions
-              column={2}
-              data={[
-                { label: '文件名称', value: previewDoc.fileName },
-                { label: '文件大小', value: previewDoc.fileSize },
-                { label: '归属组织', value: previewDoc.department },
-                { label: '上传人', value: previewDoc.author },
-                { label: '更新时间', value: previewDoc.updatedAt },
-                { label: '阅读次数', value: `${previewDoc.views + 1} 次` },
-              ]}
+            <DescriptionsCard
+              columns={2}
+              items={[
+              { key: '文件名称', label: '文件名称', value: previewDoc.fileName },
+              { key: '文件大小', label: '文件大小', value: previewDoc.fileSize },
+              { key: '归属组织', label: '归属组织', value: previewDoc.department },
+              { key: '上传人', label: '上传人', value: previewDoc.author },
+              { key: '更新时间', label: '更新时间', value: previewDoc.updatedAt },
+              { key: '阅读次数', label: '阅读次数', value: `${previewDoc.views + 1} 次` },
+            ]}
             />
             {previewUrl && IMAGE_EXTENSIONS.has(getFileExtension(previewDoc.fileName)) ? (
-              <div style={{ height: 460, padding: 16, borderRadius: 8, background: 'var(--color-fill-1)', textAlign: 'center' }}>
+              <div style={{ height: 460, padding: 16, borderRadius: 'var(--radius-md)', background: 'var(--color-fill-1)', textAlign: 'center' }}>
                 <img src={previewUrl} alt={previewDoc.title} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
               </div>
             ) : previewUrl && getFileExtension(previewDoc.fileName) === 'pdf' ? (
-              <iframe title={previewDoc.title} src={previewUrl} style={{ width: '100%', height: 460, border: '1px solid var(--color-border-2)', borderRadius: 8 }} />
+              <iframe title={previewDoc.title} src={previewUrl} style={{ width: '100%', height: 460, border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)' }} />
             ) : (
-              <div style={{ minHeight: 300, padding: 32, borderRadius: 8, background: 'var(--color-fill-1)' }}>
-                <div style={{ maxWidth: 600, margin: '0 auto', padding: 28, background: 'var(--color-bg-2)', border: '1px solid var(--color-border-2)', borderRadius: 8, boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)' }}>
+              <div style={{ minHeight: 300, padding: 32, borderRadius: 'var(--radius-md)', background: 'var(--color-fill-1)' }}>
+                <div style={{ maxWidth: 600, margin: '0 auto', padding: 28, background: 'var(--color-bg-2)', border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)' }}>
                   <Typography.Title heading={5} style={{ marginTop: 0 }}>{previewDoc.title}</Typography.Title>
                   <Text type="secondary">{previewDoc.description || '暂无文档说明'}</Text>
-                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--color-border-2)', color: 'var(--color-text-3)', fontSize: 12 }}>
+                  <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--color-border-2)', color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>
                     当前为前端模拟预览；正式接入后将在此加载文件实际内容。
                   </div>
                 </div>

@@ -1,9 +1,7 @@
-import { useState } from 'react';
-import { Button, Upload, Message, List, Typography } from '@arco-design/web-react';
-import { IconUpload, IconFile, IconDelete } from '@arco-design/web-react/icon';
+import { Button, Upload, Message } from '@/design-system';
+import { IconUpload } from '@/design-system';
+import { FileList } from '@/design-system';
 import { canUploadScan, type ScanFile } from '../fileFlow';
-
-const { Text } = Typography;
 
 interface Props {
   quoteStatus: string;
@@ -51,29 +49,13 @@ export function ScanUpload({ quoteStatus, scans, onScansChange }: Props) {
         <Button icon={<IconUpload />}>上传扫描件</Button>
       </Upload>
       {scans.length > 0 && (
-        <List
-          style={{ marginTop: 12 }}
-          dataSource={scans}
-          render={(scan) => (
-            <List.Item
-              key={scan.id}
-              actions={[
-                <Button
-                  key="del"
-                  type="text"
-                  size="small"
-                  icon={<IconDelete />}
-                  onClick={() => handleRemove(scan.id)}
-                />,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={<IconFile />}
-                title={scan.name}
-                description={`上传于 ${scan.uploadedAt}`}
-              />
-            </List.Item>
-          )}
+        <FileList
+          items={scans.map((scan) => ({
+            key: scan.id,
+            name: scan.name,
+            meta: `上传于 ${scan.uploadedAt}`,
+            onDelete: () => handleRemove(scan.id),
+          }))}
         />
       )}
     </div>

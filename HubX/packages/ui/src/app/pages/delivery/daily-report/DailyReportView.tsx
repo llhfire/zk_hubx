@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Card, Tree, Badge, Collapse, Table, DatePicker, Button, Tag } from '@arco-design/web-react';
+import { Tree, Badge, Collapse, DatePicker, Button } from '@/design-system';
+import { DataTable, DateText, EmptyState, SectionCard, StatusTag } from '@/design-system';
 import { DailyReportDetail } from './DailyReportDetail';
 import { DailyReport, DailyReportComment } from './types';
 import {
@@ -61,7 +62,7 @@ export function DailyReportView() {
     return (
       <span>
         {node.title}
-        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 12 }}>
+        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>
           ({node.reported}/{node.total})
         </span>
       </span>
@@ -78,31 +79,32 @@ export function DailyReportView() {
   return (
     <PageShell breadcrumbs={[{ label: '日报', to: '/dailyreport/list' }, { label: '日报列表', to: '/dailyreport/list' }, { label: '员工日报视图' }]}>
     <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 146px)' }}>
-      <Card
-        style={{ width: 320, flexShrink: 0 }}
-        title="组织架构"
-        extra={
-          <DatePicker
-            value={selectedDate}
-            onChange={(dateString) => setSelectedDate(dateString)}
-            style={{ width: 140 }}
-            format="YYYY-MM-DD"
+      <div style={{ width: 320, flexShrink: 0 }}>
+        <SectionCard
+          title="组织架构"
+          extra={
+            <DatePicker
+              value={selectedDate}
+              onChange={(dateString) => setSelectedDate(dateString)}
+              style={{ width: 140 }}
+              format="YYYY-MM-DD"
+            />
+          }
+        >
+          <Tree
+            treeData={mockDailyReportOrgData}
+            expandedKeys={expandedKeys}
+            onExpand={setExpandedKeys}
+            onSelect={handleSelect}
+            renderTitle={renderTreeTitle}
           />
-        }
-      >
-        <Tree
-          treeData={mockDailyReportOrgData}
-          expandedKeys={expandedKeys}
-          onExpand={setExpandedKeys}
-          onSelect={handleSelect}
-          renderTitle={renderTreeTitle}
-        />
-      </Card>
+        </SectionCard>
+      </div>
 
-      <Card
-        style={{ flex: 1, overflow: 'auto' }}
-        title={selectedEmployee ? `员工日报历史` : '选择员工查看日报'}
-      >
+      <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+        <SectionCard
+          title={selectedEmployee ? `员工日报历史` : '选择员工查看日报'}
+        >
         {selectedEmployee && mockDailyReportsByEmployee[selectedEmployee] ? (
           <Collapse defaultActiveKey={['0']}>
             {mockDailyReportsByEmployee[selectedEmployee].map((report, index) => {
@@ -115,8 +117,8 @@ export function DailyReportView() {
                 name={index.toString()}
                 header={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{report.reportDate} <Tag size="small" color="arcoblue">{getDailyReportTemplateLabel(report)}</Tag></span>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+                    <span><DateText value={report.reportDate} /> <StatusTag size="small" tone="info">{getDailyReportTemplateLabel(report)}</StatusTag></span>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                       工作项: {getDailyReportWorkTypeText(report)} | 总工时: {totalHours}h
                     </span>
                   </div>
@@ -125,7 +127,7 @@ export function DailyReportView() {
                 <div>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>工作项明细</div>
-                    <Table
+                    <DataTable
                       columns={[
                         { title: '类型', dataIndex: 'type', render: (value) => WORK_ITEM_LABELS[value as keyof typeof WORK_ITEM_LABELS] || value },
                         {
@@ -142,6 +144,7 @@ export function DailyReportView() {
                         { title: '工时(h)', dataIndex: 'hours', width: 100 },
                       ]}
                       data={workItems}
+                      rowKey="id"
                       pagination={false}
                       size="small"
                     />
@@ -149,14 +152,14 @@ export function DailyReportView() {
 
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>需协助事项</div>
-                    <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+                    <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
                       {(report.content as any)['assistance-needed'] || '无'}
                     </div>
                   </div>
 
                   <div>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>明日工作计划</div>
-                    <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+                    <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
                       {(report.content as any)['tomorrow-plan'] || '无'}
                     </div>
                   </div>
@@ -172,15 +175,12 @@ export function DailyReportView() {
             })}
           </Collapse>
         ) : selectedEmployee ? (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-3)', padding: 40 }}>
-            该员工暂无日报记录
-          </div>
+          <EmptyState description="该员工暂无日报记录" />
         ) : (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-3)', padding: 40 }}>
-            请从左侧选择员工查看日报历史
-          </div>
+          <EmptyState description="请从左侧选择员工查看日报历史" />
         )}
-      </Card>
+        </SectionCard>
+      </div>
 
       <DailyReportDetail
         visible={detailVisible}

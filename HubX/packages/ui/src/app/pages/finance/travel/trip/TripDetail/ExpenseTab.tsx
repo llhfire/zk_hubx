@@ -1,17 +1,5 @@
 import { useMemo, useState } from 'react';
-import {
-  Card,
-  Button,
-  Tag,
-  Modal,
-  Input,
-  Select,
-  Table,
-  Space,
-  Typography,
-  Grid,
-  Message,
-} from '@arco-design/web-react';
+import { Button, Form, FormGrid, Message, MetricCard, Modal, Input, Select, Space, Typography } from '@/design-system';
 import {
   IconPlus,
   IconEdit,
@@ -23,7 +11,7 @@ import {
   IconDashboard,
   IconFilter,
   IconCheckCircle,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { ExpenseOCR } from '../../components/ExpenseOCR';
 import { TimelineView } from './TimelineView';
 import { ExpensePeriodSelector } from './ExpensePeriodSelector';
@@ -32,11 +20,12 @@ import {
   diffDays,
 } from './timeSegmentUtils';
 import type { Trip, Expense, TripExpenseType } from '../../types';
+import { DateText, MoneyText, StatusTag, confirmAction, DataTable } from '@/design-system';
 
-const { Text, Title } = Typography;
-const { Row, Col } = Grid;
+const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+const FormItem = Form.Item;
 
 interface ExpenseTabProps {
   trip: Trip;
@@ -210,9 +199,10 @@ export function ExpenseTab({
 
   // 删除费用
   const handleDelete = (expense: Expense) => {
-    Modal.confirm({
+    confirmAction({
       title: '确认删除',
-      content: `确定要删除这笔 ¥${expense.amount} 的费用吗？`,
+      content: <>确定要删除这笔 <MoneyText value={expense.amount} /> 的费用吗？</>,
+      tone: 'danger',
       onOk: () => {
         Message.success('删除成功');
         onUpdate();
@@ -262,13 +252,14 @@ export function ExpenseTab({
       title: '日期',
       dataIndex: 'date',
       width: 100,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '类型',
       dataIndex: 'type',
       width: 100,
       render: (value: TripExpenseType) => (
-        <Tag>{expenseTypeLabels[value]}</Tag>
+        <StatusTag>{expenseTypeLabels[value]}</StatusTag>
       ),
     },
     {
@@ -276,7 +267,7 @@ export function ExpenseTab({
       dataIndex: 'amount',
       width: 100,
       render: (value: number) => (
-        <Text style={{ fontWeight: 500 }}>¥{value.toLocaleString()}</Text>
+        <Text style={{ fontWeight: 500 }}><MoneyText value={value} /></Text>
       ),
     },
     {
@@ -297,9 +288,14 @@ export function ExpenseTab({
       render: (value: boolean, record: Expense & { segmentDesc: string }) => (
         value ? (
           <Space direction="vertical" size={2}>
-            <Tag color="red" icon={<IconExclamationCircle />}>超标待佐证</Tag>
+            <StatusTag
+              meta={{
+                label: (<><IconExclamationCircle />超标待佐证</>),
+                tone: 'danger',
+              }}
+            />
             {record.overStandardReason ? (
-              <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>
+              <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>
                 佐证：{record.overStandardReason}
               </span>
             ) : (
@@ -307,7 +303,7 @@ export function ExpenseTab({
                 type="text"
                 size="mini"
                 status="warning"
-                style={{ padding: 0, height: 'auto', fontSize: 11 }}
+                style={{ padding: 0, height: 'auto', fontSize: 'var(--ds-text-caption)' }}
                 onClick={() => {
                   setTargetOverExpense(record);
                   setTempReason('');
@@ -319,7 +315,7 @@ export function ExpenseTab({
             )}
           </Space>
         ) : (
-          <Tag color="green" icon={<IconCheckCircle />}>合规正常</Tag>
+          <StatusTag meta={{ label: (<><IconCheckCircle />合规正常</>), tone: 'success' }} />
         )
       ),
     },
@@ -362,105 +358,39 @@ export function ExpenseTab({
 
   return (
     <div className="trip-tab-pane">
-      {/* 顶部专业微指标卡片组（4列对齐） */}
+      {/* 顶部专业微指标卡片组（保留费用统计口径，由 MetricCard 承接同构结构） */}
       <div className="trip-stat-grid">
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#e8f3ff', color: '#165dff' }}>
-                <IconStorage />
-              </span>
-              总费用汇总
-            </span>
-            <Tag size="small" color="blue">实时发生</Tag>
-          </div>
-          <div className="trip-stat-card__value">
-            ¥{totalExpense.toLocaleString()}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>共计 {allExpenses.length} 笔流水</span>
-            <span>日均 ¥{totalSpanDays > 0 ? Math.round(totalExpense / totalSpanDays).toLocaleString() : 0}/天</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-info-bg)', color: 'rgb(var(--primary-6))' }}><IconStorage /></span>总费用汇总</>}
+          value={<MoneyText value={totalExpense} />}
+          badge={<StatusTag size="small" tone="info">实时发生</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>共计 {allExpenses.length} 笔流水</span><span>日均 <MoneyText value={totalSpanDays > 0 ? Math.round(totalExpense / totalSpanDays) : 0} />/天</span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span
-                className="trip-stat-card__icon"
-                style={{
-                  background: executionRate > 100 ? '#ffece8' : '#e8ffea',
-                  color: executionRate > 100 ? '#f53f3f' : '#00b42a',
-                }}
-              >
-                <IconDashboard />
-              </span>
-              预算执行率
-            </span>
-            <Tag size="small" color={executionRate > 100 ? 'red' : executionRate >= 80 ? 'orange' : 'green'}>
-              {executionRate > 100 ? '已超预算' : executionRate >= 80 ? '接近预警' : '在控'}
-            </Tag>
-          </div>
-          <div
-            className="trip-stat-card__value"
-            style={{ color: executionRate > 100 ? '#f53f3f' : 'inherit' }}
-          >
-            {executionRate}%
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>预估总预算：¥{budgetTotal.toLocaleString()}</span>
-            <span>结余 ¥{Math.max(0, budgetTotal - totalExpense).toLocaleString()}</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: executionRate > 100 ? 'var(--ds-tone-danger-bg)' : 'var(--ds-tone-success-bg)', color: executionRate > 100 ? 'var(--ds-tone-danger-fg)' : 'var(--ds-tone-success-fg)' }}><IconDashboard /></span>预算执行率</>}
+          value={<span style={{ color: executionRate > 100 ? 'var(--ds-tone-danger-fg)' : 'inherit' }}>{executionRate}%</span>}
+          badge={<StatusTag size="small" tone={executionRate > 100 ? 'danger' : executionRate >= 80 ? 'warning' : 'success'}>{executionRate > 100 ? '已超预算' : executionRate >= 80 ? '接近预警' : '在控'}</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>预估总预算：<MoneyText value={budgetTotal} /></span><span>结余 <MoneyText value={Math.max(0, budgetTotal - totalExpense)} /></span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span className="trip-stat-card__icon" style={{ background: '#fff7e6', color: '#fa8c16' }}>
-                <IconList />
-              </span>
-              最高开销科目
-            </span>
-            <Tag size="small" color="orange">核心支出</Tag>
-          </div>
-          <div className="trip-stat-card__value">
-            {topCategory ? topCategory.label : '暂无支出'}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>金额：¥{topCategory ? topCategory.amount.toLocaleString() : 0}</span>
-            <span>占总比 {topCategory ? `${topCategory.percentage}%` : '0%'}</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: 'var(--ds-tone-warning-bg)', color: 'var(--ds-tone-warning-fg)' }}><IconList /></span>最高开销科目</>}
+          value={topCategory ? topCategory.label : '暂无支出'}
+          badge={<StatusTag size="small" tone="warning">核心支出</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>金额：<MoneyText value={topCategory ? topCategory.amount : 0} /></span><span>占总比 {topCategory ? `${topCategory.percentage}%` : '0%'}</span></span>}
+        />
 
-        <div className="trip-stat-card">
-          <div className="trip-stat-card__header">
-            <span className="trip-stat-card__title">
-              <span
-                className="trip-stat-card__icon"
-                style={{
-                  background: overStandardCount > 0 ? '#ffece8' : '#e8ffea',
-                  color: overStandardCount > 0 ? '#f53f3f' : '#00b42a',
-                }}
-              >
-                <IconCheckCircle />
-              </span>
-              记账合规核验
-            </span>
-            <Tag size="small" color={overStandardCount > 0 ? 'red' : 'green'}>
-              {overStandardCount > 0 ? `${overStandardCount} 笔异常` : '合规正常'}
-            </Tag>
-          </div>
-          <div
-            className="trip-stat-card__value"
-            style={{ color: overStandardCount > 0 ? '#f53f3f' : '#00b42a' }}
-          >
-            {overStandardCount > 0 ? `${overStandardCount} 笔超标` : '100% 合规'}
-          </div>
-          <div className="trip-stat-card__meta">
-            <span>标准内合规：{normalCount} 笔</span>
-            <span>发票核验率 {allExpenses.length > 0 ? '100%' : '-'}</span>
-          </div>
-        </div>
+        <MetricCard
+          className="trip-stat-card"
+          label={<><span className="trip-stat-card__icon" style={{ background: overStandardCount > 0 ? 'var(--ds-tone-danger-bg)' : 'var(--ds-tone-success-bg)', color: overStandardCount > 0 ? 'var(--ds-tone-danger-fg)' : 'var(--ds-tone-success-fg)' }}><IconCheckCircle /></span>记账合规核验</>}
+          value={<span style={{ color: overStandardCount > 0 ? 'var(--ds-tone-danger-fg)' : 'var(--ds-tone-success-fg)' }}>{overStandardCount > 0 ? `${overStandardCount} 笔超标` : '100% 合规'}</span>}
+          badge={<StatusTag size="small" tone={overStandardCount > 0 ? 'danger' : 'success'}>{overStandardCount > 0 ? `${overStandardCount} 笔异常` : '合规正常'}</StatusTag>}
+          detail={<span className="trip-stat-card__meta"><span>标准内合规：{normalCount} 笔</span><span>发票核验率 {allExpenses.length > 0 ? '100%' : '-'}</span></span>}
+        />
       </div>
 
       {/* 支出分类分布胶囊条（信息整齐排列，杜绝卡片掉行空隙） */}
@@ -471,11 +401,11 @@ export function ExpenseTab({
             <div key={c.type} className="trip-category-pill">
               <span
                 className="trip-category-pill__dot"
-                style={{ backgroundColor: '#165dff' }}
+                style={{ backgroundColor: 'rgb(var(--primary-6))' }}
               />
               <span>{c.label}</span>
-              <strong style={{ color: 'var(--color-text-1)' }}>¥{c.amount.toLocaleString()}</strong>
-              <span style={{ color: 'var(--color-text-3)', fontSize: 11 }}>({c.percentage}%)</span>
+              <strong style={{ color: 'var(--color-text-1)' }}><MoneyText value={c.amount} /></strong>
+              <span style={{ color: 'var(--color-text-3)', fontSize: 'var(--ds-text-caption)' }}>({c.percentage}%)</span>
             </div>
           ))}
         </div>
@@ -487,11 +417,11 @@ export function ExpenseTab({
           <Space size={8}>
             <IconStorage />
             <span>
-              已与右侧航段轨迹联动筛选：<strong>{selectedSegment.departure} → {selectedSegment.destination}</strong> ({selectedSegment.departureDate})
+              已与右侧航段轨迹联动筛选：<strong>{selectedSegment.departure} → {selectedSegment.destination}</strong> (<DateText value={selectedSegment.departureDate} />)
             </span>
-            <Tag size="small" color="arcoblue">
+            <StatusTag size="small" tone="info">
               相关流水 {displayedTableExpenses.length} 笔
-            </Tag>
+            </StatusTag>
           </Space>
           <Button size="mini" type="text" onClick={onClearSegmentFilter}>
             清除航段联动 ×
@@ -503,9 +433,9 @@ export function ExpenseTab({
       <div className="trip-section-toolbar">
         <div className="trip-section-toolbar__title">
           <span>费用记录明细</span>
-          <Tag size="small" color="gray">
+          <StatusTag size="small" tone="neutral">
             共 {displayedTableExpenses.length} 条记录
-          </Tag>
+          </StatusTag>
           {viewMode === 'list' && totalSpanDays > 7 && !selectedSegmentId && (
             <Button
               size="mini"
@@ -529,7 +459,7 @@ export function ExpenseTab({
               icon={<IconCheckCircle />}
               onClick={() => setBatchModalVisible(true)}
             >
-              转为报销单 ({selectedRowKeys.length} 笔 · ¥{selectedExpensesAmount.toLocaleString()})
+              转为报销单 ({selectedRowKeys.length} 笔 · <MoneyText value={selectedExpensesAmount} />)
             </Button>
           )}
 
@@ -565,7 +495,7 @@ export function ExpenseTab({
       {/* 主体视图区域 */}
       <div style={{ marginTop: 8 }}>
         {viewMode === 'list' ? (
-          <Table
+          <DataTable
             columns={columns}
             data={displayedTableExpenses}
             rowKey="id"
@@ -575,7 +505,7 @@ export function ExpenseTab({
               selectedRowKeys,
               onChange: (keys) => setSelectedRowKeys(keys as string[]),
             }}
-            noDataElement="暂无费用记录"
+            emptyDescription="暂无费用记录"
           />
         ) : (
           <TimelineView
@@ -606,8 +536,7 @@ export function ExpenseTab({
         cancelText="取消"
       >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <div>
-            <div style={{ marginBottom: 8 }}><Text>关联旅程段</Text></div>
+          <FormItem label="关联旅程段">
             <Select
               placeholder="选择旅程段"
               value={form.itinerarySegmentId}
@@ -616,14 +545,13 @@ export function ExpenseTab({
             >
               {trip.itinerarySegments?.map((seg) => (
                 <Option key={seg.id} value={seg.id}>
-                  {seg.departure}→{seg.destination} ({seg.departureDate})
+                  {seg.departure}→{seg.destination} (<DateText value={seg.departureDate} />)
                 </Option>
               ))}
             </Select>
-          </div>
-          <Row gutter={16}>
-            <Col span={12}>
-              <div style={{ marginBottom: 8 }}><Text>费用类型</Text></div>
+          </FormItem>
+          <FormGrid columns={2}>
+            <FormItem label="费用类型">
               <Select
                 value={form.type}
                 onChange={(value) => setForm({ ...form, type: value as TripExpenseType })}
@@ -636,59 +564,48 @@ export function ExpenseTab({
                 <Option value="office">办公用品</Option>
                 <Option value="other">其他</Option>
               </Select>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: 8 }}>
-                <Text>金额</Text> <Text type="error">*</Text>
-              </div>
+            </FormItem>
+            <FormItem label="金额" required>
               <Input
                 type="number"
                 placeholder="¥0"
                 value={form.amount ? String(form.amount) : ''}
                 onChange={(value) => setForm({ ...form, amount: Number(value) })}
               />
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <div style={{ marginBottom: 8 }}>
-                <Text>发生日期</Text> <Text type="error">*</Text>
-              </div>
+            </FormItem>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <FormItem label="发生日期" required>
               <Input
                 type="date"
                 value={form.date}
                 onChange={(value) => setForm({ ...form, date: value })}
               />
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: 8 }}><Text>发票号</Text></div>
+            </FormItem>
+            <FormItem label="发票号">
               <Input
                 placeholder="选填"
                 value={form.invoiceNo}
                 onChange={(value) => setForm({ ...form, invoiceNo: value })}
               />
-            </Col>
-          </Row>
+            </FormItem>
+          </FormGrid>
           {form.isOverStandard && (
-            <div>
-              <div style={{ marginBottom: 8 }}>
-                <Text>超标原因</Text> <Text type="error">*</Text>
-              </div>
+            <FormItem label="超标原因" required>
               <TextArea
                 placeholder="请说明超标原因"
                 value={form.overStandardReason}
                 onChange={(value) => setForm({ ...form, overStandardReason: value })}
               />
-            </div>
+            </FormItem>
           )}
-          <div>
-            <div style={{ marginBottom: 8 }}><Text>备注</Text></div>
+          <FormItem label="备注">
             <TextArea
               placeholder="选填"
               value={form.remark}
               onChange={(value) => setForm({ ...form, remark: value })}
             />
-          </div>
+          </FormItem>
         </Space>
       </Modal>
 
@@ -702,17 +619,17 @@ export function ExpenseTab({
         cancelText="取消"
       >
         <div>
-          <div style={{ marginBottom: 12, padding: '10px 12px', background: '#e8ffea', borderRadius: 4, color: '#00b42a' }}>
-            已勾选 <strong>{selectedRowKeys.length}</strong> 笔记账费用，合计归集金额：<strong>¥{selectedExpensesAmount.toLocaleString()}</strong>
+          <div style={{ marginBottom: 12, padding: '10px 12px', background: 'var(--ds-tone-success-bg)', borderRadius: 'var(--radius-xs)', color: 'var(--ds-tone-success-fg)' }}>
+            已勾选 <strong>{selectedRowKeys.length}</strong> 笔记账费用，合计归集金额：<strong><MoneyText value={selectedExpensesAmount} /></strong>
           </div>
-          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--text-xs)', display: 'block', marginBottom: 8 }}>
             系统将自动为您创建一张待申报报销单，并关联已填报发票凭证。
           </Text>
-          <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid var(--color-border-2)', borderRadius: 4, padding: '6px 10px' }}>
+          <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-xs)', padding: '6px 10px' }}>
             {selectedExpenses.map((exp) => (
-              <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px dashed var(--color-border-1)', fontSize: 12 }}>
-                <span>{exp.date} · {expenseTypeLabels[exp.type]} ({exp.invoiceNo || '无发票号'})</span>
-                <strong style={{ color: 'rgb(var(--primary-6))' }}>¥{exp.amount.toLocaleString()}</strong>
+              <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px dashed var(--color-border-1)', fontSize: 'var(--text-xs)' }}>
+                <span><DateText value={exp.date} /> · {expenseTypeLabels[exp.type]} ({exp.invoiceNo || '无发票号'})</span>
+                <strong style={{ color: 'rgb(var(--primary-6))' }}><MoneyText value={exp.amount} /></strong>
               </div>
             ))}
           </div>
@@ -729,10 +646,10 @@ export function ExpenseTab({
         cancelText="取消"
       >
         <div>
-          <div style={{ marginBottom: 12, fontSize: 13 }}>
-            当前开销：<strong>¥{targetOverExpense?.amount}</strong> ({targetOverExpense && expenseTypeLabels[targetOverExpense.type]}) · {targetOverExpense?.date}
+          <div style={{ marginBottom: 12, fontSize: 'var(--ds-text-dense)' }}>
+            当前开销：<strong>{targetOverExpense && <MoneyText value={targetOverExpense.amount} />}</strong> ({targetOverExpense && expenseTypeLabels[targetOverExpense.type]}) · <DateText value={targetOverExpense?.date} />
           </div>
-          <div style={{ marginBottom: 8, fontSize: 12, color: 'var(--color-text-3)' }}>
+          <div style={{ marginBottom: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
             请填写合规合理事由（如：旺季临时溢价、受客户指定地点、突发应急事件等），将作为财务与管理层审批参考依据：
           </div>
           <TextArea

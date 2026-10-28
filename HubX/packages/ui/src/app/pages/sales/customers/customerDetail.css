@@ -35,22 +35,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.customer-detail-360 .hubx-process-metric::before {
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 0;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: rgb(var(--primary-6));
-  content: '';
-}
-
-.customer-detail-360 .hubx-process-metric:nth-child(1)::before { background: rgb(var(--primary-6)); }
-.customer-detail-360 .hubx-process-metric:nth-child(2)::before { background: rgb(var(--cyan-6)); }
-.customer-detail-360 .hubx-process-metric:nth-child(3)::before { background: rgb(var(--warning-6)); }
-.customer-detail-360 .hubx-process-metric:nth-child(4)::before { background: rgb(var(--success-6)); }
-
 .customer-metric-heading {
   display: flex;
   width: 100%;

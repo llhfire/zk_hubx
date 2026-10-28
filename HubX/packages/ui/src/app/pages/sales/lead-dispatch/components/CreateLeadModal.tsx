@@ -4,7 +4,7 @@
 // 意向评分不落库、无 D 级（grill 决策 5/6）
 
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Form, Input, Select, Radio, Message } from '@arco-design/web-react';
+import { Modal, Form, Input, Select, Radio, Message } from '@/design-system';
 import { LEAD_SOURCE_LIST, LEAD_SOURCE_LABEL, COMPANY_ENTITY_LIST, CUSTOMER_LEVEL_LIST } from '../../leads/types';
 import { BUSINESS_LINE_LABEL, type LeadBusinessLine } from '../types';
 import type { Employee } from '../../../support/hr/employee/mockData';

@@ -4,7 +4,7 @@
 // - 静态部署 / β 回退 localStorage；
 // - 下班/退下按当天追加条目，简洁一句话，不写流水账。
 
-export const WORK_LOG_CATEGORIES = ['功能', '底座', '设计', '文档', '修洞', '其它'] as const;
+export const WORK_LOG_CATEGORIES = ['功能', '底座', '设计', '文档', '修洞', '测试', '架构', '数据', '其它'] as const;
 export type WorkLogCategory = (typeof WORK_LOG_CATEGORIES)[number];
 
 export interface WorkLogItem {

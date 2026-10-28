@@ -1,18 +1,27 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
   Button,
-  Tag,
-  Table,
   Space,
   Typography,
   Grid,
   Slider,
-  Statistic,
   Message,
-} from '@arco-design/web-react';
-import { PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus } from '@/design-system';
+} from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  EntityLink,
+  MetricCard,
+  MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import {
   mockCases,
   mockCostItems,
@@ -35,6 +44,12 @@ import { useCollections } from '../../../../collections/CollectionContext';
 
 const { Text } = Typography;
 const { Row, Col } = Grid;
+
+const HEALTH_STATUS: StatusMap<'green' | 'yellow' | 'red'> = {
+  green: { label: '健康', tone: 'success' },
+  yellow: { label: '预警', tone: 'warning' },
+  red: { label: '风险', tone: 'danger' },
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -100,12 +115,12 @@ export default function Dashboard() {
   const alertColumns = [
     {
       title: '业务单编号', dataIndex: 'caseNo', width: 120,
-      render: (v: string, r: any) => <Button type="text" size="small" onClick={() => navigate(`/financial-delivery/cases/${r.id}`)}>{v}</Button>,
+      render: (v: string, r: any) => <EntityLink to={`/financial-delivery/cases/${r.id}`}>{v}</EntityLink>,
     },
     { title: '项目名称', dataIndex: 'projectName', width: 150, render: (v: string) => v || '-' },
     {
       title: '健康状态', dataIndex: 'health', width: 100,
-      render: (v: string) => <Tag color={v === 'yellow' ? 'orange' : 'red'}>{v === 'yellow' ? '预警' : '风险'}</Tag>,
+      render: (v: 'green' | 'yellow' | 'red') => <StatusTag meta={resolveStatus(HEALTH_STATUS, v)} />,
     },
     {
       title: '全周期利润率', width: 100,
@@ -117,13 +132,13 @@ export default function Dashboard() {
   const recentColumns = [
     {
       title: '业务单编号', dataIndex: 'caseNo', width: 120,
-      render: (v: string, r: any) => <Button type="text" size="small" onClick={() => navigate(`/financial-delivery/cases/${r.id}`)}>{v}</Button>,
+      render: (v: string, r: any) => <EntityLink to={`/financial-delivery/cases/${r.id}`}>{v}</EntityLink>,
     },
     {
       title: '状态', dataIndex: 'status', width: 100,
       render: (v: string) => <StatusTag meta={resolveStatus(caseStatusMap, v)} />,
     },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 120, render: (v: string) => new Date(v).toLocaleDateString() },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 120, render: (v: string) => <DateText value={v} /> },
   ];
 
   return (
@@ -156,21 +171,22 @@ export default function Dashboard() {
         {
           key: 'revenue',
           label: '累计回款',
-          value: `¥${statistics.totalRevenue.toLocaleString()}`,
-          detail: `总成本 ¥${statistics.totalCost.toLocaleString()}`,
+          value: <MoneyText value={statistics.totalRevenue} />,
+          detail: <>总成本 <MoneyText value={statistics.totalCost} /></>,
           tone: 'success',
         },
         {
           key: 'profit',
           label: '总利润',
-          value: `¥${statistics.totalProfit.toLocaleString()}`,
+          value: <MoneyText value={statistics.totalProfit} tone={statistics.totalProfit >= 0 ? 'success' : 'danger'} />,
           detail: `利润率 ${statistics.margin.toFixed(1)}%`,
           tone: statistics.totalProfit >= 0 ? 'success' : 'danger',
         },
       ]} />
 
       {/* 气泡图（全周期利润率 vs WIP） */}
-      <Card title="项目健康度（全周期口径）" style={{ marginBottom: 'var(--space-5)' }}>
+      <div style={{ marginBottom: 'var(--space-5)' }}>
+      <SectionCard title="项目健康度（全周期口径）">
         <div className="lean-bubble-chart">
           <div className="lean-bubble-axis-label top-left">全周期利润率 (%)</div>
           <div className="lean-bubble-axis-label bottom-right">WIP 占用天数</div>
@@ -192,7 +208,7 @@ export default function Dashboard() {
                 onClick={() => navigate(`/financial-delivery/cases/${c.id}`)}
                 title={`${c.projectName ?? c.caseNo}\n全周期利润率: ${marginPct.toFixed(1)}%\nWIP: ${c.wip.days}天`}
               >
-                <span style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>{marginPct.toFixed(0)}%</span>
+                <span style={{ color: 'var(--color-white)', fontSize: 'var(--text-xs)', fontWeight: 'bold' }}>{marginPct.toFixed(0)}%</span>
               </div>
             );
           })}
@@ -204,11 +220,15 @@ export default function Dashboard() {
             </Space>
           </div>
         </div>
-      </Card>
+      </SectionCard>
+      </div>
 
       {/* 模拟器 */}
       {simulatorCase && simResult && (
-        <Card title={`敏感性模拟 — ${simulatorCase.projectName ?? simulatorCase.caseNo}`} style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24 }}>
+        <SectionCard
+          title={`敏感性模拟 — ${simulatorCase.projectName ?? simulatorCase.caseNo}`}
+        >
           <Row gutter={16}>
             <Col span={8}>
               <div style={{ marginBottom: 16 }}>
@@ -222,36 +242,39 @@ export default function Dashboard() {
             </Col>
             <Col span={16}>
               <Row gutter={16}>
-                <Col span={6}><Statistic title="EAC" value={simResult.eac} prefix="¥" /></Col>
-                <Col span={6}><Statistic title="模拟利润率" value={`${(simResult.margin * 100).toFixed(1)}%`} /></Col>
-                <Col span={6}><Statistic title="保本额" value={simResult.breakevenAmount} prefix="¥" /></Col>
-                <Col span={6}><Statistic title="底价" value={Math.round(simResult.floorPrice)} prefix="¥" /></Col>
+                <Col span={6}><MetricCard label="EAC" value={<MoneyText value={simResult.eac} />} /></Col>
+                <Col span={6}><MetricCard label="模拟利润率" value={`${(simResult.margin * 100).toFixed(1)}%`} /></Col>
+                <Col span={6}><MetricCard label="保本额" value={<MoneyText value={simResult.breakevenAmount} />} /></Col>
+                <Col span={6}><MetricCard label="底价" value={<MoneyText value={Math.round(simResult.floorPrice)} />} /></Col>
               </Row>
             </Col>
           </Row>
-        </Card>
+        </SectionCard>
+        </div>
       )}
 
       {/* 预警列表 + 最近更新 */}
       <Row gutter={16}>
         <Col span={14}>
-          <Card title="风险预警" extra={<Button type="text" onClick={() => navigate('/financial-delivery/cases')}>查看全部</Button>}>
-            <Table columns={alertColumns} data={alertCases} rowKey="id" pagination={false} size="small" />
-          </Card>
+          <SectionCard title="风险预警" extra={<Button type="text" onClick={() => navigate('/financial-delivery/cases')}>查看全部</Button>}>
+            <DataTable columns={alertColumns} data={alertCases} rowKey="id" pagination={false} size="small" />
+          </SectionCard>
         </Col>
         <Col span={10}>
-          <Card title="最近更新" extra={<Button type="text" onClick={() => navigate('/financial-delivery/cases')}>查看全部</Button>}>
-            <Table columns={recentColumns} data={recentCases} rowKey="id" pagination={false} size="small" />
-          </Card>
+          <SectionCard title="最近更新" extra={<Button type="text" onClick={() => navigate('/financial-delivery/cases')}>查看全部</Button>}>
+            <DataTable columns={recentColumns} data={recentCases} rowKey="id" pagination={false} size="small" />
+          </SectionCard>
         </Col>
       </Row>
 
       {/* 穿透看板：按行业聚合利润 */}
-      <Card title="行业利润穿透" style={{ marginTop: 16 }}>
-        <Table
+      <div style={{ marginTop: 16 }}>
+      <SectionCard title="行业利润穿透">
+        <DataTable
           size="small"
           rowKey="industry"
           pagination={false}
+          emptyDescription="暂无行业利润数据"
           data={(() => {
             const byIndustry = new Map<string, { profit: number; count: number }>();
             for (const c of caseMetrics) {
@@ -271,20 +294,25 @@ export default function Dashboard() {
           })()}
           columns={[
             { title: '行业', dataIndex: 'industry', width: 120 },
-            { title: '利润', dataIndex: 'profit', width: 120, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
+            { title: '利润', dataIndex: 'profit', width: 120, align: 'right', render: (v: number) => <MoneyText value={v} /> },
             { title: '占比', dataIndex: 'percentage', width: 80, render: (v: number) => `${v}%` },
             { title: '业务单数', dataIndex: 'count', width: 80 },
           ]}
         />
-      </Card>
+      </SectionCard>
+      </div>
 
       {/* 相似项目 Top 3 */}
       {simulatorCase && (
-        <Card title={`相似项目 — ${simulatorCase.projectName ?? simulatorCase.caseNo}`} style={{ marginTop: 16 }}>
-          <Table
+        <div style={{ marginTop: 16 }}>
+        <SectionCard
+          title={`相似项目 — ${simulatorCase.projectName ?? simulatorCase.caseNo}`}
+        >
+          <DataTable
             size="small"
             rowKey="id"
             pagination={false}
+            emptyDescription="暂无相似项目"
             data={caseMetrics
               .filter(c => c.id !== simulatorCase.id && c.industry === simulatorCase.industry && c.status === CaseStatus.COMPLETED)
               .slice(0, 3)
@@ -299,10 +327,11 @@ export default function Dashboard() {
               { title: '项目', dataIndex: 'name' },
               { title: '行业', dataIndex: 'industry', width: 100 },
               { title: '利润率', dataIndex: 'margin', width: 80 },
-              { title: '总成本', dataIndex: 'totalCost', width: 120, align: 'right', render: (v: number) => `¥${v.toLocaleString()}` },
+              { title: '总成本', dataIndex: 'totalCost', width: 120, align: 'right', render: (v: number) => <MoneyText value={v} /> },
             ]}
           />
-        </Card>
+        </SectionCard>
+        </div>
       )}
     </PageShell>
   );

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Button, Popover, Tag, Typography } from '@arco-design/web-react';
-import { IconCheck, IconClockCircle, IconDown, IconRight } from '@arco-design/web-react/icon';
+import { Button, Popover, Typography } from '@/design-system';
+import { IconCheck, IconClockCircle, IconDown, IconRight } from '@/design-system';
+import { MoneyText, StatusTag, resolveStatus, type StatusMap } from '@/design-system';
 import type { ProjectStageCheck, ProjectStageSummary } from '../projectStageSummary';
 
 const { Text } = Typography;
@@ -11,10 +12,10 @@ interface ProjectStagePopoverProps {
   onNavigate: (target: NonNullable<ProjectStageCheck['target']>) => void;
 }
 
-const PAYMENT_STATUS_META: Record<ProjectStageSummary['payments'][number]['status'], { label: string; color: string }> = {
-  paid: { label: '已收足', color: 'green' },
-  partial: { label: '部分已收', color: 'orange' },
-  pending: { label: '待收', color: 'gray' },
+const PAYMENT_STATUS_META: StatusMap<ProjectStageSummary['payments'][number]['status']> = {
+  paid: { label: '已收足', tone: 'success' },
+  partial: { label: '部分已收', tone: 'warning' },
+  pending: { label: '待收', tone: 'neutral' },
 };
 
 export function ProjectStagePopover({ children, summary, onNavigate }: ProjectStagePopoverProps) {
@@ -67,10 +68,10 @@ export function ProjectStagePopover({ children, summary, onNavigate }: ProjectSt
                     <button key={payment.id} type="button" onClick={() => onNavigate({ main: 'payments' })}>
                       <span className="project-stage-popover__payment-symbol">¥</span>
                       <span>
-                        <strong>{payment.label} · ¥{payment.amount.toLocaleString('zh-CN')}</strong>
+                        <strong>{payment.label} · <MoneyText value={payment.amount} /></strong>
                         <Text type="secondary">{payment.condition} · {payment.percentage}%</Text>
                       </span>
-                      <Tag size="small" color={statusMeta.color}>{statusMeta.label}</Tag>
+                      <StatusTag meta={resolveStatus(PAYMENT_STATUS_META, payment.status)} />
                     </button>
                   );
                 })}

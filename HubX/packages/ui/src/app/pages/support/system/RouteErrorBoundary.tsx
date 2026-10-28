@@ -1,7 +1,7 @@
-import { Button, Result, Typography } from '@arco-design/web-react';
+import { Button, PageHeader, PageShell, Result, Space, Typography } from '@/design-system';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router';
 
-const { Paragraph, Text } = Typography;
+const { Paragraph } = Typography;
 
 /**
  * 路由级错误边界。
@@ -30,26 +30,22 @@ export function RouteErrorBoundary() {
   }
 
   return (
-    <Result
-      status="500"
-      title={title}
-      subTitle="该页面渲染时发生异常。可以重试加载，或返回工作台继续其它操作。"
-      extra={
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <Button type="primary" onClick={() => window.location.reload()}>
-            重新加载
-          </Button>
-          <Button onClick={() => navigate('/')}>返回工作台</Button>
-        </div>
-      }
-    >
-      {detail && (
-        <Paragraph style={{ maxWidth: 560, margin: '0 auto', textAlign: 'left' }}>
-          <Text type="secondary" style={{ fontSize: 12, wordBreak: 'break-all' }}>
-            {detail}
-          </Text>
-        </Paragraph>
-      )}
-    </Result>
+    <PageShell>
+      <PageHeader title={title} />
+      <Result
+        status="500"
+        subTitle="该页面渲染时发生异常。可以重试加载，或返回工作台继续其它操作。"
+        extra={
+          <Space>
+            <Button type="primary" onClick={() => window.location.reload()}>
+              重新加载
+            </Button>
+            <Button onClick={() => navigate('/')}>返回工作台</Button>
+          </Space>
+        }
+      >
+        {detail && <Paragraph type="secondary">{detail}</Paragraph>}
+      </Result>
+    </PageShell>
   );
 }

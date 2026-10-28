@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
   Button,
-  Card,
   Checkbox,
   Form,
   Input,
@@ -11,13 +10,11 @@ import {
   Select,
   Space,
   Switch,
-  Table,
-  Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconEdit, IconEye, IconPlus } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell } from '@/design-system';
+} from '@/design-system';
+import { IconEdit, IconEye, IconPlus } from '@/design-system';
+import { DataTable, DateText, PageHeader, PageShell, SectionCard, StatusTag } from '@/design-system';
 import {
   loadBusinessApprovals,
   loadWorkflowTemplates,
@@ -188,7 +185,7 @@ export function BusinessMappingList() {
       title: '审批模板',
       width: 180,
       render: (_: unknown, record: BusinessApprovalDefinition) => record.templateName
-        ? <Tag color="arcoblue">{record.templateName}</Tag>
+        ? <StatusTag tone="info">{record.templateName}</StatusTag>
         : <Text type="secondary">未配置</Text>,
     },
     {
@@ -207,7 +204,7 @@ export function BusinessMappingList() {
         />
       ),
     },
-    { title: '最近更新', dataIndex: 'updatedAt', width: 120 },
+    { title: '最近更新', dataIndex: 'updatedAt', width: 120, render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       width: 150,
@@ -235,9 +232,7 @@ export function BusinessMappingList() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={openCreate}>新增业务审批</Button>}
       />
 
-      <Card bordered={false}>
-        <Table rowKey="key" columns={columns} data={businessApprovals} pagination={false} scroll={{ x: 900 }} />
-      </Card>
+      <DataTable rowKey="key" columns={columns} data={businessApprovals} pagination={false} scroll={{ x: 900 }} />
 
       <Modal
         title={editing ? `配置业务审批 — ${editing.bizName}` : '新增业务审批'}
@@ -249,7 +244,7 @@ export function BusinessMappingList() {
         style={{ width: 820 }}
       >
         <Form form={form} layout="vertical">
-          <div style={{ padding: '12px 16px', marginBottom: 18, borderRadius: 8, background: 'var(--color-fill-1)' }}>
+          <div style={{ padding: '12px 16px', marginBottom: 18, borderRadius: 'var(--radius-md)', background: 'var(--color-fill-1)' }}>
             <div style={{ fontWeight: 500, marginBottom: 12 }}>1. 业务信息</div>
             <div className="flex gap-3">
               <Form.Item label="业务审批名称" field="bizName" rules={[{ required: true, message: '请输入业务审批名称' }]} style={{ flex: 1 }}>
@@ -268,7 +263,7 @@ export function BusinessMappingList() {
           </div>
         </Form>
 
-        <div style={{ padding: '12px 16px', marginBottom: 18, borderRadius: 8, background: 'var(--color-fill-1)' }}>
+        <div style={{ padding: '12px 16px', marginBottom: 18, borderRadius: 'var(--radius-md)', background: 'var(--color-fill-1)' }}>
           <div style={{ fontWeight: 500, marginBottom: 10 }}>2. 选择审批模板</div>
           <Select
             value={selectedTemplateId || undefined}
@@ -284,13 +279,13 @@ export function BusinessMappingList() {
         </div>
 
         {currentTemplate && assignments.length > 0 ? (
-          <div style={{ padding: '12px 16px', borderRadius: 8, background: 'var(--color-fill-1)' }}>
+          <div style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: 'var(--color-fill-1)' }}>
             <div style={{ fontWeight: 500, marginBottom: 10 }}>3. 配置节点审批人</div>
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
               {assignments.map((assignment, index) => (
-                <Card key={assignment.nodeId} size="small" bodyStyle={{ padding: 12 }}>
+                <SectionCard key={assignment.nodeId} size="small" bodyStyle={{ padding: 12 }}>
                   <div className="flex items-start gap-3">
-                    <Tag color="arcoblue">节点 {index + 1}</Tag>
+                    <StatusTag tone="info">节点 {index + 1}</StatusTag>
                     <div style={{ width: 150 }}>
                       <Text bold>{assignment.nodeName}</Text>
                       <div><Text type="secondary">{assignment.strategy}</Text></div>
@@ -313,7 +308,7 @@ export function BusinessMappingList() {
                         {employeeOptions.map((option) => <Select.Option key={option} value={option}>{option}</Select.Option>)}
                       </Select>
                     ) : (
-                      <div style={{ width: 240, height: 32, display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: 4, background: 'var(--color-fill-2)', color: 'var(--color-text-2)' }}>
+                      <div style={{ width: 240, height: 32, display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: 'var(--radius-xs)', background: 'var(--color-fill-2)', color: 'var(--color-text-2)' }}>
                         自动取上一节点负责人
                       </div>
                     )}
@@ -324,7 +319,7 @@ export function BusinessMappingList() {
                       审批人为空时跳过
                     </Checkbox>
                   </div>
-                </Card>
+                </SectionCard>
               ))}
             </Space>
           </div>
@@ -340,20 +335,20 @@ export function BusinessMappingList() {
       >
         {editing ? (
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Space><Text type="secondary">审批模板</Text><Tag color="arcoblue">{editing.templateName}</Tag></Space>
-            <Card size="small"><Tag color="green">发起人提交</Tag></Card>
+            <Space><Text type="secondary">审批模板</Text><StatusTag tone="info">{editing.templateName}</StatusTag></Space>
+            <SectionCard size="small"><StatusTag tone="success">发起人提交</StatusTag></SectionCard>
             {editing.assignments.map((assignment, index) => (
-              <Card key={assignment.nodeId} size="small" title={`节点 ${index + 1}：${assignment.nodeName}`}>
+              <SectionCard key={assignment.nodeId} title={`节点 ${index + 1}：${assignment.nodeName}`}>
                 <Space>
-                  <Tag>{assignment.strategy}</Tag>
+                  <StatusTag>{assignment.strategy}</StatusTag>
                   <Text>审批人：{hasAssignee(assignment.assigneeValue)
                     ? Array.isArray(assignment.assigneeValue) ? assignment.assigneeValue.join('、') : assignment.assigneeValue
                     : '未配置'}</Text>
                   <Text type="secondary">（{assignment.assigneeType}）</Text>
                 </Space>
-              </Card>
+              </SectionCard>
             ))}
-            <Card size="small"><Tag color="gray">审批结束</Tag><Text type="secondary" style={{ marginLeft: 8 }}>仅支持通过、驳回；驳回后返回发起人重新发起</Text></Card>
+            <SectionCard size="small"><StatusTag tone="neutral">审批结束</StatusTag><Text type="secondary" style={{ marginLeft: 8 }}>仅支持通过、驳回；驳回后返回发起人重新发起</Text></SectionCard>
           </Space>
         ) : null}
       </Modal>

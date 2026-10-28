@@ -1,7 +1,14 @@
 // src/app/pages/daily-report/DailyReportDetail.tsx
 
 import { useState } from 'react';
-import { Modal, Descriptions, Card, Typography, Input, Button, Avatar, Tag, Table } from '@arco-design/web-react';
+import { Modal, Typography, Input, Button, Avatar } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  GradeTag,
+  SectionCard,
+} from '@/design-system';
 import { AdDeliveryReportContent, AdDeliveryWorkItem, DailyReport, DailyReportComment, SalesReportContent, GeneralReportContent, LeadTrackingItem, ProjectTask, SalesWorkItem } from './types';
 import { getWorkAttributionDisplayLabel } from './workAttribution';
 
@@ -39,8 +46,8 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['work-items'] && content['work-items'].length > 0 && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>销售工作项</Text>
-          <Table
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>销售工作项</Text>
+          <DataTable
             columns={[
               {
                 title: '工作归属',
@@ -65,13 +72,11 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['lead-tracking'] && content['lead-tracking'].length > 0 && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>线索跟进情况</Text>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>线索跟进情况</Text>
           {content['lead-tracking'].map((item: LeadTrackingItem) => (
-            <Card key={item.leadId} size="small" style={{ marginBottom: 8 }}>
+            <SectionCard key={item.leadId} className="daily-report-detail__lead-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Tag color={item.level === 'S' ? 'red' : item.level === 'A' ? 'orange' : item.level === 'B' ? 'blue' : 'green'}>
-                  {item.level}
-                </Tag>
+                <GradeTag grade={item.level} />
                 <Text bold>{item.leadName}</Text>
               </div>
               {item.statusChanges.length > 0 && (
@@ -88,22 +93,22 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
                   ))}
                 </div>
               )}
-            </Card>
+            </SectionCard>
           ))}
         </div>
       )}
       {content['assistance-needed'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>需协助事项</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['assistance-needed']}
           </div>
         </div>
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['tomorrow-plan']}
           </div>
         </div>
@@ -115,8 +120,8 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['project-tasks'] && content['project-tasks'].length > 0 && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>任务明细</Text>
-          <Table
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>任务明细</Text>
+          <DataTable
             columns={[
               {
                 title: '工作归属',
@@ -130,6 +135,7 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
               { title: '用时（小时）', dataIndex: 'hours' },
             ]}
             data={content['project-tasks']}
+            rowKey="id"
             pagination={false}
             size="small"
           />
@@ -137,24 +143,24 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['today-summary'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>今日总结</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>今日总结</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['today-summary']}
           </div>
         </div>
       )}
       {content['problems-encountered'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>遇到的问题</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>遇到的问题</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['problems-encountered']}
           </div>
         </div>
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['tomorrow-plan']}
           </div>
         </div>
@@ -166,8 +172,8 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {content['work-items'] && content['work-items'].length > 0 && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作项</Text>
-          <Table
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>工作项</Text>
+          <DataTable
             columns={[
               {
                 title: '类型',
@@ -209,24 +215,24 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       )}
       {content['today-summary'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>工作内容</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>工作内容</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['today-summary']}
           </div>
         </div>
       )}
       {content['assistance-needed'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>需协助事项</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>需协助事项</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['assistance-needed']}
           </div>
         </div>
       )}
       {content['tomorrow-plan'] && (
         <div>
-          <Text bold style={{ fontSize: 16, marginBottom: 8, display: 'block' }}>明日工作计划</Text>
-          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 8, display: 'block' }}>明日工作计划</Text>
+          <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {content['tomorrow-plan']}
           </div>
         </div>
@@ -254,37 +260,38 @@ export function DailyReportDetail({ visible, onCancel, report, comments, onAddCo
       footer={null}
       style={{ width: 800 }}
     >
-      <Descriptions
-        column={2}
-        data={[
-          { label: '日报日期', value: report.reportDate },
-          { label: '汇报人', value: report.userName },
-          { label: '部门', value: report.department },
-        ]}
-        style={{ marginBottom: 16 }}
-      />
+      <div style={{ marginBottom: 16 }}>
+        <DescriptionsCard
+          columns={2}
+          items={[
+            { key: 'reportDate', label: '日报日期', value: <DateText value={report.reportDate} /> },
+            { key: 'userName', label: '汇报人', value: report.userName },
+            { key: 'department', label: '部门', value: report.department },
+          ]}
+        />
+      </div>
 
       <div style={{ marginBottom: 24 }}>{renderContent()}</div>
 
       {/* 评论区域 */}
       <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
-        <Text bold style={{ fontSize: 16, marginBottom: 12, display: 'block' }}>
+        <Text bold style={{ fontSize: 'var(--text-base)', marginBottom: 12, display: 'block' }}>
           评论 ({reportComments.length})
         </Text>
 
         {reportComments.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             {reportComments.map((comment) => (
-              <Card key={comment.id} size="small" style={{ marginBottom: 8 }}>
+              <SectionCard key={comment.id} className="daily-report-detail__comment-card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <Avatar size={24}>{comment.userName[0]}</Avatar>
                   <Text bold>{comment.userName}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {new Date(comment.createdAt).toLocaleString()}
+                  <Text type="secondary">
+                    <DateText value={comment.createdAt} mode="datetime" />
                   </Text>
                 </div>
                 <Text>{comment.content}</Text>
-              </Card>
+              </SectionCard>
             ))}
           </div>
         )}

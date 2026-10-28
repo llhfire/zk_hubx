@@ -1,24 +1,30 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
-  Table,
   Button,
   Input,
-  Message,
   Select,
   Space,
   Tabs,
-  Tag,
   Tooltip,
-} from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye, IconDownload } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconSearch, IconPlus, IconEye, IconDownload } from '@/design-system';
 import { useContracts, countByStatus } from './ContractsContext';
-import { ContractStatusBadge } from './components/ContractStatusBadge';
-import { CONTRACT_STATUS_LABEL } from './utils';
+import { CONTRACT_STATUS, CONTRACT_STATUS_LABEL } from './utils';
+import { computePlanStatusRows } from './paymentUtils';
 import type { Contract, ContractStatus } from './types';
 import { initialProjects } from '../../delivery/project/mockData';
-import { FilterBar, PageHeader, PageShell } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  EntityLink,
+  PageHeader,
+  PageShell,
+  PaymentAmountSummary,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 
@@ -81,14 +87,7 @@ export function Contracts() {
       title: '合同名称',
       width: 220,
       render: (_: unknown, c: Contract) => (
-        <a
-          style={{ color: 'var(--primary)', cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--color-fill-1)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          onClick={() => navigate(`/contracts/${c.id}`)}
-        >
-          {c.current.contractName}
-        </a>
+        <EntityLink to={`/contracts/${c.id}`}>{c.current.contractName}</EntityLink>
       ),
     },
     {
@@ -98,20 +97,28 @@ export function Contracts() {
     },
     {
       title: '合同 / 回款金额',
-      width: 190,
+      width: 250,
       render: (_: unknown, c: Contract) => (
-        <Space direction="vertical" size={2}>
-          <b>合同 ¥{(c.current.totalAmount / 10000).toFixed(0)}万</b>
-          <span style={{ color: 'var(--color-text-2)', whiteSpace: 'nowrap' }}>
-            已收 {c.receivedAmount !== undefined ? `¥${(c.receivedAmount / 10000).toFixed(0)}万` : '—'} · 待收 {c.receivableAmount !== undefined ? `¥${(c.receivableAmount / 10000).toFixed(0)}万` : '—'}
-          </span>
-        </Space>
+        <PaymentAmountSummary
+          size="small"
+          total={c.current.totalAmount}
+          receivable={c.receivableAmount ?? 0}
+          scheduleItems={computePlanStatusRows(c).map(({ plan, allocated, status }) => ({
+            id: `${c.id}-${plan.period}`,
+            label: plan.periodName ?? `第${plan.period}期`,
+            percentage: plan.percentage,
+            amount: plan.amount,
+            allocated,
+            status,
+            expectedDate: plan.expectedDate,
+          }))}
+        />
       ),
     },
     {
       title: '形成状态',
       width: 110,
-      render: (_: unknown, c: Contract) => <ContractStatusBadge status={c.status} size="small" />,
+      render: (_: unknown, c: Contract) => <StatusTag meta={CONTRACT_STATUS[c.status]} size="small" />,
     },
     {
       title: '版本',
@@ -121,28 +128,28 @@ export function Contracts() {
     {
       title: '签订日期',
       width: 120,
-      render: (_: unknown, c: Contract) => c.current.signDate,
+      render: (_: unknown, c: Contract) => <DateText value={c.current.signDate} />,
     },
     {
       title: '终止日期',
       width: 120,
-      render: (_: unknown, c: Contract) => c.current.endDate,
+      render: (_: unknown, c: Contract) => <DateText value={c.current.endDate} />,
     },
     {
       title: '履行状态',
       width: 100,
       render: (_: unknown, c: Contract) =>
         c.status === 'archived' && c.executionStatus ? (
-          <Tag color={c.executionStatus === '已完成' ? 'green' : 'arcoblue'}>
+          <StatusTag tone={c.executionStatus === '已完成' ? 'success' : 'info'}>
             {c.executionStatus}
-          </Tag>
+          </StatusTag>
         ) : (
-          <span style={{ color: 'var(--color-text-3)' }}>—</span>
+          <span>—</span>
         ),
     },
     {
       title: '操作',
-      width: 100,
+      width: 120,
       fixed: 'right' as const,
       render: (_: unknown, c: Contract) => (
         <Space>
@@ -170,28 +177,35 @@ export function Contracts() {
         actions={<Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>新建合同</Button>}
       />
 
-      <Card>
-        <Tabs activeTab={filter} onChange={(k) => setFilter(k as ListFilter)} style={{ marginBottom: 12 }}>
-          <TabPane key="all" title={`全部 (${projectContracts.length})`} />
-          <TabPane key="draft" title={`${CONTRACT_STATUS_LABEL.draft} (${counts.draft})`} />
-          <TabPane key="approving" title={`${CONTRACT_STATUS_LABEL.approving} (${counts.approving})`} />
-          <TabPane key="executing" title={`履行中 (${executingCount})`} />
-          <TabPane key="archived" title={`${CONTRACT_STATUS_LABEL.archived} (${counts.archived})`} />
-        </Tabs>
+      <SectionCard>
+        <SectionTabs
+          activeKey={filter}
+          onChange={(k) => setFilter(k as ListFilter)}
+          items={[
+            {
+              key: 'all',
+              label: `全部 (${projectContracts.length})`,
+            },
+            {
+              key: 'draft',
+              label: `${CONTRACT_STATUS_LABEL.draft} (${counts.draft})`,
+            },
+            {
+              key: 'approving',
+              label: `${CONTRACT_STATUS_LABEL.approving} (${counts.approving})`,
+            },
+            {
+              key: 'executing',
+              label: `履行中 (${executingCount})`,
+            },
+            {
+              key: 'archived',
+              label: `${CONTRACT_STATUS_LABEL.archived} (${counts.archived})`,
+            },
+          ]}
+        />
 
-        <FilterBar actions={<Button type="primary" icon={<IconSearch />}>搜索</Button>}>
-          <Input
-            style={{ width: 280 }}
-            placeholder="搜索合同编号、名称或客户"
-            prefix={<IconSearch />}
-            value={keyword}
-            onChange={setKeyword}
-            allowClear
-          />
-        </FilterBar>
-
-        <Table
-          style={{ marginTop: 16 }}
+        <DataTable
           columns={columns}
           data={filtered}
           rowKey="id"
@@ -201,8 +215,19 @@ export function Contracts() {
             showTotal: true,
             showJumper: true,
           }}
+          toolbar={(
+            <Input
+              style={{ width: 280 }}
+              placeholder="搜索合同编号、名称或客户"
+              prefix={<IconSearch />}
+              value={keyword}
+              onChange={setKeyword}
+              allowClear
+            />
+          )}
+          actions={<Button type="primary" icon={<IconSearch />}>搜索</Button>}
         />
-      </Card>
+      </SectionCard>
     </PageShell>
   );
 }

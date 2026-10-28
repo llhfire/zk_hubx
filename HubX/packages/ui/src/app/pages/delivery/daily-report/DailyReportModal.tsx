@@ -1,7 +1,7 @@
 // src/app/pages/daily-report/DailyReportModal.tsx
 
 import { useState, useEffect, useRef } from 'react';
-import { DatePicker, Modal, Message, Select } from '@arco-design/web-react';
+import { DatePicker, Modal, Message, Select } from '@/design-system';
 import { SalesDailyTemplate } from './SalesDailyTemplate';
 import { GeneralDailyTemplate } from './GeneralDailyTemplate';
 import { AdDeliveryDailyTemplate } from './AdDeliveryDailyTemplate';
@@ -510,7 +510,7 @@ export function DailyReportModal({ visible, onCancel, onSubmit, currentUserId = 
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>日期</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>日期</div>
           {backfill ? (
             <DatePicker
               value={formatDate(reportDate)}
@@ -519,13 +519,13 @@ export function DailyReportModal({ visible, onCancel, onSubmit, currentUserId = 
               style={{ width: '100%' }}
             />
           ) : (
-            <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 4 }}>
+            <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
               {formatDate(reportDate)}
             </div>
           )}
         </div>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>撰写人</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>撰写人</div>
           {backfill ? (
             <Select
               value={selectedEmployeeId}
@@ -534,20 +534,20 @@ export function DailyReportModal({ visible, onCancel, onSubmit, currentUserId = 
               style={{ width: '100%' }}
             />
           ) : (
-            <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 4 }}>
+            <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
               {currentUser?.name || '未知用户'}
             </div>
           )}
         </div>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>部门</div>
-          <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>部门</div>
+          <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {currentUser?.department || '未知部门'}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>岗位</div>
-          <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 4 }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>岗位</div>
+          <div style={{ height: 32, lineHeight: '32px', padding: '0 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
             {currentUser?.position || '未知岗位'}
           </div>
         </div>

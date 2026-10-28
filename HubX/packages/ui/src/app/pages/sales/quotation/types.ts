@@ -1,6 +1,7 @@
 // 报价模块核心类型定义
 import type { CustomerSnapshot } from '../customers/types';
 import type { ElectronicSigningPackage } from '../compliance/types';
+import type { StatusMap } from '@/design-system';
 
 // ─── 状态机 ───────────────────────────────────────────────
 
@@ -16,32 +17,29 @@ export type QuoteStatus =
   | 'confirmed'       // 已确认（原 deal，ADR 0066：已确认 ≠ 签约）
   | 'voided';         // 已废止（原展示词「已作废」）
 
-export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
-  draft: '草稿',
-  pending_eval: '待评估',
-  pending_quote: '待报价',
-  auditing: '待审核',
-  rejected: '已驳回',
-  pending_stamp: '待盖章',
-  stamped: '已盖章',
-  sent: '已发出',
-  confirmed: '已确认',
-  voided: '已废止',
+/**
+ * 状态 → 文案 + 语义色的唯一映射（设计系统 `StatusTag` 使用）。
+ *
+ * 文案只在这里写一次；`QUOTE_STATUS_LABELS` 由它派生。新增状态先改
+ * `QuoteStatus`，再在这里加一行。页面里统一 `<StatusTag meta={QUOTE_STATUS[...]}/>`。
+ */
+export const QUOTE_STATUS: StatusMap<QuoteStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending_eval: { label: '待评估', tone: 'info' },
+  pending_quote: { label: '待报价', tone: 'info' },
+  auditing: { label: '待审核', tone: 'warning' },
+  rejected: { label: '已驳回', tone: 'danger' },
+  pending_stamp: { label: '待盖章', tone: 'warning' },
+  stamped: { label: '已盖章', tone: 'success' },
+  sent: { label: '已发出', tone: 'success' },
+  confirmed: { label: '已确认', tone: 'success' },
+  voided: { label: '已废止', tone: 'neutral' },
 };
 
-/** 列表页状态标签配色 */
-export const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
-  draft: 'gray',
-  pending_eval: 'blue',
-  pending_quote: 'arcoblue',
-  auditing: 'orange',
-  rejected: 'red',
-  pending_stamp: 'gold',
-  stamped: 'green',
-  sent: 'green',
-  confirmed: 'green',
-  voided: 'gray',
-};
+// 只取文案时用它（筛选下拉、纯文本摘要）。文案的唯一来源是上面的 QUOTE_STATUS。
+export const QUOTE_STATUS_LABELS = Object.fromEntries(
+  Object.entries(QUOTE_STATUS).map(([status, meta]) => [status, meta.label]),
+) as Record<QuoteStatus, string>;
 
 // ─── 角色 ───────────────────────────────────────────────
 
@@ -234,10 +232,11 @@ export const GRANULARITY_LABELS: Record<Granularity, string> = {
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
-export const RISK_META: Record<RiskLevel, { text: string; color: string }> = {
-  LOW: { text: '低', color: 'green' },
-  MEDIUM: { text: '中', color: 'orange' },
-  HIGH: { text: '高危', color: 'red' },
+/** 风险等级 → 文案 + 语义色的唯一映射（StatusTag 使用）。 */
+export const RISK_STATUS: StatusMap<RiskLevel> = {
+  LOW: { label: '低', tone: 'success' },
+  MEDIUM: { label: '中', tone: 'warning' },
+  HIGH: { label: '高危', tone: 'danger' },
 };
 
 export interface EvaluationUnit {

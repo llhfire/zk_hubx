@@ -1,12 +1,13 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApprovalProvider } from '../../../../approvals/ApprovalContext';
 import { CollectionProvider } from '../../../../collections/CollectionContext';
 import { LeadsProvider } from '../../../../leads/LeadContext';
 import { TodoProvider } from '../../../../todos/TodoContext';
 import { LeadDetail360 } from '../LeadDetail360';
+import * as leadDetailEdit from '../leadDetailEdit';
 import { LeadStagePopover, LeadStagePopoverContent } from '../components/LeadStagePopover';
 import { ContractsProvider } from '../../contracts/ContractsContext';
 import { CustomerProvider } from '../../customers/CustomerContext';
@@ -67,10 +68,28 @@ function renderLeadDetail360Markup(entry = '/leads/my/lead-1') {
 }
 
 describe('LeadDetail360 信息架构全面重构验证', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('线索缺失时保留单个页面壳、标题和返回列表入口', () => {
+    // 示例档案会回退到默认线索，在详情合并边界模拟数据缺失。
+    vi.spyOn(leadDetailEdit, 'mergeLeadDetail').mockReturnValueOnce(undefined);
+    const markup = renderLeadDetail360Markup('/leads/my/missing-lead');
+
+    expect(markup.match(/class="hubx-page-shell"/g)).toHaveLength(1);
+    expect(markup.match(/class="hubx-page-header"/g)).toHaveLength(1);
+    expect(markup).toContain('<h1 class="hubx-page-header__title">线索详情</h1>');
+    expect(markup).toContain('hubx-empty-state');
+    expect(markup).toContain('线索不存在');
+    expect(markup).toContain('返回列表');
+    expect(markup).not.toContain('hubx-process-overview');
+  });
+
   it('1. 顶部 Header、统一指标网格与步进条驾驶舱完整渲染', () => {
     const markup = renderLeadDetail360Markup('/leads/my/lead-1');
 
     // 顶部 ProcessOverview
+    expect(markup.match(/class="hubx-page-shell"/g)).toHaveLength(1);
+    expect(markup).not.toContain('class="hubx-page-header"');
     expect(markup).toContain('hubx-process-overview');
     expect(markup).toContain('A公司CRM系统开发需求');
     expect(markup).toContain('A公司');

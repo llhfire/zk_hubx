@@ -7,6 +7,7 @@
 // - 合同编号生成
 // - 从线索的报价历史中找最近一份"已审批通过的报价"
 
+import type { StatusMap } from '@/design-system';
 import type {
   ContractStatus,
   PaymentPlanItem,
@@ -163,22 +164,22 @@ export function generateContractNo(now: Date, seq: number, signingEntityPrefix?:
   return `CT${yyyy}${mm}${dd}${seqStr}`;
 }
 
-// ContractStatus 的中文标签。组件层（StatusBadge / Tab）共用。
-export const CONTRACT_STATUS_LABEL: Record<ContractStatus, string> = {
-  draft: '草稿',
-  approving: '审批中',
-  pending_mail: '待寄出',
-  pending_return: '待回寄',
-  archived: '已归档',
-  voided: '已作废',
+/**
+ * 合同状态的唯一事实源：文案 + 语义色。
+ *
+ * 渲染一律走 `<StatusTag meta={CONTRACT_STATUS[status]} />`；
+ * 只需要文案时用 `CONTRACT_STATUS[status].label`，不要另建第二份映射。
+ */
+export const CONTRACT_STATUS: StatusMap<ContractStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  approving: { label: '审批中', tone: 'info' },
+  pending_mail: { label: '待寄出', tone: 'warning' },
+  pending_return: { label: '待回寄', tone: 'purple' },
+  archived: { label: '已归档', tone: 'success' },
+  voided: { label: '已作废', tone: 'danger' },
 };
 
-// 状态对应的 Arco Tag/Badge 颜色。
-export const CONTRACT_STATUS_COLOR: Record<ContractStatus, string> = {
-  draft: 'gray',
-  approving: 'arcoblue',
-  pending_mail: 'orange',
-  pending_return: 'cyan',
-  archived: 'green',
-  voided: 'red',
-};
+// 只需要文案时（页签标题、纯文本摘要）用这份派生视图，避免第二份映射。
+export const CONTRACT_STATUS_LABEL = Object.fromEntries(
+  Object.entries(CONTRACT_STATUS).map(([status, meta]) => [status, meta.label]),
+) as Record<ContractStatus, string>;

@@ -1,41 +1,32 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
-  Card,
-  Descriptions,
+  AsyncState,
   Tabs,
-  Table,
   Space,
   Result,
   Button,
   Select,
-  Tag,
   Timeline,
   Typography,
   Modal,
   Form,
   Input,
   Message,
-  Spin,
-  Alert,
   DatePicker,
   Upload,
-} from '@arco-design/web-react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+} from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import {
   IconEdit,
   IconCheck,
   IconWechatpay,
   IconPushpin,
-  IconDelete,
-  IconDownload,
-  IconEye,
   IconFullscreen,
   IconUpload,
   IconPlus,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useContracts } from './ContractsContext';
-import { ContractStatusBadge } from './components/ContractStatusBadge';
 import { renderContractDocument } from './templates';
 import { computePlanStatusRows, PLAN_STATUS_META, effectiveAmount, getReceivedAmount } from './paymentUtils';
 import { registerMainPaymentDualWrite, type DualWriteStatus } from '../../../../services/collectionMutations';
@@ -44,26 +35,36 @@ import { useProjects } from '../../delivery/project/ProjectContext';
 import {
   type ContractStatus,
   type ContractVersion,
-  type ScanArchiveEntry,
 } from './types';
 import {
-  PageShell,
+  AlertBanner,
+  DataTable,
+  DateText,
   DocumentViewerModal,
+  FileList,
   MetricGrid,
+  MoneyText,
+  PaymentPlanTable,
+  PageShell,
   ProcessOverview,
+  SectionTabs,
+  SectionCard,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
+  StatusTag,
+  DescriptionsCard,
+  FileArchivePanel,
 } from '@/design-system';
+import { CONTRACT_STATUS } from './utils';
 import { useQuotation } from '../quotation/QuotationContext';
 import { canCreateSupplementQuote } from '../quotation/supplementQuote';
+import { formatFileSize } from './contractModification';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
 import { compareContractVersions } from './contractVersionDiff';
 import { advanceSigningPackage } from '../compliance/complianceModel';
-import type { ElectronicSigningPackage, ElectronicSigningStatus } from '../compliance/types';
-import { formatMoney } from '../../../utils/money';
-
+import type { ElectronicSigningEvidence, ElectronicSigningPackage, ElectronicSigningStatus } from '../compliance/types';
 const { TabPane } = Tabs;
 const { Text } = Typography;
 
@@ -78,11 +79,11 @@ interface FollowUpRecord {
   date: string;
 }
 
-const FOLLOW_UP_TYPES: Record<FollowUpRecord['type'], { label: string; color: string; icon: ReactNode }> = {
-  requirement_change: { label: '需求变更', color: 'orange', icon: <IconEdit /> },
-  ui_confirm: { label: 'UI确认', color: 'cyan', icon: <IconCheck /> },
-  dunning: { label: '催款记录', color: 'red', icon: <IconWechatpay /> },
-  other: { label: '其他', color: 'gray', icon: <IconPushpin /> },
+const FOLLOW_UP_TYPES: Record<FollowUpRecord['type'], { label: string; tone: 'warning' | 'purple' | 'info' | 'danger' | 'neutral'; icon: ReactNode }> = {
+  requirement_change: { label: '需求变更', tone: 'warning', icon: <IconEdit /> },
+  ui_confirm: { label: 'UI确认', tone: 'info', icon: <IconCheck /> },
+  dunning: { label: '催款记录', tone: 'danger', icon: <IconWechatpay /> },
+  other: { label: '其他', tone: 'neutral', icon: <IconPushpin /> },
 };
 
 const mockFollowUps: FollowUpRecord[] = [
@@ -203,14 +204,29 @@ export function ContractDetail() {
     if (scanInputRef.current) scanInputRef.current.value = '';
   };
 
+  const openSigningEvidence = (file: ElectronicSigningEvidence) => {
+    if (file.url) window.open(file.url, '_blank', 'noopener,noreferrer');
+  };
+
+  const downloadSigningEvidence = (file: ElectronicSigningEvidence) => {
+    if (!file.url) {
+      Message.warning(`${file.name} 仅有演示元数据，无可下载源文件`);
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = file.url;
+    link.download = file.name;
+    link.click();
+  };
+
   if (loading) {
     return (
       <PageShell breadcrumbs={[{ label: '合同管理', to: '/contracts' }, { label: '合同列表', to: '/contracts' }, { label: '加载中' }]}>
-        <Card>
+        <SectionCard>
           <div style={{ minHeight: 240, display: 'grid', placeItems: 'center' }}>
-            <Spin dot tip="正在加载合同详情…" />
+            <AsyncState status="loading" loadingText="正在加载合同详情…" />
           </div>
-        </Card>
+        </SectionCard>
       </PageShell>
     );
   }
@@ -355,21 +371,6 @@ export function ContractDetail() {
   // 期次回款状态
   const planStatusRows = computePlanStatusRows(financialContract);
 
-  const paymentPlanColumns = [
-    { title: '期数', dataIndex: 'period', width: 100, render: (_: unknown, record: { period: number; periodName?: string }) => record.periodName || `第${record.period}期` },
-    { title: '预计回款日期', dataIndex: 'expectedDate', width: 160, render: (v: string) => displayValue(v) },
-    { title: '比例', dataIndex: 'percentage', width: 120, render: (v: number) => `${v?.toFixed(2)}%` },
-    { title: '金额', dataIndex: 'amount', width: 160, render: (v: number) => formatMoney(v) },
-    {
-      title: '回款状态', width: 120,
-      render: (_: unknown, row: { period: number }) => {
-        const status = planStatusRows.find((item) => item.plan.period === row.period)?.status;
-        const meta = status ? PLAN_STATUS_META[status] : PLAN_STATUS_META.pending;
-        return <Tag color={meta.color}>{meta.label}</Tag>;
-      },
-    },
-  ];
-
   const contractBodyHtml = selectedVersion?.renderedHtml || renderContractDocument(cd);
 
   return (
@@ -385,11 +386,11 @@ export function ContractDetail() {
         title={cd.contractName}
         tags={(
           <>
-            <ContractStatusBadge status={contract.status} size="small" />
-            <Tag color={contract.kind === 'supplement' ? 'purple' : 'gray'}>
+            <StatusTag meta={CONTRACT_STATUS[contract.status]} size="small" />
+            <StatusTag tone={contract.kind === 'supplement' ? 'purple' : 'neutral'}>
               {contract.kind === 'supplement' ? '补充合同' : '主合同'}
-            </Tag>
-            {contract.executionStatus && <Tag color="arcoblue">履行：{contract.executionStatus}</Tag>}
+            </StatusTag>
+            {contract.executionStatus && <StatusTag tone="info">履行：{contract.executionStatus}</StatusTag>}
           </>
         )}
         actions={(
@@ -444,9 +445,9 @@ export function ContractDetail() {
         items={[
           { key: 'customer', label: '客户', value: displayValue(cd.customerName) },
           { key: 'entity', label: '签约主体', value: displayValue(cd.signingEntity) },
-          { key: 'total', label: '合同总额', value: formatMoney(totalAmount) },
-          { key: 'received', label: '已回款', value: formatMoney(receivedAmount), tone: receivedAmount > 0 ? 'success' : 'neutral' },
-          { key: 'receivable', label: '待回款', value: formatMoney(receivableAmount), tone: receivableAmount > 0 ? 'warning' : 'success' },
+          { key: 'total', label: '合同总额', value: <MoneyText value={totalAmount} /> },
+          { key: 'received', label: '已回款', value: <MoneyText value={receivedAmount} tone="success" />, tone: receivedAmount > 0 ? 'success' : 'neutral' },
+          { key: 'receivable', label: '待回款', value: <MoneyText value={receivableAmount} />, tone: receivableAmount > 0 ? 'warning' : 'success' },
           { key: 'rate', label: '到账率', value: `${collectionRate}%`, tone: collectionRate >= 100 ? 'success' : 'neutral' },
           { key: 'version', label: '当前版本', value: selectedVersion?.versionNo || '-' },
         ]}
@@ -456,265 +457,319 @@ export function ContractDetail() {
         {/* 主内容区 */}
         <SplitLayoutMain>
           {/* 基础信息 */}
-          <Card title="基础信息">
-            <Descriptions
-              column={4}
-              labelStyle={{ color: 'var(--color-text-3)' }}
-              style={{ marginBottom: 16 }}
-              data={[
-                { label: '签约主体', value: displayValue(cd.signingEntity) },
-                { label: '产品类别', value: displayValue(cd.productCategory) },
-                { label: '合同总额', value: formatMoney(totalAmount) },
-                { label: '付款方式', value: displayValue(cd.paymentMethod) },
-                { label: '签约日期', value: displayValue(cd.signDate) },
-                { label: '生效日期', value: displayValue(cd.effectiveDate) },
-                { label: '终止日期', value: displayValue(cd.endDate) },
-                { label: '创建人', value: displayValue(contract.createdBy) },
-              ]}
+          <SectionCard title="基础信息">
+            <DescriptionsCard
+              bare
+              columns={4}
+              items={[
+              { key: '签约主体', label: '签约主体', value: displayValue(cd.signingEntity) },
+              { key: '产品类别', label: '产品类别', value: displayValue(cd.productCategory) },
+              { key: '合同总额', label: '合同总额', value: <MoneyText value={totalAmount} /> },
+              { key: '付款方式', label: '付款方式', value: displayValue(cd.paymentMethod) },
+              { key: '签约日期', label: '签约日期', value: <DateText value={cd.signDate} placeholder="-" /> },
+              { key: '生效日期', label: '生效日期', value: <DateText value={cd.effectiveDate} placeholder="-" /> },
+              { key: '终止日期', label: '终止日期', value: <DateText value={cd.endDate} placeholder="-" /> },
+              { key: '创建人', label: '创建人', value: displayValue(contract.createdBy) },
+            ]}
             />
             <Text bold style={{ display: 'block', marginBottom: 8 }}>甲方信息</Text>
-            <Descriptions
-              column={4}
-              labelStyle={{ color: 'var(--color-text-3)' }}
-              data={[
-                { label: '公司名称', value: displayValue(cd.customerName) },
-                { label: '联系人', value: displayValue(cd.customerContact) },
-                { label: '联系电话', value: displayValue(cd.customerPhone) },
-                { label: '邮箱', value: displayValue(cd.customerEmail) },
-                { label: '地址', value: displayValue(cd.customerAddress) },
-                { label: '邮编', value: displayValue(cd.customerPostalCode) },
-                { label: '税务登记号', value: displayValue(cd.customerTaxNo) },
-                { label: '开户行', value: displayValue(cd.bankName) },
-                { label: '银行账号', value: displayValue(cd.bankAccount) },
-              ]}
+            <DescriptionsCard
+              bare
+              columns={4}
+              items={[
+              { key: '公司名称', label: '公司名称', value: displayValue(cd.customerName) },
+              { key: '联系人', label: '联系人', value: displayValue(cd.customerContact) },
+              { key: '联系电话', label: '联系电话', value: displayValue(cd.customerPhone) },
+              { key: '邮箱', label: '邮箱', value: displayValue(cd.customerEmail) },
+              { key: '地址', label: '地址', value: displayValue(cd.customerAddress) },
+              { key: '邮编', label: '邮编', value: displayValue(cd.customerPostalCode) },
+              { key: '税务登记号', label: '税务登记号', value: displayValue(cd.customerTaxNo) },
+              { key: '开户行', label: '开户行', value: displayValue(cd.bankName) },
+              { key: '银行账号', label: '银行账号', value: displayValue(cd.bankAccount) },
+            ]}
             />
-          </Card>
+          </SectionCard>
 
           {/* 款项与回款计划 */}
-          <Card title="款项与回款计划">
-            <Table
-              columns={paymentPlanColumns}
+          <SectionCard title="款项与回款计划">
+            <PaymentPlanTable
               data={cd.paymentPlans ?? []}
-              rowKey={(record) => String(record.period)}
-              pagination={false}
+              showPercentage
+              renderStatus={(row) => {
+                const status = planStatusRows.find((item) => item.plan.period === row.period)?.status;
+                const meta = status ? PLAN_STATUS_META[status] : PLAN_STATUS_META.pending;
+                return <StatusTag meta={meta} />;
+              }}
             />
-          </Card>
+          </SectionCard>
 
           {financialSupplements.map((supplement) => {
             const supplementRows = computePlanStatusRows(supplement);
             return (
-              <Card key={supplement.id} title={`补充合同回款计划 · ${supplement.current.contractName}`}>
-                <Table
-                  columns={[
-                    { title: '期数', render: (_: unknown, row: { period: number; periodName?: string }) => row.periodName || `第${row.period}期` },
-                    { title: '预计回款日期', dataIndex: 'expectedDate', render: (value: string) => displayValue(value) },
-                    { title: '金额', dataIndex: 'amount', render: (value: number) => formatMoney(value) },
-                    { title: '回款状态', render: (_: unknown, row: { period: number }) => {
-                      const status = supplementRows.find((item) => item.plan.period === row.period)?.status;
-                      const meta = status ? PLAN_STATUS_META[status] : PLAN_STATUS_META.pending;
-                      return <Tag color={meta.color}>{meta.label}</Tag>;
-                    } },
-                  ]}
+              <SectionCard key={supplement.id} title={`补充合同回款计划 · ${supplement.current.contractName}`}>
+                <PaymentPlanTable
                   data={supplement.current.paymentPlans ?? []}
-                  rowKey={(row) => `${supplement.id}-${row.period}`}
-                  pagination={false}
+                  showPercentage={false}
+                  renderStatus={(row) => {
+                    const status = supplementRows.find((item) => item.plan.period === row.period)?.status;
+                    const meta = status ? PLAN_STATUS_META[status] : PLAN_STATUS_META.pending;
+                    return <StatusTag meta={meta} />;
+                  }}
+                  rowKeyPrefix={supplement.id}
                 />
-              </Card>
+              </SectionCard>
             );
           })}
 
           {/* 合同文件 */}
-          <Card title="合同文件" extra={<Button icon={<IconFullscreen />} onClick={() => setViewer({ title: `${cd.contractName} · 合同正文`, html: contractBodyHtml })}>全屏查看</Button>}>
-            <Tabs defaultActiveTab="body">
-              <TabPane key="body" title="合同正文">
-                <div
-                  style={{ maxHeight: 900, overflow: 'auto', padding: '0 8px' }}
-                  dangerouslySetInnerHTML={{ __html: contractBodyHtml }}
-                />
-              </TabPane>
-              {supplements.map((supplement) => (
-                <TabPane key={`supplement-${supplement.id}`} title={supplement.current.contractName}>
-                  <div style={{ maxHeight: 900, overflow: 'auto', padding: '0 8px' }} dangerouslySetInnerHTML={{ __html: renderContractDocument(supplement.current) }} />
-                </TabPane>
-              ))}
-              <TabPane key="scans" title={`扫描件归档(${scanRows.length})`}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                  <input ref={scanInputRef} hidden type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => handleScanUpload(event.target.files)} />
-                  <Button type="primary" icon={<IconUpload />} onClick={() => scanInputRef.current?.click()}>上传扫描件</Button>
-                </div>
-                {scanRows.length > 0 ? (
-                  <Table
-                    columns={[
-                      // 两列 render 的行参必须用同一行类型，否则 Arco Table 会按较窄的那一列
-                      // 反推泛型，导致另一列不可赋值。
-                      { title: '文件', dataIndex: 'fileName', render: (_: unknown, entry: ScanArchiveEntry) => entry.files.map((f) => <Button key={f.fileName} type="text" onClick={() => setViewer({ title: f.fileName, url: f.blobUrl })}>{f.fileName}</Button>) },
-                      { title: '上传时间', dataIndex: 'uploadedAt' },
-                      { title: '上传人', dataIndex: 'uploadedBy' },
-                      { title: '操作', width: 120, fixed: 'right' as const, render: (_: unknown, entry: ScanArchiveEntry) => <Space>
-                        <Button aria-label="查看扫描件" type="text" icon={<IconEye />} onClick={() => setViewer({ title: entry.files[0]?.fileName || '扫描件', url: entry.files[0]?.blobUrl })} />
-                        <Button aria-label="删除扫描件" type="text" status="danger" icon={<IconDelete />} onClick={() => setScanRows((rows) => rows.filter((row) => row.id !== entry.id))} />
-                      </Space> },
-                    ]}
-                    data={scanRows}
-                    rowKey="id"
-                    pagination={false}
-                  />
-                ) : (
-                  <Text type="secondary">暂无扫描件归档，审批通过后可在此上传归档合同文件。</Text>
-                )}
-              </TabPane>
-            </Tabs>
-          </Card>
+          <SectionCard title="合同文件" extra={<Button icon={<IconFullscreen />} onClick={() => setViewer({ title: `${cd.contractName} · 合同正文`, html: contractBodyHtml })}>全屏查看</Button>}>
+            <SectionTabs
+              defaultActiveKey={"body"}
+              items={[
+                {
+                  key: 'body',
+                  label: "合同正文",
+                  content: (
+                    <>
+                              <div
+                                style={{ maxHeight: 900, overflow: 'auto', padding: '0 8px' }}
+                                dangerouslySetInnerHTML={{ __html: contractBodyHtml }}
+                              />
+                            
+                    </>
+                  ),
+                },
+                ...supplements.map((supplement) => ({
+                  key: `supplement-${supplement.id}`,
+                  label: supplement.current.contractName,
+                  content: (
+                    <div style={{ maxHeight: 900, overflow: 'auto', padding: '0 8px' }} dangerouslySetInnerHTML={{ __html: renderContractDocument(supplement.current) }} />
+                  ),
+                })),
+                {
+                  key: 'scans',
+                  label: `扫描件归档(${scanRows.length})`,
+                  content: (
+                    <>
+                              <FileArchivePanel
+                                title={`扫描件归档（${scanRows.length} 批）`}
+                                description="审批通过后上传归档合同文件"
+                                action={(
+                                  <>
+                                    <input ref={scanInputRef} hidden type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => handleScanUpload(event.target.files)} />
+                                    <Button type="primary" icon={<IconUpload />} onClick={() => scanInputRef.current?.click()}>上传扫描件</Button>
+                                  </>
+                                )}
+                                entries={scanRows.map((entry) => ({
+                                  key: entry.id,
+                                  title: `${entry.linkedVersionNo || '未关联版本'} 归档`,
+                                  badges: entry.isPrimary ? <StatusTag tone="info" size="small">主归档</StatusTag> : undefined,
+                                  timestamp: entry.uploadedAt,
+                                  meta: `上传人：${entry.uploadedBy}${entry.note ? ` · ${entry.note}` : ''}`,
+                                  files: entry.files.map((file) => ({
+                                    key: file.id,
+                                    name: file.fileName,
+                                    meta: `${formatFileSize(file.fileSize)} · ${file.mimeType}`,
+                                    onPreview: () => setViewer({ title: file.fileName, url: file.blobUrl }),
+                                  })),
+                                  onDelete: () => setScanRows((rows) => rows.filter((row) => row.id !== entry.id)),
+                                }))}
+                                emptyDescription="暂无扫描件归档，审批通过后可在此上传归档合同文件。"
+                              />
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutMain>
 
         {/* 右侧跟进记录边栏 */}
         <SplitLayoutAside>
-          <Card
+          <SectionCard
             title="跟进记录"
             extra={<Button type="primary" size="small" icon={<IconEdit />} onClick={() => setFollowUpModalVisible(true)}>记录</Button>}
-            style={{ height: '100%' }}
           >
-            <Tabs defaultActiveTab="followup">
-              <TabPane key="followup" title="跟进">
-                <Timeline style={{ marginTop: 8 }}>
-                  {followUps.map((record) => {
-                    const meta = FOLLOW_UP_TYPES[record.type];
-                    return (
-                      <Timeline.Item key={record.id}>
-                        <Space align="start" direction="vertical" size={4}>
-                          <Space size={4}>
-                            <Tag color={meta.color} size="small">{meta.label}</Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>{record.date}</Text>
-                          </Space>
-                          <Text>{record.content}</Text>
-                          <Text type="secondary" style={{ fontSize: 12 }}>操作人：{record.author}</Text>
-                        </Space>
-                      </Timeline.Item>
-                    );
-                  })}
-                </Timeline>
-              </TabPane>
-              <TabPane key="approval" title="审批">
-                <Timeline style={{ marginTop: 8 }}>
-                  {contract.approvalFlow.map((node) => (
-                    <Timeline.Item key={node.step + node.time}>
-                      <Space direction="vertical" size={2}>
-                        <Space size={4}>
-                          <Tag
-                            color={node.status === 'approved' ? 'green' : node.status === 'rejected' ? 'red' : 'gray'}
-                            size="small"
-                          >
-                            {node.step}
-                          </Tag>
-                          <Text type="secondary" style={{ fontSize: 12 }}>{node.approver}</Text>
-                        </Space>
-                        {node.time && <Text type="secondary" style={{ fontSize: 12 }}>{node.time}</Text>}
-                        {node.comment && <Text>{node.comment}</Text>}
-                      </Space>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </TabPane>
-              <TabPane key="payment" title="回款">
-                <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Button type="text" size="mini" onClick={() => setPaymentBreakdownVisible(true)} style={{ padding: 0, height: 'auto' }}>
-                      已回款 {formatMoney(receivedAmount)} / 待回款 {formatMoney(receivableAmount)}
-                    </Button>
-                    <Button type="primary" size="mini" onClick={() => setMainPaymentModalVisible(true)}>
-                      登记回款
-                    </Button>
-                  </div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>到账率 {collectionRate}%</Text>
-                  {planStatusRows.length === 0 ? (
-                    <Text type="secondary">暂无回款期次，可在合同编辑中配置付款计划。</Text>
-                  ) : (
-                    planStatusRows.map((row) => {
-                      const meta = PLAN_STATUS_META[row.status];
-                      const label = row.plan.periodName || `第${row.plan.period}期`;
-                      return (
-                        <div key={row.plan.period} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '8px 12px' }}>
-                          <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Text bold style={{ fontSize: 13 }}>{label}</Text>
-                              <Tag color={meta.color} size="small">{meta.label}</Tag>
-                            </div>
-                            <Space size={8}>
-                              <Text type="secondary" style={{ fontSize: 12 }}>预计 {row.plan.expectedDate || '-'}</Text>
-                              <Text style={{ fontSize: 12, fontWeight: 600 }}>{formatMoney(row.plan.amount)}</Text>
-                            </Space>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              已到账 {formatMoney(row.allocated)}（{row.plan.percentage?.toFixed(0) ?? '-'}%）
-                            </Text>
-                          </Space>
-                        </div>
-                      );
-                    })
-                  )}
-                  {financialSupplements.map((supplement) => (
-                    <div key={supplement.id} style={{ marginTop: 8 }}>
-                      <Text bold style={{ display: 'block', marginBottom: 6 }}>补充合同 · {supplement.current.contractName}</Text>
-                      {computePlanStatusRows(supplement).map((row) => {
-                        const meta = PLAN_STATUS_META[row.status];
-                        return <div key={row.plan.period} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '8px 12px', marginBottom: 6 }}><div style={{ display: 'flex', justifyContent: 'space-between' }}><Text>{row.plan.periodName || `第${row.plan.period}期`} · {formatMoney(row.plan.amount)}</Text><Tag color={meta.color}>{meta.label}</Tag></div><Text type="secondary" style={{ fontSize: 12 }}>预计 {row.plan.expectedDate || '-'} · 已到账 {formatMoney(row.allocated)}</Text></div>;
-                      })}
-                    </div>
-                  ))}
-                </Space>
-              </TabPane>
-              <TabPane key="version" title="版本">
-                <Timeline style={{ marginTop: 8 }}>
-                  {[...versions].reverse().map((v) => (
-                    <Timeline.Item key={v.versionNo}>
-                      <Space direction="vertical" size={2}>
-                        <Space size={4}>
-                          <Tag color={v.versionNo === (contract.approvedVersionNo) ? 'arcoblue' : 'gray'} size="small">
-                            {v.versionNo}
-                          </Tag>
-                          <Text>{v.label}</Text>
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: 12 }}>{v.createdAt} · {v.createdBy}</Text>
-                        <Space size={4}>
-                          <Button type="text" size="mini" onClick={() => setSelectedVersionNo(v.versionNo)}>查看此版本</Button>
-                          <Button type="text" size="mini" onClick={() => navigate(`/contracts/${contract.id}/edit`, { state: { baseVersionNo: v.versionNo, createNewVersion: true } })}>基于此版本编辑</Button>
-                          {versions.findIndex((item) => item.versionNo === v.versionNo) > 0 && <Button type="text" size="mini" onClick={() => setVersionDiffTarget(v.versionNo)}>对比上一版</Button>}
-                        </Space>
-                      </Space>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </TabPane>
-              <TabPane key="supplement" title="补充合同">
-                <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
-                  {supplementQuotes.map((quote) => (
-                    <div key={quote.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12, cursor: 'pointer' }} onClick={() => navigate(`/quotation/${quote.id}`)}>
-                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text bold>{quote.quoteNo}</Text><Tag color="purple">补充报价</Tag></div>
-                        <Text type="secondary">{quote.basicInfo.projectName} · 变更额 {formatMoney(quote.summary?.grandTotalPrice ?? quote.supplementChangeAmount)}</Text>
-                      </Space>
-                    </div>
-                  ))}
-                  {supplements.length === 0 ? (
-                    supplementQuotes.length === 0 && <Text type="secondary">暂无补充报价或补充合同。</Text>
-                  ) : (
-                    supplements.map((sup) => (
-                      <div key={sup.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: 12, cursor: 'pointer' }}
-                        onClick={() => navigate(`/contracts/${sup.id}`)}>
-                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text bold>{sup.current.contractName}</Text>
-                            <Tag color="arcoblue" size="small">补充合同</Tag>
-                          </div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>合同额：{formatMoney(sup.current.totalAmount)}</Text>
-                          <Text type="secondary" style={{ fontSize: 12 }}>来源报价：{sup.sourceQuoteId || '-'}</Text>
-                        </Space>
-                      </div>
-                    ))
-                  )}
-                </Space>
-              </TabPane>
-            </Tabs>
-          </Card>
+            <SectionTabs
+              defaultActiveKey={"followup"}
+              items={[
+                {
+                  key: 'followup',
+                  label: "跟进",
+                  content: (
+                    <>
+                              <Timeline style={{ marginTop: 8 }}>
+                                {followUps.map((record) => {
+                                  const meta = FOLLOW_UP_TYPES[record.type];
+                                  return (
+                                    <Timeline.Item key={record.id}>
+                                      <Space align="start" direction="vertical" size={4}>
+                                        <Space size={4}>
+                                          <StatusTag tone={meta.tone} size="small">{meta.label}</StatusTag>
+                                          <DateText value={record.date} mode="datetime" />
+                                        </Space>
+                                        <Text>{record.content}</Text>
+                                        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>操作人：{record.author}</Text>
+                                      </Space>
+                                    </Timeline.Item>
+                                  );
+                                })}
+                              </Timeline>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'approval',
+                  label: "审批",
+                  content: (
+                    <>
+                              <Timeline style={{ marginTop: 8 }}>
+                                {contract.approvalFlow.map((node) => (
+                                  <Timeline.Item key={node.step + node.time}>
+                                    <Space direction="vertical" size={2}>
+                                      <Space size={4}>
+                                        <StatusTag
+                                          tone={node.status === 'approved' ? 'success' : node.status === 'rejected' ? 'danger' : 'neutral'}
+                                          size="small"
+                                        >
+                                          {node.step}
+                                        </StatusTag>
+                                        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{node.approver}</Text>
+                                      </Space>
+                                      {node.time && <DateText value={node.time} mode="datetime" />}
+                                      {node.comment && <Text>{node.comment}</Text>}
+                                    </Space>
+                                  </Timeline.Item>
+                                ))}
+                              </Timeline>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'payment',
+                  label: "回款",
+                  content: (
+                    <>
+                              <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <Button type="text" size="mini" onClick={() => setPaymentBreakdownVisible(true)} style={{ padding: 0, height: 'auto' }}>
+                                    已回款 <MoneyText value={receivedAmount} /> / 待回款 <MoneyText value={receivableAmount} />
+                                  </Button>
+                                  <Button type="primary" size="mini" onClick={() => setMainPaymentModalVisible(true)}>
+                                    登记回款
+                                  </Button>
+                                </div>
+                                <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>到账率 {collectionRate}%</Text>
+                                {planStatusRows.length === 0 ? (
+                                  <Text type="secondary">暂无回款期次，可在合同编辑中配置付款计划。</Text>
+                                ) : (
+                                  planStatusRows.map((row) => {
+                                    const meta = PLAN_STATUS_META[row.status];
+                                    const label = row.plan.periodName || `第${row.plan.period}期`;
+                                    return (
+                                      <div key={row.plan.period} style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: '8px 12px' }}>
+                                        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Text bold style={{ fontSize: 'var(--ds-text-dense)' }}>{label}</Text>
+                                            <StatusTag meta={meta} size="small" />
+                                          </div>
+                                          <Space size={8}>
+                                            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>预计 <DateText value={row.plan.expectedDate} placeholder="-" /></Text>
+                                            <MoneyText value={row.plan.amount} />
+                                          </Space>
+                                          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
+                                            已到账 <MoneyText value={row.allocated} />（{row.plan.percentage?.toFixed(0) ?? '-'}%）
+                                          </Text>
+                                        </Space>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                                {financialSupplements.map((supplement) => (
+                                  <div key={supplement.id} style={{ marginTop: 8 }}>
+                                    <Text bold style={{ display: 'block', marginBottom: 6 }}>补充合同 · {supplement.current.contractName}</Text>
+                                    {computePlanStatusRows(supplement).map((row) => {
+                                      const meta = PLAN_STATUS_META[row.status];
+                                      return <div key={row.plan.period} style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: '8px 12px', marginBottom: 6 }}><div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{row.plan.periodName || `第${row.plan.period}期`} · <MoneyText value={row.plan.amount} /></span><StatusTag meta={meta} /></div><Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>预计 <DateText value={row.plan.expectedDate} placeholder="-" /> · 已到账 <MoneyText value={row.allocated} /></Text></div>;
+                                    })}
+                                  </div>
+                                ))}
+                              </Space>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'version',
+                  label: "版本",
+                  content: (
+                    <>
+                              <Timeline style={{ marginTop: 8 }}>
+                                {[...versions].reverse().map((v) => (
+                                  <Timeline.Item key={v.versionNo}>
+                                    <Space direction="vertical" size={2}>
+                                      <Space size={4}>
+                                        <StatusTag tone={v.versionNo === (contract.approvedVersionNo) ? 'info' : 'neutral'} size="small">
+                                          {v.versionNo}
+                                        </StatusTag>
+                                        <Text>{v.label}</Text>
+                                      </Space>
+                                      <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}><DateText value={v.createdAt} mode="datetime" /> · {v.createdBy}</Text>
+                                      <Space size={4}>
+                                        <Button type="text" size="mini" onClick={() => setSelectedVersionNo(v.versionNo)}>查看此版本</Button>
+                                        <Button type="text" size="mini" onClick={() => navigate(`/contracts/${contract.id}/edit`, { state: { baseVersionNo: v.versionNo, createNewVersion: true } })}>基于此版本编辑</Button>
+                                        {versions.findIndex((item) => item.versionNo === v.versionNo) > 0 && <Button type="text" size="mini" onClick={() => setVersionDiffTarget(v.versionNo)}>对比上一版</Button>}
+                                      </Space>
+                                    </Space>
+                                  </Timeline.Item>
+                                ))}
+                              </Timeline>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'supplement',
+                  label: "补充合同",
+                  content: (
+                    <>
+                              <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
+                                {supplementQuotes.map((quote) => (
+                                  <div key={quote.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: 12, cursor: 'pointer' }} onClick={() => navigate(`/quotation/${quote.id}`)}>
+                                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}><Text bold>{quote.quoteNo}</Text><StatusTag tone="purple">补充报价</StatusTag></div>
+                                      <Text type="secondary">{quote.basicInfo.projectName} · 变更额 <MoneyText value={quote.summary?.grandTotalPrice ?? quote.supplementChangeAmount} /></Text>
+                                    </Space>
+                                  </div>
+                                ))}
+                                {supplements.length === 0 ? (
+                                  supplementQuotes.length === 0 && <Text type="secondary">暂无补充报价或补充合同。</Text>
+                                ) : (
+                                  supplements.map((sup) => (
+                                    <div key={sup.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-md)', padding: 12, cursor: 'pointer' }}
+                                      onClick={() => navigate(`/contracts/${sup.id}`)}>
+                                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                          <Text bold>{sup.current.contractName}</Text>
+                                          <StatusTag tone="info" size="small">补充合同</StatusTag>
+                                        </div>
+                                        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>合同额：<MoneyText value={sup.current.totalAmount} /></Text>
+                                        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>来源报价：{sup.sourceQuoteId || '-'}</Text>
+                                      </Space>
+                                    </div>
+                                  ))
+                                )}
+                              </Space>
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 
@@ -723,7 +778,7 @@ export function ContractDetail() {
           const index = versions.findIndex((item) => item.versionNo === versionDiffTarget);
           if (index <= 0) return null;
           const rows = compareContractVersions(versions[index - 1], versions[index]);
-          return <Table rowKey="key" pagination={false} data={rows} columns={[{ title: '字段', dataIndex: 'label', width: 120 }, { title: versions[index - 1].versionNo, dataIndex: 'before' }, { title: versions[index].versionNo, dataIndex: 'after' }, { title: '结果', width: 90, render: (_: unknown, row: typeof rows[number]) => <Tag color={row.changed ? 'orange' : 'gray'}>{row.changed ? '有变化' : '一致'}</Tag> }]} />;
+          return <DataTable rowKey="key" pagination={false} data={rows} columns={[{ title: '字段', dataIndex: 'label', width: 120 }, { title: versions[index - 1].versionNo, dataIndex: 'before' }, { title: versions[index].versionNo, dataIndex: 'after' }, { title: '结果', width: 90, render: (_: unknown, row: typeof rows[number]) => <StatusTag tone={row.changed ? 'warning' : 'neutral'}>{row.changed ? '有变化' : '一致'}</StatusTag> }]} />;
         })()}
       </Modal>
 
@@ -736,8 +791,8 @@ export function ContractDetail() {
         await updateSigningPackage(contract.id, () => pkg);
         Message.success('合同签署演示包已创建');
       }} okText={contract.signingPackage ? '关闭' : '创建演示包'} style={{ width: 680 }}>
-        <Alert type="warning" content="α 签署演示，不具有电子签名法律效力。系统不会生成或伪造个人签名。" showIcon />
-        {!contract.signingPackage ? <Form form={signingForm} layout="vertical"><Form.Item label="签署人（每行：姓名,手机号）" field="signers" rules={[{ required: true }]}><Input.TextArea rows={4} defaultValue={`${contract.current.customerContact},${contract.current.customerPhone}`} /></Form.Item><Form.Item label="签署截止时间" field="deadline" rules={[{ required: true }]}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></Form> : <Space direction="vertical" style={{ width: '100%' }}><Descriptions column={1} data={[{ label: '状态', value: <Tag>{contract.signingPackage.status}</Tag> }, { label: '截止时间', value: contract.signingPackage.deadline }, { label: '签署顺序', value: contract.signingPackage.signers.map((item) => `${item.order}. ${item.name} ${item.phone}`).join('；') }]} /><Space wrap>{contract.signingPackage.status === 'pending' && <Button onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'signing'))}>开始签署</Button>}{contract.signingPackage.status === 'signing' && <><Button type="primary" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'completed'))}>模拟全部完成</Button><Button status="danger" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'refused'))}>模拟拒签</Button></>}{(['pending', 'signing'] as ElectronicSigningStatus[]).includes(contract.signingPackage.status) && <Button status="warning" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'revoked'))}>撤销演示包</Button>}</Space><Upload autoUpload={false} multiple limit={5} onChange={async (files: UploadItem[]) => { const file = files.at(-1)?.originFile; if (!file) return; const evidence = { id: `contract-sign-evidence-${Date.now()}`, name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, url: URL.createObjectURL(file), uploadedAt: new Date().toISOString() }; await updateSigningPackage(contract.id, (value) => value ? { ...value, evidence: [...value.evidence, evidence] } : value); Message.success('线下签署证据已保存'); }}><Button>上传线下签署证据</Button></Upload>{contract.signingPackage.evidence.map((file) => <Space key={file.id}><span>{file.name}</span>{file.url && <Button type="text" size="mini" onClick={() => window.open(file.url, '_blank')}>预览</Button>}</Space>)}</Space>}
+        <AlertBanner tone="warning">α 签署演示，不具有电子签名法律效力。系统不会生成或伪造个人签名。</AlertBanner>
+        {!contract.signingPackage ? <Form form={signingForm} layout="vertical"><Form.Item label="签署人（每行：姓名,手机号）" field="signers" rules={[{ required: true }]}><Input.TextArea rows={4} defaultValue={`${contract.current.customerContact},${contract.current.customerPhone}`} /></Form.Item><Form.Item label="签署截止时间" field="deadline" rules={[{ required: true }]}><DatePicker showTime style={{ width: '100%' }} /></Form.Item></Form> : <Space direction="vertical" style={{ width: '100%' }}><DescriptionsCard bare columns={1} items={[{ key: '状态', label: '状态', value: <StatusTag tone="info">{contract.signingPackage.status}</StatusTag> }, { key: '截止时间', label: '截止时间', value: contract.signingPackage.deadline }, { key: '签署顺序', label: '签署顺序', value: contract.signingPackage.signers.map((item) => `${item.order}. ${item.name} ${item.phone}`).join('；'), long: true }]} /><Space wrap>{contract.signingPackage.status === 'pending' && <Button onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'signing'))}>开始签署</Button>}{contract.signingPackage.status === 'signing' && <><Button type="primary" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'completed'))}>模拟全部完成</Button><Button status="danger" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'refused'))}>模拟拒签</Button></>}{(['pending', 'signing'] as ElectronicSigningStatus[]).includes(contract.signingPackage.status) && <Button status="warning" onClick={() => updateSigningPackage(contract.id, (value) => advanceSigningPackage(value!, 'revoked'))}>撤销演示包</Button>}</Space><Upload autoUpload={false} multiple limit={5} onChange={async (files: UploadItem[]) => { const file = files.at(-1)?.originFile; if (!file) return; const evidence = { id: `contract-sign-evidence-${Date.now()}`, name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, url: URL.createObjectURL(file), uploadedAt: new Date().toISOString() }; await updateSigningPackage(contract.id, (value) => value ? { ...value, evidence: [...value.evidence, evidence] } : value); Message.success('线下签署证据已保存'); }}><Button>上传线下签署证据</Button></Upload>{contract.signingPackage.evidence.length > 0 && <FileList items={contract.signingPackage.evidence.map((file) => ({ key: file.id, name: file.name, meta: `${formatFileSize(file.size)} · ${file.mimeType} · 上传于 ${file.uploadedAt}`, onPreview: file.url ? () => openSigningEvidence(file) : undefined, onDownload: file.url ? () => downloadSigningEvidence(file) : undefined }))} />}</Space>}
       </Modal>
 
       <DocumentViewerModal
@@ -775,8 +830,8 @@ export function ContractDetail() {
       </Modal>
       <Modal title="合同金额拆分" visible={paymentBreakdownVisible} onCancel={() => setPaymentBreakdownVisible(false)} footer={<Button onClick={() => setPaymentBreakdownVisible(false)}>关闭</Button>}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Card size="small" title="主合同"><Text>合同额 {formatMoney(contract.current.totalAmount)} · 已回 {formatMoney(mainReceivedAmount)} · 待回 {formatMoney(Math.max(0, contract.current.totalAmount - mainReceivedAmount))}</Text></Card>
-          {financialSupplements.map((item) => { const received = getReceivedAmount(item); return <Card key={item.id} size="small" title={item.current.contractName}><Text>合同额 {formatMoney(item.current.totalAmount)} · 已回 {formatMoney(received)} · 待回 {formatMoney(Math.max(0, item.current.totalAmount - received))}</Text></Card>; })}
+          <SectionCard title="主合同"><Text>合同额 <MoneyText value={contract.current.totalAmount} /> · 已回 <MoneyText value={mainReceivedAmount} /> · 待回 <MoneyText value={Math.max(0, contract.current.totalAmount - mainReceivedAmount)} /></Text></SectionCard>
+          {financialSupplements.map((item) => { const received = getReceivedAmount(item); return <SectionCard key={item.id} title={item.current.contractName}><Text>合同额 <MoneyText value={item.current.totalAmount} /> · 已回 <MoneyText value={received} /> · 待回 <MoneyText value={Math.max(0, item.current.totalAmount - received)} /></Text></SectionCard>; })}
         </Space>
       </Modal>
 
@@ -799,7 +854,7 @@ export function ContractDetail() {
             <Select placeholder="请选择回款期次">
               {planStatusRows.map((row) => (
                 <Select.Option key={row.plan.period} value={String(row.plan.period)}>
-                  {row.plan.periodName || `第${row.plan.period}期`} · {formatMoney(row.plan.amount)}
+                  {row.plan.periodName || `第${row.plan.period}期`} · <MoneyText value={row.plan.amount} />
                 </Select.Option>
               ))}
               <Select.Option value="other">其他/不分期</Select.Option>

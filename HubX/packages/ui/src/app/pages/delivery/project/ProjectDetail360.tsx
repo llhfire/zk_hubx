@@ -1,18 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
-  Card,
   Button,
   Space,
-  Tag,
-  Tabs,
   Typography,
-  Grid,
-  Progress,
-  Descriptions,
+  FormGrid,
   Timeline,
   Message,
-  Table,
   Modal,
   Form,
   Input,
@@ -20,33 +14,32 @@ import {
   DatePicker,
   InputNumber,
   Drawer,
-  Empty,
   Upload,
   Pagination,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
+  ChartBarHorizontal,
   IconEdit,
   IconCalendar,
   IconPlus,
   IconFile,
   IconDelete,
   IconUpload,
-} from '@arco-design/web-react/icon';
-import { ChartBarHorizontal, Flag } from '@phosphor-icons/react';
+  Flag,
+} from '@/design-system';
 import type {
   ActivityEvent,
   ProjectMeetingMinutes,
   ProjectDemoEnv,
 } from './types';
 import {
-  PROJECT_PRIORITY_COLOR,
-  BUSINESS_LINE_COLOR,
-  HEALTH_LABEL,
-  HEALTH_COLOR,
+  PROJECT_PRIORITY_META,
+  BUSINESS_LINE_META,
+  HEALTH_META,
   PROJECT_DELIVERY_STAGE_LABEL,
   getProjectDeliveryStage,
-  PROJECT_RISK_LEVEL_LABEL,
-  PROJECT_RISK_LEVEL_COLOR,
+  PROJECT_RISK_LEVEL_META,
+  PROJECT_STATUS_META,
 } from './types';
 import {
   getProjectCountdown,
@@ -81,21 +74,36 @@ import {
   type CollectionLedgerEntry,
   type CollectionPeriod,
 } from '../../../../services/collectionMutations';
-import type { Contract, ContractStatus } from '../../sales/contracts/types';
+import type { Contract } from '../../sales/contracts/types';
 import { computePlanStatusRows, effectiveAmount } from '../../sales/contracts/paymentUtils';
 import { useQuotation } from '../../sales/quotation/QuotationContext';
 import { QuotationWorkbench } from '../../sales/quotation/QuotationWorkbench';
 import { QuoteCard } from '../../sales/quotation/QuoteCard';
-import { QUOTE_STATUS_LABELS, QUOTE_STATUS_COLORS } from '../../sales/quotation/types';
+import { QUOTE_STATUS } from '../../sales/quotation/types';
 import { getLeadDetailProfile } from '../../sales/leads/leadDetailProfiles';
 import {
-  PageShell,
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  EmptyState,
   MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
   ProcessOverview,
+  ProcessPanelSection,
+  ProcessRecordCard,
+  SectionCard,
+  SectionTabs,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
+  StatusTag,
+  UploadPanel,
+  resolveStatus,
   type MetricItem,
+  type StatusMap,
+  ProgressBar,
 } from '@/design-system';
 import {
   CollectionRecordModal,
@@ -120,11 +128,9 @@ import {
   type ProjectStageCheck,
 } from './projectStageSummary';
 import './detail/projectDetail360.css';
-import { formatMoney as money } from '../../../utils/money';
-import { CONTRACT_STATUS_COLOR as CONTRACT_STATUS_COLORS } from '../../sales/contracts/utils';
+import { CONTRACT_STATUS } from '../../sales/contracts/utils';
 
 const { Text } = Typography;
-const TabPane = Tabs.TabPane;
 
 const MAIN_TABS = ['activity', 'basic', 'contracts', 'payments', 'team', 'daily', 'tasks'] as const;
 const SIDE_TABS = ['follow', 'meetings', 'documents', 'demo', 'quotation', 'contract-records', 'presales', 'travel', 'reimbursement'] as const;
@@ -139,13 +145,9 @@ function isSideTab(value: string | null): value is SideTab {
   return SIDE_TABS.includes(value as SideTab);
 }
 
-const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
-  draft: '草稿',
-  approving: '审批中',
-  pending_mail: '待寄出',
-  pending_return: '待回寄',
-  archived: '已归档',
-  voided: '已作废',
+const CONFIRMATION_STATUS_META: StatusMap = {
+  已签署: { label: '已签署', tone: 'success' },
+  待签署: { label: '待签署', tone: 'warning' },
 };
 
 const PAWKEY_PROJECT_ID = 'prod-112';
@@ -375,14 +377,12 @@ export function ProjectDetail360() {
 
   if (!project || !metrics) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Text type="secondary">项目不存在</Text>
-          <div style={{ marginTop: 16 }}>
-            <Button onClick={() => navigate('/projects')}>返回列表</Button>
-          </div>
-        </div>
-      </Card>
+      <PageShell breadcrumbs={[{ label: '项目管理', to: '/projects' }, { label: '项目详情' }]}>
+        <PageHeader title="项目详情" />
+        <SectionCard>
+          <EmptyState description="项目不存在" action={<Button onClick={() => navigate('/projects')}>返回列表</Button>} />
+        </SectionCard>
+      </PageShell>
     );
   }
 
@@ -697,16 +697,10 @@ export function ProjectDetail360() {
       ),
       value: contractAmount > 0 ? (
         <div className="project-collection-metric">
-          <Progress
-            percent={Math.max(0, Math.min(100, collectionPercent))}
-            size="small"
-            showText={false}
-            color="rgb(var(--success-6))"
-            trailColor="rgb(var(--success-1))"
-          />
+          <ProgressBar percent={Math.max(0, Math.min(100, collectionPercent))} tone="success" />
           <span className="project-collection-metric__amount">
-            <span>已回 {formatAmount(receivedAmount)}</span>
-            <span>合同 {formatAmount(contractAmount)}</span>
+            <span>已回 <MoneyText value={receivedAmount} variant="compact" /></span>
+            <span>合同 <MoneyText value={contractAmount} variant="compact" /></span>
           </span>
         </div>
       ) : '暂无有效合同',
@@ -728,8 +722,8 @@ export function ProjectDetail360() {
       key: 'risk-blockers',
       label: '风险 / 阻塞',
       value: activeBlockers.length > 0
-        ? `${PROJECT_RISK_LEVEL_LABEL[project.riskLevel || 'none']} · ${activeBlockers.length} 项阻塞`
-        : PROJECT_RISK_LEVEL_LABEL[project.riskLevel || 'none'],
+        ? `${resolveStatus(PROJECT_RISK_LEVEL_META, project.riskLevel || 'none').label} · ${activeBlockers.length} 项阻塞`
+        : resolveStatus(PROJECT_RISK_LEVEL_META, project.riskLevel || 'none').label,
       tone: activeBlockers.length > 0 || project.riskLevel === 'high' ? 'danger' : project.riskLevel === 'medium' ? 'warning' : 'success',
       onClick: () => {
         setActiveMainTab('activity');
@@ -753,12 +747,10 @@ export function ProjectDetail360() {
         title={project.name}
         tags={(
           <>
-            <Tag color={BUSINESS_LINE_COLOR[project.businessLine]}>{project.businessLine}</Tag>
-            <Tag color="gray">{project.entity}</Tag>
-            <Tag color={PROJECT_PRIORITY_COLOR[project.priority]}>优先级: {project.priority}</Tag>
-            <Tag color={HEALTH_COLOR[metrics.healthStatus]}>
-              健康度: {HEALTH_LABEL[metrics.healthStatus]}
-            </Tag>
+            <StatusTag meta={resolveStatus(BUSINESS_LINE_META, project.businessLine)} />
+            <StatusTag>{project.entity}</StatusTag>
+            <StatusTag tone={resolveStatus(PROJECT_PRIORITY_META, project.priority).tone}>优先级: {project.priority}</StatusTag>
+            <StatusTag tone={resolveStatus(HEALTH_META, metrics.healthStatus).tone}>健康度: {resolveStatus(HEALTH_META, metrics.healthStatus).label}</StatusTag>
           </>
         )}
         actions={(
@@ -810,71 +802,65 @@ export function ProjectDetail360() {
           />
 
           {/* 左侧主 Tab */}
-          <Card size="small">
-            <Tabs activeTab={activeMainTab} onChange={setActiveMainTab} type="card">
-              <TabPane key="basic" title="基础信息" />
-              <TabPane key="contracts" title="合同信息" />
-              <TabPane key="payments" title="回款与发票" />
-              <TabPane key="team" title="团队与工时" />
-              <TabPane key="tasks" title="任务管理" />
-              <TabPane key="activity" title="项目动态" />
-            </Tabs>
+          <SectionCard>
+            <SectionTabs
+              variant="card"
+              activeKey={activeMainTab}
+              onChange={setActiveMainTab}
+              items={[
+                { key: 'basic', label: '基础信息' },
+                { key: 'contracts', label: '合同信息' },
+                { key: 'payments', label: '回款与发票' },
+                { key: 'team', label: '团队与工时' },
+                { key: 'tasks', label: '任务管理' },
+                { key: 'activity', label: '项目动态' },
+              ]}
+            />
 
-            <div style={{ marginTop: 16 }}>
+            <div className="project-detail-360__side-content">
               {/* 基础信息 */}
               {activeMainTab === 'basic' && (
                 <div className="project-basic-information">
-                  <Descriptions
-                    className="project-basic-information__grid"
-                    column={3}
-                    layout="inline-horizontal"
-                    size="medium"
-                    tableLayout="fixed"
-                    data={[
-                      { label: '项目编号', value: project.projectNo },
-                      { label: '业务线', value: project.businessLine },
-                      { label: '签约主体', value: project.entity },
-                      { label: '项目经理', value: project.owner || '待指派' },
-                      { label: '销售', value: project.salesUsers.join('、') || '-' },
-                      { label: '优先级', value: project.priority },
-                      { label: '状态', value: project.status },
-                      { label: '项目进度', value: `${project.progress}%` },
-                      { label: '预算工时', value: budgetHoursLabel },
-                      { label: '开始日期', value: project.startDate || '-' },
-                      { label: '预计交付', value: project.expectedEndDate || '-' },
-                      { label: '创建时间', value: project.createdAt },
-                      { label: '风险等级', value: project.riskLevel ? <Tag color={PROJECT_RISK_LEVEL_COLOR[project.riskLevel]} size="small">{PROJECT_RISK_LEVEL_LABEL[project.riskLevel]}</Tag> : '-' },
-                      { label: '活跃阻塞', value: activeBlockers.length > 0 ? `${activeBlockers.length} 项` : '无' },
-                      { label: '生产站 ID', value: project.sourceProjectId ?? '-' },
+                  <DescriptionsCard
+                    columns={3}
+                    items={[
+                      { key: 'projectNo', label: '项目编号', value: project.projectNo },
+                      { key: 'businessLine', label: '业务线', value: <StatusTag meta={resolveStatus(BUSINESS_LINE_META, project.businessLine)} /> },
+                      { key: 'entity', label: '签约主体', value: project.entity },
+                      { key: 'owner', label: '项目经理', value: project.owner || '待指派' },
+                      { key: 'sales', label: '销售', value: project.salesUsers.join('、') || '-' },
+                      { key: 'priority', label: '优先级', value: <StatusTag meta={resolveStatus(PROJECT_PRIORITY_META, project.priority)} /> },
+                      { key: 'status', label: '状态', value: <StatusTag meta={resolveStatus(PROJECT_STATUS_META, project.status)} /> },
+                      { key: 'progress', label: '项目进度', value: `${project.progress}%` },
+                      { key: 'budgetHours', label: '预算工时', value: budgetHoursLabel },
+                      { key: 'startDate', label: '开始日期', value: <DateText value={project.startDate} /> },
+                      { key: 'expectedEndDate', label: '预计交付', value: <DateText value={project.expectedEndDate} /> },
+                      { key: 'createdAt', label: '创建时间', value: <DateText value={project.createdAt} mode="datetime" /> },
+                      { key: 'riskLevel', label: '风险等级', value: project.riskLevel ? <StatusTag meta={resolveStatus(PROJECT_RISK_LEVEL_META, project.riskLevel)} /> : '-' },
+                      { key: 'blockers', label: '活跃阻塞', value: activeBlockers.length > 0 ? `${activeBlockers.length} 项` : '无' },
+                      { key: 'sourceProjectId', label: '生产站 ID', value: project.sourceProjectId ?? '-' },
+                      { key: 'customer', label: '客户', value: metrics.customerName || '-', long: true },
+                      { key: 'latestProgress', label: '最新进展', value: project.latestProgress || '-', long: true },
+                      { key: 'riskNote', label: '风险备注', value: project.riskNote || '-', long: true },
+                      { key: 'remark', label: '项目备注', value: project.remark || '-', long: true },
                     ]}
                   />
-                  <div className="project-basic-information__long-list">
-                    {[
-                      { label: '客户', value: metrics.customerName || '-' },
-                      { label: '最新进展', value: project.latestProgress || '-' },
-                      { label: '风险备注', value: project.riskNote || '-' },
-                      { label: '项目备注', value: project.remark || '-' },
-                    ].map((item) => (
-                      <div key={item.label} className="project-basic-information__long-row">
-                        <Text type="secondary">{item.label}</Text>
-                        <span>{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
               {/* 合同信息 */}
               {activeMainTab === 'contracts' && (
                 <div>
-                  <Card size="small" title="正式主合同" style={{ marginBottom: 12 }}>
-                    {mainContract ? (
-                      <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo defaultCollapsed />
-                    ) : (
-                      <Empty description="暂无关联合同" />
-                    )}
-                  </Card>
-                  <Card size="small" title={`补充合同（${supplementContracts.length}）`}>
+                  <div style={{ marginBottom: 12 }}>
+                    <SectionCard title="正式主合同">
+                      {mainContract ? (
+                        <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo defaultCollapsed />
+                      ) : (
+                        <EmptyState description="暂无关联合同" />
+                      )}
+                    </SectionCard>
+                  </div>
+                  <SectionCard title={`补充合同（${supplementContracts.length}）`}>
                     {supplementContracts.length > 0 ? (
                       <Space direction="vertical" size={16} style={{ width: '100%' }}>
                         {supplementContracts.map((contract) => (
@@ -882,9 +868,9 @@ export function ProjectDetail360() {
                         ))}
                       </Space>
                     ) : (
-                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
+                      <EmptyState description="暂无补充合同" />
                     )}
-                  </Card>
+                  </SectionCard>
                 </div>
               )}
 
@@ -917,46 +903,37 @@ export function ProjectDetail360() {
               {/* 团队与工时 */}
               {activeMainTab === 'team' && (
                 <div>
-                  <Card size="small" title="团队成员与分工" style={{ marginBottom: 16 }}>
-                    <Table rowKey="name" pagination={false} data={teamMembers} columns={[
-                      { title: '成员', dataIndex: 'name', render: (name: string) => <Button type="text" style={{ padding: 0 }} onClick={() => { setTeamDrawerMember(name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>{name}</Button> },
-                      { title: '岗位', dataIndex: 'position' },
-                      { title: '累计工时', dataIndex: 'hours', render: (hours: number) => <Text style={{ fontWeight: 600 }}>{formatHours(hours)}</Text> },
-                      { title: '操作', width: 100, fixed: 'right' as const, render: (_: unknown, member: { name: string }) => <Button type="text" size="small" onClick={() => { setTeamDrawerMember(member.name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>查看日报</Button> },
-                    ]} />
-                  </Card>
+                  <div style={{ marginBottom: 16 }}>
+                    <SectionCard title="团队成员与分工">
+                      <DataTable rowKey="name" pagination={false} data={teamMembers} emptyDescription="暂无团队成员" columns={[
+                        { title: '成员', dataIndex: 'name', render: (name: string) => <Button type="text" style={{ padding: 0 }} onClick={() => { setTeamDrawerMember(name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>{name}</Button> },
+                        { title: '岗位', dataIndex: 'position' },
+                        { title: '累计工时', dataIndex: 'hours', render: (hours: number) => <Text style={{ fontWeight: 600 }}>{formatHours(hours)}</Text> },
+                        { title: '操作', width: 100, fixed: 'right' as const, render: (_: unknown, member: { name: string }) => <Button type="text" size="small" onClick={() => { setTeamDrawerMember(member.name); setTeamDailyPage(1); setTeamDailyKeyword(''); setTeamDailyRiskFilter('all'); }}>查看日报</Button> },
+                      ]} />
+                    </SectionCard>
+                  </div>
 
-                  <Card size="small" title="工时统计">
-                    <Grid.Row gutter={16}>
-                      <Grid.Col span={8}>
-                        <div style={{ textAlign: 'center', padding: 16 }}>
-                          <Text type="secondary">预算工时</Text>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{budgetHoursLabel}</div>
-                        </div>
-                      </Grid.Col>
-                      <Grid.Col span={8}>
-                        <div style={{ textAlign: 'center', padding: 16 }}>
-                          <Text type="secondary">已消耗</Text>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{formatHours(metrics.totalHours)}</div>
-                        </div>
-                      </Grid.Col>
-                      <Grid.Col span={8}>
-                        <div style={{ textAlign: 'center', padding: 16 }}>
-                          <Text type="secondary">消耗比例</Text>
-                          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 8 }}>{hoursUsageLabel}</div>
-                        </div>
-                      </Grid.Col>
-                    </Grid.Row>
-                    <Progress percent={metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0} style={{ marginTop: 8 }} />
-                  </Card>
+                  <SectionCard title="工时统计">
+                    <MetricGrid
+                      items={[
+                        { key: 'budget', label: '预算工时', value: budgetHoursLabel },
+                        { key: 'total', label: '已消耗', value: formatHours(metrics.totalHours) },
+                        { key: 'usage', label: '消耗比例', value: hoursUsageLabel },
+                      ]}
+                    />
+                    <div style={{ marginTop: 8 }}>
+                      <ProgressBar percent={metrics.budgetHours > 0 ? Math.round(metrics.totalHours / metrics.budgetHours * 100) : 0} />
+                    </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* 日报 */}
               {activeMainTab === 'daily' && (
-                <Table
+                <DataTable
                   columns={[
-                    { title: '日期', dataIndex: 'date', width: 110 },
+                    { title: '日期', dataIndex: 'date', width: 110, render: (value: string) => <DateText value={value} /> },
                     { title: '成员', dataIndex: 'personName', width: 80 },
                     { title: '岗位', dataIndex: 'position', width: 120 },
                     { title: '工时(h)', dataIndex: 'hours', width: 70 },
@@ -966,25 +943,21 @@ export function ProjectDetail360() {
                   data={dailyReports}
                   pagination={false}
                   rowKey="id"
-                  noDataElement={<Empty description="暂无日报记录" />}
+                  emptyDescription="暂无日报记录"
                 />
               )}
 
               {/* 任务管理 */}
               {activeMainTab === 'tasks' && (
                 <div>
-                  <Text style={{ display: 'block', fontSize: 16, fontWeight: 600, marginBottom: 12 }}>工作项概览</Text>
-                  <Grid.Row gutter={[12, 12]}>
-                    {[
-                      { key: 'requirements', title: '需求', total: Math.max(3, tasks.filter((task) => task.type === '产品设计').length), pending: 1, tone: 'rgb(var(--primary-6))' },
-                      { key: 'tasks', title: '任务', total: tasks.length, pending: tasks.filter((task) => task.status !== '已完成').length, tone: 'rgb(var(--warning-6))' },
-                      { key: 'bugs', title: '缺陷', total: bugs.length, pending: bugs.filter((bug) => bug.status !== '已修复').length, tone: 'rgb(var(--danger-6))' },
-                    ].map((item) => <Grid.Col span={8} key={item.key}>
-                      <Card hoverable size="small" style={{ cursor: 'pointer', borderTop: `3px solid ${item.tone}` }} onClick={() => navigate(`/projects/${project.id}/work-items?tab=${item.key}`)}>
-                        <Text type="secondary">{item.title}总数</Text><div style={{ fontSize: 28, fontWeight: 700, margin: '6px 0' }}>{item.total}</div><Text type="secondary">待处理 {item.pending} 项 · 点击查看列表</Text>
-                      </Card>
-                    </Grid.Col>)}
-                  </Grid.Row>
+                  <Text style={{ display: 'block', fontSize: 'var(--text-base)', fontWeight: 600, marginBottom: 12 }}>工作项概览</Text>
+                  <MetricGrid
+                    items={[
+                      { key: 'requirements', label: '需求总数', value: Math.max(3, tasks.filter((task) => task.type === '产品设计').length), detail: '待处理 1 项 · 点击查看列表', tone: 'neutral', ariaLabel: '查看需求列表', onClick: () => navigate(`/projects/${project.id}/work-items?tab=requirements`) },
+                      { key: 'tasks', label: '任务总数', value: tasks.length, detail: `待处理 ${tasks.filter((task) => task.status !== '已完成').length} 项 · 点击查看列表`, tone: 'warning', ariaLabel: '查看任务列表', onClick: () => navigate(`/projects/${project.id}/work-items?tab=tasks`) },
+                      { key: 'bugs', label: '缺陷总数', value: bugs.length, detail: `待处理 ${bugs.filter((bug) => bug.status !== '已修复').length} 项 · 点击查看列表`, tone: 'danger', ariaLabel: '查看缺陷列表', onClick: () => navigate(`/projects/${project.id}/work-items?tab=bugs`) },
+                    ]}
+                  />
                 </div>
               )}
 
@@ -1001,56 +974,60 @@ export function ProjectDetail360() {
                 />
               )}
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutMain>
 
         {/* 右侧业务过程 (30%) */}
         <SplitLayoutAside className="project-detail-360__aside">
-          <Card size="small" style={{ flex: 1 }}>
-            <Tabs activeTab={activeSideTab} onChange={setActiveSideTab} type="card" size="small">
-              <TabPane key="follow" title="跟进" />
-              <TabPane key="meetings" title="会议纪要" />
-              <TabPane key="documents" title="资料" />
-              <TabPane key="demo" title="演示" />
-              <TabPane key="quotation" title="报价" />
-              <TabPane key="contract-records" title="合同" />
-              <TabPane key="presales" title="售前" />
-              <TabPane key="travel" title="出差" />
-              <TabPane key="reimbursement" title="报销" />
-            </Tabs>
+          <SectionCard>
+            <SectionTabs
+              variant="card"
+              activeKey={activeSideTab}
+              onChange={setActiveSideTab}
+              items={[
+                { key: 'follow', label: '跟进' },
+                { key: 'meetings', label: '会议纪要' },
+                { key: 'documents', label: '资料' },
+                { key: 'demo', label: '演示' },
+                { key: 'quotation', label: '报价' },
+                { key: 'contract-records', label: '合同' },
+                { key: 'presales', label: '售前' },
+                { key: 'travel', label: '出差' },
+                { key: 'reimbursement', label: '报销' },
+              ]}
+            />
 
             <div style={{ marginTop: 16 }}>
               {/* 跟进 */}
               {activeSideTab === 'follow' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openQuickFollow()}>写跟进</Button>
-                  </div>
+                <ProcessPanelSection
+                  actions={<Button type="primary" size="small" icon={<IconPlus />} onClick={() => openQuickFollow()}>写跟进</Button>}
+                >
                   <Timeline>
                     {followUps.map((record) => (
                       <Timeline.Item key={record.id} dotColor="var(--color-border-2)">
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <Tag color="blue" size="small">{record.status}</Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>{record.createdAt}</Text>
-                            <Text type="secondary" style={{ fontSize: 12 }}>· {record.operator}</Text>
+                        <div className="project-detail-360__follow-record">
+                          <div className="project-detail-360__follow-meta">
+                            <StatusTag tone="info">{record.status}</StatusTag>
+                            <Text type="secondary"><DateText value={record.createdAt} mode="datetime" /></Text>
+                            <Text type="secondary">· {record.operator}</Text>
                           </div>
-                          <div style={{ fontSize: 14, color: 'var(--color-text-1)', marginBottom: 4 }}>{record.content}</div>
+                          <div className="project-detail-360__follow-content">{record.content}</div>
                           {record.progress > 0 && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>进度: {record.progress}%</Text>
+                            <Text type="secondary">进度: {record.progress}%</Text>
                           )}
                         </div>
                       </Timeline.Item>
                     ))}
                   </Timeline>
-                  {followUps.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无跟进记录</div>}
-                </div>
+                  {followUps.length === 0 && <EmptyState description="暂无跟进记录" />}
+                </ProcessPanelSection>
               )}
 
               {/* 报价 */}
               {activeSideTab === 'quotation' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <ProcessPanelSection
+                  actions={(
                     <Button
                       type="primary"
                       size="small"
@@ -1060,11 +1037,12 @@ export function ProjectDetail360() {
                     >
                       新建报价
                     </Button>
-                  </div>
+                  )}
+                >
                   {!leadId ? (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>当前项目未关联线索，暂无报价</div>
+                    <EmptyState description="当前项目未关联线索，暂无报价" />
                   ) : leadQuotes.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报价记录</div>
+                    <EmptyState description="暂无报价记录" />
                   ) : (
                     <div>
                       {activeQuotes.map((q) => (
@@ -1079,29 +1057,28 @@ export function ProjectDetail360() {
                       ))}
                       {voidedQuotes.length > 0 && (
                         <>
-                          <div style={{ borderTop: '1px dashed var(--color-border-3)', margin: '12px 0' }} />
-                          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>已作废</Text>
+                          <div className="project-detail-360__side-divider" />
+                          <Text type="secondary" className="project-detail-360__side-label">已作废</Text>
                           {voidedQuotes.map((q) => (
-                            <div key={q.id} style={{ border: '1px solid var(--color-border-2)', borderRadius: 8, padding: '12px 14px', marginBottom: 8, opacity: 0.5, background: 'var(--color-fill-1)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                                <Text style={{ fontWeight: 600, textDecoration: 'line-through' }}>{q.basicInfo.projectName}</Text>
-                                <Tag color="arcoblue" size="small">{q.version}</Tag>
-                                <Tag size="small" color="gray">{QUOTE_STATUS_LABELS[q.status]}</Tag>
-                              </div>
-                              <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{q.quoteNo}</div>
-                            </div>
+                            <ProcessRecordCard
+                              key={q.id}
+                              muted
+                              title={q.basicInfo.projectName}
+                              tags={<><StatusTag size="small" tone="info">{q.version}</StatusTag><StatusTag size="small" meta={QUOTE_STATUS[q.status]} /></>}
+                              identifier={q.quoteNo}
+                            />
                           ))}
                         </>
                       )}
                     </div>
                   )}
-                </div>
+                </ProcessPanelSection>
               )}
 
               {/* 合同 */}
               {activeSideTab === 'contract-records' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <ProcessPanelSection
+                  actions={(
                     <Button
                       type="primary"
                       size="small"
@@ -1110,31 +1087,21 @@ export function ProjectDetail360() {
                     >
                       新建合同
                     </Button>
-                  </div>
-                  {linkedContracts.map((c) => (
-                    <Card
-                      key={c.id}
-                      size="small"
-                      hoverable
-                      style={{ marginBottom: 8, cursor: 'pointer' }}
-                      onClick={() => handleViewContractDetail(c.id)}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{c.current.contractName}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{c.contractNo} · {c.current.signingEntity}</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>{money(c.current.totalAmount)}</div>
-                          <Tag color={CONTRACT_STATUS_COLORS[c.status]} size="small">{CONTRACT_STATUS_LABELS[c.status]}</Tag>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                  {linkedContracts.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无合同</div>
                   )}
-                </div>
+                >
+                  {linkedContracts.map((c) => (
+                    <ProcessRecordCard
+                      key={c.id}
+                      title={c.current.contractName}
+                      identifier={<>{c.contractNo} · {c.current.signingEntity}</>}
+                      summary={<MoneyText value={c.current.totalAmount} />}
+                      actions={<StatusTag meta={resolveStatus(CONTRACT_STATUS, c.status)} />}
+                      onClick={() => handleViewContractDetail(c.id)}
+                      ariaLabel={`查看合同 ${c.current.contractName}`}
+                    />
+                  ))}
+                  {linkedContracts.length === 0 && <EmptyState description="暂无合同" />}
+                </ProcessPanelSection>
               )}
 
               {/* 售前 */}
@@ -1144,152 +1111,119 @@ export function ProjectDetail360() {
 
               {/* 会议纪要 */}
               {activeSideTab === 'meetings' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { meetingForm.resetFields(); setMeetingModalVisible(true); }}>新增纪要</Button>
-                  </div>
+                <ProcessPanelSection
+                  actions={<Button size="small" icon={<IconPlus />} onClick={() => { meetingForm.resetFields(); setMeetingModalVisible(true); }}>新增纪要</Button>}
+                >
                   {meetings.map((m) => (
-                    <Card key={m.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={{ fontWeight: 500 }}>{m.subject}</Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>{m.meetingTime}</Text>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 6 }}>
-                        <Tag size="small" color="blue">内部: {m.employeeAttendees.join('、') || '-'}</Tag>
-                        {m.externalAttendees.length > 0 && <Tag size="small" color="cyan">客户: {m.externalAttendees.join('、')}</Tag>}
-                      </div>
-                      <div style={{ fontSize: 14, color: 'var(--color-text-2)' }}>{m.minutes}</div>
-                      <div style={{ marginTop: 6 }}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>记录人: {m.recorder}</Text>
-                      </div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={m.id}
+                      title={m.subject}
+                      actions={<Text type="secondary"><DateText value={m.meetingTime} mode="datetime" /></Text>}
+                      tags={<><StatusTag size="small" tone="info">内部: {m.employeeAttendees.join('、') || '-'}</StatusTag>{m.externalAttendees.length > 0 && <StatusTag size="small" tone="cyan">客户: {m.externalAttendees.join('、')}</StatusTag>}</>}
+                      details={<>{m.minutes}<div className="project-detail-360__record-caption">记录人: {m.recorder}</div></>}
+                    />
                   ))}
-                  {meetings.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无会议纪要</div>}
-                </div>
+                  {meetings.length === 0 && <EmptyState description="暂无会议纪要" />}
+                </ProcessPanelSection>
               )}
 
               {/* 演示 */}
               {activeSideTab === 'demo' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>
-                  </div>
+                <ProcessPanelSection
+                  actions={<Button size="small" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>}
+                >
                   {demoEnvs.map((demo) => (
-                    <Card key={demo.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Tag color="blue" size="small">{demo.env}</Tag>
-                          <Text style={{ marginLeft: 8 }}>{demo.description}</Text>
-                        </div>
+                    <ProcessRecordCard
+                      key={demo.id}
+                      leading={<StatusTag tone="info">{demo.env}</StatusTag>}
+                      title={demo.description}
+                      identifier={demo.url}
+                      actions={(
                         <Space>
                           <Button type="text" size="small" onClick={() => { navigator.clipboard.writeText(demo.url); Message.success('已复制链接'); }}>复制链接</Button>
                           <Button type="text" size="small" icon={<IconDelete />} status="danger" onClick={() => { setDemoEnvs(demoEnvs.filter((d) => d.id !== demo.id)); Message.success('已删除'); }} />
                         </Space>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{demo.url}</div>
-                    </Card>
+                      )}
+                    />
                   ))}
-                  {demoEnvs.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无演示环境</div>}
-                </div>
+                  {demoEnvs.length === 0 && <EmptyState description="暂无演示环境" />}
+                </ProcessPanelSection>
               )}
 
               {/* 资料（确认书 + 项目文档） */}
               {activeSideTab === 'documents' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconUpload />}>上传资料</Button>
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>确认书</Text>
+                <ProcessPanelSection actions={<Button size="small" icon={<IconUpload />}>上传资料</Button>}>
+                  <div className="project-detail-360__record-group">
+                    <Text type="secondary" className="project-detail-360__side-label">确认书</Text>
                     {confirmations.map((c) => (
-                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--color-border-1)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <IconFile style={{ color: 'var(--color-text-3)' }} />
-                          <div>
-                            <Text style={{ fontSize: 14 }}>{c.type}</Text>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{c.attachment || '无附件'} · {c.signDate || '未签署'}</div>
-                          </div>
-                        </div>
-                        <Tag color={c.status === '已签署' ? 'green' : 'orange'} size="small">{c.status}</Tag>
-                      </div>
+                      <ProcessRecordCard
+                        key={c.id}
+                        leading={<IconFile />}
+                        title={c.type}
+                        identifier={<>{c.attachment || '无附件'} · <DateText value={c.signDate} placeholder="未签署" /></>}
+                        actions={<StatusTag meta={resolveStatus(CONFIRMATION_STATUS_META, c.status)} />}
+                      />
                     ))}
-                    {confirmations.length === 0 && <div style={{ textAlign: 'center', padding: 16, color: 'var(--color-text-4)', fontSize: 12 }}>暂无确认书</div>}
+                    {confirmations.length === 0 && <EmptyState description="暂无确认书" />}
                   </div>
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>项目文档</Text>
+                  <div className="project-detail-360__record-group">
+                    <Text type="secondary" className="project-detail-360__side-label">项目文档</Text>
                     {documents.map((doc) => (
-                      <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--color-border-1)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <IconFile style={{ color: 'var(--color-text-3)' }} />
-                          <div>
-                            <Text style={{ fontSize: 14 }}>{doc.title}</Text>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{doc.owner} · {doc.createdAt}</div>
-                          </div>
-                        </div>
-                        <Space>
-                          {doc.onlineUrl && <Button type="text" size="small" onClick={() => window.open(doc.onlineUrl, '_blank')}>查看</Button>}
-                          <Button type="text" size="small">下载</Button>
-                        </Space>
-                      </div>
+                      <ProcessRecordCard
+                        key={doc.id}
+                        leading={<IconFile />}
+                        title={doc.title}
+                        identifier={<>{doc.owner} · <DateText value={doc.createdAt} /></>}
+                        actions={(
+                          <Space>
+                            {doc.onlineUrl && <Button type="text" size="small" onClick={() => window.open(doc.onlineUrl, '_blank')}>查看</Button>}
+                            <Button type="text" size="small">下载</Button>
+                          </Space>
+                        )}
+                      />
                     ))}
-                    {documents.length === 0 && <div style={{ textAlign: 'center', padding: 16, color: 'var(--color-text-4)', fontSize: 12 }}>暂无项目文档</div>}
+                    {documents.length === 0 && <EmptyState description="暂无项目文档" />}
                   </div>
-                </div>
+                </ProcessPanelSection>
               )}
 
               {/* 出差 */}
               {activeSideTab === 'travel' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>
-                  </div>
+                <ProcessPanelSection
+                  actions={<Button size="small" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>}
+                >
                   {travels.map((travel) => (
-                    <Card key={travel.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{travel.destination} - {travel.purpose}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
-                            {travel.applicant} · {travel.startDate} ~ {travel.endDate} · ¥{travel.amount}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <Tag color="green" size="small">{travel.status}</Tag>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {travel.approvalNo}</div>
-                        </div>
-                      </div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={travel.id}
+                      title={`${travel.destination} - ${travel.purpose}`}
+                      identifier={<>{travel.applicant} · <DateText value={travel.startDate} /> ~ <DateText value={travel.endDate} /></>}
+                      summary={<MoneyText value={travel.amount} />}
+                      actions={<><StatusTag tone="success">{travel.status}</StatusTag><Text type="secondary">审批号: {travel.approvalNo}</Text></>}
+                    />
                   ))}
-                  {travels.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无出差记录</div>}
-                </div>
+                  {travels.length === 0 && <EmptyState description="暂无出差记录" />}
+                </ProcessPanelSection>
               )}
 
               {/* 报销 */}
               {activeSideTab === 'reimbursement' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                    <Button size="small" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>
-                  </div>
+                <ProcessPanelSection
+                  actions={<Button size="small" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>}
+                >
                   {reimbursements.map((rb) => (
-                    <Card key={rb.id} size="small" style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text style={{ fontWeight: 500 }}>{rb.type} - {rb.description}</Text>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>
-                            {rb.applicant} · ¥{rb.amount}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <Tag color="green" size="small">{rb.status}</Tag>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>审批号: {rb.approvalNo}</div>
-                        </div>
-                      </div>
-                    </Card>
+                    <ProcessRecordCard
+                      key={rb.id}
+                      title={`${rb.type} - ${rb.description}`}
+                      identifier={rb.applicant}
+                      summary={<MoneyText value={rb.amount} />}
+                      actions={<><StatusTag tone="success">{rb.status}</StatusTag><Text type="secondary">审批号: {rb.approvalNo}</Text></>}
+                    />
                   ))}
-                  {reimbursements.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报销记录</div>}
-                </div>
+                  {reimbursements.length === 0 && <EmptyState description="暂无报销记录" />}
+                </ProcessPanelSection>
               )}
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 
@@ -1327,18 +1261,14 @@ export function ProjectDetail360() {
       >
         <Form form={taskForm} layout="vertical">
           <Form.Item label="任务名称" field="title" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="类型" field="type"><Select placeholder="请选择"><Select.Option value="开发">开发</Select.Option><Select.Option value="UI 设计">UI 设计</Select.Option><Select.Option value="产品设计">产品设计</Select.Option><Select.Option value="测试">测试</Select.Option><Select.Option value="账号注册">账号注册</Select.Option><Select.Option value="bug">bug</Select.Option></Select></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="负责人" field="assignee" rules={[{ required: true }]}><Select placeholder="请选择">{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="状态" field="status" initialValue="未开始"><Select><Select.Option value="未开始">未开始</Select.Option><Select.Option value="进行中">进行中</Select.Option><Select.Option value="已完成">已完成</Select.Option></Select></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="优先级" field="priority" initialValue="中"><Select><Select.Option value="高">高</Select.Option><Select.Option value="中">中</Select.Option><Select.Option value="低">低</Select.Option></Select></Form.Item></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="截止日期" field="plannedEndDate"><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="进度(%)" field="progress"><InputNumber min={0} max={100} placeholder="0" style={{ width: '100%' }} /></Form.Item></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <Form.Item label="类型" field="type"><Select placeholder="请选择"><Select.Option value="开发">开发</Select.Option><Select.Option value="UI 设计">UI 设计</Select.Option><Select.Option value="产品设计">产品设计</Select.Option><Select.Option value="测试">测试</Select.Option><Select.Option value="账号注册">账号注册</Select.Option><Select.Option value="bug">bug</Select.Option></Select></Form.Item>
+            <Form.Item label="负责人" field="assignee" rules={[{ required: true }]}><Select placeholder="请选择">{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item>
+            <Form.Item label="状态" field="status" initialValue="未开始"><Select><Select.Option value="未开始">未开始</Select.Option><Select.Option value="进行中">进行中</Select.Option><Select.Option value="已完成">已完成</Select.Option></Select></Form.Item>
+            <Form.Item label="优先级" field="priority" initialValue="中"><Select><Select.Option value="高">高</Select.Option><Select.Option value="中">中</Select.Option><Select.Option value="低">低</Select.Option></Select></Form.Item>
+            <Form.Item label="截止日期" field="plannedEndDate"><DatePicker style={{ width: '100%' }} /></Form.Item>
+            <Form.Item label="进度(%)" field="progress"><InputNumber min={0} max={100} placeholder="0" style={{ width: '100%' }} /></Form.Item>
+          </FormGrid>
         </Form>
       </Modal>
 
@@ -1382,10 +1312,10 @@ export function ProjectDetail360() {
         style={{ width: 560 }}
       >
         <Form form={followForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="操作人" field="operator" initialValue={project.owner || '李四'}><Select>{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="当前进度(%)" field="progress" initialValue={project.progress}><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <Form.Item label="操作人" field="operator" initialValue={project.owner || '李四'}><Select>{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item>
+            <Form.Item label="当前进度(%)" field="progress" initialValue={project.progress}><InputNumber min={0} max={100} style={{ width: '100%' }} /></Form.Item>
+          </FormGrid>
           <Form.Item label="跟进内容" field="content" rules={[{ required: true }]}><Input.TextArea rows={4} maxLength={1000} showWordLimit placeholder="请记录跟进内容" /></Form.Item>
           <Form.Item label="关键节点（选填）" field="milestoneTag" extra="选择后，该跟进会同步进入项目动态与大事记。">
             <Select allowClear placeholder="普通跟进无需选择">
@@ -1400,12 +1330,7 @@ export function ProjectDetail360() {
             </Select>
           </Form.Item>
           <Form.Item label="附件">
-            <Upload accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple drag>
-              <div style={{ padding: '16px 0', textAlign: 'center' }}>
-                <IconUpload style={{ fontSize: 24, color: 'var(--color-text-3)' }} />
-                <div style={{ marginTop: 8, color: 'var(--color-text-2)' }}>点击或拖拽上传</div>
-              </div>
-            </Upload>
+            <UploadPanel accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple hint="点击或拖拽上传" />
           </Form.Item>
         </Form>
       </Modal>
@@ -1435,10 +1360,10 @@ export function ProjectDetail360() {
       >
         <Form form={meetingForm} layout="vertical">
           <Form.Item label="会议主题" field="subject" rules={[{ required: true }]}><Input placeholder="会议主题" /></Form.Item>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="会议时间" field="meetingTime"><DatePicker showTime style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="记录人" field="recorder" initialValue={project.owner || '李四'}><Select>{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <Form.Item label="会议时间" field="meetingTime"><DatePicker showTime style={{ width: '100%' }} /></Form.Item>
+            <Form.Item label="记录人" field="recorder" initialValue={project.owner || '李四'}><Select>{employees.map((e) => <Select.Option key={e} value={e}>{e}</Select.Option>)}</Select></Form.Item>
+          </FormGrid>
           <Form.Item label="内部参会人（顿号分隔）" field="employeeAttendees"><Input placeholder="如：李四、王五" /></Form.Item>
           <Form.Item label="客户参会人（顿号分隔）" field="externalAttendees"><Input placeholder="如：刘经理、陈工" /></Form.Item>
           <Form.Item label="纪要内容" field="minutes" rules={[{ required: true }]}><Input.TextArea rows={4} placeholder="会议纪要" /></Form.Item>
@@ -1457,14 +1382,12 @@ export function ProjectDetail360() {
       {/* 新增出差 Modal */}
       <Modal title="新增出差" visible={travelModalVisible} onOk={() => { travelForm.validate().then((values) => { setTravels([...travels, { id: `tr${Date.now()}`, ...values, status: '待审批' }]); Message.success('已提交'); setTravelModalVisible(false); }); }} onCancel={() => setTravelModalVisible(false)} style={{ width: 520 }}>
         <Form form={travelForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="目的地" field="destination" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="出差事由" field="purpose" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="开始日期" field="startDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="结束日期" field="endDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <Form.Item label="目的地" field="destination" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item>
+            <Form.Item label="出差事由" field="purpose" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item>
+            <Form.Item label="开始日期" field="startDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+            <Form.Item label="结束日期" field="endDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+          </FormGrid>
           <Form.Item label="预估费用" field="amount"><InputNumber min={0} style={{ width: '100%' }} prefix="¥" /></Form.Item>
         </Form>
       </Modal>
@@ -1491,19 +1414,29 @@ export function ProjectDetail360() {
 
       <Drawer title={`${teamDrawerMember || ''} · 项目日报`} visible={Boolean(teamDrawerMember)} onCancel={() => setTeamDrawerMember(undefined)} footer={null} width={720}>
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Grid.Row gutter={12}>
-            <Grid.Col span={8}><Card size="small"><Text type="secondary">累计工时</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{formatHours(selectedMemberReports.reduce((sum, item) => sum + item.hours, 0))}</div></Card></Grid.Col>
-            <Grid.Col span={8}><Card size="small"><Text type="secondary">日报数量</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{selectedMemberReports.length}</div></Card></Grid.Col>
-            <Grid.Col span={8}><Card size="small"><Text type="secondary">风险记录</Text><div style={{ fontSize: 24, fontWeight: 700 }}>{selectedMemberReports.filter((item) => item.riskFeedback && item.riskFeedback !== '无').length}</div></Card></Grid.Col>
-          </Grid.Row>
-          <Space style={{ width: '100%' }}>
-            <Input.Search allowClear placeholder="搜索工作内容或风险反馈" value={teamDailyKeyword} onChange={(value) => { setTeamDailyKeyword(value); setTeamDailyPage(1); }} style={{ flex: 1 }} />
-            <Select value={teamDailyRiskFilter} onChange={(value) => { setTeamDailyRiskFilter(value); setTeamDailyPage(1); }} style={{ width: 150 }}><Select.Option value="all">风险（全部）</Select.Option><Select.Option value="risk">仅有风险</Select.Option></Select>
-          </Space>
-          <Table rowKey="id" pagination={false} data={selectedMemberReports.slice((teamDailyPage - 1) * 5, teamDailyPage * 5)} columns={[
-            { title: '日期', dataIndex: 'date', width: 110 }, { title: '工时', dataIndex: 'hours', width: 80, render: (value: number) => `${value}h` },
-            { title: '工作内容', dataIndex: 'workContent' }, { title: '风险反馈', dataIndex: 'riskFeedback', width: 180 },
-          ]} />
+          <MetricGrid
+            items={[
+              { key: 'hours', label: '累计工时', value: formatHours(selectedMemberReports.reduce((sum, item) => sum + item.hours, 0)) },
+              { key: 'count', label: '日报数量', value: selectedMemberReports.length },
+              { key: 'risk', label: '风险记录', value: selectedMemberReports.filter((item) => item.riskFeedback && item.riskFeedback !== '无').length },
+            ]}
+          />
+          <DataTable
+            rowKey="id"
+            pagination={false}
+            data={selectedMemberReports.slice((teamDailyPage - 1) * 5, teamDailyPage * 5)}
+            toolbar={(
+              <Space style={{ width: '100%' }}>
+                <Input.Search allowClear placeholder="搜索工作内容或风险反馈" value={teamDailyKeyword} onChange={(value) => { setTeamDailyKeyword(value); setTeamDailyPage(1); }} style={{ flex: 1 }} />
+                <Select value={teamDailyRiskFilter} onChange={(value) => { setTeamDailyRiskFilter(value); setTeamDailyPage(1); }} style={{ width: 150 }}><Select.Option value="all">风险（全部）</Select.Option><Select.Option value="risk">仅有风险</Select.Option></Select>
+              </Space>
+            )}
+            emptyDescription="暂无日报记录"
+            columns={[
+              { title: '日期', dataIndex: 'date', width: 110, render: (value: string) => <DateText value={value} /> }, { title: '工时', dataIndex: 'hours', width: 80, render: (value: number) => `${value}h` },
+              { title: '工作内容', dataIndex: 'workContent' }, { title: '风险反馈', dataIndex: 'riskFeedback', width: 180 },
+            ]}
+          />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Pagination current={teamDailyPage} pageSize={5} total={selectedMemberReports.length} onChange={setTeamDailyPage} size="small" /></div>
         </Space>
       </Drawer>

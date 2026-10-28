@@ -3,18 +3,18 @@ import { cloneElement, isValidElement, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
   Button,
-  Card,
   DatePicker,
+  Form,
+  FormGrid,
   Grid,
   Input,
   InputNumber,
   Message,
   Select,
   Space,
-  Tag,
   Typography,
-} from '@arco-design/web-react';
-import { IconLeft } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconLeft } from '@/design-system';
 import { useContracts } from './ContractsContext';
 import {
   findLeadContext,
@@ -33,7 +33,7 @@ import { findLatestApprovedQuote } from './utils';
 import { applyDealQuotePrefill, type DealQuotePrefill } from './dealQuotePrefill';
 import { useQuotation } from '../quotation/QuotationContext';
 import { useBusinessCases } from '../../../business-case/BusinessCaseContext';
-import { PageShell } from '@/design-system';
+import { PageShell, SectionCard, StatusTag } from '@/design-system';
 import type { ContractFormData, QuotationRecord } from './types';
 import { findDefaultContractTemplate } from './templateStore';
 import { useCustomers } from '../customers/CustomerContext';
@@ -53,13 +53,6 @@ interface ContractEditPrefillState {
 }
 
 const submitControlStyle = { width: '100%', height: 44 };
-const submitGridStyle = (columns = 2) => ({
-  display: 'grid',
-  gridTemplateColumns: columns === 1 ? 'minmax(0, 1fr)' : 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
-  columnGap: 28,
-  rowGap: 24,
-});
-
 function renderSubmitField(
   label: string,
   control: ReactNode,
@@ -68,33 +61,7 @@ function renderSubmitField(
   const labelledControl = isValidElement(control)
     ? cloneElement(control as ReactElement<Record<string, unknown>>, { 'aria-label': label })
     : control;
-  return (
-    <div
-      style={{
-        gridColumn: options.full ? '1 / -1' : undefined,
-        display: 'flex',
-        alignItems: options.textarea ? 'flex-start' : 'center',
-        gap: 14,
-        minWidth: 0,
-      }}
-    >
-      <div
-        style={{
-          width: 120,
-          flex: '0 0 120px',
-          textAlign: 'right',
-          fontWeight: 600,
-          fontSize: 16,
-          lineHeight: '44px',
-          color: 'var(--color-text-1)',
-        }}
-      >
-        {options.required && <span style={{ color: 'rgb(var(--red-6))', marginRight: 4 }}>*</span>}
-        {label}：
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>{labelledControl}</div>
-    </div>
-  );
+  return <Form.Item label={label} required={options.required}>{labelledControl}</Form.Item>;
 }
 
 function todayStr(): string {
@@ -427,9 +394,9 @@ export function ContractWizard() {
             {contractEditPrefill ? '编辑合同' : '新建合同'}
           </Title>
           {lead && (
-            <Tag color="arcoblue">
+            <StatusTag tone="info">
               来自线索：{lead.leadName}
-            </Tag>
+            </StatusTag>
           )}
         </Space>
       </div>
@@ -469,8 +436,8 @@ function SimpleContractForm({
 }) {
   return (
     <>
-      <Card bodyStyle={{ padding: '20px 24px' }}>
-        <div style={submitGridStyle(2)}>
+      <SectionCard>
+        <FormGrid columns={2}>
           {renderSubmitField('合同编号', (
             <Input disabled value={contractNo || '系统生成，保存后自动生成'} style={submitControlStyle} />
           ))}
@@ -497,12 +464,12 @@ function SimpleContractForm({
               style={submitControlStyle}
             />
           ), { required: true })}
-        </div>
-      </Card>
+        </FormGrid>
+      </SectionCard>
 
       <Grid.Row gutter={16} style={{ marginTop: 16 }}>
         <Grid.Col xs={24} md={12}>
-          <Card title="我方信息" bodyStyle={{ padding: '20px 24px' }}>
+          <SectionCard title="我方信息">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {renderSubmitField('签约主体', (
                 <Select
@@ -578,11 +545,11 @@ function SimpleContractForm({
                 </Select>
               ))}
             </div>
-          </Card>
+          </SectionCard>
         </Grid.Col>
 
         <Grid.Col xs={24} md={12}>
-          <Card title="客户信息" bodyStyle={{ padding: '20px 24px' }}>
+          <SectionCard title="客户信息">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {renderSubmitField('公司名称', (
           <Input
@@ -657,20 +624,18 @@ function SimpleContractForm({
           </Input.Group>
         ))}
             </div>
-          </Card>
+          </SectionCard>
         </Grid.Col>
       </Grid.Row>
 
-      <Card
+      <SectionCard
         title="模板关键条款"
-        extra={<Tag color="arcoblue">{formData.signingEntity === '中科软通' ? '中科软通技术服务合同 · 19 章 + 2 个附件' : `${formData.signingEntity || '签约主体'} · 软件服务合同`}</Tag>}
-        bodyStyle={{ padding: '20px 24px' }}
-        style={{ marginTop: 16 }}
+        extra={<StatusTag tone="info">{formData.signingEntity === '中科软通' ? '中科软通技术服务合同 · 19 章 + 2 个附件' : `${formData.signingEntity || '签约主体'} · 软件服务合同`}</StatusTag>}
       >
         <Text type="secondary" style={{ display: 'block', marginBottom: 20 }}>
           以下字段直接写入合同模板的项目期限、确认验收、免费维护和开票条款；成交报价的功能清单与付款节点会自动带入附件一和第七章。
         </Text>
-        <div style={submitGridStyle(2)}>
+        <FormGrid columns={2}>
           {renderSubmitField('开发工期', (
             <InputNumber min={1} value={formData.projectWorkDays} onChange={(value) => updateField('projectWorkDays', Number(value) || 0)} suffix="工作日" style={submitControlStyle} />
           ))}
@@ -695,8 +660,8 @@ function SimpleContractForm({
           {renderSubmitField('开票内容', (
             <Input value={formData.invoiceContent ?? ''} onChange={(value) => updateField('invoiceContent', value)} placeholder="如：生产生活服务*研发服务费" style={submitControlStyle} />
           ))}
-        </div>
-      </Card>
+        </FormGrid>
+      </SectionCard>
     </>
   );
 }

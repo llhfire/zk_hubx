@@ -1,12 +1,13 @@
 import React from 'react';
-import { Space, Typography, Button, Tag } from '@arco-design/web-react';
+import { Space, Typography, Button } from '@/design-system';
 import {
   IconCalendar,
   IconLeft,
   IconRight,
   IconClockCircle,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { TenDaySegment } from './timeSegmentUtils';
+import { StatusTag } from '@/design-system';
 
 const { Text } = Typography;
 
@@ -47,9 +48,9 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
       style={{
         marginTop: 16,
         padding: '12px 16px',
-        backgroundColor: 'var(--color-fill-1, #f7f8fa)',
-        border: '1px solid var(--color-border-2, #e5e6eb)',
-        borderRadius: 8,
+        backgroundColor: 'var(--color-fill-1)',
+        border: '1px solid var(--color-border-2)',
+        borderRadius: 'var(--radius-md)',
       }}
     >
       {/* 头部导航与操作区 */}
@@ -69,24 +70,24 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
               justifyContent: 'center',
               width: 24,
               height: 24,
-              borderRadius: 4,
+              borderRadius: 'var(--radius-xs)',
               backgroundColor: 'var(--color-primary-light-1)',
               color: 'rgb(var(--primary-6))',
             }}
           >
             <IconCalendar />
           </div>
-          <Text style={{ fontWeight: 600, fontSize: 13 }}>时间段选择器</Text>
-          <Tag size="small" color="arcoblue">
+          <Text style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>时间段选择器</Text>
+          <StatusTag size="small" tone="info">
             按每 10 天一个显示段
-          </Tag>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          </StatusTag>
+          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             （共 {segments.length} 个阶段，总跨度 {totalSpanDays} 天）
           </Text>
         </Space>
 
         <Space size={6} align="center">
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             第 {safeActiveIndex + 1} / {segments.length} 段
           </Text>
           <Button
@@ -128,13 +129,13 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
               style={{
                 cursor: 'pointer',
                 padding: '8px 14px',
-                borderRadius: 6,
+                borderRadius: 'var(--radius-sm)',
                 border: isActive
                   ? '1px solid rgb(var(--primary-6))'
-                  : '1px solid var(--color-border-2, #e5e6eb)',
+                  : '1px solid var(--color-border-2)',
                 backgroundColor: isActive
                   ? 'var(--color-primary-light-1)'
-                  : 'var(--color-bg-2, #ffffff)',
+                  : 'var(--color-bg-2)',
                 boxShadow: isActive ? '0 1px 4px rgba(22, 93, 255, 0.15)' : 'none',
                 transition: 'all 0.2s ease',
                 minWidth: 128,
@@ -152,19 +153,19 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
               >
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 'var(--ds-text-dense)',
                     fontWeight: isActive ? 600 : 500,
                     color: isActive
                       ? 'rgb(var(--primary-6))'
-                      : 'var(--color-text-1, #1d2129)',
+                      : 'var(--color-text-1)',
                   }}
                 >
                   {seg.label}
                 </span>
                 <span
                   style={{
-                    fontSize: 11,
-                    color: 'var(--color-text-3, #86909c)',
+                    fontSize: 'var(--ds-text-caption)',
+                    color: 'var(--color-text-3)',
                   }}
                 >
                   {seg.days}天
@@ -173,10 +174,10 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
 
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 'var(--ds-text-caption)',
                   color: isActive
                     ? 'rgb(var(--primary-5))'
-                    : 'var(--color-text-3, #86909c)',
+                    : 'var(--color-text-3)',
                 }}
               >
                 {seg.dateRangeLabel}
@@ -185,13 +186,13 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
               <div
                 style={{
                   marginTop: 2,
-                  fontSize: 12,
+                  fontSize: 'var(--text-xs)',
                   fontWeight: hasExpenses ? 600 : 400,
                   color: hasExpenses
                     ? isActive
                       ? 'rgb(var(--primary-6))'
-                      : 'var(--color-text-1, #1d2129)'
-                    : 'var(--color-text-4, #c9cdd4)',
+                      : 'var(--color-text-1)'
+                    : 'var(--color-text-4)',
                 }}
               >
                 {hasExpenses ? `¥${seg.totalAmount.toLocaleString()} (${seg.expenseCount}笔)` : '无记账'}
@@ -206,12 +207,12 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
         style={{
           marginTop: 10,
           paddingTop: 8,
-          borderTop: '1px dashed var(--color-border-2, #e5e6eb)',
+          borderTop: '1px dashed var(--color-border-2)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontSize: 12,
-          color: 'var(--color-text-2, #4e5969)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--color-text-2)',
         }}
       >
         <Space size={4}>
@@ -225,7 +226,7 @@ export const ExpensePeriodSelector: React.FC<ExpensePeriodSelectorProps> = ({
         </Space>
         <span>
           该段产生费用：
-          <strong style={{ color: currentSegment.totalAmount > 0 ? '#ff7d00' : 'inherit' }}>
+          <strong style={{ color: currentSegment.totalAmount > 0 ? 'var(--ds-tone-warning-fg)' : 'inherit' }}>
             ¥{currentSegment.totalAmount.toLocaleString()}
           </strong>
         </span>

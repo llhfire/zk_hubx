@@ -37,7 +37,9 @@ describe('α 客户详情页 SplitLayout 标杆规范', () => {
     // ProcessOverview
     expect(html).toContain('hubx-process-overview');
     expect(html).toContain('重庆绮算法科技有限公司');
-    expect(html).toContain('S 级客户');
+    // M-041：客户等级只显示字母，走 GradeTag
+    expect(html).toContain('hubx-grade-tag');
+    expect(html).toContain('S');
     expect(html).toContain('企业客户');
 
     // 4 大微指标卡

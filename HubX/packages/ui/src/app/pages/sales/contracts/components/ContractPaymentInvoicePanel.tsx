@@ -1,22 +1,17 @@
 import {
   Button,
-  Card,
-  Empty,
   Form,
-  Grid,
+  FormGrid,
   Input,
   InputNumber,
   Modal,
   Popconfirm,
   Select,
   Space,
-  Table,
-  Tag,
   Tooltip,
-  Typography,
-} from '@arco-design/web-react';
-import { IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
-import type { FormInstance } from '@arco-design/web-react/es/Form';
+} from '@/design-system';
+import { IconDelete, IconEdit, IconPlus } from '@/design-system';
+import type { FormInstance } from '@/design-system';
 import {
   collectionIncludesPeriod,
   getCollectionPeriods,
@@ -24,9 +19,15 @@ import {
 } from '../../../../../services/collectionMutations';
 import type { Contract } from '../types';
 import { computePlanStatusRows, PLAN_STATUS_META } from '../paymentUtils';
-import { formatMoney as money } from '../../../../utils/money';
-
-const { Text } = Typography;
+import {
+  DataTable,
+  EmptyState,
+  MetricGrid,
+  MoneyText,
+  PaymentPlanTable,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 
 export interface PaymentInvoiceRecord {
   id: string;
@@ -111,82 +112,73 @@ export function ContractPaymentInvoicePanel({
     const invoiced = hasActiveInvoiceForPlan({ contractId: contract.id, period, collections, invoiceRecords });
     return (
       <Space size={4} wrap>
-        <Tag color={meta.color}>{meta.label}</Tag>
-        {invoiced && <Tag color="arcoblue">已开票</Tag>}
+        <StatusTag meta={meta} />
+        {invoiced && <StatusTag tone="info">已开票</StatusTag>}
       </Space>
     );
   };
 
   return (
     <div>
-      <Grid.Row gutter={[8, 8]} style={{ marginBottom: 12 }}>
-        <Grid.Col span={8}>
-          <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>合同标的额</Text>
-            <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{contractAmount > 0 ? money(contractAmount) : '-'}</div>
-          </div>
-        </Grid.Col>
-        <Grid.Col span={8}>
-          <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>已到账</Text>
-            <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4, color: 'rgb(var(--success-6))' }}>{receivedAmount > 0 ? money(receivedAmount) : '-'}</div>
-          </div>
-        </Grid.Col>
-        <Grid.Col span={8}>
-          <div style={{ padding: '8px 12px', background: 'var(--color-fill-2)', borderRadius: 6, textAlign: 'center' }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>待回款</Text>
-            <div style={{ fontSize: 16, fontWeight: 600, marginTop: 4 }}>{contractAmount > 0 ? money(Math.max(0, contractAmount - receivedAmount)) : '-'}</div>
-          </div>
-        </Grid.Col>
-      </Grid.Row>
+      <div style={{ marginBottom: 12 }}>
+        <MetricGrid
+          items={[
+            {
+              key: 'contract',
+              label: '合同标的额',
+              value: contractAmount > 0 ? <MoneyText value={contractAmount} /> : '-',
+            },
+            {
+              key: 'received',
+              label: '已到账',
+              value: receivedAmount > 0 ? <MoneyText value={receivedAmount} /> : '-',
+              tone: 'success',
+            },
+            {
+              key: 'receivable',
+              label: '待回款',
+              value: contractAmount > 0 ? <MoneyText value={Math.max(0, contractAmount - receivedAmount)} /> : '-',
+            },
+          ]}
+        />
+      </div>
 
-      <Card size="small" title="回款期次（计划）" style={{ marginBottom: 12 }}>
-        {mainContract?.current.paymentPlans?.length ? (
-          <Table
-            columns={[
-              { title: '期次', dataIndex: 'period', width: 80, render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
-              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
-              { title: '收款 / 开票', width: 170, render: (_: unknown, row: { period: number }) => planStatusTags(mainContract, row.period) },
-              { title: '比例', dataIndex: 'percentage', width: 80, render: (value: number) => `${value}%` },
-              { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
-              { title: '触发条件', dataIndex: 'condition', width: 160 },
-            ]}
-            data={mainContract.current.paymentPlans}
-            pagination={false}
-            rowKey="period"
+      <div style={{ marginBottom: 12 }}>
+        <SectionCard title="回款期次（计划）">
+          <PaymentPlanTable
+            data={mainContract?.current.paymentPlans ?? []}
+            showPercentage
+            showCondition
+            conditionWidth={160}
+            renderStatus={(row) => mainContract ? planStatusTags(mainContract, row.period) : null}
           />
-        ) : <Empty description="暂无回款期次" />}
-      </Card>
+        </SectionCard>
+      </div>
 
       {supplementContracts.map((supplement) => (
-        <Card key={supplement.id} size="small" title={`补充合同回款计划 · ${supplement.current.contractName}`} style={{ marginBottom: 12 }}>
-          <Table
-            columns={[
-              { title: '期次', width: 90, render: (_: unknown, row: { periodName?: string; period: number }) => row.periodName || `第${row.period}期` },
-              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
-              { title: '收款 / 开票', width: 170, render: (_: unknown, row: { period: number }) => planStatusTags(supplement, row.period) },
-              { title: '比例', dataIndex: 'percentage', width: 80, render: (value: number) => `${value}%` },
-              { title: '预计日期', dataIndex: 'expectedDate', width: 120 },
-              { title: '触发条件', dataIndex: 'condition', width: 180 },
-            ]}
-            data={supplement.current.paymentPlans ?? []}
-            pagination={false}
-            rowKey="period"
-            noDataElement={<Empty description="暂无回款期次" />}
-          />
-        </Card>
+        <div key={supplement.id} style={{ marginBottom: 12 }}>
+          <SectionCard title={`补充合同回款计划 · ${supplement.current.contractName}`}>
+            <PaymentPlanTable
+              data={supplement.current.paymentPlans ?? []}
+              showPercentage
+              showCondition
+              conditionWidth={180}
+              renderStatus={(row) => planStatusTags(supplement, row.period)}
+              rowKeyPrefix={supplement.id}
+            />
+          </SectionCard>
+        </div>
       ))}
 
-      <Card
-        size="small"
+      <SectionCard
         title="实收台账"
         extra={<Button type="primary" size="small" icon={<IconPlus />} disabled={!mainContract} onClick={onAddCollection}>新增实收</Button>}
       >
         {collections.length ? (
-          <Table
+          <DataTable
             columns={[
               { title: '到账日期', dataIndex: 'date', width: 120 },
-              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => money(value) },
+              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => <MoneyText value={value} /> },
               { title: '方式', dataIndex: 'method', width: 120 },
               { title: '期次', width: 140, render: (_: unknown, record: CollectionLedgerEntry) => {
                 const periods = getCollectionPeriods(record);
@@ -196,7 +188,11 @@ export function ContractPaymentInvoicePanel({
               { title: '开票状态', width: 100, render: (_: unknown, record: CollectionLedgerEntry) => {
                 const records = invoiceRecords.filter((item) => item.collectionId === record.id);
                 const validAmount = records.reduce((sum, item) => sum + item.amount, 0);
-                return <Tag color={validAmount > 0 ? 'green' : records.length ? 'orange' : 'gray'}>{validAmount > 0 ? '已开票' : records.length ? '已冲红' : '未开票'}</Tag>;
+                return (
+                  <StatusTag tone={validAmount > 0 ? 'success' : records.length ? 'warning' : 'neutral'}>
+                    {validAmount > 0 ? '已开票' : records.length ? '已冲红' : '未开票'}
+                  </StatusTag>
+                );
               } },
               { title: '操作', width: 176, fixed: 'right' as const, render: (_: unknown, record: CollectionLedgerEntry) => (
                 <Space size={2}>
@@ -211,34 +207,37 @@ export function ContractPaymentInvoicePanel({
             data={collections}
             pagination={false}
             rowKey="id"
+            emptyDescription="暂无实收记录"
           />
-        ) : <Empty description="暂无实收记录" />}
-      </Card>
+        ) : <EmptyState description="暂无实收记录" />}
+      </SectionCard>
 
-      <Card size="small" title="开票与红冲记录" style={{ marginTop: 12 }}>
-        <Table
-          rowKey="id"
-          pagination={false}
-          data={invoiceRecords}
-          noDataElement={<Empty description="暂无开票记录" />}
-          columns={[
-            { title: '发票号码', dataIndex: 'invoiceNo', width: 180 },
-            { title: '关联实收', dataIndex: 'collectionId', width: 150 },
-            { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => <Text style={{ color: value < 0 ? 'rgb(var(--danger-6))' : undefined }}>{money(value)}</Text> },
-            { title: '日期', dataIndex: 'issuedAt', width: 120 },
-            { title: '状态', dataIndex: 'status', width: 90, render: (value: string) => <Tag color={value === 'valid' ? 'green' : 'red'}>{value === 'valid' ? '有效' : '已红冲'}</Tag> },
-            { title: '操作', width: 140, fixed: 'right' as const, render: (_: unknown, invoice: PaymentInvoiceRecord) => (
-              <Space size={2}>
-                {invoice.status === 'valid' && !invoiceRecords.some((item) => item.originalInvoiceId === invoice.id) && <Button type="text" size="small" status="danger" onClick={() => onRedInvoice(invoice)}>冲红</Button>}
-                <Tooltip content="更正发票号码"><Button className="hubx-icon-action" type="text" icon={<IconEdit />} onClick={() => onCorrectInvoice(invoice)} /></Tooltip>
-                <Popconfirm title="确认删除该开票记录？" onOk={() => onDeleteInvoice(invoice)}>
-                  <Tooltip content="删除"><Button className="hubx-icon-action" type="text" status="danger" icon={<IconDelete />} /></Tooltip>
-                </Popconfirm>
-              </Space>
-            ) },
-          ]}
-        />
-      </Card>
+      <div style={{ marginTop: 12 }}>
+        <SectionCard title="开票与红冲记录">
+          <DataTable
+            rowKey="id"
+            pagination={false}
+            data={invoiceRecords}
+            emptyDescription="暂无开票记录"
+            columns={[
+              { title: '发票号码', dataIndex: 'invoiceNo', width: 180 },
+              { title: '关联实收', dataIndex: 'collectionId', width: 150 },
+              { title: '金额', dataIndex: 'amount', width: 120, render: (value: number) => <MoneyText value={value} tone={value < 0 ? 'danger' : 'default'} /> },
+              { title: '日期', dataIndex: 'issuedAt', width: 120 },
+              { title: '状态', dataIndex: 'status', width: 90, render: (value: string) => <StatusTag tone={value === 'valid' ? 'success' : 'danger'}>{value === 'valid' ? '有效' : '已冲红'}</StatusTag> },
+              { title: '操作', width: 140, fixed: 'right' as const, render: (_: unknown, invoice: PaymentInvoiceRecord) => (
+                <Space size={2}>
+                  {invoice.status === 'valid' && !invoiceRecords.some((item) => item.originalInvoiceId === invoice.id) && <Button type="text" size="small" status="danger" onClick={() => onRedInvoice(invoice)}>冲红</Button>}
+                  <Tooltip content="更正发票号码"><Button className="hubx-icon-action" type="text" icon={<IconEdit />} onClick={() => onCorrectInvoice(invoice)} /></Tooltip>
+                  <Popconfirm title="确认删除该开票记录？" onOk={() => onDeleteInvoice(invoice)}>
+                    <Tooltip content="删除"><Button className="hubx-icon-action" type="text" status="danger" icon={<IconDelete />} /></Tooltip>
+                  </Popconfirm>
+                </Space>
+              ) },
+            ]}
+          />
+        </SectionCard>
+      </div>
     </div>
   );
 }
@@ -267,12 +266,9 @@ export function CollectionRecordModal({
   return (
     <Modal title={editing ? '编辑实收记录' : '新增实收记录'} visible={visible} onOk={onOk} onCancel={onCancel} okText="保存" cancelText="取消" style={{ width: 560 }}>
       <Form form={form} layout="vertical">
-        <Grid.Row gutter={16}>
-          <Grid.Col span={12}><Form.Item label="到账日期" field="date" rules={[{ required: true }]}><Input type="date" /></Form.Item></Grid.Col>
-          <Grid.Col span={12}><Form.Item label="到账金额" field="amount" rules={[{ required: true }]}><InputNumber min={0.01} prefix="¥" style={{ width: '100%' }} /></Form.Item></Grid.Col>
-        </Grid.Row>
-        <Grid.Row gutter={16}>
-          <Grid.Col span={12}>
+        <FormGrid columns={2}>
+          <Form.Item label="到账日期" field="date" rules={[{ required: true }]}><Input type="date" /></Form.Item>
+          <Form.Item label="到账金额" field="amount" rules={[{ required: true }]}><InputNumber min={0.01} prefix="¥" style={{ width: '100%' }} /></Form.Item>
             <Form.Item label="关联合同" field="contractId" rules={[{ required: true, message: '请选择关联合同' }]}>
               <Select onChange={() => form.setFieldValue('periods', [])}>
                 {contracts.map((contract) => (
@@ -280,9 +276,8 @@ export function CollectionRecordModal({
                 ))}
               </Select>
             </Form.Item>
-          </Grid.Col>
-          <Grid.Col span={12}><Form.Item label="到账方式" field="method" rules={[{ required: true }]}><Select><Select.Option value="银行汇款">银行汇款</Select.Option><Select.Option value="支付宝">支付宝</Select.Option><Select.Option value="现金">现金</Select.Option></Select></Form.Item></Grid.Col>
-        </Grid.Row>
+          <Form.Item label="到账方式" field="method" rules={[{ required: true }]}><Select><Select.Option value="银行汇款">银行汇款</Select.Option><Select.Option value="支付宝">支付宝</Select.Option><Select.Option value="现金">现金</Select.Option></Select></Form.Item>
+        </FormGrid>
         <Form.Item noStyle shouldUpdate={(previous, current) => previous.contractId !== current.contractId}>
           {(values) => {
             const contract = contracts.find((item) => item.id === values.contractId) ?? contracts[0];
@@ -301,7 +296,7 @@ export function CollectionRecordModal({
                 >
                   {selectablePlans.map(({ plan, allocated }) => (
                     <Select.Option key={plan.period} value={String(plan.period)}>
-                      {plan.periodName || `第${plan.period}期`} · 待收 {money(plan.amount - allocated)}
+                      {plan.periodName || `第${plan.period}期`} · 待收 <MoneyText value={plan.amount - allocated} />
                     </Select.Option>
                   ))}
                   <Select.Option value="other">其他款项</Select.Option>

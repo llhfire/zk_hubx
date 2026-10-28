@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Tag,
-  Button,
-  Space,
-  Typography,
-  Grid,
-  Collapse,
-} from '@arco-design/web-react';
+import { Button, Space, Typography, Grid, Collapse } from '@/design-system';
 import {
   IconExclamationCircle,
   IconCheckCircle,
@@ -16,7 +9,8 @@ import {
   IconSafe,
   IconHome,
   IconCommon,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { MoneyText, StatusTag } from '@/design-system';
 
 const { Text } = Typography;
 const { Row, Col } = Grid;
@@ -52,9 +46,9 @@ export function ComplianceGuide({ destination, days, department, companions }: C
   return (
     <div
       style={{
-        border: '1px solid #bedaff',
-        borderRadius: 8,
-        background: 'linear-gradient(to right, #f2f3ff, #e8f3ff)',
+        border: '1px solid rgb(var(--primary-3))',
+        borderRadius: 'var(--radius-md)',
+        background: 'linear-gradient(to right, rgb(var(--primary-1)), rgb(var(--primary-2)))',
         marginBottom: 16,
       }}
     >
@@ -70,15 +64,15 @@ export function ComplianceGuide({ destination, days, department, companions }: C
         onClick={() => setExpanded(!expanded)}
       >
         <Space>
-          <IconSafe style={{ color: '#165dff' }} />
-          <Text style={{ fontWeight: 500, color: '#165dff' }}>报销合规指引</Text>
-          <Tag size="small" color="blue">{destination} · {days}天 · {cityInfo.level}</Tag>
+          <IconSafe style={{ color: 'rgb(var(--primary-6))' }} />
+          <Text style={{ fontWeight: 500, color: 'rgb(var(--primary-6))' }}>报销合规指引</Text>
+          <StatusTag size="small" tone="info">{destination} · {days}天 · {cityInfo.level}</StatusTag>
         </Space>
         <Space>
           <Space size={16}>
-            <Text type="secondary" style={{ fontSize: 12 }}>住宿 <Text style={{ fontWeight: 600, color: '#165dff' }}>¥{hotelLimit}</Text>/天</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>交通 <Text style={{ fontWeight: 600, color: '#165dff' }}>¥{cityInfo.transportLimit}</Text>/天</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>餐补 <Text style={{ fontWeight: 600, color: '#165dff' }}>¥40</Text>/天</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>住宿 <Text style={{ fontWeight: 600, color: 'rgb(var(--primary-6))' }}><MoneyText value={hotelLimit} /></Text>/天</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>交通 <Text style={{ fontWeight: 600, color: 'rgb(var(--primary-6))' }}><MoneyText value={cityInfo.transportLimit} /></Text>/天</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>餐补 <Text style={{ fontWeight: 600, color: 'rgb(var(--primary-6))' }}><MoneyText value={40} /></Text>/天</Text>
           </Space>
           {expanded ? <IconUp /> : <IconDown />}
         </Space>
@@ -86,64 +80,64 @@ export function ComplianceGuide({ destination, days, department, companions }: C
 
       {/* 展开详情 */}
       {expanded && (
-        <div style={{ padding: '0 16px 12px', borderTop: '1px solid #bedaff' }}>
+        <div style={{ padding: '0 16px 12px', borderTop: '1px solid rgb(var(--primary-3))' }}>
           <Row gutter={12} style={{ marginTop: 12 }}>
             {/* 住宿 */}
             <Col span={8}>
-              <div style={{ padding: 12, background: 'white', borderRadius: 8, border: '1px solid #bedaff' }}>
+              <div style={{ padding: 12, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgb(var(--primary-3))' }}>
                 <Space size={4} style={{ marginBottom: 8 }}>
-                  <IconHome style={{ color: '#165dff', fontSize: 14 }} />
-                  <Text style={{ fontWeight: 600, fontSize: 12 }}>住宿</Text>
+                  <IconHome style={{ color: 'rgb(var(--primary-6))', fontSize: 'var(--text-sm)' }} />
+                  <Text style={{ fontWeight: 600, fontSize: 'var(--text-xs)' }}>住宿</Text>
                 </Space>
-                <div style={{ fontSize: 12, color: '#86909c' }}>上限 ¥{hotelLimit}/天，标间/大床房</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>总额上限 ¥{hotelLimit * days}</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>上限 <MoneyText value={hotelLimit} />/天，标间/大床房</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>总额上限 <MoneyText value={hotelLimit * days} /></div>
                 {companions.length > 0 && (
-                  <div style={{ fontSize: 10, color: '#ff7d00', marginTop: 4 }}>⚠️ 须与同行人员合住</div>
+                  <div style={{ fontSize: 'var(--ds-text-micro)', color: 'rgb(var(--warning-6))', marginTop: 4 }}>⚠️ 须与同行人员合住</div>
                 )}
               </div>
             </Col>
             {/* 交通 */}
             <Col span={8}>
-              <div style={{ padding: 12, background: 'white', borderRadius: 8, border: '1px solid #bedaff' }}>
+              <div style={{ padding: 12, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgb(var(--primary-3))' }}>
                 <Space size={4} style={{ marginBottom: 8 }}>
-                  <IconCommon style={{ color: '#00b42a', fontSize: 14 }} />
-                  <Text style={{ fontWeight: 600, fontSize: 12 }}>市内交通</Text>
+                  <IconCommon style={{ color: 'rgb(var(--success-6))', fontSize: 'var(--text-sm)' }} />
+                  <Text style={{ fontWeight: 600, fontSize: 'var(--text-xs)' }}>市内交通</Text>
                 </Space>
-                <div style={{ fontSize: 12, color: '#86909c' }}>上限 ¥{cityInfo.transportLimit}/天</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>总额上限 ¥{cityInfo.transportLimit * days}</div>
-                {!isSales && <div style={{ fontSize: 10, color: '#86909c', marginTop: 4 }}>职能部门仅限二等座/经济舱</div>}
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>上限 <MoneyText value={cityInfo.transportLimit} />/天</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>总额上限 <MoneyText value={cityInfo.transportLimit * days} /></div>
+                {!isSales && <div style={{ fontSize: 'var(--ds-text-micro)', color: 'var(--color-text-3)', marginTop: 4 }}>职能部门仅限二等座/经济舱</div>}
               </div>
             </Col>
             {/* 餐补 */}
             <Col span={8}>
-              <div style={{ padding: 12, background: 'white', borderRadius: 8, border: '1px solid #bedaff' }}>
+              <div style={{ padding: 12, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-md)', border: '1px solid rgb(var(--primary-3))' }}>
                 <Space size={4} style={{ marginBottom: 8 }}>
-                  <IconSafe style={{ color: '#fa8c16', fontSize: 14 }} />
-                  <Text style={{ fontWeight: 600, fontSize: 12 }}>餐补</Text>
+                  <IconSafe style={{ color: 'rgb(var(--warning-6))', fontSize: 'var(--text-sm)' }} />
+                  <Text style={{ fontWeight: 600, fontSize: 'var(--text-xs)' }}>餐补</Text>
                 </Space>
-                <div style={{ fontSize: 12, color: '#86909c' }}>¥40/天，总额 ¥{(days - 1) * 40}</div>
-                <div style={{ fontSize: 12, color: '#86909c' }}>往返路途当日无补贴</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}><MoneyText value={40} />/天，总额 <MoneyText value={(days - 1) * 40} /></div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>往返路途当日无补贴</div>
               </div>
             </Col>
           </Row>
 
           {/* 合规要点 */}
-          <Space style={{ marginTop: 12, fontSize: 11, color: '#86909c' }}>
+          <Space style={{ marginTop: 12, fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>
             <Space size={4}>
-              <IconCheckCircle style={{ color: '#00b42a', fontSize: 12 }} />
+              <IconCheckCircle style={{ color: 'rgb(var(--success-6))', fontSize: 'var(--text-xs)' }} />
               <span>保持企微打卡</span>
             </Space>
             <Space size={4}>
-              <IconCheckCircle style={{ color: '#00b42a', fontSize: 12 }} />
+              <IconCheckCircle style={{ color: 'rgb(var(--success-6))', fontSize: 'var(--text-xs)' }} />
               <span>留存网约车行程单</span>
             </Space>
             <Space size={4}>
-              <IconExclamationCircle style={{ color: '#ff7d00', fontSize: 12 }} />
+              <IconExclamationCircle style={{ color: 'rgb(var(--warning-6))', fontSize: 'var(--text-xs)' }} />
               <span>返回7天内报销</span>
             </Space>
             {isSoftware && (
-              <Space size={4} style={{ color: '#f53f3f' }}>
-                <IconExclamationCircle style={{ fontSize: 12 }} />
+              <Space size={4} style={{ color: 'rgb(var(--danger-6))' }}>
+                <IconExclamationCircle style={{ fontSize: 'var(--text-xs)' }} />
                 <span>驻场未结束禁止返程</span>
               </Space>
             )}

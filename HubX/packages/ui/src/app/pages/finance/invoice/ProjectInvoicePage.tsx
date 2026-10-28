@@ -1,8 +1,24 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Input, Message, Modal, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
-import { IconCopy, IconEye, IconFile, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import { Button, Input, Message, Modal, Space, Tooltip, Typography, Upload } from '@/design-system';
+import type { UploadItem } from '@/design-system';
+import { IconCopy, IconEye, IconFile, IconSearch } from '@/design-system';
+import { formatMoney } from '@/app/utils/money';
+import {
+  DataTable,
+  DateText,
+  EmptyState,
+  FilterBar,
+  FileList,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+  DescriptionsCard,
+} from '@/design-system';
 import { useProjectInvoices, type ProjectInvoiceApplication } from './ProjectInvoiceContext';
 import {
   calculateProjectInvoiceListMetrics,
@@ -15,9 +31,17 @@ import './ProjectInvoicePage.css';
 
 const { Text } = Typography;
 
-function currency(value: number) {
-  return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}`;
-}
+const PAYMENT_STATUS: StatusMap<'未回款' | '部分回款' | '已回款'> = {
+  未回款: { label: '未回款', tone: 'neutral' },
+  部分回款: { label: '部分回款', tone: 'warning' },
+  已回款: { label: '已回款', tone: 'success' },
+};
+
+const INVOICE_STATUS: StatusMap<'开票中' | '已开票' | '已冲红'> = {
+  开票中: { label: '开票中', tone: 'warning' },
+  已开票: { label: '已开票', tone: 'success' },
+  已冲红: { label: '已冲红', tone: 'danger' },
+};
 
 function downloadFile(fileName: string) {
   const url = URL.createObjectURL(new Blob([`发票附件：${fileName}`], { type: 'application/octet-stream' }));
@@ -79,19 +103,26 @@ export function ProjectInvoicePage() {
     </Space>
   );
 
+  const copyableMoney = (value: number) => (
+    <Space size={4}>
+      <MoneyText value={value} />
+      {/* 复制内容是纯文本辅助语义，页面金额本身仍由 MoneyText 渲染。 */}
+      <Button type="text" size="mini" icon={<IconCopy />} aria-label={`复制${formatMoney(value)}`} onClick={() => void copyText(formatMoney(value))} />
+    </Space>
+  );
+
   const columns = [
     { title: '项目编号', dataIndex: 'projectNo', width: 150 },
     { title: '项目名称', dataIndex: 'projectName', width: 220 },
     { title: '开票期数', dataIndex: 'periodLabel', width: 110 },
     { title: '客户名称', dataIndex: 'customerName', width: 200 },
-    { title: '开票金额', dataIndex: 'amount', width: 130, align: 'right' as const, render: currency },
-    { title: '回款状态', dataIndex: 'paymentStatus', width: 110, render: (value?: string) => {
-      const label = value || '未回款';
-      return <Tag color={label === '已回款' ? 'green' : label === '部分回款' ? 'orange' : 'gray'}>{label}</Tag>;
-    } },
+    { title: '开票金额', dataIndex: 'amount', width: 130, align: 'right' as const, render: (value: number) => <MoneyText value={value} /> },
+    { title: '回款状态', dataIndex: 'paymentStatus', width: 110, render: (value?: '未回款' | '部分回款' | '已回款') => (
+      <StatusTag meta={PAYMENT_STATUS[value || '未回款']} />
+    ) },
     { title: '发票类别', dataIndex: 'invoiceType', width: 160 },
-    { title: '申请时间', dataIndex: 'submittedAt', width: 170 },
-    { title: '状态', dataIndex: 'status', width: 100, render: (value: string) => <Tag color={value === '已开票' ? 'green' : value === '已冲红' ? 'red' : 'orange'}>{value}</Tag> },
+    { title: '申请时间', dataIndex: 'submittedAt', width: 170, render: (value: string) => <DateText value={value} mode="datetime" /> },
+    { title: '状态', dataIndex: 'status', width: 100, render: (value: '开票中' | '已开票' | '已冲红') => <StatusTag meta={INVOICE_STATUS[value]} /> },
     {
       title: '操作', width: 110, fixed: 'right' as const,
       render: (_: unknown, record: ProjectInvoiceApplication) => (
@@ -110,25 +141,25 @@ export function ProjectInvoicePage() {
   ];
 
   const detailData = active ? [
-    { label: '项目编号', value: active.projectNo },
-    { label: '项目名称', value: active.projectName },
-    { label: '开票期数', value: active.periodLabel },
-    { label: '本期应收', value: currency(active.expectedAmount) },
-    { label: '发票类别', value: active.invoiceType },
-    { label: '发票税率', value: `${active.taxRate}%` },
-    { label: '开票金额', value: copyableValue(currency(active.amount)) },
-    { label: '发票税额', value: currency(active.taxAmount) },
-    { label: '客户名称', value: copyableValue(active.customerName) },
-    { label: '纳税人识别号', value: copyableValue(active.taxpayerId) },
-    { label: '地址', value: active.customerAddress || '-' },
-    { label: '手机号', value: active.customerPhone },
-    { label: '开户行', value: copyableValue(active.bankName) },
-    { label: '银行账号', value: copyableValue(active.bankAccount) },
-    { label: '收票人姓名', value: active.recipientName },
-    { label: '收票人电话', value: active.recipientPhone },
-    { label: '收票人邮箱', value: active.recipientEmail || '-' },
-    { label: '申请时间', value: active.submittedAt },
-    ...(active.status === '已冲红' ? [{ label: '冲红时间', value: active.redFlushedAt || '-' }, { label: '冲红原因', value: active.redFlushReason || '-' }] : []),
+    { key: '项目编号', label: '项目编号', value: active.projectNo },
+    { key: '项目名称', label: '项目名称', value: active.projectName },
+    { key: '开票期数', label: '开票期数', value: active.periodLabel },
+    { key: '本期应收', label: '本期应收', value: <MoneyText value={active.expectedAmount} /> },
+    { key: '发票类别', label: '发票类别', value: active.invoiceType },
+    { key: '发票税率', label: '发票税率', value: `${active.taxRate}%` },
+    { key: '开票金额', label: '开票金额', value: copyableMoney(active.amount) },
+    { key: '发票税额', label: '发票税额', value: <MoneyText value={active.taxAmount} /> },
+    { key: '客户名称', label: '客户名称', value: copyableValue(active.customerName) },
+    { key: '纳税人识别号', label: '纳税人识别号', value: copyableValue(active.taxpayerId) },
+    { key: '地址', label: '地址', value: active.customerAddress || '-' },
+    { key: '手机号', label: '手机号', value: active.customerPhone },
+    { key: '开户行', label: '开户行', value: copyableValue(active.bankName) },
+    { key: '银行账号', label: '银行账号', value: copyableValue(active.bankAccount) },
+    { key: '收票人姓名', label: '收票人姓名', value: active.recipientName },
+    { key: '收票人电话', label: '收票人电话', value: active.recipientPhone },
+    { key: '收票人邮箱', label: '收票人邮箱', value: active.recipientEmail || '-' },
+    { key: '申请时间', label: '申请时间', value: <DateText value={active.submittedAt} mode="datetime" /> },
+    ...(active.status === '已冲红' ? [{ key: '冲红时间', label: '冲红时间', value: <DateText value={active.redFlushedAt} mode="datetime" /> }, { key: '冲红原因', label: '冲红原因', value: active.redFlushReason || '-' }] : []),
   ] : [];
   const paymentPeriods = active?.paymentPeriods?.length
     ? active.paymentPeriods
@@ -155,13 +186,29 @@ export function ProjectInvoicePage() {
         ]}
       />
 
-      <Card className="project-invoice-page__content-card">
-        <Tabs activeTab={status} onChange={value => setStatus(value as ProjectInvoiceListStatus)}>
-          <Tabs.TabPane key="全部" title={`全部（${metrics.applicationCount}）`} />
-          <Tabs.TabPane key="开票中" title={`待开票（${metrics.pendingCount}）`} />
-          <Tabs.TabPane key="已开票" title={`已开票（${metrics.completedCount}）`} />
-          <Tabs.TabPane key="已冲红" title={`已冲红（${metrics.redFlushedCount}）`} />
-        </Tabs>
+      <SectionCard className="project-invoice-page__content-card">
+        <SectionTabs
+          activeKey={status}
+          onChange={value => setStatus(value as ProjectInvoiceListStatus)}
+          items={[
+            {
+              key: '全部',
+              label: `全部（${metrics.applicationCount}）`,
+            },
+            {
+              key: '开票中',
+              label: `待开票（${metrics.pendingCount}）`,
+            },
+            {
+              key: '已开票',
+              label: `已开票（${metrics.completedCount}）`,
+            },
+            {
+              key: '已冲红',
+              label: `已冲红（${metrics.redFlushedCount}）`,
+            },
+          ]}
+        />
 
         <FilterBar actions={hasFilters ? <Button type="text" onClick={resetFilters}>重置筛选</Button> : undefined}>
           <Input
@@ -181,11 +228,13 @@ export function ProjectInvoicePage() {
 
         {data.length === 0 ? (
           <div className="project-invoice-page__empty">
-            <Empty description={applications.length === 0 ? '暂无项目开票申请' : '没有符合当前条件的开票申请'} />
-            {hasFilters && <Button onClick={resetFilters}>清除筛选</Button>}
+            <EmptyState
+              description={applications.length === 0 ? '暂无项目开票申请' : '没有符合当前条件的开票申请'}
+              action={hasFilters ? <Button onClick={resetFilters}>清除筛选</Button> : undefined}
+            />
           </div>
         ) : (
-          <Table
+          <DataTable
             rowKey="id"
             size="small"
             columns={columns}
@@ -194,7 +243,7 @@ export function ProjectInvoicePage() {
             scroll={{ x: 1350 }}
           />
         )}
-      </Card>
+      </SectionCard>
 
       <Modal
         title={active?.status === '开票中' ? '项目开票' : '开票详情'}
@@ -207,21 +256,21 @@ export function ProjectInvoicePage() {
       >
         {active && (
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Descriptions column={2} data={detailData} border />
+            <DescriptionsCard columns={2} items={detailData} />
             <div>
               <div className="project-invoice-upload-title">当前项目每期回款情况</div>
-              <Table
+              <DataTable
                 rowKey="periodId"
                 size="small"
                 pagination={false}
                 data={paymentPeriods}
-                noDataElement="暂无回款期次数据"
+                emptyDescription="暂无回款期次数据"
                 columns={[
                   { title: '期次', dataIndex: 'periodLabel', width: 100 },
-                  { title: '应回款', dataIndex: 'expectedAmount', width: 130, render: currency },
-                  { title: '实际回款', dataIndex: 'paidAmount', width: 130, render: currency },
-                  { title: '预计日期', dataIndex: 'expectedDate', width: 120, render: (value: string) => value || '-' },
-                  { title: '回款状态', dataIndex: 'paymentStatus', width: 110, render: (value: string) => <Tag color={value === '已回款' ? 'green' : value === '部分回款' ? 'orange' : 'gray'}>{value}</Tag> },
+                  { title: '应回款', dataIndex: 'expectedAmount', width: 130, render: (value: number) => <MoneyText value={value} /> },
+                  { title: '实际回款', dataIndex: 'paidAmount', width: 130, render: (value: number) => <MoneyText value={value} /> },
+                  { title: '预计日期', dataIndex: 'expectedDate', width: 120, render: (value: string) => <DateText value={value} placeholder="-" /> },
+                  { title: '回款状态', dataIndex: 'paymentStatus', width: 110, render: (value: '未回款' | '部分回款' | '已回款') => <StatusTag meta={PAYMENT_STATUS[value]} /> },
                 ]}
               />
             </div>
@@ -232,10 +281,29 @@ export function ProjectInvoicePage() {
                   <Button icon={<IconFile />}>上传发票</Button>
                 </Upload>
               ) : (
-                <Space wrap>{active.invoiceFiles.map(file => <Button key={file} type="text" icon={<IconFile />} onClick={() => downloadFile(file)}>{file}</Button>)}</Space>
+                <FileList
+                  items={active.invoiceFiles.map(file => ({
+                    key: file,
+                    name: file,
+                    onDownload: () => downloadFile(file),
+                  }))}
+                  emptyDescription="暂无发票附件"
+                />
               )}
             </div>
-            {active.status === '已冲红' ? <div><div className="project-invoice-upload-title">冲红附件</div>{active.redFlushFiles?.length ? <Space wrap>{active.redFlushFiles.map(file => <Button key={file} type="text" icon={<IconFile />} onClick={() => downloadFile(file)}>{file}</Button>)}</Space> : <Text type="secondary">暂无冲红附件</Text>}</div> : null}
+            {active.status === '已冲红' ? (
+              <div>
+                <div className="project-invoice-upload-title">冲红附件</div>
+                <FileList
+                  items={(active.redFlushFiles ?? []).map(file => ({
+                    key: file,
+                    name: file,
+                    onDownload: () => downloadFile(file),
+                  }))}
+                  emptyDescription="暂无冲红附件"
+                />
+              </div>
+            ) : null}
           </Space>
         )}
       </Modal>

@@ -199,7 +199,6 @@
 }
 
 .payment-lane-card__header,
-.payment-lane-card__progress-meta,
 .payment-lane-card__owner {
   display: flex;
   align-items: center;
@@ -264,17 +263,6 @@
 
 .payment-lane-card__progress {
   margin-top: var(--space-3);
-}
-
-.payment-lane-card__progress-meta {
-  margin-top: var(--space-1);
-  color: var(--color-text-4);
-  font-size: 12px;
-}
-
-.payment-lane-card__progress-meta span:first-child {
-  color: var(--card-accent);
-  font-weight: 600;
 }
 
 .payment-lane-card__next-payment,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Select, Space, Table, Tooltip, Typography } from '@arco-design/web-react';
-import { IconEye, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
+import { Button, DatePicker, Select, Space, Tooltip, Typography } from '@/design-system';
+import { IconEye, IconRefresh, IconSearch } from '@/design-system';
 import { DailyReportDetail } from '../daily-report/DailyReportDetail';
 import { mockDailyReports } from '../daily-report/mockData';
 import {
@@ -10,7 +10,7 @@ import {
   SalesReportContent,
   WORK_KIND_LABELS,
 } from '../daily-report/types';
-import { PageShell } from '@/design-system';
+import { DataTable, DateText, FilterBar, PageShell, SectionCard } from '@/design-system';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -144,7 +144,7 @@ export function ProjectLogView() {
       width: 80,
       render: (_: unknown, __: ProjectReportRow, index: number) => String(index + 1).padStart(3, '0'),
     },
-    { title: '汇报日期', dataIndex: 'reportDate', width: 120 },
+    { title: '汇报日期', dataIndex: 'reportDate', width: 120, render: (value: string) => <DateText value={value} /> },
     { title: '汇报人', dataIndex: 'userName', width: 100 },
     { title: '部门', dataIndex: 'department', width: 120 },
     {
@@ -190,10 +190,12 @@ export function ProjectLogView() {
 
   return (
     <PageShell breadcrumbs={[{ label: '日报', to: '/dailyreport/list' }, { label: '日报列表', to: '/dailyreport/list' }, { label: '项目日报明细' }]}>
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
+      <div style={{ marginBottom: 16 }}>
+        <SectionCard>
+        <FilterBar>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报人</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 6 }}>汇报人</div>
             <Select
               style={{ width: 160 }}
               placeholder="请选择汇报人"
@@ -204,7 +206,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>部门</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 6 }}>部门</div>
             <Select
               style={{ width: 180 }}
               placeholder="请选择部门"
@@ -215,7 +217,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>项目</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 6 }}>项目</div>
             <Select
               style={{ width: 220 }}
               placeholder="请选择项目"
@@ -226,7 +228,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>工作性质</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 6 }}>工作性质</div>
             <Select
               style={{ width: 180 }}
               placeholder="请选择工作性质"
@@ -237,7 +239,7 @@ export function ProjectLogView() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 14, color: 'var(--color-text-2)', marginBottom: 6 }}>汇报日期</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 6 }}>汇报日期</div>
             <RangePicker
               style={{ width: 260 }}
               placeholder={['开始日期', '结束日期']}
@@ -254,10 +256,12 @@ export function ProjectLogView() {
             </Button>
           </Space>
         </div>
-      </Card>
+        </FilterBar>
+        </SectionCard>
+      </div>
 
-      <Card title="项目日报明细">
-        <Table
+      <SectionCard title="项目日报明细">
+        <DataTable
           rowKey="id"
           columns={columns}
           data={filteredRows}
@@ -268,9 +272,9 @@ export function ProjectLogView() {
             showTotal: true,
             sizeCanChange: true,
           }}
-          noDataElement="暂无项目日报记录"
+          emptyDescription="暂无项目日报记录"
         />
-      </Card>
+      </SectionCard>
 
       <DailyReportDetail
         visible={detailVisible}

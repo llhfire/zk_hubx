@@ -1,18 +1,6 @@
 import { useState } from 'react';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Tag,
-  Timeline,
-  Upload,
-} from '@arco-design/web-react';
-import { IconPlus, IconUpload } from '@arco-design/web-react/icon';
+import { Button, Form, Input, Message, Modal, Select, Timeline } from '@/design-system';
+import { IconPlus } from '@/design-system';
 import {
   DOCUMENT_TITLE_OPTIONS,
   buildDocumentRecordFromForm,
@@ -20,6 +8,7 @@ import {
   downloadAttachment,
   type DocumentUploadRecord,
 } from '../documentUpload';
+import { EmptyState, FileList, SectionCard, UploadPanel, StatusTag } from '@/design-system';
 
 const FormItem = Form.Item;
 
@@ -29,11 +18,7 @@ interface Props {
   initialRecords?: DocumentUploadRecord[];
 }
 
-export function DocumentUploadPanel({
-  bordered = false,
-  size,
-  initialRecords,
-}: Props) {
+export function DocumentUploadPanel({ initialRecords }: Props) {
   const [records, setRecords] = useState<DocumentUploadRecord[]>(
     () => initialRecords ?? createDefaultDocumentRecords(),
   );
@@ -57,9 +42,7 @@ export function DocumentUploadPanel({
 
   return (
     <>
-      <Card
-        bordered={bordered}
-        size={size}
+      <SectionCard
         extra={
           <Button type="primary" size="small" icon={<IconPlus />} onClick={() => setVisible(true)}>
             新增资料
@@ -67,9 +50,7 @@ export function DocumentUploadPanel({
         }
       >
         {records.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px 16px 48px', color: 'var(--color-text-3)' }}>
-            暂无资料上传记录
-          </div>
+          <EmptyState description="暂无资料上传记录" />
         ) : (
           <Timeline>
             {records.map((record, index) => (
@@ -87,49 +68,31 @@ export function DocumentUploadPanel({
                       marginBottom: 8,
                     }}
                   >
-                    <Tag color="arcoblue" size="small">
+                    <StatusTag tone="info" size="small">
                       {record.title}
-                    </Tag>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-3)', flexShrink: 0 }}>
+                    </StatusTag>
+                    <span style={{ fontSize: 'var(--text-xs)', flexShrink: 0 }}>
                       {record.uploadTime}
                     </span>
                   </div>
                   {record.remark && (
-                    <div style={{ color: 'var(--color-text-1)', lineHeight: '20px', marginBottom: 8 }}>
+                    <div style={{ lineHeight: '20px', marginBottom: 8 }}>
                       {record.remark}
                     </div>
                   )}
                   {record.files.length > 0 && (
                     <div style={{ marginBottom: 8 }}>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        {record.files.map((file) => (
-                          <div
-                            key={file.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '6px 10px',
-                              background: 'var(--color-fill-2)',
-                              borderRadius: 4,
-                              fontSize: 14,
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <span style={{ fontWeight: 500 }}>{file.name}</span>
-                              <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 12 }}>
-                                {file.size}
-                              </span>
-                            </div>
-                            <Button type="text" size="mini" onClick={() => downloadAttachment(file)}>
-                              下载
-                            </Button>
-                          </div>
-                        ))}
-                      </Space>
+                      <FileList
+                        items={record.files.map((file) => ({
+                          key: file.id,
+                          name: file.name,
+                          meta: file.size,
+                          onDownload: () => downloadAttachment(file),
+                        }))}
+                      />
                     </div>
                   )}
-                  <div style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
+                  <div style={{ fontSize: 'var(--text-xs)' }}>
                     上传人: {record.uploader}
                   </div>
                 </div>
@@ -137,7 +100,7 @@ export function DocumentUploadPanel({
             ))}
           </Timeline>
         )}
-      </Card>
+      </SectionCard>
 
       <Modal
         title="新增资料记录"
@@ -179,19 +142,12 @@ export function DocumentUploadPanel({
             triggerPropName="fileList"
             rules={[{ required: true, message: '请上传资料文件' }]}
           >
-            <Upload
+            <UploadPanel
               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png"
               multiple
-              drag
-              tip="支持上传文档、表格、压缩包、图片等资料文件"
-            >
-              <div style={{ padding: '20px 0', textAlign: 'center' }}>
-                <IconUpload style={{ fontSize: 32, color: 'var(--color-text-3)' }} />
-                <div style={{ marginTop: 8, color: 'var(--color-text-2)' }}>
-                  点击或拖拽资料文件到此处上传
-                </div>
-              </div>
-            </Upload>
+              hint="点击或拖拽资料文件到此处上传"
+              description="支持上传文档、表格、压缩包、图片等资料文件"
+            />
           </FormItem>
         </Form>
       </Modal>

@@ -6,11 +6,10 @@ import {
   Select,
   DatePicker,
   Message,
-  Grid,
-} from '@arco-design/web-react';
+  FormGrid,
+} from '@/design-system';
 import type { SopStep, SopStepStatus } from './types';
 
-const { Row, Col } = Grid;
 const { TextArea } = Input;
 
 interface StepEditModalProps {
@@ -129,19 +128,16 @@ const StepEditModal: React.FC<StepEditModalProps> = ({
         layout="vertical"
         autoComplete="off"
       >
-        <Row gutter={16}>
-          <Col span={24}>
+        <FormGrid columns={1}>
             <Form.Item label="步骤名称" field="stepName">
               <Input
                 placeholder="请输入步骤名称"
                 disabled={!(step?.isCustom)}
               />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={12}>
+        <FormGrid columns={2}>
             <Form.Item label="执行人" field="assignee">
               <Select
                 placeholder="请选择执行人"
@@ -154,45 +150,34 @@ const StepEditModal: React.FC<StepEditModalProps> = ({
                 }
               />
             </Form.Item>
-          </Col>
-          <Col span={12}>
             <Form.Item label="状态" field="status">
               <Select
                 placeholder="请选择状态"
                 options={STATUS_OPTIONS}
               />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={12}>
+        <FormGrid columns={2}>
             <Form.Item label="开始日期" field="startDate">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-          </Col>
-          <Col span={12}>
             <Form.Item label="截止日期" field="dueDate">
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={24}>
+        <FormGrid columns={1}>
             <Form.Item label="执行产物" field="deliverables">
               <TextArea placeholder="请输入执行产物" autoSize={{ minRows: 2, maxRows: 4 }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={24}>
+        <FormGrid columns={1}>
             <Form.Item label="用户备注" field="userNotes">
               <TextArea placeholder="请输入用户备注" autoSize={{ minRows: 2, maxRows: 4 }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
       </Form>
     </Modal>
   );

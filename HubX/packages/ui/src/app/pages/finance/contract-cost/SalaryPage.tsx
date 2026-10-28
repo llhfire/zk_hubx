@@ -1,6 +1,16 @@
 import { useState } from 'react';
-import { Button, Card, Modal, Select, Space, Table, Tag, Typography, Upload } from '@arco-design/web-react';
-import { IconImport } from '@arco-design/web-react/icon';
+import { AsyncState, Button, Modal, Select, Space } from '@/design-system';
+import { IconImport } from '@/design-system';
+import {
+  DataTable,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  StatusTag,
+  UploadPanel,
+  type StatusMap,
+  SectionCard,
+} from '@/design-system';
 import {
   contractCostPermissions,
   getHourlyRate,
@@ -9,10 +19,12 @@ import {
   type MonthlySalaryRecord,
 } from './contractCostData';
 
-const Title = Typography.Title;
-const Text = Typography.Text;
-
 const MONTHS = ['2026-05', '2026-04', '2026-03', '2026-02', '2026-01'];
+
+const SALARY_STATUS: StatusMap<'inherited' | 'entered'> = {
+  inherited: { label: '沿用上月', tone: 'warning' },
+  entered: { label: '已录入', tone: 'success' },
+};
 
 export function SalaryPage() {
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[0]);
@@ -21,17 +33,9 @@ export function SalaryPage() {
 
   const { salaryView, salaryEdit } = contractCostPermissions;
 
-  if (!salaryView) {
-    return (
-      <Card>
-        <Text>暂无权限查看工资表</Text>
-      </Card>
-    );
-  }
-
   const data = getSalaryForMonth(selectedMonth, mockSalaryData);
 
-  const mask = (value: string | number) => (salaryView ? value : '***');
+  const maskMoney = (value: number) => (salaryView ? <MoneyText value={value} /> : '***');
 
   const columns = [
     {
@@ -53,7 +57,7 @@ export function SalaryPage() {
       title: '名义月工资',
       dataIndex: 'nominalSalary',
       width: 120,
-      render: (value: number) => mask(value.toLocaleString()),
+      render: (value: number) => maskMoney(value),
     },
     {
       title: '名义月工时',
@@ -64,13 +68,13 @@ export function SalaryPage() {
       title: '名义时薪',
       width: 110,
       render: (_: unknown, record: MonthlySalaryRecord) =>
-        mask(getHourlyRate(record, false).toFixed(2)),
+        maskMoney(getHourlyRate(record, false)),
     },
     {
       title: '实际月工资',
       width: 120,
       render: (_: unknown, record: MonthlySalaryRecord) =>
-        record.actualSalary != null ? mask(record.actualSalary.toLocaleString()) : '-',
+        record.actualSalary != null ? maskMoney(record.actualSalary) : '-',
     },
     {
       title: '实际月工时',
@@ -83,24 +87,24 @@ export function SalaryPage() {
       width: 110,
       render: (_: unknown, record: MonthlySalaryRecord) =>
         record.actualSalary != null && record.actualHours != null
-          ? mask(getHourlyRate(record, true).toFixed(2))
+          ? maskMoney(getHourlyRate(record, true))
           : '-',
     },
     {
       title: '状态',
       width: 100,
-      render: (_: unknown, record: MonthlySalaryRecord) =>
-        record.inherited ? (
-          <Tag color="orangered">沿用上月</Tag>
-        ) : (
-          <Tag color="green">已录入</Tag>
-        ),
+      render: (_: unknown, record: MonthlySalaryRecord) => (
+        <StatusTag meta={SALARY_STATUS[record.inherited ? 'inherited' : 'entered']} />
+      ),
     },
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+    <PageShell>
+      <PageHeader
+        title="工资表"
+        description="按月度导入工资与实际工时，作为人力成本核算的基数。"
+        actions={salaryView && (
         <Space>
           <Select
             value={selectedMonth}
@@ -131,17 +135,19 @@ export function SalaryPage() {
             </>
           )}
         </Space>
-      </div>
+        )}
+      />
 
-      <Card>
-        <Table
+      <AsyncState status={salaryView ? 'ready' : 'forbidden'} forbiddenText="暂无权限查看工资表">
+      <SectionCard>
+        <DataTable
           columns={columns}
           data={data}
           rowKey="employeeId"
           pagination={false}
           scroll={{ x: 1200 }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 导入工资弹窗 */}
       <Modal
@@ -152,7 +158,7 @@ export function SalaryPage() {
         okText="确认导入"
         style={{ width: 520 }}
       >
-        <Upload drag tip="点击或拖拽文件到此区域上传" accept=".xlsx,.xls,.csv" />
+        <UploadPanel hint="点击或拖拽文件到此区域上传" accept=".xlsx,.xls,.csv" />
       </Modal>
 
       {/* 导入实际工时弹窗 */}
@@ -164,8 +170,9 @@ export function SalaryPage() {
         okText="确认导入"
         style={{ width: 520 }}
       >
-        <Upload drag tip="点击或拖拽文件到此区域上传" accept=".xlsx,.xls,.csv" />
+        <UploadPanel hint="点击或拖拽文件到此区域上传" accept=".xlsx,.xls,.csv" />
       </Modal>
-    </div>
+      </AsyncState>
+    </PageShell>
   );
 }

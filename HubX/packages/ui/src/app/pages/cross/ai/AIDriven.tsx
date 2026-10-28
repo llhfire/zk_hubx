@@ -1,37 +1,39 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Grid,
-  Statistic,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Typography,
-  Timeline,
   Avatar,
   Badge,
-  Alert,
-  Select,
-  Modal,
-  Form,
-  Input,
-  Progress,
-} from '@arco-design/web-react';
-import {
+  Button,
+  CountdownTag,
+  DataTable,
+  DateText,
+  Grid,
   IconApps,
-  IconUser,
+  IconArrowRight,
   IconCalendar,
-  IconFile,
   IconCheckCircle,
   IconClockCircle,
-  IconExclamationCircle,
   IconExperiment,
-  IconArrowRight,
-  IconSend,
+  IconExclamationCircle,
+  IconFile,
   IconFolder,
-} from '@arco-design/web-react/icon';
+  IconSend,
+  IconUser,
+  MetricGrid,
+  Modal,
+  PageHeader,
+  PageShell,
+  AlertBanner,
+  ProgressBar,
+  Select,
+  SectionTabs,
+  SectionCard,
+  Space,
+  StatusTag,
+  Tabs,
+  Timeline,
+  Typography,
+  type StatusTone,
+} from '@/design-system';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -161,59 +163,76 @@ export function AIDriven() {
   };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <PageShell>
+      <PageHeader
+        title="AI 智能助手"
+        description="用 AI 拆解需求、生成任务，并提示高风险节点。"
+      />
       {/* 顶部摘要 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconApps style={{ color: 'var(--primary)' }} />AI 拆解任务</span>} value={summary.totalTasks} suffix="个" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />已分配</span>} value={summary.assigned} suffix="个" /></Card></Col>
-        <Col span={4}><Card><Statistic title="高风险节点" value={summary.highRiskMilestones} suffix="个" prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />} styleValue={{ color: 'var(--destructive-500)' }} /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--warning-500)' }} />待确认会议</span>} value={summary.suggestedMeetings} suffix="场" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconUser style={{ color: 'var(--chart-5)' }} />人员匹配</span>} value={mockPersonnelMatches.length} suffix="项" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconExperiment style={{ color: 'var(--info-500)' }} />AI 建议</span>} value={mockMilestones.length} suffix="条" /></Card></Col>
-      </Row>
+      <MetricGrid
+        items={[
+          { key: 'tasks', label: <><IconApps /> AI 拆解任务</>, value: `${summary.totalTasks} 个` },
+          { key: 'assigned', label: <><IconCheckCircle /> 已分配</>, value: `${summary.assigned} 个`, tone: 'success' },
+          { key: 'risk', label: <><IconExclamationCircle /> 高风险节点</>, value: `${summary.highRiskMilestones} 个`, tone: 'danger' },
+          { key: 'meetings', label: <><IconCalendar /> 待确认会议</>, value: `${summary.suggestedMeetings} 场`, tone: 'warning' },
+          { key: 'personnel', label: <><IconUser /> 人员匹配</>, value: `${mockPersonnelMatches.length} 项` },
+          { key: 'suggestions', label: <><IconExperiment /> AI 建议</>, value: `${mockMilestones.length} 条` },
+        ]}
+      />
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="tasks" title={<span><IconApps /> 智能任务拆解</span>} />
-          <TabPane key="personnel" title={<span><IconUser /> 智能人员分配</span>} />
-          <TabPane key="milestones" title={<span><IconClockCircle /> 智能跟进提醒 <Badge count={summary.highRiskMilestones} color="red" /></span>} />
-          <TabPane key="meetings" title={<span><IconCalendar /> 智能会议安排 <Badge count={summary.suggestedMeetings} color="orange" /></span>} />
-        </Tabs>
+      <SectionCard bordered={false}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'tasks',
+              label: <span><IconApps /> 智能任务拆解</span>,
+            },
+            {
+              key: 'personnel',
+              label: <span><IconUser /> 智能人员分配</span>,
+            },
+            {
+              key: 'milestones',
+              label: <span><IconClockCircle /> 智能跟进提醒 <Badge count={summary.highRiskMilestones} color="red" /></span>,
+            },
+            {
+              key: 'meetings',
+              label: <span><IconCalendar /> 智能会议安排 <Badge count={summary.suggestedMeetings} color="orange" /></span>,
+            },
+          ]}
+        />
 
         <div style={{ paddingTop: 16 }}>
           {/* 智能任务拆解 Tab */}
           {activeTab === 'tasks' && (
             <div>
-              <Alert
-                type="info"
-                content="AI 根据合同 SOW 自动拆解项目任务，估算工期，并推荐最佳人员。"
-                style={{ marginBottom: 16 }}
-                icon={<IconExperiment />}
-              />
-              <Table
+              <AlertBanner tone="info" style={{ marginBottom: 16 }}>AI 根据合同 SOW 自动拆解项目任务，估算工期，并推荐最佳人员。</AlertBanner>
+              <DataTable
                 columns={[
                   { title: '任务', dataIndex: 'title', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
-                  { title: '阶段', dataIndex: 'phase', width: 80, render: (v: string) => <Tag color="blue" >{v}</Tag> },
+                  { title: '阶段', dataIndex: 'phase', width: 80, render: (v: string) => <StatusTag tone="info">{v}</StatusTag> },
                   { title: '预估工期', dataIndex: 'estimatedDays', width: 80, render: (v: number) => `${v}天` },
                   {
                     title: '所需技能', dataIndex: 'requiredSkills', width: 160,
-                    render: (skills: string[]) => <Space size={4} wrap>{skills.map(s => <Tag key={s} size="small">{s}</Tag>)}</Space>,
+                    render: (skills: string[]) => <Space size={4} wrap>{skills.map(s => <StatusTag key={s} size="small">{s}</StatusTag>)}</Space>,
                   },
                   {
                     title: '推荐人员', dataIndex: 'suggestedAssignee', width: 80,
-                    render: (v: string) => <Tag color="purple" >{v}</Tag>,
+                    render: (v: string) => <StatusTag tone="purple">{v}</StatusTag>,
                   },
                   {
                     title: '优先级', dataIndex: 'priority', width: 70,
-                    render: (p: string) => <Tag color={p === 'high' ? 'var(--destructive-500)' : p === 'medium' ? 'var(--primary)' : 'var(--muted-foreground)'} >{p === 'high' ? '高' : p === 'medium' ? '中' : '低'}</Tag>,
+                    render: (p: string) => <StatusTag tone={p === 'high' ? 'danger' : p === 'medium' ? 'info' : 'neutral'}>{p === 'high' ? '高' : p === 'medium' ? '中' : '低'}</StatusTag>,
                   },
                   {
                     title: '状态', dataIndex: 'status', width: 80,
                     render: (s: string) => {
-                      const map: Record<string, { label: string; color: string }> = { pending: { label: '待分配', color: 'var(--muted-foreground)' }, assigned: { label: '已分配', color: 'var(--primary)' }, in_progress: { label: '进行中', color: 'var(--success-500)' } };
+                      const map: Record<string, { label: string; tone: StatusTone }> = { pending: { label: '待分配', tone: 'neutral' }, assigned: { label: '已分配', tone: 'info' }, in_progress: { label: '进行中', tone: 'success' } };
                       const m = map[s] || map.pending;
-                      return <Tag color={m.color} >{m.label}</Tag>;
+                      return <StatusTag tone={m.tone}>{m.label}</StatusTag>;
                     },
                   },
                 ] as any}
@@ -227,14 +246,9 @@ export function AIDriven() {
           {/* 智能人员分配 Tab */}
           {activeTab === 'personnel' && (
             <div>
-              <Alert
-                type="info"
-                content="AI 根据员工技能树、能力值和当前负载，为每个任务推荐最佳人选。"
-                style={{ marginBottom: 16 }}
-                icon={<IconUser />}
-              />
+              <AlertBanner tone="info" style={{ marginBottom: 16 }}>AI 根据员工技能树、能力值和当前负载，为每个任务推荐最佳人选。</AlertBanner>
               {mockPersonnelMatches.map(match => (
-                <Card key={match.taskTitle} size="small" style={{ marginBottom: 12 }}>
+                <SectionCard key={match.taskTitle} size="small" style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <Title heading={6} style={{ margin: 0 }}><IconSend style={{ marginRight: 4 }} /> {match.taskTitle}</Title>
                     <Button type="text" size="small" onClick={() => { setSelectedMatch(match); setDetailModalVisible(true); }}>查看详情</Button>
@@ -242,28 +256,30 @@ export function AIDriven() {
                   <Row gutter={16}>
                     {match.candidates.map(c => (
                       <Col span={8} key={c.name}>
-                        <Card size="small" style={{ borderColor: c.matchScore >= 90 ? 'var(--success-500)' : 'var(--color-border)', borderWidth: c.matchScore >= 90 ? 2 : 1 }}>
+                        <SectionCard size="small" style={{ borderColor: c.matchScore >= 90 ? 'var(--success-500)' : 'var(--color-border)', borderWidth: c.matchScore >= 90 ? 2 : 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                            <Avatar size={32} style={{ backgroundColor: 'rgb(var(--primary-6))', color: '#fff' }}>{c.name.slice(0, 1)}</Avatar>
+                            <Avatar size={32} style={{ backgroundColor: 'rgb(var(--primary-6))', color: 'var(--color-white)' }}>{c.name.slice(0, 1)}</Avatar>
                             <div>
                               <div style={{ fontWeight: 600 }}>{c.name}</div>
-                              <Tag color={c.matchScore >= 90 ? 'var(--success-500)' : c.matchScore >= 70 ? 'var(--warning-500)' : 'var(--muted-foreground)'}  size="small">
+                              <StatusTag tone={c.matchScore >= 90 ? 'success' : c.matchScore >= 70 ? 'warning' : 'neutral'} size="small">
                                 匹配度 {c.matchScore}%
-                              </Tag>
+                              </StatusTag>
                             </div>
                           </div>
-                          <div style={{ fontSize: 12, marginBottom: 4 }}>
+                          <div style={{ fontSize: 'var(--text-xs)', marginBottom: 4 }}>
                             <span style={{ color: 'var(--color-text-3)' }}>负载：</span>
-                            <span style={{ color: c.currentLoad > 80 ? 'var(--destructive-500)' : c.currentLoad > 60 ? 'var(--warning-500)' : 'var(--success-500)' }}>{c.currentLoad}%</span>
+                            <StatusTag tone={c.currentLoad > 80 ? 'danger' : c.currentLoad > 60 ? 'warning' : 'success'} size="small">
+                              {c.currentLoad}%
+                            </StatusTag>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                             技能：{c.skills.join('、')}
                           </div>
-                        </Card>
+                        </SectionCard>
                       </Col>
                     ))}
                   </Row>
-                </Card>
+                </SectionCard>
               ))}
             </div>
           )}
@@ -272,25 +288,20 @@ export function AIDriven() {
           {activeTab === 'milestones' && (
             <div>
               {mockMilestones.filter(m => m.risk === 'high').length > 0 && (
-                <Alert
-                  type="error"
-                  content={`检测到 ${mockMilestones.filter(m => m.risk === 'high').length} 个高风险节点，建议立即处理。`}
-                  style={{ marginBottom: 16 }}
-                  icon={<IconExclamationCircle />}
-                />
+                <AlertBanner tone="danger" style={{ marginBottom: 16 }}>{`检测到 ${mockMilestones.filter(m => m.risk === 'high').length} 个高风险节点，建议立即处理。`}</AlertBanner>
               )}
-              <Table
+              <DataTable
                 columns={[
                   {
                     title: '风险', dataIndex: 'risk', width: 70,
-                    render: (r: string) => <Tag color={r === 'high' ? 'var(--destructive-500)' : r === 'medium' ? 'var(--warning-500)' : 'var(--success-500)'} >{r === 'high' ? '高' : r === 'medium' ? '中' : '低'}</Tag>,
+                    render: (r: string) => <StatusTag tone={r === 'high' ? 'danger' : r === 'medium' ? 'warning' : 'success'}>{r === 'high' ? '高' : r === 'medium' ? '中' : '低'}</StatusTag>,
                   },
                   { title: '项目', dataIndex: 'projectName', width: 140, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                   { title: '里程碑', dataIndex: 'milestone', width: 120 },
-                  { title: '截止日期', dataIndex: 'dueDate', width: 100 },
+                  { title: '截止日期', dataIndex: 'dueDate', width: 100, render: (v: string) => <DateText value={v} /> },
                   {
                     title: '剩余天数', dataIndex: 'daysUntil', width: 90,
-                    render: (v: number) => <span style={{ color: v <= 5 ? 'var(--destructive-500)' : v <= 10 ? 'var(--warning-500)' : 'inherit', fontWeight: v <= 5 ? 600 : 400 }}>{v} 天</span>,
+                    render: (v: number) => <CountdownTag days={v} warningWithin={10} />,
                   },
                   { title: 'AI 建议', dataIndex: 'suggestion' },
                 ] as any}
@@ -304,54 +315,49 @@ export function AIDriven() {
           {/* 智能会议安排 Tab */}
           {activeTab === 'meetings' && (
             <div>
-              <Alert
-                type="info"
-                content="AI 根据项目阶段自动推荐需要召开的会议，并建议参会人和议程。"
-                style={{ marginBottom: 16 }}
-                icon={<IconCalendar />}
-              />
+              <AlertBanner tone="info" style={{ marginBottom: 16 }}>AI 根据项目阶段自动推荐需要召开的会议，并建议参会人和议程。</AlertBanner>
               <Row gutter={16}>
                 {autoMeetings.map(meeting => (
                   <Col span={12} key={meeting.id} style={{ marginBottom: 16 }}>
-                    <Card
+                    <SectionCard
                       size="small"
-                      style={{ borderRadius: 8, opacity: meeting.status === 'dismissed' ? 0.5 : 1 }}
+                      style={{ borderRadius: 'var(--radius-md)', opacity: meeting.status === 'dismissed' ? 0.5 : 1 }}
                       extra={
                         meeting.status === 'confirmed'
-                          ? <Tag color="var(--success-500)" >已确认</Tag>
+                          ? <StatusTag tone="success">已确认</StatusTag>
                           : meeting.status === 'dismissed'
-                            ? <Tag>已忽略</Tag>
-                            : <Tag color="var(--warning-500)" >AI 建议</Tag>
+                            ? <StatusTag>已忽略</StatusTag>
+                            : <StatusTag tone="warning">AI 建议</StatusTag>
                       }
                     >
-                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}><IconCalendar style={{ marginRight: 4 }} /> {meeting.suggestedType}</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-2)', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 8 }}><IconCalendar style={{ marginRight: 4 }} /> {meeting.suggestedType}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', marginBottom: 4 }}>
                         <IconFolder style={{ marginRight: 4 }} /> {meeting.projectName} · {meeting.phase}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-2)', marginBottom: 8 }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', marginBottom: 8 }}>
                         <IconClockCircle style={{ marginRight: 4 }} /> {meeting.suggestedDate}
                       </div>
-                      <div style={{ fontSize: 12, marginBottom: 8 }}>
+                      <div style={{ fontSize: 'var(--text-xs)', marginBottom: 8 }}>
                         <Avatar.Group size={20} maxCount={5}>
-                          {meeting.attendees.map(a => <Avatar key={a} style={{ background: 'var(--primary)', fontSize: 12 }}>{a.slice(0, 1)}</Avatar>)}
+                          {meeting.attendees.map(a => <Avatar key={a} style={{ background: 'var(--primary)', fontSize: 'var(--text-xs)' }}>{a.slice(0, 1)}</Avatar>)}
                         </Avatar.Group>
-                        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 12 }}>{meeting.attendees.join('、')}</span>
+                        <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>{meeting.attendees.join('、')}</span>
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 12 }}><IconFile style={{ marginRight: 4 }} /> {meeting.agenda}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 12 }}><IconFile style={{ marginRight: 4 }} /> {meeting.agenda}</div>
                       {meeting.status === 'suggested' && (
                         <Space>
                           <Button type="primary" size="small" onClick={() => handleConfirmMeeting(meeting.id)}>确认安排</Button>
                           <Button size="small" status="danger" onClick={() => handleDismissMeeting(meeting.id)}>忽略</Button>
                         </Space>
                       )}
-                    </Card>
+                    </SectionCard>
                   </Col>
                 ))}
               </Row>
             </div>
           )}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 人员匹配详情弹窗 */}
       <Modal
@@ -366,19 +372,19 @@ export function AIDriven() {
             {selectedMatch.candidates.map((c, idx) => (
               <Timeline.Item
                 key={c.name}
-                dot={idx === 0 ? <IconCheckCircle style={{ color: 'var(--success-500)', fontSize: 16 }} /> : undefined}
+                dot={idx === 0 ? <IconCheckCircle style={{ color: 'var(--success-500)', fontSize: 'var(--text-base)' }} /> : undefined}
                 label={`${c.matchScore}% 匹配`}
               >
                 <div style={{ fontWeight: 600 }}>{c.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                   技能：{c.skills.join('、')} | 当前负载：{c.currentLoad}%
                 </div>
-                <Progress percent={c.matchScore} size="small" color={c.matchScore >= 90 ? 'var(--success-500)' : 'var(--warning-500)'} style={{ marginTop: 4 }} />
+                <ProgressBar percent={c.matchScore} size="small" tone="success" style={{ marginTop: 4 }} />
               </Timeline.Item>
             ))}
           </Timeline>
         )}
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

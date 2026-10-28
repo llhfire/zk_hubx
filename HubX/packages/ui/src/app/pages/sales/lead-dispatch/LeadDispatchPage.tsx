@@ -5,7 +5,7 @@
 // 阶段 D：LevelAdjustModal 等级调整（升级免审/降级走审批）+ 质检确认
 
 import { useMemo, useState } from 'react';
-import { Button, Card, Message, Radio, Select, Space, Typography } from '@arco-design/web-react';
+import { Button, Message, Radio, Select, Space, Typography } from '@/design-system';
 import { LeadDispatchProvider, useLeadDispatch } from './LeadDispatchContext';
 import { KpiCards } from './components/KpiCards';
 import { CategoryTabs } from './components/CategoryTabs';
@@ -24,6 +24,7 @@ import { nowString } from '../../../../services/leadMutations';
 import { generateEventId } from './eventLog';
 import type { LeadListItem, CustomerLevel } from '../leads/types';
 import { hasPendingLevelAudit, returnActorsOf } from './kpiCalc';
+import { PageHeader, PageShell, SectionCard } from '@/design-system';
 
 type TimeRange = 'today' | '7d' | '30d' | 'all';
 type SortKey = 'create_desc' | 'create_asc' | 'sla_first';
@@ -199,30 +200,27 @@ function WorkbenchInner() {
 
 
   return (
-    <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* 页头：标题 + 视角切换 + 新建 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <Typography.Title heading={5} style={{ margin: 0 }}>线索派发工作台</Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            录入 → 30min 派发 → 首联 2h 时效监控；派发是待派发线索的唯一出口（ADR-0096）
-          </Typography.Text>
-        </div>
-        <Space>
-          <Radio.Group type="button" value={role} onChange={(v) => handleRoleChange(v as DispatchRole)}>
-            {(Object.keys(DISPATCH_ROLE_LABEL) as DispatchRole[]).map((r) => (
-              <Radio key={r} value={r}>{DISPATCH_ROLE_LABEL[r]}</Radio>
-            ))}
-          </Radio.Group>
-          <Button type="primary" onClick={() => setCreateVisible(true)}>新建线索</Button>
-        </Space>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="线索派发工作台"
+        description="录入 → 30min 派发 → 首联 2h 时效监控；派发是待派发线索的唯一出口（ADR-0096）"
+        actions={(
+          <>
+            <Radio.Group type="button" value={role} onChange={(v) => handleRoleChange(v as DispatchRole)}>
+              {(Object.keys(DISPATCH_ROLE_LABEL) as DispatchRole[]).map((r) => (
+                <Radio key={r} value={r}>{DISPATCH_ROLE_LABEL[r]}</Radio>
+              ))}
+            </Radio.Group>
+            <Button type="primary" onClick={() => setCreateVisible(true)}>新建线索</Button>
+          </>
+        )}
+      />
 
       {/* KPI 卡片行 */}
       <KpiCards kpis={kpis} activeCategory={category} onSelectCategory={setCategory} />
 
       {/* 快捷分类 Tab */}
-      <Card size="small">
+      <SectionCard size="small">
         <CategoryTabs leads={leads} now={now} role={role} active={category} onChange={setCategory} />
 
         {/* 业务线 + 时间范围 + 排序 */}
@@ -244,15 +242,15 @@ function WorkbenchInner() {
             <Select.Option value="create_asc">录入时间 正序</Select.Option>
             <Select.Option value="sla_first">派发时效 紧急优先</Select.Option>
           </Select>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             {visibleLeads.length} / {leads.length} 条
             {role === 'recorder' && '（录入员固定今日）'}
           </Typography.Text>
         </Space>
-      </Card>
+      </SectionCard>
 
       {/* 筛选栏 + 批量派发 */}
-      <Card size="small">
+      <SectionCard size="small">
         <FilterBar
           filter={filter}
           onFilterChange={(patch) => setFilter((prev) => ({ ...prev, ...patch }))}
@@ -260,10 +258,10 @@ function WorkbenchInner() {
           selectedCount={selectedIds.length}
           onBatchDispatch={handleBatchDispatch}
         />
-      </Card>
+      </SectionCard>
 
       {/* 列表表格 */}
-      <Card size="small">
+      <SectionCard size="small">
         <LeadTable
           leads={visibleLeads}
           now={now}
@@ -276,7 +274,7 @@ function WorkbenchInner() {
           onLevelAdjust={handleLevelAdjust}
           onQualityConfirm={handleQualityConfirm}
         />
-      </Card>
+      </SectionCard>
 
       <CreateLeadModal
         visible={createVisible}
@@ -302,7 +300,7 @@ function WorkbenchInner() {
           onConfirm={handleLevelAdjustConfirm}
         />
       )}
-    </div>
+    </PageShell>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Button, Message, Modal, Radio, Space, Tag, Tooltip, Typography } from '@arco-design/web-react';
+import { confirmAction, StatusTag } from '@/design-system';
+import { Button, Message, Modal, Radio, Space, Tooltip, Typography } from '@/design-system';
 import {
   IconSave,
   IconDownload,
@@ -15,7 +16,7 @@ import {
   IconRight,
   IconMenuFold,
   IconMenuUnfold,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { generateQuoteHtml, getDraftWatermark, type PdfTemplateData } from '../quotePdfTemplate';
 import { useQuoteAssets } from '../useQuoteAssets';
 import { canSubmitWithDocument, type OnlineDocument } from '../fileFlow';
@@ -441,20 +442,20 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
   };
 
   return (
-    <div style={{ background: 'var(--color-bg-2)', padding: '16px', borderRadius: 6, border: '1px solid var(--color-border-2)' }}>
+    <div style={{ background: 'var(--color-bg-2)', padding: '16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-2)' }}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <Text bold style={{ fontSize: 14 }}>{ZKRT_QUOTE_TEMPLATE.name}</Text>
-          <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+          <Text bold style={{ fontSize: 'var(--text-sm)' }}>{ZKRT_QUOTE_TEMPLATE.name}</Text>
+          <Text type="secondary" style={{ marginLeft: 8, fontSize: 'var(--text-xs)' }}>
             1:1 标准件排版（6页A4、封面、项目整体报价盖章、公司介绍、六列表清单、自费项目与授权签章）
           </Text>
         </div>
 
         <div>
           {document.status === 'saved' ? (
-            <Tag color="green" icon={<IconCheckCircle />}>✓ 已保存于 {document.savedAt}</Tag>
+            <StatusTag tone="success"><IconCheckCircle />✓ 已保存于 {document.savedAt}</StatusTag>
           ) : (
-            <Tag color="orange">未保存 — 必须保存过才能提交审批</Tag>
+            <StatusTag tone="warning">未保存 — 必须保存过才能提交审批</StatusTag>
           )}
         </div>
       </div>
@@ -473,7 +474,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
 
       {!canSubmit && quoteStatus === 'pending_quote' && (
         <div style={{ marginTop: 8 }}>
-          <Text type="warning" style={{ fontSize: 12 }}>
+          <Text type="warning" style={{ fontSize: 'var(--text-xs)' }}>
             ⚠️ 提示：在提交审批前，请务必点击「在线预览与修改报价单」核对条款并保存终稿。
           </Text>
         </div>
@@ -486,14 +487,14 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
         title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 40 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Text bold style={{ fontSize: 16 }}>报价单在线修改与审阅工作台</Text>
-              <Tag color={isEditing ? 'arcoblue' : 'gray'}>
+              <Text bold style={{ fontSize: 'var(--text-base)' }}>报价单在线修改与审阅工作台</Text>
+              <StatusTag tone={isEditing ? 'info' : 'neutral'}>
                 {isEditing ? '在线编辑模式' : '只读审阅模式'}
-              </Tag>
+              </StatusTag>
               {hasUnsavedEdits ? (
-                <Tag color="red">存在未保存修改</Tag>
+                <StatusTag tone="danger">存在未保存修改</StatusTag>
               ) : document.status === 'saved' ? (
-                <Tag color="green" icon={<IconCheckCircle />}>已保存</Tag>
+                <StatusTag tone="success"><IconCheckCircle />已保存</StatusTag>
               ) : null}
             </div>
 
@@ -502,7 +503,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
               <Button
                 size="mini"
                 type="text"
-                icon={isFullscreen ? <IconFullscreenExit style={{ fontSize: 16 }} /> : <IconFullscreen style={{ fontSize: 16 }} />}
+                icon={isFullscreen ? <IconFullscreenExit style={{ fontSize: 'var(--text-base)' }} /> : <IconFullscreen style={{ fontSize: 'var(--text-base)' }} />}
                 onClick={() => setIsFullscreen(!isFullscreen)}
               >
                 {isFullscreen ? '还原窗口' : '全屏模式'}
@@ -514,7 +515,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
         alignCenter={false}
         onCancel={() => {
           if (hasUnsavedEdits) {
-            Modal.confirm({
+            confirmAction({
               title: '提示',
               content: '您有尚未保存的文档修改，确定要退出吗？',
               okText: '退出并不保存',
@@ -577,7 +578,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                 disabled={zoomPercent <= 60}
                 onClick={() => setZoomPercent((z) => Math.max(60, z - 10))}
               />
-              <span style={{ fontSize: 12, minWidth: 38, textAlign: 'center', color: 'var(--color-text-2)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', minWidth: 38, textAlign: 'center', color: 'var(--color-text-2)' }}>
                 {zoomPercent}%
               </span>
               <Button
@@ -604,7 +605,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
               gap: 8,
               background: 'var(--color-fill-2)',
               padding: '4px 10px',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               border: '1px solid var(--color-border-2)',
             }}
           >
@@ -617,19 +618,16 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
               上一页
             </Button>
 
-            <Tag
-              color="arcoblue"
-              style={{
+            <StatusTag tone="info" style={{
                 fontWeight: 600,
-                fontSize: 12,
+                fontSize: 'var(--text-xs)',
                 padding: '0 10px',
                 height: 24,
                 lineHeight: '24px',
                 userSelect: 'none',
-              }}
-            >
+              }}>
               第 {currentPage} / 6 页
-            </Tag>
+            </StatusTag>
 
             <Button
               size="mini"
@@ -708,7 +706,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: 12,
+            fontSize: 'var(--text-xs)',
           }}
         >
           <Text style={{ color: 'var(--color-text-1)', fontWeight: isEditing ? 500 : 400 }}>
@@ -716,7 +714,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
               ? '💡 已开启所见即所得修改：您可以直接在页面中点击打字修改；👈 点击左侧缩略图或上方按钮可快速翻页跳转。'
               : '当前处于只读审阅模式。点击上方「在线直接修改」即可修改页面文字；👈 点击左侧缩略图可快速定位。'}
           </Text>
-          <Text style={{ color: 'var(--color-text-2)', fontSize: 11, whiteSpace: 'nowrap', marginLeft: 12 }}>
+          <Text style={{ color: 'var(--color-text-2)', fontSize: 'var(--ds-text-caption)', whiteSpace: 'nowrap', marginLeft: 12 }}>
             6 页标准 A4 规格 · 支持单页专注 / 连续滚动 · 左侧缩略图联动
           </Text>
         </div>
@@ -750,7 +748,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
               minHeight: 0,
               height: '100%',
               position: 'relative',
-              background: '#525659',
+              background: "var(--ds-viewer-backdrop)",
               overflow: 'hidden',
             }}
           >
@@ -765,7 +763,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                 height: '100%',
                 border: 'none',
                 display: 'block',
-                background: '#525659',
+                background: "var(--ds-viewer-backdrop)",
               }}
               onLoad={handleIframeLoad}
             />
@@ -787,17 +785,17 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                       width: 48,
                       height: 48,
                       borderRadius: '50%',
-                      background: 'rgba(20, 24, 31, 0.65)',
+                      background: "var(--ds-viewer-overlay)",
                       backdropFilter: 'blur(10px)',
                       WebkitBackdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: '#ffffff',
-                      fontSize: 22,
+                      border: '1px solid var(--ds-viewer-edge)',
+                      color: "var(--ds-doc-paper)",
+                      fontSize: 'var(--text-xl)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
+                      boxShadow: 'var(--ds-shadow-viewer)',
                       transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       zIndex: 30,
                     }}
@@ -806,7 +804,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(20, 24, 31, 0.65)';
+                      e.currentTarget.style.background = "var(--ds-viewer-overlay)";
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   >
@@ -828,17 +826,17 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                       width: 48,
                       height: 48,
                       borderRadius: '50%',
-                      background: 'rgba(20, 24, 31, 0.65)',
+                      background: "var(--ds-viewer-overlay)",
                       backdropFilter: 'blur(10px)',
                       WebkitBackdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      color: '#ffffff',
-                      fontSize: 22,
+                      border: '1px solid var(--ds-viewer-edge)',
+                      color: "var(--ds-doc-paper)",
+                      fontSize: 'var(--text-xl)',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
+                      boxShadow: 'var(--ds-shadow-viewer)',
                       transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       zIndex: 30,
                     }}
@@ -847,7 +845,7 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(20, 24, 31, 0.65)';
+                      e.currentTarget.style.background = "var(--ds-viewer-overlay)";
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   >
@@ -862,17 +860,17 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                     bottom: 24,
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'rgba(20, 24, 31, 0.85)',
+                    background: "var(--ds-viewer-overlay-strong)",
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.18)',
-                    borderRadius: 30,
+                    border: '1px solid var(--ds-viewer-edge-dim)',
+                    borderRadius: 'var(--ds-radius-pill)',
                     padding: '6px 18px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
-                    boxShadow: '0 8px 28px rgba(0,0,0,0.4)',
-                    color: '#ffffff',
+                    boxShadow: 'var(--ds-shadow-viewer-strong)',
+                    color: "var(--ds-doc-paper)",
                     zIndex: 30,
                     userSelect: 'none',
                   }}
@@ -881,9 +879,9 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                     size="mini"
                     type="text"
                     disabled={currentPage <= 1}
-                    icon={<IconLeft style={{ color: currentPage <= 1 ? 'rgba(255,255,255,0.3)' : '#ffffff' }} />}
+                    icon={<IconLeft style={{ color: currentPage <= 1 ? 'rgba(255,255,255,0.3)' : "var(--ds-doc-paper)" }} />}
                     onClick={() => scrollToPage(currentPage - 1)}
-                    style={{ color: currentPage <= 1 ? 'rgba(255,255,255,0.3)' : '#ffffff' }}
+                    style={{ color: currentPage <= 1 ? 'rgba(255,255,255,0.3)' : "var(--ds-doc-paper)" }}
                   >
                     上一页
                   </Button>
@@ -897,14 +895,14 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                         style={{
                           width: p === currentPage ? 22 : 8,
                           height: 8,
-                          borderRadius: 4,
-                          background: p === currentPage ? '#165dff' : 'rgba(255, 255, 255, 0.35)',
+                          borderRadius: 'var(--radius-xs)',
+                          background: p === currentPage ? "var(--ds-doc-accent)" : 'rgba(255, 255, 255, 0.35)',
                           cursor: 'pointer',
                           transition: 'all 0.25s ease',
                         }}
                       />
                     ))}
-                    <span style={{ fontSize: 12, marginLeft: 8, fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)' }}>
+                    <span style={{ fontSize: 'var(--text-xs)', marginLeft: 8, fontWeight: 600, color: "var(--ds-viewer-on-overlay-soft)" }}>
                       第 {currentPage} / 6 页
                     </span>
                   </div>
@@ -913,9 +911,9 @@ export function OnlineDocumentPreview({ data, document, onDocumentChange, quoteS
                     size="mini"
                     type="text"
                     disabled={currentPage >= 6}
-                    icon={<IconRight style={{ color: currentPage >= 6 ? 'rgba(255,255,255,0.3)' : '#ffffff' }} />}
+                    icon={<IconRight style={{ color: currentPage >= 6 ? 'rgba(255,255,255,0.3)' : "var(--ds-doc-paper)" }} />}
                     onClick={() => scrollToPage(currentPage + 1)}
-                    style={{ color: currentPage >= 6 ? 'rgba(255,255,255,0.3)' : '#ffffff' }}
+                    style={{ color: currentPage >= 6 ? 'rgba(255,255,255,0.3)' : "var(--ds-doc-paper)" }}
                   >
                     下一页
                   </Button>

@@ -1,14 +1,32 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Input, Message, Modal, Select, Space, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
-import { IconRefresh, IconSearch, IconDelete } from '@arco-design/web-react/icon';
 import { useIntegration } from '../../../integrations/IntegrationContext';
 import type { DeliveryLog, MessageChannel } from '../../../integrations/types';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  Button,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  DataTable,
+  confirmAction,
+  IconDelete,
+  IconRefresh,
+  IconSearch,
+  Input,
+  Message,
+  Modal,
+  Select,
+  SectionCard,
+  Space,
+  StatusTag,
+  Tooltip,
+  Typography,
+  type StatusTone,
+} from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
 
 const Text = Typography.Text;
 const channelLabels: Record<MessageChannel, string> = { in_app: '站内信', wecom: '企业微信', sms: '阿里云短信' };
-const channelColors: Record<MessageChannel, string> = { in_app: 'arcoblue', wecom: 'green', sms: 'orange' };
+const channelTones: Record<MessageChannel, StatusTone> = { in_app: 'info', wecom: 'success', sms: 'warning' };
 
 export function MessageCenter() {
   const { logs, deleteLogs } = useIntegration();
@@ -51,10 +69,10 @@ export function MessageCenter() {
   };
 
   const confirmDelete = (ids: string[]) => {
-    Modal.confirm({
+    confirmAction({
       title: ids.length > 1 ? `确认删除选中的 ${ids.length} 条记录？` : '确认删除该记录？',
       content: '删除后将从当前浏览器的消息发送记录中移除，无法撤销。',
-      okButtonProps: { status: 'danger' },
+      tone: 'danger',
       onOk: () => {
         deleteLogs(ids);
         setSelectedRowKeys((current) => current.filter((id) => !ids.includes(id)));
@@ -69,20 +87,20 @@ export function MessageCenter() {
       width: 330,
       render: (_: unknown, record: DeliveryLog) => (
         <Space direction="vertical" size={2}>
-          <Space><Text bold={!record.read}>{record.title}</Text>{record.channel === 'in_app' && !record.read ? <Tag color="red">未读</Tag> : null}</Space>
+          <Space><Text bold={!record.read}>{record.title}</Text>{record.channel === 'in_app' && !record.read ? <StatusTag tone="danger">未读</StatusTag> : null}</Space>
           <Text type="secondary">{record.content}</Text>
         </Space>
       ),
     },
     { title: '业务模块', dataIndex: 'module', width: 140 },
     { title: '接收人', dataIndex: 'recipientName', width: 120 },
-    { title: '通道', dataIndex: 'channel', width: 110, render: (value: MessageChannel) => <Tag color={channelColors[value]}>{channelLabels[value]}</Tag> },
-    { title: '优先级', dataIndex: 'priority', width: 90, render: (value: string) => <Tag color={value === 'high' ? 'red' : value === 'medium' ? 'orange' : 'gray'}>{value === 'high' ? '高' : value === 'medium' ? '中' : '低'}</Tag> },
+    { title: '通道', dataIndex: 'channel', width: 110, render: (value: MessageChannel) => <StatusTag tone={channelTones[value]}>{channelLabels[value]}</StatusTag> },
+    { title: '优先级', dataIndex: 'priority', width: 90, render: (value: string) => <StatusTag tone={value === 'high' ? 'danger' : value === 'medium' ? 'warning' : 'neutral'}>{value === 'high' ? '高' : value === 'medium' ? '中' : '低'}</StatusTag> },
     {
       title: '投递状态',
       dataIndex: 'status',
       width: 110,
-      render: (value: string) => <Tag color={value === 'success' ? 'green' : value === 'failed' ? 'red' : 'gray'}>{value === 'success' ? '成功' : value === 'failed' ? '失败' : '未触发'}</Tag>,
+      render: (value: string) => <StatusTag tone={value === 'success' ? 'success' : value === 'failed' ? 'danger' : 'neutral'}>{value === 'success' ? '成功' : value === 'failed' ? '失败' : '未触发'}</StatusTag>,
     },
     { title: '说明', dataIndex: 'reason', width: 200, render: (value?: string) => value || '-' },
     { title: '发送时间', dataIndex: 'createdAt', width: 170 },
@@ -117,7 +135,7 @@ export function MessageCenter() {
         { key: 'failed', label: '投递失败', value: logs.filter((log) => log.status === 'failed').length, detail: '需要检查通道配置', tone: logs.some((log) => log.status === 'failed') ? 'danger' : 'neutral' },
         { key: 'unread', label: '站内未读', value: logs.filter((log) => log.channel === 'in_app' && !log.read).length, detail: '等待当前用户查看', tone: 'warning' },
       ]} />
-      <Card className="system-config-card" title="投递记录" bordered={false}>
+      <SectionCard className="system-config-card" title="投递记录" bordered={false}>
         <div className="system-config-section-toolbar">
           <Space wrap>
             <Input
@@ -144,7 +162,7 @@ export function MessageCenter() {
           <span>筛选结果 {data.length} 条</span>
           <span>{selectedRowKeys.length > 0 ? `已选择 ${selectedRowKeys.length} 条` : '可勾选记录后批量删除'}</span>
         </div>
-        <Table
+        <DataTable
           rowKey="id"
           columns={columns}
           data={data}
@@ -156,7 +174,7 @@ export function MessageCenter() {
           pagination={{ pageSize: 10 }}
           scroll={{ x: 1450 }}
         />
-      </Card>
+      </SectionCard>
     </PageShell>
   );
 }

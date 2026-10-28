@@ -1,31 +1,29 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router';
 import {
-  Card,
   Button,
   Space,
   Tag,
-  Tabs,
   Typography,
   Grid,
   Steps,
-  Descriptions,
   Tooltip,
   Message,
   Divider,
   Drawer,
   Modal,
   Form,
+  FormGrid,
+  FormSection,
   Input,
   InputNumber,
   Select,
   DatePicker,
   Timeline,
-  Progress,
   Upload,
   Radio,
-} from '@arco-design/web-react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+} from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import {
   IconEdit,
   IconPlus,
@@ -43,7 +41,7 @@ import {
   IconFullscreenExit,
   IconArrowLeft,
   IconArrowRight,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { LeadDetailInfo, ClueType, FollowUpRecord } from './types';
 import {
   CLUE_TYPE_LABEL,
@@ -74,7 +72,17 @@ import { LeadFollowUpModal, type LeadFollowUpFormValues } from './components/Lea
 import { LeadFinalContractPanel } from './components/LeadFinalContractPanel';
 import { LeadStagePopover, type LeadStageSopInfo } from './components/LeadStagePopover';
 import { SelectQuoteModeModal } from './components/SelectQuoteModeModal';
-import { WeChatIcon } from '@/design-system';
+import {
+  WeChatIcon,
+  confirmAction,
+  UploadPanel,
+  MoneyText,
+  DescriptionsCard,
+  ProgressBar,
+  SectionCard,
+  SectionTabs,
+  StatusTag,
+} from '@/design-system';
 import './components/NewLeadModal.css';
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
@@ -104,6 +112,8 @@ import {
   FEEDBACK_DISPOSITION_MAP,
 } from './components/LeadQuotationManager';
 import {
+  EmptyState,
+  PageHeader,
   PageShell,
   MetricGrid,
   ProcessOverview,
@@ -119,7 +129,6 @@ import {
 } from '../contracts/components/ContractPaymentInvoicePanel';
 
 const { Text } = Typography;
-const TabPane = Tabs.TabPane;
 const Step = Steps.Step;
 const DEFAULT_LEAD_TAGS = ['APP', '小程序', 'B端', 'C端', '网站', '数据接口', '其他'];
 type LeadOperation = 'transfer' | 'return' | 'trash';
@@ -552,14 +561,12 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
 
   if (!lead) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Text type="secondary">线索不存在</Text>
-          <div style={{ marginTop: 16 }}>
-            <Button onClick={() => navigate('/leads/my')}>返回列表</Button>
-          </div>
-        </div>
-      </Card>
+      <PageShell breadcrumbs={[{ label: '线索管理', to: '/leads/my' }, { label: '线索详情' }]}>
+        <PageHeader title="线索详情" />
+        <SectionCard>
+          <EmptyState description="线索不存在" action={<Button onClick={() => navigate('/leads/my')}>返回列表</Button>} />
+        </SectionCard>
+      </PageShell>
     );
   }
 
@@ -1061,12 +1068,12 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
       Message.error('未找到可删除的线索');
       return;
     }
-    Modal.confirm({
+    confirmAction({
       title: '确认删除线索？',
       content: `删除“${lead.name}”后将从当前线索池隐藏，管理员仍可通过数据恢复。`,
       okText: '确认删除',
       cancelText: '取消',
-      okButtonProps: { status: 'danger' },
+      tone: 'danger',
       onOk: async () => {
         try {
           await softDelete(serviceLeadId);
@@ -1133,10 +1140,10 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
         title={lead.name}
         tags={(
           <>
-            <Tag color={lead.status === '已签单' ? 'green' : lead.status === '已终止' ? 'red' : 'blue'}>{lead.status}</Tag>
-            {lead.customerLevel && <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'}>{lead.customerLevel}</Tag>}
-            <Tag color="gray">{lead.entity}</Tag>
-            <Tag color="gray" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag>
+            <StatusTag tone={lead.status === '已签单' ? 'success' : lead.status === '已终止' ? 'danger' : 'info'}>{lead.status}</StatusTag>
+            {lead.customerLevel && <StatusTag tone={lead.customerLevel === 'S' ? 'danger' : 'info'}>{lead.customerLevel}</StatusTag>}
+            <StatusTag tone="neutral">{lead.entity}</StatusTag>
+            <StatusTag tone="neutral" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</StatusTag>
           </>
         )}
         actions={(
@@ -1206,7 +1213,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
             value: <>
               <IconUserAdd style={{ color: 'rgb(var(--primary-6))' }} />
               <span>{lead.owner || '公海'}</span>
-              {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 12 }}>({lead.daysHeld}天)</Text>}
+              {lead.daysHeld > 0 && <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>({lead.daysHeld}天)</Text>}
             </>,
           },
           {
@@ -1232,19 +1239,19 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
         {/* 左侧主区域 (70%) */}
         <SplitLayoutMain>
           {/* 关键信息档案卡 */}
-          <Card
+          <SectionCard
             size="small"
             style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}
             bodyStyle={{ padding: '16px 20px' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--color-text-1)' }}>{lead.name}</span>
+                <span style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-text-1)' }}>{lead.name}</span>
                 {lead.customerTitle && (
-                  <Tag color="arcoblue" size="small">称谓: {lead.customerTitle}</Tag>
+                  <StatusTag tone="info" size="small">称谓: {lead.customerTitle}</StatusTag>
                 )}
                 {lead.customerLevel && (
-                  <Tag color={lead.customerLevel === 'S' ? 'red' : 'blue'} size="small">{lead.customerLevel} 级客户</Tag>
+                  <StatusTag tone={lead.customerLevel === 'S' ? 'danger' : 'info'} size="small">{lead.customerLevel} 级客户</StatusTag>
                 )}
               </div>
               {lead.presalesGroupName && (
@@ -1279,8 +1286,8 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               }}
             >
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>联系电话</div>
-                <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>联系电话</div>
+                <div style={{ fontSize: 'var(--ds-text-dense)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>{lead.phone || '-'}</span>
                   {lead.phone && (
                     <Tooltip content="复制电话">
@@ -1297,8 +1304,8 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>微信号</div>
-                <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>微信号</div>
+                <div style={{ fontSize: 'var(--ds-text-dense)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>{lead.wechat || '-'}</span>
                   {lead.wechat && (
                     <Tooltip content="复制微信">
@@ -1315,33 +1322,33 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>渠道与主体</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>渠道与主体</div>
                 <Space size={4}>
-                  <Tag color="gray" size="small" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</Tag>
-                  <Tag color="blue" size="small">{lead.entity}</Tag>
+                  <StatusTag tone="neutral" size="small" style={{ color: 'var(--color-text-1)', background: 'var(--color-fill-2)' }}>{channelLabel(lead.source)}</StatusTag>
+                  <StatusTag tone="info" size="small">{lead.entity}</StatusTag>
                 </Space>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>客资成本</div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: lead.customerCost ? 'rgb(var(--primary-6))' : 'var(--color-text-3)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>客资成本</div>
+                <div style={{ fontSize: 'var(--ds-text-dense)', fontWeight: 500, color: lead.customerCost ? 'rgb(var(--primary-6))' : 'var(--color-text-3)' }}>
                   {lead.customerCost || '¥0.00'}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>团队协作</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>团队协作</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                   优化师: {lead.optimizer || '-'} · 协助人: {lead.assistant || '-'}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 2 }}>意向标签</div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 2 }}>意向标签</div>
                 <Space size={4} wrap>
                   {(lead.tags && lead.tags.length > 0) ? lead.tags.map((t) => (
-                    <Tag key={t} size="small" color="green">{t}</Tag>
-                  )) : <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>暂无标签</span>}
+                    <StatusTag key={t} size="small" tone="success">{t}</StatusTag>
+                  )) : <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>暂无标签</span>}
                 </Space>
               </div>
             </div>
@@ -1355,8 +1362,8 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 500, color: 'rgb(var(--primary-7))', marginBottom: 2 }}>初始业务需求</div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: 1.6 }}>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'rgb(var(--primary-7))', marginBottom: 2 }}>初始业务需求</div>
+              <div style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)', lineHeight: 1.6 }}>
                 {lead.requirement || lead.initialRequirement || '暂无填写的初始需求描述'}
               </div>
             </div>
@@ -1367,46 +1374,50 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               attachments={lead.attachments ?? []}
               onManage={openEditLead}
             />
-          </Card>
+          </SectionCard>
 
           {/* 左侧业务实体工作台：6 大宽幅 Tab */}
-          <Card size="small" style={{ flex: 1 }}>
-            <Tabs activeTab={activeMainTab} onChange={setActiveMainTab} type="card">
-              <TabPane key="basic" title="基础档案" />
-              <TabPane key="quotation" title={`方案与报价 (${quotes.filter((q) => q.leadId === id && q.status !== 'voided').length})`} />
-              <TabPane key="contracts" title={`合同与财务 (${relatedContracts.length})`} />
-              <TabPane key="travel" title={`差旅与费用 (${travels.length + reimbursements.length})`} />
-              <TabPane key="delivery" title="交付执行" />
-              <TabPane key="assets" title={`资料与环境 (${demos.length + documents.length})`} />
-            </Tabs>
+          <SectionCard size="small" style={{ flex: 1 }}>
+            <SectionTabs
+              variant="card"
+              activeKey={activeMainTab}
+              onChange={setActiveMainTab}
+              items={[
+                { key: 'basic', label: '基础档案' },
+                { key: 'quotation', label: '方案与报价', count: quotes.filter((q) => q.leadId === id && q.status !== 'voided').length },
+                { key: 'contracts', label: '合同与财务', count: relatedContracts.length },
+                { key: 'travel', label: '差旅与费用', count: travels.length + reimbursements.length },
+                { key: 'delivery', label: '交付执行' },
+                { key: 'assets', label: '资料与环境', count: demos.length + documents.length },
+              ]}
+            />
 
             <div style={{ marginTop: 16 }}>
               {/* 1. 基础信息 */}
               {activeMainTab === 'basic' && (
-                <Descriptions
-                  column={4}
-                  size="small"
-                  data={[
-                    { label: '对接主体', value: lead.entity },
-                    { label: '线索意向', value: lead.level || '-' },
-                    { label: '线索状态', value: lead.status },
-                    { label: '客户类型', value: lead.customerLevel || '-' },
-                    { label: '客户预算', value: lead.customerBudget || '-' },
-                    { label: '客户主体', value: lead.customer },
-                    { label: '售前群名称', value: lead.presalesGroupName || '-' },
-                    { label: '威客任务号', value: lead.witkeyTaskNo || '-' },
-                    { label: '推广关键词', value: lead.keyword || '-' },
-                    { label: '意向标签', value: lead.tags?.join('、') || '-' },
+                <DescriptionsCard
+                  columns={4}
+                  items={[
+                    { key: '对接主体', label: '对接主体', value: lead.entity },
+                    { key: '线索意向', label: '线索意向', value: lead.level || '-' },
+                    { key: '线索状态', label: '线索状态', value: lead.status },
+                    { key: '客户类型', label: '客户类型', value: lead.customerLevel || '-' },
+                    { key: '客户预算', label: '客户预算', value: lead.customerBudget || '-' },
+                    { key: '客户主体', label: '客户主体', value: lead.customer },
+                    { key: '售前群名称', label: '售前群名称', value: lead.presalesGroupName || '-' },
+                    { key: '威客任务号', label: '威客任务号', value: lead.witkeyTaskNo || '-' },
+                    { key: '推广关键词', label: '推广关键词', value: lead.keyword || '-' },
+                    { key: '意向标签', label: '意向标签', value: lead.tags?.join('、') || '-' },
                     // 派发信息
-                    { label: '业务线', value: dispatchLead?.businessLine ? BUSINESS_LINE_LABEL[dispatchLead.businessLine as LeadBusinessLine] || dispatchLead.businessLine : '-' },
-                    { label: '渠道计划', value: dispatchLead?.channelPlan || '-' },
-                    { label: '派发时间', value: dispatchLead?.dispatchedAt || '未派发' },
-                    { label: '派发目标', value: dispatchLead?.dispatchTarget === 'sales' ? '指派销售' : dispatchLead?.dispatchTarget === 'pool' ? '公海' : '-' },
-                    { label: '派发时效', value: dispatchView ? <Tag color={dispatchView.dispatchSla.status === 'overdue' ? 'red' : dispatchView.dispatchSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.dispatchSla.label}</Tag> : '-' },
-                    { label: '首联时效', value: dispatchView ? <Tag color={dispatchView.firstContactSla.status === 'overdue' ? 'red' : dispatchView.firstContactSla.status === 'warning' ? 'orange' : 'green'} size="small">{dispatchView.firstContactSla.label}</Tag> : '-' },
-                    { label: '原型图链接', span: 4, value: lead.prototypeLink ? <a href={lead.prototypeLink} target="_blank" rel="noreferrer" style={{ overflowWrap: 'anywhere' }}>{lead.prototypeLink}</a> : '-' },
-                    { label: '客户信息备注', span: 4, value: lead.customerNote || '-' },
-                  ]}
+                    { key: '业务线', label: '业务线', value: dispatchLead?.businessLine ? BUSINESS_LINE_LABEL[dispatchLead.businessLine as LeadBusinessLine] || dispatchLead.businessLine : '-' },
+                    { key: '渠道计划', label: '渠道计划', value: dispatchLead?.channelPlan || '-' },
+                    { key: '派发时间', label: '派发时间', value: dispatchLead?.dispatchedAt || '未派发' },
+                    { key: '派发目标', label: '派发目标', value: dispatchLead?.dispatchTarget === 'sales' ? '指派销售' : dispatchLead?.dispatchTarget === 'pool' ? '公海' : '-' },
+                    { key: '派发时效', label: '派发时效', value: dispatchView ? <StatusTag tone={dispatchView.dispatchSla.status === 'overdue' ? 'danger' : dispatchView.dispatchSla.status === 'warning' ? 'warning' : 'success'} size="small">{dispatchView.dispatchSla.label}</StatusTag> : '-' },
+                    { key: '首联时效', label: '首联时效', value: dispatchView ? <StatusTag tone={dispatchView.firstContactSla.status === 'overdue' ? 'danger' : dispatchView.firstContactSla.status === 'warning' ? 'warning' : 'success'} size="small">{dispatchView.firstContactSla.label}</StatusTag> : '-' },
+                    { key: '原型图链接', label: '原型图链接', long: true, value: lead.prototypeLink ? <a href={lead.prototypeLink} target="_blank" rel="noreferrer" style={{ overflowWrap: 'anywhere' }}>{lead.prototypeLink}</a> : '-' },
+                    { key: '客户信息备注', label: '客户信息备注', long: true, value: lead.customerNote || '-' },
+                                    ]}
                 />
               )}
 
@@ -1414,7 +1425,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               {activeMainTab === 'quotation' && (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <span style={{ fontSize: 13, color: 'var(--color-text-3)' }}>
+                    <span style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-3)' }}>
                       沉淀此线索的技术方案成本测算与多版本报价记录
                     </span>
                     <Button
@@ -1496,14 +1507,14 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                       新建合同
                     </Button>
                   </div>
-                  <Card size="small" title="正式主合同" style={{ marginBottom: 16 }}>
+                  <SectionCard size="small" title="正式主合同" style={{ marginBottom: 16 }}>
                     {mainContract ? (
                       <LeadFinalContractPanel contract={mainContract} projectLayout projectFullInfo />
                     ) : (
                       <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无关联合同</div>
                     )}
-                  </Card>
-                  <Card size="small" title={`补充合同（${supplementContracts.length}）`} style={{ marginBottom: 16 }}>
+                  </SectionCard>
+                  <SectionCard size="small" title={`补充合同（${supplementContracts.length}）`} style={{ marginBottom: 16 }}>
                     {supplementContracts.length > 0 ? (
                       <Space direction="vertical" size={16} style={{ width: '100%' }}>
                         {supplementContracts.map((contract) => (
@@ -1513,9 +1524,9 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                     ) : (
                       <div style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-4)' }}>暂无补充合同</div>
                     )}
-                  </Card>
+                  </SectionCard>
 
-                  <Card size="small" title="回款与发票台账">
+                  <SectionCard size="small" title="回款与发票台账">
                     <ContractPaymentInvoicePanel
                       mainContract={mainContract}
                       supplementContracts={supplementContracts}
@@ -1538,7 +1549,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                       onCorrectInvoice={(invoice) => setInvoiceRecords((items) => items.map((item) => item.id === invoice.id ? { ...item, invoiceNo: `${item.invoiceNo}-更正` } : item))}
                       onDeleteInvoice={(invoice) => setInvoiceRecords((items) => items.filter((item) => item.id !== invoice.id))}
                     />
-                  </Card>
+                  </SectionCard>
                 </div>
               )}
 
@@ -1547,7 +1558,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 <div>
                   <Grid.Row gutter={16}>
                     <Grid.Col span={12}>
-                      <Card
+                      <SectionCard
                         size="small"
                         title="出差申请记录"
                         extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { travelForm.resetFields(); setTravelModalVisible(true); }}>新增出差</Button>}
@@ -1556,7 +1567,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                           <ProcessRecordCard
                             key={travel.id}
                             title={`${travel.destination} · ${travel.purpose}`}
-                            tags={<Tag color="green" size="small">{travel.status}</Tag>}
+                            tags={<StatusTag tone="success" size="small">{travel.status}</StatusTag>}
                             actions={<Tooltip content="展开出差详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
                             identifier={`审批号 ${travel.approvalNo}`}
                             onClick={() => setTravelDetailId(travel.id)}
@@ -1565,17 +1576,17 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                               <>
                                 <span>申请人 <strong>{travel.applicant}</strong></span>
                                 <span>{travel.startDate} 至 {travel.endDate}</span>
-                                <span>费用 <strong>{money(travel.amount)}</strong></span>
+                                <span>费用 <strong><MoneyText value={travel.amount} /></strong></span>
                               </>
                             )}
                           />
                         ))}
                         {travels.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无出差记录</div>}
-                      </Card>
+                      </SectionCard>
                     </Grid.Col>
 
                     <Grid.Col span={12}>
-                      <Card
+                      <SectionCard
                         size="small"
                         title="费用报销记录"
                         extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { reimbursementForm.resetFields(); setReimbursementModalVisible(true); }}>新增报销</Button>}
@@ -1584,7 +1595,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                           <ProcessRecordCard
                             key={rb.id}
                             title={`${rb.type} · ${rb.description}`}
-                            tags={<Tag color="green" size="small">{rb.status}</Tag>}
+                            tags={<StatusTag tone="success" size="small">{rb.status}</StatusTag>}
                             actions={<Tooltip content="展开报销详情"><span className="hubx-process-record-card__indicator"><IconArrowRight /></span></Tooltip>}
                             identifier={`审批号 ${rb.approvalNo}`}
                             onClick={() => setReimbursementDetailId(rb.id)}
@@ -1592,13 +1603,13 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                             summary={(
                               <>
                                 <span>申请人 <strong>{rb.applicant}</strong></span>
-                                <span>报销金额 <strong>{money(rb.amount)}</strong></span>
+                                <span>报销金额 <strong><MoneyText value={rb.amount} /></strong></span>
                               </>
                             )}
                           />
                         ))}
                         {reimbursements.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无报销记录</div>}
-                      </Card>
+                      </SectionCard>
                     </Grid.Col>
                   </Grid.Row>
                 </div>
@@ -1607,20 +1618,20 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               {/* 5. 交付执行 */}
               {activeMainTab === 'delivery' && (
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px', background: 'var(--color-fill-2)', borderRadius: 8 }}>
-                    <Tag color="blue">项目编号</Tag>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 16px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-md)' }}>
+                    <StatusTag tone="info">项目编号</StatusTag>
                     <Text style={{ fontWeight: 500 }}>PRJ20260820001</Text>
                     <Divider type="vertical" />
-                    <Tag color="green">健康度: 正常</Tag>
+                    <StatusTag tone="success">健康度: 正常</StatusTag>
                     <Divider type="vertical" />
                     <Text type="secondary">PM: 李四</Text>
                     <Divider type="vertical" />
                     <Text type="secondary">进度: 65%</Text>
-                    <Progress percent={65} size="small" style={{ width: 100 }} showText={false} />
+                    <ProgressBar percent={65} size="small" style={{ width: 100 }} showValue={false} />
                   </div>
 
                   <div style={{ marginBottom: 16 }}>
-                    <Text style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
+                    <Text style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 8, display: 'block' }}>交付里程碑</Text>
                     <Steps current={2} size="small">
                       <Step title="立项启动" description="08-20 已确认" />
                       <Step title="UI确认" description="08-28 客户盖章" />
@@ -1632,19 +1643,19 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
 
                   <Grid.Row gutter={16}>
                     <Grid.Col span={12}>
-                      <Card size="small" title="任务看板">
-                        <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>开发中 3 项 · 待分配 1 项 · 已完成 1 项</div>
-                      </Card>
+                      <SectionCard size="small" title="任务看板">
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>开发中 3 项 · 待分配 1 项 · 已完成 1 项</div>
+                      </SectionCard>
                     </Grid.Col>
                     <Grid.Col span={12}>
-                      <Card size="small" title="缺陷跟踪">
-                        <div style={{ fontSize: 12 }}>
-                          <Tag color="red" size="small">P0: 0</Tag>
-                          <Tag color="orangered" size="small">P1: 1</Tag>
-                          <Tag color="orange" size="small">P2: 0</Tag>
-                          <Tag color="blue" size="small">P3: 0</Tag>
+                      <SectionCard size="small" title="缺陷跟踪">
+                        <div style={{ fontSize: 'var(--text-xs)' }}>
+                          <StatusTag tone="danger" size="small">P0: 0</StatusTag>
+                          <StatusTag tone="danger" size="small">P1: 1</StatusTag>
+                          <StatusTag tone="warning" size="small">P2: 0</StatusTag>
+                          <StatusTag tone="info" size="small">P3: 0</StatusTag>
                         </div>
-                      </Card>
+                      </SectionCard>
                     </Grid.Col>
                   </Grid.Row>
                 </div>
@@ -1655,7 +1666,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 <div>
                   <Grid.Row gutter={16}>
                     <Grid.Col span={12}>
-                      <Card
+                      <SectionCard
                         size="small"
                         title="演示环境管理"
                         extra={<Button type="primary" size="mini" icon={<IconPlus />} onClick={() => { demoForm.resetFields(); setDemoModalVisible(true); }}>新增环境</Button>}
@@ -1663,7 +1674,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                         {demos.map((demo) => (
                           <ProcessRecordCard
                             key={demo.id}
-                            leading={<Tag color="blue" size="small">{demo.type}</Tag>}
+                            leading={<StatusTag tone="info" size="small">{demo.type}</StatusTag>}
                             title={demo.description}
                             identifier={(
                               <span className="hubx-process-record-card__identifier-line">
@@ -1688,11 +1699,11 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                           />
                         ))}
                         {demos.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无演示环境</div>}
-                      </Card>
+                      </SectionCard>
                     </Grid.Col>
 
                     <Grid.Col span={12}>
-                      <Card
+                      <SectionCard
                         size="small"
                         title="方案资料库"
                         extra={<Button type="primary" size="mini" icon={<IconUpload />} onClick={() => { docForm.resetFields(); setDocUploadItems([]); setDocModalVisible(true); }}>上传资料</Button>}
@@ -1702,7 +1713,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                             key={doc.id}
                             leading={<IconFile />}
                             title={doc.name}
-                            tags={<><Tag size="small" color="gray">{doc.type}</Tag><Tag size="small" color="arcoblue">{doc.source}</Tag></>}
+                            tags={<><StatusTag size="small" tone="neutral">{doc.type}</StatusTag><StatusTag size="small" tone="info">{doc.source}</StatusTag></>}
                             identifier={`${doc.uploader} · ${doc.createdAt}`}
                             actions={(
                               <Space size={4}>
@@ -1713,35 +1724,35 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                           />
                         ))}
                         {documents.length === 0 && <div style={{ textAlign: 'center', padding: 32, color: 'var(--color-text-4)' }}>暂无资料</div>}
-                      </Card>
+                      </SectionCard>
                     </Grid.Col>
                   </Grid.Row>
                 </div>
               )}
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutMain>
 
         {/* 右侧互动流与协同 (30%) */}
         <SplitLayoutAside>
           {/* 售前聊天群分析 */}
           {lead.presalesGroupName && (
-            <Card size="small" title="售前聊天群分析" style={{ marginBottom: 14 }}>
+            <SectionCard size="small" title="售前聊天群分析" style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <WeChatIcon />
                 <Text style={{ fontWeight: 500 }}>{lead.presalesGroupName}</Text>
               </div>
-              <div style={{ padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 8, fontSize: 13, color: 'var(--color-text-2)' }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-3)', marginBottom: 4 }}>AI 摘要洞察</div>
+              <div style={{ padding: '10px 12px', background: 'var(--color-fill-2)', borderRadius: 'var(--radius-md)', fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-2)' }}>
+                <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-3)', marginBottom: 4 }}>AI 摘要洞察</div>
                 <div>
                   客户对小程序点餐系统需求明确，重点关注多门店管理和微信支付对接。已确认基础功能清单，待确认抖音端增项需求。
                 </div>
               </div>
-            </Card>
+            </SectionCard>
           )}
 
           {/* 常驻快捷写跟进卡片 */}
-          <Card
+          <SectionCard
             size="small"
             title="快捷写跟进"
             extra={
@@ -1797,10 +1808,10 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 </Button>
               </div>
             </div>
-          </Card>
+          </SectionCard>
 
           {/* 互动时间线卡片 */}
-          <Card
+          <SectionCard
             size="small"
             title="跟进与互动动态"
             extra={
@@ -1811,15 +1822,15 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                   { label: '微信', value: '微信' },
                   { label: '拜访', value: '拜访' },
                 ].map((item) => (
-                  <Tag
+                  <StatusTag
                     key={item.value}
                     size="small"
-                    color={timelineFilterMethod === item.value ? 'arcoblue' : undefined}
+                    tone={timelineFilterMethod === item.value ? 'info' : 'neutral'}
                     style={{ cursor: 'pointer' }}
                     onClick={() => setTimelineFilterMethod(item.value)}
                   >
                     {item.label}
-                  </Tag>
+                  </StatusTag>
                 ))}
               </Space>
             }
@@ -1832,16 +1843,16 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                     <div style={{ marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
                         <Space size={6}>
-                          <Tag color="blue" size="small">{record.method}</Tag>
-                          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-2)' }}>{record.creator}</span>
+                          <StatusTag tone="info" size="small">{record.method}</StatusTag>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-2)' }}>{record.creator}</span>
                         </Space>
-                        <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>{record.createdAt}</span>
+                        <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-4)' }}>{record.createdAt}</span>
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: 1.6, marginBottom: 4, whiteSpace: 'pre-wrap' }}>
+                      <div style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)', lineHeight: 1.6, marginBottom: 4, whiteSpace: 'pre-wrap' }}>
                         {record.content}
                       </div>
                       {record.nextFollowTime && (
-                        <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span>📅 下次跟进:</span>
                           <strong>{record.nextFollowTime}</strong>
                         </div>
@@ -1856,7 +1867,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 </div>
               )}
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 
@@ -1896,7 +1907,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
             />
           </Form.Item>
           {leadOperation === 'return' && (
-            <div style={{ color: lead.trashCount >= 2 ? 'rgb(var(--danger-6))' : 'var(--color-text-3)', fontSize: 13, lineHeight: '20px' }}>
+            <div style={{ color: lead.trashCount >= 2 ? 'rgb(var(--danger-6))' : 'var(--color-text-3)', fontSize: 'var(--ds-text-dense)', lineHeight: '20px' }}>
               当前已退回 {lead.trashCount} 次；第 3 次退回将自动进入垃圾线索。
             </div>
           )}
@@ -1949,12 +1960,13 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
             <span className="new-lead-form__destination">更新当前线索</span>
           </div>
 
-          <section className="new-lead-form__section">
-            <div className="new-lead-form__section-heading">
-              <span>01</span>
-              <div><h3>基本信息</h3><p>维护线索名称、来源渠道和承接主体</p></div>
-            </div>
-            <div className="new-lead-form__grid">
+          <FormSection
+            className="new-lead-form__section"
+            leading={<span>01</span>}
+            title="基本信息"
+            description="维护线索名称、来源渠道和承接主体"
+          >
+            <FormGrid columns={2} className="new-lead-form__grid">
               <Form.Item className="new-lead-form__span-2" label="线索名称" field="name" required rules={[{ required: true, message: '请输入线索名称' }, { maxLength: 30, message: '最多输入 30 个字符' }]}>
                 <Input autoFocus placeholder="如：华东零售门店小程序升级" maxLength={30} showWordLimit allowClear />
               </Form.Item>
@@ -1968,15 +1980,16 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                   {COMPANY_ENTITY_LIST.map((entity) => <Select.Option key={entity} value={entity}>{entity}</Select.Option>)}
                 </Select>
               </Form.Item>
-            </div>
-          </section>
+            </FormGrid>
+          </FormSection>
 
-          <section className="new-lead-form__section">
-            <div className="new-lead-form__section-heading">
-              <span>02</span>
-              <div><h3>联系人信息</h3><p>维护客户对接人和有效触达方式</p></div>
-            </div>
-            <div className="new-lead-form__grid new-lead-form__grid--three">
+          <FormSection
+            className="new-lead-form__section"
+            leading={<span>02</span>}
+            title="联系人信息"
+            description="维护客户对接人和有效触达方式"
+          >
+            <FormGrid columns={3} className="new-lead-form__grid new-lead-form__grid--three">
               <Form.Item label="联系人" field="contact" required rules={[{ required: true, message: '请输入联系人' }]}>
                 <Input placeholder="联系人姓名或称呼" allowClear />
               </Form.Item>
@@ -1986,15 +1999,16 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               <Form.Item label="联系微信" field="wechat">
                 <Input placeholder="微信号或绑定手机号" allowClear />
               </Form.Item>
-            </div>
-          </section>
+            </FormGrid>
+          </FormSection>
 
-          <section className="new-lead-form__section">
-            <div className="new-lead-form__section-heading">
-              <span>03</span>
-              <div><h3>状态与责任</h3><p>更新销售阶段、客户分级和协作人员</p></div>
-            </div>
-            <div className="new-lead-form__grid new-lead-form__grid--three">
+          <FormSection
+            className="new-lead-form__section"
+            leading={<span>03</span>}
+            title="状态与责任"
+            description="更新销售阶段、客户分级和协作人员"
+          >
+            <FormGrid columns={3} className="new-lead-form__grid new-lead-form__grid--three">
               <Form.Item label="线索状态" field="status" required rules={[{ required: true, message: '请选择线索状态' }]}>
                 <Select placeholder="选择线索状态" options={SALES_STATUS_LIST.map((value) => ({ label: value, value }))} />
               </Form.Item>
@@ -2013,15 +2027,16 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
               <Form.Item label="协助人" field="assistant">
                 <Select placeholder="选择协助人" options={employeeOptions} showSearch allowClear />
               </Form.Item>
-            </div>
-          </section>
+            </FormGrid>
+          </FormSection>
 
-          <section className="new-lead-form__section">
-            <div className="new-lead-form__section-heading">
-              <span>04</span>
-              <div><h3>需求与投放</h3><p>补充需求记录、渠道索引和售前协作信息</p></div>
-            </div>
-            <div className="new-lead-form__grid">
+          <FormSection
+            className="new-lead-form__section"
+            leading={<span>04</span>}
+            title="需求与投放"
+            description="补充需求记录、渠道索引和售前协作信息"
+          >
+            <FormGrid columns={2} className="new-lead-form__grid">
               <Form.Item label="推广关键词" field="keyword">
                 <Input placeholder="如：小程序定制" allowClear />
               </Form.Item>
@@ -2057,11 +2072,10 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 <Input.TextArea rows={3} maxLength={500} showWordLimit placeholder="补充沟通偏好、特殊事项或其他背景" />
               </Form.Item>
               <Form.Item className="new-lead-form__span-all new-lead-form__upload" label={`附件管理（${editLeadUploadItems.length}/10）`}>
-                <Upload
+                <UploadPanel
                   accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
                   multiple
                   limit={10}
-                  drag
                   autoUpload={false}
                   fileList={editLeadUploadItems}
                   onChange={setEditLeadUploadItems}
@@ -2073,16 +2087,12 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                     if (file.url) window.open(file.url, '_blank', 'noopener,noreferrer');
                   }}
                   onExceedLimit={() => Message.warning('线索附件最多上传 10 个')}
-                >
-                  <div className="new-lead-form__upload-content">
-                    <IconUpload />
-                    <div>点击或拖拽文件到此处上传</div>
-                    <span>支持图片、PDF、Word、Excel；点击文件列表删除图标可移除附件，保存后生效</span>
-                  </div>
-                </Upload>
+                  hint="点击或拖拽文件到此处上传"
+                  description="支持图片、PDF、Word、Excel；点击文件列表删除图标可移除附件，保存后生效"
+                />
               </Form.Item>
-            </div>
-          </section>
+            </FormGrid>
+          </FormSection>
         </Form>
       </Modal>
 
@@ -2166,8 +2176,7 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
         style={{ width: 560 }}
       >
         <Form form={docForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <Form.Item label="资料类型" field="type" rules={[{ required: true, message: '请选择资料类型' }]}>
                 <Select placeholder="请选择">
                   <Select.Option value="确认书">确认书</Select.Option>
@@ -2177,8 +2186,6 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                   <Select.Option value="其他">其他</Select.Option>
                 </Select>
               </Form.Item>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <Form.Item label="资料来源" field="source" rules={[{ required: true, message: '请选择资料来源' }]}>
                 <Select placeholder="请选择">
                   <Select.Option value="客户签署">客户签署</Select.Option>
@@ -2187,13 +2194,11 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                   <Select.Option value="报价模块">报价模块</Select.Option>
                 </Select>
               </Form.Item>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <Form.Item label="资料文件" required>
-            <Upload
+            <UploadPanel
               accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.zip"
               limit={1}
-              drag
               autoUpload={false}
               fileList={docUploadItems}
               onChange={(files) => setDocUploadItems(files.slice(-1))}
@@ -2202,13 +2207,9 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
                 return false;
               }}
               onExceedLimit={() => Message.warning('每次只能上传一个资料文件')}
-            >
-              <div style={{ padding: '16px 0', textAlign: 'center' }}>
-                <IconUpload style={{ fontSize: 28, color: 'rgb(var(--primary-6))' }} />
-                <div style={{ marginTop: 8 }}>点击或拖拽资料文件到此处</div>
-                <Text type="secondary" style={{ fontSize: 12 }}>支持图片、PDF、Word、Excel 和 ZIP</Text>
-              </div>
-            </Upload>
+              hint="点击或拖拽资料文件到此处"
+              description="支持图片、PDF、Word、Excel 和 ZIP"
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -2216,14 +2217,12 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
       {/* 新增出差 Modal */}
       <Modal title="新增出差" visible={travelModalVisible} onOk={() => { travelForm.validate().then((values) => { setTravels([...travels, { id: `tr${Date.now()}`, ...values, status: '待审批' }]); Message.success('已提交'); setTravelModalVisible(false); }); }} onCancel={() => setTravelModalVisible(false)} style={{ width: 520 }}>
         <Form form={travelForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="目的地" field="destination" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="出差事由" field="purpose" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><Form.Item label="开始日期" field="startDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-            <Grid.Col span={12}><Form.Item label="结束日期" field="endDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <Form.Item label="目的地" field="destination" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item>
+            <Form.Item label="出差事由" field="purpose" rules={[{ required: true }]}><Input placeholder="请输入" /></Form.Item>
+            <Form.Item label="开始日期" field="startDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+            <Form.Item label="结束日期" field="endDate" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+          </FormGrid>
           <Form.Item label="预估费用" field="amount"><InputNumber min={0} style={{ width: '100%' }} prefix="¥" /></Form.Item>
         </Form>
       </Modal>
@@ -2266,10 +2265,10 @@ export function LeadDetail360({ leadId, initialSideTab }: LeadDetail360Props = {
         )}
       </Drawer>
       <Drawer title="出差详情与审批流" width={520} visible={Boolean(travelDetailId)} onCancel={() => setTravelDetailId(null)} footer={null}>
-        {travels.filter((item) => item.id === travelDetailId).map((item) => <div key={item.id}><Descriptions column={1} data={[{ label: '目的地', value: item.destination }, { label: '事由', value: item.purpose }, { label: '申请人', value: item.applicant }, { label: '日期', value: `${item.startDate} ~ ${item.endDate}` }, { label: '金额', value: money(item.amount) }, { label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交申请 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">部门负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
+        {travels.filter((item) => item.id === travelDetailId).map((item) => <div key={item.id}><DescriptionsCard columns={1} items={[{ key: '目的地', label: '目的地', value: item.destination }, { key: '事由', label: '事由', value: item.purpose, long: true }, { key: '申请人', label: '申请人', value: item.applicant }, { key: '日期', label: '日期', value: `${item.startDate} ~ ${item.endDate}` }, { key: '金额', label: '金额', value: <MoneyText value={item.amount} /> }, { key: '审批号', label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交申请 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">部门负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
       </Drawer>
       <Drawer title="报销详情与审批流" width={520} visible={Boolean(reimbursementDetailId)} onCancel={() => setReimbursementDetailId(null)} footer={null}>
-        {reimbursements.filter((item) => item.id === reimbursementDetailId).map((item) => <div key={item.id}><Descriptions column={1} data={[{ label: '报销类型', value: item.type }, { label: '说明', value: item.description }, { label: '申请人', value: item.applicant }, { label: '金额', value: money(item.amount) }, { label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交报销 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">直属负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
+        {reimbursements.filter((item) => item.id === reimbursementDetailId).map((item) => <div key={item.id}><DescriptionsCard columns={1} items={[{ key: '报销类型', label: '报销类型', value: item.type }, { key: '说明', label: '说明', value: item.description, long: true }, { key: '申请人', label: '申请人', value: item.applicant }, { key: '金额', label: '金额', value: <MoneyText value={item.amount} /> }, { key: '审批号', label: '审批号', value: item.approvalNo }]} /><Divider /><Timeline><Timeline.Item dotColor="green">提交报销 · {item.applicant}</Timeline.Item><Timeline.Item dotColor="green">直属负责人审批通过</Timeline.Item><Timeline.Item dotColor="green">财务审批通过 · {item.status}</Timeline.Item></Timeline></div>)}
       </Drawer>
 
       {/* 阶段推进流转弹窗 */}

@@ -15,6 +15,8 @@ describe('宿舍管理模块 DormitoryManagement', () => {
     );
 
     // 页面标题与描述
+    expect(markup.match(/class="hubx-page-shell"/g)).toHaveLength(1);
+    expect(markup.match(/class="hubx-page-header"/g)).toHaveLength(1);
     expect(markup).toContain('宿舍管理');
     expect(markup).toContain('统一管理企业宿舍楼栋档案、房态床位网格');
 

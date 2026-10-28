@@ -1,11 +1,23 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Button, DatePicker, Input, Message, Modal, Select, Space, Tooltip } from '@/design-system';
+import { IconEye } from '@/design-system';
 import {
-  Alert, Button, Card, DatePicker, Descriptions, Input, Message, Modal, Progress,
-  Select, Space, Table, Tag, Tooltip,
-} from '@arco-design/web-react';
-import { IconEye } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, MetricGrid, ProcessOverview, StatusTag, type StatusMap } from '@/design-system';
+  DataTable,
+  DateText,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  ProcessOverview,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+  DescriptionsCard,
+  AlertBanner,
+  ProgressBar,
+  PaymentProgress,
+} from '@/design-system';
 import { useCollections } from '../../collections/CollectionContext';
 import { useLeads } from '../../leads/LeadContext';
 import { useContracts } from '../sales/contracts/ContractsContext';
@@ -29,6 +41,19 @@ const PAYMENT_INVOICE_STATUS: StatusMap<PaymentInvoiceStatus> = {
   部分收款: { label: '部分收款', tone: 'warning' },
   逾期: { label: '逾期', tone: 'danger' },
   已完成: { label: '已完成', tone: 'success' },
+};
+
+const PAYMENT_PERIOD_STATUS: StatusMap<'未收款' | '部分收款' | '已收款' | '逾期'> = {
+  未收款: { label: '未收款', tone: 'neutral' },
+  部分收款: { label: '部分收款', tone: 'warning' },
+  已收款: { label: '已收款', tone: 'success' },
+  逾期: { label: '逾期', tone: 'danger' },
+};
+
+const INVOICE_APPLICATION_STATUS: StatusMap<'开票中' | '已开票' | '已冲红'> = {
+  开票中: { label: '开票中', tone: 'warning' },
+  已开票: { label: '已开票', tone: 'success' },
+  已冲红: { label: '已冲红', tone: 'danger' },
 };
 
 interface SearchForm {
@@ -107,16 +132,16 @@ export function PaymentInvoiceList() {
     { title: '线索/合同名称', dataIndex: 'leadName', width: 220 },
     { title: '客户主体', dataIndex: 'customerEntity', width: 190 },
     { title: '对接主体', dataIndex: 'ourEntity', width: 130 },
-    { title: '合同总额', dataIndex: 'totalAmount', width: 120, render: (value: number) => `¥${value.toLocaleString()}` },
-    { title: '已收金额', dataIndex: 'receivedAmount', width: 120, render: (value: number) => `¥${value.toLocaleString()}` },
-    { title: '回款进度', dataIndex: 'receivedRate', width: 150, render: (rate: number) => <Progress percent={rate} size="small" /> },
-    { title: '已开票金额', dataIndex: 'invoicedAmount', width: 120, render: (value: number) => `¥${value.toLocaleString()}` },
-    { title: '开票进度', dataIndex: 'invoicedRate', width: 150, render: (rate: number) => <Progress percent={rate} size="small" /> },
+    { title: '合同总额', dataIndex: 'totalAmount', width: 120, render: (value: number) => <MoneyText value={value} /> },
+    { title: '已收金额', dataIndex: 'receivedAmount', width: 120, render: (value: number) => <MoneyText value={value} /> },
+    { title: '回款进度', dataIndex: 'receivedRate', width: 150, render: (_rate: number, record: PaymentInvoiceRecordRow) => <PaymentProgress received={record.receivedAmount} total={record.totalAmount} size="small" showAmounts={false} /> },
+    { title: '已开票金额', dataIndex: 'invoicedAmount', width: 120, render: (value: number) => <MoneyText value={value} /> },
+    { title: '开票进度', dataIndex: 'invoicedRate', width: 150, render: (rate: number) => <ProgressBar percent={rate} size="small" /> },
     {
       title: '状态', dataIndex: 'status', width: 100,
       render: (status: PaymentInvoiceStatus) => <StatusTag meta={PAYMENT_INVOICE_STATUS[status]} />,
     },
-    { title: '最新日期', dataIndex: 'latestDate', width: 120 },
+    { title: '最新日期', dataIndex: 'latestDate', width: 120, render: (value: string) => <DateText value={value} /> },
     {
       title: '操作', width: 80, fixed: 'right' as const,
       render: (_: unknown, record: PaymentInvoiceRecordRow) => (
@@ -143,7 +168,7 @@ export function PaymentInvoiceList() {
       <ProcessOverview
         identifier="FINANCE-CLOSURE"
         title="合同结清与售后移交流程"
-        tags={<><Tag color={overdueCount ? 'red' : 'green'}>{overdueCount ? `${overdueCount} 个逾期期次` : '当前无逾期'}</Tag><Tag color="arcoblue">α 流程接缝</Tag></>}
+        tags={<><StatusTag tone={overdueCount ? 'danger' : 'success'}>{overdueCount ? `${overdueCount} 个逾期期次` : '当前无逾期'}</StatusTag><StatusTag tone="info">α 流程接缝</StatusTag></>}
         steps={[
           { key: 'period', title: '回款期次', description: `${paymentPeriodCount} 个计划期次` },
           { key: 'overdue', title: '逾期处理', description: overdueCount ? `${overdueCount} 个待处理` : '无逾期阻断' },
@@ -160,41 +185,40 @@ export function PaymentInvoiceList() {
         { key: 'handoffs', label: '售后移交', value: afterSalesHandoffs.length, detail: '满足结清条件后生成维护期', tone: afterSalesHandoffs.length ? 'success' : 'neutral' },
       ]} />
 
-      {overdueCount > 0 && <Alert type="warning" showIcon content={`当前有 ${overdueCount} 个逾期期次。请先在回款管理完成催收、到账或卡点登记，再继续售后移交。`} />}
+      {overdueCount > 0 && <AlertBanner tone="warning">{`当前有 ${overdueCount} 个逾期期次。请先在回款管理完成催收、到账或卡点登记，再继续售后移交。`}</AlertBanner>}
 
-      <Card style={{ marginBottom: 16 }}>
-        <Space size="medium" wrap>
-          <Input
-            style={{ width: 240 }} placeholder="搜索记录、合同、客户或名称"
-            value={searchForm.keyword}
-            onChange={keyword => setSearchForm(current => ({ ...current, keyword }))}
-            allowClear
-          />
-          <Select
-            style={{ width: 130 }} placeholder="数据类型" value={searchForm.type}
-            onChange={type => setSearchForm(current => ({ ...current, type }))}
-            allowClear options={[{ label: '有回款', value: '回款' }, { label: '有发票', value: '发票' }]}
-          />
-          <Select
-            style={{ width: 130 }} placeholder="选择状态" value={searchForm.status}
-            onChange={status => setSearchForm(current => ({ ...current, status }))}
-            allowClear options={Object.keys(PAYMENT_INVOICE_STATUS).map(status => ({ label: status, value: status }))}
-          />
-          <RangePicker
-            style={{ width: 260 }} placeholder={['开始日期', '结束日期']}
-            value={searchForm.dateRange}
-            onChange={dateRange => setSearchForm(current => ({ ...current, dateRange }))}
-          />
-          <Button onClick={() => setSearchForm(EMPTY_SEARCH)}>重置</Button>
-        </Space>
-      </Card>
-
-      <Card title={`合同履约台账（${filteredRows.length}）`}>
-        <Table
+      <SectionCard title={`合同履约台账（${filteredRows.length}）`}>
+        <DataTable
           columns={columns} data={filteredRows} rowKey="id" scroll={{ x: 1750 }}
           pagination={{ pageSize: 10, showTotal: true, sizeCanChange: true }}
+          toolbar={(
+            <Space size="medium" wrap>
+              <Input
+                style={{ width: 240 }} placeholder="搜索记录、合同、客户或名称"
+                value={searchForm.keyword}
+                onChange={keyword => setSearchForm(current => ({ ...current, keyword }))}
+                allowClear
+              />
+              <Select
+                style={{ width: 130 }} placeholder="数据类型" value={searchForm.type}
+                onChange={type => setSearchForm(current => ({ ...current, type }))}
+                allowClear options={[{ label: '有回款', value: '回款' }, { label: '有发票', value: '发票' }]}
+              />
+              <Select
+                style={{ width: 130 }} placeholder="选择状态" value={searchForm.status}
+                onChange={status => setSearchForm(current => ({ ...current, status }))}
+                allowClear options={Object.keys(PAYMENT_INVOICE_STATUS).map(status => ({ label: status, value: status }))}
+              />
+              <RangePicker
+                style={{ width: 260 }} placeholder={['开始日期', '结束日期']}
+                value={searchForm.dateRange}
+                onChange={dateRange => setSearchForm(current => ({ ...current, dateRange }))}
+              />
+            </Space>
+          )}
+          actions={<Button onClick={() => setSearchForm(EMPTY_SEARCH)}>重置</Button>}
         />
-      </Card>
+      </SectionCard>
 
       <Modal
         title="回款与发票详情" visible={Boolean(selectedRecord)}
@@ -202,60 +226,62 @@ export function PaymentInvoiceList() {
       >
         {selectedRecord && (
           <div>
-            <Card size="small" title="后半程流程接缝" style={{ marginBottom: 20 }}>
-              <MetricGrid items={[
-                { key: 'period', label: '回款期次', value: selectedRecord.payments.length, detail: `${selectedOverdueCount} 个逾期`, tone: selectedOverdueCount ? 'danger' : 'success' },
-                { key: 'payment', label: '回款完成', value: `${selectedRecord.receivedRate}%`, detail: '按有效合同金额计算' },
-                { key: 'invoice', label: '开票完成', value: `${selectedRecord.invoicedRate}%`, detail: selectedRecord.invoices.some((invoice) => invoice.status === '开票中') ? '存在开票中记录' : `红冲 ${selectedRecord.invoices.filter((invoice) => invoice.status === '已冲红').length} 条` },
-                { key: 'handoff', label: '售后移交', value: selectedHandoff ? '已移交' : selectedReadyForHandoff ? '可移交' : '待结清', detail: selectedHandoff?.handedOffAt || '需无逾期且回款、开票均完成', tone: selectedHandoff || selectedReadyForHandoff ? 'success' : 'warning' },
-              ]} />
-              <Space wrap style={{ marginTop: 12 }}>
-                <Button onClick={() => navigate(`/contracts/payments?contractId=${selectedRecord.contractId}`)}>{selectedOverdueCount ? '处理逾期与催收' : '查看回款期次'}</Button>
-                <Button onClick={() => navigate(`/finance/project-invoices?contractId=${selectedRecord.contractId}`)}>处理开票与红冲</Button>
-                <Button type="primary" disabled={!selectedReadyForHandoff || Boolean(selectedHandoff)} onClick={handleAfterSalesHandoff}>{selectedHandoff ? '已移交售后' : '确认移交售后'}</Button>
-                {selectedHandoff && <Button onClick={() => navigate('/maintenance')}>查看售后维护</Button>}
-              </Space>
-            </Card>
-            <Descriptions
-              column={2}
-              data={[
-                { label: '记录编号', value: selectedRecord.recordNo },
-                { label: '合同编号', value: selectedRecord.contractNo },
-                { label: '线索/合同名称', value: selectedRecord.leadName },
-                { label: '客户主体', value: selectedRecord.customerEntity },
-                { label: '对接主体', value: selectedRecord.ourEntity },
-                { label: '合同总额', value: `¥${selectedRecord.totalAmount.toLocaleString()}` },
-                { label: '已收金额', value: `¥${selectedRecord.receivedAmount.toLocaleString()}（${selectedRecord.receivedRate}%）` },
-                { label: '已开票金额', value: `¥${selectedRecord.invoicedAmount.toLocaleString()}（${selectedRecord.invoicedRate}%）` },
-                { label: '状态', value: <StatusTag meta={PAYMENT_INVOICE_STATUS[selectedRecord.status]} /> },
-              ]}
-              style={{ marginBottom: 24 }}
+            <div style={{ marginBottom: 20 }}>
+              <SectionCard title="后半程流程接缝">
+                <MetricGrid items={[
+                  { key: 'period', label: '回款期次', value: selectedRecord.payments.length, detail: `${selectedOverdueCount} 个逾期`, tone: selectedOverdueCount ? 'danger' : 'success' },
+                  { key: 'payment', label: '回款完成', value: `${selectedRecord.receivedRate}%`, detail: '按有效合同金额计算' },
+                  { key: 'invoice', label: '开票完成', value: `${selectedRecord.invoicedRate}%`, detail: selectedRecord.invoices.some((invoice) => invoice.status === '开票中') ? '存在开票中记录' : `红冲 ${selectedRecord.invoices.filter((invoice) => invoice.status === '已冲红').length} 条` },
+                  { key: 'handoff', label: '售后移交', value: selectedHandoff ? '已移交' : selectedReadyForHandoff ? '可移交' : '待结清', detail: selectedHandoff?.handedOffAt || '需无逾期且回款、开票均完成', tone: selectedHandoff || selectedReadyForHandoff ? 'success' : 'warning' },
+                ]} />
+                <Space wrap style={{ marginTop: 12 }}>
+                  <Button onClick={() => navigate(`/contracts/payments?contractId=${selectedRecord.contractId}`)}>{selectedOverdueCount ? '处理逾期与催收' : '查看回款期次'}</Button>
+                  <Button onClick={() => navigate(`/finance/project-invoices?contractId=${selectedRecord.contractId}`)}>处理开票与红冲</Button>
+                  <Button type="primary" disabled={!selectedReadyForHandoff || Boolean(selectedHandoff)} onClick={handleAfterSalesHandoff}>{selectedHandoff ? '已移交售后' : '确认移交售后'}</Button>
+                  {selectedHandoff && <Button onClick={() => navigate('/maintenance')}>查看售后维护</Button>}
+                </Space>
+              </SectionCard>
+            </div>
+            <DescriptionsCard
+              columns={2}
+              items={[
+              { key: '记录编号', label: '记录编号', value: selectedRecord.recordNo },
+              { key: '合同编号', label: '合同编号', value: selectedRecord.contractNo },
+              { key: '线索/合同名称', label: '线索/合同名称', value: selectedRecord.leadName },
+              { key: '客户主体', label: '客户主体', value: selectedRecord.customerEntity },
+              { key: '对接主体', label: '对接主体', value: selectedRecord.ourEntity },
+              { key: '合同总额', label: '合同总额', value: <MoneyText value={selectedRecord.totalAmount} /> },
+              { key: '已收金额', label: '已收金额', value: <><MoneyText value={selectedRecord.receivedAmount} />（{selectedRecord.receivedRate}%）</> },
+              { key: '已开票金额', label: '已开票金额', value: <><MoneyText value={selectedRecord.invoicedAmount} />（{selectedRecord.invoicedRate}%）</> },
+              { key: '状态', label: '状态', value: <StatusTag meta={PAYMENT_INVOICE_STATUS[selectedRecord.status]} /> },
+            ]}
             />
 
             <div style={{ fontWeight: 600, marginBottom: 12 }}>回款计划与实收</div>
-            <Table
-              columns={[
-                { title: '合同', dataIndex: 'contractNo', width: 130 },
-                { title: '期次', dataIndex: 'periodName', width: 100 },
-                { title: '计划日期', dataIndex: 'planDate', width: 120 },
-                { title: '应收金额', dataIndex: 'amount', width: 130, render: (value: number) => `¥${value.toLocaleString()}` },
-                { title: '实收金额', dataIndex: 'receivedAmount', width: 130, render: (value: number) => `¥${value.toLocaleString()}` },
-                { title: '到账日期', dataIndex: 'actualDate', width: 120 },
-                { title: '状态', dataIndex: 'status', width: 100, render: (status: string) => <Tag>{status}</Tag> },
-              ]}
-              data={selectedRecord.payments} rowKey="key" pagination={false} size="small"
-              style={{ marginBottom: 24 }}
-            />
+            <div style={{ marginBottom: 24 }}>
+              <DataTable
+                columns={[
+                  { title: '合同', dataIndex: 'contractNo', width: 130 },
+                  { title: '期次', dataIndex: 'periodName', width: 100 },
+                  { title: '计划日期', dataIndex: 'planDate', width: 120, render: (value: string) => <DateText value={value} /> },
+                  { title: '应收金额', dataIndex: 'amount', width: 130, render: (value: number) => <MoneyText value={value} /> },
+                  { title: '实收金额', dataIndex: 'receivedAmount', width: 130, render: (value: number) => <MoneyText value={value} /> },
+                  { title: '到账日期', dataIndex: 'actualDate', width: 120, render: (value: string) => <DateText value={value} /> },
+                  { title: '状态', dataIndex: 'status', width: 100, render: (status: '未收款' | '部分收款' | '已收款' | '逾期') => <StatusTag meta={PAYMENT_PERIOD_STATUS[status]} /> },
+                ]}
+                data={selectedRecord.payments} rowKey="key" pagination={false} size="small"
+              />
+            </div>
 
             <div style={{ fontWeight: 600, marginBottom: 12 }}>开票申请</div>
-            <Table
+            <DataTable
               columns={[
                 { title: '申请编号', dataIndex: 'id', width: 190 },
                 { title: '期次', dataIndex: 'periodLabel', width: 100 },
-                { title: '金额', dataIndex: 'amount', width: 130, render: (value: number) => `¥${value.toLocaleString()}` },
-                { title: '申请日期', dataIndex: 'submittedAt', width: 160 },
+                { title: '金额', dataIndex: 'amount', width: 130, render: (value: number) => <MoneyText value={value} /> },
+                { title: '申请日期', dataIndex: 'submittedAt', width: 160, render: (value: string) => <DateText value={value} mode="datetime" /> },
                 { title: '发票类型', dataIndex: 'invoiceType', width: 130 },
-                { title: '状态', dataIndex: 'status', width: 100, render: (status: string) => <Tag>{status}</Tag> },
+                { title: '状态', dataIndex: 'status', width: 100, render: (status: '开票中' | '已开票' | '已冲红') => <StatusTag meta={INVOICE_APPLICATION_STATUS[status]} /> },
               ]}
               data={selectedRecord.invoices} rowKey="id" pagination={false} size="small"
             />

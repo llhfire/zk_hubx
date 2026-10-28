@@ -1,26 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Card,
   Button,
+  AsyncState,
   Input,
   Tag,
   Modal,
   Select,
   Tabs,
-  Table,
   Space,
   Typography,
-  Grid,
   Message,
-  Spin,
   Tooltip,
   Popconfirm,
   Radio,
   InputNumber,
-  Badge,
   Checkbox,
   Divider,
-} from '@arco-design/web-react';
+  FormGrid,
+  FormSection,
+} from '@/design-system';
 import {
   IconPlus,
   IconHome,
@@ -37,19 +35,65 @@ import {
   IconDown,
   IconUp,
   IconFile,
-  IconTool,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { DormitoryBuilding, DormitoryCheckIn, DormitoryExpense, DormitoryMaintenance, DormitoryBed } from '../types';
 import { getDormitoryList } from '../travel-api';
 import { mockDormitories, mockTrips } from '../mock-data';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DormitoryRoomBoard,
+  EmptyState,
+  MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import '../travelAdminConsistency.css';
 import './dormitoryManagement.css';
 
 const { Text } = Typography;
-const { Row, Col } = Grid;
 const { Option } = Select;
 const { TabPane } = Tabs;
+
+const CHECK_IN_STATUS: StatusMap<DormitoryCheckIn['status']> = {
+  active: { label: '在住', tone: 'success' },
+  checked_out: { label: '已退宿', tone: 'neutral' },
+};
+
+const MAINTENANCE_STATUS: StatusMap<DormitoryMaintenance['status']> = {
+  pending: { label: '待处理', tone: 'warning' },
+  in_progress: { label: '处理中', tone: 'info' },
+  completed: { label: '已完成', tone: 'success' },
+};
+
+const MAINTENANCE_URGENCY: StatusMap<DormitoryMaintenance['urgency']> = {
+  normal: { label: '普通', tone: 'neutral' },
+  urgent: { label: '紧急', tone: 'warning' },
+  very_urgent: { label: '非常紧急', tone: 'danger' },
+};
+
+/** 费用类型是并列分类而非状态好坏，用分类色（cyan/pink/gold）区分 */
+const EXPENSE_TYPE: StatusMap = {
+  rent: { label: '房屋租金', tone: 'pink' },
+  water: { label: '水费', tone: 'cyan' },
+  electricity: { label: '电费', tone: 'warning' },
+  gas: { label: '燃气费', tone: 'danger' },
+  internet: { label: '宽带费', tone: 'info' },
+  maintenance: { label: '维修保洁', tone: 'success' },
+  other: { label: '其他杂费', tone: 'neutral' },
+};
+
+const MAINTENANCE_TYPE: StatusMap = {
+  repair: { label: '设施报修', tone: 'danger' },
+  cleaning: { label: '专业保洁', tone: 'cyan' },
+  inspection: { label: '定期巡检', tone: 'info' },
+};
 
 // 常用城市快选标签
 const quickCities = ['北京', '杭州', '上海', '深圳', '成都', '武汉'];
@@ -205,6 +249,7 @@ const initialMaintenances: DormitoryMaintenance[] = [
 
 export function DormitoryManagement() {
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [buildings, setBuildings] = useState<DormitoryBuilding[]>(mockDormitories);
   const [selectedBuilding, setSelectedBuilding] = useState<DormitoryBuilding | null>(mockDormitories[0] || null);
   const [activeTab, setActiveTab] = useState<string>('rooms');
@@ -327,14 +372,16 @@ export function DormitoryManagement() {
   }, []);
 
   const loadBuildings = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const result = await getDormitoryList();
-      if (result.list && result.list.length > 0) {
-        setBuildings(result.list);
-        setSelectedBuilding((prev) => prev || result.list[0]);
-      }
+      setBuildings(result.list);
+      setSelectedBuilding((prev) => result.list.find((building) => building.id === prev?.id) ?? result.list[0] ?? null);
     } catch {
-      // 容错使用 mock 数据
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1024,20 +1071,62 @@ export function DormitoryManagement() {
     });
   }, [maintenances, maintenanceBuildingFilter, maintenanceStatusFilter, maintenanceUrgencyFilter]);
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
-        <Spin dot />
-      </div>
-    );
-  }
+  const roomBoardFloors = (selectedBuilding?.floors || []).map((floor) => {
+    const floorRooms = floor.rooms || [];
+    const floorBeds = floorRooms.flatMap((room) => room.beds || []);
+    return {
+      key: floor.id,
+      label: `${floor.floorNumber}F 楼层`,
+      roomCount: floorRooms.length,
+      bedCount: floorBeds.length,
+      occupiedCount: floorBeds.filter((bed) => bed.status === 'occupied').length,
+      rooms: floorRooms.map((room) => {
+        const isUnderMaintenance = room.status === 'maintenance' || maintenances.some(
+          (maintenance) => maintenance.buildingId === selectedBuilding?.id
+            && maintenance.roomNumber === room.roomNumber
+            && maintenance.status !== 'completed',
+        );
+        const roomTypeLabel = room.roomType === 'single' ? '单人间' : room.roomType === 'double' ? '双人间' : '四人间';
+        const roomTypeTone = room.roomType === 'single' ? 'warning' as const : room.roomType === 'double' ? 'info' as const : 'purple' as const;
+        return {
+          key: room.id,
+          roomNumber: room.roomNumber,
+          roomTypeKey: room.roomType,
+          roomTypeLabel,
+          roomTypeTone,
+          facilities: room.facilities,
+          maintenance: isUnderMaintenance,
+          onMaintenance: () => openMaintenanceForm(undefined, { buildingId: selectedBuilding!.id, roomNumber: room.roomNumber }),
+          beds: (room.beds || []).map((bed) => {
+            const isOccupied = bed.status === 'occupied';
+            const checkInRecord = checkIns.find((checkIn) => checkIn.bedId === bed.id && checkIn.status === 'active');
+            return {
+              key: bed.id,
+              label: `${bed.bedNumber}号床`,
+              occupied: isOccupied,
+              occupantName: bed.occupantName || checkInRecord?.employeeName || '在住员工',
+              stayLabel: bed.tripId ? '出差借宿' : '长期员工',
+              stayTone: bed.tripId ? 'purple' as const : 'info' as const,
+              onSelect: !isOccupied ? () => openNewCheckIn({
+                buildingId: selectedBuilding!.id,
+                floorId: floor.id,
+                roomId: room.id,
+                bedId: bed.id,
+              }) : undefined,
+              onCheckout: isOccupied && checkInRecord ? () => openCheckOutModal(checkInRecord) : undefined,
+            };
+          }),
+        };
+      }),
+    };
+  });
 
   return (
     <PageShell>
       <PageHeader
         title="宿舍管理"
         description="统一管理企业宿舍楼栋档案、房态床位网格、员工入住/退宿、水电气租金分摊及报修维护闭环。"
-        actions={
+        actions={!loading && !loadError && (
           <Space>
             <Button icon={<IconPlus />} onClick={() => openBuildingForm()}>
               新增楼栋
@@ -1046,9 +1135,15 @@ export function DormitoryManagement() {
               办理入住
             </Button>
           </Space>
-        }
+        )}
       />
 
+      <AsyncState
+        status={loading ? 'loading' : loadError ? 'error' : 'ready'}
+        loadingText="正在加载宿舍楼栋"
+        errorText="加载宿舍楼栋失败"
+        onRetry={() => void loadBuildings()}
+      >
       {/* 4 大核心指标中枢 */}
       <MetricGrid
         items={[
@@ -1056,7 +1151,7 @@ export function DormitoryManagement() {
             key: 'buildings',
             label: '在管楼栋',
             value: `${buildings.length} 栋`,
-            detail: `全网总月租 ¥${totalMonthlyRent.toLocaleString()}`,
+            detail: <>全网总月租 <MoneyText value={totalMonthlyRent} /></>,
           },
           {
             key: 'beds',
@@ -1082,988 +1177,767 @@ export function DormitoryManagement() {
         ]}
       />
 
-      <Tabs activeTab={activeTab} onChange={setActiveTab} type="line">
-        {/* ===================== Tab 1: 房态与床位 ===================== */}
-        <TabPane key="rooms" title="房态与床位">
-          <div className="dorm-master-detail travel-admin-master-detail">
-            {/* 左侧：楼栋选择器 Master */}
-            <div className="dorm-master-col">
-              <Card
-                title="楼栋清单"
-                extra={
-                  <Button
-                    size="mini"
-                    type="text"
-                    icon={<IconPlus />}
-                    onClick={() => openBuildingForm()}
-                  >
-                    新增
-                  </Button>
-                }
-              >
-                <div style={{ marginBottom: 12 }}>
-                  <Input
-                    prefix={<IconSearch />}
-                    placeholder="按楼栋/城市搜索..."
-                    allowClear
-                    value={buildingSearchKey}
-                    onChange={setBuildingSearchKey}
-                  />
-                </div>
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  {filteredBuildings.map((building) => {
-                    const isActive = selectedBuilding?.id === building.id;
-                    const bRooms = building.floors?.flatMap((f) => f.rooms ?? []) ?? [];
-                    const bBeds = bRooms.flatMap((r) => r.beds ?? []);
-                    const bOccupied = bBeds.filter((b) => b.status === 'occupied').length;
-                    const bAvailable = bBeds.length - bOccupied;
-
-                    return (
-                      <div
-                        key={building.id}
-                        className={`dorm-building-card${isActive ? ' dorm-building-card--active' : ''}`}
-                        onClick={() => setSelectedBuilding(building)}
-                      >
-                        {/* 1. 标题与快捷操作 */}
-                        <div className="dorm-building-card__head">
-                          <div className="dorm-building-card__title" title={building.name}>
-                            <IconHome style={{ color: isActive ? 'rgb(var(--primary-6))' : '#86909c', flexShrink: 0 }} />
-                            <span className="dorm-building-card__name">{building.name}</span>
-                          </div>
-                          <div onClick={(e) => e.stopPropagation()}><Space size={2} className="dorm-building-card__actions">
-                            <Tooltip content="编辑楼栋档案">
-                              <Button
-                                aria-label={`编辑${building.name}`}
-                                className="hubx-icon-action"
-                                size="mini"
-                                type="text"
-                                icon={<IconEdit />}
-                                onClick={() => openBuildingForm(building)}
-                              />
-                            </Tooltip>
-                            <Popconfirm
-                              title="确认删除该楼栋档案？关联房间将一并移除。"
-                              onOk={() => {
-                                setBuildings((items) => items.filter((b) => b.id !== building.id));
-                                if (selectedBuilding?.id === building.id) {
-                                  const rest = buildings.filter((b) => b.id !== building.id);
-                                  setSelectedBuilding(rest[0] || null);
-                                }
-                                Message.success('楼栋档案已删除');
-                              }}
-                            >
-                              <Tooltip content="删除楼栋">
-                                <Button
-                                  aria-label={`删除${building.name}`}
-                                  className="hubx-icon-action"
-                                  size="mini"
-                                  type="text"
-                                  status="danger"
-                                  icon={<IconDelete />}
-                                />
-                              </Tooltip>
-                            </Popconfirm>
-                          </Space></div>
-                        </div>
-
-                        {/* 2. 城市行政区与社区门牌 */}
-                        <div className="dorm-building-card__sub">
-                          <Tag size="small" color="arcoblue" style={{ flexShrink: 0 }}>
-                            {building.city}·{building.district}
-                          </Tag>
-                          <span className="dorm-building-card__address" title={building.community || building.address}>
-                            {building.community || building.address}
-                          </span>
-                        </div>
-
-                        {/* 3. 房床使用状态 */}
-                        <div className="dorm-building-card__stats-row">
-                          <Tag size="small" color={bAvailable > 0 ? 'green' : 'gray'}>
-                            {bAvailable > 0 ? `余 ${bAvailable} 空床` : '已满员'}
-                          </Tag>
-                          <span className="dorm-building-card__room-count">
-                            共 {bRooms.length} 房 · {bBeds.length} 床
-                          </span>
-                        </div>
-
-                        {/* 4. 月租费用行（独立成行，避免挤压） */}
-                        <div className="dorm-building-card__rent-row">
-                          <span className="dorm-building-card__lease-tag">预算月租</span>
-                          <span className="dorm-building-card__rent">
-                            ¥{building.monthlyRent.toLocaleString()}
-                            <span style={{ fontSize: 11, fontWeight: 'normal', color: 'var(--color-text-3)', marginLeft: 2 }}>
-                              /月
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {filteredBuildings.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-3)' }}>
-                      无匹配楼栋
-                    </div>
-                  )}
-                </Space>
-              </Card>
-            </div>
-
-            {/* 右侧：房态可视化矩阵 Detail */}
-            <div style={{ minWidth: 0 }}>
-              <Card
-                title={
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontWeight: 600 }}>{selectedBuilding ? selectedBuilding.name : '请选择楼栋'}</span>
-                    {selectedBuilding && (
-                      <Tag color="arcoblue">{selectedBuilding.city} · {selectedBuilding.district}</Tag>
-                    )}
-                  </div>
-                }
-                extra={
-                  selectedBuilding && (
-                    <Space>
-                      <Button
-                        size="small"
-                        icon={<IconFile />}
-                        onClick={() => openExpenseForm()}
-                      >
-                        录入费用
-                      </Button>
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<IconPlus />}
-                        onClick={() => openNewCheckIn({ buildingId: selectedBuilding.id })}
-                      >
-                        快速办理入住
-                      </Button>
-                    </Space>
-                  )
-                }
-              >
-                {selectedBuilding ? (
-                  <div>
-                    {/* 楼栋全貌档案卡（可展开/折叠） */}
-                    <div className="dorm-hero-panel">
-                      <div className="dorm-hero-header">
-                        <div className="dorm-hero-title">
-                          <IconHome />
-                          <span>楼栋租赁与物业公摊信息</span>
-                        </div>
-                        <Button
-                          size="mini"
-                          type="text"
-                          icon={isHeroExpanded ? <IconUp /> : <IconDown />}
-                          onClick={() => setIsHeroExpanded(!isHeroExpanded)}
-                        >
-                          {isHeroExpanded ? '收起详情' : '展开档案'}
-                        </Button>
-                      </div>
-
-                      <div className="dorm-hero-meta-grid">
-                        <div className="dorm-hero-meta-item">
-                          <span className="dorm-hero-meta-label">详细地址</span>
-                          <span className="dorm-hero-meta-val">{selectedBuilding.address}</span>
-                        </div>
-                        <div className="dorm-hero-meta-item">
-                          <span className="dorm-hero-meta-label">房东联系人</span>
-                          <span className="dorm-hero-meta-val">
-                            {selectedBuilding.landlordName} ({selectedBuilding.landlordPhone})
-                          </span>
-                        </div>
-                        <div className="dorm-hero-meta-item">
-                          <span className="dorm-hero-meta-label">租赁周期与押金</span>
-                          <span className="dorm-hero-meta-val">
-                            {selectedBuilding.leaseStartDate} ~ {selectedBuilding.leaseEndDate} (押金 ¥{selectedBuilding.deposit?.toLocaleString()})
-                          </span>
-                        </div>
-                        <div className="dorm-hero-meta-item">
-                          <span className="dorm-hero-meta-label">月租总额</span>
-                          <span className="dorm-hero-meta-val" style={{ color: 'rgb(var(--danger-6))' }}>
-                            ¥{selectedBuilding.monthlyRent?.toLocaleString()}/月 (按月付)
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 展开的公用事业账户明细 */}
-                      {isHeroExpanded && (
-                        <div
-                          style={{
-                            marginTop: 14,
-                            paddingTop: 12,
-                            borderTop: '1px dashed var(--color-border-2)',
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                            gap: '10px 20px',
-                          }}
-                        >
-                          <div className="dorm-hero-meta-item">
-                            <span className="dorm-hero-meta-label">水费户号</span>
-                            <span className="dorm-hero-meta-val">{selectedBuilding.waterAccountNo || 'W-880219 (自动代扣)'}</span>
-                          </div>
-                          <div className="dorm-hero-meta-item">
-                            <span className="dorm-hero-meta-label">电费户号</span>
-                            <span className="dorm-hero-meta-val">{selectedBuilding.electricityAccountNo || 'E-330108 (阶梯电价)'}</span>
-                          </div>
-                          <div className="dorm-hero-meta-item">
-                            <span className="dorm-hero-meta-label">宽带网络</span>
-                            <span className="dorm-hero-meta-val">
-                              {selectedBuilding.internetProvider || '中国电信千兆专网'} (月费 ¥{selectedBuilding.internetMonthlyFee || 200})
-                            </span>
-                          </div>
-                          <div className="dorm-hero-meta-item">
-                            <span className="dorm-hero-meta-label">支付方式</span>
-                            <span className="dorm-hero-meta-val">
-                              {selectedBuilding.paymentMethod === 'quarterly' ? '季付' : selectedBuilding.paymentMethod === 'annual' ? '年付' : '月付'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 房态筛选条与图例说明 */}
-                    <div className="dorm-visual-filter">
-                      <Space size={12}>
-                        <Radio.Group
-                          type="button"
-                          size="small"
-                          value={roomStatusFilter}
-                          onChange={(val) => setRoomStatusFilter(val)}
-                        >
-                          <Radio value="all">全部房态</Radio>
-                          <Radio value="available">仅看有空床</Radio>
-                          <Radio value="occupied">仅看已住满</Radio>
-                          <Radio value="maintenance">仅看报修中</Radio>
-                        </Radio.Group>
-                        <Select
-                          size="small"
-                          placeholder="房型过滤"
-                          value={roomTypeFilter}
-                          onChange={setRoomTypeFilter}
-                          style={{ width: 110 }}
-                        >
-                          <Option value="all">全部房型</Option>
-                          <Option value="single">单人间</Option>
-                          <Option value="double">双人间</Option>
-                          <Option value="quad">四人间</Option>
-                        </Select>
-                      </Space>
-
-                      {/* 图例 */}
-                      <div className="dorm-visual-legend">
-                        <div className="dorm-visual-legend-item">
-                          <span className="dorm-visual-dot dorm-visual-dot--occupied" />
-                          <span>已占用</span>
-                        </div>
-                        <div className="dorm-visual-legend-item">
-                          <span className="dorm-visual-dot dorm-visual-dot--available" />
-                          <span>空闲可住</span>
-                        </div>
-                        <div className="dorm-visual-legend-item">
-                          <span className="dorm-visual-dot dorm-visual-dot--maintenance" />
-                          <span>设施报修</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 楼层与房间卡片矩阵 */}
-                    {selectedBuilding.floors?.map((floor) => {
-                      const visibleRooms = (floor.rooms || []).filter((room) => {
-                        if (roomTypeFilter !== 'all' && room.roomType !== roomTypeFilter) return false;
-                        if (roomStatusFilter === 'available') {
-                          return room.beds?.some((b) => b.status === 'available');
+      <SectionTabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'rooms',
+            label: "房态与床位",
+            content: (
+              <>
+                  <div className="dorm-master-detail travel-admin-master-detail">
+                    {/* 左侧：楼栋选择器 Master */}
+                    <div className="dorm-master-col">
+                      <SectionCard
+                        title="楼栋清单"
+                        extra={
+                          <Button
+                            size="mini"
+                            type="text"
+                            icon={<IconPlus />}
+                            onClick={() => openBuildingForm()}
+                          >
+                            新增
+                          </Button>
                         }
-                        if (roomStatusFilter === 'occupied') {
-                          return room.beds?.every((b) => b.status === 'occupied');
-                        }
-                        if (roomStatusFilter === 'maintenance') {
-                          return (
-                            room.status === 'maintenance' ||
-                            maintenances.some(
-                              (m) =>
-                                m.buildingId === selectedBuilding.id &&
-                                m.roomNumber === room.roomNumber &&
-                                m.status !== 'completed'
-                            )
-                          );
-                        }
-                        return true;
-                      });
-
-                      if (visibleRooms.length === 0 && (roomStatusFilter !== 'all' || roomTypeFilter !== 'all')) {
-                        return null;
-                      }
-
-                      const floorRooms = floor.rooms || [];
-                      const floorBeds = floorRooms.flatMap((r) => r.beds || []);
-                      const floorOccupied = floorBeds.filter((b) => b.status === 'occupied').length;
-
-                      return (
-                        <div key={floor.id} className="dorm-floor-section">
-                          <div className="dorm-floor-header">
-                            <div className="dorm-floor-title">
-                              <span>{floor.floorNumber}F 楼层</span>
-                              <Tag size="small">
-                                共 {floorRooms.length} 间 · {floorBeds.length} 床 (在住 {floorOccupied} / 空闲 {floorBeds.length - floorOccupied})
-                              </Tag>
-                            </div>
-                          </div>
-
-                          <div className="dorm-room-grid">
-                            {visibleRooms.map((room) => {
-                              const isUnderMaintenance =
-                                room.status === 'maintenance' ||
-                                maintenances.some(
-                                  (m) =>
-                                    m.buildingId === selectedBuilding.id &&
-                                    m.roomNumber === room.roomNumber &&
-                                    m.status !== 'completed'
-                                );
-
-                              return (
-                                <div
-                                  key={room.id}
-                                  className={`dorm-room-card${isUnderMaintenance ? ' dorm-room-card--maintenance' : ''}`}
-                                >
-                                  <div className="dorm-room-header">
-                                    <div className="dorm-room-number">
-                                      <span>{room.roomNumber} 室</span>
-                                      <Tag size="small" color={room.roomType === 'single' ? 'orange' : room.roomType === 'double' ? 'arcoblue' : 'purple'}>
-                                        {room.roomType === 'single' ? '单人间' : room.roomType === 'double' ? '双人间' : '四人间'}
-                                      </Tag>
-                                      {/* Arco Badge 的 text 只接受字符串，传元素会被丢弃 */}
-                                      {isUnderMaintenance && (
-                                        <Badge status="warning" text="维修中" />
-                                      )}
-                                    </div>
-                                    <Tooltip content="登记房间报修">
+                      >
+                        <div style={{ marginBottom: 12 }}>
+                          <Input
+                            prefix={<IconSearch />}
+                            placeholder="按楼栋/城市搜索..."
+                            allowClear
+                            value={buildingSearchKey}
+                            onChange={setBuildingSearchKey}
+                          />
+                        </div>
+                        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                          {filteredBuildings.map((building) => {
+                            const isActive = selectedBuilding?.id === building.id;
+                            const bRooms = building.floors?.flatMap((f) => f.rooms ?? []) ?? [];
+                            const bBeds = bRooms.flatMap((r) => r.beds ?? []);
+                            const bOccupied = bBeds.filter((b) => b.status === 'occupied').length;
+                            const bAvailable = bBeds.length - bOccupied;
+        
+                            return (
+                              <div
+                                key={building.id}
+                                className={`dorm-building-card${isActive ? ' dorm-building-card--active' : ''}`}
+                                onClick={() => setSelectedBuilding(building)}
+                              >
+                                {/* 1. 标题与快捷操作 */}
+                                <div className="dorm-building-card__head">
+                                  <div className="dorm-building-card__title" title={building.name}>
+                                    <IconHome style={{ color: isActive ? 'rgb(var(--primary-6))' : 'var(--color-text-3)', flexShrink: 0 }} />
+                                    <span className="dorm-building-card__name">{building.name}</span>
+                                  </div>
+                                  <div onClick={(e) => e.stopPropagation()}><Space size={2} className="dorm-building-card__actions">
+                                    <Tooltip content="编辑楼栋档案">
                                       <Button
+                                        aria-label={`编辑${building.name}`}
+                                        className="hubx-icon-action"
                                         size="mini"
                                         type="text"
-                                        icon={<IconTool />}
-                                        onClick={() =>
-                                          openMaintenanceForm(undefined, {
-                                            buildingId: selectedBuilding.id,
-                                            roomNumber: room.roomNumber,
-                                          })
-                                        }
+                                        icon={<IconEdit />}
+                                        onClick={() => openBuildingForm(building)}
                                       />
                                     </Tooltip>
+                                    <Popconfirm
+                                      title="确认删除该楼栋档案？关联房间将一并移除。"
+                                      onOk={() => {
+                                        setBuildings((items) => items.filter((b) => b.id !== building.id));
+                                        if (selectedBuilding?.id === building.id) {
+                                          const rest = buildings.filter((b) => b.id !== building.id);
+                                          setSelectedBuilding(rest[0] || null);
+                                        }
+                                        Message.success('楼栋档案已删除');
+                                      }}
+                                    >
+                                      <Tooltip content="删除楼栋">
+                                        <Button
+                                          aria-label={`删除${building.name}`}
+                                          className="hubx-icon-action"
+                                          size="mini"
+                                          type="text"
+                                          status="danger"
+                                          icon={<IconDelete />}
+                                        />
+                                      </Tooltip>
+                                    </Popconfirm>
+                                  </Space></div>
+                                </div>
+        
+                                {/* 2. 城市行政区与社区门牌 */}
+                                <div className="dorm-building-card__sub">
+                                  <StatusTag size="small" tone="info" style={{ flexShrink: 0 }}>
+                                    {building.city}·{building.district}
+                                  </StatusTag>
+                                  <span className="dorm-building-card__address" title={building.community || building.address}>
+                                    {building.community || building.address}
+                                  </span>
+                                </div>
+        
+                                {/* 3. 房床使用状态 */}
+                                <div className="dorm-building-card__stats-row">
+                                  <StatusTag
+                                    meta={{
+                                      label: bAvailable > 0 ? `余 ${bAvailable} 空床` : '已满员',
+                                      tone: bAvailable > 0 ? 'success' : 'neutral',
+                                    }}
+                                  />
+                                  <span className="dorm-building-card__room-count">
+                                    共 {bRooms.length} 房 · {bBeds.length} 床
+                                  </span>
+                                </div>
+        
+                                {/* 4. 月租费用行（独立成行，避免挤压） */}
+                                <div className="dorm-building-card__rent-row">
+                                  <span className="dorm-building-card__lease-tag">预算月租</span>
+                                  <span className="dorm-building-card__rent">
+                                    <MoneyText value={building.monthlyRent} />
+                                    <Text type="secondary" style={{ marginLeft: 2 }}>/月</Text>
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {filteredBuildings.length === 0 && <EmptyState description="无匹配楼栋" />}
+                        </Space>
+                      </SectionCard>
+                    </div>
+        
+                    {/* 右侧：房态可视化矩阵 Detail */}
+                    <div style={{ minWidth: 0 }}>
+                      <SectionCard
+                        title={
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span>{selectedBuilding ? selectedBuilding.name : '请选择楼栋'}</span>
+                            {selectedBuilding && (
+                              <StatusTag tone="info">{selectedBuilding.city} · {selectedBuilding.district}</StatusTag>
+                            )}
+                          </div>
+                        }
+                        extra={
+                          selectedBuilding && (
+                            <Space>
+                              <Button
+                                size="small"
+                                icon={<IconFile />}
+                                onClick={() => openExpenseForm()}
+                              >
+                                录入费用
+                              </Button>
+                              <Button
+                                size="small"
+                                type="primary"
+                                icon={<IconPlus />}
+                                onClick={() => openNewCheckIn({ buildingId: selectedBuilding.id })}
+                              >
+                                快速办理入住
+                              </Button>
+                            </Space>
+                          )
+                        }
+                      >
+                        {selectedBuilding ? (
+                          <div>
+                            {/* 楼栋全貌档案卡（可展开/折叠） */}
+                            <div className="dorm-hero-panel">
+                              <div className="dorm-hero-header">
+                                <div className="dorm-hero-title">
+                                  <IconHome />
+                                  <span>楼栋租赁与物业公摊信息</span>
+                                </div>
+                                <Button
+                                  size="mini"
+                                  type="text"
+                                  icon={isHeroExpanded ? <IconUp /> : <IconDown />}
+                                  onClick={() => setIsHeroExpanded(!isHeroExpanded)}
+                                >
+                                  {isHeroExpanded ? '收起详情' : '展开档案'}
+                                </Button>
+                              </div>
+        
+                              <div className="dorm-hero-meta-grid">
+                                <div className="dorm-hero-meta-item">
+                                  <span className="dorm-hero-meta-label">详细地址</span>
+                                  <span className="dorm-hero-meta-val">{selectedBuilding.address}</span>
+                                </div>
+                                <div className="dorm-hero-meta-item">
+                                  <span className="dorm-hero-meta-label">房东联系人</span>
+                                  <span className="dorm-hero-meta-val">
+                                    {selectedBuilding.landlordName} ({selectedBuilding.landlordPhone})
+                                  </span>
+                                </div>
+                                <div className="dorm-hero-meta-item">
+                                  <span className="dorm-hero-meta-label">租赁周期与押金</span>
+                                  <span className="dorm-hero-meta-val">
+                                    <DateText value={selectedBuilding.leaseStartDate} end={selectedBuilding.leaseEndDate} /> (押金 <MoneyText value={selectedBuilding.deposit} />)
+                                  </span>
+                                </div>
+                                <div className="dorm-hero-meta-item">
+                                  <span className="dorm-hero-meta-label">月租总额</span>
+                                  <span className="dorm-hero-meta-val">
+                                    <MoneyText value={selectedBuilding.monthlyRent} tone="danger" />/月 (按月付)
+                                  </span>
+                                </div>
+                              </div>
+        
+                              {/* 展开的公用事业账户明细 */}
+                              {isHeroExpanded && (
+                                <div
+                                  style={{
+                                    marginTop: 14,
+                                    paddingTop: 12,
+                                    borderTop: '1px dashed var(--color-border-2)',
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                    gap: '10px 20px',
+                                  }}
+                                >
+                                  <div className="dorm-hero-meta-item">
+                                    <span className="dorm-hero-meta-label">水费户号</span>
+                                    <span className="dorm-hero-meta-val">{selectedBuilding.waterAccountNo || 'W-880219 (自动代扣)'}</span>
                                   </div>
-
-                                  <div className="dorm-room-facilities">
-                                    {room.facilities.map((fac) => (
-                                      <Tag key={fac} size="small" bordered>
-                                        {fac}
-                                      </Tag>
-                                    ))}
+                                  <div className="dorm-hero-meta-item">
+                                    <span className="dorm-hero-meta-label">电费户号</span>
+                                    <span className="dorm-hero-meta-val">{selectedBuilding.electricityAccountNo || 'E-330108 (阶梯电价)'}</span>
                                   </div>
-
-                                  <div className="dorm-beds-list">
-                                    {room.beds?.map((bed) => {
-                                      const isOccupied = bed.status === 'occupied';
-                                      const checkInRecord = checkIns.find(
-                                        (c) => c.bedId === bed.id && c.status === 'active'
-                                      );
-
-                                      return (
-                                        <div
-                                          key={bed.id}
-                                          className={`dorm-bed-item ${
-                                            isOccupied ? 'dorm-bed-item--occupied' : 'dorm-bed-item--available'
-                                          }`}
-                                          onClick={() => {
-                                            if (!isOccupied) {
-                                              openNewCheckIn({
-                                                buildingId: selectedBuilding.id,
-                                                floorId: floor.id,
-                                                roomId: room.id,
-                                                bedId: bed.id,
-                                              });
-                                            }
-                                          }}
-                                        >
-                                          <Space size={6}>
-                                            <span style={{ fontWeight: 600 }}>{bed.bedNumber}号床</span>
-                                            {isOccupied ? (
-                                              <Space size={4}>
-                                                <span className="dorm-bed-occupant-name">
-                                                  {bed.occupantName || checkInRecord?.employeeName || '在住员工'}
-                                                </span>
-                                                <Tag size="small" color={bed.tripId ? 'purple' : 'blue'}>
-                                                  {bed.tripId ? '出差借宿' : '长期员工'}
-                                                </Tag>
-                                              </Space>
-                                            ) : (
-                                              <span className="dorm-bed-available-text">+ 点击办理入住</span>
-                                            )}
-                                          </Space>
-
-                                          {isOccupied && checkInRecord && (
-                                            <Tooltip content="办理退宿交接">
-                                              <Button
-                                                size="mini"
-                                                type="text"
-                                                style={{ fontSize: 11, padding: '0 6px', height: 22 }}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  openCheckOutModal(checkInRecord);
-                                                }}
-                                              >
-                                                退宿
-                                              </Button>
-                                            </Tooltip>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
+                                  <div className="dorm-hero-meta-item">
+                                    <span className="dorm-hero-meta-label">宽带网络</span>
+                                    <span className="dorm-hero-meta-val">
+                                      {selectedBuilding.internetProvider || '中国电信千兆专网'} (月费 <MoneyText value={selectedBuilding.internetMonthlyFee || 200} />)
+                                    </span>
+                                  </div>
+                                  <div className="dorm-hero-meta-item">
+                                    <span className="dorm-hero-meta-label">支付方式</span>
+                                    <span className="dorm-hero-meta-val">
+                                      {selectedBuilding.paymentMethod === 'quarterly' ? '季付' : selectedBuilding.paymentMethod === 'annual' ? '年付' : '月付'}
+                                    </span>
                                   </div>
                                 </div>
-                              );
-                            })}
+                              )}
+                            </div>
+        
+                            <DormitoryRoomBoard
+                              floors={roomBoardFloors}
+                              statusFilter={roomStatusFilter}
+                              onStatusFilterChange={setRoomStatusFilter}
+                              roomTypeFilter={roomTypeFilter}
+                              onRoomTypeFilterChange={setRoomTypeFilter}
+                            />
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-3)' }}>
-                    请选择左侧楼栋查看房态矩阵
-                  </div>
-                )}
-              </Card>
-            </div>
-          </div>
-        </TabPane>
-
-        {/* ===================== Tab 2: 入住管理 ===================== */}
-        <TabPane key="checkin" title="入住管理">
-          <Card
-            title="员工入住台账"
-            extra={
-              <Button type="primary" icon={<IconPlus />} onClick={() => openNewCheckIn()}>
-                办理入住登记
-              </Button>
-            }
-          >
-            {/* 工具栏 */}
-            <div className="dorm-toolbar">
-              <div className="dorm-toolbar__filters">
-                <Input
-                  prefix={<IconSearch />}
-                  placeholder="搜索员工姓名 / 工号 / 房间号 / 出差单..."
-                  allowClear
-                  value={checkInSearch}
-                  onChange={setCheckInSearch}
-                  style={{ width: 280 }}
-                />
-                <Select
-                  placeholder="入住类型"
-                  value={checkInTypeFilter}
-                  onChange={setCheckInTypeFilter}
-                  style={{ width: 130 }}
-                >
-                  <Option value="all">全部类型</Option>
-                  <Option value="long_term">长期员工宿舍</Option>
-                  <Option value="trip">出差临时借宿</Option>
-                </Select>
-                <Select
-                  placeholder="入住状态"
-                  value={checkInStatusFilter}
-                  onChange={setCheckInStatusFilter}
-                  style={{ width: 120 }}
-                >
-                  <Option value="all">全部状态</Option>
-                  <Option value="active">当前在住</Option>
-                  <Option value="checked_out">已退宿</Option>
-                </Select>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                共查询到 <strong style={{ color: 'var(--color-text-1)' }}>{filteredCheckIns.length}</strong> 条入住记录
-              </div>
-            </div>
-
-            {/* 表格：严格无头像 */}
-            <Table
-              columns={[
-                {
-                  title: '入住员工',
-                  dataIndex: 'employeeName',
-                  width: 140,
-                  render: (_: unknown, record: DormitoryCheckIn) => (
-                    <div className="dorm-employee-cell">
-                      <span className="dorm-employee-name">{record.employeeName}</span>
-                      <span className="dorm-employee-sub">{record.employeeId}</span>
+                        ) : (
+                          <EmptyState description="请选择左侧楼栋查看房态矩阵" />
+                        )}
+                      </SectionCard>
                     </div>
-                  ),
-                },
-                {
-                  title: '分配宿舍与床位',
-                  dataIndex: 'buildingName',
-                  width: 220,
-                  render: (_: unknown, record: DormitoryCheckIn) => (
-                    <div>
-                      <div style={{ fontWeight: 500 }}>{record.buildingName}</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                        {record.floorNumber}层 · {record.roomNumber}室 · {record.bedNumber}号床
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  title: '入住类型',
-                  dataIndex: 'checkInType',
-                  width: 130,
-                  render: (v: string, record: DormitoryCheckIn) => (
-                    <Space direction="vertical" size={2}>
-                      <Tag color={v === 'long_term' ? 'arcoblue' : 'purple'}>
-                        {v === 'long_term' ? '长期入住' : '出差临时'}
-                      </Tag>
-                      {record.tripNo && (
-                        <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>
-                          单号: {record.tripNo}
+                  </div>
+                
+              </>
+            ),
+          },
+          {
+            key: 'checkin',
+            label: "入住管理",
+            content: (
+              <>
+                  <SectionCard
+                    title="员工入住台账"
+                    extra={
+                      <Button type="primary" icon={<IconPlus />} onClick={() => openNewCheckIn()}>
+                        办理入住登记
+                      </Button>
+                    }
+                  >
+                    {/* 表格：严格无头像 */}
+                    <DataTable
+                      toolbar={
+                        <>
+                          <Input
+                            prefix={<IconSearch />}
+                            placeholder="搜索员工姓名 / 工号 / 房间号 / 出差单..."
+                            allowClear
+                            value={checkInSearch}
+                            onChange={setCheckInSearch}
+                            style={{ width: 280 }}
+                          />
+                          <Select
+                            placeholder="入住类型"
+                            value={checkInTypeFilter}
+                            onChange={setCheckInTypeFilter}
+                            style={{ width: 130 }}
+                          >
+                            <Option value="all">全部类型</Option>
+                            <Option value="long_term">长期员工宿舍</Option>
+                            <Option value="trip">出差临时借宿</Option>
+                          </Select>
+                          <Select
+                            placeholder="入住状态"
+                            value={checkInStatusFilter}
+                            onChange={setCheckInStatusFilter}
+                            style={{ width: 120 }}
+                          >
+                            <Option value="all">全部状态</Option>
+                            <Option value="active">当前在住</Option>
+                            <Option value="checked_out">已退宿</Option>
+                          </Select>
+                        </>
+                      }
+                      caption={<>共查询到 <strong>{filteredCheckIns.length}</strong> 条入住记录</>}
+                      columns={[
+                        {
+                          title: '入住员工',
+                          dataIndex: 'employeeName',
+                          width: 140,
+                          render: (_: unknown, record: DormitoryCheckIn) => (
+                            <div className="dorm-employee-cell">
+                              <span className="dorm-employee-name">{record.employeeName}</span>
+                              <span className="dorm-employee-sub">{record.employeeId}</span>
+                            </div>
+                          ),
+                        },
+                        {
+                          title: '分配宿舍与床位',
+                          dataIndex: 'buildingName',
+                          width: 220,
+                          render: (_: unknown, record: DormitoryCheckIn) => (
+                            <div>
+                              <div style={{ fontWeight: 500 }}>{record.buildingName}</div>
+                              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+                                {record.floorNumber}层 · {record.roomNumber}室 · {record.bedNumber}号床
+                              </div>
+                            </div>
+                          ),
+                        },
+                        {
+                          title: '入住类型',
+                          dataIndex: 'checkInType',
+                          width: 130,
+                          render: (v: string, record: DormitoryCheckIn) => (
+                            <Space direction="vertical" size={2}>
+                              <StatusTag tone={v === 'long_term' ? 'info' : 'purple'}>
+                                {v === 'long_term' ? '长期入住' : '出差临时'}
+                              </StatusTag>
+                              {record.tripNo && (
+                                <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>
+                                  单号: {record.tripNo}
+                                </span>
+                              )}
+                            </Space>
+                          ),
+                        },
+                        {
+                          title: '入住周期',
+                          dataIndex: 'checkInDate',
+                          width: 180,
+                          render: (_: unknown, record: DormitoryCheckIn) => (
+                            <div style={{ fontSize: 'var(--text-xs)' }}>
+                              <div>起：<DateText value={record.checkInDate} /></div>
+                              {record.actualCheckOutDate ? (
+                                <div>止：<DateText value={record.actualCheckOutDate} /> (已退)</div>
+                              ) : (
+                                <div style={{ color: 'rgb(var(--success-6))' }}>在住中</div>
+                              )}
+                            </div>
+                          ),
+                        },
+                        {
+                          title: '当前状态',
+                          dataIndex: 'status',
+                          width: 100,
+                          render: (v: DormitoryCheckIn['status']) => <StatusTag meta={CHECK_IN_STATUS[v]} />,
+                        },
+                        {
+                          title: '操作',
+                          width: 140,
+                          fixed: 'right',
+                          render: (_: unknown, record: DormitoryCheckIn) => (
+                            <Space size={6}>
+                              {record.status === 'active' && (
+                                <Button
+                                  size="mini"
+                                  type="outline"
+                                  status="warning"
+                                  onClick={() => openCheckOutModal(record)}
+                                >
+                                  退宿
+                                </Button>
+                              )}
+                              <Tooltip content="编辑记录">
+                                <Button
+                                  aria-label={`编辑${record.employeeName}入住`}
+                                  className="hubx-icon-action"
+                                  type="text"
+                                  icon={<IconEdit />}
+                                  onClick={() => openEditCheckIn(record)}
+                                />
+                              </Tooltip>
+                              <Popconfirm
+                                title="确认删除该入住记录？"
+                                onOk={() => {
+                                  setCheckIns((items) => items.filter((item) => item.id !== record.id));
+                                  Message.success('记录已删除');
+                                }}
+                              >
+                                <Tooltip content="删除记录">
+                                  <Button
+                                    aria-label={`删除${record.employeeName}入住`}
+                                    className="hubx-icon-action"
+                                    type="text"
+                                    status="danger"
+                                    icon={<IconDelete />}
+                                  />
+                                </Tooltip>
+                              </Popconfirm>
+                            </Space>
+                          ),
+                        },
+                      ]}
+                      data={filteredCheckIns}
+                      rowKey="id"
+                      pagination={{ pageSize: 8 }}
+                      emptyDescription="暂无入住登记记录"
+                    />
+                  </SectionCard>
+                
+              </>
+            ),
+          },
+          {
+            key: 'expenses',
+            label: "费用管理",
+            content: (
+              <>
+                  <SectionCard
+                    title="宿舍账单与公用事业分摊"
+                    extra={
+                      <Button type="primary" icon={<IconPlus />} onClick={() => openExpenseForm()}>
+                        登记费用账单
+                      </Button>
+                    }
+                  >
+                    {/* 费用胶囊数据看板 */}
+                    <div className="dorm-cost-ribbon">
+                      <div className="dorm-cost-ribbon-item">
+                        <span>当期总费用：</span>
+                        <span className="dorm-cost-ribbon-val">
+                          <MoneyText value={expenseSummary.total} tone="danger" />
                         </span>
-                      )}
-                    </Space>
-                  ),
-                },
-                {
-                  title: '入住周期',
-                  dataIndex: 'checkInDate',
-                  width: 180,
-                  render: (_: unknown, record: DormitoryCheckIn) => (
-                    <div style={{ fontSize: 12 }}>
-                      <div>起：{record.checkInDate}</div>
-                      {record.actualCheckOutDate ? (
-                        <div style={{ color: 'var(--color-text-3)' }}>止：{record.actualCheckOutDate} (已退)</div>
-                      ) : (
-                        <div style={{ color: 'rgb(var(--success-6))' }}>在住中</div>
-                      )}
-                    </div>
-                  ),
-                },
-                {
-                  title: '当前状态',
-                  dataIndex: 'status',
-                  width: 100,
-                  render: (v: string) => (
-                    <Tag color={v === 'active' ? 'green' : 'gray'}>
-                      {v === 'active' ? '在住' : '已退宿'}
-                    </Tag>
-                  ),
-                },
-                {
-                  title: '操作',
-                  width: 140,
-                  fixed: 'right',
-                  render: (_: unknown, record: DormitoryCheckIn) => (
-                    <Space size={6}>
-                      {record.status === 'active' && (
-                        <Button
-                          size="mini"
-                          type="outline"
-                          status="warning"
-                          onClick={() => openCheckOutModal(record)}
-                        >
-                          退宿
-                        </Button>
-                      )}
-                      <Tooltip content="编辑记录">
-                        <Button
-                          aria-label={`编辑${record.employeeName}入住`}
-                          className="hubx-icon-action"
-                          type="text"
-                          icon={<IconEdit />}
-                          onClick={() => openEditCheckIn(record)}
-                        />
-                      </Tooltip>
-                      <Popconfirm
-                        title="确认删除该入住记录？"
-                        onOk={() => {
-                          setCheckIns((items) => items.filter((item) => item.id !== record.id));
-                          Message.success('记录已删除');
-                        }}
-                      >
-                        <Tooltip content="删除记录">
-                          <Button
-                            aria-label={`删除${record.employeeName}入住`}
-                            className="hubx-icon-action"
-                            type="text"
-                            status="danger"
-                            icon={<IconDelete />}
-                          />
-                        </Tooltip>
-                      </Popconfirm>
-                    </Space>
-                  ),
-                },
-              ]}
-              data={filteredCheckIns}
-              rowKey="id"
-              pagination={{ pageSize: 8 }}
-              noDataElement="暂无入住登记记录"
-            />
-          </Card>
-        </TabPane>
-
-        {/* ===================== Tab 3: 费用管理 ===================== */}
-        <TabPane key="expenses" title="费用管理">
-          <Card
-            title="宿舍账单与公用事业分摊"
-            extra={
-              <Button type="primary" icon={<IconPlus />} onClick={() => openExpenseForm()}>
-                登记费用账单
-              </Button>
-            }
-          >
-            {/* 费用胶囊数据看板 */}
-            <div className="dorm-cost-ribbon">
-              <div className="dorm-cost-ribbon-item">
-                <span>当期总费用：</span>
-                <span className="dorm-cost-ribbon-val" style={{ color: 'rgb(var(--danger-6))' }}>
-                  ¥{expenseSummary.total.toLocaleString()}
-                </span>
-              </div>
-              <div className="dorm-cost-ribbon-item">
-                <span>房屋租金总计：</span>
-                <span className="dorm-cost-ribbon-val">
-                  ¥{expenseSummary.rentTotal.toLocaleString()}
-                </span>
-              </div>
-              <div className="dorm-cost-ribbon-item">
-                <span>水电气网公摊：</span>
-                <span className="dorm-cost-ribbon-val">
-                  ¥{expenseSummary.utilityTotal.toLocaleString()}
-                </span>
-              </div>
-              <div className="dorm-cost-ribbon-item">
-                <span>当前在住人均分摊测算：</span>
-                <span className="dorm-cost-ribbon-val" style={{ color: 'rgb(var(--primary-6))' }}>
-                  ≈ ¥{expenseSummary.avgPerPerson.toLocaleString()} / 人
-                </span>
-              </div>
-            </div>
-
-            {/* 工具栏 */}
-            <div className="dorm-toolbar">
-              <div className="dorm-toolbar__filters">
-                <Select
-                  placeholder="选择楼栋"
-                  value={expenseBuildingFilter}
-                  onChange={setExpenseBuildingFilter}
-                  style={{ width: 180 }}
-                >
-                  <Option value="all">全部楼栋</Option>
-                  {buildings.map((b) => (
-                    <Option key={b.id} value={b.id}>
-                      {b.name}
-                    </Option>
-                  ))}
-                </Select>
-                <Select
-                  placeholder="费用类型"
-                  value={expenseTypeFilter}
-                  onChange={setExpenseTypeFilter}
-                  style={{ width: 140 }}
-                >
-                  <Option value="all">全部类型</Option>
-                  <Option value="rent">租金</Option>
-                  <Option value="water">水费</Option>
-                  <Option value="electricity">电费</Option>
-                  <Option value="gas">燃气费</Option>
-                  <Option value="internet">网络宽带</Option>
-                  <Option value="maintenance">维修保洁</Option>
-                  <Option value="other">其他</Option>
-                </Select>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                共 {filteredExpenses.length} 笔支出明细
-              </div>
-            </div>
-
-            <Table
-              columns={[
-                {
-                  title: '所属楼栋',
-                  dataIndex: 'buildingName',
-                  width: 180,
-                  render: (v: string, record: DormitoryExpense) => (
-                    <div>
-                      <div style={{ fontWeight: 500 }}>{v}</div>
-                      {record.roomNumber && (
-                        <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                          关联房间：{record.roomNumber}
-                        </div>
-                      )}
-                    </div>
-                  ),
-                },
-                {
-                  title: '费用类型',
-                  dataIndex: 'type',
-                  width: 120,
-                  render: (v: string) => {
-                    const map: Record<string, { label: string; color: string }> = {
-                      rent: { label: '房屋租金', color: 'magenta' },
-                      water: { label: '水费', color: 'cyan' },
-                      electricity: { label: '电费', color: 'orange' },
-                      gas: { label: '燃气费', color: 'red' },
-                      internet: { label: '宽带费', color: 'blue' },
-                      maintenance: { label: '维修保洁', color: 'green' },
-                      other: { label: '其他杂费', color: 'gray' },
-                    };
-                    const item = map[v] || { label: v, color: 'arcoblue' };
-                    return <Tag color={item.color}>{item.label}</Tag>;
-                  },
-                },
-                {
-                  title: '金额',
-                  dataIndex: 'amount',
-                  width: 130,
-                  render: (v: number) => (
-                    <span style={{ fontWeight: 700, fontSize: 14, color: 'rgb(var(--danger-6))' }}>
-                      ¥{v?.toLocaleString()}
-                    </span>
-                  ),
-                },
-                { title: '费用所属期间', dataIndex: 'period', width: 140 },
-                {
-                  title: '分摊方案',
-                  dataIndex: 'splitMethod',
-                  width: 120,
-                  render: (v: string) => (
-                    <Tag bordered>{v === 'by_room' ? '按房间均摊' : '按实际入住人头'}</Tag>
-                  ),
-                },
-                {
-                  title: '备注说明',
-                  dataIndex: 'remark',
-                  render: (v?: string) => v || '-',
-                },
-                {
-                  title: '操作',
-                  width: 100,
-                  fixed: 'right',
-                  render: (_: unknown, record: DormitoryExpense) => (
-                    <Space size={4}>
-                      <Tooltip content="编辑费用账单">
-                        <Button
-                          aria-label={`编辑${record.period}费用`}
-                          className="hubx-icon-action"
-                          type="text"
-                          icon={<IconEdit />}
-                          onClick={() => openExpenseForm(record)}
-                        />
-                      </Tooltip>
-                      <Popconfirm
-                        title="确认删除该笔费用记录？"
-                        onOk={() => {
-                          setExpenses((items) => items.filter((item) => item.id !== record.id));
-                          Message.success('费用记录已删除');
-                        }}
-                      >
-                        <Tooltip content="删除费用">
-                          <Button
-                            aria-label={`删除${record.period}费用`}
-                            className="hubx-icon-action"
-                            type="text"
-                            status="danger"
-                            icon={<IconDelete />}
-                          />
-                        </Tooltip>
-                      </Popconfirm>
-                    </Space>
-                  ),
-                },
-              ]}
-              data={filteredExpenses}
-              rowKey="id"
-              pagination={{ pageSize: 8 }}
-              noDataElement="暂无宿舍费用记录"
-            />
-          </Card>
-        </TabPane>
-
-        {/* ===================== Tab 4: 维护管理 ===================== */}
-        <TabPane key="maintenance" title="维护管理">
-          <Card
-            title="宿舍维保与报修工单"
-            extra={
-              <Button type="primary" icon={<IconPlus />} onClick={() => openMaintenanceForm()}>
-                登记报修工单
-              </Button>
-            }
-          >
-            {/* 工具栏 */}
-            <div className="dorm-toolbar">
-              <div className="dorm-toolbar__filters">
-                <Select
-                  placeholder="所属楼栋"
-                  value={maintenanceBuildingFilter}
-                  onChange={setMaintenanceBuildingFilter}
-                  style={{ width: 180 }}
-                >
-                  <Option value="all">全部楼栋</Option>
-                  {buildings.map((b) => (
-                    <Option key={b.id} value={b.id}>
-                      {b.name}
-                    </Option>
-                  ))}
-                </Select>
-                <Select
-                  placeholder="工单状态"
-                  value={maintenanceStatusFilter}
-                  onChange={setMaintenanceStatusFilter}
-                  style={{ width: 130 }}
-                >
-                  <Option value="all">全部状态</Option>
-                  <Option value="pending">待处理</Option>
-                  <Option value="in_progress">处理中</Option>
-                  <Option value="completed">已完成</Option>
-                </Select>
-                <Select
-                  placeholder="紧急程度"
-                  value={maintenanceUrgencyFilter}
-                  onChange={setMaintenanceUrgencyFilter}
-                  style={{ width: 130 }}
-                >
-                  <Option value="all">全部等级</Option>
-                  <Option value="normal">普通</Option>
-                  <Option value="urgent">紧急</Option>
-                  <Option value="very_urgent">非常紧急</Option>
-                </Select>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                待处理 <strong style={{ color: 'rgb(var(--warning-6))' }}>{pendingMaintenancesCount}</strong> 单
-              </div>
-            </div>
-
-            <Table
-              columns={[
-                {
-                  title: '楼栋与房间',
-                  dataIndex: 'buildingName',
-                  width: 200,
-                  render: (_: unknown, record: DormitoryMaintenance) => (
-                    <div>
-                      <div style={{ fontWeight: 500 }}>{record.buildingName}</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                        {record.roomNumber ? `${record.roomNumber} 室` : '公共区域'}
+                      </div>
+                      <div className="dorm-cost-ribbon-item">
+                        <span>房屋租金总计：</span>
+                        <span className="dorm-cost-ribbon-val">
+                          <MoneyText value={expenseSummary.rentTotal} />
+                        </span>
+                      </div>
+                      <div className="dorm-cost-ribbon-item">
+                        <span>水电气网公摊：</span>
+                        <span className="dorm-cost-ribbon-val">
+                          <MoneyText value={expenseSummary.utilityTotal} />
+                        </span>
+                      </div>
+                      <div className="dorm-cost-ribbon-item">
+                        <span>当前在住人均分摊测算：</span>
+                        <span className="dorm-cost-ribbon-val">
+                          ≈ <MoneyText value={expenseSummary.avgPerPerson} /> / 人
+                        </span>
                       </div>
                     </div>
-                  ),
-                },
-                {
-                  title: '工单类型',
-                  dataIndex: 'type',
-                  width: 100,
-                  render: (v: string) => {
-                    const map: Record<string, { label: string; color: string }> = {
-                      repair: { label: '设施报修', color: 'orangered' },
-                      cleaning: { label: '专业保洁', color: 'cyan' },
-                      inspection: { label: '定期巡检', color: 'blue' },
-                    };
-                    const item = map[v] || { label: v, color: 'gray' };
-                    return <Tag color={item.color}>{item.label}</Tag>;
-                  },
-                },
-                {
-                  title: '问题与事项说明',
-                  dataIndex: 'description',
-                  render: (v: string) => <span style={{ fontWeight: 500 }}>{v}</span>,
-                },
-                {
-                  title: '紧急程度',
-                  dataIndex: 'urgency',
-                  width: 110,
-                  render: (v: string) => {
-                    if (v === 'very_urgent') return <Tag color="red">非常紧急</Tag>;
-                    if (v === 'urgent') return <Tag color="orange">紧急</Tag>;
-                    return <Tag color="gray">普通</Tag>;
-                  },
-                },
-                {
-                  title: '处理进度',
-                  dataIndex: 'status',
-                  width: 110,
-                  render: (v: string) => {
-                    if (v === 'completed') return <Tag color="green">已完成</Tag>;
-                    if (v === 'in_progress') return <Tag color="arcoblue">处理中</Tag>;
-                    return <Tag color="gold">待处理</Tag>;
-                  },
-                },
-                {
-                  title: '跟进负责人',
-                  dataIndex: 'assignee',
-                  width: 120,
-                  render: (v?: string) => v || '物业服务处',
-                },
-                {
-                  title: '操作',
-                  width: 170,
-                  fixed: 'right',
-                  render: (_: unknown, record: DormitoryMaintenance) => (
-                    <Space size={6}>
-                      {record.status === 'pending' && (
-                        <Button
-                          size="mini"
-                          type="outline"
-                          status="success"
-                          icon={<IconClockCircle />}
-                          onClick={() => advanceMaintenanceStatus(record)}
-                        >
-                          接单
-                        </Button>
-                      )}
-                      {record.status === 'in_progress' && (
-                        <Button
-                          size="mini"
-                          type="outline"
-                          status="success"
-                          icon={<IconCheck />}
-                          onClick={() => advanceMaintenanceStatus(record)}
-                        >
-                          办结
-                        </Button>
-                      )}
-                      <Tooltip content="编辑工单">
-                        <Button
-                          aria-label={`编辑${record.roomNumber || record.buildingName}工单`}
-                          className="hubx-icon-action"
-                          type="text"
-                          icon={<IconEdit />}
-                          onClick={() => openMaintenanceForm(record)}
-                        />
-                      </Tooltip>
-                      <Popconfirm
-                        title="确认删除该维保记录？"
-                        onOk={() => {
-                          setMaintenances((items) => items.filter((item) => item.id !== record.id));
-                          Message.success('维保记录已删除');
-                        }}
-                      >
-                        <Tooltip content="删除工单">
-                          <Button
-                            aria-label={`删除${record.roomNumber || record.buildingName}工单`}
-                            className="hubx-icon-action"
-                            type="text"
-                            status="danger"
-                            icon={<IconDelete />}
-                          />
-                        </Tooltip>
-                      </Popconfirm>
-                    </Space>
-                  ),
-                },
-              ]}
-              data={filteredMaintenances}
-              rowKey="id"
-              pagination={{ pageSize: 8 }}
-              noDataElement="暂无报修与维护记录"
-            />
-          </Card>
-        </TabPane>
-      </Tabs>
+        
+                    <DataTable
+                      toolbar={
+                        <>
+                          <Select
+                            placeholder="选择楼栋"
+                            value={expenseBuildingFilter}
+                            onChange={setExpenseBuildingFilter}
+                            style={{ width: 180 }}
+                          >
+                            <Option value="all">全部楼栋</Option>
+                            {buildings.map((b) => (
+                              <Option key={b.id} value={b.id}>
+                                {b.name}
+                              </Option>
+                            ))}
+                          </Select>
+                          <Select
+                            placeholder="费用类型"
+                            value={expenseTypeFilter}
+                            onChange={setExpenseTypeFilter}
+                            style={{ width: 140 }}
+                          >
+                            <Option value="all">全部类型</Option>
+                            <Option value="rent">租金</Option>
+                            <Option value="water">水费</Option>
+                            <Option value="electricity">电费</Option>
+                            <Option value="gas">燃气费</Option>
+                            <Option value="internet">网络宽带</Option>
+                            <Option value="maintenance">维修保洁</Option>
+                            <Option value="other">其他</Option>
+                          </Select>
+                        </>
+                      }
+                      caption={<>共 {filteredExpenses.length} 笔支出明细</>}
+                      columns={[
+                        {
+                          title: '所属楼栋',
+                          dataIndex: 'buildingName',
+                          width: 180,
+                          render: (v: string, record: DormitoryExpense) => (
+                            <div>
+                              <div style={{ fontWeight: 500 }}>{v}</div>
+                              {record.roomNumber && (
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+                                  关联房间：{record.roomNumber}
+                                </div>
+                              )}
+                            </div>
+                          ),
+                        },
+                        {
+                          title: '费用类型',
+                          dataIndex: 'type',
+                          width: 120,
+                          render: (v: string) => <StatusTag meta={resolveStatus(EXPENSE_TYPE, v)} />,
+                        },
+                        {
+                          title: '金额',
+                          dataIndex: 'amount',
+                          width: 130,
+                          render: (v: number) => (
+                            <span style={{ fontWeight: 700 }}>
+                              <MoneyText value={v} tone="danger" />
+                            </span>
+                          ),
+                        },
+                        { title: '费用所属期间', dataIndex: 'period', width: 140 },
+                        {
+                          title: '分摊方案',
+                          dataIndex: 'splitMethod',
+                          width: 120,
+                          render: (v: string) => (
+                            <StatusTag>{v === 'by_room' ? '按房间均摊' : '按实际入住人头'}</StatusTag>
+                          ),
+                        },
+                        {
+                          title: '备注说明',
+                          dataIndex: 'remark',
+                          render: (v?: string) => v || '-',
+                        },
+                        {
+                          title: '操作',
+                          width: 100,
+                          fixed: 'right',
+                          render: (_: unknown, record: DormitoryExpense) => (
+                            <Space size={4}>
+                              <Tooltip content="编辑费用账单">
+                                <Button
+                                  aria-label={`编辑${record.period}费用`}
+                                  className="hubx-icon-action"
+                                  type="text"
+                                  icon={<IconEdit />}
+                                  onClick={() => openExpenseForm(record)}
+                                />
+                              </Tooltip>
+                              <Popconfirm
+                                title="确认删除该笔费用记录？"
+                                onOk={() => {
+                                  setExpenses((items) => items.filter((item) => item.id !== record.id));
+                                  Message.success('费用记录已删除');
+                                }}
+                              >
+                                <Tooltip content="删除费用">
+                                  <Button
+                                    aria-label={`删除${record.period}费用`}
+                                    className="hubx-icon-action"
+                                    type="text"
+                                    status="danger"
+                                    icon={<IconDelete />}
+                                  />
+                                </Tooltip>
+                              </Popconfirm>
+                            </Space>
+                          ),
+                        },
+                      ]}
+                      data={filteredExpenses}
+                      rowKey="id"
+                      pagination={{ pageSize: 8 }}
+                      emptyDescription="暂无宿舍费用记录"
+                    />
+                  </SectionCard>
+                
+              </>
+            ),
+          },
+          {
+            key: 'maintenance',
+            label: "维护管理",
+            content: (
+              <>
+                  <SectionCard
+                    title="宿舍维保与报修工单"
+                    extra={
+                      <Button type="primary" icon={<IconPlus />} onClick={() => openMaintenanceForm()}>
+                        登记报修工单
+                      </Button>
+                    }
+                  >
+                    <DataTable
+                      toolbar={
+                        <>
+                          <Select
+                            placeholder="所属楼栋"
+                            value={maintenanceBuildingFilter}
+                            onChange={setMaintenanceBuildingFilter}
+                            style={{ width: 180 }}
+                          >
+                            <Option value="all">全部楼栋</Option>
+                            {buildings.map((b) => (
+                              <Option key={b.id} value={b.id}>
+                                {b.name}
+                              </Option>
+                            ))}
+                          </Select>
+                          <Select
+                            placeholder="工单状态"
+                            value={maintenanceStatusFilter}
+                            onChange={setMaintenanceStatusFilter}
+                            style={{ width: 130 }}
+                          >
+                            <Option value="all">全部状态</Option>
+                            <Option value="pending">待处理</Option>
+                            <Option value="in_progress">处理中</Option>
+                            <Option value="completed">已完成</Option>
+                          </Select>
+                          <Select
+                            placeholder="紧急程度"
+                            value={maintenanceUrgencyFilter}
+                            onChange={setMaintenanceUrgencyFilter}
+                            style={{ width: 130 }}
+                          >
+                            <Option value="all">全部等级</Option>
+                            <Option value="normal">普通</Option>
+                            <Option value="urgent">紧急</Option>
+                            <Option value="very_urgent">非常紧急</Option>
+                          </Select>
+                        </>
+                      }
+                      caption={<>待处理 <strong style={{ color: 'rgb(var(--warning-6))' }}>{pendingMaintenancesCount}</strong> 单</>}
+                      columns={[
+                        {
+                          title: '楼栋与房间',
+                          dataIndex: 'buildingName',
+                          width: 200,
+                          render: (_: unknown, record: DormitoryMaintenance) => (
+                            <div>
+                              <div style={{ fontWeight: 500 }}>{record.buildingName}</div>
+                              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+                                {record.roomNumber ? `${record.roomNumber} 室` : '公共区域'}
+                              </div>
+                            </div>
+                          ),
+                        },
+                        {
+                          title: '工单类型',
+                          dataIndex: 'type',
+                          width: 100,
+                          render: (v: string) => <StatusTag meta={resolveStatus(MAINTENANCE_TYPE, v)} />,
+                        },
+                        {
+                          title: '问题与事项说明',
+                          dataIndex: 'description',
+                          render: (v: string) => <span style={{ fontWeight: 500 }}>{v}</span>,
+                        },
+                        {
+                          title: '紧急程度',
+                          dataIndex: 'urgency',
+                          width: 110,
+                          render: (v: DormitoryMaintenance['urgency']) => <StatusTag meta={MAINTENANCE_URGENCY[v]} />,
+                        },
+                        {
+                          title: '处理进度',
+                          dataIndex: 'status',
+                          width: 110,
+                          render: (v: DormitoryMaintenance['status']) => <StatusTag meta={MAINTENANCE_STATUS[v]} />,
+                        },
+                        {
+                          title: '跟进负责人',
+                          dataIndex: 'assignee',
+                          width: 120,
+                          render: (v?: string) => v || '物业服务处',
+                        },
+                        {
+                          title: '操作',
+                          width: 170,
+                          fixed: 'right',
+                          render: (_: unknown, record: DormitoryMaintenance) => (
+                            <Space size={6}>
+                              {record.status === 'pending' && (
+                                <Button
+                                  size="mini"
+                                  type="outline"
+                                  status="success"
+                                  icon={<IconClockCircle />}
+                                  onClick={() => advanceMaintenanceStatus(record)}
+                                >
+                                  接单
+                                </Button>
+                              )}
+                              {record.status === 'in_progress' && (
+                                <Button
+                                  size="mini"
+                                  type="outline"
+                                  status="success"
+                                  icon={<IconCheck />}
+                                  onClick={() => advanceMaintenanceStatus(record)}
+                                >
+                                  办结
+                                </Button>
+                              )}
+                              <Tooltip content="编辑工单">
+                                <Button
+                                  aria-label={`编辑${record.roomNumber || record.buildingName}工单`}
+                                  className="hubx-icon-action"
+                                  type="text"
+                                  icon={<IconEdit />}
+                                  onClick={() => openMaintenanceForm(record)}
+                                />
+                              </Tooltip>
+                              <Popconfirm
+                                title="确认删除该维保记录？"
+                                onOk={() => {
+                                  setMaintenances((items) => items.filter((item) => item.id !== record.id));
+                                  Message.success('维保记录已删除');
+                                }}
+                              >
+                                <Tooltip content="删除工单">
+                                  <Button
+                                    aria-label={`删除${record.roomNumber || record.buildingName}工单`}
+                                    className="hubx-icon-action"
+                                    type="text"
+                                    status="danger"
+                                    icon={<IconDelete />}
+                                  />
+                                </Tooltip>
+                              </Popconfirm>
+                            </Space>
+                          ),
+                        },
+                      ]}
+                      data={filteredMaintenances}
+                      rowKey="id"
+                      pagination={{ pageSize: 8 }}
+                      emptyDescription="暂无报修与维护记录"
+                    />
+                  </SectionCard>
+                
+              </>
+            ),
+          },
+        ]}
+      />
 
       {/* ===================== 子功能一：新建/编辑楼栋档案弹窗 ===================== */}
       <Modal
@@ -2077,115 +1951,117 @@ export function DormitoryManagement() {
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
           {/* 分段 1：基础信息与城市快选 */}
-          <div className="dorm-form-section">
-            <div className="dorm-form-section__header">
-              <span><span className="dorm-form-section__badge">1</span>楼栋基础档案与地址定位</span>
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
+          <FormSection
+            className="dorm-form-section"
+            leading={<span className="dorm-form-section__badge">1</span>}
+            title="楼栋基础档案与地址定位"
+          >
+            <FormGrid template="2-1-1">
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>楼栋名称 *</Text></div>
                 <Input
                   placeholder="如：北京中关村人才公寓"
                   value={buildingForm.name}
                   onChange={(value) => setBuildingForm({ ...buildingForm, name: value })}
                 />
-              </Col>
-              <Col span={6}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>所在城市 *</Text></div>
                 <Input
                   placeholder="如：北京"
                   value={buildingForm.city}
                   onChange={(value) => setBuildingForm({ ...buildingForm, city: value })}
                 />
-              </Col>
-              <Col span={6}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>行政区</Text></div>
                 <Input
                   placeholder="如：海淀区"
                   value={buildingForm.district}
                   onChange={(value) => setBuildingForm({ ...buildingForm, district: value })}
                 />
-              </Col>
-            </Row>
+              </div>
+            </FormGrid>
 
             {/* 常用城市快选药丸标签 */}
             <div className="dorm-quick-tags">
-              <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>常用城市：</span>
+              <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>常用城市：</span>
               {quickCities.map((city) => (
-                <Tag
+                <StatusTag
                   key={city}
                   size="small"
                   className="dorm-quick-tag-item"
                   onClick={() => setBuildingForm({ ...buildingForm, city })}
                 >
                   {city}
-                </Tag>
+                </StatusTag>
               ))}
             </div>
 
-            <Row gutter={16} style={{ marginTop: 10 }}>
-              <Col span={10}>
+            <FormGrid template="5-7" className="dorm-form-grid--spaced">
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>社区 / 园区名称</Text></div>
                 <Input
                   placeholder="如：中关村南大街1号院"
                   value={buildingForm.community}
                   onChange={(value) => setBuildingForm({ ...buildingForm, community: value })}
                 />
-              </Col>
-              <Col span={14}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>详细门牌地址</Text></div>
                 <Input
                   placeholder="如：北京市海淀区中关村南大街1号3号楼5单元"
                   value={buildingForm.address}
                   onChange={(value) => setBuildingForm({ ...buildingForm, address: value })}
                 />
-              </Col>
-            </Row>
-          </div>
+              </div>
+            </FormGrid>
+          </FormSection>
 
           {/* 分段 2：租赁合同与租金 */}
-          <div className="dorm-form-section">
-            <div className="dorm-form-section__header">
-              <span><span className="dorm-form-section__badge">2</span>房东对接与租赁合同</span>
-            </div>
-            <Row gutter={16}>
-              <Col span={12}>
+          <FormSection
+            className="dorm-form-section"
+            leading={<span className="dorm-form-section__badge">2</span>}
+            title="房东对接与租赁合同"
+          >
+            <FormGrid columns={2}>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>房东姓名/物业联系人</Text></div>
                 <Input
                   placeholder="房东姓名"
                   value={buildingForm.landlordName}
                   onChange={(value) => setBuildingForm({ ...buildingForm, landlordName: value })}
                 />
-              </Col>
-              <Col span={12}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>房东联系手机号</Text></div>
                 <Input
                   placeholder="11位手机号码"
                   value={buildingForm.landlordPhone}
                   onChange={(value) => setBuildingForm({ ...buildingForm, landlordPhone: value })}
                 />
-              </Col>
-            </Row>
-            <Row gutter={16} style={{ marginTop: 10 }}>
-              <Col span={12}>
+              </div>
+            </FormGrid>
+            <FormGrid columns={2} className="dorm-form-grid--spaced">
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>租期开始日期</Text></div>
                 <Input
                   placeholder="YYYY-MM-DD"
                   value={buildingForm.leaseStartDate}
                   onChange={(value) => setBuildingForm({ ...buildingForm, leaseStartDate: value })}
                 />
-              </Col>
-              <Col span={12}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>租期截止日期</Text></div>
                 <Input
                   placeholder="YYYY-MM-DD"
                   value={buildingForm.leaseEndDate}
                   onChange={(value) => setBuildingForm({ ...buildingForm, leaseEndDate: value })}
                 />
-              </Col>
-            </Row>
-            <Row gutter={16} style={{ marginTop: 10 }}>
-              <Col span={8}>
+              </div>
+            </FormGrid>
+            <FormGrid columns={3} className="dorm-form-grid--spaced">
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>每月总租金 (元) *</Text></div>
                 <InputNumber
                   min={0}
@@ -2194,8 +2070,8 @@ export function DormitoryManagement() {
                   value={buildingForm.monthlyRent}
                   onChange={(value) => setBuildingForm({ ...buildingForm, monthlyRent: value || 0 })}
                 />
-              </Col>
-              <Col span={8}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>房屋押金 (元)</Text></div>
                 <InputNumber
                   min={0}
@@ -2204,8 +2080,8 @@ export function DormitoryManagement() {
                   value={buildingForm.deposit}
                   onChange={(value) => setBuildingForm({ ...buildingForm, deposit: value || 0 })}
                 />
-              </Col>
-              <Col span={8}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>付款周期</Text></div>
                 <Select
                   value={buildingForm.paymentMethod}
@@ -2217,58 +2093,62 @@ export function DormitoryManagement() {
                   <Option value="semi_annual">半年付</Option>
                   <Option value="annual">年付</Option>
                 </Select>
-              </Col>
-            </Row>
-          </div>
+              </div>
+            </FormGrid>
+          </FormSection>
 
           {/* 分段 3：公用事业与代扣设置 */}
-          <div className="dorm-form-section">
-            <div className="dorm-form-section__header">
-              <span><span className="dorm-form-section__badge">3</span>水电气网托收账号与代扣设置</span>
-            </div>
-            <Row gutter={16}>
-              <Col span={8}>
+          <FormSection
+            className="dorm-form-section"
+            leading={<span className="dorm-form-section__badge">3</span>}
+            title="水电气网托收账号与代扣设置"
+          >
+            <FormGrid columns={3}>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>水费代扣户号</Text></div>
                 <Input
                   placeholder="水务托收户号"
                   value={buildingForm.waterAccountNo}
                   onChange={(value) => setBuildingForm({ ...buildingForm, waterAccountNo: value })}
                 />
-              </Col>
-              <Col span={8}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>电费托收户号</Text></div>
                 <Input
                   placeholder="国家电网户号"
                   value={buildingForm.electricityAccountNo}
                   onChange={(value) => setBuildingForm({ ...buildingForm, electricityAccountNo: value })}
                 />
-              </Col>
-              <Col span={8}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>宽带运营商及月费</Text></div>
                 <Input
                   placeholder="如：中国电信千兆 (¥200/月)"
                   value={buildingForm.internetProvider}
                   onChange={(value) => setBuildingForm({ ...buildingForm, internetProvider: value })}
                 />
-              </Col>
-            </Row>
-          </div>
+              </div>
+            </FormGrid>
+          </FormSection>
 
           {/* 分段 4：新建楼栋专属：智能批量房源初始化 */}
           {!editingBuildingId && (
-            <div className="dorm-form-section" style={{ background: 'rgba(var(--primary-1), 0.5)', borderColor: 'rgb(var(--primary-3))' }}>
-              <div className="dorm-form-section__header">
-                <span><span className="dorm-form-section__badge">4</span>智能批量房源初始化 (新建自动生成)</span>
+            <FormSection
+              className="dorm-form-section dorm-form-section--initialization"
+              leading={<span className="dorm-form-section__badge">4</span>}
+              title="智能批量房源初始化 (新建自动生成)"
+              extra={(
                 <Checkbox
                   checked={buildingForm.autoInitRooms}
                   onChange={(checked) => setBuildingForm({ ...buildingForm, autoInitRooms: checked })}
                 >
                   启用自动生成房间与床位
                 </Checkbox>
-              </div>
+              )}
+            >
               {buildingForm.autoInitRooms && (
-                <Row gutter={16}>
-                  <Col span={8}>
+                <FormGrid columns={3}>
+                  <div>
                     <div style={{ marginBottom: 6 }}><Text>总楼层数</Text></div>
                     <InputNumber
                       min={1}
@@ -2277,8 +2157,8 @@ export function DormitoryManagement() {
                       onChange={(val) => setBuildingForm({ ...buildingForm, initFloorsCount: val || 1 })}
                       style={{ width: '100%' }}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </div>
+                  <div>
                     <div style={{ marginBottom: 6 }}><Text>每层房间数</Text></div>
                     <InputNumber
                       min={1}
@@ -2287,8 +2167,8 @@ export function DormitoryManagement() {
                       onChange={(val) => setBuildingForm({ ...buildingForm, initRoomsPerFloor: val || 1 })}
                       style={{ width: '100%' }}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </div>
+                  <div>
                     <div style={{ marginBottom: 6 }}><Text>默认房型</Text></div>
                     <Select
                       value={buildingForm.initRoomType}
@@ -2299,10 +2179,10 @@ export function DormitoryManagement() {
                       <Option value="double">双人间 (2床位)</Option>
                       <Option value="quad">四人间 (4床位)</Option>
                     </Select>
-                  </Col>
-                </Row>
+                  </div>
+                </FormGrid>
               )}
-            </div>
+            </FormSection>
           )}
         </Space>
       </Modal>
@@ -2319,8 +2199,8 @@ export function DormitoryManagement() {
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
           {/* 入住性质切换 */}
-          <div style={{ padding: '10px 14px', background: 'var(--color-fill-1)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600, fontSize: 13 }}>入住性质类型：</span>
+          <div style={{ padding: '10px 14px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>入住性质类型：</span>
             <Radio.Group
               type="button"
               value={checkInForm.checkInType}
@@ -2333,8 +2213,8 @@ export function DormitoryManagement() {
 
           {/* 出差单联动快捷选择器 */}
           {checkInForm.checkInType === 'trip' && (
-            <div style={{ padding: '12px 14px', background: 'rgba(var(--purple-1), 0.6)', border: '1px solid rgba(var(--purple-3), 0.7)', borderRadius: 6 }}>
-              <div style={{ fontWeight: 600, fontSize: 12, color: 'rgb(var(--purple-7))', marginBottom: 6 }}>
+            <div style={{ padding: '12px 14px', background: 'rgba(var(--purple-1), 0.6)', border: '1px solid rgba(var(--purple-3), 0.7)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'rgb(var(--purple-7))', marginBottom: 6 }}>
                 快捷关联已审批出差申请单 (自动回填员工与出差周期)：
               </div>
               <Select
@@ -2354,8 +2234,8 @@ export function DormitoryManagement() {
 
           {/* 长期员工候选库快选 */}
           {checkInForm.checkInType === 'long_term' && (
-            <div style={{ padding: '10px 14px', background: 'rgba(var(--primary-1), 0.5)', border: '1px solid rgba(var(--primary-3), 0.6)', borderRadius: 6 }}>
-              <div style={{ fontWeight: 600, fontSize: 12, color: 'rgb(var(--primary-7))', marginBottom: 6 }}>
+            <div style={{ padding: '10px 14px', background: 'rgba(var(--primary-1), 0.5)', border: '1px solid rgba(var(--primary-3), 0.6)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: 'rgb(var(--primary-7))', marginBottom: 6 }}>
                 候选员工库快选 (自动填充工号与部门)：
               </div>
               <Select
@@ -2374,57 +2254,57 @@ export function DormitoryManagement() {
           )}
 
           {/* 员工信息表单 */}
-          <Row gutter={16}>
-            <Col span={8}>
+          <FormGrid columns={3}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>员工姓名 *</Text></div>
               <Input
                 placeholder="员工姓名"
                 value={checkInForm.employeeName}
                 onChange={(value) => setCheckInForm({ ...checkInForm, employeeName: value })}
               />
-            </Col>
-            <Col span={8}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>员工工号</Text></div>
               <Input
                 placeholder="如：emp-001"
                 value={checkInForm.employeeId}
                 onChange={(value) => setCheckInForm({ ...checkInForm, employeeId: value })}
               />
-            </Col>
-            <Col span={8}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>所属部门</Text></div>
               <Input
                 placeholder="如：技术研发部"
                 value={checkInForm.department}
                 onChange={(value) => setCheckInForm({ ...checkInForm, department: value })}
               />
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>入住生效日期 *</Text></div>
               <Input
                 placeholder="YYYY-MM-DD"
                 value={checkInForm.checkInDate}
                 onChange={(value) => setCheckInForm({ ...checkInForm, checkInDate: value })}
               />
-            </Col>
-            <Col span={12}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>预计退宿日期</Text></div>
               <Input
                 placeholder="YYYY-MM-DD"
                 value={checkInForm.expectedCheckOutDate}
                 onChange={(value) => setCheckInForm({ ...checkInForm, expectedCheckOutDate: value })}
               />
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
           {/* 楼栋与图形化床位选择器 */}
-          <div style={{ padding: '12px 14px', background: 'var(--color-fill-1)', borderRadius: 8 }}>
+          <div style={{ padding: '12px 14px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-md)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontWeight: 600, fontSize: 13 }}>选择分配楼栋与具体床位</span>
-              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>可直接点击下方绿色空床快速选中</span>
+              <span style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>选择分配楼栋与具体床位</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>可直接点击下方绿色空床快速选中</span>
             </div>
 
             <div style={{ marginBottom: 10 }}>
@@ -2460,14 +2340,14 @@ export function DormitoryManagement() {
                 .find((b) => b.id === checkInForm.buildingId)
                 ?.floors?.map((floor) => (
                   <div key={floor.id} style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-2)', marginBottom: 4 }}>
+                    <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-2)', marginBottom: 4 }}>
                       {floor.floorNumber}F 楼层
                     </div>
                     {floor.rooms?.map((room) => (
                       <div key={room.id} className="dorm-bed-picker-room">
                         <div className="dorm-bed-picker-room__title">
                           <span>{room.roomNumber} 室 ({room.roomType === 'single' ? '单人间' : room.roomType === 'double' ? '双人间' : '四人间'})</span>
-                          <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>设施：{room.facilities.join('、')}</span>
+                          <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>设施：{room.facilities.join('、')}</span>
                         </div>
                         <div className="dorm-bed-picker-grid">
                           {room.beds?.map((bed) => {
@@ -2498,11 +2378,11 @@ export function DormitoryManagement() {
                                 <span>{bed.bedNumber}号床</span>
                                 <span>
                                   {isOccupied ? (
-                                    <span style={{ fontSize: 11 }}>已占({bed.occupantName})</span>
+                                    <span style={{ fontSize: 'var(--ds-text-caption)' }}>已占({bed.occupantName})</span>
                                   ) : isSelected ? (
-                                    <Tag size="small" color="arcoblue">已选定</Tag>
+                                    <StatusTag size="small" tone="info">已选定</StatusTag>
                                   ) : (
-                                    <Tag size="small" color="green">空闲</Tag>
+                                    <StatusTag size="small" tone="success">空闲</StatusTag>
                                   )}
                                 </span>
                               </div>
@@ -2516,16 +2396,16 @@ export function DormitoryManagement() {
             </div>
 
             {/* 门禁与配套登记 */}
-            <Row gutter={16} style={{ marginTop: 12 }}>
-              <Col span={12}>
+            <FormGrid columns={2} className="dorm-form-grid--spaced">
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>门禁卡/钥匙编号</Text></div>
                 <Input
                   placeholder="如：CARD-101-B1"
                   value={checkInForm.accessCardNo}
                   onChange={(val) => setCheckInForm({ ...checkInForm, accessCardNo: val })}
                 />
-              </Col>
-              <Col span={12}>
+              </div>
+              <div>
                 <div style={{ marginBottom: 6 }}><Text>钥匙押金 (元)</Text></div>
                 <InputNumber
                   min={0}
@@ -2533,8 +2413,8 @@ export function DormitoryManagement() {
                   onChange={(val) => setCheckInForm({ ...checkInForm, depositAmount: val || 0 })}
                   style={{ width: '100%' }}
                 />
-              </Col>
-            </Row>
+              </div>
+            </FormGrid>
           </div>
         </Space>
       </Modal>
@@ -2554,21 +2434,21 @@ export function DormitoryManagement() {
           <div>
             {/* 退宿摘要卡 */}
             <div className="dorm-checkout-card">
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-1)' }}>
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', color: 'var(--color-text-1)' }}>
                 退宿员工：{checkingOutRecord.employeeName} ({checkingOutRecord.employeeId})
               </div>
               <div className="dorm-checkout-summary-grid">
                 <div>楼栋：<strong>{checkingOutRecord.buildingName}</strong></div>
                 <div>房间：<strong>{checkingOutRecord.roomNumber}室</strong></div>
                 <div>床位：<strong>{checkingOutRecord.bedNumber}号床</strong></div>
-                <div>入住日期：<strong>{checkingOutRecord.checkInDate}</strong></div>
+                <div>入住日期：<strong><DateText value={checkingOutRecord.checkInDate} /></strong></div>
                 <div>入住性质：<strong>{checkingOutRecord.checkInType === 'long_term' ? '长期员工' : '出差借宿'}</strong></div>
-                <div>退宿日期：<strong>{new Date().toISOString().slice(0, 10)}</strong></div>
+                <div>退宿日期：<strong><DateText value={new Date().toISOString().slice(0, 10)} /></strong></div>
               </div>
             </div>
 
             {/* 退宿验收 Checklist */}
-            <div style={{ marginBottom: 12, fontWeight: 600, fontSize: 13 }}>退宿交接验收清单：</div>
+            <div style={{ marginBottom: 12, fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>退宿交接验收清单：</div>
             <Space direction="vertical" size={10} style={{ width: '100%', marginBottom: 16 }}>
               <Checkbox
                 checked={checkoutChecklist.keysReturned}
@@ -2599,7 +2479,7 @@ export function DormitoryManagement() {
             <Divider style={{ margin: '12px 0' }} />
 
             {/* 智能闭环联动选项 */}
-            <div style={{ padding: '10px 14px', background: 'rgba(var(--primary-1), 0.5)', borderRadius: 6 }}>
+            <div style={{ padding: '10px 14px', background: 'rgba(var(--primary-1), 0.5)', borderRadius: 'var(--radius-sm)' }}>
               <Checkbox
                 checked={checkoutChecklist.autoGenerateCleaning}
                 onChange={(checked) => setCheckoutChecklist({ ...checkoutChecklist, autoGenerateCleaning: checked })}
@@ -2637,8 +2517,8 @@ export function DormitoryManagement() {
             </Select>
           </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>费用类型 *</Text></div>
               <Select
                 value={expenseForm.type}
@@ -2653,8 +2533,8 @@ export function DormitoryManagement() {
                 <Option value="maintenance">维修保洁费</Option>
                 <Option value="other">其他杂费</Option>
               </Select>
-            </Col>
-            <Col span={12}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>费用金额 (元) *</Text></div>
               <InputNumber
                 min={0}
@@ -2663,19 +2543,19 @@ export function DormitoryManagement() {
                 value={expenseForm.amount}
                 onChange={(value) => setExpenseForm({ ...expenseForm, amount: value || 0 })}
               />
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>费用归属期间 *</Text></div>
               <Input
                 placeholder="如：2026年8月"
                 value={expenseForm.period}
                 onChange={(value) => setExpenseForm({ ...expenseForm, period: value })}
               />
-            </Col>
-            <Col span={12}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>公摊分账方案</Text></div>
               <Select
                 value={expenseForm.splitMethod}
@@ -2685,22 +2565,22 @@ export function DormitoryManagement() {
                 <Option value="by_person">按在住实际人头分摊</Option>
                 <Option value="by_room">按房间固定均摊</Option>
               </Select>
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
           {/* 实时分摊测算动态看板 */}
           <div className="dorm-split-calculator">
             <div>
-              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-1)' }}>
+              <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)' }}>
                 实时测算分摊结果：
               </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
                 {expenseSplitEstimate.desc}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span className="dorm-split-calculator__num">¥{expenseSplitEstimate.perUnit}</span>
-              <span style={{ fontSize: 12, color: 'var(--color-text-2)', marginLeft: 4 }}>
+              <span className="dorm-split-calculator__num"><MoneyText value={Number(expenseSplitEstimate.perUnit)} fractionDigits={2} /></span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', marginLeft: 4 }}>
                 / {expenseSplitEstimate.label}
               </span>
             </div>
@@ -2728,8 +2608,8 @@ export function DormitoryManagement() {
         style={{ width: 560 }}
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>报修楼栋 *</Text></div>
               <Select
                 value={maintenanceForm.buildingId || undefined}
@@ -2748,8 +2628,8 @@ export function DormitoryManagement() {
                   </Option>
                 ))}
               </Select>
-            </Col>
-            <Col span={12}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>房间号</Text></div>
               <Select
                 placeholder="选择房间或公共区"
@@ -2767,11 +2647,11 @@ export function DormitoryManagement() {
                     </Option>
                   ))}
               </Select>
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
-          <Row gutter={16}>
-            <Col span={8}>
+          <FormGrid columns={3}>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>工单类型</Text></div>
               <Select
                 value={maintenanceForm.type}
@@ -2782,8 +2662,8 @@ export function DormitoryManagement() {
                 <Option value="cleaning">专业保洁</Option>
                 <Option value="inspection">巡检维护</Option>
               </Select>
-            </Col>
-            <Col span={8}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>紧急程度</Text></div>
               <Select
                 value={maintenanceForm.urgency}
@@ -2794,8 +2674,8 @@ export function DormitoryManagement() {
                 <Option value="urgent">紧急 (24h内)</Option>
                 <Option value="very_urgent">非常紧急 (当天)</Option>
               </Select>
-            </Col>
-            <Col span={8}>
+            </div>
+            <div>
               <div style={{ marginBottom: 6 }}><Text>派工负责组</Text></div>
               <Select
                 value={maintenanceForm.assignee}
@@ -2807,8 +2687,8 @@ export function DormitoryManagement() {
                 <Option value="外部厂家售后">外部厂家售后</Option>
                 <Option value="房东联系人">房东联系人</Option>
               </Select>
-            </Col>
-          </Row>
+            </div>
+          </FormGrid>
 
           <div>
             <div style={{ marginBottom: 6 }}><Text>故障或维护内容描述 *</Text></div>
@@ -2822,22 +2702,23 @@ export function DormitoryManagement() {
 
           {/* 常见故障快捷胶囊标签 */}
           <div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginBottom: 4 }}>常见报修故障点击快速输入：</div>
+            <div style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginBottom: 4 }}>常见报修故障点击快速输入：</div>
             <div className="dorm-fault-tags">
               {quickFaults.map((fault) => (
-                <Tag
+                <StatusTag
                   key={fault}
                   size="small"
                   className="dorm-fault-tag-item"
                   onClick={() => setMaintenanceForm({ ...maintenanceForm, description: fault })}
                 >
                   {fault}
-                </Tag>
+                </StatusTag>
               ))}
             </div>
           </div>
         </Space>
       </Modal>
+      </AsyncState>
     </PageShell>
   );
 }

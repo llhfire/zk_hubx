@@ -1,25 +1,20 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router';
 import {
-  Card,
-  Empty,
-  Grid,
-  Table,
+  FormGrid,
   Button,
   Space,
-  Tag,
   Input,
   InputNumber,
   Select,
   Modal,
   Form,
   DatePicker,
-  Descriptions,
   Message,
   Dropdown,
   Menu,
   Tooltip,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconPlus,
   IconSearch,
@@ -30,22 +25,43 @@ import {
   IconEye,
   IconEdit,
   IconRefresh,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   ALL_JOB_LEVELS,
   ALL_EMPLOYMENT_STATUSES,
   DEPARTMENTS,
-  formatCurrency,
   EMPLOYMENT_STATUS,
   calcWorkDays,
 } from './mockData';
 import type { Employee, EmploymentStatus, JobLevel } from './mockData';
 import { useIntegration } from '../../../../integrations/IntegrationContext';
-import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  FilterBar,
+  MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
+
+const WECOM_BINDING_STATUS: StatusMap<string> = {
+  bound: { label: '已绑定', tone: 'success' },
+  conflict: { label: '冲突', tone: 'danger' },
+};
+
+const WECOM_SYNC_STATUS: StatusMap<string> = {
+  synced: { label: '已同步', tone: 'info' },
+};
 
 const EMPLOYEE_IMPORT_HEADERS = ['用户名', '姓名', '所属部门', '职位', '职级', '在职状态', '手机号', '邮箱', '入职日期', '转正时间', '合同到期日', '标准时薪', '试用期工资', '转正工资', '社保', '公积金', '每月工天'];
 
@@ -328,7 +344,7 @@ export function EmployeeList() {
       title: '职位',
       dataIndex: 'position',
       width: 100,
-      render: (pos: string) => <Tag>{pos}</Tag>,
+      render: (pos: string) => <StatusTag tone="neutral">{pos}</StatusTag>,
     },
     {
       title: '状态',
@@ -341,11 +357,7 @@ export function EmployeeList() {
       width: 105,
       render: (_: unknown, record: Employee) => {
         const binding = bindings.find(item => item.employeeId === record.id);
-        return binding?.bindingStatus === 'bound'
-          ? <Tag color="green">已绑定</Tag>
-          : binding?.bindingStatus === 'conflict'
-            ? <Tag color="red">冲突</Tag>
-            : <Tag color="gray">待绑定</Tag>;
+        return <StatusTag meta={resolveStatus(WECOM_BINDING_STATUS, binding?.bindingStatus, '待绑定')} />;
       },
     },
     {
@@ -353,12 +365,10 @@ export function EmployeeList() {
       width: 105,
       render: (_: unknown, record: Employee) => {
         const binding = bindings.find(item => item.employeeId === record.id);
-        return binding?.syncStatus === 'synced'
-          ? <Tag color="arcoblue">已同步</Tag>
-          : <Tag color="gray">未同步</Tag>;
+        return <StatusTag meta={resolveStatus(WECOM_SYNC_STATUS, binding?.syncStatus, '未同步')} />;
       },
     },
-    { title: '试用期工资', dataIndex: 'probationSalary', width: 120, render: (value?: number) => value == null ? '-' : formatCurrency(value), sorter: (a: Employee, b: Employee) => (a.probationSalary ?? 0) - (b.probationSalary ?? 0) },
+    { title: '试用期工资', dataIndex: 'probationSalary', width: 120, render: (value?: number) => value == null ? '-' : <MoneyText value={value} />, sorter: (a: Employee, b: Employee) => (a.probationSalary ?? 0) - (b.probationSalary ?? 0) },
     {
       title: '转正工资',
       dataIndex: 'regularSalary',
@@ -370,13 +380,13 @@ export function EmployeeList() {
         const adjustmentEffective = hasAdjustment
           && Boolean(record.salaryEffectiveDate)
           && record.salaryEffectiveDate! <= currentDate;
-        if (adjustmentEffective) return formatCurrency(adjustedSalary);
+        if (adjustmentEffective) return <MoneyText value={adjustedSalary} />;
         return <div>
-          <div>{formatCurrency(value)}</div>
+          <div><MoneyText value={value} /></div>
           {hasAdjustment && (
             <Tooltip content={`生效日期：${record.salaryEffectiveDate || '未设置'}`}>
-              <div style={{ marginTop: 2, color: 'var(--color-text-3)', fontSize: 12, cursor: 'help' }}>
-                {formatCurrency(adjustedSalary)}
+              <div style={{ marginTop: 2, color: 'var(--color-text-3)', fontSize: 'var(--text-xs)', cursor: 'help' }}>
+                <MoneyText value={adjustedSalary} />
               </div>
             </Tooltip>
           )}
@@ -391,14 +401,15 @@ export function EmployeeList() {
         return getCurrentSalary(a) - getCurrentSalary(b);
       },
     },
-    { title: '社保', dataIndex: 'socialSecurity', width: 100, render: (value?: number) => value == null ? '-' : formatCurrency(value) },
-    { title: '公积金', dataIndex: 'housingFund', width: 100, render: (value?: number) => value == null ? '-' : formatCurrency(value) },
-    { title: '转正时间', dataIndex: '转正Date', width: 110, render: (value: string) => value || '-' },
+    { title: '社保', dataIndex: 'socialSecurity', width: 100, render: (value?: number) => value == null ? '-' : <MoneyText value={value} /> },
+    { title: '公积金', dataIndex: 'housingFund', width: 100, render: (value?: number) => value == null ? '-' : <MoneyText value={value} /> },
+    { title: '转正时间', dataIndex: '转正Date', width: 110, render: (value: string) => value ? <DateText value={value} /> : '-' },
     { title: '每月工天', dataIndex: 'monthlyWorkdays', width: 100, render: (value?: number) => value == null ? '-' : `${value}天`, sorter: (a: Employee, b: Employee) => (a.monthlyWorkdays ?? 0) - (b.monthlyWorkdays ?? 0) },
     {
       title: '入职日期',
       dataIndex: 'hireDate',
       width: 110,
+      render: (value: string) => value ? <DateText value={value} /> : '-',
     },
     {
       title: '入职天数',
@@ -506,7 +517,7 @@ export function EmployeeList() {
           ]}
         />
 
-        <Card bordered={false} title="员工列表" className="employee-admin-list-card">
+        <SectionCard title="员工列表" className="employee-admin-list-card">
           <FilterBar
             actions={filtersActive ? (
               <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
@@ -569,15 +580,15 @@ export function EmployeeList() {
             {filtersActive && <span>已按当前条件筛选</span>}
           </div>
 
-        <Table
+        <DataTable
           columns={columns as any}
           data={filteredEmployees}
           rowKey="id"
           pagination={{ pageSize: 12, showTotal: true, showJumper: true }}
           scroll={{ x: 1860 }}
-          noDataElement={<Empty description="没有符合当前条件的员工" />}
+          emptyDescription="没有符合当前条件的员工"
         />
-        </Card>
+        </SectionCard>
       </PageShell>
 
       <Modal
@@ -608,28 +619,27 @@ export function EmployeeList() {
             { label: '转正时间', value: detailEmployee.转正Date || '-' },
             { label: '合同到期日', value: detailEmployee.contractEndDate || '-' },
             { label: '入职天数', value: `${calcWorkDays(detailEmployee.hireDate)}天` },
-            { label: '试用期工资', value: detailEmployee.probationSalary == null ? '-' : formatCurrency(detailEmployee.probationSalary) },
-            { label: '转正工资', value: detailEmployee.regularSalary == null ? '-' : formatCurrency(regularSalary) },
-            { label: '社保', value: detailEmployee.socialSecurity == null ? '-' : formatCurrency(detailEmployee.socialSecurity) },
-            { label: '公积金', value: detailEmployee.housingFund == null ? '-' : formatCurrency(detailEmployee.housingFund) },
+            { label: '试用期工资', value: detailEmployee.probationSalary == null ? '-' : <MoneyText value={detailEmployee.probationSalary} /> },
+            { label: '转正工资', value: detailEmployee.regularSalary == null ? '-' : <MoneyText value={regularSalary} /> },
+            { label: '社保', value: detailEmployee.socialSecurity == null ? '-' : <MoneyText value={detailEmployee.socialSecurity} /> },
+            { label: '公积金', value: detailEmployee.housingFund == null ? '-' : <MoneyText value={detailEmployee.housingFund} /> },
             { label: '每月工天', value: detailEmployee.monthlyWorkdays == null ? '-' : `${detailEmployee.monthlyWorkdays}天` },
             { label: '身份证号', value: detailEmployee.idCard || '-' },
             { label: '银行卡号', value: detailEmployee.bankAccount || '-' },
             { label: '紧急联系人', value: detailEmployee.emergencyContact || '-' },
             { label: '学历', value: detailEmployee.education || '-' },
             { label: '毕业院校', value: detailEmployee.school || '-' },
-            { label: '工作经历', value: detailEmployee.previousExperience || '-' },
+            { label: '工作经历', value: detailEmployee.previousExperience || '-', long: true },
           ];
 
           return (
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
-              <Descriptions
-                column={2}
-                border
-                data={descriptionData}
-                labelStyle={{ width: 110 }}
+              <DescriptionsCard
+                bare
+                columns={2}
+                items={descriptionData.map((item) => ({ ...item, key: item.label }))}
               />
-              <Card title="简历附件" bordered bodyStyle={{ padding: 14 }}>
+              <SectionCard title="简历附件">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <span>{detailEmployee.resumeAttachment || '暂未上传简历附件'}</span>
                   <Button
@@ -641,7 +651,7 @@ export function EmployeeList() {
                     下载
                   </Button>
                 </div>
-              </Card>
+              </SectionCard>
             </Space>
           );
         })()}
@@ -659,7 +669,7 @@ export function EmployeeList() {
         <div style={{ color: 'var(--color-text-3)', marginBottom: 12 }}>
           支持 .xlsx 文件。必填列：用户名、姓名、所属部门、职位、职级、在职状态、手机号、入职日期；其余列可选。
         </div>
-        {importFileName && <Tag color="arcoblue">{importFileName}</Tag>}
+        {importFileName && <StatusTag tone="info">{importFileName}</StatusTag>}
         {importLoading && <div style={{ padding: 32, textAlign: 'center' }}>正在解析 Excel...</div>}
         {importErrors.length > 0 && (
           <div style={{ marginTop: 12, color: 'rgb(var(--red-6))' }}>
@@ -667,7 +677,7 @@ export function EmployeeList() {
           </div>
         )}
         {!importLoading && importRows.length > 0 && (
-          <Table
+          <DataTable
             rowKey="jobNumber"
             pagination={false}
             data={importRows}
@@ -702,155 +712,95 @@ export function EmployeeList() {
         style={{ width: 760 }}
       >
         <Form form={form} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="用户名" field="jobNumber" rules={[{ required: true, message: '请输入用户名' }]}>
                 <Input placeholder="请输入用户名" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="姓名" field="name" rules={[{ required: true, message: '请输入姓名' }]}>
                 <Input placeholder="请输入姓名" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="所属部门" field="department" rules={[{ required: true, message: '请选择部门' }]}>
-                <Select placeholder="请选择部门" allowClear>
-                  {DEPARTMENTS.map(d => (
-                    <Select.Option key={d} value={d}>{d}</Select.Option>
-                  ))}
-                </Select>
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="职位" field="position" rules={[{ required: true, message: '请选择职位' }]}>
-                <Select placeholder="请选择职位" allowClear>
-                  {positions.map(p => (
-                    <Select.Option key={p} value={p}>{p}</Select.Option>
-                  ))}
-                </Select>
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="职级" field="level" rules={[{ required: true, message: '请选择职级' }]}>
-                <Select placeholder="请选择职级" allowClear>
-                  {ALL_JOB_LEVELS.map(l => (
-                    <Select.Option key={l} value={l}>{l}</Select.Option>
-                  ))}
-                </Select>
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="在职状态" field="employmentStatus" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态">
-                  {ALL_EMPLOYMENT_STATUSES.map(s => (
-                    <Select.Option key={s} value={s}>{s}</Select.Option>
-                  ))}
-                </Select>
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem
-                label="手机号"
-                field="phone"
-                rules={[
-                  { required: true, message: '请输入手机号' },
-                  { match: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
-                ]}
-              >
-                <Input placeholder="请输入手机号" />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem
-                label="邮箱"
-                field="email"
-                rules={[{ match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: '邮箱格式不正确' }]}
-              >
-                <Input placeholder="请输入邮箱" />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="入职日期" field="hireDate" rules={[{ required: true, message: '请选择入职日期' }]}>
-                <DatePicker placeholder="请选择入职日期" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="合同到期日" field="contractEndDate">
-                <DatePicker placeholder="请选择合同到期日" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="试用期工资" field="probationSalary" rules={[{ required: true, message: '请输入试用期工资' }]}>
-                <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入试用期工资" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="转正工资" field="regularSalary" rules={[{ required: true, message: '请输入转正工资' }]}>
-                <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入转正工资" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="社保" field="socialSecurity" rules={[{ required: true, message: '请输入社保金额' }]}>
-                <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入社保金额" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="公积金" field="housingFund" rules={[{ required: true, message: '请输入公积金金额' }]}>
-                <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入公积金金额" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="每月工天" field="monthlyWorkdays">
-                <InputNumber min={0} precision={1} suffix="天" placeholder="请输入每月工天" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="转正时间" field="转正Date">
-                <DatePicker placeholder="请选择转正时间" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="薪资调整" field="salaryAdjustment">
-                <InputNumber precision={0} prefix="¥" placeholder="加薪输入正数，降薪输入负数" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="生效时间" field="salaryEffectiveDate">
-                <DatePicker placeholder="请选择生效时间" style={{ width: '100%' }} />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
-              <FormItem label="学历" field="education">
-                <Input placeholder="如 本科/硕士/大专" />
-              </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
-              <FormItem label="毕业院校" field="school">
-                <Input placeholder="请输入毕业院校" />
-              </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+            <FormItem label="所属部门" field="department" rules={[{ required: true, message: '请选择部门' }]}>
+              <Select placeholder="请选择部门" allowClear>
+                {DEPARTMENTS.map(d => (
+                  <Select.Option key={d} value={d}>{d}</Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+            <FormItem label="职位" field="position" rules={[{ required: true, message: '请选择职位' }]}>
+              <Select placeholder="请选择职位" allowClear>
+                {positions.map(p => (
+                  <Select.Option key={p} value={p}>{p}</Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+            <FormItem label="职级" field="level" rules={[{ required: true, message: '请选择职级' }]}>
+              <Select placeholder="请选择职级" allowClear>
+                {ALL_JOB_LEVELS.map(l => (
+                  <Select.Option key={l} value={l}>{l}</Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+            <FormItem label="在职状态" field="employmentStatus" rules={[{ required: true, message: '请选择状态' }]}>
+              <Select placeholder="请选择状态">
+                {ALL_EMPLOYMENT_STATUSES.map(s => (
+                  <Select.Option key={s} value={s}>{s}</Select.Option>
+                ))}
+              </Select>
+            </FormItem>
+            <FormItem
+              label="手机号"
+              field="phone"
+              rules={[
+                { required: true, message: '请输入手机号' },
+                { match: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
+              ]}
+            >
+              <Input placeholder="请输入手机号" />
+            </FormItem>
+            <FormItem
+              label="邮箱"
+              field="email"
+              rules={[{ match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: '邮箱格式不正确' }]}
+            >
+              <Input placeholder="请输入邮箱" />
+            </FormItem>
+            <FormItem label="入职日期" field="hireDate" rules={[{ required: true, message: '请选择入职日期' }]}>
+              <DatePicker placeholder="请选择入职日期" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="合同到期日" field="contractEndDate">
+              <DatePicker placeholder="请选择合同到期日" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="试用期工资" field="probationSalary" rules={[{ required: true, message: '请输入试用期工资' }]}>
+              <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入试用期工资" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="转正工资" field="regularSalary" rules={[{ required: true, message: '请输入转正工资' }]}>
+              <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入转正工资" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="社保" field="socialSecurity" rules={[{ required: true, message: '请输入社保金额' }]}>
+              <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入社保金额" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="公积金" field="housingFund" rules={[{ required: true, message: '请输入公积金金额' }]}>
+              <InputNumber min={0} precision={0} prefix="¥" placeholder="请输入公积金金额" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="每月工天" field="monthlyWorkdays">
+              <InputNumber min={0} precision={1} suffix="天" placeholder="请输入每月工天" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="转正时间" field="转正Date">
+              <DatePicker placeholder="请选择转正时间" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="薪资调整" field="salaryAdjustment">
+              <InputNumber precision={0} prefix="¥" placeholder="加薪输入正数，降薪输入负数" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="生效时间" field="salaryEffectiveDate">
+              <DatePicker placeholder="请选择生效时间" style={{ width: '100%' }} />
+            </FormItem>
+            <FormItem label="学历" field="education">
+              <Input placeholder="如 本科/硕士/大专" />
+            </FormItem>
+            <FormItem label="毕业院校" field="school">
+              <Input placeholder="请输入毕业院校" />
+            </FormItem>
+          </FormGrid>
         </Form>
       </Modal>
     </>

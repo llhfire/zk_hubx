@@ -1,13 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
   Grid,
-  Statistic,
-  Table,
   Button,
   Space,
-  Tag,
   Tabs,
   Modal,
   Form,
@@ -22,20 +18,30 @@ import {
   Descriptions,
   Divider,
   Tooltip,
-} from '@arco-design/web-react';
+  FormGrid,
+} from '@/design-system';
 import {
   IconCalendar,
   IconPlus,
   IconEdit,
   IconDelete,
-  IconClockCircle,
-  IconUser,
-  IconFile,
-  IconCheckCircle,
   IconCloseCircle,
   IconLocation,
   IconUserGroup,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  EmptyState,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  STATUS_TONE_VARS,
+  StatusTag,
+  type StatusMap,
+  SectionTabs,
+  SectionCard,
+} from '@/design-system';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -196,60 +202,81 @@ export function MeetingManagement() {
     });
   };
 
-  const roomStatusLabels: Record<string, { label: string; color: string }> = {
-    available:   { label: '空闲', color: 'var(--success-500)' },
-    occupied:    { label: '使用中', color: 'var(--primary)' },
-    maintenance: { label: '维护中', color: 'var(--destructive-500)' },
+  const roomStatusLabels: StatusMap<MeetingRoom['status']> = {
+    available:   { label: '空闲', tone: 'success' },
+    occupied:    { label: '使用中', tone: 'info' },
+    maintenance: { label: '维护中', tone: 'danger' },
   };
 
-  const meetingStatusLabels: Record<string, { label: string; color: string }> = {
-    scheduled:  { label: '已预约', color: 'var(--primary)' },
-    ongoing:    { label: '进行中', color: 'var(--success-500)' },
-    completed:  { label: '已结束', color: 'var(--muted-foreground)' },
-    cancelled:  { label: '已取消', color: 'var(--destructive-500)' },
+  const meetingStatusLabels: StatusMap<Meeting['status']> = {
+    scheduled:  { label: '已预约', tone: 'info' },
+    ongoing:    { label: '进行中', tone: 'success' },
+    completed:  { label: '已结束', tone: 'neutral' },
+    cancelled:  { label: '已取消', tone: 'danger' },
+  };
+
+  const meetingPriorityLabels: StatusMap<Meeting['priority']> = {
+    high:   { label: '高', tone: 'danger' },
+    normal: { label: '普通', tone: 'info' },
+    low:    { label: '低', tone: 'neutral' },
   };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <PageShell>
+      <PageHeader
+        title="会议管理"
+        description="维护会议室、会议排期与会议纪要。"
+      />
       {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconLocation style={{ color: 'var(--primary)' }} />会议室</span>} value={summary.totalRooms} suffix="间" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />空闲</span>} value={summary.availableRooms} suffix="间" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--warning-500)' }} />今日会议</span>} value={summary.todayMeetings} suffix="场" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconClockCircle style={{ color: 'var(--primary)' }} />待开会议</span>} value={summary.upcomingMeetings} suffix="场" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconFile style={{ color: 'var(--chart-5)' }} />会议总数</span>} value={summary.totalMeetings} suffix="场" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCheckCircle style={{ color: 'var(--success-500)' }} />已完成</span>} value={summary.completedMeetings} suffix="场" /></Card></Col>
-      </Row>
+      <MetricGrid items={[
+        { key: 'rooms', label: '会议室', value: summary.totalRooms, detail: '间' },
+        { key: 'available', label: '空闲', value: summary.availableRooms, detail: '间', tone: 'success' },
+        { key: 'today', label: '今日会议', value: summary.todayMeetings, detail: '场' },
+        { key: 'upcoming', label: '待开会议', value: summary.upcomingMeetings, detail: '场' },
+        { key: 'total', label: '会议总数', value: summary.totalMeetings, detail: '场' },
+        { key: 'completed', label: '已完成', value: summary.completedMeetings, detail: '场', tone: 'success' },
+      ]} />
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="meetings" title={<span><IconCalendar style={{ fontSize: 16 }} /> 会议安排 <Badge count={summary.upcomingMeetings} color="arcoblue" /></span>} />
-          <TabPane key="rooms" title={<span><IconLocation style={{ fontSize: 16 }} /> 会议室管理</span>} />
-          <TabPane key="minutes" title={<span><IconEdit style={{ fontSize: 16 }} /> 会议记录</span>} />
-        </Tabs>
+      <SectionCard bordered={false}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'meetings',
+              label: <span><IconCalendar style={{ fontSize: 'var(--text-base)' }} /> 会议安排 <Badge count={summary.upcomingMeetings} color="arcoblue" /></span>,
+            },
+            {
+              key: 'rooms',
+              label: <span><IconLocation style={{ fontSize: 'var(--text-base)' }} /> 会议室管理</span>,
+            },
+            {
+              key: 'minutes',
+              label: <span><IconEdit style={{ fontSize: 'var(--text-base)' }} /> 会议记录</span>,
+            },
+          ]}
+        />
 
         <div style={{ paddingTop: 16 }}>
           {/* 会议安排 Tab */}
           {activeTab === 'meetings' && (
             <div>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="primary" icon={<IconPlus />} onClick={handleAddMeeting}>预约会议</Button>
-              </div>
-              <Table
+              <DataTable
+                actions={<Button type="primary" icon={<IconPlus />} onClick={handleAddMeeting}>预约会议</Button>}
                 columns={[
                   { title: '会议主题', dataIndex: 'title', width: 180, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                   {
                     title: '优先级', dataIndex: 'priority', width: 70,
-                    render: (p: string) => <Tag color={p === 'high' ? 'var(--destructive-500)' : p === 'normal' ? 'var(--primary)' : 'var(--muted-foreground)'}>{p === 'high' ? '高' : p === 'normal' ? '普通' : '低'}</Tag>,
+                    render: (p: Meeting['priority']) => <StatusTag meta={meetingPriorityLabels[p]} />,
                   },
                   { title: '会议室', dataIndex: 'roomName', width: 110 },
-                  { title: '时间', dataIndex: 'startTime', width: 200, render: (_: unknown, row: Meeting) => `${row.startTime} ~ ${row.endTime.slice(11)}` },
+                  { title: '时间', dataIndex: 'startTime', width: 220, render: (_: unknown, row: Meeting) => <><DateText value={row.startTime} mode="datetime" /> ~ {row.endTime.slice(11)}</> },
                   { title: '组织人', dataIndex: 'organizer', width: 70 },
-                  { title: '参会人', dataIndex: 'attendees', width: 120, render: (a: string[]) => <Avatar.Group size={24} maxCount={4}>{a.map(u => <Avatar key={u} style={{ background: 'var(--primary)', fontSize: 12 }}>{u.slice(0, 1)}</Avatar>)}</Avatar.Group> },
+                  { title: '参会人', dataIndex: 'attendees', width: 120, render: (a: string[]) => <Avatar.Group size={24} maxCount={4}>{a.map(u => <Avatar key={u} style={{ background: 'var(--primary)', fontSize: 'var(--text-xs)' }}>{u.slice(0, 1)}</Avatar>)}</Avatar.Group> },
                   {
                     title: '状态', dataIndex: 'status', width: 70,
-                    render: (s: string) => <Tag color={meetingStatusLabels[s]?.color || 'var(--muted-foreground)'}>{meetingStatusLabels[s]?.label || s}</Tag>,
+                    render: (s: Meeting['status']) => <StatusTag meta={meetingStatusLabels[s]} />,
                   },
                   {
                     title: '操作', width: 180,
@@ -294,9 +321,9 @@ export function MeetingManagement() {
               <Row gutter={16}>
                 {rooms.map(room => (
                   <Col span={8} key={room.id} style={{ marginBottom: 16 }}>
-                    <Card
+                    <SectionCard
                       size="small"
-                      style={{ borderRadius: 8, borderTop: `3px solid ${roomStatusLabels[room.status].color}` }}
+                      style={{ borderRadius: 'var(--radius-md)', borderTop: `3px solid ${STATUS_TONE_VARS[roomStatusLabels[room.status].tone].fg}` }}
                       extra={
                         <Space>
                           <Button type="text" size="small" icon={<IconEdit />} onClick={() => handleEditRoom(room)} />
@@ -307,17 +334,17 @@ export function MeetingManagement() {
                       }
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: 16 }}>{room.name}</span>
-                        <Tag color={roomStatusLabels[room.status].color}>{roomStatusLabels[room.status].label}</Tag>
+                        <span style={{ fontWeight: 600, fontSize: 'var(--text-base)' }}>{room.name}</span>
+                        <StatusTag meta={roomStatusLabels[room.status]} />
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-2)', marginBottom: 8 }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', marginBottom: 8 }}>
                         <div><IconLocation style={{ marginRight: 4 }} /> {room.location}</div>
                         <div><IconUserGroup style={{ marginRight: 4 }} /> 容量 {room.capacity} 人</div>
                       </div>
                       <Space size={4} wrap>
-                        {room.equipment.map(e => <Tag key={e} size="small">{e}</Tag>)}
+                        {room.equipment.map(e => <StatusTag key={e} size="small">{e}</StatusTag>)}
                       </Space>
-                    </Card>
+                    </SectionCard>
                   </Col>
                 ))}
               </Row>
@@ -328,56 +355,53 @@ export function MeetingManagement() {
           {activeTab === 'minutes' && (
             <div>
               {mockMinutes.length === 0 ? (
-                <Typography.Paragraph style={{ textAlign: 'center', color: 'var(--color-text-3)', padding: '40px 0' }}>
-                  暂无会议记录
-                </Typography.Paragraph>
+                <EmptyState description="暂无会议记录" />
               ) : (
                 mockMinutes.map(min => (
-                  <Card key={min.id} size="small" style={{ marginBottom: 16 }}>
+                  <SectionCard key={min.id} size="small" style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <Title heading={6} style={{ margin: 0 }}><IconEdit style={{ marginRight: 4 }} /> {min.meetingTitle}</Title>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>{min.date}</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{min.date}</Typography.Text>
                     </div>
 
                     {min.decisions.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <Typography.Text style={{ fontWeight: 600, fontSize: 14 }}>决议事项：</Typography.Text>
+                        <Typography.Text style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>决议事项：</Typography.Text>
                         <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-                          {min.decisions.map((d, i) => <li key={i} style={{ fontSize: 14 }}>{d}</li>)}
+                          {min.decisions.map((d, i) => <li key={i} style={{ fontSize: 'var(--text-sm)' }}>{d}</li>)}
                         </ul>
                       </div>
                     )}
 
                     {min.actionItems.length > 0 && (
                       <div>
-                        <Typography.Text style={{ fontWeight: 600, fontSize: 14 }}>行动项：</Typography.Text>
+                        <Typography.Text style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>行动项：</Typography.Text>
                         {/* Arco 的 rowKey 只支持 string 或 (record) => Key，拿不到下标；
                             这里先把下标烘进行数据，保证同一会议内多次出现同名待办也不撞 key。 */}
-                        <Table
+                        <DataTable
                           size="small"
                           columns={[
                             { title: '任务', dataIndex: 'task', width: 200 },
                             { title: '负责人', dataIndex: 'owner', width: 70 },
-                            { title: '截止日期', dataIndex: 'deadline', width: 100 },
+                            { title: '截止日期', dataIndex: 'deadline', width: 100, render: (value: string) => <DateText value={value} /> },
                             {
                               title: '状态', dataIndex: 'done', width: 70,
-                              render: (done: boolean) => done ? <Tag color="var(--success-500)" size="small">已完成</Tag> : <Tag color="var(--warning-500)" size="small">待办</Tag>,
+                              render: (done: boolean) => done ? <StatusTag tone="success">已完成</StatusTag> : <StatusTag tone="warning">待办</StatusTag>,
                             },
                           ] as any}
                           data={min.actionItems.map((item, idx) => ({ ...item, __rowKey: `${min.id}-${idx}` }))}
                           rowKey="__rowKey"
                           pagination={false}
-                          style={{ marginTop: 8 }}
                         />
                       </div>
                     )}
-                  </Card>
+                  </SectionCard>
                 ))
               )}
             </div>
           )}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 会议室弹窗 */}
       <Modal
@@ -393,13 +417,10 @@ export function MeetingManagement() {
           <FormItem label="名称" field="name" rules={[{ required: true, message: '请输入名称' }]}>
             <Input placeholder="如：会议室 A" />
           </FormItem>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="容量" field="capacity" rules={[{ required: true, message: '请输入容量' }]}>
                 <Input type="number" placeholder="人数" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="状态" field="status" rules={[{ required: true }]}>
                 <Select placeholder="选择状态">
                   <SelectOption value="available">空闲</SelectOption>
@@ -407,8 +428,7 @@ export function MeetingManagement() {
                   <SelectOption value="maintenance">维护中</SelectOption>
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="位置" field="location" rules={[{ required: true, message: '请输入位置' }]}>
             <Input placeholder="如：3楼东侧" />
           </FormItem>
@@ -432,8 +452,7 @@ export function MeetingManagement() {
           <FormItem label="会议主题" field="title" rules={[{ required: true, message: '请输入主题' }]}>
             <Input placeholder="会议主题" />
           </FormItem>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="会议室" field="roomName" rules={[{ required: true, message: '请选择会议室' }]}>
                 <Select placeholder="选择会议室">
                   {rooms.filter(r => r.status === 'available').map(r => (
@@ -441,8 +460,6 @@ export function MeetingManagement() {
                   ))}
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="优先级" field="priority" initialValue="normal">
                 <Select>
                   <SelectOption value="high">高</SelectOption>
@@ -450,20 +467,15 @@ export function MeetingManagement() {
                   <SelectOption value="low">低</SelectOption>
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="开始时间" field="startTime" rules={[{ required: true }]}>
                 <DatePicker showTime placeholder="选择开始时间" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="结束时间" field="endTime" rules={[{ required: true }]}>
                 <DatePicker showTime placeholder="选择结束时间" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="组织人" field="organizer" rules={[{ required: true, message: '请输入组织人' }]}>
             <Input placeholder="组织人姓名" />
           </FormItem>
@@ -475,6 +487,6 @@ export function MeetingManagement() {
           </FormItem>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

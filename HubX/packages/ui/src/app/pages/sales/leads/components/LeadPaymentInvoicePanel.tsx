@@ -1,30 +1,37 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
+  confirmAction,
+  DataTable,
+  FileList,
+  MoneyText,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+  type StatusTone,
+} from '@/design-system';
+import {
   Button,
   DatePicker,
   Form,
-  Grid,
+  FormGrid,
   Input,
   InputNumber,
   Message,
   Modal,
   Select,
   Space,
-  Table,
-  Tag,
   Tooltip,
   Upload,
-} from '@arco-design/web-react';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+} from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import {
   IconDelete,
-  IconDownload,
   IconDownCircle,
   IconEdit,
   IconEye,
   IconFile,
   IconPlus,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
   getPaymentPeriodMetrics,
   getPaymentPlanSummary,
@@ -176,20 +183,25 @@ function getFileNames(files: UploadItem[]) {
   return files.map(file => file.name || file.originFile?.name || '').filter(Boolean);
 }
 
-function paymentStatusTag(status: ReturnType<typeof getPaymentPeriodMetrics>['paymentStatus']) {
-  const color = status === '已回款'
-    ? 'green'
-    : status === '已逾期'
-      ? 'red'
-      : status === '部分回款'
-        ? 'orange'
-        : 'gray';
-  return <Tag color={color}>{status}</Tag>;
+const PERIOD_PAYMENT_STATUS: StatusMap<string> = {
+  已回款: { label: '已回款', tone: 'success' },
+  部分回款: { label: '部分回款', tone: 'warning' },
+  已逾期: { label: '已逾期', tone: 'danger' },
+  未回款: { label: '未回款', tone: 'neutral' },
+};
+
+const PERIOD_INVOICE_STATUS: StatusMap<string> = {
+  已开票: { label: '已开票', tone: 'info' },
+  部分开票: { label: '部分开票', tone: 'purple' },
+  未开票: { label: '未开票', tone: 'neutral' },
+};
+
+function paymentStatusTag(status: string) {
+  return <StatusTag meta={resolveStatus(PERIOD_PAYMENT_STATUS, status)} />;
 }
 
-function invoiceStatusTag(status: ReturnType<typeof getPaymentPeriodMetrics>['invoiceStatus']) {
-  const color = status === '已开票' ? 'arcoblue' : status === '部分开票' ? 'purple' : 'gray';
-  return <Tag color={color}>{status}</Tag>;
+function invoiceStatusTag(status: string) {
+  return <StatusTag meta={resolveStatus(PERIOD_INVOICE_STATUS, status)} />;
 }
 
 export function LeadPaymentInvoicePanel({ contractAmount, projectMode = false, customerInvoiceInfo, projectId, projectName, projectNo, contractId }: LeadPaymentInvoicePanelProps) {
@@ -346,10 +358,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
   };
 
   const deletePaymentRecord = (period: PaymentPeriod, record: PaymentRecord) => {
-    Modal.confirm({
+    confirmAction({
       title: '删除回款记录',
       content: `确认删除 ${formatCurrency(record.amount)} 的回款记录？删除后将重新计算本期回款状态。`,
-      okButtonProps: { status: 'danger' },
+      tone: 'danger',
       onOk: () => {
         setPeriods(current => current.map(item => item.id === period.id
           ? { ...item, payments: item.payments.filter(payment => payment.id !== record.id) }
@@ -360,10 +372,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
   };
 
   const deleteInvoiceRecord = (period: PaymentPeriod, record: InvoiceRecord) => {
-    Modal.confirm({
+    confirmAction({
       title: '删除开票记录',
       content: `确认删除 ${formatCurrency(record.amount)} 的开票记录？删除后将重新计算本期开票状态。`,
-      okButtonProps: { status: 'danger' },
+      tone: 'danger',
       onOk: () => {
         setPeriods(current => current.map(item => item.id === period.id
           ? { ...item, invoices: item.invoices.filter(invoice => invoice.id !== record.id) }
@@ -373,12 +385,13 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
     });
   };
 
-  const renderFiles = (files: string[], _label: string) => files.length ? (
-    <div className="lead-payment-file-list">
-      {files.map(file => (
-        <Tag key={file} icon={<IconFile />}>{file}</Tag>
-      ))}
-    </div>
+  const renderFiles = (files: string[]) => files.length ? (
+    <FileList
+      items={files.map((file, index) => ({
+        key: `${file}-${index}`,
+        name: file,
+      }))}
+    />
   ) : '-';
 
   const renderPaymentDetails = (period: PaymentPeriod) => {
@@ -390,7 +403,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         dataIndex: 'amount',
         width: 120,
         render: (amount: number) => (
-          <strong className="lead-payment-record-amount is-paid">{formatCurrency(amount)}</strong>
+          <strong className="lead-payment-record-amount is-paid"><MoneyText value={amount} /></strong>
         ),
       },
       { title: '回款方式', dataIndex: 'paymentMethod', width: 96 },
@@ -398,7 +411,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         title: '回款凭证',
         dataIndex: 'voucherFiles',
         width: 180,
-        render: (files: string[]) => renderFiles(files, '回款凭证'),
+        render: (files: string[]) => renderFiles(files),
       },
       { title: '回款说明', dataIndex: 'note', render: (note: string) => note || '-' },
       {
@@ -424,7 +437,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         dataIndex: 'amount',
         width: 120,
         render: (amount: number) => (
-          <strong className="lead-payment-record-amount is-invoiced">{formatCurrency(amount)}</strong>
+          <strong className="lead-payment-record-amount is-invoiced"><MoneyText value={amount} /></strong>
         ),
       },
       { title: '发票类型', dataIndex: 'invoiceType', width: 132 },
@@ -433,7 +446,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         title: '发票文件',
         dataIndex: 'invoiceFiles',
         width: 180,
-        render: (files: string[]) => renderFiles(files, '发票文件'),
+        render: (files: string[]) => renderFiles(files),
       },
       { title: '备注', dataIndex: 'note', render: (note: string) => note || '-' },
       {
@@ -465,9 +478,9 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
                   <span className="lead-payment-detail-count">{period.payments.length} 笔</span>
                 </div>
                 <div className="lead-payment-detail-summary">
-                  累计回款 <strong>{formatCurrency(metrics.paidAmount)}</strong>
+                  累计回款 <strong><MoneyText value={metrics.paidAmount} /></strong>
                   <span className="lead-payment-detail-separator">·</span>
-                  剩余可登记 {formatCurrency(metrics.remainingPaymentAmount)}
+                  剩余可登记 <MoneyText value={metrics.remainingPaymentAmount} />
                 </div>
               </div>
             </div>
@@ -481,14 +494,14 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
               新增回款记录
             </Button>
           </div>
-          <Table
+          <DataTable
             rowKey="id"
             size="small"
             pagination={false}
             columns={paymentColumns}
             data={period.payments}
             scroll={{ x: 900 }}
-            noDataElement="暂无回款记录"
+            emptyDescription="暂无回款记录"
             className="lead-payment-detail-table"
           />
         </section>
@@ -503,9 +516,9 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
                   <span className="lead-payment-detail-count">{period.invoices.length} 笔</span>
                 </div>
                 <div className="lead-payment-detail-summary">
-                  累计开票 <strong>{formatCurrency(metrics.invoicedAmount)}</strong>
+                  累计开票 <strong><MoneyText value={metrics.invoicedAmount} /></strong>
                   <span className="lead-payment-detail-separator">·</span>
-                  剩余可登记 {formatCurrency(metrics.remainingInvoiceAmount)}
+                  剩余可登记 <MoneyText value={metrics.remainingInvoiceAmount} />
                 </div>
               </div>
             </div>
@@ -519,14 +532,14 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
               新增开票记录
             </Button>
           </div>
-          <Table
+          <DataTable
             rowKey="id"
             size="small"
             pagination={false}
             columns={invoiceColumns}
             data={period.invoices}
             scroll={{ x: 980 }}
-            noDataElement="暂无开票记录"
+            emptyDescription="暂无开票记录"
             className="lead-payment-detail-table"
           />
         </section>
@@ -549,7 +562,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
       title: '应回款金额',
       dataIndex: 'expectedAmount',
       width: 122,
-      render: (amount: number) => <span className="lead-payment-primary-amount">{formatCurrency(amount)}</span>,
+      render: (amount: number) => <span className="lead-payment-primary-amount"><MoneyText value={amount} /></span>,
     },
     { title: '预计回款日期', dataIndex: 'expectedDate', width: 116 },
     {
@@ -559,7 +572,7 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         const metrics = getPaymentPeriodMetrics(period);
         return (
           <div>
-            <div className="lead-payment-primary-amount is-paid">{formatCurrency(metrics.paidAmount)}</div>
+            <div className="lead-payment-primary-amount is-paid"><MoneyText value={metrics.paidAmount} /></div>
             <div className="lead-payment-cell-note">最后回款：{metrics.lastPaymentDate || '-'}</div>
           </div>
         );
@@ -572,8 +585,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         const metrics = getPaymentPeriodMetrics(period);
         return (
           <div>
-            <div className="lead-payment-primary-amount is-invoiced">{formatCurrency(metrics.invoicedAmount)}</div>
-            <div className="lead-payment-cell-note">待开：{formatCurrency(metrics.remainingInvoiceAmount)}</div>
+            <div className="lead-payment-primary-amount is-invoiced"><MoneyText value={metrics.invoicedAmount} /></div>
+            <div className="lead-payment-cell-note">待开：<MoneyText value={metrics.remainingInvoiceAmount} /></div>
           </div>
         );
       },
@@ -628,23 +641,23 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
       <div className="lead-payment-summary">
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">合同总额</div>
-          <div className="lead-payment-summary-value">{formatCurrency(contractAmount)}</div>
+          <div className="lead-payment-summary-value"><MoneyText value={contractAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">实际回款金额</div>
-          <div className="lead-payment-summary-value is-paid">{formatCurrency(summary.paidAmount)}</div>
+          <div className="lead-payment-summary-value is-paid"><MoneyText value={summary.paidAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">待回款金额</div>
-          <div className="lead-payment-summary-value is-pending">{formatCurrency(pendingAmount)}</div>
+          <div className="lead-payment-summary-value is-pending"><MoneyText value={pendingAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">已开票金额</div>
-          <div className="lead-payment-summary-value is-invoiced">{formatCurrency(summary.invoicedAmount)}</div>
+          <div className="lead-payment-summary-value is-invoiced"><MoneyText value={summary.invoicedAmount} /></div>
         </div>
       </div>
 
-      <Table
+      <DataTable
         rowKey="id"
         size="small"
         pagination={false}
@@ -666,8 +679,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         style={{ width: 680, maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form form={paymentForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+          <FormGrid columns={2}>
+            <div>
               <FormItem
                 label="回款金额"
                 field="amount"
@@ -683,10 +696,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
                 />
               </FormItem>
               <div className="lead-payment-modal-limit">
-                本期剩余可登记 {formatCurrency(getPaymentLimit(paymentEditor))}
+                本期剩余可登记 <MoneyText value={getPaymentLimit(paymentEditor)} />
               </div>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem
                 label="实际回款日期"
                 field="paymentDate"
@@ -694,8 +707,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
               >
                 <DatePicker style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+            </div>
+          </FormGrid>
           <FormItem
             label="回款方式"
             field="paymentMethod"
@@ -740,8 +753,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
         style={{ width: 720, maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form form={invoiceForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+          <FormGrid columns={2}>
+            <div>
               <FormItem
                 label="开票金额"
                 field="amount"
@@ -757,10 +770,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
                 />
               </FormItem>
               <div className="lead-payment-modal-limit">
-                本期剩余可登记 {formatCurrency(getInvoiceLimit(invoiceEditor))}
+                本期剩余可登记 <MoneyText value={getInvoiceLimit(invoiceEditor)} />
               </div>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem
                 label="发票类型"
                 field="invoiceType"
@@ -772,10 +785,10 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
                   ))}
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+            </div>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <div>
               <FormItem
                 label="开票日期"
                 field="invoiceDate"
@@ -783,8 +796,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
               >
                 <DatePicker style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem
                 label="发票抬头"
                 field="invoiceTitle"
@@ -792,8 +805,8 @@ function StandardPaymentInvoicePanel({ contractAmount }: Pick<LeadPaymentInvoice
               >
                 <Input placeholder="请输入发票抬头" maxLength={100} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+            </div>
+          </FormGrid>
           <FormItem label="发票文件">
             <Upload
               autoUpload={false}
@@ -886,40 +899,24 @@ function getProjectInitialPeriods(): PaymentPeriod[] {
 
 function ProjectStatusTag({
   status,
-  color,
+  tone,
   onClick,
 }: {
   status: string;
-  color: string;
+  tone: StatusTone;
   onClick: () => void;
 }) {
-  return (
-    <button type="button" className="project-payment-status-tag" onClick={onClick}>
-      <Tag color={color} size="small">{status}</Tag>
-    </button>
-  );
+  return <StatusTag tone={tone} size="small" onClick={onClick}>{status}</StatusTag>;
 }
 
 function ProjectRecordFiles({
   files,
-  label: _label,
-  downloadable: _downloadable = false,
 }: {
   files: string[];
-  label: string;
-  downloadable?: boolean;
 }) {
   if (!files.length) return <span className="project-payment-empty-value">-</span>;
 
-  return (
-    <div className="project-payment-file-list">
-      {files.map(file => (
-        <div key={file} className="project-payment-file-item">
-          <Tag icon={<IconFile />}>{file}</Tag>
-        </div>
-      ))}
-    </div>
-  );
+  return <FileList items={files.map((file, index) => ({ key: `${file}-${index}`, name: file }))} />;
 }
 
 const attachmentColumns = [
@@ -927,7 +924,7 @@ const attachmentColumns = [
     title: '附件类型',
     dataIndex: 'type',
     width: 124,
-    render: (type: string) => <Tag size="small">{type}</Tag>,
+    render: (type: string) => <StatusTag size="small">{type}</StatusTag>,
   },
   {
     title: '附件名称',
@@ -946,7 +943,7 @@ const attachmentColumns = [
     title: '附件文件',
     dataIndex: 'files',
     width: 180,
-    render: (files: string[]) => <ProjectRecordFiles files={files} label="附件" downloadable />,
+    render: (files: string[]) => <ProjectRecordFiles files={files} />,
   },
 ];
 
@@ -1307,15 +1304,15 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
 
     return {
       payment: paidAmount >= expectedAmount && expectedAmount > 0
-        ? { label: '已回款', color: 'green' }
+        ? PERIOD_PAYMENT_STATUS.已回款
         : paidAmount > 0
-          ? { label: '部分回款', color: 'orange' }
-          : { label: '未回款', color: 'gray' },
+          ? PERIOD_PAYMENT_STATUS.部分回款
+          : PERIOD_PAYMENT_STATUS.未回款,
       invoice: invoicedAmount >= expectedAmount && expectedAmount > 0
-        ? { label: '已开票', color: 'arcoblue' }
+        ? PERIOD_INVOICE_STATUS.已开票
         : invoicedAmount > 0
-          ? { label: '部分开票', color: 'purple' }
-          : { label: '未开票', color: 'gray' },
+          ? PERIOD_INVOICE_STATUS.部分开票
+          : PERIOD_INVOICE_STATUS.未开票,
     };
   };
 
@@ -1346,11 +1343,11 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
             <div className="project-payment-period-cell is-split-parent">
               <div className="project-payment-period-parent-title">
                 <strong>{getProjectPeriodLabel(period, index)}</strong>
-                <Tag color="arcoblue" size="small">已拆分</Tag>
+                <StatusTag tone="info" size="small">已拆分</StatusTag>
               </div>
               <div className="project-payment-period-parent-statuses">
-                <Tag color={statuses.payment.color} size="small">{statuses.payment.label}</Tag>
-                <Tag color={statuses.invoice.color} size="small">{statuses.invoice.label}</Tag>
+                <StatusTag meta={statuses.payment} />
+                <StatusTag meta={statuses.invoice} />
               </div>
             </div>
           );
@@ -1362,7 +1359,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
             <div className="project-payment-period-statuses">
               <ProjectStatusTag
                 status={hasPayment ? '已回款' : '未回款'}
-                color={hasPayment ? 'green' : 'gray'}
+                tone={hasPayment ? 'success' : 'neutral'}
                 onClick={() => {
                   const record = period.payments[period.payments.length - 1];
                   if (record) setPaymentViewer({ record });
@@ -1371,7 +1368,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
               />
               <ProjectStatusTag
                 status={invoiceApplication?.status || (hasInvoice ? '已开票' : '未开票')}
-                color={invoiceApplication?.status === '开票中' ? 'orange' : hasInvoice ? 'arcoblue' : 'gray'}
+                tone={invoiceApplication?.status === '开票中' ? 'warning' : hasInvoice ? 'info' : 'neutral'}
                 onClick={() => {
                   const record = period.invoices[period.invoices.length - 1];
                   if (invoiceApplication?.status === '开票中') Message.info('开票申请已提交，财务正在处理中');
@@ -1408,7 +1405,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       width: 146,
       render: (_: unknown, period: PaymentPeriod) => (
         <div>
-          <div className="lead-payment-primary-amount">{formatCurrency(period.expectedAmount)}</div>
+          <div className="lead-payment-primary-amount"><MoneyText value={period.expectedAmount} /></div>
           <div className="lead-payment-cell-note">预计日期：{period.expectedDate || '-'}</div>
         </div>
       ),
@@ -1428,7 +1425,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         return (
           <div>
             <div className="lead-payment-primary-amount is-paid">
-              {paidAmount ? formatCurrency(paidAmount) : '-'}
+              {paidAmount ? <MoneyText value={paidAmount} /> : '-'}
             </div>
             <div className="lead-payment-cell-note">回款日期：{latestPayment?.paymentDate || '-'}</div>
           </div>
@@ -1457,23 +1454,23 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       <div className="lead-payment-summary">
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">合同总额</div>
-          <div className="lead-payment-summary-value">{formatCurrency(contractAmount)}</div>
+          <div className="lead-payment-summary-value"><MoneyText value={contractAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">实际回款金额</div>
-          <div className="lead-payment-summary-value is-paid">{formatCurrency(summary.paidAmount)}</div>
+          <div className="lead-payment-summary-value is-paid"><MoneyText value={summary.paidAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">待回款金额</div>
-          <div className="lead-payment-summary-value is-pending">{formatCurrency(pendingAmount)}</div>
+          <div className="lead-payment-summary-value is-pending"><MoneyText value={pendingAmount} /></div>
         </div>
         <div className="lead-payment-summary-item">
           <div className="lead-payment-summary-label">已开票金额</div>
-          <div className="lead-payment-summary-value is-invoiced">{formatCurrency(summary.invoicedAmount + completedInvoiceAmount)}</div>
+          <div className="lead-payment-summary-value is-invoiced"><MoneyText value={summary.invoicedAmount + completedInvoiceAmount} /></div>
         </div>
       </div>
 
-      <Table
+      <DataTable
         rowKey="id"
         size="small"
         pagination={false}
@@ -1503,13 +1500,13 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
           const payment = detailPeriod.payments[detailPeriod.payments.length - 1];
           return <div className="project-period-detail">
             <div className="project-period-detail-hero">
-              <div className="project-period-detail-amount"><span>本期应回款</span><div className="project-period-detail-amount-row"><strong>{formatCurrency(detailPeriod.expectedAmount)}</strong><div className="project-period-detail-status"><span className={payment ? 'is-paid' : 'is-muted'}>{payment ? '已回款' : '未回款'}</span><span className={application?.status === '已开票' ? 'is-invoiced' : application?.status === '已冲红' ? 'is-red-flushed' : application?.status === '开票中' ? 'is-invoicing' : 'is-muted'}>{application?.status || (detailPeriod.invoices.length ? '已开票' : '未开票')}</span></div></div><small>预计回款日期：{detailPeriod.expectedDate || '-'}</small></div>
+              <div className="project-period-detail-amount"><span>本期应回款</span><div className="project-period-detail-amount-row"><strong><MoneyText value={detailPeriod.expectedAmount} /></strong><div className="project-period-detail-status"><span className={payment ? 'is-paid' : 'is-muted'}>{payment ? '已回款' : '未回款'}</span><span className={application?.status === '已开票' ? 'is-invoiced' : application?.status === '已冲红' ? 'is-red-flushed' : application?.status === '开票中' ? 'is-invoicing' : 'is-muted'}>{application?.status || (detailPeriod.invoices.length ? '已开票' : '未开票')}</span></div></div><small>预计回款日期：{detailPeriod.expectedDate || '-'}</small></div>
               <div className="project-period-detail-hero-actions">{detailPermissions.canSplit && <Button className="project-period-split-button" onClick={() => openSplitModal(detailPeriod)}>拆分期次</Button>}{detailPermissions.canRedFlush && application && <Button className="project-period-red-flush-button" onClick={() => { setRedFlushApplicationId(application.id); setRedFlushReason(''); setRedFlushFiles([]); }}>冲红</Button>}</div>
             </div>
             <div className="project-period-detail-body">
               <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>01</span><div><strong>回款条件</strong><small>本期触发回款的业务节点</small></div></div><p className="project-period-detail-condition">{detailPeriod.condition || '暂未填写回款条件'}</p></section>
-              <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>02</span><div><strong>回款记录</strong><small>每个期次仅保留一条有效回款记录</small></div></div>{payment ? <div className="project-payment-record-card"><div className="project-payment-record-amount"><span>实际回款</span><strong>{formatCurrency(payment.amount)}</strong></div><div className="project-payment-record-meta"><div><span>回款日期</span><strong>{payment.paymentDate}</strong></div><div><span>回款方式</span><strong>{payment.paymentMethod}</strong></div><div><span>回款说明</span><strong>{payment.note || '-'}</strong></div></div><div className="project-payment-record-files"><span>回款凭证</span><ProjectRecordFiles files={payment.voucherFiles} label="回款凭证" downloadable /></div></div> : <div className="project-period-detail-empty">当前期次尚未登记回款</div>}</section>
-              <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>03</span><div><strong>附件资料</strong><small>当前期次的回款凭证、发票及其他资料</small></div></div>{attachments.length ? <div className="project-period-detail-attachments">{attachments.map(item => <div key={item.id} className="project-period-detail-attachment"><div><Tag size="small">{item.type}</Tag><strong>{item.name}</strong><small>{item.description || '暂无说明'}</small></div><ProjectRecordFiles files={item.files} label="附件" downloadable /></div>)}</div> : <div className="project-period-detail-empty">暂无附件资料</div>}<div className="project-period-detail-actions"><Button type="text" icon={<IconPlus />} onClick={() => openAttachmentModal(detailPeriod)}>新增附件</Button></div></section>
+              <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>02</span><div><strong>回款记录</strong><small>每个期次仅保留一条有效回款记录</small></div></div>{payment ? <div className="project-payment-record-card"><div className="project-payment-record-amount"><span>实际回款</span><strong><MoneyText value={payment.amount} /></strong></div><div className="project-payment-record-meta"><div><span>回款日期</span><strong>{payment.paymentDate}</strong></div><div><span>回款方式</span><strong>{payment.paymentMethod}</strong></div><div><span>回款说明</span><strong>{payment.note || '-'}</strong></div></div><div className="project-payment-record-files"><span>回款凭证</span><ProjectRecordFiles files={payment.voucherFiles} /></div></div> : <div className="project-period-detail-empty">当前期次尚未登记回款</div>}</section>
+              <section className="project-period-detail-section"><div className="project-period-detail-section-title"><span>03</span><div><strong>附件资料</strong><small>当前期次的回款凭证、发票及其他资料</small></div></div>{attachments.length ? <div className="project-period-detail-attachments">{attachments.map(item => <div key={item.id} className="project-period-detail-attachment"><div><StatusTag size="small">{item.type}</StatusTag><strong>{item.name}</strong><small>{item.description || '暂无说明'}</small></div><ProjectRecordFiles files={item.files} /></div>)}</div> : <div className="project-period-detail-empty">暂无附件资料</div>}<div className="project-period-detail-actions"><Button type="text" icon={<IconPlus />} onClick={() => openAttachmentModal(detailPeriod)}>新增附件</Button></div></section>
             </div>
           </div>;
         })()}
@@ -1517,7 +1514,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
 
       <Modal title="发票冲红" visible={Boolean(redFlushApplicationId)} okText="确认冲红" onCancel={() => { setRedFlushApplicationId(null); setRedFlushFiles([]); }} onOk={() => { if (!redFlushReason.trim()) { Message.warning('请填写冲红原因'); return; } redFlushInvoice(redFlushApplicationId!, redFlushReason.trim(), getFileNames(redFlushFiles)); setRedFlushApplicationId(null); setRedFlushFiles([]); setDetailPeriodId(null); Message.success('已冲红并生成新的待开票记录'); }} okButtonProps={{ status: 'danger' }}>
         <FormItem label="冲红原因" required><Input.TextArea value={redFlushReason} onChange={setRedFlushReason} rows={4} maxLength={300} showWordLimit placeholder="请说明开错票的原因" /></FormItem>
-        <FormItem label="冲红附件"><Upload autoUpload={false} multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" fileList={redFlushFiles} onChange={setRedFlushFiles}><Button icon={<IconFile />}>上传文件</Button></Upload><div style={{ marginTop: 6, color: 'var(--color-text-3)', fontSize: 12 }}>支持图片、PDF、Word、Excel、PPT、文本和压缩包，可上传多个文件</div></FormItem>
+        <FormItem label="冲红附件"><Upload autoUpload={false} multiple accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" fileList={redFlushFiles} onChange={setRedFlushFiles}><Button icon={<IconFile />}>上传文件</Button></Upload><div style={{ marginTop: 6, color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>支持图片、PDF、Word、Excel、PPT、文本和压缩包，可上传多个文件</div></FormItem>
       </Modal>
 
       <Modal
@@ -1531,18 +1528,18 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       >
         <Form form={paymentForm} layout="vertical">
           <div className="project-payment-modal-notice">请确认是否已回款，若已回款请提交回款信息</div>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+          <FormGrid columns={2}>
+            <div>
               <FormItem label="回款金额" field="amount" rules={[{ required: true, message: '请输入回款金额' }]}>
                 <InputNumber min={0.01} precision={2} prefix="¥" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem label="回款日期" field="paymentDate" rules={[{ required: true, message: '请选择回款日期' }]}>
                 <DatePicker style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+            </div>
+          </FormGrid>
           <FormItem label="回款方式" field="paymentMethod" rules={[{ required: true, message: '请选择回款方式' }]}>
             <Select placeholder="请选择回款方式">
               {PAYMENT_METHOD_OPTIONS.map(option => <Select.Option key={option} value={option}>{option}</Select.Option>)}
@@ -1568,10 +1565,10 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
       >
         {paymentViewer && (
           <div className="project-payment-view-grid">
-            <div><span>回款金额</span><strong className="lead-payment-primary-amount is-paid">{formatCurrency(paymentViewer.record.amount)}</strong></div>
+            <div><span>回款金额</span><strong className="lead-payment-primary-amount is-paid"><MoneyText value={paymentViewer.record.amount} /></strong></div>
             <div><span>回款日期</span><strong>{paymentViewer.record.paymentDate}</strong></div>
             <div><span>回款方式</span><strong>{paymentViewer.record.paymentMethod}</strong></div>
-            <div className="is-full"><span>回款凭证</span><ProjectRecordFiles files={paymentViewer.record.voucherFiles} label="回款凭证" downloadable /></div>
+            <div className="is-full"><span>回款凭证</span><ProjectRecordFiles files={paymentViewer.record.voucherFiles} /></div>
             <div className="is-full"><span>回款说明</span><strong>{paymentViewer.record.note || '-'}</strong></div>
           </div>
         )}
@@ -1590,15 +1587,15 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         <Form form={invoiceForm} layout="vertical" className="project-invoice-application-form">
           <div className="project-invoice-form-tip">客户信息已根据关联合同自动带入，提交前请核对并按实际开票资料修改。</div>
           <div className="project-invoice-form-section-title"><span>1</span><div><strong>发票信息</strong><small>选择发票类别，填写金额和税率</small></div></div>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+          <FormGrid columns={2}>
+            <div>
               <FormItem label="发票类别" field="invoiceType" rules={[{ required: true, message: '请选择发票类别' }]}>
                 <Select placeholder="请选择发票类别">
                   {PROJECT_INVOICE_TYPE_OPTIONS.map(option => <Select.Option key={option} value={option}>{option}</Select.Option>)}
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem label="发票税率" field="taxRate" rules={[{ required: true, message: '请输入发票税率' }]}>
                 <InputNumber
                   min={0}
@@ -1611,10 +1608,10 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
                   }}
                 />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}>
+            </div>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <div>
               <FormItem label="开票金额" field="amount" rules={[{ required: true, message: '请输入开票金额' }]}>
                 <InputNumber
                   min={0.01}
@@ -1627,34 +1624,34 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
                   }}
                 />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12} xs={24}>
+            </div>
+            <div>
               <FormItem className="project-invoice-tax-amount" label="发票税额（自动计算）" field="taxAmount" rules={[{ required: true, message: '请输入发票税额' }]}>
                 <InputNumber min={0} precision={2} prefix="¥" disabled style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+            </div>
+          </FormGrid>
           <div className="project-invoice-form-section-title"><span>2</span><div><strong>购方开票信息</strong><small>请与客户提供的开票资料保持一致</small></div></div>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}><FormItem label="客户名称" field="invoiceTitle" rules={[{ required: true, message: '请输入客户名称' }]}><Input maxLength={100} /></FormItem></Grid.Col>
-            <Grid.Col span={12} xs={24}><FormItem label="纳税人识别号" field="taxpayerId" rules={[{ required: true, message: '请输入纳税人识别号' }]}><Input maxLength={30} /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}><FormItem label="地址" field="customerAddress"><Input maxLength={200} /></FormItem></Grid.Col>
-            <Grid.Col span={12} xs={24}><FormItem label="手机号" field="customerPhone" rules={[{ required: true, message: '请输入手机号' }]}><Input maxLength={30} /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}><FormItem label="开户行" field="bankName" rules={[{ required: true, message: '请输入开户行' }]}><Input maxLength={100} /></FormItem></Grid.Col>
-            <Grid.Col span={12} xs={24}><FormItem label="银行账号" field="bankAccount" rules={[{ required: true, message: '请输入银行账号' }]}><Input maxLength={40} /></FormItem></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <FormItem label="客户名称" field="invoiceTitle" rules={[{ required: true, message: '请输入客户名称' }]}><Input maxLength={100} /></FormItem>
+            <FormItem label="纳税人识别号" field="taxpayerId" rules={[{ required: true, message: '请输入纳税人识别号' }]}><Input maxLength={30} /></FormItem>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <FormItem label="地址" field="customerAddress"><Input maxLength={200} /></FormItem>
+            <FormItem label="手机号" field="customerPhone" rules={[{ required: true, message: '请输入手机号' }]}><Input maxLength={30} /></FormItem>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <FormItem label="开户行" field="bankName" rules={[{ required: true, message: '请输入开户行' }]}><Input maxLength={100} /></FormItem>
+            <FormItem label="银行账号" field="bankAccount" rules={[{ required: true, message: '请输入银行账号' }]}><Input maxLength={40} /></FormItem>
+          </FormGrid>
           <div className="project-invoice-form-section-title"><span>3</span><div><strong>收票人信息</strong><small>用于发票送达和联系</small></div></div>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}><FormItem label="收票人姓名" field="recipientName" rules={[{ required: true, message: '请输入收票人姓名' }]}><Input maxLength={50} /></FormItem></Grid.Col>
-            <Grid.Col span={12} xs={24}><FormItem label="收票人电话" field="recipientPhone" rules={[{ required: true, message: '请输入收票人电话' }]}><Input maxLength={30} /></FormItem></Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12} xs={24}><FormItem label="收票人邮箱" field="recipientEmail"><Input maxLength={100} /></FormItem></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <FormItem label="收票人姓名" field="recipientName" rules={[{ required: true, message: '请输入收票人姓名' }]}><Input maxLength={50} /></FormItem>
+            <FormItem label="收票人电话" field="recipientPhone" rules={[{ required: true, message: '请输入收票人电话' }]}><Input maxLength={30} /></FormItem>
+          </FormGrid>
+          <FormGrid columns={2}>
+            <FormItem label="收票人邮箱" field="recipientEmail"><Input maxLength={100} /></FormItem>
+          </FormGrid>
         </Form>
       </Modal>
 
@@ -1668,10 +1665,10 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
         {invoiceViewer && (
           <div className="project-payment-view-grid">
             <div><span>开票日期</span><strong>{invoiceViewer.record.invoiceDate}</strong></div>
-            <div><span>开票金额</span><strong className="lead-payment-primary-amount is-invoiced">{formatCurrency(invoiceViewer.record.amount)}</strong></div>
+            <div><span>开票金额</span><strong className="lead-payment-primary-amount is-invoiced"><MoneyText value={invoiceViewer.record.amount} /></strong></div>
             <div><span>发票类型</span><strong>{invoiceViewer.record.invoiceType}</strong></div>
             <div><span>发票税率</span><strong>{invoiceViewer.record.taxRate == null ? '-' : `${invoiceViewer.record.taxRate}%`}</strong></div>
-            <div><span>发票税额</span><strong>{invoiceViewer.record.taxAmount == null ? '-' : formatCurrency(invoiceViewer.record.taxAmount)}</strong></div>
+            <div><span>发票税额</span><strong>{invoiceViewer.record.taxAmount == null ? '-' : <MoneyText value={invoiceViewer.record.taxAmount} />}</strong></div>
             <div><span>发票抬头</span><strong>{invoiceViewer.record.invoiceTitle}</strong></div>
             <div><span>纳税人识别号</span><strong>{invoiceViewer.record.taxpayerId || '-'}</strong></div>
             <div><span>地址</span><strong>{invoiceViewer.record.customerAddress || '-'}</strong></div>
@@ -1681,7 +1678,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
             <div><span>收票人姓名</span><strong>{invoiceViewer.record.recipientName || '-'}</strong></div>
             <div><span>收票人电话</span><strong>{invoiceViewer.record.recipientPhone || '-'}</strong></div>
             <div className="is-full"><span>收票人邮箱</span><strong>{invoiceViewer.record.recipientEmail || '-'}</strong></div>
-            <div className="is-full"><span>发票文件</span><ProjectRecordFiles files={invoiceViewer.record.invoiceFiles} label="发票文件" downloadable /></div>
+            <div className="is-full"><span>发票文件</span><ProjectRecordFiles files={invoiceViewer.record.invoiceFiles} /></div>
             <div className="is-full"><span>备注信息</span><strong>{invoiceViewer.record.note || '-'}</strong></div>
           </div>
         )}
@@ -1713,7 +1710,7 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
             </div>
 
             {attachmentRecords.length ? (
-              <Table
+              <DataTable
                 className="project-payment-attachment-table"
                 rowKey="id"
                 size="small"
@@ -1730,8 +1727,8 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
               <div className="project-payment-attachment-form">
                 <strong>新增附件记录</strong>
                 <Form form={attachmentForm} layout="vertical" style={{ marginTop: 12 }}>
-                  <Grid.Row gutter={16}>
-                    <Grid.Col span={12} xs={24}>
+                  <FormGrid columns={2}>
+                    <div>
                       <FormItem label="附件类型" field="type" rules={[{ required: true, message: '请选择附件类型' }]}>
                         <Select placeholder="请选择附件类型">
                           {PROJECT_ATTACHMENT_TYPE_OPTIONS.map(option => (
@@ -1739,13 +1736,13 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
                           ))}
                         </Select>
                       </FormItem>
-                    </Grid.Col>
-                    <Grid.Col span={12} xs={24}>
+                    </div>
+                    <div>
                       <FormItem label="附件名称" field="name" rules={[{ required: true, message: '请输入附件名称' }]}>
                         <Input placeholder="请输入附件名称" maxLength={100} />
                       </FormItem>
-                    </Grid.Col>
-                  </Grid.Row>
+                    </div>
+                  </FormGrid>
                   <FormItem label="说明" field="description">
                     <Input.TextArea placeholder="请输入附件说明" maxLength={300} showWordLimit autoSize={{ minRows: 2, maxRows: 4 }} />
                   </FormItem>
@@ -1795,18 +1792,18 @@ function ProjectPaymentInvoicePanel({ contractAmount, customerInvoiceInfo, proje
               return (
                 <div key={item} className="project-payment-split-item">
                   <strong>{baseLabel}-{item}</strong>
-                  <Grid.Row gutter={16}>
-                    <Grid.Col span={12}>
+                  <FormGrid columns={2}>
+                    <div>
                       <FormItem label="回款金额" field={`splitAmount${item}`} rules={[{ required: true, message: '请输入回款金额' }]}>
                         <InputNumber min={0.01} precision={2} prefix="¥" style={{ width: '100%' }} />
                       </FormItem>
-                    </Grid.Col>
-                    <Grid.Col span={12}>
+                    </div>
+                    <div>
                       <FormItem label="预计回款日期" field={`splitDate${item}`} rules={[{ required: true, message: '请选择预计回款日期' }]}>
                         <DatePicker style={{ width: '100%' }} />
                       </FormItem>
-                    </Grid.Col>
-                  </Grid.Row>
+                    </div>
+                  </FormGrid>
                   <FormItem label="回款条件" field={`splitCondition${item}`}>
                     <Input placeholder="请输入回款条件" />
                   </FormItem>

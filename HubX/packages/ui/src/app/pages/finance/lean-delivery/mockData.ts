@@ -1112,35 +1112,35 @@ export const caseStatusMap: StatusMap<CaseStatus> = {
 };
 
 // 健康状态显示映射
-export const healthStatusMap: Record<HealthStatus, { label: string; color: string }> = {
-  [HealthStatus.GREEN]: { label: '健康', color: 'green' },
-  [HealthStatus.YELLOW]: { label: '预警', color: 'orange' },
-  [HealthStatus.RED]: { label: '风险', color: 'red' },
+export const healthStatusMap: StatusMap<HealthStatus> = {
+  [HealthStatus.GREEN]: { label: '健康', tone: 'success' },
+  [HealthStatus.YELLOW]: { label: '预警', tone: 'warning' },
+  [HealthStatus.RED]: { label: '风险', tone: 'danger' },
 };
 
 // 功能清单状态显示映射
-export const featureListStatusMap: Record<FeatureListStatus, { label: string; color: string }> = {
-  [FeatureListStatus.DRAFT]: { label: '草稿', color: 'default' },
-  [FeatureListStatus.PENDING_ESTIMATE]: { label: '待估算', color: 'processing' },
-  [FeatureListStatus.ESTIMATED]: { label: '已估算', color: 'success' },
-  [FeatureListStatus.LOCKED]: { label: '已锁定', color: 'default' },
+export const featureListStatusMap: StatusMap<FeatureListStatus> = {
+  [FeatureListStatus.DRAFT]: { label: '草稿', tone: 'neutral' },
+  [FeatureListStatus.PENDING_ESTIMATE]: { label: '待估算', tone: 'info' },
+  [FeatureListStatus.ESTIMATED]: { label: '已估算', tone: 'success' },
+  [FeatureListStatus.LOCKED]: { label: '已锁定', tone: 'purple' },
 };
 
 // 功能点分类显示映射
-export const featureCategoryMap: Record<FeatureCategory, { label: string; color: string }> = {
-  [FeatureCategory.REUSE]: { label: '复用', color: 'green' },
-  [FeatureCategory.SEMI_CUSTOM]: { label: '半定制', color: 'blue' },
-  [FeatureCategory.NEW_DEV]: { label: '全新开发', color: 'orange' },
+export const featureCategoryMap: StatusMap<FeatureCategory> = {
+  [FeatureCategory.REUSE]: { label: '复用', tone: 'success' },
+  [FeatureCategory.SEMI_CUSTOM]: { label: '半定制', tone: 'info' },
+  [FeatureCategory.NEW_DEV]: { label: '全新开发', tone: 'warning' },
 };
 
 // 报价单状态显示映射
-export const quotationStatusMap: Record<QuotationStatus, { label: string; color: string }> = {
-  [QuotationStatus.DRAFT]: { label: '草稿', color: 'default' },
-  [QuotationStatus.REVIEWING]: { label: '审批中', color: 'processing' },
-  [QuotationStatus.APPROVED]: { label: '已审批', color: 'success' },
-  [QuotationStatus.SENT]: { label: '已发送', color: 'processing' },
-  [QuotationStatus.ACCEPTED]: { label: '已接受', color: 'success' },
-  [QuotationStatus.REJECTED]: { label: '已拒绝', color: 'error' },
+export const quotationStatusMap: StatusMap<QuotationStatus> = {
+  [QuotationStatus.DRAFT]: { label: '草稿', tone: 'neutral' },
+  [QuotationStatus.REVIEWING]: { label: '审批中', tone: 'warning' },
+  [QuotationStatus.APPROVED]: { label: '已审批', tone: 'success' },
+  [QuotationStatus.SENT]: { label: '已发送', tone: 'info' },
+  [QuotationStatus.ACCEPTED]: { label: '已接受', tone: 'success' },
+  [QuotationStatus.REJECTED]: { label: '已拒绝', tone: 'danger' },
 };
 
 // 服务类别显示映射
@@ -1155,12 +1155,12 @@ export const serviceCategoryMap: Record<ServiceCategory, { label: string }> = {
 };
 
 // 根因类别显示映射
-export const rootCauseCategoryMap: Record<string, { label: string; color: string }> = {
-  scope_creep: { label: '需求变更', color: 'orange' },
-  quality_issue: { label: '质量问题', color: 'red' },
-  efficiency: { label: '效率问题', color: 'yellow' },
-  commercial_overrun: { label: '商务超支', color: 'purple' },
-  external: { label: '外部因素', color: 'gray' },
+export const rootCauseCategoryMap: StatusMap = {
+  scope_creep: { label: '需求变更', tone: 'warning' },
+  quality_issue: { label: '质量问题', tone: 'danger' },
+  efficiency: { label: '效率问题', tone: 'gold' },
+  commercial_overrun: { label: '商务超支', tone: 'purple' },
+  external: { label: '外部因素', tone: 'neutral' },
 };
 
 // 项目类型选项

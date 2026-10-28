@@ -1,11 +1,11 @@
-import { Badge, Button, Card, Grid, Progress, Space, Tag, Typography } from '@arco-design/web-react';
+import { Badge, Button, Grid, Space, Typography } from '@/design-system';
 import {
   IconApps,
   IconCalendar,
   IconClockCircle,
   IconCustomerService,
   IconRight,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { DailyReportModal } from '../../delivery/daily-report/DailyReportModal';
@@ -13,21 +13,30 @@ import type { DailyReport } from '../../delivery/daily-report/types';
 import { useReminders } from '../../../reminders/ReminderContext';
 import { useTodos } from '../../../todos/TodoContext';
 import type { TodoItem } from '../../../todos/types';
+import {
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+  ProgressBar,
+} from '@/design-system';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
 
-const cardStyle = {
-  borderRadius: 'var(--radius-lg)',
-  boxShadow: 'var(--shadow-xs)',
-  border: '1px solid var(--grey-200)',
+const TODO_PRIORITY: StatusMap<'high' | 'medium' | 'low'> = {
+  high: { label: '高', tone: 'danger' },
+  medium: { label: '中', tone: 'warning' },
+  low: { label: '低', tone: 'neutral' },
 };
 
-const priorityMeta = {
-  high: { label: '高', color: 'red' },
-  medium: { label: '中', color: 'orange' },
-  low: { label: '低', color: 'gray' },
-} as const;
+const LEAD_INTENT: StatusMap<string> = {
+  高: { label: '高意向', tone: 'danger' },
+  中: { label: '中意向', tone: 'warning' },
+};
 
 function parseLocalDate(value?: string) {
   if (!value) return undefined;
@@ -103,69 +112,40 @@ export function Dashboard() {
     weekday: 'long',
   }).format(now);
 
-  const summaryCards = [
-    { label: '待处理', value: activeTodos.length, note: '全部待办', icon: <IconApps />, color: 'rgb(var(--primary-6))' },
-    { label: '已逾期', value: todoSummary.overdue, note: '需优先处理', icon: <IconClockCircle />, color: 'rgb(var(--red-6))' },
-    { label: '今日截止', value: todoSummary.dueToday, note: '今日需完成', icon: <IconCalendar />, color: 'rgb(var(--orange-6))' },
-    { label: '待审批', value: todoSummary.approvals, note: '含企业微信审批', icon: <IconCustomerService />, color: 'rgb(var(--purple-6))' },
+  const summaryItems = [
+    { key: 'pending', label: '待处理', value: activeTodos.length, detail: '全部待办' },
+    { key: 'overdue', label: '已逾期', value: todoSummary.overdue, detail: '需优先处理', tone: 'danger' as const },
+    { key: 'dueToday', label: '今日截止', value: todoSummary.dueToday, detail: '今日需完成', tone: 'warning' as const },
+    { key: 'approvals', label: '待审批', value: todoSummary.approvals, detail: '含企业微信审批' },
   ];
 
   return (
-    <div>
-      <div className="flex items-start justify-between" style={{ marginBottom: 20 }}>
-        <div>
-          <Typography.Title heading={5} style={{ margin: 0, color: 'var(--grey-900)' }}>
-            {greeting}，张三
-          </Typography.Title>
-          <Typography.Text style={{ display: 'block', marginTop: 7, color: 'var(--grey-500)' }}>
+    <PageShell>
+      <PageHeader
+        title={`${greeting}，张三`}
+        description={(
+          <>
             {dateLabel} · 今天有 {activeTodos.length} 项待处理
-            {todoSummary.overdue > 0 && <span style={{ color: 'rgb(var(--red-6))' }}>，其中 {todoSummary.overdue} 项已逾期</span>}
-          </Typography.Text>
-        </div>
-        <Space>
-          <Button onClick={() => setDailyReportVisible(true)}>填写日报</Button>
-          <Button type="primary" onClick={() => navigate('/todos')}>查看全部待办</Button>
-        </Space>
-      </div>
+            {todoSummary.overdue > 0 && <span style={{ color: 'var(--ds-tone-danger-fg)' }}>，其中 {todoSummary.overdue} 项已逾期</span>}
+          </>
+        )}
+        actions={(
+          <>
+            <Button onClick={() => setDailyReportVisible(true)}>填写日报</Button>
+            <Button type="primary" onClick={() => navigate('/todos')}>查看全部待办</Button>
+          </>
+        )}
+      />
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        {summaryCards.map((item) => (
-          <Col span={6} key={item.label}>
-            <Card style={cardStyle} bodyStyle={{ padding: '18px 20px' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div style={{ fontSize: 14, color: 'var(--grey-500)' }}>{item.label}</div>
-                  <div style={{ fontSize: 30, lineHeight: 1.2, fontWeight: 700, margin: '6px 0 3px', color: 'var(--grey-900)' }}>
-                    {item.value}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--grey-400)' }}>{item.note}</div>
-                </div>
-                <div style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 20,
-                  color: item.color,
-                  background: `color-mix(in srgb, ${item.color} 10%, white)`,
-                }}>
-                  {item.icon}
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <MetricGrid items={summaryItems} />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col span={16}>
-          <Card
+          <SectionCard
             title="我的待办"
             extra={<Button type="text" size="small" onClick={() => navigate('/todos')}>查看全部 <IconRight /></Button>}
-            style={{ ...cardStyle, height: '100%' }}
-            bodyStyle={{ padding: '0 20px' }}
+            padded={false}
+            className="h-full"
           >
             {sortedTodos.map((todo, index) => {
               const deadline = parseLocalDate(todo.deadline);
@@ -182,14 +162,14 @@ export function Dashboard() {
                 >
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div className="flex items-center gap-2" style={{ marginBottom: 7 }}>
-                      <Tag size="small" color={priorityMeta[todo.priority].color}>{priorityMeta[todo.priority].label}</Tag>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--grey-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <StatusTag meta={TODO_PRIORITY[todo.priority]} />
+                      <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--grey-800)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {todo.title}
                       </span>
                     </div>
                     <Space size={12}>
-                      <span style={{ fontSize: 12, color: 'var(--grey-500)' }}>{todo.module}</span>
-                      <span style={{ fontSize: 12, color: overdue ? 'rgb(var(--red-6))' : 'var(--grey-500)' }}>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)' }}>{todo.module}</span>
+                      <span style={{ fontSize: 'var(--text-xs)', color: overdue ? 'rgb(var(--red-6))' : 'var(--grey-500)' }}>
                         <IconClockCircle style={{ marginRight: 4 }} />{overdue ? '已逾期 · ' : ''}{formatDeadline(todo.deadline)}
                       </span>
                       {todo.status === 'in_progress' && <Badge status="processing" text="处理中" />}
@@ -201,11 +181,12 @@ export function Dashboard() {
                 </div>
               );
             })}
-          </Card>
+          </SectionCard>
         </Col>
 
         <Col span={8}>
-          <Card title="快捷入口" style={{ ...cardStyle, marginBottom: 16 }} bodyStyle={{ padding: 16 }}>
+          <div style={{ marginBottom: 16 }}>
+          <SectionCard title="快捷入口">
             <Row gutter={[10, 10]}>
               {[
                 { label: '线索管理', route: '/leads/my', icon: <IconCustomerService /> },
@@ -220,74 +201,73 @@ export function Dashboard() {
                     onClick={() => item.action ? item.action() : navigate(item.route!)}
                   >
                     <Space direction="vertical" size={3}>
-                      <span style={{ color: 'rgb(var(--primary-6))', fontSize: 18 }}>{item.icon}</span>
+                      <span style={{ color: 'rgb(var(--primary-6))', fontSize: 'var(--text-lg)' }}>{item.icon}</span>
                       <span>{item.label}</span>
                     </Space>
                   </Button>
                 </Col>
               ))}
             </Row>
-          </Card>
-          <Card title="业务概览" style={cardStyle} bodyStyle={{ padding: '8px 18px' }}>
+          </SectionCard>
+          </div>
+          <SectionCard title="业务概览">
             {[
               ['本月新增线索', '156', '+12.5%'],
               ['本月签约客户', '28', '+18.2%'],
               ['进行中项目', '35', '+5.7%'],
             ].map(([label, value, trend], index) => (
               <div key={label} className="flex items-center justify-between" style={{ padding: '11px 0', borderBottom: index === 2 ? 'none' : '1px solid var(--grey-100)' }}>
-                <span style={{ fontSize: 14, color: 'var(--grey-500)' }}>{label}</span>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--grey-500)' }}>{label}</span>
                 <Space>
-                  <strong style={{ fontSize: 16 }}>{value}</strong>
-                  <span style={{ fontSize: 12, color: 'rgb(var(--green-6))' }}>{trend}</span>
+                  <strong style={{ fontSize: 'var(--text-base)' }}>{value}</strong>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--green-6))' }}>{trend}</span>
                 </Space>
               </div>
             ))}
-          </Card>
+          </SectionCard>
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card
+          <SectionCard
             title="待跟进线索"
             extra={<Button type="text" size="small" onClick={() => navigate('/leads/my')}>查看全部 <IconRight /></Button>}
-            style={cardStyle}
-            bodyStyle={{ padding: '0 20px' }}
+            padded={false}
           >
             {recentLeads.map((lead, index) => (
               <div key={lead.name} className="flex items-center justify-between" style={{ padding: '14px 0', borderBottom: index === recentLeads.length - 1 ? 'none' : '1px solid var(--grey-100)' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 5 }}>{lead.name}</div>
-                  <span style={{ fontSize: 12, color: 'var(--grey-500)' }}>{lead.customer} · {lead.followTime}</span>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 5 }}>{lead.name}</div>
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)' }}>{lead.customer} · {lead.followTime}</span>
                 </div>
                 <Space>
-                  <Tag size="small" color={lead.level === '高' ? 'red' : 'orange'}>{lead.level}意向</Tag>
+                  <StatusTag meta={resolveStatus(LEAD_INTENT, lead.level)} />
                   <Badge status="processing" text={lead.status} />
                 </Space>
               </div>
             ))}
-          </Card>
+          </SectionCard>
         </Col>
         <Col span={12}>
-          <Card
+          <SectionCard
             title="项目进度"
             extra={<Button type="text" size="small" onClick={() => navigate('/projects')}>查看全部 <IconRight /></Button>}
-            style={cardStyle}
-            bodyStyle={{ padding: '0 20px' }}
+            padded={false}
           >
             {projectProgress.map((project, index) => (
               <div key={project.name} style={{ padding: '13px 0', borderBottom: index === projectProgress.length - 1 ? 'none' : '1px solid var(--grey-100)' }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: 7 }}>
                   <div>
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>{project.name}</span>
-                    <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--grey-500)' }}>{project.customer}</span>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{project.name}</span>
+                    <span style={{ marginLeft: 8, fontSize: 'var(--text-xs)', color: 'var(--grey-500)' }}>{project.customer}</span>
                   </div>
                   <Badge status={project.status === '正常' ? 'success' : 'warning'} text={project.status} />
                 </div>
-                <Progress percent={project.progress} size="small" showText={false} color={project.status === '正常' ? 'rgb(var(--primary-6))' : 'rgb(var(--orange-6))'} />
+                <ProgressBar percent={project.progress} size="small" showValue={false} />
               </div>
             ))}
-          </Card>
+          </SectionCard>
         </Col>
       </Row>
 
@@ -298,6 +278,6 @@ export function Dashboard() {
         currentUserId={currentUserId}
         recentReports={dailyReports}
       />
-    </div>
+    </PageShell>
   );
 }

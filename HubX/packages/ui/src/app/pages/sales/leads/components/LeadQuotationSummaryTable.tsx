@@ -1,4 +1,5 @@
-import { Table } from '@arco-design/web-react';
+import { Table } from '@/design-system';
+import { DataTable } from '@/design-system';
 import type { LeadQuotationSummary } from '../leadDetailProfiles';
 import './LeadQuotationSummaryTable.css';
 
@@ -20,7 +21,8 @@ export function LeadQuotationSummaryTable({
   summary,
   showTitle = true,
 }: LeadQuotationSummaryTableProps) {
-  const rows = [
+  type SummaryRow = { key: string; name: string; amount: number; isTotal?: boolean };
+  const rows: SummaryRow[] = [
     { key: 'frontend', name: '前端配置', amount: summary.frontendCost },
     { key: 'backend', name: '后端配置', amount: summary.backendCost },
     { key: 'other-roles', name: '其他岗位', amount: summary.otherRoleCost },
@@ -35,7 +37,7 @@ export function LeadQuotationSummaryTable({
   return (
     <section className="lead-quotation-summary-table">
       {showTitle ? <strong className="lead-quotation-summary-table-title">报价信息</strong> : null}
-      <Table
+      <DataTable<SummaryRow>
         rowKey="key"
         border={{ wrapper: true, cell: true }}
         pagination={false}

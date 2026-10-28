@@ -1,6 +1,362 @@
 {
   "days": [
     {
+      "date": "2026-10-28",
+      "items": [
+        {
+          "id": "wl-2026-10-28-1",
+          "category": "设计",
+          "text": "UI 组件库改四层结构：基础 UI（原子与录入控件）/ 模块组件（六个分组页签）/ 页面框架（4 个可运行骨架）/ 业务样板（4 个真实切片 + 复制边界），1231 行单文件拆成 panels、demos、patterns、frameworks 目录，页签位置写进 hash。"
+        },
+        {
+          "id": "wl-2026-10-28-2",
+          "category": "设计",
+          "text": "SectionTabs 补三个受限能力：variant（line / card）、countTone（逾期与超时的数量强调）、defaultActiveKey（非受控），并写进设计系统规范与实样。"
+        },
+        {
+          "id": "wl-2026-10-28-3",
+          "category": "底座",
+          "text": "页面侧直写 Arco Tabs 的 58 个页签组全部迁移到 SectionTabs，新增棘轮门禁 rawPageTabs 并把预算收到 0。"
+        },
+        {
+          "id": "wl-2026-10-28-4",
+          "category": "测试",
+          "text": "UI/API 类型检查、生产构建、设计系统门禁与严格门禁全部通过；140 个测试文件、1300 个用例全绿；浏览器逐页复核 41 条路由的页签渲染与切换。"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "items": [
+        {
+          "id": "wl-2026-10-27-1",
+          "category": "设计",
+          "text": "继续执行页面组件铁律：将交付、销售、资源、运维、员工及获客成本域的真实字段表单统一迁移到 FormGrid，保留卡片、指标、图表和上传资源的业务 Grid 语义。"
+        },
+        {
+          "id": "wl-2026-10-27-2",
+          "category": "测试",
+          "text": "完成 133 个测试文件、1249 个 Vitest 用例全量回归，UI/API 类型检查、严格设计系统门禁、设计系统报告和生产构建全部通过。"
+        },
+        {
+          "id": "wl-2026-10-27-3",
+          "category": "测试",
+          "text": "通过浏览器实页验收获客成本日报、员工新增及线索合同财务新增实收弹窗，确认 FormGrid 双列字段在稳定态无溢出或错位。"
+        },
+        {
+          "id": "wl-2026-10-27-4",
+          "category": "底座",
+          "text": "清理项目与线索共享类型对 React/UI 入口的编译期依赖，保持前后端共享类型纯净，UI 与 API 两套 TypeScript 检查均通过。"
+        },
+        {
+          "id": "wl-2026-10-27-5",
+          "category": "修洞",
+          "text": "将线索池页面重复声明的 SLA 状态语义色统一收口到 sales/leads/types.ts，删除三处页面内重复映射，相关线索回归测试 47/47 通过。"
+        },
+        {
+          "id": "wl-2026-10-27-6",
+          "category": "设计",
+          "text": "新增设计系统业务组件 PaymentProgress：统一回款进度比例、已回款/合同总额/待回款摘要，提供默认摘要态与表格紧凑态；已接入合同回款看板和财务回款列表。"
+        },
+        {
+          "id": "wl-2026-10-27-7",
+          "category": "测试",
+          "text": "浏览器实页复验回款看板与财务回款列表：紧凑态金额改用万元格式避免窄卡片截断，卡片、进度条和财务表格稳定渲染。"
+        },
+        {
+          "id": "wl-2026-10-27-8",
+          "category": "设计",
+          "text": "新增 PaymentPlanTable 业务组件并接入合同详情与合同财务面板；仅统一合同计划列骨架，财务对账、开票记录和回款预测继续保留独立语义。"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "新增 FileArchivePanel 业务组件并接入合同详情扫描归档、线索合同历史终稿归档；统一归档批次、文件列表和预览/下载/删除动作，不合并发票附件与知识库上传语义。",
+          "id": "wl-2026-10-27-9"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "继续按组件铁律收口页面级文件行：报销票据凭证与项目开票附件统一消费 FileList；回款期次、财务台账和业务证据卡仍保留各自语义，不做万能附件组件。",
+          "id": "wl-2026-10-27-10"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "继续收口回款与费用证据文件：LeadPaymentInvoicePanel 的回款凭证、发票文件、期次附件，以及 ProjectCostPanel 的费用凭证统一消费 FileList；仅有演示元数据的文件不伪造下载动作。",
+          "id": "wl-2026-10-27-11"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "修洞",
+          "text": "按 Impeccable 严格扫描修正 RiskRadarGrid 的 4px 左侧色条反模式，改为整卡语义边框与浅色底纹；最终扫描无确定性设计质量问题。",
+          "id": "wl-2026-10-27-12"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "继续收口 ProjectDetailWorkspace 的重复文件行：确认书、报销、跟进、会议录音与会议资料统一消费 FileList，保留各业务记录自身的标题、状态、说明和时间语义。",
+          "id": "wl-2026-10-27-13"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "合同电子签署演示包的线下签署证据统一消费 FileList；保留签署状态、签署人、截止时间和上传动作，预览/下载仅在存在真实文件 URL 时提供。",
+          "id": "wl-2026-10-27-14"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "修洞",
+          "text": "合同版本附件列表统一消费 FileList，并移除页面专属文件行 CSS；同时将最新版本原有 3px 左侧色条改为整卡信息边框与浅色底，最终 Impeccable 扫描无确定性问题。",
+          "id": "wl-2026-10-27-15"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "线索附件面板与报价历史文件块统一消费 FileList，移除页面重复文件行样式；元数据文件不展示伪下载动作，并补强 FileList 操作按钮的文件名可访问标签。",
+          "id": "wl-2026-10-27-16"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "反馈详情的附件区域统一消费 FileList，保留 DescriptionsCard 的反馈语义和真实存储下载函数，删除页面内手写文件行与重复视觉样式。",
+          "id": "wl-2026-10-27-17"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "针对主合同与报价历史的单文件主文档行新建 DocumentActionRow，提供 default/quiet 受限变体，统一文档身份、版本元数据和主要操作；已补组件库实样、测试与清单。",
+          "id": "wl-2026-10-27-18"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "报价历史的报价系统记录继续收口到 DocumentActionRow，保留在线查看与真实下载两个主要动作，删除页面专属文件行 CSS。",
+          "id": "wl-2026-10-27-19"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "资产管理与售后运维的到期日、维护截止和工单 SLA 统一使用 DateText + CountdownTag，移除页面级状态色和重复日期文案；业务判断保持不变。",
+          "id": "wl-2026-10-27-20"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "AI 智能助手的里程碑日期与剩余天数统一使用 DateText + CountdownTag；全链路 ROI 的关键指标改用 MetricGrid + MoneyText，移除嵌套指标卡和页面级金额/利润色实现。",
+          "id": "wl-2026-10-27-21"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "继续收口资源与运维域展示语义：供应商、资产、售后维护的金额统一消费 MoneyText，供应商付款日期统一消费 DateText，删除页面级金额格式化实现。",
+          "id": "wl-2026-10-27-22"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "设计",
+          "text": "并行收口财务报表、客户销售与差旅明细域：9 个页面统一接入 MoneyText、DateText、StatusTag、MetricCard/MetricGrid，保留报价 Canvas、借款闭环和报销轧差等特殊业务布局。",
+          "id": "wl-2026-10-27-23"
+        },
+        {
+          "date": "2026-10-27",
+          "category": "修洞",
+          "text": "修复并行迁移引入的兼容性回归：StandardList 保留 formatCurrency 公开导出并委托共享 formatter；LeadQuotationManager 保留既有反馈文案和可访问日期标签，相关测试恢复通过。",
+          "id": "wl-2026-10-27-24"
+        },
+        {
+          "id": "wl-2026-10-27-25",
+          "category": "设计",
+          "text": "把 /ui-library 的「模块组件」页签从 8 处真实渲染补成全部 54 个值导出都有可交互实样：9 个 tone 色板、环形进度、Quill 编辑器、确认弹窗和全屏阅读器均可实际操作，页尾目录表 49 行覆盖所有导出。"
+        },
+        {
+          "id": "wl-2026-10-27-26",
+          "category": "底座",
+          "text": "新增 libraryMissingDemo 门禁：index.ts 每加一个值导出就必须在 /ui-library 有真实渲染，检查时剔除字符串字面量，防止目录表那行文字让检查假通过。"
+        },
+        {
+          "id": "wl-2026-10-27-27",
+          "category": "底座",
+          "text": "收紧设计系统棘轮预算：visualInlineStyle 从 2288 收到 2076，语义迁移把整段内联样式搬进设计系统组件，页面侧不再堆 fontSize token。"
+        },
+        {
+          "id": "wl-2026-10-27-28",
+          "category": "文档",
+          "text": "交接文档拆成索引 + 切片：根目录 下班交接.md 只留本轮结论、状态表和切片目录，正文按主题落到 文档/交接/<日期>-<主题>/，并写入切片仓库约定。"
+        },
+        {
+          "id": "wl-2026-10-27-29",
+          "category": "设计",
+          "text": "并行收口报价流程 Stage3 与 Stage4：通用金额、日期、状态、指标摘要统一消费 MoneyText、DateText、StatusTag、MetricCard/MetricGrid，保留自动化画布、正式公函、审批会签与风控驾驶舱等业务专属布局。"
+        },
+        {
+          "id": "wl-2026-10-27-30",
+          "category": "修洞",
+          "text": "修复 Stage4 组件迁移后的既有测试兼容性：保留原有报价文案、发送时间可访问标签，以及质保/有效期的完整单位文本；全量 133 个测试文件、1251 个测试用例恢复通过。"
+        },
+        {
+          "id": "wl-2026-10-27-31",
+          "category": "设计",
+          "text": "并行收口合同看板、回款时间线/预测表与现金流预测：金额、日期、状态、周期筛选、月度汇总统一消费设计系统组件，保留现金流图表、回款时间线、调期与预测表的业务专属语义。"
+        },
+        {
+          "id": "wl-2026-10-27-32",
+          "category": "测试",
+          "text": "第三波验收全绿：UI/API 类型检查、133 个测试文件与 1251 个测试用例、生产构建、严格设计系统门禁、Impeccable detector、diff 检查均通过；visualInlineStyle 棘轮降至 2043。"
+        },
+        {
+          "id": "wl-2026-10-27-33",
+          "category": "设计",
+          "text": "多代理完成 FileFlowWorkbench、QuotePageThumbnails 与 Picker 使用审计：文件流统一接入 FileList/DocumentActionRow/MoneyText/DateText/StatusTag 等设计系统组件；A4 复刻边界收紧；确认 OrderedStatePicker 与 UserPicker 已有第二处真实场景但交互语义仍需先决策。"
+        },
+        {
+          "id": "wl-2026-10-27-34",
+          "category": "修洞",
+          "text": "移除 QuotePageThumbnails 两处 width 布局动画，消除 Impeccable layout-transition 警告；目标测试 9/9、全量测试 133/133 文件与 1251/1251 用例通过，visualInlineStyle 降至 2041。"
+        },
+        {
+          "id": "wl-2026-10-27-35",
+          "category": "设计",
+          "text": "多代理完成 OrderedStatePicker 与 UserPicker：统一稳定 ID、空值、固定顺序等级与姓名/工号/部门搜索契约，接入跟进/等级调整、报价改指和项目工时四处业务，并补齐 UI library 实样与设计系统测试。"
+        },
+        {
+          "id": "wl-2026-10-27-36",
+          "category": "底座",
+          "text": "facsimile 独立边界完成：A4 缩略页内容与画布抽入 design-system/facsimile，门禁新增 facsimileBoundary 检查；AsyncState 收口 OCR、交付计划、报价工作台和智能会议状态。"
+        },
+        {
+          "id": "wl-2026-10-27-37",
+          "category": "测试",
+          "text": "本轮多代理最终验收全绿：133 个测试文件、1254 个测试用例，UI/API 类型检查、生产构建、严格门禁、facsimileBoundary、libraryMissingDemo、diff 检查均通过；visualInlineStyle 当前 2039。"
+        },
+        {
+          "id": "wl-2026-10-27-38",
+          "category": "修洞",
+          "text": "发布前只读审查发现并修复 Stage3 自定义付款模板删除按钮的 StatusTag 事件冒泡风险，同时清理 FileFlow/Stage4 AlertBanner 可见多余引号；补齐工作记录历史分类契约与当前交接文档快照。"
+        },
+        {
+          "id": "wl-2026-10-27-39",
+          "category": "修洞",
+          "text": "继续发布前视觉收口：清理跨域 AI、企业微信、线索治理、交付计划、差旅标准、费用和 UI library 等 AlertBanner 的可见多余引号，避免业务提示出现双引号噪声。"
+        },
+        {
+          "id": "wl-2026-10-27-40",
+          "category": "文档",
+          "text": "发布决策审计：确认 apps/api/tsconfig.json 仅新增文件末尾换行，保留工作区不动并标记为提交时排除；修正组件清单将未提交工作区误写为当前 HEAD、实样数量误写为 48 的陈旧表述。"
+        },
+        {
+          "id": "wl-2026-10-27-41",
+          "category": "架构",
+          "text": "更新发布拆分方案：从旧的 6 个提交调整为 8 个提交，按设计系统底座、门禁、sales、delivery、finance/resource、support/cross/acquisition、UI library、文档交接分层；明确业务消费方不能脱离设计系统导出单独验证。"
+        },
+        {
+          "id": "wl-2026-10-27-42",
+          "category": "架构",
+          "text": "提交归属复核发现 ops/maintenance 与版本工作记录模块未被旧拆分方案明确覆盖，已将发布方案修正为 9 个切片，并把 apps/api/tsconfig.json 末尾换行明确列为排除项。"
+        },
+        {
+          "id": "wl-2026-10-27-43",
+          "category": "测试",
+          "text": "暂存前覆盖检查完成：285 项工作区变更全部映射到 9 个提交切片，两个页面测试分别跟随 sales/delivery，唯一排除项是 apps/api/tsconfig.json 的末尾换行。"
+        },
+        {
+          "id": "wl-2026-10-27-44",
+          "category": "设计",
+          "text": "新增 PaymentScheduleRail：按付款期次比例绘制横向细线，已收为蓝色、待收为灰色、逾期为红色、部分收款为蓝灰分段；接入合同列表回款金额列，补齐 UI library 实样、设计系统测试与门禁登记。"
+        },
+        {
+          "id": "wl-2026-10-27-45",
+          "category": "设计",
+          "text": "根据 /contracts 页面反馈收窄 PaymentScheduleRail：移除 SVG 内可见于表格文本的逐期 title 明细，表格只保留简洁细线；改为鼠标悬停时由设计系统 Tooltip 展示对应期次、比例、应收、已收与状态。"
+        },
+        {
+          "id": "wl-2026-10-27-46",
+          "category": "修洞",
+          "text": "浏览器实测发现回款细线的灰色变量写法会退化为黑色，已改用设计系统语义色并将线高从 4px 收窄到 2px；Arco Tooltip 的延迟内容触发不稳定，改为组件内部受控 hover tooltip，实测可显示期次回款明细。"
+        },
+        {
+          "id": "wl-2026-10-27-47",
+          "category": "设计",
+          "text": "根据 /contracts 第二轮反馈新增 PaymentAmountSummary 业务组件：金额列只显示合同额与待收，统一使用紧凑字号；移除已收金额冗余文本，补齐 UI library 实样、导出、测试与组件清单。"
+        },
+        {
+          "id": "wl-2026-10-27-48",
+          "category": "测试",
+          "text": "PaymentAmountSummary 接入时补齐可选 receivableAmount 的 0 缺省契约；定向类型检查、设计系统测试、合同状态测试与全套门禁均恢复通过。"
+        },
+        {
+          "id": "wl-2026-10-27-49",
+          "category": "设计",
+          "text": "根据 /contracts 反馈放宽合同金额列：列宽从 190px 调整为 250px，PaymentScheduleRail 跟随铺满；期次细线间隔从约 2px 增至约 4px，改善横向呼吸感与期次辨识度。"
+        },
+        {
+          "id": "wl-2026-10-27-50",
+          "category": "修洞",
+          "text": "浏览器测量确认外层 Space 的 shrink-to-content 阻止金额组件变宽，已移除合同金额列的收缩型 Space；PaymentAmountSummary 与 PaymentScheduleRail 现在真实填满约 250px 列宽。"
+        },
+        {
+          "id": "wl-2026-10-27-51",
+          "category": "修洞",
+          "text": "优化合同回款横线：线段增至 3px、SVG 响应区域增至 14px，未收款改用更浅的中性边框色；悬停仅显示当前期次，并让当前线段上移 1px 同步出现阴影。"
+        },
+        {
+          "id": "wl-2026-10-27-52",
+          "category": "设计",
+          "text": "开始组件库尺寸校准：修正 UserPicker、PaymentAmountSummary、PaymentScheduleRail 在实样页被整行拉伸的问题，增加按真实业务容器宽度展示的尺寸基准。"
+        },
+        {
+          "id": "wl-2026-10-27-53",
+          "category": "修洞",
+          "text": "合同部分回款期次由蓝灰硬切改为连续 SVG 渐变：已收侧保持蓝色，向待收侧平滑过渡到浅灰；全收、待收和逾期期次维持原有纯色语义。"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-26",
+      "items": [
+        {
+          "id": "wl-2026-10-26-1",
+          "category": "设计",
+          "text": "建立设计系统六层分类与 45 个可复用组件，规范与组件清单落入 docs/design-system/，页面改造统一从 @/design-system 取组件。"
+        },
+        {
+          "id": "wl-2026-10-26-2",
+          "category": "设计",
+          "text": "继续迁移 ProjectDetail360、EmployeeDetail 与 TripForm：将流程记录、过程面板、表单分组、字段网格和指标卡收口为设计系统组件。"
+        },
+        {
+          "id": "wl-2026-10-26-3",
+          "category": "设计",
+          "text": "将智能会议列表/工作台、差旅域 3 个页面及合同详情的 loading 入口统一为 AsyncState，保留页面容器、空态和业务错误态层级。"
+        },
+        {
+          "id": "wl-2026-10-26-4",
+          "category": "底座",
+          "text": "设计系统门禁扩展为严格页面检查：页面不得直接导入 Arco，不得绕过设计系统书写视觉 token、状态色和原始组件。"
+        },
+        {
+          "id": "wl-2026-10-26-5",
+          "category": "修洞",
+          "text": "修复门禁对 borderTop/borderBottom 等分写边框属性的漏检，并补齐新业务组件的真实示例、单测与浏览器视觉验收。"
+        },
+        {
+          "id": "wl-2026-10-26-6",
+          "category": "设计",
+          "text": "差旅标准页的试算输入、版本抽屉与规则抽屉统一为 FormGrid 字段网格，保留主从业务布局与规则结果矩阵的独立语义。"
+        },
+        {
+          "id": "wl-2026-10-26-7",
+          "category": "设计",
+          "text": "差旅借款新建弹窗的六个双列字段统一为 FormGrid，支付方式与借款事由保留为底部单列业务字段。"
+        },
+        {
+          "id": "wl-2026-10-26-8",
+          "category": "设计",
+          "text": "宿舍管理楼栋、入住、费用、维保四个弹窗完成 FormSection/FormGrid 迁移，并新增 2-1-1、5-7 不等宽字段模板与组件库实样。"
+        }
+      ]
+    },
+    {
       "date": "2026-09-07",
       "items": [
         {

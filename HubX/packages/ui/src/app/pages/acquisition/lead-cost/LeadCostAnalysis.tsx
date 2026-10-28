@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Grid, Message, Progress, Select, Space, Table, Tag, Typography } from '@arco-design/web-react';
-import { IconDownload } from '@arco-design/web-react/icon';
+import { Button, DataTable, DatePicker, Grid, IconDownload, Message, PageHeader, PageShell, ProgressBar, SectionCard, Select, Space, StatusTag, Typography } from '@/design-system';
 import { Bar, BarChart, CartesianGrid, Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   buildChannelSummaries,
@@ -86,7 +85,7 @@ export function LeadCostAnalysis() {
 
   const columns = [
     { title: '排名', width: 80, render: (_: unknown, __: unknown, index: number) => index + 1 },
-    { title: '平台', dataIndex: 'platform', width: 100, render: (platform: string) => <Tag color="arcoblue">{platform}</Tag> },
+    { title: '平台', dataIndex: 'platform', width: 100, render: (platform: string) => <StatusTag tone="info">{platform}</StatusTag> },
     { title: '渠道', dataIndex: 'channel', width: 200 },
     { title: '消耗', dataIndex: 'spend', width: 120, render: (value: number) => formatCurrency(value) },
     { title: '退款影响', dataIndex: 'refund', width: 120, render: (value: number) => formatCurrency(value) },
@@ -95,16 +94,18 @@ export function LeadCostAnalysis() {
     { title: '实际成本', dataIndex: 'actualCost', width: 120, render: (value: number) => formatCurrency(value) },
     { title: '有效率', dataIndex: 'validRate', width: 120, render: (value: number) => `${value.toFixed(1)}%` },
     { title: '客资质量', dataIndex: 'qualityRate', width: 120, render: (value: number) => `${value.toFixed(1)}%` },
-    { title: '综合评分', dataIndex: 'score', width: 160, render: (value: number) => <Progress percent={value} size="small" /> },
+    { title: '综合评分', dataIndex: 'score', width: 160, render: (value: number) => <ProgressBar percent={value} size="small" /> },
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-end" style={{ marginBottom: 16 }}>
-        <Button icon={<IconDownload />} onClick={handleExport}>导出 Excel</Button>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="渠道分析"
+        description="按平台与渠道维度对比线索质量与获客成本，支撑投放预算决策。"
+        actions={<Button icon={<IconDownload />} onClick={handleExport}>导出 Excel</Button>}
+      />
 
-      <Card style={{ marginBottom: 16 }}>
+      <SectionCard style={{ marginBottom: 16 }}>
         <Space wrap>
           <DatePicker.RangePicker style={{ width: 260 }} value={draftFilters.dateRange} onChange={(dateRange) => setDraftFilters((current) => ({ ...current, dateRange: dateRange || [] }))} />
           <Select placeholder="平台" mode="multiple" style={{ width: 260 }} allowClear value={draftFilters.platforms} onChange={(selected) => setDraftFilters((current) => ({ ...current, platforms: (selected || []) as LeadCostPlatform[] }))}>
@@ -112,11 +113,11 @@ export function LeadCostAnalysis() {
           </Select>
           <Button type="primary" onClick={() => setFilters(draftFilters)}>分析</Button>
         </Space>
-      </Card>
+      </SectionCard>
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={12}>
-          <Card title="消耗金额与有效线索数对比">
+          <SectionCard title="消耗金额与有效线索数对比">
             <div style={{ height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
@@ -130,10 +131,10 @@ export function LeadCostAnalysis() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </SectionCard>
         </Col>
         <Col span={12}>
-          <Card title="渠道四维能力雷达图">
+          <SectionCard title="渠道四维能力雷达图">
             <div style={{ height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData}>
@@ -155,13 +156,13 @@ export function LeadCostAnalysis() {
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </SectionCard>
         </Col>
       </Row>
 
-      <Card title="渠道综合明细">
-        <Table columns={columns} data={rankedSummaries} scroll={{ x: 1500 }} pagination={false} noDataElement="当前筛选条件下暂无数据" />
-      </Card>
-    </div>
+      <SectionCard title="渠道综合明细">
+        <DataTable columns={columns} data={rankedSummaries} scroll={{ x: 1500 }} pagination={false} emptyDescription="当前筛选条件下暂无数据" />
+      </SectionCard>
+    </PageShell>
   );
 }

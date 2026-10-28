@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Divider,
-  Form,
-  Modal,
-  Select,
-  Space,
-  Typography,
-} from '@arco-design/web-react';
+import { Button, Checkbox, Divider, Form, Modal, Select, Space, Typography } from '@/design-system';
 import type { DeliveryType, DeliveryConfig } from './types';
 import { DELIVERY_TYPES } from './types';
 import { SOP_PHASES, DELIVERY_TYPE_PHASE4_STEPS } from './constants';
 import { SOP_STEP_TEMPLATES } from './sopTemplate';
+import { AlertBanner } from '@/design-system';
 
 const FormItem = Form.Item;
 const { Text } = Typography;
@@ -126,11 +117,7 @@ export function DeliveryConfigModal({
       <Form layout="vertical">
         {/* 项目开始日期缺失警告 */}
         {startDateMissing && (
-          <Alert
-            type="warning"
-            content="请先在项目基础信息中填写开始日期"
-            style={{ marginBottom: 16 }}
-          />
+          <AlertBanner tone="warning" style={{ marginBottom: 16 }}>请先在项目基础信息中填写开始日期</AlertBanner>
         )}
 
         {/* 合同信息（有合同时展示） */}
@@ -195,7 +182,7 @@ export function DeliveryConfigModal({
               <div
                 style={{
                   background: 'var(--color-fill-1)',
-                  borderRadius: 4,
+                  borderRadius: 'var(--radius-xs)',
                   padding: '8px 12px',
                 }}
               >

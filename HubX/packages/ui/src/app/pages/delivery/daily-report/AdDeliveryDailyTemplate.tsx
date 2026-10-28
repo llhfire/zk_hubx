@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Button, Card, Input, InputNumber, Select, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconDelete } from '@arco-design/web-react/icon';
+import { Button, Input, InputNumber, Select, Space, Typography } from '@/design-system';
+import { IconDelete } from '@/design-system';
+import { EmptyState, SectionCard, StatusTag } from '@/design-system';
 import { AdDeliveryReportContent, AdDeliveryWorkItem, WorkAttributionCategory } from './types';
 import { WorkAttributionSelector } from './WorkAttributionSelector';
 import { getWorkAttributionTypeForCategory } from './workAttribution';
@@ -87,7 +88,7 @@ export function AdDeliveryDailyTemplate({ content, department, onChange, omitFol
 
   const renderField = (label: string, control: ReactNode) => (
     <div>
-      <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{label}：</div>
+      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>{label}：</div>
       {control}
     </div>
   );
@@ -113,23 +114,19 @@ export function AdDeliveryDailyTemplate({ content, department, onChange, omitFol
         </Space>
       </div>
 
-      <Text type="secondary" style={{ fontSize: 12 }}>
+      <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
         根据不同类型（线索、项目、新媒体投放、内容、招聘、管理等），选择对应工作项并填写渠道、账户、消耗、客资等信息和工时。
       </Text>
 
       {workItems.length === 0 && (
-        <Card size="small" style={{ background: 'var(--color-fill-2)' }}>
-          <Text type="secondary">请选择一个工作项类型开始填写</Text>
-        </Card>
+        <EmptyState description="请选择一个工作项类型开始填写" />
       )}
 
       {workItems.map((item, index) => (
-        <Card
+        <SectionCard
           key={item.id}
-          size="small"
-          title={<Space><span>工作项 {index + 1}</span><Tag color={item.type === 'ad' || item.type === 'ad-account' ? 'orange' : 'gray'}>{getTypeLabel(item.type)}</Tag></Space>}
+          title={<Space><span>工作项 {index + 1}</span><StatusTag tone={item.type === 'ad' || item.type === 'ad-account' ? 'warning' : 'neutral'}>{getTypeLabel(item.type)}</StatusTag></Space>}
           extra={<Button type="text" status="danger" size="small" icon={<IconDelete />} onClick={() => removeWorkItem(item.id)} />}
-          bodyStyle={{ padding: 16 }}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 120px', gap: 12, marginBottom: 12 }}>
             {renderField('工作归属', (
@@ -208,26 +205,26 @@ export function AdDeliveryDailyTemplate({ content, department, onChange, omitFol
               autoSize={{ minRows: 2, maxRows: 5 }}
             />
           ))}
-        </Card>
+        </SectionCard>
       ))}
 
-      {!omitFollowUpFields && <Card size="small" title="需协助事项" bodyStyle={{ padding: '12px 16px' }}>
+      {!omitFollowUpFields && <SectionCard title="需协助事项">
         <Input.TextArea
           value={content['assistance-needed'] || ''}
           onChange={(value) => updateContent({ 'assistance-needed': value })}
           placeholder="请输入需要协助的事项"
           autoSize={{ minRows: 2, maxRows: 4 }}
         />
-      </Card>}
+      </SectionCard>}
 
-      {!omitFollowUpFields && <Card size="small" title={<span>明日工作计划 <span style={{ color: 'red' }}>*</span></span>} bodyStyle={{ padding: '12px 16px' }}>
+      {!omitFollowUpFields && <SectionCard title={<span>明日工作计划 <span style={{ color: 'var(--ds-tone-danger-fg)' }}>*</span></span>}>
         <Input.TextArea
           value={content['tomorrow-plan'] || ''}
           onChange={(value) => updateContent({ 'tomorrow-plan': value })}
           placeholder="请输入明日工作计划（必填）"
           autoSize={{ minRows: 2, maxRows: 4 }}
         />
-      </Card>}
+      </SectionCard>}
     </Space>
   );
 }

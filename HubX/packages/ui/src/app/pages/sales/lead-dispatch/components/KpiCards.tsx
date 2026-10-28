@@ -1,8 +1,9 @@
 // 告警卡 5 类 + Cohort 成交率卡（PLAN.md 阶段 B：可点击筛选）
 // 点击卡片 = 切换对应快捷分类 Tab
 
-import { Card } from '@arco-design/web-react';
+
 import type { DispatchKpis, DispatchCategory } from '../kpiCalc';
+import { MetricGrid } from '@/design-system';
 
 interface KpiCardsProps {
   kpis: DispatchKpis;
@@ -65,32 +66,18 @@ export function KpiCards({ kpis, activeCategory, onSelectCategory }: KpiCardsPro
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
-      {cards.map((card) => (
-        <Card
-          key={card.title}
-          size="small"
-          hoverable={card.category !== null}
-          style={{
-            cursor: card.category ? 'pointer' : 'default',
-            borderColor: card.category && activeCategory === card.category ? 'rgb(var(--primary-6))' : undefined,
-          }}
-          onClick={() => card.category && onSelectCategory(card.category)}
-        >
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{card.title}</div>
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 600,
-              marginTop: 4,
-              color: card.danger ? 'rgb(var(--danger-6))' : 'var(--color-text-1)',
-            }}
-          >
-            {card.value}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 4 }}>{card.sub}</div>
-        </Card>
-      ))}
-    </div>
+    <MetricGrid
+      columns={3}
+      items={cards.map((card) => ({
+        key: card.title,
+        label: card.title,
+        value: card.value,
+        detail: card.sub,
+        tone: card.danger ? 'danger' : 'neutral',
+        selected: card.category !== null && activeCategory === card.category,
+        onClick: card.category ? () => onSelectCategory(card.category as DispatchCategory) : undefined,
+        ariaLabel: card.category ? `筛选${card.title}` : undefined,
+      }))}
+    />
   );
 }

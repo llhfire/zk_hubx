@@ -9,24 +9,18 @@
  */
 
 import { useState } from 'react';
-import { Drawer, List, Tag, Button, Typography, Space, Message } from '@arco-design/web-react';
-import { IconCopy, IconCalendar } from '@arco-design/web-react/icon';
+import { Drawer, List, Button, Typography, Space, Message } from '@/design-system';
+import { IconCopy, IconCalendar } from '@/design-system';
+import { DateText, EmptyState, StatusTag, type StatusMap } from '@/design-system';
 import type { MinuteVersion } from '../types';
 
 const { Text, Title } = Typography;
 
-const VERSION_REASON_LABEL: Record<MinuteVersion['reason'], string> = {
-  ai_regenerate: 'AI 生成',
-  withdraw_edit: '撤回修改',
-  confirm: '确认',
-  resubmit: '重新提交',
-};
-
-const VERSION_REASON_COLOR: Record<MinuteVersion['reason'], string> = {
-  ai_regenerate: 'blue',
-  withdraw_edit: 'orange',
-  confirm: 'green',
-  resubmit: 'processing',
+const VERSION_REASON: StatusMap<MinuteVersion['reason']> = {
+  ai_regenerate: { label: 'AI 生成', tone: 'info' },
+  withdraw_edit: { label: '撤回修改', tone: 'warning' },
+  confirm: { label: '确认', tone: 'success' },
+  resubmit: { label: '重新提交', tone: 'info' },
 };
 
 interface VersionDrawerProps {
@@ -59,7 +53,7 @@ export function VersionDrawer({ visible, versions, onClose }: VersionDrawerProps
       width={460}
     >
       {sorted.length === 0 ? (
-        <Text style={{ color: 'var(--grey-400)' }}>暂无版本记录</Text>
+        <EmptyState description="暂无版本记录" />
       ) : (
         <List
           dataSource={sorted}
@@ -72,12 +66,10 @@ export function VersionDrawer({ visible, versions, onClose }: VersionDrawerProps
               {/* 版本摘要行 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 <Space size={8}>
-                  <Tag color={VERSION_REASON_COLOR[version.reason]} size="small">
-                    {VERSION_REASON_LABEL[version.reason]}
-                  </Tag>
-                  <Text style={{ fontSize: 13 }}>
-                    <IconCalendar style={{ marginRight: 4, fontSize: 12 }} />
-                    {new Date(version.createdAt).toLocaleString()}
+                  <StatusTag meta={VERSION_REASON[version.reason]} />
+                  <Text style={{ fontSize: 'var(--ds-text-dense)' }}>
+                    <IconCalendar style={{ marginRight: 4, fontSize: 'var(--text-xs)' }} />
+                    <DateText value={version.createdAt} mode="datetime" />
                   </Text>
                 </Space>
                 <Button
@@ -100,23 +92,23 @@ export function VersionDrawer({ visible, versions, onClose }: VersionDrawerProps
                     marginTop: 12,
                     padding: 12,
                     background: 'var(--grey-50)',
-                    borderRadius: 6,
-                    fontSize: 13,
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 'var(--ds-text-dense)',
                   }}
                 >
                   <Title heading={6} style={{ margin: '0 0 8px' }}>
                     {version.snapshot.title}
                   </Title>
-                  <Text style={{ fontSize: 12, color: 'var(--grey-500)', display: 'block', marginBottom: 8 }}>
-                    {new Date(version.snapshot.meetingTime).toLocaleString()} · {version.snapshot.attendeeIds.length} 人参会
+                  <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', display: 'block', marginBottom: 8 }}>
+                    <DateText value={version.snapshot.meetingTime} mode="datetime" /> · {version.snapshot.attendeeIds.length} 人参会
                   </Text>
 
                   {version.snapshot.coreDecisions.length > 0 && (
                     <div style={{ marginBottom: 8 }}>
-                      <Text style={{ fontSize: 12, fontWeight: 600 }}>核心决议：</Text>
+                      <Text style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>核心决议：</Text>
                       <ul style={{ margin: '4px 0', paddingLeft: 16 }}>
                         {version.snapshot.coreDecisions.map((d, i) => (
-                          <li key={i} style={{ fontSize: 12 }}>{d}</li>
+                          <li key={i} style={{ fontSize: 'var(--text-xs)' }}>{d}</li>
                         ))}
                       </ul>
                     </div>
@@ -126,12 +118,12 @@ export function VersionDrawer({ visible, versions, onClose }: VersionDrawerProps
                     <div
                       style={{
                         padding: 8,
-                        background: '#fff',
-                        borderRadius: 4,
+                        background: 'var(--color-white)',
+                        borderRadius: 'var(--radius-xs)',
                         whiteSpace: 'pre-wrap',
                         maxHeight: 200,
                         overflow: 'auto',
-                        fontSize: 12,
+                        fontSize: 'var(--text-xs)',
                         lineHeight: 1.6,
                       }}
                     >
@@ -141,7 +133,7 @@ export function VersionDrawer({ visible, versions, onClose }: VersionDrawerProps
 
                   {version.snapshot.actionItems.length > 0 && (
                     <div style={{ marginTop: 8 }}>
-                      <Text style={{ fontSize: 12, fontWeight: 600 }}>
+                      <Text style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>
                         行动项：{version.snapshot.actionItems.length} 项
                       </Text>
                     </div>

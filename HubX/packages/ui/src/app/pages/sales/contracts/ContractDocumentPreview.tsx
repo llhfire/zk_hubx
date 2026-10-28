@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   Button,
-  Card,
   Form,
   Input,
   Message,
@@ -11,7 +10,7 @@ import {
   Select,
   Space,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconBold,
   IconItalic,
@@ -20,11 +19,11 @@ import {
   IconRedo,
   IconUndo,
   IconUnorderedList,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { initialProjects } from '../../delivery/project/mockData';
 import { useContracts } from './ContractsContext';
 import { contractTemplates, renderContractDocument } from './templates';
-import { PageShell } from '@/design-system';
+import { PageShell, SectionCard } from '@/design-system';
 import type { ContractFormData, ContractVersionAttachment } from './types';
 import { createDocxBlob } from '../../../documents/wordExport';
 
@@ -184,7 +183,7 @@ export function ContractDocumentPreview() {
         </Select>
       </div>
 
-      <Card bodyStyle={{ padding: 0 }}>
+      <SectionCard bodyStyle={{ padding: 0 }}>
         {!isReadonly && (
           <div
             style={{
@@ -237,13 +236,13 @@ export function ContractDocumentPreview() {
               margin: '0 auto',
               padding: '56px 64px',
               background: 'var(--color-bg-2)',
-              boxShadow: '0 1px 4px rgb(0 0 0 / 12%)',
+              boxShadow: 'var(--ds-shadow-card)',
               outline: 'none',
             }}
             dangerouslySetInnerHTML={{ __html: documentHtml }}
           />
         </div>
-      </Card>
+      </SectionCard>
 
       <div
         style={{

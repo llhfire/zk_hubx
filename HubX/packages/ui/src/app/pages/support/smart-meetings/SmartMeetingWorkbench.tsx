@@ -11,12 +11,17 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { Button, Card, Descriptions, Message, Result, Space, Spin, Tabs, Tag, Typography } from '@arco-design/web-react';
-import { IconSave, IconSend, IconDelete, IconCheck, IconUndo, IconArchive, IconCopy, IconBrush } from '@arco-design/web-react/icon';
+import { AsyncState, Button, Message, Result, Space, Tabs, Typography } from '@/design-system';
+import { IconSave, IconSend, IconDelete, IconCheck, IconUndo, IconArchive, IconCopy, IconBrush } from '@/design-system';
 import {
-  PageShell,
+  AlertBanner,
+  DateText,
+  DescriptionsCard,
   MetricGrid,
+  PageShell,
   ProcessOverview,
+  SectionTabs,
+  SectionCard,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
@@ -327,7 +332,7 @@ export function SmartMeetingWorkbench() {
   if (!isNew && loading) {
     return (
       <PageShell breadcrumbs={[{ label: '智能会议' }, { label: '纪要列表', to: '/smart-meetings' }, { label: '加载中' }]}>
-        <Card className="smart-meeting-workbench__state"><Spin size={40} /></Card>
+        <SectionCard className="smart-meeting-workbench__state"><AsyncState status="loading" /></SectionCard>
       </PageShell>
     );
   }
@@ -335,14 +340,14 @@ export function SmartMeetingWorkbench() {
   if (!isNew && !minute) {
     return (
       <PageShell breadcrumbs={[{ label: '智能会议' }, { label: '纪要列表', to: '/smart-meetings' }, { label: '未找到' }]}>
-        <Card className="smart-meeting-workbench__state">
+        <SectionCard className="smart-meeting-workbench__state">
           <Result
             status="404"
             title="纪要不存在"
             subTitle="该会议纪要不存在或已被删除。"
             extra={<Button type="primary" onClick={() => navigate('/smart-meetings')}>返回纪要列表</Button>}
           />
-        </Card>
+        </SectionCard>
       </PageShell>
     );
   }
@@ -350,9 +355,9 @@ export function SmartMeetingWorkbench() {
   if (minuteView && !minuteView.visible) {
     return (
       <PageShell breadcrumbs={[{ label: '智能会议' }, { label: '纪要列表', to: '/smart-meetings' }, { label: '无权查看' }]}>
-        <Card className="smart-meeting-workbench__state">
-          <Result status="403" title="无权查看此纪要" subTitle="请联系会议整理人或管理员获取权限。" />
-        </Card>
+        <SectionCard className="smart-meeting-workbench__state">
+          <AsyncState status="forbidden" forbiddenText="无权查看此纪要，请联系会议整理人或管理员获取权限。" />
+        </SectionCard>
       </PageShell>
     );
   }
@@ -387,8 +392,8 @@ export function SmartMeetingWorkbench() {
         tags={(
           <>
             <StatusTag meta={MINUTE_STATUS[status]} />
-            {activeMinute.adminSource && <Tag color="cyan">来自行政会议</Tag>}
-            <Tag color={isReadonly ? 'gray' : 'green'}>{isReadonly ? '只读' : '可编辑'}</Tag>
+            {activeMinute.adminSource && <StatusTag tone="info">来自行政会议</StatusTag>}
+            <StatusTag tone={isReadonly ? 'neutral' : 'success'}>{isReadonly ? '只读' : '可编辑'}</StatusTag>
           </>
         )}
         actions={(
@@ -411,7 +416,7 @@ export function SmartMeetingWorkbench() {
 
       <MetricGrid
         items={[
-          { key: 'time', label: '会议时间', value: formatMeetingTime(meetingTime) },
+          { key: 'time', label: '会议时间', value: <DateText value={meetingTime} mode="datetime" placeholder="待填写" /> },
           { key: 'attendees', label: '参会人数', value: `${attendeeIds.length} 人`, detail: attendeeIds.map(userName).join('、') || '待添加' },
           { key: 'decisions', label: '核心决议', value: `${coreDecisions.length} 项`, tone: coreDecisions.length > 0 ? 'success' : 'neutral' },
           { key: 'actions', label: '行动事项', value: `${openActionCount} 待办`, detail: `${syncReadyCount} 项同步就绪`, tone: openActionCount > 0 ? 'warning' : 'neutral' },
@@ -421,56 +426,81 @@ export function SmartMeetingWorkbench() {
       />
 
       {activeMinute.adminSource?.sourceStatus === 'cancelled' && (
-        <div className="smart-meeting-workbench__source-alert smart-meeting-workbench__source-alert--warning">来源行政会议已取消，纪要继续保留。</div>
+        <AlertBanner tone="warning" closable>来源行政会议已取消，纪要继续保留。</AlertBanner>
       )}
       {activeMinute.adminSource?.sourceStatus === 'deleted' && (
-        <div className="smart-meeting-workbench__source-alert smart-meeting-workbench__source-alert--danger">来源行政会议已删除，纪要继续保留。</div>
+        <AlertBanner tone="danger" closable>来源行政会议已删除，纪要继续保留。</AlertBanner>
       )}
 
       <SplitLayout>
         <SplitLayoutMain>
-          <Card className="smart-meeting-workbench__tabs-card">
-            <Tabs activeTab={activeWorkspace} onChange={setActiveWorkspace}>
-              <TabPane key="prepare" title="会议整理">
-                <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
-                  <SourcePanel source={source} canSee={minuteView?.canSeeSourceText ?? true} readonly={isReadonly} onImport={setSource} />
-                  <MetaPanel
-                    title={title} meetingTime={meetingTime} attendeeIds={attendeeIds}
-                    organizerId={organizerId} reviewerId={reviewerId} refs={refs}
-                    readonly={isReadonly}
-                    onTitleChange={setTitle} onTimeChange={setMeetingTime}
-                    onAttendeesChange={setAttendeeIds} onOrganizerChange={setOrganizerId}
-                    onReviewerChange={setReviewerId} onRefsChange={setRefs}
-                  />
-                </div>
-              </TabPane>
-              <TabPane key="content" title="纪要内容">
-                <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
-                  <DecisionsPanel decisions={coreDecisions} readonly={isReadonly} onChange={setCoreDecisions} />
-                  <ContentPanel
-                    contentMarkdown={contentMarkdown} polishPreview={polishPreview}
-                    readonly={isReadonly}
-                    onContentChange={setContentMarkdown} onPolishRequest={handlePolish}
-                    onPolishAccept={handlePolishAccept} onPolishDiscard={handlePolishDiscard}
-                  />
-                </div>
-              </TabPane>
-              <TabPane key="actions" title={`行动事项 (${actionItems.length})`}>
-                <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
-                  <ActionItemsPanel
-                    actionItems={actionItems}
-                    readonly={isReadonly}
-                    confirmedReadonly={status === 'confirmed' || status === 'archived'}
-                    onChange={setActionItems}
-                  />
-                </div>
-              </TabPane>
-            </Tabs>
-          </Card>
+          <SectionCard className="smart-meeting-workbench__tabs-card">
+            <SectionTabs
+              activeKey={activeWorkspace}
+              onChange={setActiveWorkspace}
+              items={[
+                {
+                  key: 'prepare',
+                  label: "会议整理",
+                  content: (
+                    <>
+                              <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
+                                <SourcePanel source={source} canSee={minuteView?.canSeeSourceText ?? true} readonly={isReadonly} onImport={setSource} />
+                                <MetaPanel
+                                  title={title} meetingTime={meetingTime} attendeeIds={attendeeIds}
+                                  organizerId={organizerId} reviewerId={reviewerId} refs={refs}
+                                  readonly={isReadonly}
+                                  onTitleChange={setTitle} onTimeChange={setMeetingTime}
+                                  onAttendeesChange={setAttendeeIds} onOrganizerChange={setOrganizerId}
+                                  onReviewerChange={setReviewerId} onRefsChange={setRefs}
+                                />
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'content',
+                  label: "纪要内容",
+                  content: (
+                    <>
+                              <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
+                                <DecisionsPanel decisions={coreDecisions} readonly={isReadonly} onChange={setCoreDecisions} />
+                                <ContentPanel
+                                  contentMarkdown={contentMarkdown} polishPreview={polishPreview}
+                                  readonly={isReadonly}
+                                  onContentChange={setContentMarkdown} onPolishRequest={handlePolish}
+                                  onPolishAccept={handlePolishAccept} onPolishDiscard={handlePolishDiscard}
+                                />
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'actions',
+                  label: `行动事项 (${actionItems.length})`,
+                  content: (
+                    <>
+                              <div className="smart-meeting-workbench__tab-panel smart-meeting-workbench__main-stack">
+                                <ActionItemsPanel
+                                  actionItems={actionItems}
+                                  readonly={isReadonly}
+                                  confirmedReadonly={status === 'confirmed' || status === 'archived'}
+                                  onChange={setActionItems}
+                                />
+                              </div>
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutMain>
 
         <SplitLayoutAside>
-          <Card title="当前处理" size="small">
+          <SectionCard title="当前处理">
             <Space direction="vertical" size={12} className="smart-meeting-workbench__aside-stack">
               <div>
                 <Text type="secondary">当前阶段</Text>
@@ -486,44 +516,44 @@ export function SmartMeetingWorkbench() {
                 <div className="smart-meeting-workbench__aside-value">{isReadonly ? '当前为只读状态' : '可继续编辑并保存'}</div>
               </div>
             </Space>
-          </Card>
+          </SectionCard>
 
-          <Card title="会议角色" size="small">
-            <Descriptions column={1} data={[
-              { label: '整理人', value: userName(organizerId) },
-              { label: '确认人', value: reviewerId ? userName(reviewerId) : '待选择' },
-              { label: '参会人', value: attendeeIds.map(userName).join('、') || '待添加' },
-              { label: '会议时间', value: formatMeetingTime(meetingTime) },
+          <SectionCard title="会议角色">
+            <DescriptionsCard bare columns={1} items={[
+              { key: 'organizer', label: '整理人', value: userName(organizerId) },
+              { key: 'reviewer', label: '确认人', value: reviewerId ? userName(reviewerId) : '待选择' },
+              { key: 'attendees', label: '参会人', value: attendeeIds.map(userName).join('、') || '待添加', long: true },
+              { key: 'meetingTime', label: '会议时间', value: formatMeetingTime(meetingTime) },
             ]} />
-          </Card>
+          </SectionCard>
 
-          <Card title="业务关联" size="small">
+          <SectionCard title="业务关联">
             {refs.length > 0 ? (
               <div className="smart-meeting-workbench__tag-list">
-                {refs.map((ref) => <Tag key={`${ref.kind}-${ref.id}`} color="arcoblue">{ref.displaySnapshot}</Tag>)}
+                {refs.map((ref) => <StatusTag key={`${ref.kind}-${ref.id}`} tone="info">{ref.displaySnapshot}</StatusTag>)}
               </div>
             ) : <Text type="secondary">暂未关联线索、合同、项目或业务单。</Text>}
-          </Card>
+          </SectionCard>
 
-          <Card title="提交检查" size="small">
+          <SectionCard title="提交检查">
             <div className="smart-meeting-workbench__checklist">
               {checklist.map((item) => (
                 <div key={item.label} className="smart-meeting-workbench__check-row">
                   <Text>{item.label}</Text>
-                  <Tag color={item.done ? 'green' : 'orange'}>{item.done ? '已完成' : '待补充'}</Tag>
+                  <StatusTag tone={item.done ? 'success' : 'warning'}>{item.done ? '已完成' : '待补充'}</StatusTag>
                 </div>
               ))}
             </div>
-          </Card>
+          </SectionCard>
 
-          <Card title="行动项摘要" size="small">
-            <Descriptions column={1} data={[
-              { label: '行动项总数', value: `${actionItems.length} 项` },
-              { label: '待完成', value: `${openActionCount} 项` },
-              { label: '已完成', value: `${completedActionCount} 项` },
-              { label: '同步就绪', value: `${syncReadyCount} 项` },
+          <SectionCard title="行动项摘要">
+            <DescriptionsCard bare columns={1} items={[
+              { key: 'total', label: '行动项总数', value: `${actionItems.length} 项` },
+              { key: 'open', label: '待完成', value: `${openActionCount} 项` },
+              { key: 'done', label: '已完成', value: `${completedActionCount} 项` },
+              { key: 'syncReady', label: '同步就绪', value: `${syncReadyCount} 项` },
             ]} />
-          </Card>
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 

@@ -1,23 +1,30 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
+  confirmAction,
+  DateText,
+  MetricGrid,
+  MoneyText,
+  StatusTag,
+  type StatusTone,
+  STATUS_TONE_VARS,
+} from '@/design-system';
+import {
   Button,
-  Card,
   Collapse,
   Divider,
   Form,
   Input,
   InputNumber,
   Message,
-  Grid,
+  FormGrid,
   Modal,
   Radio,
   Checkbox,
   Space,
-  Tag,
   Timeline,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconArrowRight,
   IconCheckCircle,
@@ -31,71 +38,61 @@ import {
   IconMessage,
   IconPlus,
   IconRight,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { computeAmountBreakdown } from '../../quotation/quoteFlow';
 import {
-  QUOTE_STATUS_COLORS,
-  QUOTE_STATUS_LABELS,
+  QUOTE_STATUS,
   type CustomerFeedbackDisposition,
   type Quote,
   type QuoteCustomerFeedback,
 } from '../../quotation/types';
 import './LeadQuotationManager.css';
-import { formatMoney as money } from '../../../../utils/money';
 
 const { Text } = Typography;
 
 export const FEEDBACK_DISPOSITION_MAP: Record<
   CustomerFeedbackDisposition,
-  { label: string; tagColor: string; description: string; pillClass: string }
+  { label: string; tagTone: StatusTone; description: string }
 > = {
   price_high: {
     label: '价格偏高',
-    tagColor: 'red',
+    tagTone: 'danger',
     description: '超出客户预算或审批额度',
-    pillClass: 'pill-price_high',
   },
   timeline_long: {
     label: '工期偏长',
-    tagColor: 'orange',
+    tagTone: 'warning',
     description: '交付工期较长，期望提前上线',
-    pillClass: 'pill-timeline_long',
   },
   scope_mismatch: {
     label: '范围调整',
-    tagColor: 'arcoblue',
+    tagTone: 'info',
     description: '需调整/裁剪功能模块范围',
-    pillClass: 'pill-scope_mismatch',
   },
   payment_terms: {
     label: '付款争议',
-    tagColor: 'purple',
+    tagTone: 'purple',
     description: '对付款节点或首付比例有异议',
-    pillClass: 'pill-payment_terms',
   },
   tech_concerns: {
     label: '技术疑虑',
-    tagColor: 'cyan',
+    tagTone: 'cyan',
     description: '对架构、多端适配或性能有顾虑',
-    pillClass: 'pill-scope_mismatch',
   },
   competitor: {
     label: '竞对冲击',
-    tagColor: 'magenta',
+    tagTone: 'pink',
     description: '竞争对手给出更低报价或赠送增项',
-    pillClass: 'pill-price_high',
   },
   approved: {
     label: '基本认可',
-    tagColor: 'green',
+    tagTone: 'success',
     description: '认可方案与报价，推进合同签约',
-    pillClass: 'pill-approved',
   },
   other: {
     label: '其他反馈',
-    tagColor: 'gray',
+    tagTone: 'neutral',
     description: '其他商务或技术诉求',
-    pillClass: '',
   },
 };
 
@@ -242,7 +239,7 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
 
       // 如果建议发起新版本，提示是否立即生成
       if (values.nextAction === 'new_version' && onNewVersion) {
-        Modal.confirm({
+        confirmAction({
           title: '已记录客户反馈，是否立即发起新版本报价？',
           content: `当前反馈明确需调整方案，可立即基于 ${currentQuote.version} 生成修改版并调整工时与清单。`,
           okText: '立即发起新版本',
@@ -265,9 +262,9 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
   if (quotes.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-4)' }}>
-        <IconFile style={{ fontSize: 40, marginBottom: 12, color: 'var(--color-text-4)' }} />
-        <div style={{ fontSize: 14, marginBottom: 6, color: 'var(--color-text-2)' }}>暂无报价方案</div>
-        <div style={{ fontSize: 12, marginBottom: 16 }}>可发起在线表单或文件流转的多版本方案与人天测算</div>
+        <IconFile style={{ fontSize: 'var(--text-4xl)', marginBottom: 12, color: 'var(--color-text-4)' }} />
+        <div style={{ fontSize: 'var(--text-sm)', marginBottom: 6, color: 'var(--color-text-2)' }}>暂无报价方案</div>
+        <div style={{ fontSize: 'var(--text-xs)', marginBottom: 16 }}>可发起在线表单或文件流转的多版本方案与人天测算</div>
         <Button size="small" type="primary" icon={<IconPlus />} onClick={onCreateQuote}>
           立即发起首次报价
         </Button>
@@ -319,22 +316,20 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
               >
                 <div className="lead-quote-mini-card__head">
                   <Space size={6}>
-                    <Tag size="small" color="arcoblue">
+                    <StatusTag size="small" tone="info">
                       {q.version}
-                    </Tag>
-                    <Tag size="small" color={QUOTE_STATUS_COLORS[q.status]}>
-                      {QUOTE_STATUS_LABELS[q.status]}
-                    </Tag>
+                    </StatusTag>
+                    <StatusTag meta={QUOTE_STATUS[q.status]} />
                   </Space>
                   <Space size={4}>
                     {isSelected && (
-                      <Tag size="small" color="arcoblue" style={{ fontSize: 11, padding: '0 6px', fontWeight: 600 }}>
+                      <StatusTag size="small" tone="info" style={{ fontSize: 'var(--ds-text-caption)', padding: '0 6px', fontWeight: 600 }}>
                         检视中
-                      </Tag>
+                      </StatusTag>
                     )}
-                    <Tag size="small" color={q.flowMode === 'file' ? 'purple' : 'gray'}>
+                    <StatusTag size="small" tone={q.flowMode === 'file' ? 'purple' : 'neutral'}>
                       {q.flowMode === 'file' ? '文件' : '在线'}
-                    </Tag>
+                    </StatusTag>
                   </Space>
                 </div>
 
@@ -343,22 +338,22 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                 </div>
 
                 <div className="lead-quote-mini-card__metrics">
-                  <span className="lead-quote-mini-card__price">{money(grandTotal)}</span>
+                  <span className="lead-quote-mini-card__price"><MoneyText value={grandTotal} tone="danger" /></span>
                   <span className="lead-quote-mini-card__sub">
                     {workDays} 工作日 · {totalDays.toFixed(1)} 人天
                   </span>
                 </div>
 
                 {disp ? (
-                  <div className={`lead-quote-mini-card__feedback-pill ${disp.pillClass}`}>
-                    <span style={{ fontWeight: 600 }}>● 反馈: {disp.label}</span>
+                  <div className="lead-quote-mini-card__feedback-pill">
+                    <StatusTag tone={disp.tagTone}>● 反馈: {disp.label}</StatusTag>
                     {latestFb?.targetBudget ? (
-                      <span>(期望 {money(latestFb.targetBudget)})</span>
+                      <span>(期望 <MoneyText value={latestFb.targetBudget} />)</span>
                     ) : null}
                   </div>
                 ) : (
-                  <div className="lead-quote-mini-card__feedback-pill" style={{ color: 'var(--color-text-4)' }}>
-                    <span>待跟进客户反馈</span>
+                  <div className="lead-quote-mini-card__feedback-pill">
+                    <StatusTag tone="neutral">待跟进客户反馈</StatusTag>
                   </div>
                 )}
               </div>
@@ -374,7 +369,7 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
           >
             <Collapse.Item
               name="voided"
-              header={<span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>已作废历史版本 ({voidedQuotes.length})</span>}
+              header={<span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>已作废历史版本 ({voidedQuotes.length})</span>}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {voidedQuotes.map((q) => (
@@ -383,16 +378,16 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                     style={{
                       padding: '8px 10px',
                       background: 'var(--color-fill-2)',
-                      borderRadius: 6,
-                      fontSize: 12,
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 'var(--text-xs)',
                       opacity: 0.7,
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
                       <span style={{ textDecoration: 'line-through' }}>{q.basicInfo.projectName}</span>
-                      <Tag size="small" color="gray">{q.version}</Tag>
+                      <StatusTag size="small" tone="neutral">{q.version}</StatusTag>
                     </div>
-                    <div style={{ color: 'var(--color-text-4)', fontSize: 11 }}>
+                    <div style={{ color: 'var(--color-text-4)', fontSize: 'var(--ds-text-caption)' }}>
                       作废原因：{q.timeline.find((t) => t.action === 'mark_voided')?.note || '未知原因'}
                     </div>
                   </div>
@@ -414,22 +409,20 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   <span className="lead-quote-detail-head__title">
                     {currentQuote.basicInfo.projectName}
                   </span>
-                  <Tag color="arcoblue">{currentQuote.version}</Tag>
-                  <Tag color={QUOTE_STATUS_COLORS[currentQuote.status]}>
-                    {QUOTE_STATUS_LABELS[currentQuote.status]}
-                  </Tag>
-                  <Tag color={currentQuote.flowMode === 'file' ? 'purple' : 'gray'}>
+                  <StatusTag tone="info">{currentQuote.version}</StatusTag>
+                  <StatusTag meta={QUOTE_STATUS[currentQuote.status]} />
+                  <StatusTag tone={currentQuote.flowMode === 'file' ? 'purple' : 'neutral'}>
                     {currentQuote.flowMode === 'file' ? '文件流转' : '在线数据流转'}
-                  </Tag>
-                  <Tag color="cyan" size="small" style={{ fontSize: 11 }}>
+                  </StatusTag>
+                  <StatusTag tone="cyan" size="small" style={{ fontSize: 'var(--ds-text-caption)' }}>
                     关联方案详情
-                  </Tag>
+                  </StatusTag>
                 </div>
                 <div className="lead-quote-detail-head__meta">
                   <span>编号：<strong>{currentQuote.quoteNo}</strong></span>
                   <span>销售责任人：{currentQuote.salesOwnerName || '张三'}</span>
                   <span>技术评估人：{currentQuote.basicInfo.techEvaluatorName || '罗总'}</span>
-                  <span>更新时间：{currentQuote.updatedAt || currentQuote.createdAt}</span>
+                  <span>更新时间：<DateText value={currentQuote.updatedAt || currentQuote.createdAt} mode="datetime" /></span>
                   {currentQuote.flowMode === 'file' && currentQuote.fileFlow?.evaluationFileName && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       评估原件：<strong>{currentQuote.fileFlow.evaluationFileName}</strong>
@@ -479,40 +472,30 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
             </div>
 
             {/* 核心商务指标 3 栏网格 */}
-            <div className="lead-quote-metrics-grid">
-              <div className="lead-quote-metric-item">
-                <div className="lead-quote-metric-item__label">商务总报价</div>
-                <div className="lead-quote-metric-item__val" style={{ color: 'rgb(var(--red-6))' }}>
-                  {money(currentGrandTotal)}
-                </div>
-                <div className="lead-quote-metric-item__sub">
-                  含税 · 质保 {currentQuote.summary?.warrantyYears ?? 1} 年 · {currentQuote.summary?.invoiceType || '专票'}
-                </div>
-              </div>
-
-              <div className="lead-quote-metric-item">
-                <div className="lead-quote-metric-item__label">交付工期与人天</div>
-                <div className="lead-quote-metric-item__val">
-                  {currentWorkDays} <span style={{ fontSize: 13, fontWeight: 'normal' }}>工作日</span>
-                </div>
-                <div className="lead-quote-metric-item__sub">
-                  合计 {currentTotalLaborDays.toFixed(1)} 人天 ·{' '}
-                  {currentQuote.evalSheet?.evaluationUnits?.length ?? 0} 个估算单元
-                </div>
-              </div>
-
-              <div className="lead-quote-metric-item">
-                <div className="lead-quote-metric-item__label">方案规模与覆盖</div>
-                <div className="lead-quote-metric-item__val">
-                  {(currentQuote.endpointConfigs || []).length}{' '}
-                  <span style={{ fontSize: 13, fontWeight: 'normal' }}>端</span>
-                </div>
-                <div className="lead-quote-metric-item__sub">
-                  {(currentQuote.featureList || []).length} 个一级模块 ·{' '}
-                  {(currentQuote.featureList || []).reduce((s, m) => s + (m.subFeatures?.length || 0), 0)} 个二级功能
-                </div>
-              </div>
-            </div>
+            <MetricGrid
+              columns={3}
+              items={[
+                {
+                  key: 'quote-total',
+                  label: '商务总报价',
+                  value: <MoneyText value={currentGrandTotal} tone="danger" />,
+                  detail: `含税 · 质保 ${currentQuote.summary?.warrantyYears ?? 1} 年 · ${currentQuote.summary?.invoiceType || '专票'}`,
+                  tone: 'danger',
+                },
+                {
+                  key: 'delivery-effort',
+                  label: '交付工期与人天',
+                  value: `${currentWorkDays} 工作日`,
+                  detail: `合计 ${currentTotalLaborDays.toFixed(1)} 人天 · ${currentQuote.evalSheet?.evaluationUnits?.length ?? 0} 个估算单元`,
+                },
+                {
+                  key: 'scope-coverage',
+                  label: '方案规模与覆盖',
+                  value: `${(currentQuote.endpointConfigs || []).length} 端`,
+                  detail: `${(currentQuote.featureList || []).length} 个一级模块 · ${(currentQuote.featureList || []).reduce((s, m) => s + (m.subFeatures?.length || 0), 0)} 个二级功能`,
+                },
+              ]}
+            />
 
             {/* ─── 客户商务反馈与诉求跟踪（核心高亮专区） ─── */}
             <section className="lead-quote-feedback-section">
@@ -521,9 +504,9 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   <IconMessage style={{ color: 'rgb(var(--primary-6))' }} />
                   <span>客户商务反馈与博弈跟踪</span>
                   {feedbacks.length > 0 && (
-                    <Tag size="small" color="blue">
+                    <StatusTag size="small" tone="info">
                       共 {feedbacks.length} 次沟通反馈
-                    </Tag>
+                    </StatusTag>
                   )}
                 </div>
                 <Button
@@ -542,17 +525,18 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   <div className="lead-quote-feedback-card">
                     <div className="lead-quote-feedback-card__meta">
                       <Space size={8}>
-                        <Tag
-                          color={FEEDBACK_DISPOSITION_MAP[latestFeedback.disposition]?.tagColor || 'blue'}
-                        >
+                        <StatusTag tone={FEEDBACK_DISPOSITION_MAP[latestFeedback.disposition]?.tagTone || 'info'}>
                           {FEEDBACK_DISPOSITION_MAP[latestFeedback.disposition]?.label || '方案反馈'}
-                        </Tag>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        </StatusTag>
+                        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
                           {FEEDBACK_DISPOSITION_MAP[latestFeedback.disposition]?.description}
                         </Text>
                       </Space>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
-                        记录人：{latestFeedback.recordedBy} · {latestFeedback.recordedAt}
+                      <span
+                        aria-label={`记录人：${latestFeedback.recordedBy} · ${latestFeedback.recordedAt}`}
+                        style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}
+                      >
+                        记录人：{latestFeedback.recordedBy} · <DateText value={latestFeedback.recordedAt} mode="datetime" />
                       </span>
                     </div>
 
@@ -566,23 +550,23 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                               <span>当前报价</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                              <span style={{ fontWeight: 600, fontSize: 14 }}>
-                                {money(latestFeedback.targetBudget)}
+                              <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                                <MoneyText value={latestFeedback.targetBudget} />
                               </span>
-                              <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
-                                {money(currentGrandTotal)}
+                              <span style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>
+                                <MoneyText value={currentGrandTotal} />
                               </span>
                             </div>
                             <div style={{ marginTop: 4 }}>
                               {currentGrandTotal > latestFeedback.targetBudget ? (
-                                <span className="diff-alert-red lead-quote-feedback-gap-card__diff">
-                                  超出客户预算 {money(currentGrandTotal - latestFeedback.targetBudget)} (
+                                <StatusTag tone="danger" className="lead-quote-feedback-gap-card__diff">
+                                  超出客户预算 <MoneyText value={currentGrandTotal - latestFeedback.targetBudget} /> (
                                   +{(((currentGrandTotal - latestFeedback.targetBudget) / latestFeedback.targetBudget) * 100).toFixed(1)}%)
-                                </span>
+                                </StatusTag>
                               ) : (
-                                <span className="diff-alert-green lead-quote-feedback-gap-card__diff">
-                                  在客户预算范围内 (节余 {money(latestFeedback.targetBudget - currentGrandTotal)})
-                                </span>
+                                <StatusTag tone="success" className="lead-quote-feedback-gap-card__diff">
+                                  在客户预算范围内 (节余 <MoneyText value={latestFeedback.targetBudget - currentGrandTotal} />)
+                                </StatusTag>
                               )}
                             </div>
                           </div>
@@ -595,22 +579,22 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                               <span>当前方案工期</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                              <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
                                 {latestFeedback.targetDays} 工作日
                               </span>
-                              <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
+                              <span style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>
                                 {currentWorkDays} 工作日
                               </span>
                             </div>
                             <div style={{ marginTop: 4 }}>
                               {currentWorkDays > latestFeedback.targetDays ? (
-                                <span className="diff-alert-orange lead-quote-feedback-gap-card__diff">
+                                <StatusTag tone="warning" className="lead-quote-feedback-gap-card__diff">
                                   超出客户期望 {currentWorkDays - latestFeedback.targetDays} 工作日（需排期前置或压缩测试）
-                                </span>
+                                </StatusTag>
                               ) : (
-                                <span className="diff-alert-green lead-quote-feedback-gap-card__diff">
+                                <StatusTag tone="success" className="lead-quote-feedback-gap-card__diff">
                                   满足工期预期（提前 {latestFeedback.targetDays - currentWorkDays} 工作日）
-                                </span>
+                                </StatusTag>
                               )}
                             </div>
                           </div>
@@ -639,10 +623,10 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                     {latestFeedback.nextAction && (
                       <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Space size={6}>
-                          <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>处置建议：</span>
-                          <Tag size="small" color="arcoblue">
+                          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>处置建议：</span>
+                          <StatusTag size="small" tone="info">
                             {NEXT_ACTION_LABELS[latestFeedback.nextAction] || latestFeedback.nextAction}
-                          </Tag>
+                          </StatusTag>
                         </Space>
                         {latestFeedback.nextAction === 'new_version' && onNewVersion && (
                           <Button
@@ -679,13 +663,13 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                             {feedbacks.slice(1).map((fb) => (
                               <Timeline.Item
                                 key={fb.id}
-                                label={fb.recordedAt}
-                                dotColor={FEEDBACK_DISPOSITION_MAP[fb.disposition]?.tagColor === 'red' ? '#f53f3f' : '#165dff'}
+                                label={<DateText value={fb.recordedAt} mode="datetime" />}
+                                dotColor={STATUS_TONE_VARS[FEEDBACK_DISPOSITION_MAP[fb.disposition]?.tagTone || 'info'].fg}
                               >
-                                <div style={{ fontSize: 12 }}>
-                                  <Tag size="small" color={FEEDBACK_DISPOSITION_MAP[fb.disposition]?.tagColor}>
+                                <div style={{ fontSize: 'var(--text-xs)' }}>
+                                  <StatusTag size="small" tone={FEEDBACK_DISPOSITION_MAP[fb.disposition]?.tagTone}>
                                     {FEEDBACK_DISPOSITION_MAP[fb.disposition]?.label}
-                                  </Tag>
+                                  </StatusTag>
                                   <span style={{ marginLeft: 8, color: 'var(--color-text-1)' }}>{fb.content}</span>
                                   {fb.strategy && (
                                     <div style={{ color: 'var(--color-text-3)', marginTop: 4 }}>策略：{fb.strategy}</div>
@@ -701,10 +685,10 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                 </div>
               ) : (
                 <div className="lead-quote-feedback-empty">
-                  <div style={{ fontSize: 13, color: 'var(--color-text-2)', marginBottom: 4 }}>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-2)', marginBottom: 4 }}>
                     方案已生成，尚未记录客户商务反馈
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-4)', marginBottom: 12 }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)', marginBottom: 12 }}>
                     向客户出具报价或方案后，可在此记录客户对价格、交付周期、功能范围等商务意见，便于针对性调整方案
                   </div>
                   <Button size="small" type="primary" icon={<IconEdit />} onClick={handleOpenFeedbackModal}>
@@ -767,29 +751,28 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
             rules={[{ required: true, message: '请选择客户反馈倾向' }]}
           >
             <Radio.Group style={{ width: '100%' }}>
-              <Grid.Row gutter={[8, 8]}>
+              <FormGrid columns={2}>
                 {Object.entries(FEEDBACK_DISPOSITION_MAP).map(([key, config]) => (
-                  <Grid.Col span={12} key={key}>
+                  <div key={key}>
                     <Radio value={key}>
                       <span style={{ fontWeight: 500 }}>{config.label}</span>
-                      <span style={{ fontSize: 11, color: 'var(--color-text-3)', marginLeft: 4 }}>
+                      <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginLeft: 4 }}>
                         ({config.description})
                       </span>
                     </Radio>
-                  </Grid.Col>
+                  </div>
                 ))}
-              </Grid.Row>
+              </FormGrid>
             </Radio.Group>
           </Form.Item>
 
           {/* 期望预算与工期（当反馈为价格高或工期长时强烈建议录入） */}
-          <Grid.Row gutter={12}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <Form.Item
                 label={
                   <Space>
                     <span>客户期望预算 (元)</span>
-                    <Tooltip content={`当前方案报价 ${money(currentGrandTotal)}`}>
+                    <Tooltip content={<>当前方案报价 <MoneyText value={currentGrandTotal} /></>}>
                       <IconInfoCircle />
                     </Tooltip>
                   </Space>
@@ -798,13 +781,13 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                 extra={
                   formTargetBudget ? (
                     currentGrandTotal > formTargetBudget ? (
-                      <span style={{ color: 'rgb(var(--red-6))', fontSize: 11 }}>
-                        当前报价超出客户预算 {money(currentGrandTotal - formTargetBudget)}
-                      </span>
+                      <StatusTag tone="danger">
+                        当前报价超出客户预算 <MoneyText value={currentGrandTotal - formTargetBudget} />
+                      </StatusTag>
                     ) : (
-                      <span style={{ color: 'rgb(var(--green-6))', fontSize: 11 }}>
+                      <StatusTag tone="success">
                         在客户预算范围内
-                      </span>
+                      </StatusTag>
                     )
                   ) : '如客户提到心理预算，可在此录入'
                 }
@@ -816,9 +799,6 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   style={{ width: '100%' }}
                 />
               </Form.Item>
-            </Grid.Col>
-
-            <Grid.Col span={12}>
               <Form.Item
                 label={
                   <Space>
@@ -832,13 +812,13 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                 extra={
                   formTargetDays ? (
                     currentWorkDays > formTargetDays ? (
-                      <span style={{ color: 'rgb(var(--orange-6))', fontSize: 11 }}>
+                      <StatusTag tone="warning">
                         当前工期超出客户预期 {currentWorkDays - formTargetDays} 工作日
-                      </span>
+                      </StatusTag>
                     ) : (
-                      <span style={{ color: 'rgb(var(--green-6))', fontSize: 11 }}>
+                      <StatusTag tone="success">
                         符合客户交付工期要求
-                      </span>
+                      </StatusTag>
                     )
                   ) : '如客户要求提前交付，可在此录入'
                 }
@@ -850,8 +830,7 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   style={{ width: '100%' }}
                 />
               </Form.Item>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
 
           {/* 客户原话/核心关切 */}
           <Form.Item
@@ -867,10 +846,10 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
 
           {/* 快捷填词建议 */}
           <div style={{ marginTop: -8, marginBottom: 16 }}>
-            <span style={{ fontSize: 11, color: 'var(--color-text-3)', marginRight: 6 }}>快捷填入：</span>
+            <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginRight: 6 }}>快捷填入：</span>
             <Space wrap size={6}>
               {QUICK_FEEDBACK_PRESETS.map((preset, idx) => (
-                <Tag
+                <StatusTag
                   key={idx}
                   size="small"
                   style={{ cursor: 'pointer' }}
@@ -880,7 +859,7 @@ export const LeadQuotationManager: React.FC<LeadQuotationManagerProps> = ({
                   }}
                 >
                   {preset.slice(0, 16)}...
-                </Tag>
+                </StatusTag>
               ))}
             </Space>
           </div>

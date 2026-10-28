@@ -1,7 +1,7 @@
 // 快捷分类 Tab（PLAN.md 决策 15/16：去侧边栏，6 个快捷分类）
 // 角色可见性：等级审核 / 质检分桶仅管理员可见
 
-import { Tabs } from '@arco-design/web-react';
+import { SectionTabs } from '@/design-system';
 import type { DispatchCategory } from '../kpiCalc';
 import { filterByCategory, CATEGORY_LABEL } from '../kpiCalc';
 import type { LeadListItem } from '../../leads/types';
@@ -31,17 +31,14 @@ export function CategoryTabs({ leads, now, role, active, onChange }: CategoryTab
   });
 
   return (
-    <Tabs
-      activeTab={active}
+    <SectionTabs
+      activeKey={active}
       onChange={(key) => onChange(key as DispatchCategory)}
-      size="small"
-    >
-      {visible.map((category) => (
-        <Tabs.TabPane
-          key={category}
-          title={`${CATEGORY_LABEL[category]}（${filterByCategory(leads, category, now).length}）`}
-        />
-      ))}
-    </Tabs>
+      items={visible.map((category) => ({
+        key: category,
+        label: CATEGORY_LABEL[category],
+        count: filterByCategory(leads, category, now).length,
+      }))}
+    />
   );
 }

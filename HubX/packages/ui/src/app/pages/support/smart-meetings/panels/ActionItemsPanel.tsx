@@ -8,25 +8,20 @@
  * - 已完成行只读不重开；取消为软取消
  */
 
-import { Card, Button, Input, Select, DatePicker, Tag, Space, Typography, Tooltip } from '@arco-design/web-react';
-import { IconPlus, IconDelete, IconCheck, IconClose } from '@arco-design/web-react/icon';
+import { Button, Input, Select, DatePicker, Space, Typography, Tooltip } from '@/design-system';
+import { IconPlus, IconDelete, IconCheck, IconClose } from '@/design-system';
+import { SectionCard, StatusTag, type StatusMap } from '@/design-system';
 import { MOCK_USERS } from '../mockData';
-import type { ActionItem, ActionPriority, BusinessRef } from '../types';
+import type { ActionItem, ActionPriority } from '../types';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 const Option = Select.Option;
 
-const PRIORITY_LABEL: Record<ActionPriority, string> = {
-  P0: 'P0',
-  P1: 'P1',
-  P2: 'P2',
-};
-
-const PRIORITY_COLOR: Record<ActionPriority, string> = {
-  P0: 'red',
-  P1: 'orange',
-  P2: 'blue',
+const ACTION_PRIORITY: StatusMap<ActionPriority> = {
+  P0: { label: 'P0', tone: 'danger' },
+  P1: { label: 'P1', tone: 'warning' },
+  P2: { label: 'P2', tone: 'info' },
 };
 
 const nextPriority: Record<ActionPriority, ActionPriority> = {
@@ -88,10 +83,9 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
   };
 
   return (
-    <Card
-      size="small"
+    <div style={{ marginBottom: 12 }}>
+    <SectionCard
       title="📋 行动项"
-      style={{ marginBottom: 12 }}
       extra={
         !isReadonly && (
           <Button size="mini" type="text" icon={<IconPlus />} onClick={handleAdd}>
@@ -101,7 +95,7 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
       }
     >
       {actionItems.length === 0 ? (
-        <Text style={{ fontSize: 13, color: 'var(--grey-400)' }}>
+        <Text style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--grey-400)' }}>
           {isReadonly ? '无行动项' : '点击「添加行动项」开始'}
         </Text>
       ) : (
@@ -115,7 +109,7 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
                 style={{
                   padding: 10,
                   border: '1px solid var(--grey-200)',
-                  borderRadius: 8,
+                  borderRadius: 'var(--radius-md)',
                   opacity: isDone ? 0.6 : 1,
                   background: isDone ? 'var(--grey-50)' : 'transparent',
                 }}
@@ -124,7 +118,7 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
                   {/* 内容 */}
                   <div style={{ flex: 1 }}>
                     {isReadonly || isDone ? (
-                      <Text style={{ fontSize: 13, textDecoration: isDone && item.status === 'completed' ? 'line-through' : 'none' }}>
+                      <Text style={{ fontSize: 'var(--ds-text-dense)', textDecoration: isDone && item.status === 'completed' ? 'line-through' : 'none' }}>
                         {item.content || '(空)'}
                       </Text>
                     ) : (
@@ -139,23 +133,23 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
                   </div>
 
                   {/* 优先级 */}
-                  <Tag
-                    color={PRIORITY_COLOR[item.priority]}
-                    size="small"
+                  <span
                     style={{ cursor: isReadonly || isDone ? 'default' : 'pointer', flexShrink: 0 }}
                     onClick={() => !isReadonly && !isDone && handleUpdate(i, { priority: nextPriority[item.priority] })}
                   >
-                    {PRIORITY_LABEL[item.priority]}
-                    {item.priorityNeedsReview && <span style={{ marginLeft: 4 }}>⚠</span>}
-                  </Tag>
+                    <StatusTag tone={ACTION_PRIORITY[item.priority].tone}>
+                      {ACTION_PRIORITY[item.priority].label}
+                      {item.priorityNeedsReview && <span style={{ marginLeft: 4 }}>⚠</span>}
+                    </StatusTag>
+                  </span>
 
                   {/* 同步就绪 */}
                   <Tooltip content={!syncable.ok ? syncable.reason : '可同步'}>
                     <span style={{ flexShrink: 0 }}>
                       {syncable.ok ? (
-                        <IconCheck style={{ color: 'var(--success-500)', fontSize: 14 }} />
+                        <IconCheck style={{ color: 'var(--success-500)', fontSize: 'var(--text-sm)' }} />
                       ) : (
-                        <IconClose style={{ color: 'var(--grey-400)', fontSize: 14 }} />
+                        <IconClose style={{ color: 'var(--grey-400)', fontSize: 'var(--text-sm)' }} />
                       )}
                     </span>
                   </Tooltip>
@@ -190,9 +184,7 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
                       <Option key={u.id} value={u.id}>{u.name}</Option>
                     ))}
                   </Select>
-                  {!item.assigneeId && (
-                    <Tag color="orange" size="small">待指派</Tag>
-                  )}
+                  {!item.assigneeId && <StatusTag tone="warning">待指派</StatusTag>}
 
                   {/* 截止日期 */}
                   <DatePicker
@@ -205,14 +197,15 @@ export function ActionItemsPanel({ actionItems, readonly, confirmedReadonly, onC
                   />
 
                   {/* 状态标签 */}
-                  {item.status === 'completed' && <Tag color="green" size="small">已完成</Tag>}
-                  {item.status === 'canceled' && <Tag color="gray" size="small">已取消</Tag>}
+                  {item.status === 'completed' && <StatusTag tone="success">已完成</StatusTag>}
+                  {item.status === 'canceled' && <StatusTag tone="neutral">已取消</StatusTag>}
                 </div>
               </div>
             );
           })}
         </div>
       )}
-    </Card>
+    </SectionCard>
+    </div>
   );
 }

@@ -1,11 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Empty,
-  Table,
   Button,
   Space,
-  Tag,
   Select,
   DatePicker,
   Modal,
@@ -14,13 +10,13 @@ import {
   Radio,
   Message,
   Tooltip,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconPlus,
   IconCheck,
   IconClose,
   IconRefresh,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   AttendanceRecord,
@@ -28,21 +24,32 @@ import {
   AttendanceStatus,
   ALL_LEAVE_TYPES,
 } from './mockData';
-import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus, type StatusMap } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
 const { MonthPicker } = DatePicker;
 
-const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
-  '年假': 'var(--primary)',
-  '事假': 'var(--warning-500)',
-  '病假': 'var(--destructive-500)',
-  '调休': 'var(--info-500)',
-  '婚假': 'var(--chart-5)',
-  '产假': 'var(--chart-5)',
-  '丧假': 'var(--grey-400)',
-  '加班': 'var(--success-500)',
+const LEAVE_TYPE: StatusMap<LeaveType> = {
+  '年假': { label: '年假', tone: 'info' },
+  '事假': { label: '事假', tone: 'warning' },
+  '病假': { label: '病假', tone: 'danger' },
+  '调休': { label: '调休', tone: 'info' },
+  '婚假': { label: '婚假', tone: 'purple' },
+  '产假': { label: '产假', tone: 'purple' },
+  '丧假': { label: '丧假', tone: 'neutral' },
+  '加班': { label: '加班', tone: 'success' },
 };
 
 const ATTENDANCE_STATUS: StatusMap<AttendanceStatus> = {
@@ -132,12 +139,10 @@ export function AttendanceManagement() {
       title: '类型',
       dataIndex: 'type',
       width: 70,
-      render: (t: LeaveType) => (
-        <Tag color={LEAVE_TYPE_COLORS[t]}>{t}</Tag>
-      ),
+      render: (t: LeaveType) => <StatusTag meta={LEAVE_TYPE[t]} />,
     },
-    { title: '开始日期', dataIndex: 'startDate', width: 130 },
-    { title: '结束日期', dataIndex: 'endDate', width: 130 },
+    { title: '开始日期', dataIndex: 'startDate', width: 130, render: (value: string) => <DateText value={value} /> },
+    { title: '结束日期', dataIndex: 'endDate', width: 130, render: (value: string) => <DateText value={value} /> },
     { title: '天数', dataIndex: 'days', width: 60, render: (d: number) => `${d}天` },
     { title: '事由', dataIndex: 'reason', ellipsis: true },
     {
@@ -203,7 +208,7 @@ export function AttendanceManagement() {
         ]}
       />
 
-      <Card bordered={false} title="考勤申请" className="employee-admin-list-card">
+      <SectionCard title="考勤申请" className="employee-admin-list-card">
         <FilterBar
           actions={filtersActive ? (
             <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
@@ -243,15 +248,15 @@ export function AttendanceManagement() {
           <span>共 {filteredRecords.length} 条申请</span>
           <span>{filterMonth || '全部月份'}</span>
         </div>
-        <Table
+        <DataTable
           columns={columns as any}
           data={filteredRecords}
           rowKey="id"
           pagination={{ pageSize: 10, showTotal: true }}
           scroll={{ x: 900 }}
-          noDataElement={<Empty description="没有符合当前条件的考勤申请" />}
+          emptyDescription="没有符合当前条件的考勤申请"
         />
-      </Card>
+      </SectionCard>
 
       {/* 新增申请弹窗 */}
       <Modal

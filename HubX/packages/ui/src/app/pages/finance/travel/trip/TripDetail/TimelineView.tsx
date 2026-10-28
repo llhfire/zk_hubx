@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Tag, Typography } from '@arco-design/web-react';
+import { Tag, Typography } from '@/design-system';
 import type { Expense, TripExpenseType } from '../../types';
 
 const { Text } = Typography;
@@ -11,14 +11,14 @@ interface TimelineViewProps {
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  transport: { bg: '#f2f3ff', text: '#165dff', border: '#bedaff' },
-  accommodation: { bg: '#f5e8ff', text: '#722ed1', border: '#d3adf7' },
-  meal: { bg: '#fff7e6', text: '#fa8c16', border: '#ffd591' },
-  local_transport: { bg: '#e8ffea', text: '#00b42a', border: '#aff0b5' },
-  communication: { bg: '#e8fffb', text: '#13c2c2', border: '#87e8de' },
-  entertainment: { bg: '#fff0f6', text: '#eb2f96', border: '#ffadd2' },
-  office: { bg: '#f7f8fa', text: '#86909c', border: '#c9cdd4' },
-  other: { bg: '#fff7e6', text: '#fa8c16', border: '#ffd591' },
+  transport: { bg: 'rgb(var(--primary-1))', text: 'rgb(var(--primary-6))', border: 'rgb(var(--primary-3))' },
+  accommodation: { bg: 'var(--ds-tone-purple-bg)', text: 'var(--ds-tone-purple-fg)', border: 'var(--ds-tone-purple-border)' },
+  meal: { bg: 'var(--ds-tone-warning-bg)', text: 'var(--ds-tone-warning-fg)', border: 'var(--ds-tone-warning-border)' },
+  local_transport: { bg: 'var(--ds-tone-success-bg)', text: 'var(--ds-tone-success-fg)', border: 'var(--ds-tone-success-border)' },
+  communication: { bg: 'var(--ds-tone-cyan-bg)', text: 'var(--ds-tone-cyan-fg)', border: 'var(--ds-tone-cyan-border)' },
+  entertainment: { bg: 'var(--ds-tone-pink-bg)', text: 'var(--ds-tone-pink-fg)', border: 'var(--ds-tone-pink-border)' },
+  office: { bg: 'var(--color-fill-2)', text: 'var(--color-text-3)', border: 'var(--color-border-3)' },
+  other: { bg: 'var(--ds-tone-warning-bg)', text: 'var(--ds-tone-warning-fg)', border: 'var(--ds-tone-warning-border)' },
 };
 
 const TRACK_TYPES: TripExpenseType[] = ['transport', 'accommodation', 'meal', 'local_transport', 'other'];
@@ -40,7 +40,7 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
 
   if (dateRange.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '48px 0', color: '#86909c' }}>
+      <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-3)' }}>
         暂无费用记录
       </div>
     );
@@ -62,8 +62,8 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
         <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 4, paddingLeft: labelWidth }}>
           {dateRange.map((date) => (
             <div key={date} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#1d2129' }}>{date.slice(5)}</div>
-              <div style={{ fontSize: 10, color: '#86909c' }}>
+              <div style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--color-text-1)' }}>{date.slice(5)}</div>
+              <div style={{ fontSize: 'var(--ds-text-micro)', color: 'var(--color-text-3)' }}>
                 ¥{expensesByDate[date]?.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </div>
             </div>
@@ -72,7 +72,7 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
 
         {/* 时间轴线 */}
         <div style={{ position: 'relative', marginLeft: labelWidth, marginBottom: 2 }}>
-          <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 2, background: '#e5e6eb' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 2, background: 'var(--color-border-2)' }} />
           {dateRange.map((date, i) => (
             <div
               key={date}
@@ -83,9 +83,9 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: '#165dff',
+                background: 'rgb(var(--primary-6))',
                 border: '2px solid white',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                boxShadow: 'var(--ds-shadow-subtle)',
                 left: `${((i + 0.5) / dateRange.length) * 100}%`,
               }}
             />
@@ -100,15 +100,15 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
               <div key={type} style={{ display: 'flex', alignItems: 'center' }}>
                 {/* 类型标签 */}
                 <div style={{ width: labelWidth, flexShrink: 0, textAlign: 'right', paddingRight: 12 }}>
-                  <Text style={{ fontSize: 12, fontWeight: hasData ? 500 : 400, color: hasData ? '#1d2129' : '#86909c' }}>
+                  <Text style={{ fontSize: 'var(--text-xs)', fontWeight: hasData ? 500 : 400, color: hasData ? 'var(--color-text-1)' : 'var(--color-text-3)' }}>
                     {typeLabels[type]}
                   </Text>
                 </div>
 
                 {/* 轨道 */}
-                <div style={{ flex: 1, position: 'relative', height: 32, background: '#fff' }}>
+                <div style={{ flex: 1, position: 'relative', height: 32, background: 'var(--color-white)' }}>
                   {/* 轨道背景线 */}
-                  <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 4, right: 4, height: 1, background: '#e5e6eb' }} />
+                  <div style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 4, right: 4, height: 1, background: 'var(--color-border-2)' }} />
 
                   {/* 日期网格线 */}
                   {dateRange.map((_, i) => (
@@ -119,7 +119,7 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
                         top: 0,
                         bottom: 0,
                         width: 1,
-                        background: '#f0f0f0',
+                        background: 'var(--color-fill-2)',
                         left: `${((i + 0.5) / dateRange.length) * 100}%`,
                       }}
                     />
@@ -141,8 +141,8 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
                           transform: 'translate(-50%, -50%)',
                           left: `${((i + 0.5) / dateRange.length) * 100}%`,
                           padding: '1px 6px',
-                          borderRadius: 12,
-                          fontSize: 10,
+                          borderRadius: 'var(--radius-lg)',
+                          fontSize: 'var(--ds-text-micro)',
                           fontWeight: 600,
                           whiteSpace: 'nowrap',
                           cursor: 'pointer',
@@ -164,16 +164,16 @@ export function TimelineView({ expenses, typeLabels, visibleDates }: TimelineVie
         </div>
 
         {/* 每日总计 */}
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, paddingTop: 6, borderTop: '1px solid #e5e6eb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--color-border-2)' }}>
           <div style={{ width: labelWidth, flexShrink: 0, textAlign: 'right', paddingRight: 12 }}>
-            <Text style={{ fontSize: 11, fontWeight: 600, color: '#1d2129' }}>每日合计</Text>
+            <Text style={{ fontSize: 'var(--ds-text-caption)', fontWeight: 600, color: 'var(--color-text-1)' }}>每日合计</Text>
           </div>
           <div style={{ flex: 1, display: 'flex' }}>
             {dateRange.map((date) => {
               const total = expensesByDate[date]?.reduce((sum, e) => sum + e.amount, 0) || 0;
               return (
                 <div key={date} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, fontWeight: 'bold', color: '#722ed1' }}>¥{total.toLocaleString()}</div>
+                  <div style={{ fontSize: 'var(--ds-text-caption)', fontWeight: 'bold', color: 'var(--ds-tone-purple-fg)' }}>¥{total.toLocaleString()}</div>
                 </div>
               );
             })}

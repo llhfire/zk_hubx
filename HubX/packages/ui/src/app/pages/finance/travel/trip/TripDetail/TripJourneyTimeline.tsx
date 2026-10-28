@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import {
   Button,
-  Card,
   Divider,
-  Grid,
+  Form,
+  FormGrid,
   Input,
   Message,
   Modal,
   Select,
   Space,
-  Tag,
   Timeline,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconCommon,
   IconDelete,
@@ -22,14 +21,23 @@ import {
   IconPlus,
   IconPublic,
   IconRight,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip, ItinerarySegment, TransportMode } from '../../types';
-import { formatMoney } from '../tripDetailMetrics';
+import { DateText, MoneyText, StatusTag, confirmAction, type StatusMeta } from '@/design-system';
 
 const { Text } = Typography;
 const { Option } = Select;
-const { Row, Col } = Grid;
+const FormItem = Form.Item;
 const TimelineItem = Timeline.Item;
+
+const SEGMENT_STATUS: Record<'current' | 'finished' | 'pending', StatusMeta> = {
+  current: {
+    label: (<><span className="trip-ticket-pulse" /><span>进行中行程</span></>),
+    tone: 'info',
+  },
+  finished: { label: '已抵离', tone: 'success' },
+  pending: { label: '待启程', tone: 'neutral' },
+};
 
 interface TripJourneyTimelineProps {
   trip: Trip;
@@ -124,9 +132,10 @@ export function TripJourneyTimeline({
   };
 
   const handleDelete = (segment: ItinerarySegment) => {
-    Modal.confirm({
+    confirmAction({
       title: '确认删除航段',
       content: `确定要删除 ${segment.departure} → ${segment.destination} 的航段吗？`,
+      tone: 'danger',
       onOk: () => {
         Message.success('航段删除成功');
         onUpdate();
@@ -150,8 +159,8 @@ export function TripJourneyTimeline({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <Space size={6}>
           <IconLocation style={{ color: 'rgb(var(--primary-6))' }} />
-          <Text style={{ fontWeight: 600, fontSize: 13 }}>全程行程规划</Text>
-          <Tag size="small" color="arcoblue">{segments.length} 个航段</Tag>
+          <Text style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>全程行程规划</Text>
+          <StatusTag size="small" tone="info">{segments.length} 个航段</StatusTag>
         </Space>
         <Button
           type="outline"
@@ -186,8 +195,8 @@ export function TripJourneyTimeline({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: isCurrent ? '#fff' : isFinished ? 'rgb(var(--success-6))' : 'var(--color-text-3)',
-                      fontSize: 11,
+                      color: isCurrent ? 'var(--color-white)' : isFinished ? 'rgb(var(--success-6))' : 'var(--color-text-3)',
+                      fontSize: 'var(--ds-text-caption)',
                       fontWeight: 600,
                     }}
                   >
@@ -202,19 +211,12 @@ export function TripJourneyTimeline({
                   {/* 车票顶部状态与操作栏 */}
                   <div className="trip-ticket-header">
                     <Space size={6}>
-                      <Tag size="small" color={isCurrent ? 'arcoblue' : isFinished ? 'green' : 'gray'}>
-                        {isCurrent ? (
-                          <>
-                            <span className="trip-ticket-pulse" />
-                            <span>进行中行程</span>
-                          </>
-                        ) : isFinished ? '已抵离' : '待启程'}
-                      </Tag>
-                      <Tag size="small" color="blue">
+                      <StatusTag meta={SEGMENT_STATUS[isCurrent ? 'current' : isFinished ? 'finished' : 'pending']} />
+                      <StatusTag size="small" tone="info">
                         {transportModeLabels[segment.transportMode]}
-                      </Tag>
+                      </StatusTag>
                       {isSelected && (
-                        <Tag size="small" color="orangered">已联动流水</Tag>
+                        <StatusTag meta={{ label: '已联动流水', tone: 'warning' }} />
                       )}
                     </Space>
 
@@ -239,7 +241,7 @@ export function TripJourneyTimeline({
                   <div className="trip-ticket-route">
                     <span className="trip-ticket-station">{segment.departure}</span>
                     <div className="trip-ticket-transport-bridge">
-                      <span style={{ fontSize: 11, color: 'rgb(var(--primary-6))', fontWeight: 600, marginBottom: 2 }}>
+                      <span style={{ fontSize: 'var(--ds-text-caption)', color: 'rgb(var(--primary-6))', fontWeight: 600, marginBottom: 2 }}>
                         {segment.transportDetail || transportModeLabels[segment.transportMode]}
                       </span>
                       <div className="trip-ticket-transport-line" />
@@ -253,11 +255,11 @@ export function TripJourneyTimeline({
                   <div className="trip-ticket-meta-grid">
                     <div>
                       <span style={{ color: 'var(--color-text-3)', marginRight: 4 }}>出发:</span>
-                      <span>{segment.departureDate}</span>
+                      <DateText value={segment.departureDate} />
                     </div>
                     <div>
                       <span style={{ color: 'var(--color-text-3)', marginRight: 4 }}>到达:</span>
-                      <span>{segment.arrivalDate}</span>
+                      <DateText value={segment.arrivalDate} />
                     </div>
                   </div>
 
@@ -266,20 +268,20 @@ export function TripJourneyTimeline({
                     <div className="trip-ticket-hotel-badge">
                       {segment.accommodation?.hotelName ? (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <IconHome style={{ fontSize: 12 }} />
+                          <IconHome style={{ fontSize: 'var(--text-xs)' }} />
                           {segment.accommodation.hotelName} ({segment.accommodation.nights}晚)
                         </span>
                       ) : (
-                        <span>交通支出：{formatMoney(segment.transportCost)}</span>
+                        <span>交通支出：<MoneyText value={segment.transportCost} /></span>
                       )}
                       <span style={{ fontWeight: 600 }}>
-                        小计 {formatMoney(segment.transportCost + (segment.accommodation?.totalAmount || 0))}
+                        小计 <MoneyText value={segment.transportCost + (segment.accommodation?.totalAmount || 0)} />
                       </span>
                     </div>
                   )}
 
                   {/* 底部点击联动提示 */}
-                  <div style={{ marginTop: 6, fontSize: 11, color: isSelected ? 'rgb(var(--primary-6))' : 'var(--color-text-3)', textAlign: 'right' }}>
+                  <div style={{ marginTop: 6, fontSize: 'var(--ds-text-caption)', color: isSelected ? 'rgb(var(--primary-6))' : 'var(--color-text-3)', textAlign: 'right' }}>
                     {isSelected ? '已过滤左侧记账流水 · 点击取消' : '点击可在左侧联动过滤该段流水 ➔'}
                   </div>
                 </div>
@@ -289,7 +291,7 @@ export function TripJourneyTimeline({
         </Timeline>
       ) : (
         <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-3)' }}>
-          <IconLocation style={{ fontSize: 24, marginBottom: 6 }} />
+          <IconLocation style={{ fontSize: 'var(--text-2xl)', marginBottom: 6 }} />
           <div>暂未规划具体旅程航段</div>
           <Button type="text" size="small" onClick={handleCreate} style={{ marginTop: 4 }}>
             点击添加第一个航段
@@ -308,47 +310,42 @@ export function TripJourneyTimeline({
         style={{ width: 440 }}
       >
         <Space direction="vertical" size={14} style={{ width: '100%' }}>
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>出发地</Text></div>
+          <FormGrid columns={2}>
+            <FormItem label="出发地">
               <Input
                 placeholder="出发城市"
                 value={form.departure}
                 onChange={(val) => setForm({ ...form, departure: val })}
               />
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>目的地</Text></div>
+            </FormItem>
+            <FormItem label="目的地">
               <Input
                 placeholder="目的城市"
                 value={form.destination}
                 onChange={(val) => setForm({ ...form, destination: val })}
               />
-            </Col>
-          </Row>
+            </FormItem>
+          </FormGrid>
 
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>出发日期</Text></div>
+          <FormGrid columns={2}>
+            <FormItem label="出发日期">
               <Input
                 type="date"
                 value={form.departureDate}
                 onChange={(val) => setForm({ ...form, departureDate: val })}
               />
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>到达日期</Text></div>
+            </FormItem>
+            <FormItem label="到达日期">
               <Input
                 type="date"
                 value={form.arrivalDate}
                 onChange={(val) => setForm({ ...form, arrivalDate: val })}
               />
-            </Col>
-          </Row>
+            </FormItem>
+          </FormGrid>
 
-          <Row gutter={12}>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>交通方式</Text></div>
+          <FormGrid columns={2}>
+            <FormItem label="交通方式">
               <Select
                 value={form.transportMode}
                 onChange={(val) => setForm({ ...form, transportMode: val })}
@@ -358,25 +355,23 @@ export function TripJourneyTimeline({
                   <Option key={key} value={key}>{label}</Option>
                 ))}
               </Select>
-            </Col>
-            <Col span={12}>
-              <div style={{ marginBottom: 4, fontSize: 12 }}><Text>班次 / 车次 / 航班</Text></div>
+            </FormItem>
+            <FormItem label="班次 / 车次 / 航班">
               <Input
                 placeholder="例如 G33 / CA1234"
                 value={form.transportDetail}
                 onChange={(val) => setForm({ ...form, transportDetail: val })}
               />
-            </Col>
-          </Row>
+            </FormItem>
+          </FormGrid>
 
-          <div>
-            <div style={{ marginBottom: 4, fontSize: 12 }}><Text>入住酒店（选填）</Text></div>
+          <FormItem label="入住酒店（选填）">
             <Input
               placeholder="例如 汉庭酒店 / 全季酒店"
               value={form.accommodationHotel}
               onChange={(val) => setForm({ ...form, accommodationHotel: val })}
             />
-          </div>
+          </FormItem>
         </Space>
       </Modal>
     </div>

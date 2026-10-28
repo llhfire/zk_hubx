@@ -1,43 +1,45 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Card,
-  Descriptions,
   Dropdown,
-  Grid,
   Input,
   Menu,
   Modal,
   Select,
   Space,
-  Statistic,
-  Table,
-  Tabs,
-  Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconClockCircle, IconSearch, IconEye, IconCheck } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconClockCircle, IconSearch, IconEye, IconCheck } from '@/design-system';
 import { useNavigate } from 'react-router';
 import { useTodos } from '../../../todos/TodoContext';
 import { useQuotation } from '../../sales/quotation/QuotationContext';
 import type { TodoItem, TodoPriority, TodoStatus } from '../../../todos/types';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionTabs,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 
 const Text = Typography.Text;
-const Row = Grid.Row;
-const Col = Grid.Col;
 
-const statusMeta: Record<TodoStatus, { label: string; color: string }> = {
-  pending: { label: '待处理', color: 'orange' },
-  in_progress: { label: '处理中', color: 'arcoblue' },
-  completed: { label: '已完成', color: 'green' },
-  canceled: { label: '已取消', color: 'gray' },
+const TODO_STATUS: StatusMap<TodoStatus> = {
+  pending: { label: '待处理', tone: 'warning' },
+  in_progress: { label: '处理中', tone: 'info' },
+  completed: { label: '已完成', tone: 'success' },
+  canceled: { label: '已取消', tone: 'neutral' },
 };
 
-const priorityMeta: Record<TodoPriority, { label: string; color: string }> = {
-  high: { label: '高', color: 'red' },
-  medium: { label: '中', color: 'orange' },
-  low: { label: '低', color: 'gray' },
+const TODO_PRIORITY: StatusMap<TodoPriority> = {
+  high: { label: '高', tone: 'danger' },
+  medium: { label: '中', tone: 'warning' },
+  low: { label: '低', tone: 'neutral' },
 };
 
 function parseLocalDate(value?: string) {
@@ -120,7 +122,7 @@ export function TodoCenter() {
         <Space direction="vertical" size={3}>
           <Space>
             <Text bold>{record.title}</Text>
-            {record.external ? <Tag color="green">企业微信</Tag> : null}
+            {record.external ? <StatusTag tone="success">企业微信</StatusTag> : null}
           </Space>
           <Text type="secondary">{record.content}</Text>
           {formatSnoozeLabel(record.snoozedUntil) ? <Text type="secondary">{formatSnoozeLabel(record.snoozedUntil)}</Text> : null}
@@ -132,7 +134,7 @@ export function TodoCenter() {
       title: '优先级',
       dataIndex: 'priority',
       width: 90,
-      render: (value: TodoPriority) => <Tag color={priorityMeta[value].color}>{priorityMeta[value].label}</Tag>,
+      render: (value: TodoPriority) => <StatusTag meta={TODO_PRIORITY[value]} />,
     },
     {
       title: '状态',
@@ -140,13 +142,13 @@ export function TodoCenter() {
       width: 130,
       render: (value: TodoStatus, record: TodoItem) => (
         <Space size={4}>
-          <Tag color={statusMeta[value].color}>{statusMeta[value].label}</Tag>
-          {isOverdue(record) ? <Tag color="red">已逾期</Tag> : null}
+          <StatusTag meta={TODO_STATUS[value]} />
+          {isOverdue(record) ? <StatusTag tone="danger">已逾期</StatusTag> : null}
         </Space>
       ),
     },
-    { title: '生成时间', dataIndex: 'createdAt', width: 160 },
-    { title: '截止时间', dataIndex: 'deadline', width: 160, render: (value?: string) => value || '无截止时间' },
+    { title: '生成时间', dataIndex: 'createdAt', width: 160, render: (value: string) => <DateText value={value} mode="datetime" /> },
+    { title: '截止时间', dataIndex: 'deadline', width: 160, render: (value?: string) => value ? <DateText value={value} mode="datetime" /> : '无截止时间' },
     {
       title: '操作',
       width: 80,
@@ -181,67 +183,76 @@ export function TodoCenter() {
   const todayDeadlineCount = mergedActive.filter((item) => item.deadline?.startsWith(today)).length;
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div>
-        <Text type="secondary">待办由业务系统自动生成，完成状态以真实业务处理结果为准。</Text>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="待办中心"
+        description="待办由业务系统自动生成，完成状态以真实业务处理结果为准。"
+      />
 
-      <Card bordered={false} bodyStyle={{ padding: '16px 24px' }}>
-        <Row gutter={24}>
-          <Col span={6}><Statistic title="全部待处理" value={mergedActive.length} suffix="项" /></Col>
-          <Col span={6}><Statistic title="高优先级" value={mergedActive.filter((item) => item.priority === 'high').length} suffix="项" /></Col>
-          <Col span={6}><Statistic title="今日截止" value={todayDeadlineCount} suffix="项" /></Col>
-          <Col span={6}><Statistic title="已逾期" value={overdueCount} suffix="项" styleValue={{ color: overdueCount ? 'rgb(var(--red-6))' : undefined }} /></Col>
-        </Row>
-      </Card>
+      <MetricGrid items={[
+        { key: 'active', label: '全部待处理', value: mergedActive.length, detail: '项' },
+        { key: 'high', label: '高优先级', value: mergedActive.filter((item) => item.priority === 'high').length, detail: '项' },
+        { key: 'today', label: '今日截止', value: todayDeadlineCount, detail: '项' },
+        { key: 'overdue', label: '已逾期', value: overdueCount, detail: '项', tone: overdueCount ? 'danger' : 'neutral' },
+      ]} />
 
-      <Card bordered={false}>
-        <Tabs activeTab={view} onChange={(value) => setView(value as TodoView)}>
-          <Tabs.TabPane key="active" title={`待处理（${mergedActive.length}）`} />
-          <Tabs.TabPane key="completed" title="已完成" />
-          <Tabs.TabPane key="canceled" title="已取消" />
-          <Tabs.TabPane key="all" title="全部" />
-        </Tabs>
-        <Space wrap style={{ marginBottom: 16 }}>
-          <Input prefix={<IconSearch />} allowClear placeholder="搜索待办标题、内容或业务编号" style={{ width: 300 }} value={keyword} onChange={setKeyword} />
-          <Select allowClear placeholder="业务来源" style={{ width: 160 }} value={module || undefined} onChange={(value) => setModule(value || '')} options={modules} />
-          <Select
-            allowClear
-            placeholder="优先级"
-            style={{ width: 130 }}
-            value={priority || undefined}
-            onChange={(value) => setPriority(value || '')}
-            options={Object.entries(priorityMeta).map(([value, meta]) => ({ value, label: `${meta.label}优先级` }))}
-          />
-        </Space>
-        <Table rowKey="id" columns={columns} data={data} pagination={{ pageSize: 10 }} scroll={{ x: 1300 }} />
-      </Card>
+      <SectionTabs
+        activeKey={view}
+        onChange={(value) => setView(value as TodoView)}
+        items={[
+          { key: 'active', label: '待处理', count: mergedActive.length },
+          { key: 'completed', label: '已完成' },
+          { key: 'canceled', label: '已取消' },
+          { key: 'all', label: '全部' },
+        ]}
+      />
+      <DataTable
+        rowKey="id"
+        columns={columns}
+        data={data}
+        pagination={{ pageSize: 10 }}
+        scroll={{ x: 1300 }}
+        toolbar={(
+          <>
+            <Input prefix={<IconSearch />} allowClear placeholder="搜索待办标题、内容或业务编号" style={{ width: 300 }} value={keyword} onChange={setKeyword} />
+            <Select allowClear placeholder="业务来源" style={{ width: 160 }} value={module || undefined} onChange={(value) => setModule(value || '')} options={modules} />
+            <Select
+              allowClear
+              placeholder="优先级"
+              style={{ width: 130 }}
+              value={priority || undefined}
+              onChange={(value) => setPriority(value || '')}
+              options={Object.entries(TODO_PRIORITY).map(([value, meta]) => ({ value, label: `${meta.label}优先级` }))}
+            />
+          </>
+        )}
+      />
 
       <Modal title="待办详情" visible={Boolean(detail)} onCancel={() => setDetail(null)} footer={<Button onClick={() => setDetail(null)}>关闭</Button>} style={{ width: 640 }}>
         {detail && (
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <Space>
-              <Tag color={priorityMeta[detail.priority].color}>{priorityMeta[detail.priority].label}优先级</Tag>
-              <Tag color={statusMeta[detail.status].color}>{statusMeta[detail.status].label}</Tag>
-              {isOverdue(detail) ? <Tag color="red">已逾期</Tag> : null}
+              <StatusTag tone={TODO_PRIORITY[detail.priority].tone}>{TODO_PRIORITY[detail.priority].label}优先级</StatusTag>
+              <StatusTag meta={TODO_STATUS[detail.status]} />
+              {isOverdue(detail) ? <StatusTag tone="danger">已逾期</StatusTag> : null}
             </Space>
-            <Descriptions
-              border
-              column={2}
-              data={[
-                { label: '待办事项', value: detail.title },
-                { label: '业务来源', value: detail.module },
-                { label: '负责人', value: detail.assigneeName },
-                { label: '业务编号', value: detail.sourceId },
-                { label: '生成时间', value: detail.createdAt },
-                { label: '截止时间', value: detail.deadline || '无截止时间' },
-                { label: '事项说明', value: detail.content, span: 2 },
+            <DescriptionsCard
+              bare
+              columns={2}
+              items={[
+                { key: 'title', label: '待办事项', value: detail.title },
+                { key: 'module', label: '业务来源', value: detail.module },
+                { key: 'assignee', label: '负责人', value: detail.assigneeName },
+                { key: 'sourceId', label: '业务编号', value: detail.sourceId },
+                { key: 'createdAt', label: '生成时间', value: detail.createdAt },
+                { key: 'deadline', label: '截止时间', value: detail.deadline || '无截止时间' },
+                { key: 'content', label: '事项说明', value: detail.content, long: true },
               ]}
             />
             <Text type="secondary">业务待办不能手动完成或删除，请前往对应业务页面处理。</Text>
           </Space>
         )}
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

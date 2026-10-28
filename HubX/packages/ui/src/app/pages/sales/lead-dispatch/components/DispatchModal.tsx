@@ -3,7 +3,7 @@
 // PLAN.md 决策 19：先勾选行 → 再点按钮 → 弹窗选统一目标。
 
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Radio, Select, Space, Typography } from '@arco-design/web-react';
+import { Modal, Radio, Select, Space, Typography } from '@/design-system';
 import type { DispatchTarget } from '../types';
 import type { Employee } from '../../../support/hr/employee/mockData';
 
@@ -126,7 +126,7 @@ export function DispatchModal({ visible, leadCount, employees, onClose, onConfir
 
         {/* 公海说明 */}
         {target === 'pool' && (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          <Typography.Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             线索将进入公海池，所有销售人员均可领取。
           </Typography.Text>
         )}

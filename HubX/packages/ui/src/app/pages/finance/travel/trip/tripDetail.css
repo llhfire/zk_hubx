@@ -93,7 +93,7 @@
   justify-content: flex-start;
   padding: 12px 14px;
   border-radius: 6px;
-  background: var(--color-bg-2) !important; /* 统一白色线框卡片，不要着色底 */
+  background: var(--color-bg-2) !important; /* 白底线框，不铺灰、不着状态色 */
   border: 1px solid var(--color-border-2) !important; /* 细灰白线框 */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   text-align: left !important;
@@ -882,7 +882,7 @@
 }
 
 .trip-ticket-card--current {
-  border-left: 4px solid #165dff;
+  border-color: rgb(var(--primary-6));
 }
 
 .trip-ticket-header {

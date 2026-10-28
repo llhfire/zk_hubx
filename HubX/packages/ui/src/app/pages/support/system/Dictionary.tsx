@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Card,
-  Empty,
   Form,
   Input,
   InputNumber,
@@ -11,13 +9,21 @@ import {
   Popconfirm,
   Select,
   Space,
-  Table,
-  Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconDelete, IconEdit, IconEye, IconPlus, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+} from '@/design-system';
+import { IconDelete, IconEdit, IconEye, IconPlus, IconSearch } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 import {
   calculateDictionaryMetrics,
   EMPTY_DICTIONARY_FILTERS,
@@ -34,6 +40,11 @@ import './Dictionary.css';
 
 const FormItem = Form.Item;
 const { Text } = Typography;
+
+const DICTIONARY_STATUS: StatusMap<DictionaryStatus> = {
+  启用: { label: '启用', tone: 'success' },
+  禁用: { label: '禁用', tone: 'neutral' },
+};
 
 const INITIAL_DICTIONARY_TYPES: DictionaryType[] = [
   { id: '1', code: 'customer_source', name: '客户来源', description: '客户来源渠道分类', status: '启用', createTime: '2020-01-01' },
@@ -208,8 +219,8 @@ export function Dictionary() {
     { title: '字典编码', dataIndex: 'code', width: 180 },
     { title: '字典名称', dataIndex: 'name', width: 140 },
     { title: '描述', dataIndex: 'description', ellipsis: true },
-    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <Tag color={status === '启用' ? 'green' : 'gray'}>{status}</Tag> },
-    { title: '创建时间', dataIndex: 'createTime', width: 120 },
+    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <StatusTag meta={DICTIONARY_STATUS[status]} /> },
+    { title: '创建时间', dataIndex: 'createTime', width: 120, render: (value: string) => <DateText value={value} /> },
     {
       title: '操作', width: 150, fixed: 'right' as const,
       render: (_: unknown, record: DictionaryType) => (
@@ -234,7 +245,7 @@ export function Dictionary() {
     { title: '标签名称', dataIndex: 'label', width: 160 },
     { title: '标签值', dataIndex: 'value', width: 180 },
     { title: '排序', dataIndex: 'sort', width: 80, align: 'right' as const },
-    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <Tag color={status === '启用' ? 'green' : 'gray'}>{status}</Tag> },
+    { title: '状态', dataIndex: 'status', width: 90, render: (status: DictionaryStatus) => <StatusTag meta={DICTIONARY_STATUS[status]} /> },
     { title: '备注', dataIndex: 'remark', ellipsis: true },
     {
       title: '操作', width: 110, fixed: 'right' as const,
@@ -270,7 +281,7 @@ export function Dictionary() {
         ]}
       />
 
-      <Card className="dictionary-page__card" title="字典分类">
+      <SectionCard className="dictionary-page__card" title="字典分类">
         <FilterBar actions={hasTypeFilters ? <Button type="text" onClick={() => setTypeFilters({ ...EMPTY_DICTIONARY_FILTERS })}>重置筛选</Button> : undefined}>
           <Input className="dictionary-page__keyword" prefix={<IconSearch />} placeholder="搜索分类编码、名称或描述" value={typeFilters.keyword} onChange={keyword => setTypeFilters(current => ({ ...current, keyword }))} allowClear />
           <Select className="dictionary-page__status" value={typeFilters.status} onChange={status => setTypeFilters(current => ({ ...current, status: status as DictionaryFilterStatus }))}>
@@ -283,17 +294,19 @@ export function Dictionary() {
           <Text type="secondary">共 {filteredTypes.length} 个分类</Text>
           {hasTypeFilters && <Text type="secondary">已按当前条件筛选</Text>}
         </div>
-        {filteredTypes.length === 0 ? (
-          <div className="dictionary-page__empty">
-            <Empty description={dictionaryTypes.length === 0 ? '暂无字典分类' : '没有符合当前条件的字典分类'} />
-            {hasTypeFilters && <Button onClick={() => setTypeFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button>}
-          </div>
-        ) : (
-          <Table rowKey="id" columns={typeColumns} data={filteredTypes} scroll={{ x: 980 }} pagination={{ pageSize: 10, total: filteredTypes.length, showTotal: true, sizeCanChange: true }} rowClassName={record => record.id === selectedTypeId ? 'dictionary-page__selected-row' : ''} />
-        )}
-      </Card>
+        <DataTable
+          rowKey="id"
+          columns={typeColumns}
+          data={filteredTypes}
+          scroll={{ x: 980 }}
+          pagination={{ pageSize: 10, total: filteredTypes.length, showTotal: true, sizeCanChange: true }}
+          onRow={(record) => ({ className: record.id === selectedTypeId ? 'dictionary-page__selected-row' : '' })}
+          emptyDescription={dictionaryTypes.length === 0 ? '暂无字典分类' : '没有符合当前条件的字典分类'}
+          emptyAction={hasTypeFilters ? <Button onClick={() => setTypeFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button> : undefined}
+        />
+      </SectionCard>
 
-      <Card className="dictionary-page__card" title={currentType ? `字典项 · ${currentType.name}` : '字典项'} extra={<Button type="primary" icon={<IconPlus />} disabled={!currentType} onClick={handleAddItem}>新建字典项</Button>}>
+      <SectionCard className="dictionary-page__card" title={currentType ? `字典项 · ${currentType.name}` : '字典项'} extra={<Button type="primary" icon={<IconPlus />} disabled={!currentType} onClick={handleAddItem}>新建字典项</Button>}>
         <FilterBar actions={hasItemFilters ? <Button type="text" onClick={() => setItemFilters({ ...EMPTY_DICTIONARY_FILTERS })}>重置筛选</Button> : undefined}>
           <Input className="dictionary-page__keyword" prefix={<IconSearch />} placeholder="搜索标签名称、标签值或备注" value={itemFilters.keyword} onChange={keyword => setItemFilters(current => ({ ...current, keyword }))} allowClear disabled={!currentType} />
           <Select className="dictionary-page__status" value={itemFilters.status} onChange={status => setItemFilters(current => ({ ...current, status: status as DictionaryFilterStatus }))} disabled={!currentType}>
@@ -306,15 +319,16 @@ export function Dictionary() {
           <Text type="secondary">共 {filteredItems.length} 个字典项</Text>
           {hasItemFilters && <Text type="secondary">已按当前条件筛选</Text>}
         </div>
-        {!currentType || filteredItems.length === 0 ? (
-          <div className="dictionary-page__empty">
-            <Empty description={!currentType ? '请先新建并选择字典分类' : currentItems.length === 0 ? '当前分类暂无字典项' : '没有符合当前条件的字典项'} />
-            {currentType && hasItemFilters && <Button onClick={() => setItemFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button>}
-          </div>
-        ) : (
-          <Table rowKey="id" columns={itemColumns} data={filteredItems} scroll={{ x: 820 }} pagination={{ pageSize: 10, total: filteredItems.length, showTotal: true, sizeCanChange: true }} />
-        )}
-      </Card>
+        <DataTable
+          rowKey="id"
+          columns={itemColumns}
+          data={filteredItems}
+          scroll={{ x: 820 }}
+          pagination={{ pageSize: 10, total: filteredItems.length, showTotal: true, sizeCanChange: true }}
+          emptyDescription={!currentType ? '请先新建并选择字典分类' : currentItems.length === 0 ? '当前分类暂无字典项' : '没有符合当前条件的字典项'}
+          emptyAction={currentType && hasItemFilters ? <Button onClick={() => setItemFilters({ ...EMPTY_DICTIONARY_FILTERS })}>清除筛选</Button> : undefined}
+        />
+      </SectionCard>
 
       <Modal title={editingType ? '编辑字典分类' : '新建字典分类'} visible={typeModalVisible} onOk={handleTypeSubmit} onCancel={() => setTypeModalVisible(false)} autoFocus={false} focusLock>
         <Form form={typeForm} layout="vertical">

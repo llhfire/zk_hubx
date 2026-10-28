@@ -1,7 +1,8 @@
 // 项目详情「售前」Tab：仅保留签约前的跟进、报价与合同时间线。
 
 import { useMemo } from 'react';
-import { Card, Empty, Space, Tag, Timeline, Typography } from '@arco-design/web-react';
+import { Space, Timeline, Typography } from '@/design-system';
+import { DateText, EmptyState, SectionCard, StatusTag, resolveStatus, type StatusMap } from '@/design-system';
 import type { Contract } from '../../sales/contracts/types';
 import { getLeadDetailProfile } from '../../sales/leads/leadDetailProfiles';
 import {
@@ -21,11 +22,11 @@ const CONTRACT_STATUS_LABELS: Record<string, string> = {
   voided: '已作废',
 };
 
-const EVENT_TYPE_META: Record<PresalesEvent['type'], { label: string; color: string }> = {
-  lead: { label: '线索', color: 'gray' },
-  follow: { label: '跟进', color: 'arcoblue' },
-  quote: { label: '报价', color: 'orange' },
-  contract: { label: '合同', color: 'green' },
+const EVENT_TYPE_META: StatusMap<PresalesEvent['type']> = {
+  lead: { label: '线索', tone: 'neutral' },
+  follow: { label: '跟进', tone: 'info' },
+  quote: { label: '报价', tone: 'warning' },
+  contract: { label: '合同', tone: 'success' },
 };
 
 /** 售前跟进 mock：与线索详情跟进侧栏同一套演示数据口径 */
@@ -86,14 +87,14 @@ export function ProjectPresalesHistoryPanel({ leadId, contract }: { leadId?: str
   }, [contract, leadId, leadProfile]);
 
   if (!leadId) {
-    return <Empty description="当前项目未关联线索，暂无售前历程" />;
+    return <EmptyState description="当前项目未关联线索，暂无售前历程" />;
   }
 
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="medium">
-      <Card bordered={false} title="售前历程" size="small">
+      <SectionCard title="售前历程">
         {events.length === 0 ? (
-          <Empty description="暂无售前历程记录" />
+          <EmptyState description="暂无售前历程记录" />
         ) : (
           <Timeline>
             {events.map((event, index) => {
@@ -105,9 +106,9 @@ export function ProjectPresalesHistoryPanel({ leadId, contract }: { leadId?: str
                 >
                   <div style={{ marginBottom: 4 }}>
                     <Space size={8} wrap>
-                      <Tag color={meta.color} size="small">{meta.label}</Tag>
+                      <StatusTag meta={resolveStatus(EVENT_TYPE_META, event.type)} />
                       <strong style={{ color: 'var(--color-text-1)' }}>{event.title}</strong>
-                      {event.status ? <Tag size="small">{event.status}</Tag> : null}
+                      {event.status ? <StatusTag>{event.status}</StatusTag> : null}
                     </Space>
                   </div>
                   {event.detail ? (
@@ -115,13 +116,13 @@ export function ProjectPresalesHistoryPanel({ leadId, contract }: { leadId?: str
                       {event.detail}
                     </div>
                   ) : null}
-                  <Text type="secondary" style={{ fontSize: 12 }}>{event.time}</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}><DateText value={event.time} mode="datetime" /></Text>
                 </Timeline.Item>
               );
             })}
           </Timeline>
         )}
-      </Card>
+      </SectionCard>
     </Space>
   );
 }

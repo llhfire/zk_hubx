@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Table, Tag, Button, Space, Select, Message } from '@arco-design/web-react';
-import { IconPlus } from '@arco-design/web-react/icon';
+import { Button, Select, Message } from '@/design-system';
+import { IconPlus } from '@/design-system';
+import { DataTable, MoneyText, StatusTag, type StatusMap } from '@/design-system';
 import { useOperatingExpense } from './OperatingExpenseContext';
 import { voidExpense, patchPostedExpense, confirmExpense } from './expenseMutations';
 import { CATEGORY_SEED } from './categorySeed';
@@ -8,8 +9,11 @@ import { RECORDABLE_PRIMARY } from './types';
 import type { ExpenseRecord, ExpenseStatus } from './types';
 import { ExpenseFormDrawer } from './ExpenseFormDrawer';
 
-const STATUSColors: Record<ExpenseStatus, string> = { pending: 'orange', posted: 'green', voided: 'red' };
-const STATUSLabels: Record<ExpenseStatus, string> = { pending: '待确认', posted: '已入账', voided: '已作废' };
+const EXPENSE_STATUS: StatusMap<ExpenseStatus> = {
+  pending: { label: '待确认', tone: 'warning' },
+  posted: { label: '已入账', tone: 'success' },
+  voided: { label: '已作废', tone: 'danger' },
+};
 
 export function LedgerTab() {
   const { records, setRecords } = useOperatingExpense();
@@ -43,7 +47,7 @@ export function LedgerTab() {
     {
       title: '科目', render: (_: unknown, r: ExpenseRecord) => getCategoryName(r.categoryPrimary, r.categorySecondary),
     },
-    { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+    { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
     { title: '归属月', dataIndex: 'billingMonth', width: 100 },
     {
       title: '归属', dataIndex: 'attribution', width: 80,
@@ -52,36 +56,40 @@ export function LedgerTab() {
     { title: '来源', dataIndex: 'source', width: 80 },
     {
       title: '状态', dataIndex: 'status', width: 80,
-      render: (v: ExpenseStatus) => <Tag color={STATUSColors[v]}>{STATUSLabels[v]}</Tag>,
+      render: (v: ExpenseStatus) => <StatusTag meta={EXPENSE_STATUS[v]} />,
     },
     {
       title: '操作', width: 160,
       render: (_: unknown, r: ExpenseRecord) => (
-        <Space>
+        <div style={{ display: 'flex', gap: 8 }}>
           {r.status === 'pending' && <Button size="mini" type="primary" onClick={() => handleConfirm(r)}>确认</Button>}
           {r.status === 'posted' && !r.isProjection && (
             <Button size="mini" status="danger" onClick={() => handleVoid(r)}>作废</Button>
           )}
-          {r.isProjection && <Tag color="gray" size="small">投影只读</Tag>}
-        </Space>
+          {r.isProjection && <StatusTag tone="neutral">投影只读</StatusTag>}
+        </div>
       ),
     },
   ];
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Space>
+      <DataTable
+        rowKey="id"
+        data={filtered}
+        columns={columns}
+        pagination={{ pageSize: 20 }}
+        emptyDescription="暂无费用记录"
+        toolbar={(
           <Select value={statusFilter} onChange={setStatusFilter} style={{ width: 120 }}>
             <Select.Option value="all">全部状态</Select.Option>
             <Select.Option value="pending">待确认</Select.Option>
             <Select.Option value="posted">已入账</Select.Option>
             <Select.Option value="voided">已作废</Select.Option>
           </Select>
-        </Space>
-        <Button type="primary" icon={<IconPlus />} onClick={() => setDrawerVisible(true)}>录入费用</Button>
-      </div>
-      <Table rowKey="id" data={filtered} columns={columns} pagination={{ pageSize: 20 }} />
+        )}
+        actions={<Button type="primary" icon={<IconPlus />} onClick={() => setDrawerVisible(true)}>录入费用</Button>}
+      />
       <ExpenseFormDrawer visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
     </div>
   );

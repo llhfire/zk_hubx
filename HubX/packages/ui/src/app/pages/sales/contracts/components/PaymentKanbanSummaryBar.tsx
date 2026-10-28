@@ -1,26 +1,26 @@
-import { Card } from '@arco-design/web-react';
-import type { CSSProperties } from 'react';
+import type { ReactNode } from 'react';
 import type { KanbanSummary } from '../paymentUtils';
+import { MetricCard, MoneyText, type MetricCardTone } from '@/design-system';
 
 const SUMMARY_GROUPS: Array<{
   label: string;
-  items: { key: keyof KanbanSummary; label: string; format: (v: number) => string; color: string }[];
+  items: { key: keyof KanbanSummary; label: string; render: (v: number) => ReactNode; tone?: MetricCardTone }[];
 }> = [
   {
     label: '经营概览',
     items: [
-      { key: 'totalContracts', label: '合同总数', format: (v) => `${v}`, color: 'var(--brand-500)' },
-      { key: 'totalReceivable', label: '总应收金额', format: (v) => `¥${(v / 10000).toFixed(1)}万`, color: 'var(--chart-5)' },
-      { key: 'monthlyCollected', label: '本月已回款', format: (v) => `¥${(v / 10000).toFixed(1)}万`, color: 'var(--success-500)' },
-      { key: 'upcomingMonthEstimate', label: '预计本月回款', format: (v) => `¥${(v / 10000).toFixed(1)}万`, color: 'var(--warning-500)' },
+      { key: 'totalContracts', label: '合同总数', render: (v) => `${v}`, tone: 'default' },
+      { key: 'totalReceivable', label: '总应收金额', render: (v) => <MoneyText variant="compact" value={v} />, tone: 'default' },
+      { key: 'monthlyCollected', label: '本月已回款', render: (v) => <MoneyText variant="compact" value={v} />, tone: 'success' },
+      { key: 'upcomingMonthEstimate', label: '预计本月回款', render: (v) => <MoneyText variant="compact" value={v} />, tone: 'warning' },
     ],
   },
   {
     label: '风险与预期',
     items: [
-      { key: 'overdueAmount', label: '逾期金额', format: (v) => `¥${(v / 10000).toFixed(1)}万`, color: 'var(--destructive-500)' },
-      { key: 'blockedCount', label: '卡点合同数', format: (v) => `${v} 个`, color: 'var(--destructive-600)' },
-      { key: 'blockedAmount', label: '卡点总金额', format: (v) => `¥${(v / 10000).toFixed(1)}万`, color: 'var(--destructive-700)' },
+      { key: 'overdueAmount', label: '逾期金额', render: (v) => <MoneyText variant="compact" value={v} />, tone: 'danger' },
+      { key: 'blockedCount', label: '卡点合同数', render: (v) => `${v} 个`, tone: 'danger' },
+      { key: 'blockedAmount', label: '卡点总金额', render: (v) => <MoneyText variant="compact" value={v} />, tone: 'danger' },
     ],
   },
 ];
@@ -37,17 +37,13 @@ export function PaymentKanbanSummaryBar({ summary }: Props) {
           <div className="payment-lane-summary__group-label">{group.label}</div>
           <div className="payment-lane-summary__items">
             {group.items.map((item) => (
-              <Card
+              <MetricCard
                 key={item.key}
                 className="payment-lane-summary__card"
-                size="small"
-                style={{ '--metric-accent': item.color } as CSSProperties}
-              >
-                <div className="payment-lane-summary__label">{item.label}</div>
-                <div className="payment-lane-summary__value">
-                  {item.format(summary[item.key] as number)}
-                </div>
-              </Card>
+                label={item.label}
+                value={item.render(summary[item.key] as number)}
+                tone={item.tone}
+              />
             ))}
           </div>
         </section>

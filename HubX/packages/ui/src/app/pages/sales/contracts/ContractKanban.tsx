@@ -1,15 +1,25 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button, Card, Space, Typography } from '@arco-design/web-react';
-import { IconPlus } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import { Button, Space, Typography } from '@/design-system';
+import { IconPlus } from '@/design-system';
+import {
+  FilterBar,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  ProgressBar,
+  SectionCard,
+  STATUS_TONE_VARS,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { useContracts } from './ContractsContext';
 import { computeKanbanSummary, getReceivedAmount } from './paymentUtils';
 import type { Contract } from './types';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import './ContractKanban.css';
-import { formatMoneyCompact as money } from '../../../utils/money';
 
 const Text = Typography.Text;
 
@@ -23,11 +33,13 @@ const filters: Array<{ key: DateFilter; label: string }> = [
   { key: '1y', label: '近 1 年' },
 ];
 
-const statusItems = [
-  { key: 'executing', label: '执行中', color: 'var(--brand-600)' },
-  { key: 'completed', label: '已完成', color: 'var(--success-500)' },
-  { key: 'paused', label: '已暂停', color: 'var(--warning-500)' },
-  { key: 'ended', label: '已终止', color: 'var(--destructive-500)' },
+type ContractStatusKey = 'executing' | 'completed' | 'paused' | 'ended';
+
+const statusItems: Array<{ key: ContractStatusKey; label: string; tone: StatusTone }> = [
+  { key: 'executing', label: '执行中', tone: 'info' },
+  { key: 'completed', label: '已完成', tone: 'success' },
+  { key: 'paused', label: '已暂停', tone: 'warning' },
+  { key: 'ended', label: '已终止', tone: 'danger' },
 ];
 
 const stageItems = ['需求调研', 'UI / 原型设计', '开发中', '测试中', '待验收'];
@@ -57,44 +69,44 @@ function trendMonths(filter: DateFilter, now: Date) {
   return Array.from({ length: count }, (_, index) => addMonths(now, index - count + 1));
 }
 
-function progressRow(label: string, value: number, max: number, color: string) {
-  const width = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+function progressRow(label: string, value: number, max: number, tone: StatusTone) {
+  const percent = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="contract-kanban__progress-row">
-      <div className="contract-kanban__progress-label">
-        <span>{label}</span>
-        <strong>{money(value)}</strong>
-      </div>
-      <div className="contract-kanban__progress-track">
-        <div className="contract-kanban__progress-fill" style={{ width: `${width}%`, background: color }} />
-      </div>
+      <ProgressBar
+        percent={percent}
+        label={label}
+        valueText={<MoneyText variant="compact" value={value} />}
+        size="small"
+        tone={tone}
+      />
     </div>
   );
 }
 
-function donutGradient(items: Array<{ color: string; value: number }>) {
+function donutGradient(items: Array<{ tone: StatusTone; value: number }>) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
-  if (total <= 0) return 'var(--grey-100)';
+  if (total <= 0) return 'var(--ds-tone-neutral-bg)';
   let start = 0;
   return `conic-gradient(${items.map(item => {
     const end = start + (item.value / total) * 360;
-    const part = `${item.color} ${start}deg ${end}deg`;
+    const part = `${STATUS_TONE_VARS[item.tone].fg} ${start}deg ${end}deg`;
     start = end;
     return part;
   }).join(', ')})`;
 }
 
 function barListRow(label: string, value: number, max: number) {
-  const width = max > 0 ? Math.max(4, Math.round((value / max) * 100)) : 0;
+  const percent = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
     <div className="contract-kanban__progress-row">
-      <div className="contract-kanban__progress-label">
-        <span>{label}</span>
-        <strong>{value} 个</strong>
-      </div>
-      <div className="contract-kanban__progress-track">
-        <div className="contract-kanban__progress-fill" style={{ width: `${width}%`, background: 'var(--brand-600)' }} />
-      </div>
+      <ProgressBar
+        percent={percent}
+        label={label}
+        valueText={`${value} 个`}
+        size="small"
+        tone="info"
+      />
     </div>
   );
 }
@@ -189,14 +201,14 @@ export function ContractKanban() {
       </FilterBar>
 
       <MetricGrid items={[
-        { key: 'total', label: '合同总额', value: money(data.total), detail: `${data.summary.totalContracts} 份有效合同` },
-        { key: 'received', label: '已回款', value: money(data.received), detail: `回款率 ${collectionRate}%`, tone: 'success' },
-        { key: 'pending', label: '待回款', value: money(Math.max(0, data.total - data.received)), detail: `未来 30 天 ${money(data.next30)}`, tone: 'warning' },
-        { key: 'risk', label: '风险合同', value: `${data.summary.blockedCount} 个`, detail: `卡点金额 ${money(data.summary.blockedAmount)}`, tone: data.summary.blockedCount > 0 ? 'danger' : 'success' },
+        { key: 'total', label: '合同总额', value: <MoneyText variant="compact" value={data.total} />, detail: `${data.summary.totalContracts} 份有效合同` },
+        { key: 'received', label: '已回款', value: <MoneyText variant="compact" value={data.received} />, detail: `回款率 ${collectionRate}%`, tone: 'success' },
+        { key: 'pending', label: '待回款', value: <MoneyText variant="compact" value={Math.max(0, data.total - data.received)} />, detail: <>未来 30 天 <MoneyText variant="compact" value={data.next30} /></>, tone: 'warning' },
+        { key: 'risk', label: '风险合同', value: `${data.summary.blockedCount} 个`, detail: <>卡点金额 <MoneyText variant="compact" value={data.summary.blockedAmount} /></>, tone: data.summary.blockedCount > 0 ? 'danger' : 'success' },
       ]} />
 
       <div className="contract-kanban__grid">
-        <Card className="contract-kanban__section-card">
+        <SectionCard className="contract-kanban__section-card">
           <div className="contract-kanban__trend-header">
             <div>
               <div className="contract-kanban__section-title">月度新签合同金额趋势</div>
@@ -218,20 +230,20 @@ export function ContractKanban() {
               );
             })}
           </div>
-        </Card>
+        </SectionCard>
 
-        <Card className="contract-kanban__section-card">
+        <SectionCard className="contract-kanban__section-card">
           <div className="contract-kanban__section-title">本月回款完成情况</div>
           <Text type="secondary">应收 / 实收 / 逾期</Text>
-          {progressRow('本月应收', data.monthDue, paymentMax, 'var(--brand-600)')}
-          {progressRow('本月实收', data.monthReceived, paymentMax, 'var(--success-500)')}
-          {progressRow('本月逾期', data.monthOverdue, paymentMax, 'var(--destructive-500)')}
-          {progressRow('未来 30 天预计回款', data.next30, paymentMax, 'var(--warning-500)')}
-        </Card>
+          {progressRow('本月应收', data.monthDue, paymentMax, 'info')}
+          {progressRow('本月实收', data.monthReceived, paymentMax, 'success')}
+          {progressRow('本月逾期', data.monthOverdue, paymentMax, 'danger')}
+          {progressRow('未来 30 天预计回款', data.next30, paymentMax, 'warning')}
+        </SectionCard>
       </div>
 
       <div className="contract-kanban__grid">
-        <Card className="contract-kanban__section-card">
+        <SectionCard className="contract-kanban__section-card">
           <div className="contract-kanban__section-title">合同状态分布</div>
           <div className="contract-kanban__donut-wrap">
             <div className="contract-kanban__donut" style={{ background: donutGradient(donutItems) }}>
@@ -243,17 +255,17 @@ export function ContractKanban() {
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
             {donutItems.map(item => (
               <div key={item.key} className="contract-kanban__legend-row">
-                <span><span className="contract-kanban__legend-dot" style={{ background: item.color }} />{item.label}</span>
+                <StatusTag tone={item.tone}>{item.label}</StatusTag>
                 <strong>{item.value} 个</strong>
               </div>
             ))}
           </Space>
-        </Card>
+        </SectionCard>
 
-        <Card className="contract-kanban__section-card">
+        <SectionCard className="contract-kanban__section-card">
           <div className="contract-kanban__section-title">项目阶段分布</div>
           {stageItems.map(item => barListRow(item, data.stageCounts[item as keyof typeof data.stageCounts], stageMax))}
-        </Card>
+        </SectionCard>
       </div>
     </PageShell>
   );

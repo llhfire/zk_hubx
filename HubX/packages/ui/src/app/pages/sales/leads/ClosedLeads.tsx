@@ -1,17 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Button,
-  Card,
-  Input,
-  Message,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-} from '@arco-design/web-react';
-import { IconEye, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
+import { Button, Input, Message, Select, Space, Tooltip } from '@/design-system';
+import { IconEye, IconRefresh, IconSearch } from '@/design-system';
 import { CompanyEntityInfoModal } from '../company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -21,14 +11,23 @@ import {
 import {
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_LABEL,
-  LEAD_SOURCE_COLOR,
+  LEAD_SOURCE_TONE,
   COMPANY_ENTITY_LIST,
 } from './types';
 import { useLeads } from '../../../leads/LeadContext';
 import { useContracts } from '../contracts/ContractsContext';
 import { useProjects } from '../../delivery/project/ProjectContext';
 import { useCollections } from '../../../collections/CollectionContext';
-import { PageHeader, PageShell, MetricGrid, WeChatIcon } from '@/design-system';
+import {
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  WeChatIcon,
+  DataTable,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { buildClosedLeadRows, type ClosedLeadRow } from './closedLeadReadModel';
 
 export function ClosedLeads() {
@@ -96,12 +95,12 @@ export function ClosedLeads() {
           <a onClick={() => openRelatedDetail(r)} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
           {r.presalesGroupName && (
             <Tooltip content="点击复制群名">
-              <div style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }} onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); }}>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }} onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); }}>
                 <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.customer} · {r.contact}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{r.customer} · {r.contact}</div>
         </div>
       ),
     },
@@ -110,8 +109,8 @@ export function ClosedLeads() {
       width: 130,
       render: (_: unknown, r: ClosedLeadRow) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
-          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
+          <StatusTag tone={LEAD_SOURCE_TONE[r.source as keyof typeof LEAD_SOURCE_TONE] || 'neutral'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</StatusTag>
+          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>{r.entity}</a>
         </Space>
       ),
     },
@@ -119,7 +118,7 @@ export function ClosedLeads() {
       title: '成交状态',
       width: 100,
       render: (_: unknown, r: ClosedLeadRow) => (
-        <Tag color={r.closedStatus === '已签约' ? 'green' : r.closedStatus === '已立项' ? 'arcoblue' : 'orange'}>{r.closedStatus}</Tag>
+        <StatusTag tone={r.closedStatus === '已签约' ? 'success' : r.closedStatus === '已立项' ? 'info' : 'warning'}>{r.closedStatus}</StatusTag>
       ),
     },
     {
@@ -128,7 +127,7 @@ export function ClosedLeads() {
       render: (_: unknown, r: ClosedLeadRow) => (
         <div>
           <div style={{ fontWeight: 500 }}>¥{r.contractAmount.toLocaleString()}</div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>已回款 ¥{r.receivedAmount.toLocaleString()}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>已回款 ¥{r.receivedAmount.toLocaleString()}</div>
         </div>
       ),
     },
@@ -138,7 +137,7 @@ export function ClosedLeads() {
       title: '归属与协作',
       width: 120,
       render: (_: unknown, r: ClosedLeadRow) => (
-        <div style={{ fontSize: 12 }}>
+        <div style={{ fontSize: 'var(--text-xs)' }}>
           <div>归属: {r.owner || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>优化: {r.optimizer || '-'}</div>
         </div>
@@ -164,12 +163,12 @@ export function ClosedLeads() {
         { key: 'cycle', label: '平均转化周期', value: `${averageConversionDays} 天`, detail: '从创建到签约' },
       ]} />
 
-      <Card>
+      <SectionCard>
         <div
           style={{
             background: 'var(--color-fill-1)',
             padding: '12px 16px',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-md)',
             marginBottom: 16,
             border: '1px solid var(--color-border-2)',
             display: 'flex',
@@ -195,13 +194,13 @@ export function ClosedLeads() {
               重置
             </Button>
           )}
-          <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--color-text-3)' }}>
+          <div style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
             筛选结果：{filteredLeads.length} 条
           </div>
         </div>
 
-        <Table columns={columns} data={filteredLeads} rowKey="key" scroll={{ x: 1400 }} pagination={false} />
-      </Card>
+        <DataTable columns={columns} data={filteredLeads} rowKey="key" scroll={{ x: 1400 }} pagination={false} />
+      </SectionCard>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />
     </PageShell>

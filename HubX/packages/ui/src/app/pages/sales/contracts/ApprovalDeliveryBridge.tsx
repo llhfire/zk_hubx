@@ -3,7 +3,7 @@
 // α 版仍走前端 diff 引擎（单机单用户，无并发问题）。
 
 import { useEffect, useRef } from 'react';
-import { Message } from '@arco-design/web-react';
+import { Message } from '@/design-system';
 import { useContracts } from './ContractsContext';
 import { useProjects } from '../../delivery/project/ProjectContext';
 import { useBusinessCases } from '../../../business-case/BusinessCaseContext';

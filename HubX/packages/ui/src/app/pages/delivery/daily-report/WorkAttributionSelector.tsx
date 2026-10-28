@@ -1,4 +1,4 @@
-import { Select } from '@arco-design/web-react';
+import { Select } from '@/design-system';
 import type { WorkAttributionCategory, WorkAttributionType } from './types';
 import { useJobWorkConfig } from './JobWorkConfigContext';
 import {

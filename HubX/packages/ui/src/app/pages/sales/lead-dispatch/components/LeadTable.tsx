@@ -4,7 +4,8 @@
 // 行高亮优先级：红（首联超时）> 橙（派发超期）> 琥珀（待审核），调 kpiCalc 同一纯函数
 
 import { useMemo } from 'react';
-import { Table, Tag, Button, Typography } from '@arco-design/web-react';
+import { DataTable, GradeTag, StatusTag, type StatusTone } from '@/design-system';
+import { Button, Typography } from '@/design-system';
 import { useNavigate } from 'react-router';
 import type { LeadListItem } from '../../leads/types';
 import { LEAD_SOURCE_LABEL } from '../../leads/types';
@@ -12,7 +13,6 @@ import { BUSINESS_LINE_LABEL, type LeadBusinessLine } from '../types';
 import { leadDispatchView, type RowHighlight } from '../kpiCalc';
 import { canBeDispatched } from '../dispatchRules';
 import { hasPendingLevelAudit, returnActorsOf } from '../kpiCalc';
-import { CUSTOMER_LEVEL_COLOR as LEVEL_COLOR } from '../../leads/types';
 
 interface LeadTableProps {
   leads: LeadListItem[];
@@ -34,11 +34,11 @@ const HIGHLIGHT_BG: Record<Exclude<RowHighlight, null>, string> = {
   level_audit: 'rgba(var(--gold-1), 0.6)',
 };
 
-const SLA_TAG_COLOR: Record<string, string> = {
-  normal: 'green',
-  warning: 'orange',
-  overdue: 'red',
-  contacted: 'green',
+const SLA_TAG_TONE: Record<string, StatusTone> = {
+  normal: 'success',
+  warning: 'warning',
+  overdue: 'danger',
+  contacted: 'success',
 };
 
 
@@ -59,8 +59,8 @@ export function LeadTable({
       dataIndex: 'businessLine',
       width: 110,
       render: (v: string) => v
-        ? <Tag size="small" color="arcoblue">{BUSINESS_LINE_LABEL[v as LeadBusinessLine] ?? v}</Tag>
-        : <Tag size="small">未设</Tag>,
+        ? <StatusTag size="small" tone="info">{BUSINESS_LINE_LABEL[v as LeadBusinessLine] ?? v}</StatusTag>
+        : <StatusTag size="small">未设</StatusTag>,
     },
     {
       title: '客户信息',
@@ -69,7 +69,7 @@ export function LeadTable({
       render: (_: string, record: LeadListItem) => (
         <div style={{ lineHeight: 1.4 }}>
           <Typography.Text style={{ fontWeight: 500 }}>{record.name}</Typography.Text>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
             {record.contact} · {record.phone}
             {record.customer ? ` · ${record.customer}` : ''}
           </div>
@@ -83,7 +83,7 @@ export function LeadTable({
       render: (_: string, record: LeadListItem) => (
         <div style={{ lineHeight: 1.4 }}>
           <div>{record.entity}</div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
             {LEAD_SOURCE_LABEL[record.source as keyof typeof LEAD_SOURCE_LABEL] ?? record.source}
             {record.channelPlan ? ` · ${record.channelPlan}` : ''}
           </div>
@@ -95,7 +95,7 @@ export function LeadTable({
       dataIndex: 'customerLevel',
       width: 70,
       render: (v: string) => v
-        ? <Tag size="small" color={LEVEL_COLOR[v as keyof typeof LEVEL_COLOR] ?? 'gray'}>{v}</Tag>
+        ? <GradeTag grade={v} />
         : '-',
     },
     {
@@ -103,7 +103,7 @@ export function LeadTable({
       dataIndex: 'createTime',
       width: 180,
       render: (_: string, record: LeadListItem) => (
-        <div style={{ lineHeight: 1.4, fontSize: 12 }}>
+        <div style={{ lineHeight: 1.4, fontSize: 'var(--text-xs)' }}>
           <div>{record.createTime}</div>
           <div style={{ color: 'var(--color-text-3)' }}>
             {record.dispatchedAt ?? '未派发'}
@@ -120,12 +120,11 @@ export function LeadTable({
         if (!view) return '-';
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <Tag size="small" color={SLA_TAG_COLOR[view.dispatchSla.status]}>
+            <StatusTag size="small" tone={SLA_TAG_TONE[view.dispatchSla.status]}>
               派发 {view.dispatchSla.label}
-            </Tag>
-            <Tag size="small" color={SLA_TAG_COLOR[view.firstContactSla.status]}>
-              首联 {view.firstContactSla.label}
-            </Tag>
+            </StatusTag>
+            <StatusTag tone={SLA_TAG_TONE[view.firstContactSla.status]}>首联 {view.firstContactSla.label}
+            </StatusTag>
           </div>
         );
       },
@@ -135,9 +134,9 @@ export function LeadTable({
       dataIndex: 'owner',
       width: 140,
       render: (v: string, record: LeadListItem) => {
-        if (!v && record.dispatchTarget === 'pool') return <Tag size="small">公海待领取</Tag>;
+        if (!v && record.dispatchTarget === 'pool') return <StatusTag size="small">公海待领取</StatusTag>;
         return (
-          <div style={{ lineHeight: 1.4, fontSize: 12 }}>
+          <div style={{ lineHeight: 1.4, fontSize: 'var(--text-xs)' }}>
             <div>{v || '-'}</div>
             <div style={{ color: 'var(--color-text-3)' }}>{v ? (departmentByOwner.get(v) ?? '-') : ''}</div>
           </div>
@@ -148,7 +147,7 @@ export function LeadTable({
       title: '跟进状态',
       dataIndex: 'status',
       width: 100,
-      render: (v: string) => <Tag size="small">{v}</Tag>,
+      render: (v: string) => <StatusTag size="small">{v}</StatusTag>,
     },
     {
       title: '操作',
@@ -184,7 +183,7 @@ export function LeadTable({
   ], [views, departmentByOwner, navigate, onDispatch, onUrge, onLevelAdjust, onQualityConfirm]);
 
   return (
-    <Table
+    <DataTable
       rowKey="id"
       loading={loading}
       columns={columns}

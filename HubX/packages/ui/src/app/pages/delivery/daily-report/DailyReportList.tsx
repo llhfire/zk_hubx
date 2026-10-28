@@ -1,8 +1,19 @@
 import { useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router';
-import { Button, Card, DatePicker, Empty, Input, Select, Space, Table, Tag, Tooltip, Typography } from '@arco-design/web-react';
-import { IconEye, IconPlus, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import { Button, DatePicker, Input, Select, Space, Tooltip, Typography } from '@/design-system';
+import { IconEye, IconPlus, IconSearch } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import { DailyReportDetail } from './DailyReportDetail';
 import type { DailyReport, DailyReportComment } from './types';
 import { getDailyReportTotalHours, getDailyReportWorkTypeText, mockDailyReports } from './mockData';
@@ -21,18 +32,11 @@ import './dailyReportList.css';
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
-const REPORT_STATUS_LABEL: Record<DailyReport['status'], string> = {
-  draft: '草稿',
-  submitted: '已提交',
-  reviewed: '已查看',
-  locked: '已锁定',
-};
-
-const REPORT_STATUS_COLOR: Record<DailyReport['status'], string> = {
-  draft: 'gray',
-  submitted: 'blue',
-  reviewed: 'green',
-  locked: 'default',
+const REPORT_STATUS_META: StatusMap<DailyReport['status']> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  submitted: { label: '已提交', tone: 'info' },
+  reviewed: { label: '已查看', tone: 'success' },
+  locked: { label: '已锁定', tone: 'neutral' },
 };
 
 export function DailyReportList() {
@@ -77,6 +81,7 @@ export function DailyReportList() {
       width: 120,
       key: 'reportDate',
       fixed: 'left' as const,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '汇报人',
@@ -101,7 +106,7 @@ export function DailyReportList() {
       dataIndex: 'status',
       width: 100,
       key: 'status',
-      render: (status: DailyReport['status']) => <Tag color={REPORT_STATUS_COLOR[status]}>{REPORT_STATUS_LABEL[status]}</Tag>,
+      render: (status: DailyReport['status']) => <StatusTag meta={resolveStatus(REPORT_STATUS_META, status)} />,
     },
     {
       title: '总工时',
@@ -166,57 +171,54 @@ export function DailyReportList() {
         ]}
       />
 
-      <Card className="daily-report-list__content-card">
-        <FilterBar actions={hasFilters ? <Button type="text" onClick={handleReset}>重置筛选</Button> : undefined}>
-          <Input
-            prefix={<IconSearch />}
-            className="daily-report-list__keyword"
-            placeholder="搜索汇报人或部门"
-            value={filters.keyword}
-            onChange={(value) => setFilters(current => ({ ...current, keyword: value }))}
-            allowClear
-          />
-          <Select
-            className="daily-report-list__department"
-            placeholder="部门（全部）"
-            value={filters.department || undefined}
-            onChange={(value) => setFilters(current => ({ ...current, department: value || '' }))}
-            allowClear
-            options={departmentOptions}
-          />
-          <RangePicker
-            className="daily-report-list__date-range"
-            placeholder={['开始日期', '结束日期']}
-            value={filters.dateRange}
-            onChange={(value) => setFilters(current => ({ ...current, dateRange: value || [] }))}
-          />
-        </FilterBar>
-
-        <div className="daily-report-list__result-summary">
-          <Text type="secondary">共 {filteredReports.length} 份日报</Text>
-          {hasFilters && <Text type="secondary">已按当前条件筛选</Text>}
-        </div>
-
-        {filteredReports.length === 0 ? (
-          <div className="daily-report-list__empty">
-            <Empty description="没有符合当前条件的日报" />
-            <Button onClick={handleReset}>清除筛选</Button>
-          </div>
-        ) : (
-          <Table
-            rowKey="id"
-            columns={columns}
-            data={filteredReports}
-            scroll={{ x: 920 }}
-            pagination={{
-              total: filteredReports.length,
-              pageSize: 10,
-              showTotal: true,
-              sizeCanChange: true,
-            }}
-          />
-        )}
-      </Card>
+      <SectionCard className="daily-report-list__content-card">
+        <DataTable
+          rowKey="id"
+          columns={columns}
+          data={filteredReports}
+          scroll={{ x: 920 }}
+          toolbar={(
+            <FilterBar>
+              <Input
+                prefix={<IconSearch />}
+                className="daily-report-list__keyword"
+                placeholder="搜索汇报人或部门"
+                value={filters.keyword}
+                onChange={(value) => setFilters(current => ({ ...current, keyword: value }))}
+                allowClear
+              />
+              <Select
+                className="daily-report-list__department"
+                placeholder="部门（全部）"
+                value={filters.department || undefined}
+                onChange={(value) => setFilters(current => ({ ...current, department: value || '' }))}
+                allowClear
+                options={departmentOptions}
+              />
+              <RangePicker
+                className="daily-report-list__date-range"
+                placeholder={['开始日期', '结束日期']}
+                value={filters.dateRange}
+                onChange={(value) => setFilters(current => ({ ...current, dateRange: value || [] }))}
+              />
+            </FilterBar>
+          )}
+          caption={(
+            <Text type="secondary">
+              共 {filteredReports.length} 份日报{hasFilters ? ' · 已按当前条件筛选' : ''}
+            </Text>
+          )}
+          actions={hasFilters ? <Button type="text" onClick={handleReset}>重置筛选</Button> : undefined}
+          emptyDescription="没有符合当前条件的日报"
+          emptyAction={hasFilters ? <Button onClick={handleReset}>清除筛选</Button> : undefined}
+          pagination={{
+            total: filteredReports.length,
+            pageSize: 10,
+            showTotal: true,
+            sizeCanChange: true,
+          }}
+        />
+      </SectionCard>
 
       <DailyReportDetail
         visible={detailVisible}

@@ -7,11 +7,15 @@ import {
   type ProjectQuotationConfig,
   type ProjectQuotationSummary,
 } from './projectQuotationConfigModel';
+import { formatMoney } from '@/app/utils/money';
+import { MoneyText } from '@/design-system';
 import './QuotationSummaryReport.css';
 
 interface QuotationReportRow {
   name: string;
   detail?: string;
+  detailAmount?: number;
+  detailAmountSuffix?: string;
   amount: number;
 }
 
@@ -32,8 +36,12 @@ type QuotationSummaryReportSummary = Omit<ProjectQuotationSummary, 'salesOtherCo
   salesOtherCost?: number;
 };
 
-function formatAmount(value: number) {
-  return `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/**
+ * Canvas 导出是报价单位图文书，无法渲染 React 的 MoneyText；固定两位小数以保留原有 facsimile 口径。
+ * 页面展示中的金额统一由 MoneyText 承接。
+ */
+function formatExportAmount(value: number) {
+  return formatMoney(value, { fractionDigits: 2 });
 }
 
 function formatPercentage(value: number, total: number) {
@@ -42,6 +50,7 @@ function formatPercentage(value: number, total: number) {
 }
 
 export function createQuotationSystemRecordFileName(systemName: string, timestamp = Date.now()) {
+  // 文件名日期是机器可读的导出命名片段，不是页面日期展示，保留 YYYYMMDD 口径。
   const date = new Date(timestamp);
   const datePart = [
     date.getFullYear(),
@@ -64,7 +73,9 @@ export function buildQuotationSummaryReportData(
 ): QuotationSummaryReportData {
   const laborRows = getQuotationLaborDetails(config).map(item => ({
     name: `${item.sourceName} · ${item.role || '未命名角色'}`,
-    detail: `${item.people}人 × ${item.days}天 × ${formatAmount(item.dailyRate)}/天${item.technology ? ` · ${item.technology}` : ''}`,
+    detail: `${item.people}人 × ${item.days}天 ×`,
+    detailAmount: item.dailyRate,
+    detailAmountSuffix: `/天${item.technology ? ` · ${item.technology}` : ''}`,
     amount: calculateLaborItemCost(item),
   }));
   const travelRows: QuotationReportRow[] = [];
@@ -108,13 +119,18 @@ function QuotationDetailBlock({ title, rows, total }: { title: string; rows: Quo
           <div className="quotation-summary-report-row" key={`${row.name}-${row.detail ?? ''}`}>
             <div>
               <strong>{row.name}</strong>
-              {row.detail ? <span>{row.detail}</span> : null}
+              {row.detail || row.detailAmount !== undefined ? (
+                <span>
+                  {row.detail}
+                  {row.detailAmount !== undefined ? <>{' '}<MoneyText value={row.detailAmount} />{row.detailAmountSuffix}</> : null}
+                </span>
+              ) : null}
             </div>
-            <strong>{formatAmount(row.amount)}</strong>
+            <strong><MoneyText value={row.amount} /></strong>
           </div>
         )) : <div className="quotation-summary-report-empty">暂无配置</div>}
       </div>
-      <div className="quotation-summary-report-subtotal"><span>{title.replace('明细', '合计')}</span><strong>{formatAmount(total)}</strong></div>
+      <div className="quotation-summary-report-subtotal"><span>{title.replace('明细', '合计')}</span><strong><MoneyText value={total} /></strong></div>
     </section>
   );
 }
@@ -137,7 +153,7 @@ export function QuotationSummaryReport({ config, summary, quotedAmount, upliftRa
         <div><span>总人天</span><strong>{report.totalPersonDays} 人天</strong></div>
         <div><span>总人数</span><strong>{report.totalPeople} 人</strong></div>
         <div><span>预计工期</span><strong>{report.estimatedPeriod}</strong></div>
-        <div className="is-primary"><span>项目报价</span><strong>{formatAmount(report.totalAmount)}</strong></div>
+        <div className="is-primary"><span>项目报价</span><strong><MoneyText value={report.totalAmount} /></strong></div>
       </div>
       <div className="quotation-summary-report-blocks">
         <QuotationDetailBlock title="人力成本明细" rows={report.laborRows} total={report.laborCost} />
@@ -146,7 +162,7 @@ export function QuotationSummaryReport({ config, summary, quotedAmount, upliftRa
       </div>
       <div className="quotation-summary-report-total">
         <span>项目总报价</span>
-        <strong>{formatAmount(displayedTotalAmount)}{upliftText}</strong>
+        <strong><MoneyText value={displayedTotalAmount} />{upliftText}</strong>
         <div>
           <span>人力：{formatPercentage(report.laborCost, displayedTotalAmount)}</span>
           <span>差旅：{formatPercentage(report.travelCost, displayedTotalAmount)}</span>
@@ -184,8 +200,11 @@ function drawReportBlock(
   blockRows.forEach((row, index) => {
     const rowY = y + 44 + index * 44;
     drawText(context, row.name, 58, rowY + 19, 'var(--grey-900)', '500 15px PingFang SC, sans-serif');
-    if (row.detail) drawText(context, row.detail, 58, rowY + 36, 'var(--grey-400)', '13px PingFang SC, sans-serif');
-    const amount = formatAmount(row.amount);
+    const detailText = row.detail || row.detailAmount !== undefined
+      ? `${row.detail ?? ''}${row.detailAmount !== undefined ? ` ${formatExportAmount(row.detailAmount)}${row.detailAmountSuffix ?? ''}` : ''}`
+      : undefined;
+    if (detailText) drawText(context, detailText, 58, rowY + 36, 'var(--grey-400)', '13px PingFang SC, sans-serif');
+    const amount = formatExportAmount(row.amount);
     context.textAlign = 'right';
     drawText(context, amount, width - 58, rowY + 26, 'var(--grey-900)', '600 15px PingFang SC, sans-serif');
     context.textAlign = 'left';
@@ -196,7 +215,7 @@ function drawReportBlock(
   context.fillRect(40, totalY, width - 80, 42);
   drawText(context, title.replace('明细', '合计'), 58, totalY + 26, 'var(--grey-600)', '600 15px PingFang SC, sans-serif');
   context.textAlign = 'right';
-  drawText(context, formatAmount(total), width - 58, totalY + 26, 'var(--primary)', '600 16px PingFang SC, sans-serif');
+  drawText(context, formatExportAmount(total), width - 58, totalY + 26, 'var(--primary)', '600 16px PingFang SC, sans-serif');
   context.textAlign = 'left';
   return y + blockHeight + 18;
 }
@@ -219,7 +238,7 @@ export async function createQuotationSummaryImageUrl(config: ProjectQuotationCon
   drawText(context, '由报价系统自动生成', 40, 76, 'var(--grey-400)', '14px PingFang SC, sans-serif');
 
   const metricLabels = ['总人天', '总人数', '预计工期', '项目总报价'];
-  const metricValues = [`${report.totalPersonDays} 人天`, `${report.totalPeople} 人`, report.estimatedPeriod, formatAmount(report.totalAmount)];
+  const metricValues = [`${report.totalPersonDays} 人天`, `${report.totalPeople} 人`, report.estimatedPeriod, formatExportAmount(report.totalAmount)];
   metricLabels.forEach((label, index) => {
     const x = 40 + index * 260;
     context.fillStyle = '#ffffff';
@@ -236,7 +255,7 @@ export async function createQuotationSummaryImageUrl(config: ProjectQuotationCon
   context.fillStyle = 'var(--primary)';
   context.fillRect(40, y, width - 80, 92);
   drawText(context, '项目总报价', 62, y + 34, '#ffffff', '16px PingFang SC, sans-serif');
-  drawText(context, formatAmount(report.totalAmount), 62, y + 66, '#ffffff', '600 30px PingFang SC, sans-serif');
+  drawText(context, formatExportAmount(report.totalAmount), 62, y + 66, '#ffffff', '600 30px PingFang SC, sans-serif');
   context.textAlign = 'right';
   drawText(context, `人力：${formatPercentage(report.laborCost, report.totalAmount)}    差旅：${formatPercentage(report.travelCost, report.totalAmount)}    其他：${formatPercentage(report.otherCost, report.totalAmount)}`, width - 62, y + 62, '#ffffff', '14px PingFang SC, sans-serif');
   context.textAlign = 'left';

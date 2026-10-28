@@ -28,22 +28,6 @@
   text-align: left;
 }
 
-.employee-detail-360 .hubx-process-metric::before {
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 0;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: rgb(var(--primary-6));
-  content: '';
-}
-
-.employee-detail-360 .hubx-process-metric:nth-child(1)::before { background: rgb(var(--primary-6)); }
-.employee-detail-360 .hubx-process-metric:nth-child(2)::before { background: rgb(var(--cyan-6)); }
-.employee-detail-360 .hubx-process-metric:nth-child(3)::before { background: rgb(var(--warning-6)); }
-.employee-detail-360 .hubx-process-metric:nth-child(4)::before { background: rgb(var(--success-6)); }
-
 .employee-metric-heading {
   display: flex;
   width: 100%;
@@ -122,16 +106,21 @@
 }
 
 .employee-project-card {
-  border: 1px solid var(--color-border-2);
-  border-radius: 8px;
-  padding: 12px 16px;
-  background: var(--color-bg-2);
-  transition: all 180ms ease;
+  width: 100%;
+  margin-bottom: 0;
 }
 
-.employee-project-card:hover {
-  border-color: rgb(var(--primary-4));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.employee-project-card .hubx-process-record-card__title a {
+  color: rgb(var(--primary-6));
+  text-decoration: none;
+}
+
+.employee-project-card .hubx-process-record-card__title a:hover {
+  text-decoration: underline;
+}
+
+.employee-project-card__caption {
+  color: var(--color-text-3);
 }
 
 .employee-growth-timeline-item {

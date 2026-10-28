@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { mockTrips } from '../../mock-data';
+import { getTripDetail } from '../../travel-api';
+import type { Trip } from '../../types';
 import { TripDetail } from '../TripDetail';
 
 vi.mock('../../travel-api', async () => {
@@ -40,7 +42,7 @@ afterEach(() => {
 
 async function waitForRender(container: HTMLElement) {
   for (let i = 0; i < 30; i++) {
-    if (container.querySelector('.trip-detail')) break;
+    if (container.querySelector('.hubx-process-overview')) break;
     await act(async () => {
       await new Promise((r) => setTimeout(r, 20));
     });
@@ -48,6 +50,84 @@ async function waitForRender(container: HTMLElement) {
 }
 
 describe('TripDetail 标杆化升级与 70:30 信息架构', () => {
+  test('加载时保留页头和面包屑，空结果结束等待并显示空态', async () => {
+    let resolveTrip!: (trip: Trip | null) => void;
+    vi.mocked(getTripDetail).mockImplementationOnce(() => new Promise((resolve) => { resolveTrip = resolve; }));
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/travel/trips/missing']}>
+          <Routes><Route path="/travel/trips/:id" element={<TripDetail />} /></Routes>
+        </MemoryRouter>,
+      );
+    });
+
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
+    expect(container.querySelector('h1')?.textContent).toBe('出差详情');
+    expect(container.querySelector('.hubx-page-breadcrumb a')?.getAttribute('href')).toBe('/travel/dashboard');
+    expect(container.querySelector('.hubx-async-state')).not.toBeNull();
+
+    await act(async () => resolveTrip(null));
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
+    expect(container.querySelector('.hubx-empty-state')?.textContent).toContain('未找到该出差申请');
+    expect(container.querySelector('.hubx-async-state')).toBeNull();
+    await act(async () => root.unmount());
+  });
+
+  test('缺少出差编号显示空态且可返回出差申请', async () => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const callsBefore = vi.mocked(getTripDetail).mock.calls.length;
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/travel/detail']}>
+          <Routes>
+            <Route path="/travel/detail" element={<TripDetail />} />
+            <Route path="/travel/trips" element={<div>出差申请列表</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    });
+    expect(vi.mocked(getTripDetail).mock.calls).toHaveLength(callsBefore);
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
+    expect(container.textContent).toContain('未找到该出差申请');
+    const back = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === '返回出差申请');
+    await act(async () => back!.click());
+    expect(container.textContent).toBe('出差申请列表');
+    await act(async () => root.unmount());
+  });
+
+  test('加载失败显示可重试错误态，重试后恢复现有流程页头', async () => {
+    vi.mocked(getTripDetail).mockRejectedValueOnce(new Error('offline'));
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={['/travel/trips/1']}>
+          <Routes><Route path="/travel/trips/:id" element={<TripDetail />} /></Routes>
+        </MemoryRouter>,
+      );
+    });
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
+    expect(container.querySelector('h1')?.textContent).toBe('出差详情');
+    expect(container.textContent).toContain('加载出差详情失败');
+    const retry = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === '重试');
+    expect(retry).toBeDefined();
+    await act(async () => retry!.click());
+    await waitForRender(container);
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
+    expect(container.querySelectorAll('.hubx-process-overview')).toHaveLength(1);
+    expect(container.querySelector('.hubx-page-header')).toBeNull();
+    expect(container.querySelector('.hubx-async-state')).toBeNull();
+    expect(container.textContent).toContain('张三 · 杭州');
+    await act(async () => root.unmount());
+  });
+
   test('异步加载出差详情并渲染 6 维微指标、强化步进条与左侧核心档案穿透', async () => {
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -67,6 +147,7 @@ describe('TripDetail 标杆化升级与 70:30 信息架构', () => {
 
     const html = container.innerHTML;
 
+    expect(container.querySelectorAll('.hubx-page-shell')).toHaveLength(1);
     // 1. 面包屑与页头
     expect(html).toContain('差旅管理');
     expect(html).toContain('BT20260425001');

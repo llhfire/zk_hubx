@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Select, Tag, Tooltip, Upload } from '@arco-design/web-react';
-import { IconFullscreen, IconFullscreenExit, IconPlus, IconUpload } from '@arco-design/web-react/icon';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+import { UploadPanel } from '@/design-system';
+import { Button, Form, Input, InputNumber, Modal, Select, Tag, Tooltip, Upload } from '@/design-system';
+import { IconFullscreen, IconFullscreenExit, IconPlus, IconUpload } from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import { COMPANY_ENTITY_LIST, LEAD_SOURCE_LABEL, LEAD_SOURCE_LIST } from '../types';
 import { initialEmployees } from '../../../support/hr/employee/mockData';
 import './NewLeadModal.css';
@@ -270,13 +271,14 @@ export function NewLeadModal({ visible, onCancel, onSubmit }: NewLeadModalProps)
               </div>
             </FormItem>
             <FormItem className="new-lead-form__span-all new-lead-form__upload" label="附件上传" field="attachments" triggerPropName="fileList">
-              <Upload accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx" multiple limit={10} drag autoUpload={false}>
-                <div className="new-lead-form__upload-content">
-                  <IconUpload />
-                  <div>点击或拖拽文件到此处上传</div>
-                  <span>支持图片、PDF、Word、Excel，单个文件不超过 20MB</span>
-                </div>
-              </Upload>
+              <UploadPanel
+                accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                multiple
+                limit={10}
+                autoUpload={false}
+                hint="点击或拖拽文件到此处上传"
+                description="支持图片、PDF、Word、Excel，单个文件不超过 20MB"
+              />
             </FormItem>
           </div>
         </section>

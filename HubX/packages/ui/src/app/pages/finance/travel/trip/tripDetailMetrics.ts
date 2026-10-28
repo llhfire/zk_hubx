@@ -6,7 +6,7 @@ import {
   IconFile,
   IconFolder,
   IconSafe,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip } from '../types';
 import type { MetricItem, MetricTone } from '@/design-system';
 

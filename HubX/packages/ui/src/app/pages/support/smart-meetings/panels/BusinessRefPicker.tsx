@@ -8,8 +8,9 @@
  */
 
 import { useState, useMemo } from 'react';
-import { Tabs, Input, List, Tag, Empty } from '@arco-design/web-react';
-import { IconSearch } from '@arco-design/web-react/icon';
+import { Input, List, SectionTabs, Tabs } from '@/design-system';
+import { IconSearch } from '@/design-system';
+import { EmptyState, StatusTag } from '@/design-system';
 import type { BusinessRef, RefKind } from '../types';
 
 const { TabPane } = Tabs;
@@ -85,20 +86,15 @@ export function BusinessRefPicker({ selected = [], onSelect, placeholder = '+ �
   };
 
   return (
-    <div style={{ border: '1px solid var(--grey-200)', borderRadius: 8, overflow: 'hidden' }}>
-      <Tabs
-        activeTab={activeKind}
+    <div style={{ border: '1px solid var(--grey-200)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+      <SectionTabs
+        activeKey={activeKind}
         onChange={(k) => {
-          setActiveKind(k as RefKind);
-          setKeyword('');
-        }}
-        size="small"
-        style={{ padding: '0 8px' }}
-      >
-        {REF_TABS.map((tab) => (
-          <TabPane key={tab.kind} title={tab.label} />
-        ))}
-      </Tabs>
+                setActiveKind(k as RefKind);
+                setKeyword('');
+              }}
+        items={REF_TABS.map((tab) => ({ key: tab.kind, label: tab.label }))}
+      />
 
       <div style={{ padding: '8px 12px' }}>
         <Input
@@ -112,7 +108,7 @@ export function BusinessRefPicker({ selected = [], onSelect, placeholder = '+ �
         />
 
         {filteredItems.length === 0 ? (
-          <Empty description="暂无数据" style={{ padding: '16px 0' }} />
+          <div style={{ padding: '16px 0' }}><EmptyState description="暂无数据" /></div>
         ) : (
           <List
             size="small"
@@ -131,14 +127,14 @@ export function BusinessRefPicker({ selected = [], onSelect, placeholder = '+ �
                   onClick={() => !isSelected && handleSelect(item)}
                 >
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{item.label}</span>
+                    <span style={{ fontSize: 'var(--ds-text-dense)', fontWeight: 500 }}>{item.label}</span>
                     {item.sublabel && (
-                      <Tag size="small" style={{ marginLeft: 8 }}>
+                      <StatusTag size="small" style={{ marginLeft: 8 }}>
                         {item.sublabel}
-                      </Tag>
+                      </StatusTag>
                     )}
                   </div>
-                  {isSelected && <Tag color="green" size="small">已选</Tag>}
+                  {isSelected && <StatusTag tone="success">已选</StatusTag>}
                 </List.Item>
               );
             }}

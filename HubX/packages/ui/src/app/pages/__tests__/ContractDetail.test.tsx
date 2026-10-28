@@ -64,5 +64,6 @@ describe('ContractDetail', () => {
     expect(container.querySelector('.hubx-process-workspace')).not.toBeNull();
 
     await act(async () => root.unmount());
-  });
+    // 整页渲染 + 四个 Provider，并发跑全量测试时单次渲染会逼近 5s 默认上限
+  }, 20_000);
 });

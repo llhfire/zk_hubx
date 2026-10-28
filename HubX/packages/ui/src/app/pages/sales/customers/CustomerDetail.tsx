@@ -1,27 +1,19 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams, Link } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import {
-  Alert,
-  Badge,
   Button,
-  Card,
-  Descriptions,
-  Empty,
   Form,
-  Grid,
+  FormGrid,
   Input,
   Message,
   Modal,
   Popconfirm,
-  Progress,
   Space,
   Switch,
-  Table,
   Tabs,
-  Tag,
   Timeline,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconEdit,
   IconPlus,
@@ -37,16 +29,31 @@ import {
   IconCalendar,
   IconIdcard,
   IconBranch,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
-  PageShell,
+  AlertBanner,
+  DataTable,
+  DateText,
+  EmptyState,
+  EntityLink,
+  GradeTag,
+  IdentifierText,
   MetricGrid,
+  MoneyText,
+  PageShell,
   ProcessOverview,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
+  StatusTag,
+  resolveStatus,
   type MetricItem,
   type ProcessOverviewStep,
+  type StatusMap,
+  DescriptionsCard,
+  ProgressBar,
+  SectionTabs,
+  SectionCard,
 } from '@/design-system';
 import { useCustomers } from './CustomerContext';
 import { deriveCustomerStatus } from './customerModel';
@@ -58,16 +65,32 @@ import { useContracts } from '../contracts/ContractsContext';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import { getReceivedAmount } from '../contracts/paymentUtils';
-import { formatMoney as money } from '../../../utils/money';
-import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../contracts/utils';
+import { CONTRACT_STATUS } from '../contracts/utils';
 import type { ContractStatus } from '../contracts/types';
 import { useProjects } from '../../delivery/project/ProjectContext';
+import { PROJECT_STATUS_META } from '../../delivery/project/types';
 import './customerDetail.css';
 
 const TabPane = Tabs.TabPane;
-const Row = Grid.Row;
-const Col = Grid.Col;
 const { Title, Text, Paragraph } = Typography;
+
+/** 客户合作状态 → 文案 + 语义色（StatusTag 使用）。 */
+const CUSTOMER_STATUS: StatusMap<string> = {
+  待合作: { label: '待合作', tone: 'neutral' },
+  合作中: { label: '合作中', tone: 'success' },
+  已合作: { label: '已合作', tone: 'info' },
+};
+
+const LEAD_STATUS: StatusMap<string> = {
+  未联系: { label: '未联系', tone: 'info' },
+  未接通: { label: '未接通', tone: 'info' },
+  初步沟通: { label: '初步沟通', tone: 'info' },
+  需求调研: { label: '需求调研', tone: 'info' },
+  方案报价: { label: '方案报价', tone: 'info' },
+  合同洽谈: { label: '合同洽谈', tone: 'info' },
+  已签单: { label: '已签单', tone: 'success' },
+  已终止: { label: '已终止', tone: 'danger' },
+};
 
 const MAIN_TABS = ['chains', 'contracts', 'projects', 'contacts', 'activity'] as const;
 const SIDE_TABS = ['profile', 'invoice', 'finance'] as const;
@@ -178,9 +201,9 @@ export function CustomerDetail() {
       <PageShell
         breadcrumbs={[{ label: '客户管理', to: '/customers' }, { label: '客户不存在' }]}
       >
-        <Card>
-          <Empty description={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}><span>未找到该客户，可能已被合并或链接已失效</span><Button onClick={() => navigate('/customers')}>返回客户列表</Button></div>} />
-        </Card>
+        <SectionCard>
+          <EmptyState description="未找到该客户，可能已被合并或链接已失效" action={<Button onClick={() => navigate('/customers')}>返回客户列表</Button>} />
+        </SectionCard>
       </PageShell>
     );
   }
@@ -291,20 +314,14 @@ export function CustomerDetail() {
       label: (
         <span className="customer-metric-heading">
           <span>签约合同总额</span>
-          <strong>{money(contractAmount)}</strong>
+          <strong><MoneyText value={contractAmount} /></strong>
         </span>
       ),
       value: (
         <div style={{ width: '100%' }}>
-          <Progress
-            percent={collectionRate}
-            size="small"
-            color="rgb(var(--primary-6))"
-            trailColor="var(--color-fill-2)"
-            showText={false}
-          />
+          <ProgressBar percent={collectionRate} size="small" showValue={false} />
           <div className="customer-metric-detail-row">
-            已回款 {money(received)} · 待收敞口 {money(outstanding)} ({collectionRate}%)
+            已回款 <MoneyText value={received} /> · 待收敞口 <MoneyText value={outstanding} /> ({collectionRate}%)
           </div>
         </div>
       ),
@@ -322,13 +339,7 @@ export function CustomerDetail() {
       ),
       value: (
         <div style={{ width: '100%' }}>
-          <Progress
-            percent={avgProjectProgress}
-            size="small"
-            color="rgb(var(--cyan-6))"
-            trailColor="var(--color-fill-2)"
-            showText={false}
-          />
+          <ProgressBar percent={avgProjectProgress} size="small" tone="cyan" showValue={false} />
           <div className="customer-metric-detail-row">
             {related.projects.length > 0
               ? `综合交付进度 ${avgProjectProgress}% · ${related.projects.filter((p) => p.status === '已完成').length} 个已结项`
@@ -350,13 +361,7 @@ export function CustomerDetail() {
       ),
       value: (
         <div style={{ width: '100%' }}>
-          <Progress
-            percent={leadSignRate}
-            size="small"
-            color="rgb(var(--warning-6))"
-            trailColor="var(--color-fill-2)"
-            showText={false}
-          />
+          <ProgressBar percent={leadSignRate} size="small" tone="warning" showValue={false} />
           <div className="customer-metric-detail-row">
             签单转化率 {leadSignRate}% · 报价沉淀 {related.quotes.length} 份
           </div>
@@ -377,9 +382,10 @@ export function CustomerDetail() {
       value: (
         <div style={{ width: '100%' }}>
           <div className="customer-metric-value-row">
-            <Tag color="green" size="small">
-              {customer.level} 级客户
-            </Tag>
+            <Space size={4}>
+              <GradeTag grade={customer.level} />
+              <span>级客户</span>
+            </Space>
             <span>{primary?.position ?? '主接口人'}</span>
           </div>
           <div className="customer-metric-detail-row">
@@ -401,8 +407,8 @@ export function CustomerDetail() {
         <div>
           <Space size={6}>
             <Text bold>{record.name}</Text>
-            {record.isPrimary && <Tag color="green">主联系人</Tag>}
-            {!record.active && <Tag>已停用</Tag>}
+            {record.isPrimary && <StatusTag tone="success">主联系人</StatusTag>}
+            {!record.active && <StatusTag>已停用</StatusTag>}
           </Space>
           <div className="customer-detail-secondary">{record.position ?? '未维护职位'}</div>
         </div>
@@ -433,7 +439,9 @@ export function CustomerDetail() {
       title: '生日关怀',
       dataIndex: 'birthday',
       width: 120,
-      render: (value?: string) => (value ? <Tag color="arcoblue"><IconCalendar /> {value}</Tag> : '—'),
+      render: (value?: string) => (
+        value ? <span className="customer-detail-secondary"><IconCalendar /> {value}</span> : '—'
+      ),
     },
     {
       title: '操作',
@@ -485,27 +493,22 @@ export function CustomerDetail() {
       ]}
     >
       {customer.mergedIntoId && (
-        <Alert
-          type="warning"
-          content={`该档案已并入客户 ${customer.mergedIntoId}，仅供历史回看。`}
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+        <AlertBanner tone="warning">
+          该档案已并入客户 {customer.mergedIntoId}，仅供历史回看。
+        </AlertBanner>
       )}
 
       {/* 顶部 ProcessOverview */}
       <ProcessOverview
-        identifier={`KH-${customer.id.replace(/\D/g, '').slice(-6) || customer.id}`}
+        identifier={<IdentifierText value={`KH-${customer.id.replace(/\D/g, '').slice(-6) || customer.id}`} />}
         title={customer.name}
         tags={
           <>
-            <Tag color={customer.level === 'S' ? 'green' : 'blue'}>{customer.level} 级客户</Tag>
-            <Tag color={status === '合作中' ? 'green' : status === '已合作' ? 'blue' : 'gray'}>
-              {status}
-            </Tag>
-            {!customer.active && <Tag color="red">已停用</Tag>}
-            <Tag color="cyan">{customer.kind === 'enterprise' ? '企业客户' : '个人客户'}</Tag>
-            <Tag>{customer.industry ?? '未分类行业'}</Tag>
+            <GradeTag grade={customer.level} />
+            <StatusTag meta={resolveStatus(CUSTOMER_STATUS, status)} />
+            {!customer.active && <StatusTag tone="danger">已停用</StatusTag>}
+            <StatusTag tone="cyan">{customer.kind === 'enterprise' ? '企业客户' : '个人客户'}</StatusTag>
+            <StatusTag>{customer.industry ?? '未分类行业'}</StatusTag>
           </>
         }
         actions={
@@ -533,13 +536,13 @@ export function CustomerDetail() {
         }
         currentStep={status === '待合作' ? 1 : status === '合作中' ? 2 : 3}
         steps={[
-          { key: 'profile', title: '客户建档', description: customer.createdAt.slice(0, 10) },
+          { key: 'profile', title: '客户建档', description: <DateText value={customer.createdAt} /> },
           { key: 'opportunity', title: '机会推进', description: `${related.leads.length} 条业务机会` },
           { key: 'cooperation', title: '签约履约', description: `${related.contracts.length} 份合同` },
           {
             key: 'operation',
             title: '持续经营',
-            description: outstanding ? `待收 ${money(outstanding)}` : '当前无待收款',
+            description: outstanding ? <>待收 <MoneyText value={outstanding} /></> : '当前无待收款',
           },
         ]}
       />
@@ -551,512 +554,514 @@ export function CustomerDetail() {
       <SplitLayout>
         {/* 左侧 Main：业务流转与交付协同 */}
         <SplitLayoutMain>
-          <Card className="customer-detail-main" bordered={false}>
-            <Tabs activeTab={activeMainTab} onChange={setActiveMainTab}>
-              {/* Tab 1: 全链路业务机会 */}
-              <TabPane
-                key="chains"
-                title={
-                  <span>
-                    <IconBranch /> 业务链路与商机 ({related.leads.length})
-                  </span>
-                }
-              >
-                <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text type="secondary">
-                      穿透链路：以商机线索为源头，串联报价单、签约合同、项目履约与待收款项闭环。
-                    </Text>
-                    <Button
-                      type="outline"
-                      size="small"
-                      icon={<IconPlus />}
-                      onClick={() =>
-                        navigate('/leads/my', { state: { createForCustomerId: customer.id } })
-                      }
-                    >
-                      发起新商机
-                    </Button>
-                  </div>
-
-                  <div className="customer-chain-list">
-                    {businessChains.map((chain) => (
-                      <section key={chain.lead.id} className="customer-chain">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <button
-                            className="customer-chain-lead"
-                            onClick={() => navigate(`/leads/${chain.lead.id}`)}
-                          >
-                            <Space size={8} align="center">
-                              <span style={{ fontSize: 15, color: 'rgb(var(--primary-6))' }}>
-                                {chain.lead.name}
-                              </span>
-                              <Badge
-                                status={chain.lead.status === '已签单' ? 'success' : 'processing'}
-                                text={chain.lead.status}
-                              />
-                            </Space>
-                            <IconRight style={{ color: 'var(--color-text-3)' }} />
-                          </button>
-                        </div>
-
-                        <div className="customer-chain-flow">
-                          <span>报价 {chain.quotes.length} 份</span>
-                          <span aria-hidden>→</span>
-                          <span>合同 {chain.contracts.length} 份</span>
-                          <span aria-hidden>→</span>
-                          <span>项目 {chain.projects.length} 个</span>
-                          <span aria-hidden>→</span>
-                          <span style={{ fontWeight: 600 }}>
-                            待收{' '}
-                            {money(
-                              chain.contracts.reduce(
-                                (sum, item) =>
-                                  sum + Math.max(0, item.current.totalAmount - getReceivedAmount(item)),
-                                0
-                              )
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="customer-chain-links">
-                          {chain.quotes.map((quote) => (
-                            <Button
-                              key={quote.id}
-                              size="mini"
-                              onClick={() => navigate(`/quotation/${quote.id}`)}
-                            >
-                              报价：{quote.quoteNo} · {QUOTE_STATUS_LABELS[quote.status] || quote.status}
-                            </Button>
-                          ))}
-                          {chain.contracts.map((contract) => (
-                            <Button
-                              key={contract.id}
-                              size="mini"
-                              onClick={() => navigate(`/contracts/${contract.id}`)}
-                            >
-                              合同：{contract.contractNo}
-                            </Button>
-                          ))}
-                          {chain.projects.map((project) => (
-                            <Button
-                              key={project.id}
-                              size="mini"
-                              onClick={() => navigate(`/projects/${project.id}`)}
-                            >
-                              项目：{project.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </section>
-                    ))}
-
-                    {directContracts.length > 0 && (
-                      <section className="customer-chain">
-                        <div className="customer-chain-lead">
-                          <span>直接签约主合同（无关联线索）</span>
-                          <Tag>{directContracts.length} 份</Tag>
-                        </div>
-                        <div className="customer-chain-links">
-                          {directContracts.map((contract) => (
-                            <Button
-                              key={contract.id}
-                              size="mini"
-                              onClick={() => navigate(`/contracts/${contract.id}`)}
-                            >
-                              {contract.contractNo} · {contract.current.contractName}
-                            </Button>
-                          ))}
-                        </div>
-                      </section>
-                    )}
-
-                    {businessChains.length === 0 && directContracts.length === 0 && (
-                      <Empty description="暂无关联业务机会或签约记录" />
-                    )}
-                  </div>
-                </div>
-              </TabPane>
-
-              {/* Tab 2: 合同与回款台账 */}
-              <TabPane
-                key="contracts"
-                title={
-                  <span>
-                    <IconFile /> 合同与回款 ({related.contracts.length})
-                  </span>
-                }
-              >
-                <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text type="secondary">
-                      台账统计：累计合同金额 {money(contractAmount)}，已收款 {money(received)}，待收敞口 {money(outstanding)}。
-                    </Text>
-                  </div>
-
-                  <Table
-                    rowKey="id"
-                    data={related.contracts}
-                    pagination={false}
-                    columns={[
-                      {
-                        title: '合同信息',
-                        render: (_: unknown, record) => (
-                          <div>
-                            <Link
-                              to={`/contracts/${record.id}`}
-                              className="table-primary-link"
-                            >
-                              {record.contractNo}
-                            </Link>
-                            <div className="table-secondary-text">{record.current.contractName}</div>
-                          </div>
-                        ),
-                      },
-                      {
-                        title: '类型',
-                        width: 100,
-                        render: (_: unknown, record) =>
-                          record.kind === 'supplement' ? (
-                            <Tag color="purple">补充合同</Tag>
-                          ) : (
-                            <Tag color="arcoblue">主合同</Tag>
-                          ),
-                      },
-                      {
-                        title: '合同金额',
-                        width: 130,
-                        render: (_: unknown, record) => (
-                          <span style={{ fontWeight: 600 }}>{money(record.current.totalAmount)}</span>
-                        ),
-                      },
-                      {
-                        title: '回款进度',
-                        width: 180,
-                        render: (_: unknown, record) => {
-                          const amt = record.current.totalAmount;
-                          const rec = getReceivedAmount(record);
-                          const pct = amt > 0 ? Math.min(100, Math.round((rec / amt) * 100)) : 0;
-                          return (
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
-                                <span>{money(rec)}</span>
-                                <span>{pct}%</span>
-                              </div>
-                              <Progress
-                                percent={pct}
-                                size="small"
-                                color="rgb(var(--primary-6))"
-                                trailColor="var(--color-fill-2)"
-                                showText={false}
-                              />
-                            </div>
-                          );
-                        },
-                      },
-                      {
-                        title: '合同状态',
-                        width: 100,
-                        dataIndex: 'status',
-                        render: (s: ContractStatus) => (
-                          <Tag color={CONTRACT_STATUS_COLOR[s] || 'gray'}>
-                            {CONTRACT_STATUS_LABEL[s] || s}
-                          </Tag>
-                        ),
-                      },
-                      {
-                        title: '签署/到期日',
-                        width: 130,
-                        render: (_: unknown, record) => record.current.endDate || record.createdAt.slice(0, 10),
-                      },
-                      {
-                        title: '操作',
-                        width: 90,
-                        render: (_: unknown, record) => (
-                          <Button
-                            type="text"
-                            size="small"
-                            onClick={() => navigate(`/contracts/${record.id}`)}
-                          >
-                            详情
-                          </Button>
-                        ),
-                      },
-                    ]}
-                  />
-
-                  {related.contracts.length === 0 && <Empty description="暂无签约合同记录" />}
-                </div>
-              </TabPane>
-
-              {/* Tab 3: 交付项目与履约进展 */}
-              <TabPane
-                key="projects"
-                title={
-                  <span>
-                    <IconFolder /> 履约项目 ({related.projects.length})
-                  </span>
-                }
-              >
-                <div style={{ marginTop: 12 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: 16,
-                    }}
-                  >
-                    <Text type="secondary">
-                      统计说明：归集属于该客户的合同履约与研发交付项目，点击可穿透进入项目 360 工作台。
-                    </Text>
-                  </div>
-
-                  {related.projects.length > 0 ? (
-                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                      {related.projects.map((proj) => (
-                        <div key={proj.id} className="customer-project-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <Space size={8} align="center">
-                                <Link
-                                  to={`/projects/${proj.id}`}
-                                  style={{ fontSize: 15, fontWeight: 600, color: 'rgb(var(--primary-6))' }}
+          <SectionCard className="customer-detail-main" bordered={false}>
+            <SectionTabs
+              activeKey={activeMainTab}
+              onChange={setActiveMainTab}
+              items={[
+                {
+                  key: 'chains',
+                  label: <span>
+                                <IconBranch /> 业务链路与商机 ({related.leads.length})
+                              </span>,
+                  content: (
+                    <>
+                              <div style={{ marginTop: 12 }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                  }}
                                 >
-                                  {proj.name}
-                                </Link>
-                                <Tag
-                                  color={
-                                    proj.status === '进行中'
-                                      ? 'arcoblue'
-                                      : proj.status === '已完成'
-                                      ? 'green'
-                                      : 'orange'
-                                  }
+                                  <Text type="secondary">
+                                    穿透链路：以商机线索为源头，串联报价单、签约合同、项目履约与待收款项闭环。
+                                  </Text>
+                                  <Button
+                                    type="outline"
+                                    size="small"
+                                    icon={<IconPlus />}
+                                    onClick={() =>
+                                      navigate('/leads/my', { state: { createForCustomerId: customer.id } })
+                                    }
+                                  >
+                                    发起新商机
+                                  </Button>
+                                </div>
+              
+                                <div className="customer-chain-list">
+                                  {businessChains.map((chain) => (
+                                    <section key={chain.lead.id} className="customer-chain">
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <button
+                                          className="customer-chain-lead"
+                                          onClick={() => navigate(`/leads/${chain.lead.id}`)}
+                                        >
+                                          <Space size={8} align="center">
+                                            <span style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--primary-6))' }}>
+                                              {chain.lead.name}
+                                            </span>
+                                            <StatusTag meta={resolveStatus(LEAD_STATUS, chain.lead.status, chain.lead.status)} />
+                                          </Space>
+                                          <IconRight style={{ color: 'var(--color-text-3)' }} />
+                                        </button>
+                                      </div>
+              
+                                      <div className="customer-chain-flow">
+                                        <span>报价 {chain.quotes.length} 份</span>
+                                        <span aria-hidden>→</span>
+                                        <span>合同 {chain.contracts.length} 份</span>
+                                        <span aria-hidden>→</span>
+                                        <span>项目 {chain.projects.length} 个</span>
+                                        <span aria-hidden>→</span>
+                                        <span style={{ fontWeight: 600 }}>
+                                          待收{' '}
+                                          <MoneyText
+                                            value={chain.contracts.reduce(
+                                              (sum, item) =>
+                                                sum + Math.max(0, item.current.totalAmount - getReceivedAmount(item)),
+                                              0
+                                            )}
+                                          />
+                                        </span>
+                                      </div>
+              
+                                      <div className="customer-chain-links">
+                                        {chain.quotes.map((quote) => (
+                                          <Button
+                                            key={quote.id}
+                                            size="mini"
+                                            onClick={() => navigate(`/quotation/${quote.id}`)}
+                                          >
+                                            报价：{quote.quoteNo} · {QUOTE_STATUS_LABELS[quote.status] || quote.status}
+                                          </Button>
+                                        ))}
+                                        {chain.contracts.map((contract) => (
+                                          <Button
+                                            key={contract.id}
+                                            size="mini"
+                                            onClick={() => navigate(`/contracts/${contract.id}`)}
+                                          >
+                                            合同：{contract.contractNo}
+                                          </Button>
+                                        ))}
+                                        {chain.projects.map((project) => (
+                                          <Button
+                                            key={project.id}
+                                            size="mini"
+                                            onClick={() => navigate(`/projects/${project.id}`)}
+                                          >
+                                            项目：{project.name}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </section>
+                                  ))}
+              
+                                  {directContracts.length > 0 && (
+                                    <section className="customer-chain">
+                                      <div className="customer-chain-lead">
+                                        <span>直接签约主合同（无关联线索）</span>
+                                        <StatusTag>{directContracts.length} 份</StatusTag>
+                                      </div>
+                                      <div className="customer-chain-links">
+                                        {directContracts.map((contract) => (
+                                          <Button
+                                            key={contract.id}
+                                            size="mini"
+                                            onClick={() => navigate(`/contracts/${contract.id}`)}
+                                          >
+                                            {contract.contractNo} · {contract.current.contractName}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </section>
+                                  )}
+              
+                                  {businessChains.length === 0 && directContracts.length === 0 && (
+                                    <EmptyState description="暂无关联业务机会或签约记录" />
+                                  )}
+                                </div>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'contracts',
+                  label: <span>
+                                <IconFile /> 合同与回款 ({related.contracts.length})
+                              </span>,
+                  content: (
+                    <>
+                              <div style={{ marginTop: 12 }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                  }}
                                 >
-                                  {proj.status}
-                                </Tag>
-                                <Tag size="small">编号：{proj.projectNo}</Tag>
-                              </Space>
-                              <div style={{ marginTop: 6, fontSize: 12, color: 'var(--color-text-3)' }}>
-                                项目经理：{proj.owner} · 排期：{proj.startDate || '—'} 至 {proj.expectedEndDate || '—'}
+                                  <Text type="secondary">
+                                    台账统计：累计合同金额 <MoneyText value={contractAmount} />，已收款 <MoneyText value={received} />，待收敞口 <MoneyText value={outstanding} />。
+                                  </Text>
+                                </div>
+              
+                                <DataTable
+                                  rowKey="id"
+                                  data={related.contracts}
+                                  pagination={false}
+                                  columns={[
+                                    {
+                                      title: '合同信息',
+                                      render: (_: unknown, record) => (
+                                        <div>
+                                          <EntityLink
+                                            to={`/contracts/${record.id}`}
+                                            className="table-primary-link"
+                                          >
+                                            {record.contractNo}
+                                          </EntityLink>
+                                          <div className="table-secondary-text">{record.current.contractName}</div>
+                                        </div>
+                                      ),
+                                    },
+                                    {
+                                      title: '类型',
+                                      width: 100,
+                                      render: (_: unknown, record) =>
+                                        record.kind === 'supplement' ? (
+                                          <StatusTag tone="purple">补充合同</StatusTag>
+                                        ) : (
+                                          <StatusTag tone="info">主合同</StatusTag>
+                                        ),
+                                    },
+                                    {
+                                      title: '合同金额',
+                                      width: 130,
+                                      render: (_: unknown, record) => (
+                                        <span style={{ fontWeight: 600 }}><MoneyText value={record.current.totalAmount} /></span>
+                                      ),
+                                    },
+                                    {
+                                      title: '回款进度',
+                                      width: 180,
+                                      render: (_: unknown, record) => {
+                                        const amt = record.current.totalAmount;
+                                        const rec = getReceivedAmount(record);
+                                        const pct = amt > 0 ? Math.min(100, Math.round((rec / amt) * 100)) : 0;
+                                        return (
+                                          <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', marginBottom: 2 }}>
+                                              <span><MoneyText value={rec} /></span>
+                                              <span>{pct}%</span>
+                                            </div>
+                                            <ProgressBar percent={pct} size="small" showValue={false} />
+                                          </div>
+                                        );
+                                      },
+                                    },
+                                    {
+                                      title: '合同状态',
+                                      width: 100,
+                                      dataIndex: 'status',
+                                      render: (s: ContractStatus) => (
+                                        <StatusTag meta={resolveStatus(CONTRACT_STATUS, s)} />
+                                      ),
+                                    },
+                                    {
+                                      title: '签署/到期日',
+                                      width: 130,
+                                      render: (_: unknown, record) => <DateText value={record.current.endDate || record.createdAt} />,
+                                    },
+                                    {
+                                      title: '操作',
+                                      width: 90,
+                                      render: (_: unknown, record) => (
+                                        <Button
+                                          type="text"
+                                          size="small"
+                                          onClick={() => navigate(`/contracts/${record.id}`)}
+                                        >
+                                          详情
+                                        </Button>
+                                      ),
+                                    },
+                                  ]}
+                                />
+              
+                                {related.contracts.length === 0 && <EmptyState description="暂无签约合同记录" />}
                               </div>
-                            </div>
-                            <div style={{ textAlign: 'right', minWidth: 160 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                                <span>交付进度</span>
-                                <strong style={{ color: 'var(--color-text-1)' }}>{proj.progress}%</strong>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'projects',
+                  label: <span>
+                                <IconFolder /> 履约项目 ({related.projects.length})
+                              </span>,
+                  content: (
+                    <>
+                              <div style={{ marginTop: 12 }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 16,
+                                  }}
+                                >
+                                  <Text type="secondary">
+                                    统计说明：归集属于该客户的合同履约与研发交付项目，点击可穿透进入项目 360 工作台。
+                                  </Text>
+                                </div>
+              
+                                {related.projects.length > 0 ? (
+                                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                                    {related.projects.map((proj) => (
+                                      <div key={proj.id} className="customer-project-card">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                          <div>
+                                            <Space size={8} align="center">
+                                              <EntityLink to={`/projects/${proj.id}`}>
+                                                {proj.name}
+                                              </EntityLink>
+                                              <StatusTag meta={resolveStatus(PROJECT_STATUS_META, proj.status, proj.status)} />
+                                              <StatusTag size="small">编号：{proj.projectNo}</StatusTag>
+                                            </Space>
+                                            <div style={{ marginTop: 6, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+                                              项目经理：{proj.owner} · 排期：<DateText value={proj.startDate} /> 至 <DateText value={proj.expectedEndDate} />
+                                            </div>
+                                          </div>
+                                          <div style={{ textAlign: 'right', minWidth: 160 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', marginBottom: 4 }}>
+                                              <span>交付进度</span>
+                                              <strong style={{ color: 'var(--color-text-1)' }}>{proj.progress}%</strong>
+                                            </div>
+                                            <ProgressBar percent={proj.progress} size="small" tone="cyan" showValue={false} />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </Space>
+                                ) : (
+                                  <EmptyState description="该客户当前暂无执行中的交付项目" />
+                                )}
                               </div>
-                              <Progress
-                                percent={proj.progress}
-                                size="small"
-                                color="rgb(var(--cyan-6))"
-                                trailColor="var(--color-fill-2)"
-                                showText={false}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </Space>
-                  ) : (
-                    <Empty description="该客户当前暂无执行中的交付项目" />
-                  )}
-                </div>
-              </TabPane>
-
-              {/* Tab 4: 关键联系人矩阵 */}
-              <TabPane
-                key="contacts"
-                title={
-                  <span>
-                    <IconUser /> 联系人与决策人 ({customer.contacts.length})
-                  </span>
-                }
-              >
-                <div style={{ marginTop: 12 }}>
-                  <div className="customer-section-heading" style={{ marginTop: 0 }}>
-                    <div>
-                      <Text bold style={{ fontSize: 14 }}>
-                        决策链与沟通矩阵
-                      </Text>
-                      <Paragraph style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-text-3)' }}>
-                        主联系人用于新报价和合同的默认快照，历史记录独立保留。
-                      </Paragraph>
-                    </div>
-                    <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openContact()}>
-                      添加联系人
-                    </Button>
-                  </div>
-
-                  <Table
-                    rowKey="id"
-                    columns={contactColumns}
-                    data={customer.contacts}
-                    pagination={false}
-                    scroll={{ x: 750 }}
-                  />
-                </div>
-              </TabPane>
-
-              {/* Tab 5: 客户全景动态 */}
-              <TabPane
-                key="activity"
-                title={
-                  <span>
-                    <IconHistory /> 客户全景动态
-                  </span>
-                }
-              >
-                <div style={{ marginTop: 16 }}>
-                  <Timeline>
-                    {activityList.map((item) => (
-                      <Timeline.Item
-                        key={`${item.time}-${item.title}`}
-                        label={item.time.slice(0, 16).replace('T', ' ')}
-                      >
-                        <strong>{item.title}</strong>
-                        <div className="customer-detail-secondary">{item.detail}</div>
-                      </Timeline.Item>
-                    ))}
-                  </Timeline>
-                </div>
-              </TabPane>
-            </Tabs>
-          </Card>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'contacts',
+                  label: <span>
+                                <IconUser /> 联系人与决策人 ({customer.contacts.length})
+                              </span>,
+                  content: (
+                    <>
+                              <div style={{ marginTop: 12 }}>
+                                <div className="customer-section-heading" style={{ marginTop: 0 }}>
+                                  <div>
+                                    <Text bold style={{ fontSize: 'var(--text-sm)' }}>
+                                      决策链与沟通矩阵
+                                    </Text>
+                                    <Paragraph style={{ margin: '4px 0 0', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+                                      主联系人用于新报价和合同的默认快照，历史记录独立保留。
+                                    </Paragraph>
+                                  </div>
+                                  <Button type="primary" size="small" icon={<IconPlus />} onClick={() => openContact()}>
+                                    添加联系人
+                                  </Button>
+                                </div>
+              
+                                <DataTable
+                                  rowKey="id"
+                                  columns={contactColumns}
+                                  data={customer.contacts}
+                                  pagination={false}
+                                  scroll={{ x: 750 }}
+                                />
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'activity',
+                  label: <span>
+                                <IconHistory /> 客户全景动态
+                              </span>,
+                  content: (
+                    <>
+                              <div style={{ marginTop: 16 }}>
+                                <Timeline>
+                                  {activityList.map((item) => (
+                                    <Timeline.Item
+                                      key={`${item.time}-${item.title}`}
+                                      label={<DateText value={item.time} mode="datetime" />}
+                                    >
+                                      <strong>{item.title}</strong>
+                                      <div className="customer-detail-secondary">{item.detail}</div>
+                                    </Timeline.Item>
+                                  ))}
+                                </Timeline>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutMain>
 
         {/* 右侧 Aside：工商档案与开票税务伴生 */}
         <SplitLayoutAside>
-          <Card bordered={false}>
-            <Tabs activeTab={activeSideTab} onChange={setActiveSideTab}>
-              {/* Aside Tab 1: 工商基础资料 */}
-              <TabPane key="profile" title="企业档案">
-                <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 8 }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <Title heading={6} style={{ margin: 0 }}>
-                        <Space><IconIdcard /> 工商认证信息</Space>
-                      </Title>
-                      <Button type="text" size="small" onClick={openEdit}>
-                        编辑
-                      </Button>
-                    </div>
-                    <Descriptions
-                      column={1}
-                      labelStyle={{ color: 'var(--color-text-2)', width: 90 }}
-                      data={[
-                        { label: '企业类型', value: customer.kind === 'enterprise' ? '企业客户' : '个人' },
-                        { label: '统一信用码', value: customer.creditCode ?? '—' },
-                        { label: '所属行业', value: customer.industry ?? '—' },
-                        { label: '企业规模', value: customer.scale ?? '—' },
-                        { label: '客户来源', value: customer.source ?? '—' },
-                        { label: '经营地址', value: customer.address ?? '—' },
-                      ]}
-                    />
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--color-border-2)', paddingTop: 12 }}>
-                    <Title heading={6} style={{ marginBottom: 8 }}>
-                      <Space><IconSafe /> 业务治理状态</Space>
-                    </Title>
-                    <Descriptions
-                      column={1}
-                      labelStyle={{ color: 'var(--color-text-2)', width: 90 }}
-                      data={[
-                        { label: '客户等级', value: <Tag color={customer.level === 'S' ? 'green' : 'blue'}>{customer.level} 级</Tag> },
-                        { label: '业务状态', value: status },
-                        { label: '档案状态', value: customer.active ? '正常启用' : '已停用' },
-                        { label: '建档时间', value: customer.createdAt.slice(0, 10) },
-                        { label: '最后更新', value: customer.updatedAt.slice(0, 10) },
-                        { label: '历史别名', value: customer.aliases?.join('、') || '—' },
-                      ]}
-                    />
-                  </div>
-                </Space>
-              </TabPane>
-
-              {/* Aside Tab 2: 开票与税务资料 */}
-              <TabPane key="invoice" title="开票资料">
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <Title heading={6} style={{ margin: 0 }}>
-                      <Space><IconFile /> 当前发票资质</Space>
-                    </Title>
-                    <Button type="text" size="small" onClick={openInvoice}>
-                      维护资料
-                    </Button>
-                  </div>
-                  <Descriptions
-                    column={1}
-                    labelStyle={{ color: 'var(--color-text-2)', width: 80 }}
-                    data={[
-                      { label: '发票抬头', value: customer.invoiceProfile?.title ?? '未维护' },
-                      { label: '税号识别', value: customer.invoiceProfile?.taxNo ?? '—' },
-                      { label: '开户银行', value: customer.invoiceProfile?.bankName ?? '—' },
-                      { label: '银行账号', value: customer.invoiceProfile?.bankAccount ?? '—' },
-                      {
-                        label: '注册电话',
-                        value: customer.invoiceProfile ? `${customer.invoiceProfile.phone || '—'}` : '—',
-                      },
-                      {
-                        label: '注册地址',
-                        value: customer.invoiceProfile ? `${customer.invoiceProfile.address || '—'}` : '—',
-                      },
-                    ]}
-                  />
-
-                  {customer.invoiceHistory.length > 0 && (
-                    <div className="customer-invoice-history">
-                      <span>已归档历史版本</span>
-                      <strong>{customer.invoiceHistory.length} 份</strong>
-                    </div>
-                  )}
-                </div>
-              </TabPane>
-
-              {/* Aside Tab 3: 客户经营价值分析 */}
-              <TabPane key="finance" title="经营分析">
-                <div style={{ marginTop: 8 }}>
-                  <Title heading={6} style={{ marginBottom: 8 }}>
-                    <Space><IconCheck /> 合作价值摘要</Space>
-                  </Title>
-                  <Descriptions
-                    column={1}
-                    labelStyle={{ color: 'var(--color-text-2)', width: 90 }}
-                    data={[
-                      { label: '累计签约总额', value: <span style={{ fontWeight: 700, color: 'rgb(var(--primary-6))' }}>{money(contractAmount)}</span> },
-                      { label: '累计到账金额', value: money(received) },
-                      { label: '待回款敞口', value: <span style={{ color: outstanding > 0 ? 'var(--warning-500)' : 'var(--success-500)' }}>{money(outstanding)}</span> },
-                      {
-                        label: '平均合同客单',
-                        value:
-                          related.contracts.length > 0
-                            ? money(Math.round(contractAmount / related.contracts.length))
-                            : '—',
-                      },
-                      { label: '签约合同数', value: `${related.contracts.length} 份` },
-                      { label: '交付项目数', value: `${related.projects.length} 个` },
-                    ]}
-                  />
-                </div>
-              </TabPane>
-            </Tabs>
-          </Card>
+          <SectionCard bordered={false}>
+            <SectionTabs
+              activeKey={activeSideTab}
+              onChange={setActiveSideTab}
+              items={[
+                {
+                  key: 'profile',
+                  label: "企业档案",
+                  content: (
+                    <>
+                              <Space direction="vertical" size={12} style={{ width: '100%', marginTop: 8 }}>
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                    <Title heading={6} style={{ margin: 0 }}>
+                                      <Space><IconIdcard /> 工商认证信息</Space>
+                                    </Title>
+                                    <Button type="text" size="small" onClick={openEdit}>
+                                      编辑
+                                    </Button>
+                                  </div>
+                                  <DescriptionsCard
+                                    columns={1}
+                                    bare
+                                    items={[
+                                      { key: '企业类型', label: '企业类型', value: customer.kind === 'enterprise' ? '企业客户' : '个人' },
+                                      { key: '统一信用码', label: '统一信用码', value: customer.creditCode ?? '—' },
+                                      { key: '所属行业', label: '所属行业', value: customer.industry ?? '—' },
+                                      { key: '企业规模', label: '企业规模', value: customer.scale ?? '—' },
+                                      { key: '客户来源', label: '客户来源', value: customer.source ?? '—' },
+                                      { key: '经营地址', label: '经营地址', value: customer.address ?? '—' },
+                                    ]}
+                                  />
+                                </div>
+              
+                                <div style={{ borderTop: '1px solid var(--color-border-2)', paddingTop: 12 }}>
+                                  <Title heading={6} style={{ marginBottom: 8 }}>
+                                    <Space><IconSafe /> 业务治理状态</Space>
+                                  </Title>
+                                  <DescriptionsCard
+                                    columns={1}
+                                    bare
+                                    items={[
+                                      { key: '客户等级', label: '客户等级', value: <GradeTag grade={customer.level} /> },
+                                      { key: '业务状态', label: '业务状态', value: <StatusTag meta={resolveStatus(CUSTOMER_STATUS, status)} /> },
+                                      {
+                                        key: '档案状态',
+                                        label: '档案状态',
+                                        value: <StatusTag tone={customer.active ? 'success' : 'danger'}>{customer.active ? '正常启用' : '已停用'}</StatusTag>,
+                                      },
+                                      { key: '建档时间', label: '建档时间', value: <DateText value={customer.createdAt} /> },
+                                      { key: '最后更新', label: '最后更新', value: <DateText value={customer.updatedAt} /> },
+                                      { key: '历史别名', label: '历史别名', value: customer.aliases?.join('、') || '—' },
+                                    ]}
+                                  />
+                                </div>
+                              </Space>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'invoice',
+                  label: "开票资料",
+                  content: (
+                    <>
+                              <div style={{ marginTop: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                  <Title heading={6} style={{ margin: 0 }}>
+                                    <Space><IconFile /> 当前发票资质</Space>
+                                  </Title>
+                                  <Button type="text" size="small" onClick={openInvoice}>
+                                    维护资料
+                                  </Button>
+                                </div>
+                                <DescriptionsCard
+                                  columns={1}
+                                  bare
+                                  items={[
+                                    { key: '发票抬头', label: '发票抬头', value: customer.invoiceProfile?.title ?? '未维护' },
+                                    { key: '税号识别', label: '税号识别', value: customer.invoiceProfile?.taxNo ?? '—' },
+                                    { key: '开户银行', label: '开户银行', value: customer.invoiceProfile?.bankName ?? '—' },
+                                    { key: '银行账号', label: '银行账号', value: customer.invoiceProfile?.bankAccount ?? '—' },
+                                    {
+                                      key: '注册电话',
+                                      label: '注册电话',
+                                      value: customer.invoiceProfile ? `${customer.invoiceProfile.phone || '—'}` : '—',
+                                    },
+                                    {
+                                      key: '注册地址',
+                                      label: '注册地址',
+                                      value: customer.invoiceProfile ? `${customer.invoiceProfile.address || '—'}` : '—',
+                                    },
+                                  ]}
+                                />
+              
+                                {customer.invoiceHistory.length > 0 && (
+                                  <div className="customer-invoice-history">
+                                    <span>已归档历史版本</span>
+                                    <strong>{customer.invoiceHistory.length} 份</strong>
+                                  </div>
+                                )}
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'finance',
+                  label: "经营分析",
+                  content: (
+                    <>
+                              <div style={{ marginTop: 8 }}>
+                                <Title heading={6} style={{ marginBottom: 8 }}>
+                                  <Space><IconCheck /> 合作价值摘要</Space>
+                                </Title>
+                                <DescriptionsCard
+                                  columns={1}
+                                  bare
+                                  items={[
+                                    { key: '累计签约总额', label: '累计签约总额', value: <span style={{ fontWeight: 700, color: 'rgb(var(--primary-6))' }}><MoneyText value={contractAmount} /></span> },
+                                    { key: '累计到账金额', label: '累计到账金额', value: <MoneyText value={received} /> },
+                                    { key: '待回款敞口', label: '待回款敞口', value: <MoneyText value={outstanding} tone={outstanding > 0 ? 'danger' : 'success'} /> },
+                                    {
+                                      key: '平均合同客单',
+                                      label: '平均合同客单',
+                                      value:
+                                        related.contracts.length > 0
+                                          ? <MoneyText value={Math.round(contractAmount / related.contracts.length)} />
+                                          : '—',
+                                    },
+                                    { key: '签约合同数', label: '签约合同数', value: `${related.contracts.length} 份` },
+                                    { key: '交付项目数', label: '交付项目数', value: `${related.projects.length} 个` },
+                                  ]}
+                                />
+                              </div>
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 
@@ -1075,43 +1080,31 @@ export function CustomerDetail() {
         style={{ width: 680 }}
       >
         <Form form={editForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={16}>
+          <FormGrid columns={2}>
               <Form.Item label="客户名称" field="name" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={8}>
               <Form.Item label="客户等级" field="level">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="行业" field="industry">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="规模" field="scale">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="负责人" field="ownerName">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="来源" field="source">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={24}>
+          </FormGrid>
+          <FormGrid columns={1}>
               <Form.Item label="地址" field="address">
                 <Input />
               </Form.Item>
-            </Col>
-          </Row>
+          </FormGrid>
         </Form>
       </Modal>
 
@@ -1130,43 +1123,31 @@ export function CustomerDetail() {
         okText="保存联系人"
       >
         <Form form={contactForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}>
+          <FormGrid columns={2}>
               <Form.Item label="姓名" field="name" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="职位" field="position">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="手机号" field="phone" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="生日（月-日）" field="birthday">
                 <Input placeholder="例如：09-18" />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="微信" field="wechat">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="邮箱" field="email">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={24}>
+          </FormGrid>
+          <FormGrid columns={1}>
               <Form.Item label="设为主联系人" field="isPrimary" triggerPropName="checked">
                 <Switch />
               </Form.Item>
-            </Col>
-          </Row>
+          </FormGrid>
         </Form>
       </Modal>
 
@@ -1184,45 +1165,34 @@ export function CustomerDetail() {
         okText="保存新资料"
         style={{ width: 680 }}
       >
-        <Alert
-          type="info"
-          content="新资料只用于之后创建的报价和合同，不会覆盖历史快照。"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
+        <AlertBanner tone="info">
+          新资料只用于之后创建的报价和合同，不会覆盖历史快照。
+        </AlertBanner>
         <Form form={invoiceForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={24}>
+          <FormGrid columns={1}>
               <Form.Item label="发票抬头" field="title" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={24}>
               <Form.Item label="纳税人识别号" field="taxNo">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <Form.Item label="开户行" field="bankName">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={12}>
               <Form.Item label="银行账号" field="bankAccount">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={16}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <Form.Item label="注册地址" field="address">
                 <Input />
               </Form.Item>
-            </Col>
-            <Col span={8}>
               <Form.Item label="注册电话" field="phone">
                 <Input />
               </Form.Item>
-            </Col>
-          </Row>
+          </FormGrid>
         </Form>
       </Modal>
     </PageShell>

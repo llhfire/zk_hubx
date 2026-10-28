@@ -14,7 +14,7 @@ import {
 } from '../../../../services/quotationService';
 import { loadBusinessApprovals, loadWorkflowTemplates } from '../../../approvals/configStore';
 import type { TodoItem } from '../../../todos/types';
-import { Message } from '@arco-design/web-react';
+import { Message } from '@/design-system';
 import { quoteLeadGate } from './quoteAccess';
 import type { QuoteAction } from './types';
 

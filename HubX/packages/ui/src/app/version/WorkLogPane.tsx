@@ -19,6 +19,9 @@ const CATEGORY_COLORS: Record<WorkLogCategory, string> = {
   '设计': 'purple',
   '文档': 'gold',
   '修洞': 'orange',
+  '测试': 'green',
+  '架构': 'blue',
+  '数据': 'magenta',
   '其它': 'gray',
 };
 

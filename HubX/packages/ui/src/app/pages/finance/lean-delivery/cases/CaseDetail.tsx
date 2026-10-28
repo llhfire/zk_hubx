@@ -1,26 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Button, Dropdown, Menu, Message, Result, Space, Tabs, Typography } from '@/design-system';
 import {
-  Button,
-  Card,
-  Descriptions,
-  Dropdown,
-  Menu,
-  Message,
-  Result,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-} from '@arco-design/web-react';
-import {
-  IconCheckCircle,
   IconDownload,
-  IconExclamationCircle,
   IconPrinter,
   IconSettings,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
   CartesianGrid,
   Cell,
@@ -35,14 +20,21 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  DataTable,
+  DateText,
+  MoneyText,
   PageShell,
   MetricGrid,
   ProcessOverview,
+  SectionTabs,
+  SectionCard,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
   StatusTag,
   resolveStatus,
+  type StatusMap,
+  DescriptionsCard,
 } from '@/design-system';
 import { useCollections } from '../../../../collections/CollectionContext';
 import { useContracts } from '../../../sales/contracts/ContractsContext';
@@ -54,14 +46,13 @@ import {
   deriveTrend,
 } from '../calc';
 import { getCollections, getContract, getPaymentPlans, getSupplementSummaries } from '../contractSeam';
-import { caseStatusMap, mockCases, mockCostItems, mockPostMortems, quotationStatusMap } from '../mockData';
+import { caseStatusMap, mockCases, mockCostItems, mockPostMortems } from '../mockData';
 import { getEvalSummaries, getQuoteSummaries } from '../quoteSeam';
 import type { SupplementContractSummary } from '../types';
 import { CaseStatus } from '../types';
 import { buildBriefRows, downloadCsv, toCsv } from './detail/briefExport';
 import { ManageParamsModal } from './detail/ManageParamsModal';
 import './caseDetail.css';
-import { formatMoney as money } from '../../../../utils/money';
 
 const { Text, Title } = Typography;
 const { TabPane } = Tabs;
@@ -100,10 +91,24 @@ const STATUS_TASKS: Record<CaseStatus, string> = {
   terminated: '业务单已终止，仅保留过程数据与经营记录。',
 };
 
-const HEALTH_CONFIG = {
-  green: { label: '健康', color: 'green', icon: <IconCheckCircle />, tone: 'success' as const },
-  yellow: { label: '预警', color: 'orange', icon: <IconExclamationCircle />, tone: 'warning' as const },
-  red: { label: '风险', color: 'red', icon: <IconExclamationCircle />, tone: 'danger' as const },
+const HEALTH_STATUS: StatusMap<'green' | 'yellow' | 'red'> = {
+  green: { label: '健康', tone: 'success' },
+  yellow: { label: '预警', tone: 'warning' },
+  red: { label: '风险', tone: 'danger' },
+};
+
+const QUOTATION_STATUS: StatusMap<string> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  reviewing: { label: '审批中', tone: 'info' },
+  approved: { label: '已审批', tone: 'success' },
+  sent: { label: '已发送', tone: 'info' },
+  accepted: { label: '已接受', tone: 'success' },
+  rejected: { label: '已拒绝', tone: 'danger' },
+};
+
+const COST_ITEM_STATUS: StatusMap<'actual' | 'forecast'> = {
+  actual: { label: '已发生', tone: 'success' },
+  forecast: { label: '预测', tone: 'info' },
 };
 
 const COST_COLORS: Record<string, string> = {
@@ -226,21 +231,21 @@ export default function CaseDetail() {
           { label: '未找到' },
         ]}
       >
-        <Card className="case-detail__state">
+        <SectionCard className="case-detail__state">
           <Result
             status="404"
             title="未找到业务单"
             subTitle="该业务单不存在或已被移除。"
             extra={<Button type="primary" onClick={() => navigate('/financial-delivery/cases')}>返回业务单列表</Button>}
           />
-        </Card>
+        </SectionCard>
       </PageShell>
     );
   }
 
   const transitions = CASE_STATUS_TRANSITIONS[currentStatus] ?? [];
   const currentStep = Math.max(0, lifecycleNodes.findIndex((node) => node.current));
-  const health = HEALTH_CONFIG[metrics.health];
+  const health = HEALTH_STATUS[metrics.health];
   const targetMarginRatio = currentParams.targetMargin / 100;
   const costBudgetOverrun = currentParams.budgetCap > 0 && metrics.eac > currentParams.budgetCap;
 
@@ -315,8 +320,8 @@ export default function CaseDetail() {
         tags={(
           <>
             <StatusTag meta={resolveStatus(caseStatusMap, currentStatus)} />
-            <Tag color={health.color} icon={health.icon}>{health.label}</Tag>
-            {caseData.industry && <Tag>{caseData.industry}</Tag>}
+            <StatusTag meta={health} />
+            {caseData.industry && <StatusTag>{caseData.industry}</StatusTag>}
           </>
         )}
         actions={(
@@ -337,257 +342,297 @@ export default function CaseDetail() {
 
       <MetricGrid
         items={[
-          { key: 'contract', label: '有效标的额', value: money(metrics.contractAmount), detail: `1 主 ${supplements.length} 补` },
-          { key: 'cost', label: '已发生成本', value: money(metrics.totalCost), detail: `预算 ${money(currentParams.budgetCap)}`, tone: costBudgetOverrun ? 'danger' : 'neutral' },
-          { key: 'eac', label: '完工估算 EAC', value: money(metrics.eac), detail: `预测净利润 ${money(metrics.contractAmount - metrics.eac)}`, tone: costBudgetOverrun ? 'danger' : 'warning' },
-          { key: 'revenue', label: '累计回款', value: money(metrics.revenue), detail: `实收利润率 ${percent(metrics.collectedMargin)}`, tone: metrics.revenue > 0 ? 'success' : 'neutral' },
+          { key: 'contract', label: '有效标的额', value: <MoneyText value={metrics.contractAmount} />, detail: `1 主 ${supplements.length} 补` },
+          { key: 'cost', label: '已发生成本', value: <MoneyText value={metrics.totalCost} />, detail: <>预算 <MoneyText value={currentParams.budgetCap} /></>, tone: costBudgetOverrun ? 'danger' : 'neutral' },
+          { key: 'eac', label: '完工估算 EAC', value: <MoneyText value={metrics.eac} />, detail: <>预测净利润 <MoneyText value={metrics.contractAmount - metrics.eac} /></>, tone: costBudgetOverrun ? 'danger' : 'warning' },
+          { key: 'revenue', label: '累计回款', value: <MoneyText value={metrics.revenue} />, detail: `实收利润率 ${percent(metrics.collectedMargin)}`, tone: metrics.revenue > 0 ? 'success' : 'neutral' },
           { key: 'margin', label: '全周期利润率', value: percent(metrics.lifecycleMargin), detail: `目标 ${currentParams.targetMargin}%`, tone: metrics.lifecycleMargin !== null && metrics.lifecycleMargin >= targetMarginRatio ? 'success' : 'danger' },
-          { key: 'wip', label: 'WIP 资金占用', value: money(metrics.wip.value), detail: `${metrics.wip.days} 天`, tone: metrics.wip.days > 14 ? 'warning' : 'neutral' },
+          { key: 'wip', label: 'WIP 资金占用', value: <MoneyText value={metrics.wip.value} />, detail: `${metrics.wip.days} 天`, tone: metrics.wip.days > 14 ? 'warning' : 'neutral' },
         ]}
       />
 
       <SplitLayout>
         <SplitLayoutMain>
-          <Card className="case-detail__tabs-card">
-            <Tabs activeTab={activeTab} onChange={(tab) => {
-              setActiveTab(tab);
-              const next = new URLSearchParams(searchParams);
-              if (tab === 'overview') next.delete('tab'); else next.set('tab', tab);
-              setSearchParams(next, { replace: true });
-            }}>
-              <TabPane key="overview" title="概览">
-                <div className="case-detail__tab-panel case-detail__content-stack">
-                  <Card title="业务档案" size="small">
-                    <Descriptions
-                      column={2}
-                      data={[
-                        { label: '线索名称', value: caseData.leadName || '-' },
-                        { label: '项目名称', value: caseData.projectName || '-' },
-                        { label: '行业', value: caseData.industry || '-' },
-                        { label: '项目类型', value: caseData.projectType || '-' },
-                        { label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
-                        { label: '技术栈', value: caseData.techStack?.join('、') || '-' },
-                      ]}
-                    />
-                  </Card>
-
-                  <Card title="经营指标拆解" size="small">
-                    <Descriptions
-                      column={2}
-                      data={[
-                        { label: '预测净利润', value: money(metrics.contractAmount - metrics.eac) },
-                        { label: '实收利润率', value: percent(metrics.collectedMargin) },
-                        { label: '目标利润率', value: `${currentParams.targetMargin}%` },
-                        { label: '成本预算上限', value: money(currentParams.budgetCap) },
-                        { label: '商务费用', value: `${money(metrics.commercialOverrun.commercialActual)} / ${money(currentParams.commercialCap)}` },
-                        { label: '经营健康度', value: <Tag color={health.color}>{health.label}</Tag> },
-                      ]}
-                    />
-                  </Card>
-
-                  {(costStructureData.actual.length > 0 || costStructureData.forecast.length > 0) && (
-                    <Card
-                      title="成本结构"
-                      size="small"
-                      extra={(
-                        <Space>
-                          <Button size="mini" type={costStructureView === 'actual' ? 'primary' : 'default'} onClick={() => setCostStructureView('actual')}>已发生</Button>
-                          <Button size="mini" type={costStructureView === 'forecast' ? 'primary' : 'default'} onClick={() => setCostStructureView('forecast')}>含预测</Button>
-                        </Space>
-                      )}
-                    >
-                      <div className="case-detail__cost-layout">
-                        <ResponsiveContainer width="100%" height={240}>
-                          <PieChart>
-                            {/* recharts 会把原始数据项字段一并透传给 label，但 `PieLabelRenderProps`
-                                只声明了 name/percent 等标准字段。这里按真实数据形状补充声明；
-                                不要改成读 `name`/`percent`——数据里的 percentage 是 0-100，不是 0-1。 */}
-                            <Pie
-                              data={costStructureData[costStructureView]}
-                              dataKey="amount"
-                              nameKey="category"
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={78}
-                              label={(props) => {
-                                const row = props as typeof props & { category: string; percentage: number };
-                                return `${row.category} ${row.percentage}%`;
-                              }}
-                            >
-                              {costStructureData[costStructureView].map((entry) => <Cell key={entry.category} fill={entry.color} />)}
-                            </Pie>
-                            <Tooltip formatter={(value) => money(Number(value))} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                        <div className="case-detail__cost-legend">
-                          {costStructureData[costStructureView].map((entry) => (
-                            <div key={entry.category} className="case-detail__legend-row">
-                              <Space>
-                                <span className="case-detail__legend-swatch" style={{ background: entry.color }} />
-                                <Text>{entry.category}</Text>
-                              </Space>
-                              <Text>{money(entry.amount)}（{entry.percentage}%）</Text>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {costTrends.length > 0 && (
-                    <Card title="收入与成本趋势" size="small">
-                      <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={costTrends} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e6eb" />
-                          <XAxis dataKey="month" />
-                          <YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
-                          <Tooltip formatter={(value) => money(Number(value))} />
-                          <Legend />
-                          <Line type="monotone" dataKey="receivable" name="应收" stroke="#165dff" strokeWidth={2} dot={false} />
-                          <Line type="monotone" dataKey="collected" name="实收" stroke="#00b42a" strokeWidth={2} dot={false} />
-                          <Line type="monotone" dataKey="cost" name="累计成本" stroke="#f53f3f" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </Card>
-                  )}
-                </div>
-              </TabPane>
-
-              <TabPane key="eval" title={`工时评估 (${evalSummaries.length})`}>
-                <div className="case-detail__tab-panel">
-                  <Card title="工时评估（报价域 EvalSheet）" size="small" extra={<Text type="secondary">共 {evalSummaries.length} 份</Text>}>
-                    {evalSummaries.length > 0 ? evalSummaries.map((evaluation, index) => (
-                      <Card
-                        key={evaluation.id}
-                        size="small"
-                        className={index === evalSummaries.length - 1 ? 'case-detail__expand-card case-detail__expand-card--current' : 'case-detail__expand-card'}
-                      >
-                        <button
-                          type="button"
-                          className="case-detail__expand-trigger"
-                          onClick={() => toggleExpand(expandedFeatureLists, evaluation.id, setExpandedFeatureLists)}
-                        >
-                          <Space wrap>
-                            <Tag color={index === evalSummaries.length - 1 ? 'blue' : 'gray'}>{evaluation.quoteNo}</Tag>
-                            <Text className="case-detail__expand-title">{evaluation.projectName}</Text>
-                            <Text type="secondary">{evaluation.totalDays} 天</Text>
-                          </Space>
-                          <Space>
-                            <Text type="secondary">{new Date(evaluation.createdAt).toLocaleDateString('zh-CN')}</Text>
-                            <span>{expandedFeatureLists.has(evaluation.id) ? '▼' : '▶'}</span>
-                          </Space>
-                        </button>
-                        {expandedFeatureLists.has(evaluation.id) && (
-                          <div className="case-detail__expand-content">
-                            <Table
-                              size="small"
-                              rowKey="role"
-                              pagination={false}
-                              data={Object.entries(evaluation.evalDays).map(([role, days]) => ({ role, label: ROLE_LABELS[role] ?? role, days }))}
-                              columns={[
-                                { title: '岗位', dataIndex: 'label', width: 160 },
-                                { title: '人天', dataIndex: 'days', width: 100, render: (value: number) => `${value} 天` },
-                              ]}
-                            />
-                          </div>
-                        )}
-                      </Card>
-                    )) : <div className="case-detail__empty">暂无工时评估</div>}
-                  </Card>
-                </div>
-              </TabPane>
-
-              <TabPane key="quotation" title={`报价单 (${quotations.length})`}>
-                <div className="case-detail__tab-panel">
-                  <Card title="报价单" size="small" extra={<Text type="secondary">共 {quotations.length} 份</Text>}>
-                    {quotations.length > 0 ? quotations.map((quotation) => (
-                      <Card key={quotation.id} size="small" className="case-detail__expand-card">
-                        <button
-                          type="button"
-                          className="case-detail__expand-trigger"
-                          onClick={() => toggleExpand(expandedQuotations, quotation.id, setExpandedQuotations)}
-                        >
-                          <Space wrap>
-                            <Tag color={quotationStatusMap[quotation.status]?.color}>{quotationStatusMap[quotation.status]?.label}</Tag>
-                            <Text className="case-detail__expand-title">{quotation.projectName}</Text>
-                            <Text type="secondary">{quotation.quoteNo}</Text>
-                          </Space>
-                          <Space>
-                            <Text type="secondary">{money(quotation.totalAmount)}</Text>
-                            <span>{expandedQuotations.has(quotation.id) ? '▼' : '▶'}</span>
-                          </Space>
-                        </button>
-                        {expandedQuotations.has(quotation.id) && (
-                          <div className="case-detail__expand-content">
-                            <Descriptions column={3} data={[
-                              { label: '报价单号', value: quotation.quoteNo },
-                              { label: '状态', value: quotationStatusMap[quotation.status]?.label },
-                              { label: '金额', value: money(quotation.totalAmount) },
-                            ]} />
-                          </div>
-                        )}
-                      </Card>
-                    )) : <div className="case-detail__empty">暂无报价单</div>}
-                  </Card>
-                </div>
-              </TabPane>
-
-              <TabPane key="costs" title={`成本归集 (${costItems.length})`}>
-                <div className="case-detail__tab-panel">
-                  <Card title="成本明细" size="small">
-                    <Table
-                      size="small"
-                      rowKey="id"
-                      pagination={{ pageSize: 20 }}
-                      data={costItems}
-                      scroll={{ x: 720 }}
-                      columns={[
-                        { title: '分类', dataIndex: 'costCategory', width: 90, render: (value: string) => COST_LABELS[value] ?? value },
-                        { title: '类型', dataIndex: 'costType', width: 120 },
-                        { title: '金额', dataIndex: 'amount', width: 110, align: 'right', render: (value: number) => money(value) },
-                        { title: '状态', dataIndex: 'status', width: 90, render: (value: string) => <Tag color={value === 'actual' ? 'green' : 'blue'}>{value === 'actual' ? '已发生' : '预测'}</Tag> },
-                        { title: '日期', dataIndex: 'date', width: 110 },
-                        { title: '描述', dataIndex: 'description', width: 220 },
-                      ]}
-                    />
-                  </Card>
-                </div>
-              </TabPane>
-
-              <TabPane key="post-mortem" title="项目决算">
-                <div className="case-detail__tab-panel">
-                  <Card title="项目决算" size="small">
-                    {postMortem ? (
-                      <div>
-                        <Title heading={6} className="case-detail__section-title">根因分析</Title>
-                        <Table
-                          size="small"
-                          pagination={false}
-                          className="case-detail__root-cause-table"
-                          data={postMortem.rootCauses}
-                          rowKey="description"
-                          columns={[
-                            { title: '类别', dataIndex: 'category', width: 110, render: (value: string) => <Tag>{value === 'scope_creep' ? '需求变更' : value === 'quality_issue' ? '质量问题' : value === 'efficiency' ? '效率问题' : value}</Tag> },
-                            { title: '描述', dataIndex: 'description' },
-                            { title: '影响金额', dataIndex: 'impact', width: 120, align: 'right', render: (value: number) => money(value) },
-                            { title: '置信度', dataIndex: 'confidence', width: 100, render: (value: number) => `${(value * 100).toFixed(0)}%` },
-                          ]}
-                        />
-                        <Title heading={6} className="case-detail__section-title">经验教训</Title>
-                        <ul className="case-detail__lessons">
-                          {postMortem.lessonsLearned.map((lesson) => <li key={lesson}>{lesson}</li>)}
-                        </ul>
-                      </div>
-                    ) : <div className="case-detail__empty">暂无决算数据</div>}
-                  </Card>
-                </div>
-              </TabPane>
-            </Tabs>
-          </Card>
+          <SectionCard className="case-detail__tabs-card">
+            <SectionTabs
+              activeKey={activeTab}
+              onChange={(tab) => {
+                          setActiveTab(tab);
+                          const next = new URLSearchParams(searchParams);
+                          if (tab === 'overview') next.delete('tab'); else next.set('tab', tab);
+                          setSearchParams(next, { replace: true });
+                        }}
+              items={[
+                {
+                  key: 'overview',
+                  label: "概览",
+                  content: (
+                    <>
+                              <div className="case-detail__tab-panel case-detail__content-stack">
+                                <SectionCard title="业务档案">
+                                  <DescriptionsCard
+                                    columns={2}
+                                    items={[
+                                    { key: '线索名称', label: '线索名称', value: caseData.leadName || '-' },
+                                    { key: '项目名称', label: '项目名称', value: caseData.projectName || '-' },
+                                    { key: '行业', label: '行业', value: caseData.industry || '-' },
+                                    { key: '项目类型', label: '项目类型', value: caseData.projectType || '-' },
+                                    { key: '计划周期', label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
+                                    { key: '技术栈', label: '技术栈', value: caseData.techStack?.join('、') || '-' },
+                                  ]}
+                                  />
+                                </SectionCard>
+              
+                                <SectionCard title="经营指标拆解">
+                                  <DescriptionsCard
+                                    columns={2}
+                                    items={[
+                                    { key: '预测净利润', label: '预测净利润', value: <MoneyText value={metrics.contractAmount - metrics.eac} /> },
+                                    { key: '实收利润率', label: '实收利润率', value: percent(metrics.collectedMargin) },
+                                    { key: '目标利润率', label: '目标利润率', value: `${currentParams.targetMargin}%` },
+                                    { key: '成本预算上限', label: '成本预算上限', value: <MoneyText value={currentParams.budgetCap} /> },
+                                    { key: '商务费用', label: '商务费用', value: <><MoneyText value={metrics.commercialOverrun.commercialActual} /> / <MoneyText value={currentParams.commercialCap} /></> },
+                                    { key: '经营健康度', label: '经营健康度', value: <StatusTag meta={health} /> },
+                                  ]}
+                                  />
+                                </SectionCard>
+              
+                                {(costStructureData.actual.length > 0 || costStructureData.forecast.length > 0) && (
+                                  <SectionCard
+                                    title="成本结构"
+                                    extra={(
+                                      <Space>
+                                        <Button size="mini" type={costStructureView === 'actual' ? 'primary' : 'default'} onClick={() => setCostStructureView('actual')}>已发生</Button>
+                                        <Button size="mini" type={costStructureView === 'forecast' ? 'primary' : 'default'} onClick={() => setCostStructureView('forecast')}>含预测</Button>
+                                      </Space>
+                                    )}
+                                  >
+                                    <div className="case-detail__cost-layout">
+                                      <ResponsiveContainer width="100%" height={240}>
+                                        <PieChart>
+                                          {/* recharts 会把原始数据项字段一并透传给 label，但 `PieLabelRenderProps`
+                                              只声明了 name/percent 等标准字段。这里按真实数据形状补充声明；
+                                              不要改成读 `name`/`percent`——数据里的 percentage 是 0-100，不是 0-1。 */}
+                                          <Pie
+                                            data={costStructureData[costStructureView]}
+                                            dataKey="amount"
+                                            nameKey="category"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={78}
+                                            label={(props) => {
+                                              const row = props as typeof props & { category: string; percentage: number };
+                                              return `${row.category} ${row.percentage}%`;
+                                            }}
+                                          >
+                                            {costStructureData[costStructureView].map((entry) => <Cell key={entry.category} fill={entry.color} />)}
+                                          </Pie>
+                                          <Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
+                                        </PieChart>
+                                      </ResponsiveContainer>
+                                      <div className="case-detail__cost-legend">
+                                        {costStructureData[costStructureView].map((entry) => (
+                                          <div key={entry.category} className="case-detail__legend-row">
+                                            <Space>
+                                              <span className="case-detail__legend-swatch" style={{ background: entry.color }} />
+                                              <Text>{entry.category}</Text>
+                                            </Space>
+                                            <Text><MoneyText value={entry.amount} />（{entry.percentage}%）</Text>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </SectionCard>
+                                )}
+              
+                                {costTrends.length > 0 && (
+                                  <SectionCard title="收入与成本趋势">
+                                    <ResponsiveContainer width="100%" height={280}>
+                                      <LineChart data={costTrends} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e6eb" />
+                                        <XAxis dataKey="month" />
+                                        <YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
+                                        <Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
+                                        <Legend />
+                                        <Line type="monotone" dataKey="receivable" name="应收" stroke="#165dff" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="collected" name="实收" stroke="#00b42a" strokeWidth={2} dot={false} />
+                                        <Line type="monotone" dataKey="cost" name="累计成本" stroke="#f53f3f" strokeWidth={2} dot={false} />
+                                      </LineChart>
+                                    </ResponsiveContainer>
+                                  </SectionCard>
+                                )}
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'eval',
+                  label: `工时评估 (${evalSummaries.length})`,
+                  content: (
+                    <>
+                              <div className="case-detail__tab-panel">
+                                <SectionCard title="工时评估（报价域 EvalSheet）" extra={<Text type="secondary">共 {evalSummaries.length} 份</Text>}>
+                                  {evalSummaries.length > 0 ? evalSummaries.map((evaluation, index) => (
+                                    <SectionCard
+                                      key={evaluation.id}
+                                      size="small"
+                                      className={index === evalSummaries.length - 1 ? 'case-detail__expand-card case-detail__expand-card--current' : 'case-detail__expand-card'}
+                                    >
+                                      <button
+                                        type="button"
+                                        className="case-detail__expand-trigger"
+                                        onClick={() => toggleExpand(expandedFeatureLists, evaluation.id, setExpandedFeatureLists)}
+                                      >
+                                        <Space wrap>
+                                          <StatusTag tone={index === evalSummaries.length - 1 ? 'info' : 'neutral'}>{evaluation.quoteNo}</StatusTag>
+                                          <Text className="case-detail__expand-title">{evaluation.projectName}</Text>
+                                          <Text type="secondary">{evaluation.totalDays} 天</Text>
+                                        </Space>
+                                        <Space>
+                                          <Text type="secondary"><DateText value={evaluation.createdAt} /></Text>
+                                          <span>{expandedFeatureLists.has(evaluation.id) ? '▼' : '▶'}</span>
+                                        </Space>
+                                      </button>
+                                      {expandedFeatureLists.has(evaluation.id) && (
+                                        <div className="case-detail__expand-content">
+                                          <DataTable
+                                            size="small"
+                                            rowKey="role"
+                                            pagination={false}
+                                            emptyDescription="暂无岗位工时"
+                                            data={Object.entries(evaluation.evalDays).map(([role, days]) => ({ role, label: ROLE_LABELS[role] ?? role, days }))}
+                                            columns={[
+                                              { title: '岗位', dataIndex: 'label', width: 160 },
+                                              { title: '人天', dataIndex: 'days', width: 100, render: (value: number) => `${value} 天` },
+                                            ]}
+                                          />
+                                        </div>
+                                      )}
+                                    </SectionCard>
+                                  )) : <div className="case-detail__empty">暂无工时评估</div>}
+                                </SectionCard>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'quotation',
+                  label: `报价单 (${quotations.length})`,
+                  content: (
+                    <>
+                              <div className="case-detail__tab-panel">
+                                <SectionCard title="报价单" extra={<Text type="secondary">共 {quotations.length} 份</Text>}>
+                                  {quotations.length > 0 ? quotations.map((quotation) => (
+                                    <SectionCard key={quotation.id} size="small" className="case-detail__expand-card">
+                                      <button
+                                        type="button"
+                                        className="case-detail__expand-trigger"
+                                        onClick={() => toggleExpand(expandedQuotations, quotation.id, setExpandedQuotations)}
+                                      >
+                                        <Space wrap>
+                                          <StatusTag meta={resolveStatus(QUOTATION_STATUS, quotation.status)} />
+                                          <Text className="case-detail__expand-title">{quotation.projectName}</Text>
+                                          <Text type="secondary">{quotation.quoteNo}</Text>
+                                        </Space>
+                                        <Space>
+                                          <Text type="secondary"><MoneyText value={quotation.totalAmount} /></Text>
+                                          <span>{expandedQuotations.has(quotation.id) ? '▼' : '▶'}</span>
+                                        </Space>
+                                      </button>
+                                      {expandedQuotations.has(quotation.id) && (
+                                        <div className="case-detail__expand-content">
+                                          <DescriptionsCard
+                                            columns={3}
+                                            items={[
+                                            { key: '报价单号', label: '报价单号', value: quotation.quoteNo },
+                                            { key: '状态', label: '状态', value: resolveStatus(QUOTATION_STATUS, quotation.status).label },
+                                            { key: '金额', label: '金额', value: <MoneyText value={quotation.totalAmount} /> },
+                                          ]}
+                                          />
+                                        </div>
+                                      )}
+                                    </SectionCard>
+                                  )) : <div className="case-detail__empty">暂无报价单</div>}
+                                </SectionCard>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'costs',
+                  label: `成本归集 (${costItems.length})`,
+                  content: (
+                    <>
+                              <div className="case-detail__tab-panel">
+                                <SectionCard title="成本明细">
+                                  <DataTable
+                                    size="small"
+                                    rowKey="id"
+                                    pagination={{ pageSize: 20 }}
+                                    data={costItems}
+                                    scroll={{ x: 720 }}
+                                    emptyDescription="暂无成本明细"
+                                    columns={[
+                                      { title: '分类', dataIndex: 'costCategory', width: 90, render: (value: string) => COST_LABELS[value] ?? value },
+                                      { title: '类型', dataIndex: 'costType', width: 120 },
+                                      { title: '金额', dataIndex: 'amount', width: 110, align: 'right', render: (value: number) => <MoneyText value={value} /> },
+                                      { title: '状态', dataIndex: 'status', width: 90, render: (value: 'actual' | 'forecast') => <StatusTag meta={COST_ITEM_STATUS[value]} /> },
+                                      { title: '日期', dataIndex: 'date', width: 110, render: (value: string) => <DateText value={value} /> },
+                                      { title: '描述', dataIndex: 'description', width: 220 },
+                                    ]}
+                                  />
+                                </SectionCard>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'post-mortem',
+                  label: "项目决算",
+                  content: (
+                    <>
+                              <div className="case-detail__tab-panel">
+                                <SectionCard title="项目决算">
+                                  {postMortem ? (
+                                    <div>
+                                      <Title heading={6} className="case-detail__section-title">根因分析</Title>
+                                      <DataTable
+                                        size="small"
+                                        pagination={false}
+                                        className="case-detail__root-cause-table"
+                                        data={postMortem.rootCauses}
+                                        rowKey="description"
+                                        emptyDescription="暂无根因数据"
+                                        columns={[
+                                          { title: '类别', dataIndex: 'category', width: 110, render: (value: string) => <StatusTag>{value === 'scope_creep' ? '需求变更' : value === 'quality_issue' ? '质量问题' : value === 'efficiency' ? '效率问题' : value}</StatusTag> },
+                                          { title: '描述', dataIndex: 'description' },
+                                          { title: '影响金额', dataIndex: 'impact', width: 120, align: 'right', render: (value: number) => <MoneyText value={value} /> },
+                                          { title: '置信度', dataIndex: 'confidence', width: 100, render: (value: number) => `${(value * 100).toFixed(0)}%` },
+                                        ]}
+                                      />
+                                      <Title heading={6} className="case-detail__section-title">经验教训</Title>
+                                      <ul className="case-detail__lessons">
+                                        {postMortem.lessonsLearned.map((lesson) => <li key={lesson}>{lesson}</li>)}
+                                      </ul>
+                                    </div>
+                                  ) : <div className="case-detail__empty">暂无决算数据</div>}
+                                </SectionCard>
+                              </div>
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </SectionCard>
         </SplitLayoutMain>
 
         <SplitLayoutAside>
-          <Card title="当前处理" size="small">
+          <SectionCard title="当前处理">
             <Space direction="vertical" size={12} className="case-detail__aside-stack">
               <div>
                 <Text type="secondary">当前阶段</Text>
@@ -604,50 +649,50 @@ export default function CaseDetail() {
                 <div>
                   <Text type="secondary">可推进至</Text>
                   <div className="case-detail__tag-list">
-                    {transitions.map((target) => <Tag key={target}>{caseStatusMap[target]?.label ?? target}</Tag>)}
+                    {transitions.map((target) => <StatusTag key={target}>{caseStatusMap[target]?.label ?? target}</StatusTag>)}
                   </div>
                 </div>
               )}
             </Space>
-          </Card>
+          </SectionCard>
 
-          <Card title="业务关联" size="small">
-            <Descriptions
-              column={1}
-              data={[
-                { label: '线索', value: caseData.leadName || '-' },
-                { label: '项目', value: caseData.projectName || '尚未立项' },
-                { label: '报价', value: `${quotations.length} 份` },
-                { label: '合同', value: `${caseData.contractId ? 1 : 0} 主 ${supplements.length} 补` },
-                { label: '成本流水', value: `${costItems.length} 条` },
-              ]}
+          <SectionCard title="业务关联">
+            <DescriptionsCard
+              columns={1}
+              items={[
+              { key: '线索', label: '线索', value: caseData.leadName || '-' },
+              { key: '项目', label: '项目', value: caseData.projectName || '尚未立项' },
+              { key: '报价', label: '报价', value: `${quotations.length} 份` },
+              { key: '合同', label: '合同', value: `${caseData.contractId ? 1 : 0} 主 ${supplements.length} 补` },
+              { key: '成本流水', label: '成本流水', value: `${costItems.length} 条` },
+            ]}
             />
-          </Card>
+          </SectionCard>
 
-          <Card title="风险与参数" size="small" extra={<Button type="text" size="mini" onClick={() => setParamsVisible(true)}>调整</Button>}>
-            <Descriptions
-              column={1}
-              data={[
-                { label: '健康状态', value: <Tag color={health.color}>{health.label}</Tag> },
-                { label: '目标利润率', value: `${currentParams.targetMargin}%` },
-                { label: '预算上限', value: money(currentParams.budgetCap) },
-                { label: '商务费用上限', value: money(currentParams.commercialCap) },
-                { label: '商务费用使用', value: <Tag color={metrics.commercialOverrun.overrun ? 'red' : 'green'}>{money(metrics.commercialOverrun.commercialActual)}</Tag> },
-                { label: 'WIP 账龄', value: `${metrics.wip.days} 天` },
-              ]}
+          <SectionCard title="风险与参数" extra={<Button type="text" size="mini" onClick={() => setParamsVisible(true)}>调整</Button>}>
+            <DescriptionsCard
+              columns={1}
+              items={[
+              { key: '健康状态', label: '健康状态', value: <StatusTag meta={health} /> },
+              { key: '目标利润率', label: '目标利润率', value: `${currentParams.targetMargin}%` },
+              { key: '预算上限', label: '预算上限', value: <MoneyText value={currentParams.budgetCap} /> },
+              { key: '商务费用上限', label: '商务费用上限', value: <MoneyText value={currentParams.commercialCap} /> },
+              { key: '商务费用使用', label: '商务费用使用', value: <StatusTag tone={metrics.commercialOverrun.overrun ? 'danger' : 'success'}><MoneyText value={metrics.commercialOverrun.commercialActual} /></StatusTag> },
+              { key: 'WIP 账龄', label: 'WIP 账龄', value: `${metrics.wip.days} 天` },
+            ]}
             />
-          </Card>
+          </SectionCard>
 
-          <Card title="时间信息" size="small">
-            <Descriptions
-              column={1}
-              data={[
-                { label: '创建时间', value: new Date(caseData.createdAt).toLocaleDateString('zh-CN') },
-                { label: '最近更新', value: new Date(caseData.updatedAt).toLocaleDateString('zh-CN') },
-                { label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
-              ]}
+          <SectionCard title="时间信息">
+            <DescriptionsCard
+              columns={1}
+              items={[
+              { key: '创建时间', label: '创建时间', value: <DateText value={caseData.createdAt} /> },
+              { key: '最近更新', label: '最近更新', value: <DateText value={caseData.updatedAt} /> },
+              { key: '计划周期', label: '计划周期', value: caseData.durationDays ? `${caseData.durationDays} 天` : '-' },
+            ]}
             />
-          </Card>
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
 

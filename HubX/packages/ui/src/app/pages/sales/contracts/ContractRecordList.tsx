@@ -1,9 +1,27 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Card, Table, Tooltip, Button, Input, Select, DatePicker, Space, Modal, Descriptions, Tag } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconEye } from '@arco-design/web-react/icon';
+import { Button, Input, Select, DatePicker, Space, Modal, Tooltip } from '@/design-system';
+import { IconSearch, IconPlus, IconEye } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 
 const { RangePicker } = DatePicker;
+
+const RECORD_STATUS: StatusMap<string> = {
+  '执行中': { label: '执行中', tone: 'info' },
+  '已完成': { label: '已完成', tone: 'success' },
+  '已终止': { label: '已终止', tone: 'danger' },
+};
 
 export function ContractRecordList() {
   const navigate = useNavigate();
@@ -102,22 +120,25 @@ export function ContractRecordList() {
       title: '合同金额',
       dataIndex: 'amount',
       width: 120,
-      render: (value: number) => `¥${value.toLocaleString()}`,
+      render: (value: number) => <MoneyText value={value} />,
     },
     {
       title: '签订日期',
       dataIndex: 'signDate',
       width: 120,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '开始日期',
       dataIndex: 'startDate',
       width: 120,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '结束日期',
       dataIndex: 'endDate',
       width: 120,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '负责人',
@@ -133,15 +154,7 @@ export function ContractRecordList() {
       title: '状态',
       dataIndex: 'status',
       width: 100,
-      render: (status: string) => {
-        const statusMap: Record<string, { color: string; text: string }> = {
-          '执行中': { color: 'blue', text: '执行中' },
-          '已完成': { color: 'green', text: '已完成' },
-          '已终止': { color: 'red', text: '已终止' },
-        };
-        const config = statusMap[status] || { color: 'gray', text: status };
-        return <Tag color={config.color}>{config.text}</Tag>;
-      },
+      render: (status: string) => <StatusTag meta={resolveStatus(RECORD_STATUS, status, status)} />,
     },
     {
       title: '操作',
@@ -185,55 +198,61 @@ export function ContractRecordList() {
   };
 
   return (
-    <div>
-      <Card style={{ marginBottom: 16 }}>
-        <Space size="medium" wrap>
-          <Input
-            key="search-input"
-            style={{ width: 200 }}
-            placeholder="搜索合同编号/名称"
-            value={searchForm.keyword}
-            onChange={(value) => setSearchForm({ ...searchForm, keyword: value })}
-            allowClear
-          />
-          <Select
-            key="status-select"
-            style={{ width: 150 }}
-            placeholder="选择状态"
-            value={searchForm.status}
-            onChange={(value) => setSearchForm({ ...searchForm, status: value })}
-            allowClear
-            options={[
-              { label: '执行中', value: '执行中' },
-              { label: '已完成', value: '已完成' },
-              { label: '已终止', value: '已终止' },
-            ]}
-          />
-          <RangePicker
-            key="date-range"
-            style={{ width: 280 }}
-            placeholder={['开始日期', '结束日期']}
-            value={searchForm.dateRange}
-            onChange={(value) => setSearchForm({ ...searchForm, dateRange: value })}
-          />
-          <Button key="search-btn" type="primary" icon={<IconSearch />} onClick={handleSearch}>
-            搜索
-          </Button>
-          <Button key="reset-btn" onClick={handleReset}>
-            重置
-          </Button>
-        </Space>
-      </Card>
+    <PageShell>
+      <PageHeader
+        title="合同列表"
+        description="维护正式合同与补充合同的归档、回款与作废状态。"
+      />
+      <div style={{ marginBottom: 16 }}>
+        <SectionCard>
+          <Space size="medium" wrap>
+            <Input
+              key="search-input"
+              style={{ width: 200 }}
+              placeholder="搜索合同编号/名称"
+              value={searchForm.keyword}
+              onChange={(value) => setSearchForm({ ...searchForm, keyword: value })}
+              allowClear
+            />
+            <Select
+              key="status-select"
+              style={{ width: 150 }}
+              placeholder="选择状态"
+              value={searchForm.status}
+              onChange={(value) => setSearchForm({ ...searchForm, status: value })}
+              allowClear
+              options={[
+                { label: '执行中', value: '执行中' },
+                { label: '已完成', value: '已完成' },
+                { label: '已终止', value: '已终止' },
+              ]}
+            />
+            <RangePicker
+              key="date-range"
+              style={{ width: 280 }}
+              placeholder={['开始日期', '结束日期']}
+              value={searchForm.dateRange}
+              onChange={(value) => setSearchForm({ ...searchForm, dateRange: value })}
+            />
+            <Button key="search-btn" type="primary" icon={<IconSearch />} onClick={handleSearch}>
+              搜索
+            </Button>
+            <Button key="reset-btn" onClick={handleReset}>
+              重置
+            </Button>
+          </Space>
+        </SectionCard>
+      </div>
 
-      <Card
+      <SectionCard
         title="合同记录列表"
-        extra={
+        extra={(
           <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/contracts/new')}>
             新增合同
           </Button>
-        }
+        )}
       >
-        <Table
+        <DataTable
           columns={columns}
           data={filteredData}
           rowKey="id"
@@ -245,7 +264,7 @@ export function ContractRecordList() {
             sizeCanChange: true,
           }}
         />
-      </Card>
+      </SectionCard>
 
       <Modal
         title="合同详情"
@@ -256,42 +275,40 @@ export function ContractRecordList() {
       >
         {selectedContract && (
           <div>
-            <Descriptions
-              column={2}
-              data={[
-                { label: '合同编号', value: selectedContract.contractNo },
-                { label: '合同名称', value: selectedContract.contractName },
-                { label: '线索名称', value: selectedContract.leadName },
-                { label: '客户主体', value: selectedContract.customerEntity },
-                { label: '对接主体', value: selectedContract.ourEntity },
-                { label: '合同金额', value: `¥${selectedContract.amount.toLocaleString()}` },
-                { label: '签订日期', value: selectedContract.signDate },
-                { label: '开始日期', value: selectedContract.startDate },
-                { label: '结束日期', value: selectedContract.endDate },
-                { label: '负责人', value: selectedContract.owner },
-                { label: '部门', value: selectedContract.department },
-                { label: '付款条款', value: selectedContract.paymentTerms },
-                {
-                  label: '状态',
-                  value: (
-                    <Tag color={selectedContract.status === '执行中' ? 'blue' : selectedContract.status === '已完成' ? 'green' : 'red'}>
-                      {selectedContract.status}
-                    </Tag>
-                  ),
-                },
-              ]}
-              style={{ marginBottom: 24 }}
-            />
+            <div style={{ marginBottom: 24 }}>
+              <DescriptionsCard
+                columns={2}
+                items={[
+                  { key: 'contractNo', label: '合同编号', value: selectedContract.contractNo },
+                  { key: 'contractName', label: '合同名称', value: selectedContract.contractName },
+                  { key: 'leadName', label: '线索名称', value: selectedContract.leadName },
+                  { key: 'customerEntity', label: '客户主体', value: selectedContract.customerEntity },
+                  { key: 'ourEntity', label: '对接主体', value: selectedContract.ourEntity },
+                  { key: 'amount', label: '合同金额', value: <MoneyText value={selectedContract.amount} /> },
+                  { key: 'signDate', label: '签订日期', value: <DateText value={selectedContract.signDate} /> },
+                  { key: 'startDate', label: '开始日期', value: <DateText value={selectedContract.startDate} /> },
+                  { key: 'endDate', label: '结束日期', value: <DateText value={selectedContract.endDate} /> },
+                  { key: 'owner', label: '负责人', value: selectedContract.owner },
+                  { key: 'department', label: '部门', value: selectedContract.department },
+                  { key: 'paymentTerms', label: '付款条款', value: selectedContract.paymentTerms },
+                  {
+                    key: 'status',
+                    label: '状态',
+                    value: <StatusTag meta={resolveStatus(RECORD_STATUS, selectedContract.status, selectedContract.status)} />,
+                  },
+                ]}
+              />
+            </div>
 
             <div>
               <div style={{ fontWeight: 600, marginBottom: 8 }}>合同范围</div>
-              <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 4 }}>
+              <div style={{ padding: 12, background: 'var(--color-fill-2)', borderRadius: 'var(--radius-xs)' }}>
                 {selectedContract.scope}
               </div>
             </div>
           </div>
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

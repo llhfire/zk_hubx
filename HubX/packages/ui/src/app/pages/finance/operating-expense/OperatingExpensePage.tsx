@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Tabs, Card } from '@arco-design/web-react';
+import { SectionTabs, Tabs } from '@/design-system';
 import { OperatingExpenseProvider } from './OperatingExpenseContext';
 import { DashboardTab } from './DashboardTab';
 import { LedgerTab } from './LedgerTab';
 import { TemplateTab } from './TemplateTab';
 import { OverheadTab } from './OverheadTab';
 import { CategoryTab } from './CategoryTab';
+import { PageHeader, PageShell, SectionCard } from '@/design-system';
 
 const TabPane = Tabs.TabPane;
 
@@ -14,25 +15,70 @@ export function OperatingExpensePage() {
 
   return (
     <OperatingExpenseProvider>
-      <Card>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="dashboard" title="费用大盘">
-            <DashboardTab />
-          </TabPane>
-          <TabPane key="ledger" title="费用台账">
-            <LedgerTab />
-          </TabPane>
-          <TabPane key="template" title="周期模板">
-            <TemplateTab />
-          </TabPane>
-          <TabPane key="overhead" title="公摊参数">
-            <OverheadTab />
-          </TabPane>
-          <TabPane key="category" title="科目入口">
-            <CategoryTab />
-          </TabPane>
-        </Tabs>
-      </Card>
+      <PageShell>
+        <PageHeader
+          title="运营费用"
+          description="维护集团运营费用台账、公摊口径与周期模板。"
+        />
+        <SectionCard>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'dashboard',
+              label: "费用大盘",
+              content: (
+                <>
+                      <DashboardTab />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'ledger',
+              label: "费用台账",
+              content: (
+                <>
+                      <LedgerTab />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'template',
+              label: "周期模板",
+              content: (
+                <>
+                      <TemplateTab />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'overhead',
+              label: "公摊参数",
+              content: (
+                <>
+                      <OverheadTab />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'category',
+              label: "科目入口",
+              content: (
+                <>
+                      <CategoryTab />
+                    
+                </>
+              ),
+            },
+          ]}
+        />
+        </SectionCard>
+      </PageShell>
     </OperatingExpenseProvider>
   );
 }

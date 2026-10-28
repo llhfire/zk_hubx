@@ -1,22 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Button, Form, FormGrid, Input, Message, Modal, SectionTabs, Select, Space, Tabs, Upload } from '@/design-system';
 import {
-  Button,
-  Descriptions,
-  Empty,
-  Form,
-  Grid,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Upload,
-} from '@arco-design/web-react';
-import { IconDelete, IconDownload, IconEdit, IconPlus, IconUpload } from '@arco-design/web-react/icon';
-import type { UploadItem } from '@arco-design/web-react/es/Upload/interface';
+  DataTable,
+  EmptyState,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+  DescriptionsCard,
+} from '@/design-system';
+import { IconDelete, IconDownload, IconEdit, IconPlus, IconUpload } from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import type {
   CompanyEntityPermissions,
   CompanyEntityRecord,
@@ -65,11 +58,18 @@ const emptyRecord: CompanyEntityRecord = {
   files: [],
 };
 
+/** 公司主体启用状态 → 文案 + 语义色（StatusTag 使用）。 */
+const ENTITY_STATUS: StatusMap<string> = {
+  启用: { label: '启用', tone: 'success' },
+  禁用: { label: '禁用', tone: 'danger' },
+};
+
 function buildDescriptions(record: CompanyEntityRecord, fields: Array<{ label: string; value: keyof CompanyEntityRecord }>) {
   return fields.map((field) => ({
+    key: String(field.value),
     label: field.label,
     value: field.value === 'status'
-      ? <Tag color={record.status === '启用' ? 'green' : 'red'}>{record.status}</Tag>
+      ? <StatusTag meta={resolveStatus(ENTITY_STATUS, record.status)} />
       : String(record[field.value] || '-'),
   }));
 }
@@ -214,14 +214,14 @@ export function CompanyEntityInfoModal({
       title: '类型',
       dataIndex: 'type',
       width: 100,
-      render: (type: string) => <Tag color={type === 'pdf' ? 'red' : 'arcoblue'}>{type.toUpperCase()}</Tag>,
+      render: (type: string) => <StatusTag tone={type === 'pdf' ? 'danger' : 'info'}>{type.toUpperCase()}</StatusTag>,
     },
     { title: '大小', dataIndex: 'size', width: 100 },
     {
       title: '资料类型',
       dataIndex: 'category',
       width: 110,
-      render: (category?: CompanyFileCategory) => <Tag color={category === '合同模板' ? 'arcoblue' : 'gray'}>{category || '公司资料'}</Tag>,
+      render: (category?: CompanyFileCategory) => <StatusTag tone={category === '合同模板' ? 'info' : 'neutral'}>{category || '公司资料'}</StatusTag>,
     },
     { title: '更新时间', dataIndex: 'updatedAt', width: 120 },
     { title: '说明', dataIndex: 'description' },
@@ -307,139 +307,141 @@ export function CompanyEntityInfoModal({
       focusLock
       style={{ width: 860 }}
     >
-      <Tabs activeTab={activeTab} onChange={(key) => setActiveTab(key as CompanyEntityModalTab)}>
-        <TabPane key="basic" title="基础信息">
-          {readonly ? (
-            <Descriptions column={2} data={buildDescriptions(currentRecord, basicFields)} />
-          ) : (
-            <Form form={form} layout="vertical">
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
-                  <FormItem label="公司名称" field="name" rules={[{ required: true, message: '请输入公司名称' }]}>
-                    <Input placeholder="请输入公司全称" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="公司简称" field="shortName" rules={[{ required: true, message: '请输入公司简称' }]}>
-                    <Input placeholder="请输入公司简称" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="统一社会信用代码" field="taxNumber" rules={[{ required: true, message: '请输入统一社会信用代码' }]}>
-                    <Input placeholder="请输入统一社会信用代码" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="法定代表人" field="legalPerson">
-                    <Input placeholder="请输入法定代表人" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="注册资本" field="registeredCapital">
-                    <Input placeholder="如：1000万元" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="联系电话" field="contactPhone">
-                    <Input placeholder="请输入联系电话" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="邮箱" field="email" rules={[{ type: 'email', message: '请输入正确的邮箱地址' }]}>
-                    <Input placeholder="请输入邮箱" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={18}>
-                  <FormItem label="注册地址" field="address">
-                    <Input placeholder="请输入注册地址" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={6}>
-                  <FormItem label="状态" field="status" initialValue="启用">
-                    <Select>
-                      <Select.Option value="启用">启用</Select.Option>
-                      <Select.Option value="禁用">禁用</Select.Option>
-                    </Select>
-                  </FormItem>
-                </Grid.Col>
-              </Grid.Row>
-            </Form>
-          )}
-        </TabPane>
-        <TabPane key="invoice" title="开票信息">
-          {readonly ? (
-            <Descriptions column={2} data={buildDescriptions(currentRecord, invoiceFields)} />
-          ) : (
-            <Form form={form} layout="vertical">
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
-                  <FormItem label="开票抬头" field="invoiceTitle" rules={[{ required: true, message: '请输入开票抬头' }]}>
-                    <Input placeholder="请输入开票抬头" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="纳税人识别号" field="invoiceTaxNumber" rules={[{ required: true, message: '请输入纳税人识别号' }]}>
-                    <Input placeholder="请输入纳税人识别号" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="开户银行" field="invoiceBankName" rules={[{ required: true, message: '请输入开户银行' }]}>
-                    <Input placeholder="请输入开户银行" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="银行账号" field="invoiceBankAccount" rules={[{ required: true, message: '请输入银行账号' }]}>
-                    <Input placeholder="请输入银行账号" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="开票地址" field="invoiceAddress" rules={[{ required: true, message: '请输入开票地址' }]}>
-                    <Input placeholder="请输入开票地址" />
-                  </FormItem>
-                </Grid.Col>
-                <Grid.Col span={12}>
-                  <FormItem label="开票电话" field="invoicePhone" rules={[{ required: true, message: '请输入开票电话' }]}>
-                    <Input placeholder="请输入开票电话" />
-                  </FormItem>
-                </Grid.Col>
-              </Grid.Row>
-            </Form>
-          )}
-        </TabPane>
-        <TabPane key="public-account" title="对公账户">
-          {publicAccounts.length === 0 ? (
-            <Empty description="暂无对公账户" />
-          ) : (
-            <Table columns={publicAccountColumns} data={publicAccounts} rowKey="id" pagination={false} />
-          )}
-          {!readonly && (
-            <Button style={{ marginTop: 16 }} type="primary" icon={<IconPlus />} onClick={() => openPublicAccountModal(null)}>
-              新增对公账户
-            </Button>
-          )}
-        </TabPane>
-        <TabPane key="files" title="公司资料">
-          {currentRecord.files.length === 0 ? (
-            <Empty description="暂无公司资料" />
-          ) : (
-            <Table columns={fileColumns} data={currentRecord.files} rowKey="id" pagination={false} />
-          )}
-          {permissions.files && !readonly && (
-            <Button
-              style={{ marginTop: 16 }}
-              type="primary"
-              icon={<IconUpload />}
-              onClick={() => {
-                uploadForm.setFieldsValue({ category: '公司资料' });
-                setUploadFileList([]);
-                setUploadVisible(true);
-              }}
-            >
-              上传资料
-            </Button>
-          )}
-        </TabPane>
-      </Tabs>
+      <SectionTabs
+        activeKey={activeTab}
+        onChange={(key) => setActiveTab(key as CompanyEntityModalTab)}
+        items={[
+          {
+            key: 'basic',
+            label: "基础信息",
+            content: (
+              <>
+                  {readonly ? (
+                    <DescriptionsCard columns={2} bare items={buildDescriptions(currentRecord, basicFields)} />
+                  ) : (
+                    <Form form={form} layout="vertical">
+                      <FormGrid columns={2}>
+                          <FormItem label="公司名称" field="name" rules={[{ required: true, message: '请输入公司名称' }]}>
+                            <Input placeholder="请输入公司全称" />
+                          </FormItem>
+                          <FormItem label="公司简称" field="shortName" rules={[{ required: true, message: '请输入公司简称' }]}>
+                            <Input placeholder="请输入公司简称" />
+                          </FormItem>
+                          <FormItem label="统一社会信用代码" field="taxNumber" rules={[{ required: true, message: '请输入统一社会信用代码' }]}>
+                            <Input placeholder="请输入统一社会信用代码" />
+                          </FormItem>
+                          <FormItem label="法定代表人" field="legalPerson">
+                            <Input placeholder="请输入法定代表人" />
+                          </FormItem>
+                          <FormItem label="注册资本" field="registeredCapital">
+                            <Input placeholder="如：1000万元" />
+                          </FormItem>
+                          <FormItem label="联系电话" field="contactPhone">
+                            <Input placeholder="请输入联系电话" />
+                          </FormItem>
+                          <FormItem label="邮箱" field="email" rules={[{ type: 'email', message: '请输入正确的邮箱地址' }]}>
+                            <Input placeholder="请输入邮箱" />
+                          </FormItem>
+                          <FormItem label="注册地址" field="address">
+                            <Input placeholder="请输入注册地址" />
+                          </FormItem>
+                          <FormItem label="状态" field="status" initialValue="启用">
+                            <Select>
+                              <Select.Option value="启用">启用</Select.Option>
+                              <Select.Option value="禁用">禁用</Select.Option>
+                            </Select>
+                          </FormItem>
+                      </FormGrid>
+                    </Form>
+                  )}
+                
+              </>
+            ),
+          },
+          {
+            key: 'invoice',
+            label: "开票信息",
+            content: (
+              <>
+                  {readonly ? (
+                    <DescriptionsCard columns={2} bare items={buildDescriptions(currentRecord, invoiceFields)} />
+                  ) : (
+                    <Form form={form} layout="vertical">
+                      <FormGrid columns={2}>
+                          <FormItem label="开票抬头" field="invoiceTitle" rules={[{ required: true, message: '请输入开票抬头' }]}>
+                            <Input placeholder="请输入开票抬头" />
+                          </FormItem>
+                          <FormItem label="纳税人识别号" field="invoiceTaxNumber" rules={[{ required: true, message: '请输入纳税人识别号' }]}>
+                            <Input placeholder="请输入纳税人识别号" />
+                          </FormItem>
+                          <FormItem label="开户银行" field="invoiceBankName" rules={[{ required: true, message: '请输入开户银行' }]}>
+                            <Input placeholder="请输入开户银行" />
+                          </FormItem>
+                          <FormItem label="银行账号" field="invoiceBankAccount" rules={[{ required: true, message: '请输入银行账号' }]}>
+                            <Input placeholder="请输入银行账号" />
+                          </FormItem>
+                          <FormItem label="开票地址" field="invoiceAddress" rules={[{ required: true, message: '请输入开票地址' }]}>
+                            <Input placeholder="请输入开票地址" />
+                          </FormItem>
+                          <FormItem label="开票电话" field="invoicePhone" rules={[{ required: true, message: '请输入开票电话' }]}>
+                            <Input placeholder="请输入开票电话" />
+                          </FormItem>
+                      </FormGrid>
+                    </Form>
+                  )}
+                
+              </>
+            ),
+          },
+          {
+            key: 'public-account',
+            label: "对公账户",
+            content: (
+              <>
+                  {publicAccounts.length === 0 ? (
+                    <EmptyState description="暂无对公账户" />
+                  ) : (
+                    <DataTable columns={publicAccountColumns} data={publicAccounts} rowKey="id" pagination={false} size="middle" />
+                  )}
+                  {!readonly && (
+                    <Button style={{ marginTop: 16 }} type="primary" icon={<IconPlus />} onClick={() => openPublicAccountModal(null)}>
+                      新增对公账户
+                    </Button>
+                  )}
+                
+              </>
+            ),
+          },
+          {
+            key: 'files',
+            label: "公司资料",
+            content: (
+              <>
+                  {currentRecord.files.length === 0 ? (
+                    <EmptyState description="暂无公司资料" />
+                  ) : (
+                    <DataTable columns={fileColumns} data={currentRecord.files} rowKey="id" pagination={false} size="middle" />
+                  )}
+                  {permissions.files && !readonly && (
+                    <Button
+                      style={{ marginTop: 16 }}
+                      type="primary"
+                      icon={<IconUpload />}
+                      onClick={() => {
+                        uploadForm.setFieldsValue({ category: '公司资料' });
+                        setUploadFileList([]);
+                        setUploadVisible(true);
+                      }}
+                    >
+                      上传资料
+                    </Button>
+                  )}
+                
+              </>
+            ),
+          },
+        ]}
+      />
       <Modal
         title={editingPublicAccount ? '编辑对公账户' : '新增对公账户'}
         visible={publicAccountModalVisible}

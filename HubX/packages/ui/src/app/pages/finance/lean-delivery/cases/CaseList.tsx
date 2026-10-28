@@ -1,15 +1,34 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Card, Button, Input, Tag, Table, Select, Space, Progress, Tooltip, Message,
-} from '@arco-design/web-react';
-import { IconPlus, IconSearch, IconDownload, IconEye, IconRefresh } from '@arco-design/web-react/icon';
+import { Button, Input, Select, Space, Tooltip, Message, Typography } from '@/design-system';
+import { IconPlus, IconSearch, IconDownload, IconEye, IconRefresh } from '@/design-system';
 import { mockCases, mockCostItems, CaseStatus, caseStatusMap, industryOptions } from '../mockData';
 import { deriveTotalCost, deriveEac, deriveLifecycleMargin, deriveWip, deriveHealth } from '../calc';
 import { getContract, totalCollected } from '../contractSeam';
 import { useContracts } from '../../../sales/contracts/ContractsContext';
 import { useCollections } from '../../../../collections/CollectionContext';
-import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, resolveStatus } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+  ProgressBar,
+} from '@/design-system';
+
+const { Text } = Typography;
+
+const HEALTH_STATUS: StatusMap<'green' | 'yellow' | 'red'> = {
+  green: { label: '健康', tone: 'success' },
+  yellow: { label: '预警', tone: 'warning' },
+  red: { label: '风险', tone: 'danger' },
+};
 
 export default function CaseList() {
   const navigate = useNavigate();
@@ -56,7 +75,6 @@ export default function CaseList() {
   }, [filteredData]);
 
   const healthLabel = (h: string) => ({ green: '健康', yellow: '预警', red: '风险' })[h] ?? h;
-  const healthColor = (h: string) => ({ green: 'green', yellow: 'orange', red: 'red' })[h] ?? 'blue';
   const filtersActive = Boolean(searchKeyword || statusFilter !== 'all' || industryFilter !== 'all');
 
   const resetFilters = () => {
@@ -99,7 +117,7 @@ export default function CaseList() {
     },
     {
       title: '关联线索/项目', width: 180,
-      render: (_: any, r: any) => <div>{r.leadName && <div style={{ fontSize: 14 }}>{r.leadName}</div>}{r.projectName && <div style={{ fontSize: 12, color: '#86909c' }}>{r.projectName}</div>}</div>,
+      render: (_: any, r: any) => <div>{r.leadName && <div>{r.leadName}</div>}{r.projectName && <Text type="secondary">{r.projectName}</Text>}</div>,
     },
     {
       title: '状态', dataIndex: 'status', width: 100,
@@ -107,27 +125,30 @@ export default function CaseList() {
     },
     {
       title: '健康状态', dataIndex: 'health', width: 100,
-      render: (v: string) => <Tag color={healthColor(v)}>{healthLabel(v)}</Tag>,
+      render: (v: 'green' | 'yellow' | 'red') => <StatusTag meta={resolveStatus(HEALTH_STATUS, v)} />,
     },
     { title: '行业', dataIndex: 'industry', width: 100, render: (v: string) => v || '-' },
     {
       title: '标的额', width: 120, align: 'right' as const,
-      render: (_: any, r: any) => r.contractAmount ? `¥${r.contractAmount.toLocaleString()}` : '-',
+      render: (_: any, r: any) => r.contractAmount ? <MoneyText value={r.contractAmount} /> : '-',
     },
     {
       title: '全周期利润率', width: 130,
       render: (_: any, r: any) => {
         if (r.lifecycleMargin === null) return '-';
         const v = r.lifecycleMargin * 100;
-        const color = v >= 30 ? 'rgb(var(--success-6))' : v >= 20 ? 'rgb(var(--warning-6))' : 'rgb(var(--danger-6))';
-        return <Space><Progress percent={Math.min(100, v)} size="small" style={{ width: 60 }} showText={false} color={color} /><span>{v.toFixed(1)}%</span></Space>;
+        const tone = v >= 30 ? 'success' : v >= 20 ? 'warning' : 'danger';
+        return <Space><ProgressBar percent={Math.min(100, v)} tone={tone} size="small" style={{ width: 60 }} showValue={false} /><span>{v.toFixed(1)}%</span></Space>;
       },
     },
     {
       title: 'WIP 天数', width: 100, align: 'center' as const,
-      render: (_: any, r: any) => { const d = r.wip.days; return <Tag color={d <= 7 ? 'green' : d <= 14 ? 'orange' : 'red'}>{d}天</Tag>; },
+      render: (_: any, r: any) => {
+        const d = r.wip.days;
+        return <StatusTag tone={d <= 7 ? 'success' : d <= 14 ? 'warning' : 'danger'}>{`${d}天`}</StatusTag>;
+      },
     },
-    { title: '创建时间', dataIndex: 'createdAt', width: 120, render: (v: string) => new Date(v).toLocaleDateString() },
+    { title: '创建时间', dataIndex: 'createdAt', width: 120, render: (v: string) => <DateText value={v} /> },
     {
       title: '操作', width: 100, fixed: 'right' as const,
       render: (_: any, r: any) => <Space>
@@ -156,21 +177,29 @@ export default function CaseList() {
         { key: 'alerts', label: '风险预警', value: `${statistics.alerts} 单`, detail: statistics.alerts > 0 ? '需优先检查利润率与 WIP' : '当前无风险预警', tone: statistics.alerts > 0 ? 'warning' : 'success' },
       ]} />
 
-      <Card>
-        <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button> : <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {filteredData.length} 条</span>}>
-          <Input style={{ width: 300 }} placeholder="搜索业务单编号、线索名称、项目名称" prefix={<IconSearch />} value={searchKeyword} onChange={setSearchKeyword} />
-          <Select style={{ width: 120 }} value={statusFilter} onChange={setStatusFilter}>
-            <Select.Option value="all">全部状态</Select.Option>
-            {Object.entries(caseStatusMap).map(([k, v]) => <Select.Option key={k} value={k}>{v.label}</Select.Option>)}
-          </Select>
-          <Select style={{ width: 120 }} value={industryFilter} onChange={setIndustryFilter}>
-            <Select.Option value="all">全部行业</Select.Option>
-            {industryOptions.map(o => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
-          </Select>
-        </FilterBar>
-        <div style={{ marginTop: 16, color: 'var(--color-text-3)', fontSize: 12 }}>筛选结果：{filteredData.length} 条</div>
-        <Table columns={columns} data={filteredData} rowKey="id" pagination={{ pageSize: 20 }} scroll={{ x: 1400 }} />
-      </Card>
+      <SectionCard>
+        <DataTable
+          columns={columns}
+          data={filteredData}
+          rowKey="id"
+          pagination={{ pageSize: 20 }}
+          scroll={{ x: 1400 }}
+          caption={`筛选结果：${filteredData.length} 条`}
+          toolbar={(
+            <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button> : undefined}>
+              <Input style={{ width: 300 }} placeholder="搜索业务单编号、线索名称、项目名称" prefix={<IconSearch />} value={searchKeyword} onChange={setSearchKeyword} />
+              <Select style={{ width: 120 }} value={statusFilter} onChange={setStatusFilter}>
+                <Select.Option value="all">全部状态</Select.Option>
+                {Object.entries(caseStatusMap).map(([k, v]) => <Select.Option key={k} value={k}>{v.label}</Select.Option>)}
+              </Select>
+              <Select style={{ width: 120 }} value={industryFilter} onChange={setIndustryFilter}>
+                <Select.Option value="all">全部行业</Select.Option>
+                {industryOptions.map(o => <Select.Option key={o.value} value={o.value}>{o.label}</Select.Option>)}
+              </Select>
+            </FilterBar>
+          )}
+        />
+      </SectionCard>
     </PageShell>
   );
 }

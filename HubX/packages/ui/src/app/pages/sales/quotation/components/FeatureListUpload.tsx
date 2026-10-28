@@ -1,24 +1,12 @@
 import { useState, useCallback } from 'react';
-import {
-  Button,
-  Table,
-  Message,
-  Alert,
-  Typography,
-  Dropdown,
-  Menu,
-  Space,
-  Tag,
-  Badge,
-} from '@arco-design/web-react';
+import { Button, Message, Typography, Dropdown, Menu, Space, Badge } from '@/design-system';
+import { DataTable, EmptyState, AlertBanner, StatusTag } from '@/design-system';
 import {
   IconUpload,
   IconDownload,
   IconDown,
-  IconCheckCircleFill,
-  IconExclamationCircleFill,
   IconFile,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
   parseFeature清单,
   detectHeaders,
@@ -185,7 +173,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
           <Text bold>{name}</Text>
           {record.endpointId && (
             <div style={{ marginTop: 2 }}>
-              <Tag size="small" color="arcoblue">{record.endpointId}</Tag>
+              <StatusTag size="small" tone="info">{record.endpointId}</StatusTag>
             </div>
           )}
         </div>
@@ -202,13 +190,13 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
               style={{
                 padding: '4px 8px',
                 background: 'var(--color-fill-2)',
-                borderRadius: 4,
-                fontSize: 12,
+                borderRadius: 'var(--radius-xs)',
+                fontSize: 'var(--text-xs)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text bold>{idx + 1}. {s.name}</Text>
-                {s.remark && <Tag size="small" color="orange">{s.remark}</Tag>}
+                {s.remark && <StatusTag size="small" tone="warning">{s.remark}</StatusTag>}
               </div>
               {s.description ? (
                 <div style={{ color: 'var(--color-text-3)', marginTop: 2 }}>{s.description}</div>
@@ -232,7 +220,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
   ];
 
   return (
-    <div style={{ background: 'var(--color-bg-2)', borderRadius: 6 }}>
+    <div style={{ background: 'var(--color-bg-2)', borderRadius: 'var(--radius-sm)' }}>
       {/* 顶部操作区 */}
       <div
         style={{
@@ -285,7 +273,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
           )}
         </Space>
 
-        <Text type="secondary" style={{ fontSize: 12 }}>
+        <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
           支持列名：模块 / 子功能 / 描述（可选：备注、端）
         </Text>
       </div>
@@ -294,44 +282,28 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
       {parseResult && (
         <div style={{ marginBottom: 16 }}>
           {parseResult.errors.length > 0 ? (
-            <Alert
-              type="error"
-              icon={<IconExclamationCircleFill />}
-              title={`清单存在 ${parseResult.errors.length} 处格式错误，部分行未导入`}
-              content={
+            <AlertBanner tone="danger" title={`清单存在 ${parseResult.errors.length} 处格式错误，部分行未导入`} style={{ marginBottom: 12 }}>{
                 <ul style={{ margin: '4px 0 0 0', paddingLeft: 18 }}>
                   {parseResult.errors.slice(0, 5).map((e, idx) => (
                     <li key={idx}>第 {e.row} 行：{e.message}</li>
                   ))}
                   {parseResult.errors.length > 5 && <li>...等其余 {parseResult.errors.length - 5} 项错误</li>}
                 </ul>
-              }
-              style={{ marginBottom: 12 }}
-            />
+              }</AlertBanner>
           ) : (
-            <Alert
-              type="success"
-              icon={<IconCheckCircleFill />}
-              title="功能清单体检通过"
-              content={
+            <AlertBanner tone="success" title="功能清单体检通过" style={{ marginBottom: 12 }}>{
                 <Space wrap size={8} style={{ marginTop: 4 }}>
-                  <Tag color="green">有效模块：{parseResult.modules.length} 个</Tag>
-                  <Tag color="blue">子功能总数：{parseResult.subFeatureCount} 项</Tag>
+                  <StatusTag tone="success">有效模块：{parseResult.modules.length} 个</StatusTag>
+                  <StatusTag tone="info">子功能总数：{parseResult.subFeatureCount} 项</StatusTag>
                   {Object.entries(parseResult.endpointSummary).map(([ep, count]) => (
-                    <Tag key={ep} color="cyan">{ep}: {count}项</Tag>
+                    <StatusTag key={ep} tone="cyan">{ep}: {count}项</StatusTag>
                   ))}
                 </Space>
-              }
-              style={{ marginBottom: 12 }}
-            />
+              }</AlertBanner>
           )}
 
           {parseResult.warnings.length > 0 && (
-            <Alert
-              type="warning"
-              content={parseResult.warnings.join('；')}
-              style={{ marginBottom: 12 }}
-            />
+            <AlertBanner tone="warning" style={{ marginBottom: 12 }}>{parseResult.warnings.join('；')}</AlertBanner>
           )}
         </div>
       )}
@@ -339,14 +311,15 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
       {/* 预览与确认表格 */}
       {previewModules.length > 0 ? (
         <>
-          <Table
-            data={previewModules}
-            columns={columns}
-            rowKey="id"
-            pagination={false}
-            border={{ cell: true }}
-            style={{ marginBottom: 16 }}
-          />
+          <div style={{ marginBottom: 16 }}>
+            <DataTable
+              data={previewModules}
+              columns={columns}
+              rowKey="id"
+              pagination={false}
+              border={{ cell: true }}
+            />
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text type="secondary">
               共解析出 {previewModules.length} 个模块，合计{' '}
@@ -372,19 +345,7 @@ export function FeatureListUpload({ onParsed, initialModules = [] }: Props) {
           </div>
         </>
       ) : !selectedFile && initialModules.length === 0 ? (
-        <div
-          style={{
-            padding: '32px 16px',
-            textAlign: 'center',
-            border: '1px dashed var(--color-border-2)',
-            borderRadius: 6,
-            background: 'var(--color-fill-1)',
-          }}
-        >
-          <Text type="secondary">
-            尚未导入功能清单。可先点击「下载标准模板」准备数据，再点击「上传并解析 Excel 清单」。
-          </Text>
-        </div>
+        <EmptyState description="尚未导入功能清单。可先点击「下载标准模板」准备数据，再点击「上传并解析 Excel 清单」。" />
       ) : null}
     </div>
   );

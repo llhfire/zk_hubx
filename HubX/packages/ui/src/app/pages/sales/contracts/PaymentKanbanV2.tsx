@@ -1,34 +1,30 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Button,
-  Card,
-  Input,
-  Message,
-  Progress,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from '@arco-design/web-react';
+import { Button, Input, Message, Select, Space, Tooltip, Typography } from '@/design-system';
 import {
   IconClockCircle,
   IconEye,
   IconFile,
   IconSearch,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useContracts } from './ContractsContext';
 import type { Contract, PaymentPlanItem } from './types';
 import { useCollections } from '../../../collections/CollectionContext';
 import { withCollectionLedger } from '../../../../services/collectionMutations';
 import {
-  FilterBar,
+  CountdownTag,
+  DataTable,
+  DateText,
+  EmptyState,
   MetricGrid,
+  MoneyText,
+  SectionCard,
   SplitLayout,
   SplitLayoutAside,
   SplitLayoutMain,
+  type StatusTone,
+  StatusTag,
+  ProgressBar,
 } from '@/design-system';
 import './payment/paymentConsistency.css';
 
@@ -55,13 +51,13 @@ interface PaymentMilestone {
   progress: number;
 }
 
-const STAGE_META: Record<MilestoneStage, { label: string; color: string }> = {
-  blocked: { label: '风险卡点', color: 'red' },
-  overdue: { label: '已逾期', color: 'orangered' },
-  week: { label: '7天内', color: 'orange' },
-  month: { label: '30天内', color: 'arcoblue' },
-  future: { label: '后续回款', color: 'gray' },
-  settled: { label: '已结清', color: 'green' },
+const STAGE_META: Record<MilestoneStage, { label: string; tone: 'danger' | 'warning' | 'info' | 'neutral' | 'success' }> = {
+  blocked: { label: '风险卡点', tone: 'danger' },
+  overdue: { label: '已逾期', tone: 'danger' },
+  week: { label: '7天内', tone: 'warning' },
+  month: { label: '30天内', tone: 'info' },
+  future: { label: '后续回款', tone: 'neutral' },
+  settled: { label: '已结清', tone: 'success' },
 };
 
 const FILTER_OPTIONS: Array<{ label: string; value: 'all' | MilestoneStage }> = [
@@ -90,15 +86,6 @@ function dayDiff(from: Date, to: Date): number {
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
   const end = new Date(to.getFullYear(), to.getMonth(), to.getDate()).getTime();
   return Math.ceil((end - start) / 86400000);
-}
-
-function currency(value: number): string {
-  if (Math.abs(value) >= 10000) return `¥${(value / 10000).toFixed(1)}万`;
-  return `¥${value.toLocaleString()}`;
-}
-
-function fullCurrency(value: number): string {
-  return `¥${Math.round(value).toLocaleString()}`;
 }
 
 function formatDate(date: Date): string {
@@ -309,12 +296,12 @@ export function PaymentKanbanV2() {
   );
 
   const cashBuckets = useMemo(() => {
-    const buckets = [
-      { key: 'overdue', label: '逾期积压', amount: 0, color: 'rgb(var(--red-6))' },
-      { key: 'week', label: '7天内', amount: 0, color: 'rgb(var(--orange-6))' },
-      { key: 'month', label: '8-30天', amount: 0, color: 'rgb(var(--blue-6))' },
-      { key: 'two-month', label: '31-60天', amount: 0, color: 'rgb(var(--green-6))' },
-      { key: 'quarter', label: '61-90天', amount: 0, color: 'rgb(var(--purple-6))' },
+    const buckets: Array<{ key: string; label: string; amount: number; tone: StatusTone }> = [
+      { key: 'overdue', label: '逾期积压', amount: 0, tone: 'danger' },
+      { key: 'week', label: '7天内', amount: 0, tone: 'warning' },
+      { key: 'month', label: '8-30天', amount: 0, tone: 'info' },
+      { key: 'two-month', label: '31-60天', amount: 0, tone: 'success' },
+      { key: 'quarter', label: '61-90天', amount: 0, tone: 'purple' },
     ];
 
     milestones.forEach((item) => {
@@ -336,52 +323,53 @@ export function PaymentKanbanV2() {
       title: '优先级',
       width: 110,
       render: (_: unknown, item: PaymentMilestone) => (
-        <Tag color={STAGE_META[item.stage].color}>{STAGE_META[item.stage].label}</Tag>
+        <StatusTag tone={STAGE_META[item.stage].tone}>{STAGE_META[item.stage].label}</StatusTag>
       ),
     },
     {
       title: '合同 / 客户',
       render: (_: unknown, item: PaymentMilestone) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{item.contractName}</div>
-          <div style={{ marginTop: 2, fontSize: 12, color: 'var(--color-text-3)' }}>
+        <Space direction="vertical" size={2}>
+          <Text bold>{item.contractName}</Text>
+          <Text type="secondary">
             {item.contractNo} · {item.customerName}
-          </div>
-        </div>
+          </Text>
+        </Space>
       ),
     },
     {
       title: '回款节点',
       width: 170,
       render: (_: unknown, item: PaymentMilestone) => (
-        <div>
-          <div>第 {item.plan.period} 期 · {item.plan.percentage}%</div>
-          <div style={{ marginTop: 2, fontSize: 12, color: 'var(--color-text-3)' }}>
+        <Space direction="vertical" size={2}>
+          <Text>第 {item.plan.period} 期 · {item.plan.percentage}%</Text>
+          <Text type="secondary">
             {item.plan.condition || '未填写回款条件'}
-          </div>
-        </div>
+          </Text>
+        </Space>
       ),
     },
     {
       title: '计划日期',
       width: 120,
-      render: (_: unknown, item: PaymentMilestone) => formatDate(item.dueDate),
+      render: (_: unknown, item: PaymentMilestone) => <DateText value={item.dueDate} />,
     },
     {
       title: '待回款',
       width: 130,
       render: (_: unknown, item: PaymentMilestone) => (
-        <span style={{ fontWeight: 700 }}>{fullCurrency(item.remainingAmount)}</span>
+        <MoneyText value={item.remainingAmount} fractionDigits={0} />
       ),
     },
     {
       title: '进度',
       width: 170,
       render: (_: unknown, item: PaymentMilestone) => (
-        <Progress
-          size="small"
+        <ProgressBar
           percent={item.progress}
-          color={item.progress >= 100 ? 'rgb(var(--green-6))' : 'rgb(var(--blue-6))'}
+          valueText={`${item.progress}%`}
+          size="small"
+          tone={item.progress >= 100 ? 'success' : 'info'}
         />
       ),
     },
@@ -423,52 +411,52 @@ export function PaymentKanbanV2() {
       </div>
 
       <MetricGrid items={[
-        { key: 'receivable', label: '未回款总额', value: currency(summary.receivableTotal), detail: `${summary.activeCount} 个待处理节点` },
-        { key: 'next30', label: '30天内应收', value: currency(summary.next30Total), detail: '需要本月重点推进', tone: summary.next30Total > 0 ? 'warning' : 'neutral' },
-        { key: 'overdue', label: '逾期与卡点', value: currency(summary.overdueTotal), detail: `平均逾期 ${summary.avgOverdueDays} 天`, tone: summary.overdueTotal > 0 ? 'danger' : 'success' },
-        { key: 'received', label: '本月已回', value: currency(summary.receivedThisMonth), detail: '来自已登记实收台账', tone: 'success' },
+        { key: 'receivable', label: '未回款总额', value: <MoneyText variant="compact" value={summary.receivableTotal} />, detail: `${summary.activeCount} 个待处理节点` },
+        { key: 'next30', label: '30天内应收', value: <MoneyText variant="compact" value={summary.next30Total} />, detail: '需要本月重点推进', tone: summary.next30Total > 0 ? 'warning' : 'neutral' },
+        { key: 'overdue', label: '逾期与卡点', value: <MoneyText variant="compact" value={summary.overdueTotal} />, detail: `平均逾期 ${summary.avgOverdueDays} 天`, tone: summary.overdueTotal > 0 ? 'danger' : 'success' },
+        { key: 'received', label: '本月已回', value: <MoneyText variant="compact" value={summary.receivedThisMonth} />, detail: '来自已登记实收台账', tone: 'success' },
       ]} />
 
       <SplitLayout>
         <SplitLayoutMain>
-          <Card title="回款队列">
-            <FilterBar actions={filtersActive ? (
-              <Button type="text" onClick={() => { setKeyword(''); setStageFilter('all'); }}>重置筛选</Button>
-            ) : (
-              <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>共 {filteredMilestones.length} 个节点</span>
-            )}>
-              <Input
-                style={{ width: 260 }}
-                prefix={<IconSearch />}
-                placeholder="搜索合同、客户、编号"
-                value={keyword}
-                onChange={setKeyword}
-              />
-              <Select
-                style={{ width: 130 }}
-                value={stageFilter}
-                onChange={setStageFilter}
-                options={FILTER_OPTIONS}
-              />
-            </FilterBar>
-            <Table
+          <SectionCard title="回款队列">
+            <DataTable
               columns={columns}
               data={filteredMilestones}
               rowKey="id"
               pagination={{ pageSize: 8 }}
               scroll={{ x: 1080 }}
-              style={{ marginTop: 16 }}
+              toolbar={(
+                <Space size={8}>
+                  <Input
+                    style={{ width: 260 }}
+                    prefix={<IconSearch />}
+                    placeholder="搜索合同、客户、编号"
+                    value={keyword}
+                    onChange={setKeyword}
+                  />
+                  <Select
+                    style={{ width: 130 }}
+                    value={stageFilter}
+                    onChange={setStageFilter}
+                    options={FILTER_OPTIONS}
+                  />
+                </Space>
+              )}
+              actions={filtersActive ? (
+                <Button type="text" onClick={() => { setKeyword(''); setStageFilter('all'); }}>重置筛选</Button>
+              ) : (
+                <span>共 {filteredMilestones.length} 个节点</span>
+              )}
             />
-          </Card>
+          </SectionCard>
         </SplitLayoutMain>
         <SplitLayoutAside>
           <>
-          <Card title="今日优先处理">
+          <SectionCard title="今日优先处理">
             <Space direction="vertical" size="medium" style={{ width: '100%' }}>
               {focusItems.length === 0 ? (
-                <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--color-text-3)' }}>
-                  暂无逾期或卡点合同
-                </div>
+                <EmptyState description="暂无逾期或卡点合同" />
               ) : (
                 focusItems.map((item) => (
                   <div
@@ -477,43 +465,40 @@ export function PaymentKanbanV2() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                       <Text bold ellipsis style={{ maxWidth: 210 }}>{item.customerName}</Text>
-                      <Tag color={STAGE_META[item.stage].color}>{STAGE_META[item.stage].label}</Tag>
+                      <StatusTag tone={STAGE_META[item.stage].tone}>{STAGE_META[item.stage].label}</StatusTag>
                     </div>
-                    <div style={{ marginTop: 6, color: 'var(--color-text-2)' }}>{item.contractName}</div>
-                    <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--color-text-3)' }}>
+                    <div style={{ marginTop: 6 }}>{item.contractName}</div>
+                    <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>
                         <IconClockCircle style={{ marginRight: 4 }} />
-                        {item.daysLeft < 0 ? `逾期 ${Math.abs(item.daysLeft)} 天` : `${item.daysLeft} 天后到期`}
+                        <CountdownTag days={item.daysLeft} />
                       </span>
-                      <Text bold>{currency(item.remainingAmount)}</Text>
+                      <MoneyText variant="compact" value={item.remainingAmount} />
                     </div>
                   </div>
                 ))
               )}
             </Space>
-          </Card>
+          </SectionCard>
 
-          <Card title="90天现金流节奏">
+          <SectionCard title="90天现金流节奏">
             <Space direction="vertical" size="medium" style={{ width: '100%' }}>
               {cashBuckets.map((bucket) => (
                 <div key={bucket.key}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ color: 'var(--color-text-2)' }}>{bucket.label}</span>
-                    <Text bold>{currency(bucket.amount)}</Text>
+                    <span>{bucket.label}</span>
+                    <MoneyText variant="compact" value={bucket.amount} />
                   </div>
-                  <div className="payment-kanban-v2__cash-track">
-                    <div
-                      style={{
-                        width: `${Math.max(4, (bucket.amount / maxBucketAmount) * 100)}%`,
-                        height: '100%',
-                        background: bucket.color,
-                      }}
-                    />
-                  </div>
+                  <ProgressBar
+                    percent={Math.max(4, (bucket.amount / maxBucketAmount) * 100)}
+                    size="small"
+                    showValue={false}
+                    tone={bucket.tone}
+                  />
                 </div>
               ))}
             </Space>
-          </Card>
+          </SectionCard>
           </>
         </SplitLayoutAside>
       </SplitLayout>

@@ -1,4 +1,5 @@
 import type { Contract, PaymentPlanItem, PaymentStatus, DunningRecord } from './types';
+import type { StatusMap } from '@/design-system';
 import { collectionAmountForPeriod, getCollectionPeriods } from '../../../../services/collectionMutations';
 
 const BUFFER_DAYS = 7;
@@ -164,12 +165,12 @@ export function computePlanStatusRows(c: Contract, now: Date = new Date()): Plan
   });
 }
 
-export const PLAN_STATUS_META: Record<PlanStatusKind, { label: string; color: string }> = {
-  paid: { label: '已收', color: 'green' },
-  partial: { label: '部分已收', color: 'orange' },
-  overdue: { label: '逾期', color: 'red' },
-  upcoming: { label: '即将到期', color: 'orange' },
-  pending: { label: '待收', color: 'gray' },
+export const PLAN_STATUS_META: StatusMap<PlanStatusKind> = {
+  paid: { label: '已收', tone: 'success' },
+  partial: { label: '部分已收', tone: 'warning' },
+  overdue: { label: '逾期', tone: 'danger' },
+  upcoming: { label: '即将到期', tone: 'warning' },
+  pending: { label: '待收', tone: 'neutral' },
 };
 
 export function computeKanbanSummary(contracts: Contract[], now: Date = new Date()): KanbanSummary {

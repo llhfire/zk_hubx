@@ -1,12 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Empty,
-  Grid,
-  Table,
+  FormGrid,
   Button,
   Space,
-  Tag,
   Select,
   Modal,
   Form,
@@ -14,31 +10,47 @@ import {
   Slider,
   InputNumber,
   Message,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconPlus,
   IconRefresh,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   PerformanceReview,
   PerformanceRank,
   ReviewPeriod,
   calcPerformance,
-  getRankColor,
 } from './mockData';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 import './employeeAdminConsistency.css';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
-const RANK_META: Record<PerformanceRank, { color: string; label: string }> = {
-  'S': { color: 'var(--chart-5)', label: '卓越' },
-  'A': { color: 'var(--success-500)', label: '优秀' },
-  'B': { color: 'var(--primary)', label: '良好' },
-  'C': { color: 'var(--warning-500)', label: '合格' },
-  'D': { color: 'var(--destructive-500)', label: '待改进' },
+const RANK_LABEL: Record<PerformanceRank, string> = {
+  'S': '卓越',
+  'A': '优秀',
+  'B': '良好',
+  'C': '合格',
+  'D': '待改进',
+};
+
+const RANK_STATUS: StatusMap<PerformanceRank> = {
+  'S': { label: 'S · 卓越', tone: 'purple' },
+  'A': { label: 'A · 优秀', tone: 'success' },
+  'B': { label: 'B · 良好', tone: 'info' },
+  'C': { label: 'C · 合格', tone: 'warning' },
+  'D': { label: 'D · 待改进', tone: 'danger' },
 };
 
 export function PerformanceManagement() {
@@ -127,7 +139,7 @@ export function PerformanceManagement() {
       title: '周期',
       dataIndex: 'period',
       width: 60,
-      render: (p: string) => <Tag>{p}</Tag>,
+      render: (p: string) => <StatusTag tone="neutral">{p}</StatusTag>,
     },
     { title: '考核月份/季', dataIndex: 'periodLabel', width: 130 },
     {
@@ -158,11 +170,7 @@ export function PerformanceManagement() {
       title: '评级',
       dataIndex: 'rank',
       width: 70,
-      render: (rank: PerformanceRank) => (
-        <Tag color={RANK_META[rank].color} style={{ fontWeight: 700 }}>
-          {rank} · {RANK_META[rank].label}
-        </Tag>
-      ),
+      render: (rank: PerformanceRank) => <StatusTag meta={RANK_STATUS[rank]} />,
     },
     { title: '考核人', dataIndex: 'evaluator', width: 80 },
     { title: '评语', dataIndex: 'comment', ellipsis: true },
@@ -188,7 +196,7 @@ export function PerformanceManagement() {
         ]}
       />
 
-      <Card bordered={false} title="绩效记录" className="employee-admin-list-card">
+      <SectionCard title="绩效记录" className="employee-admin-list-card">
         <FilterBar
           actions={filtersActive ? (
             <Button type="text" icon={<IconRefresh />} onClick={resetFilters}>重置筛选</Button>
@@ -213,7 +221,7 @@ export function PerformanceManagement() {
           >
             {(['S', 'A', 'B', 'C', 'D'] as PerformanceRank[]).map(r => (
               <Select.Option key={r} value={r}>
-                {r} · {RANK_META[r].label}
+                {r} · {RANK_LABEL[r]}
               </Select.Option>
             ))}
           </Select>
@@ -222,15 +230,15 @@ export function PerformanceManagement() {
           <span>共 {filteredReviews.length} 条考核记录</span>
           {filtersActive && <span>已按当前条件筛选</span>}
         </div>
-        <Table
+        <DataTable
           columns={columns as any}
           data={filteredReviews}
           rowKey="id"
           pagination={{ pageSize: 10, showTotal: true }}
           scroll={{ x: 1050 }}
-          noDataElement={<Empty description="没有符合当前条件的绩效记录" />}
+          emptyDescription="没有符合当前条件的绩效记录"
         />
-      </Card>
+      </SectionCard>
 
       {/* 新增考核弹窗 */}
       <Modal
@@ -254,21 +262,17 @@ export function PerformanceManagement() {
                 ))}
             </Select>
           </FormItem>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="考核周期" field="period" initialValue="季度" rules={[{ required: true, message: '请选择周期' }]}>
                 <Select>
                   <Select.Option value="月度">月度</Select.Option>
                   <Select.Option value="季度">季度</Select.Option>
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="考核标签" field="periodLabel" rules={[{ required: true, message: '如 2026-Q3 或 2026-07' }]}>
                 <Input placeholder="如 2026-Q3 或 2026-07" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
 
           {/* KPI 滑块 */}
           <FormItem label={`KPI 完成度 — ${kpiScore} 分`}>
@@ -311,28 +315,21 @@ export function PerformanceManagement() {
           </FormItem>
 
           {/* 预览 */}
-          <Card
+          <SectionCard
             className="employee-admin-performance-preview"
             bodyStyle={{ padding: '12px 16px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Space>
                 <span style={{ color: 'var(--color-text-2)' }}>综合得分预览：</span>
-                <Tag
-                  color={getRankColor(previewPerf.rank)}
-                  style={{ fontWeight: 700, fontSize: 14 }}
-                >
-                  {previewPerf.totalScore} 分
-                </Tag>
+                <StatusTag tone={RANK_STATUS[previewPerf.rank].tone}>{previewPerf.totalScore} 分</StatusTag>
               </Space>
               <Space>
                 <span style={{ color: 'var(--color-text-2)' }}>评级：</span>
-                <Tag color={getRankColor(previewPerf.rank)} style={{ fontWeight: 700 }}>
-                  {previewPerf.rank} · {RANK_META[previewPerf.rank]?.label || ''}
-                </Tag>
+                <StatusTag meta={RANK_STATUS[previewPerf.rank]} />
               </Space>
             </div>
-          </Card>
+          </SectionCard>
 
           <FormItem label="考核人" field="evaluator" rules={[{ required: true, message: '请输入考核人' }]}>
             <Input placeholder="请输入考核人姓名" />

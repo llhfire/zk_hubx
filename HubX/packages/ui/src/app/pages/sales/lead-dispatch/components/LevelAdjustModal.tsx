@@ -3,9 +3,10 @@
 // 升级免审直接生效；降级走审批（写 level_change 事件 + pending 标记）。
 
 import { useEffect, useState } from 'react';
-import { Modal, Radio, Space, Typography, Message } from '@arco-design/web-react';
+import { GradeTag, Message, Modal, OrderedStatePicker, Space, Typography } from '@/design-system';
 import type { CustomerLevel } from '../../leads/types';
-import { CUSTOMER_LEVEL_LIST, CUSTOMER_LEVEL_COLOR } from '../../leads/types';
+import { CUSTOMER_LEVEL_LIST } from '../../leads/types';
+import { GRADE_TONE } from '@/design-system';
 
 const LEVEL_ORDER: Record<CustomerLevel, number> = { S: 4, A: 3, B: 2, C: 1 };
 
@@ -59,30 +60,27 @@ export function LevelAdjustModal({ visible, currentLevel, leadName, onClose, onC
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <div>
           <Typography.Text style={{ marginBottom: 8, display: 'block' }}>
-            当前等级：<Typography.Text bold style={{ color: `var(--color-${CUSTOMER_LEVEL_COLOR[currentLevel]}-6)` }}>{currentLevel}</Typography.Text>
+            当前等级： <GradeTag grade={currentLevel} />
           </Typography.Text>
-          <Radio.Group value={selected} onChange={(v) => setSelected(v as CustomerLevel)}>
-            <Space direction="vertical">
-              {CUSTOMER_LEVEL_LIST.map((lv) => (
-                <Radio key={lv} value={lv}>
-                  <Space>
-                    <span style={{ color: `var(--color-${CUSTOMER_LEVEL_COLOR[lv]}-6)`, fontWeight: 500 }}>{lv}</span>
-                    {lv === currentLevel && <Typography.Text type="secondary">（当前）</Typography.Text>}
-                    {LEVEL_ORDER[lv] > LEVEL_ORDER[currentLevel] && lv !== currentLevel && (
-                      <Typography.Text type="secondary">↑ 升级</Typography.Text>
-                    )}
-                    {LEVEL_ORDER[lv] < LEVEL_ORDER[currentLevel] && (
-                      <Typography.Text type="secondary">↓ 降级（需审核）</Typography.Text>
-                    )}
-                  </Space>
-                </Radio>
-              ))}
-            </Space>
-          </Radio.Group>
+          <OrderedStatePicker
+            ariaLabel="客户等级"
+            value={selected}
+            onChange={(value) => setSelected((value ?? currentLevel) as CustomerLevel)}
+            options={CUSTOMER_LEVEL_LIST.map((lv) => ({
+              value: lv,
+              tone: GRADE_TONE[lv],
+              label: <Space><GradeTag grade={lv} />{lv === currentLevel && <Typography.Text type="secondary">（当前）</Typography.Text>}</Space>,
+              description: LEVEL_ORDER[lv] > LEVEL_ORDER[currentLevel] && lv !== currentLevel
+                ? '↑ 升级'
+                : LEVEL_ORDER[lv] < LEVEL_ORDER[currentLevel]
+                  ? '↓ 降级（需审核）'
+                  : undefined,
+            }))}
+          />
         </div>
 
         {isDowngrade && (
-          <Typography.Text type="warning" style={{ fontSize: 12 }}>
+          <Typography.Text type="warning" style={{ fontSize: 'var(--text-xs)' }}>
             ⚠️ 降级操作需要管理员审核，提交后进入「等级审核」队列。
           </Typography.Text>
         )}

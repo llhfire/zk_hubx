@@ -1,14 +1,6 @@
-import {
-  Select,
-  Input,
-  InputNumber,
-  Button,
-  Space,
-  Card,
-  Tag,
-  Table,
-} from '@arco-design/web-react';
-import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
+import { Select, Input, InputNumber, Button, Space } from '@/design-system';
+import { IconPlus, IconDelete } from '@/design-system';
+import { DataTable, SectionCard, StatusTag } from '@/design-system';
 import { DevReportContent, ProjectTask, WorkKind, WORK_KIND_LABELS, WORK_KIND_ABILITY_MAP } from './types';
 import { WorkAttributionSelector } from './WorkAttributionSelector';
 
@@ -124,7 +116,7 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {/* 主要工种 */}
-      <Card size="small" title="今日主要工种" bodyStyle={{ padding: '12px 16px' }}>
+      <SectionCard title="今日主要工种">
         <Select
           value={content['work-kind'] || 'dev-coding'}
           onChange={v => updateField('work-kind', v as WorkKind)}
@@ -133,25 +125,23 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
           {ALL_WORK_KINDS.map(k => (
             <SelectOption key={k} value={k}>
               {WORK_KIND_LABELS[k]}
-              <Tag size="small" style={{ marginLeft: 8, fontSize: 12 }}>
+              <StatusTag size="small" style={{ marginLeft: 8, fontSize: 'var(--text-xs)' }}>
                 {WORK_KIND_ABILITY_MAP[k].dimension} +{WORK_KIND_ABILITY_MAP[k].xpPer8h}/8h
-              </Tag>
+              </StatusTag>
             </SelectOption>
           ))}
         </Select>
-        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-3)' }}>
+        <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
           工种将映射到能力维度，自动累积经验值（每 8 小时）
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 任务明细 */}
-      <Card
-        size="small"
+      <SectionCard
         title="任务明细"
-        extra={<Tag color="blue">总工时 {totalHours}h</Tag>}
-        bodyStyle={{ padding: '12px 16px' }}
+        extra={<StatusTag tone="info">总工时 {totalHours}h</StatusTag>}
       >
-        <Table
+        <DataTable
           columns={taskColumns as any}
           data={tasks}
           rowKey="id"
@@ -162,10 +152,10 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
         <Button type="primary" icon={<IconPlus />} size="small" style={{ marginTop: 12 }} onClick={addTask}>
           添加任务
         </Button>
-      </Card>
+      </SectionCard>
 
       {/* 代码进展 */}
-      <Card size="small" title="代码进展" bodyStyle={{ padding: '12px 16px' }}>
+      <SectionCard title="代码进展">
         <Input.TextArea
           placeholder="今日代码层面的进展（提交、PR、功能完成等）"
           value={content['code-progress'] || ''}
@@ -173,10 +163,10 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
           autoSize={{ minRows: 3, maxRows: 6 }}
           style={{ width: '100%' }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 遇到的问题 */}
-      <Card size="small" title="遇到的问题" bodyStyle={{ padding: '12px 16px' }}>
+      <SectionCard title="遇到的问题">
         <Input.TextArea
           placeholder="遇到的问题或阻塞项"
           value={content['problems-encountered'] || ''}
@@ -184,10 +174,10 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
           autoSize={{ minRows: 2, maxRows: 4 }}
           style={{ width: '100%' }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 明日计划 */}
-      {!omitFollowUpFields && <Card size="small" title="明日工作计划" bodyStyle={{ padding: '12px 16px' }}>
+      {!omitFollowUpFields && <SectionCard title="明日工作计划">
         <Input.TextArea
           placeholder="请输入明日工作计划（必填）"
           value={content['tomorrow-plan'] || ''}
@@ -195,7 +185,7 @@ export function DevDailyTemplate({ content, department, onChange, omitFollowUpFi
           autoSize={{ minRows: 2, maxRows: 4 }}
           style={{ width: '100%' }}
         />
-      </Card>}
+      </SectionCard>}
     </Space>
   );
 }

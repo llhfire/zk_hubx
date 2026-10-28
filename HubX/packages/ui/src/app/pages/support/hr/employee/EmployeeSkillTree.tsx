@@ -1,17 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import {
-  Card,
-  Button,
-  Tag,
-  Space,
-  Typography,
-  Grid,
-  Progress,
-  Tabs,
-  Radio,
-  Empty,
-} from '@arco-design/web-react';
+import { Button, Space, Typography, Grid, Tabs, Radio } from '@/design-system';
 import {
   IconLeft,
   IconTrophy,
@@ -20,23 +9,29 @@ import {
   IconUnlock,
   IconBranch,
   IconInfoCircle,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
+  EmptyState,
   PageShell,
   ProcessOverview,
   MetricGrid,
+  SectionTabs,
+  SectionCard,
   SplitLayout,
   SplitLayoutMain,
   SplitLayoutAside,
   StatusTag,
   type MetricItem,
   type ProcessOverviewStep,
+  type StatusTone,
+  ProgressBar,
+  STATUS_TONE_VARS,
 } from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   ABILITY_DIMENSION_COLORS,
+  ABILITY_DIMENSION_TONES,
   ABILITY_DIMENSION_LABELS,
-  getLevelColor,
   EMPLOYMENT_STATUS,
   AbilityDimension,
   SkillNode,
@@ -62,6 +57,12 @@ function getTierIndex(level: string): number {
   if (num <= 6) return 1;
   if (num <= 8) return 2;
   return 3;
+}
+
+function levelTone(level: string): StatusTone {
+  const parsed = parseInt(level.replace('L', ''), 10);
+  if (Number.isNaN(parsed)) return 'neutral';
+  return parsed >= 9 ? 'purple' : parsed >= 7 ? 'info' : parsed >= 5 ? 'success' : parsed >= 3 ? 'warning' : 'neutral';
 }
 
 // 紧凑型五维雷达图
@@ -155,7 +156,7 @@ function SkillFullCard({ skill, empScore, allSkills, allScores }: SkillCardProps
     <div
       style={{
         padding: '16px 18px',
-        borderRadius: 10,
+        borderRadius: 'var(--radius-lg)',
         border: `1px solid ${unlocked ? 'var(--color-border-2)' : 'var(--color-border-1)'}`,
         background: unlocked ? 'var(--color-bg-2)' : 'var(--color-fill-1)',
         opacity: unlocked ? 1 : 0.72,
@@ -170,21 +171,21 @@ function SkillFullCard({ skill, empScore, allSkills, allScores }: SkillCardProps
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <Space size={6} align="center">
-            <span style={{ fontSize: 16 }}>{unlocked ? <IconUnlock style={{ color: 'var(--success-500)' }} /> : <IconLock style={{ color: 'var(--color-text-3)' }} />}</span>
-            <Text bold style={{ fontSize: 14 }}>{skill.name}</Text>
+            <span style={{ fontSize: 'var(--text-base)' }}>{unlocked ? <IconUnlock style={{ color: 'var(--success-500)' }} /> : <IconLock style={{ color: 'var(--color-text-3)' }} />}</span>
+            <Text bold style={{ fontSize: 'var(--text-sm)' }}>{skill.name}</Text>
           </Space>
           {unlocked ? (
-            <Tag color={ABILITY_DIMENSION_COLORS[skill.domain]} size="small" style={{ fontWeight: 600 }}>
+            <StatusTag tone={ABILITY_DIMENSION_TONES[skill.domain]} size="small" style={{ fontWeight: 600 }}>
               {mastery}
-            </Tag>
+            </StatusTag>
           ) : (
-            <Tag size="small" style={{ color: 'var(--color-text-3)' }}>
+            <StatusTag size="small" style={{ color: 'var(--color-text-3)' }}>
               需要 {skill.requiredScore} 分
-            </Tag>
+            </StatusTag>
           )}
         </div>
 
-        <Paragraph style={{ fontSize: 12, color: 'var(--color-text-2)', margin: '4px 0 10px', minHeight: 36, lineHeight: '18px' }}>
+        <Paragraph style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', margin: '4px 0 10px', minHeight: 36, lineHeight: '18px' }}>
           {skill.description}
         </Paragraph>
       </div>
@@ -192,19 +193,14 @@ function SkillFullCard({ skill, empScore, allSkills, allScores }: SkillCardProps
       <div>
         {/* 前置要求说明 */}
         {prereqs.length > 0 && (
-          <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginBottom: 8 }}>
+          <div style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginBottom: 8 }}>
             <span>前置技能：</span>
             {prereqs.map((p) => {
               const pMet = (allScores[p.domain] || 0) >= (p.requiredScore || 0);
               return (
-                <Tag
-                  key={p.id}
-                  size="small"
-                  style={{ marginRight: 4, fontSize: 11 }}
-                  color={pMet ? 'green' : 'gray'}
-                >
+                <StatusTag key={p.id} size="small" style={{ marginRight: 4, fontSize: 'var(--ds-text-caption)' }} tone={pMet ? 'success' : 'neutral'}>
                   {p.name} {pMet ? '✓' : '✗'}
-                </Tag>
+                </StatusTag>
               );
             })}
           </div>
@@ -212,16 +208,15 @@ function SkillFullCard({ skill, empScore, allSkills, allScores }: SkillCardProps
 
         {/* 达成进度条 */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-3)', marginBottom: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginBottom: 2 }}>
             <span>当前领域能力积分</span>
             <span>{empScore} / {skill.requiredScore || 0} 分</span>
           </div>
-          <Progress
+          <ProgressBar
             percent={progressPercent}
             size="small"
-            color={unlocked ? ABILITY_DIMENSION_COLORS[skill.domain] : 'var(--color-fill-4)'}
-            trailColor="var(--color-fill-2)"
-            showText={false}
+            tone={unlocked ? ABILITY_DIMENSION_TONES[skill.domain] : 'neutral'}
+            showValue={false}
           />
         </div>
       </div>
@@ -306,11 +301,12 @@ export function EmployeeSkillTree() {
           { label: '员工不存在' },
         ]}
       >
-        <Card>
-          <Empty description={<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}><span>未找到该员工档案或链接已失效</span><Button type="primary" onClick={() => navigate('/employees')}>
-              返回员工列表
-            </Button></div>} />
-        </Card>
+        <SectionCard>
+          <EmptyState
+            description="未找到该员工档案或链接已失效"
+            action={<Button type="primary" onClick={() => navigate('/employees')}>返回员工列表</Button>}
+          />
+        </SectionCard>
       </PageShell>
     );
   }
@@ -327,13 +323,7 @@ export function EmployeeSkillTree() {
       ),
       value: (
         <div style={{ width: '100%' }}>
-          <Progress
-            percent={skillStats.unlockRatio}
-            size="small"
-            color="rgb(var(--primary-6))"
-            trailColor="var(--color-fill-2)"
-            showText={false}
-          />
+          <ProgressBar percent={skillStats.unlockRatio} size="small" showValue={false} />
           <div className="employee-metric-detail-row">
             整体解锁进度达 {skillStats.unlockRatio}% · 覆盖 5 大维度
           </div>
@@ -352,7 +342,7 @@ export function EmployeeSkillTree() {
       value: (
         <div style={{ width: '100%' }}>
           <div className="employee-metric-value-row">
-            <Tag color="purple" size="small">Layer 3 架构与专家级</Tag>
+            <StatusTag tone="purple" size="small">Layer 3 架构与专家级</StatusTag>
           </div>
           <div className="employee-metric-detail-row">
             具备技术攻坚与团队导师赋能实力
@@ -392,9 +382,9 @@ export function EmployeeSkillTree() {
       value: (
         <div style={{ width: '100%' }}>
           <div className="employee-metric-value-row">
-            <Tag color={getLevelColor(employee.level)} size="small" style={{ fontWeight: 600 }}>
+            <StatusTag tone={levelTone(employee.level)}>
               {employee.level} · {employee.position}
-            </Tag>
+            </StatusTag>
           </div>
           <div className="employee-metric-detail-row">
             {cap?.promotionEligible ? '🌟 已达晋升要求，可发起评审' : '按照当前成长路径平稳推进中'}
@@ -421,10 +411,10 @@ export function EmployeeSkillTree() {
         title={`${employee.name} · 领域技能树`}
         tags={
           <>
-            <Tag color="arcoblue">{employee.department} · {employee.position}</Tag>
-            <Tag color={getLevelColor(employee.level)} style={{ fontWeight: 600 }}>{employee.level}</Tag>
+            <StatusTag tone="info">{employee.department} · {employee.position}</StatusTag>
+            <StatusTag tone={levelTone(employee.level)}>{employee.level}</StatusTag>
             <StatusTag meta={EMPLOYMENT_STATUS[employee.employmentStatus]} />
-            <Tag color="purple"><IconExperiment /> 技能图谱</Tag>
+            <StatusTag tone="purple"><IconExperiment /> 技能图谱</StatusTag>
           </>
         }
         actions={
@@ -459,56 +449,50 @@ export function EmployeeSkillTree() {
       <SplitLayout>
         {/* 左侧 Main：技能树图谱主体与筛选器 */}
         <SplitLayoutMain>
-          <Card
-            bordered={false}
+          <SectionCard
             title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                <Space align="center" size={8}>
-                  <IconBranch style={{ color: 'rgb(var(--primary-6))' }} />
-                  <span style={{ fontSize: 15, fontWeight: 600 }}>全域技能解锁矩阵</span>
-                  <Tag size="small">{filteredSkills.length} 个节点</Tag>
-                </Space>
-                <Space size={12}>
-                  {/* 层级筛选 */}
-                  <Radio.Group
-                    type="button"
-                    size="small"
-                    value={selectedLayer}
-                    onChange={setSelectedLayer}
-                  >
-                    <Radio value={0}>全部层级</Radio>
-                    <Radio value={1}>基础节点 (L1)</Radio>
-                    <Radio value={2}>进阶技能 (L2)</Radio>
-                    <Radio value={3}>专家掌握 (L3)</Radio>
-                  </Radio.Group>
-                </Space>
-              </div>
+              <Space align="center" size={8}>
+                <IconBranch style={{ color: 'rgb(var(--primary-6))' }} />
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>全域技能解锁矩阵</span>
+                <StatusTag size="small">{filteredSkills.length} 个节点</StatusTag>
+              </Space>
+            }
+            extra={
+              <Radio.Group
+                type="button"
+                size="small"
+                value={selectedLayer}
+                onChange={setSelectedLayer}
+              >
+                <Radio value={0}>全部层级</Radio>
+                <Radio value={1}>基础节点 (L1)</Radio>
+                <Radio value={2}>进阶技能 (L2)</Radio>
+                <Radio value={3}>专家掌握 (L3)</Radio>
+              </Radio.Group>
             }
           >
             {/* 领域分类 Tab 切换 */}
-            <Tabs
-              type="card-gutter"
-              activeTab={selectedDomain}
+            <SectionTabs
+              variant="card"
+              activeKey={selectedDomain}
               onChange={setSelectedDomain}
-              style={{ marginBottom: 16 }}
-            >
-              <TabPane
-                key="all"
-                title={
-                  <span>
-                    全景透视
-                    <Tag size="small" style={{ marginLeft: 6 }}>
-                      {skillStats.unlockedCount}/{skillStats.totalCount}
-                    </Tag>
-                  </span>
-                }
-              />
-              {(['tech', 'biz', 'mgmt', 'tool', 'domain'] as AbilityDimension[]).map((dim) => {
-                const stat = skillStats.domainStats[dim] || { total: 0, unlocked: 0 };
-                return (
-                  <TabPane
-                    key={dim}
-                    title={
+              items={[
+                {
+                  key: 'all',
+                  label: (
+                    <span>
+                      全景透视
+                      <StatusTag size="small">
+                        {skillStats.unlockedCount}/{skillStats.totalCount}
+                      </StatusTag>
+                    </span>
+                  ),
+                },
+                ...(['tech', 'biz', 'mgmt', 'tool', 'domain'] as AbilityDimension[]).map((dim) => {
+                  const stat = skillStats.domainStats[dim] || { total: 0, unlocked: 0 };
+                  return {
+                    key: dim,
+                    label: (
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span
                           style={{
@@ -516,19 +500,19 @@ export function EmployeeSkillTree() {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            background: ABILITY_DIMENSION_COLORS[dim],
+                            background: STATUS_TONE_VARS[ABILITY_DIMENSION_TONES[dim]].fg,
                           }}
                         />
                         <span>{ABILITY_DIMENSION_LABELS[dim]}</span>
-                        <Tag size="small" color={stat.unlocked === stat.total ? 'green' : 'gray'}>
+                        <StatusTag size="small" tone={stat.unlocked === stat.total ? 'success' : 'neutral'}>
                           {stat.unlocked}/{stat.total}
-                        </Tag>
+                        </StatusTag>
                       </span>
-                    }
-                  />
-                );
-              })}
-            </Tabs>
+                    ),
+                  };
+                }),
+              ]}
+            />
 
             {/* 技能卡片列表呈现 */}
             {filteredSkills.length > 0 ? (
@@ -545,39 +529,38 @@ export function EmployeeSkillTree() {
                 ))}
               </Row>
             ) : (
-              <Empty description="该筛选条件下暂无技能节点" />
+              <EmptyState description="该筛选条件下暂无技能节点" />
             )}
-          </Card>
+          </SectionCard>
         </SplitLayoutMain>
 
         {/* 右侧 Aside：雷达图谱与领域掌控度面板 */}
         <SplitLayoutAside>
-          <Card bordered={false} title="五维能力模型与掌控度">
+          <SectionCard title="五维能力模型与掌控度">
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
               <RadarChart scores={scores} size={230} />
             </div>
 
             <div style={{ borderTop: '1px solid var(--color-border-2)', paddingTop: 16 }}>
-              <Title heading={6} style={{ marginBottom: 12, fontSize: 13 }}>领域得分与解锁进度</Title>
+              <Title heading={6} style={{ marginBottom: 12, fontSize: 'var(--ds-text-dense)' }}>领域得分与解锁进度</Title>
               {(['tech', 'biz', 'mgmt', 'tool', 'domain'] as AbilityDimension[]).map((dim) => {
                 const stat = skillStats.domainStats[dim] || { total: 0, unlocked: 0 };
                 const pct = stat.total > 0 ? Math.round((stat.unlocked / stat.total) * 100) : 0;
                 return (
                   <div key={dim} style={{ marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600, fontSize: 12, color: ABILITY_DIMENSION_COLORS[dim] }}>
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-xs)', color: STATUS_TONE_VARS[ABILITY_DIMENSION_TONES[dim]].fg }}>
                         {ABILITY_DIMENSION_LABELS[dim]}
                       </span>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                         {scores[dim]} 分 · 解锁 {stat.unlocked}/{stat.total}
                       </span>
                     </div>
-                    <Progress
+                    <ProgressBar
                       percent={pct}
                       size="small"
-                      color={ABILITY_DIMENSION_COLORS[dim]}
-                      trailColor="var(--color-fill-2)"
-                      showText={false}
+                      tone={ABILITY_DIMENSION_TONES[dim]}
+                      showValue={false}
                     />
                   </div>
                 );
@@ -588,19 +571,19 @@ export function EmployeeSkillTree() {
               style={{
                 marginTop: 16,
                 padding: '12px 14px',
-                borderRadius: 8,
+                borderRadius: 'var(--radius-md)',
                 background: 'var(--color-fill-1)',
                 border: '1px solid var(--color-border-1)',
               }}
             >
               <Space align="start" size={8}>
                 <IconInfoCircle style={{ color: 'rgb(var(--primary-6))', marginTop: 2 }} />
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', lineHeight: '18px' }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: '18px' }}>
                   技能解锁依据员工日常项目沉淀与能力模型得分综合判定。达到前置技能要求且能力积分达标后，系统将自动点亮对应技能节点。
                 </div>
               </Space>
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutAside>
       </SplitLayout>
     </PageShell>

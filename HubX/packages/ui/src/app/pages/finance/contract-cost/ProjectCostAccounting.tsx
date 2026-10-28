@@ -1,29 +1,36 @@
 import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
-  Card,
   Drawer,
   Grid,
-  Statistic,
   Table,
   Button,
   Space,
-  Tag,
   Select,
-  Progress,
   Typography,
   Tabs,
   Tooltip,
-  Descriptions,
-  Empty,
-} from '@arco-design/web-react';
+} from '@/design-system';
+import {
+  DataTable,
+  DescriptionsCard,
+  EmptyState,
+  MetricCard,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+  ProgressBar,
+  SectionTabs,
+  SectionCard,
+} from '@/design-system';
 import {
   IconFile,
   IconExperiment,
-  IconExclamationCircle,
-  IconTrophy,
   IconCalendar,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import {
   initialProjects,
   initialDailyReports,
@@ -47,7 +54,6 @@ const Row = Grid.Row;
 const Col = Grid.Col;
 const TabPane = Tabs.TabPane;
 const Title = Typography.Title;
-const Text = Typography.Text;
 
 interface ProjectCostRow {
   projectId: string;
@@ -73,6 +79,22 @@ interface ProjectCostRow {
 }
 
 const COST_MONTH = '2026-06';
+
+const PROJECT_STATUS: StatusMap<string> = {
+  进行中: { label: '进行中', tone: 'info' },
+  已完成: { label: '已完成', tone: 'success' },
+  验收中: { label: '验收中', tone: 'purple' },
+  未开始: { label: '未开始', tone: 'neutral' },
+  延迟: { label: '延迟', tone: 'danger' },
+  搁置: { label: '搁置', tone: 'neutral' },
+  催款中: { label: '催款中', tone: 'warning' },
+};
+
+const BUDGET_ALERT: StatusMap<'ok' | 'warning' | 'danger'> = {
+  ok: { label: '健康', tone: 'success' },
+  warning: { label: '利润率偏低', tone: 'warning' },
+  danger: { label: '亏损预警', tone: 'danger' },
+};
 
 export function ProjectCostAccounting() {
   const navigate = useNavigate();
@@ -207,37 +229,26 @@ export function ProjectCostAccounting() {
       title: '状态',
       dataIndex: 'status',
       width: 80,
-      render: (s: string) => {
-        const colors: Record<string, string> = {
-          进行中: 'var(--primary)',
-          已完成: 'var(--success-500)',
-          验收中: '#0fc6c2',
-          未开始: 'var(--grey-400)',
-          延迟: 'var(--destructive-500)',
-          搁置: 'var(--grey-300)',
-          催款中: 'var(--warning-500)',
-        };
-        return <Tag color={colors[s] || 'gray'}>{s}</Tag>;
-      },
+      render: (s: string) => <StatusTag meta={resolveStatus(PROJECT_STATUS, s)} />,
     },
     {
       title: '进度',
       dataIndex: 'progress',
       width: 90,
-      render: (p: number) => <Progress percent={p} size="small" />,
+      render: (p: number) => <ProgressBar percent={p} size="small" />,
     },
     {
       title: '合同额',
       dataIndex: 'contractAmount',
       width: 100,
-      render: (v: number) => <span style={{ fontWeight: 600 }}>{formatCurrency(v)}</span>,
+      render: (v: number) => <MoneyText value={v} />,
       sorter: (a: ProjectCostRow, b: ProjectCostRow) => a.contractAmount - b.contractAmount,
     },
     {
       title: '已回款',
       dataIndex: 'receivedAmount',
       width: 100,
-      render: (v: number) => formatCurrency(v),
+      render: (v: number) => <MoneyText value={v} />,
     },
     {
       title: '总工时',
@@ -249,73 +260,52 @@ export function ProjectCostAccounting() {
       title: '研发成本',
       dataIndex: 'rdCost',
       width: 100,
-      render: (v: number) => formatCurrency(v),
+      render: (v: number) => <MoneyText value={v} />,
     },
     {
       title: '运营分摊',
       dataIndex: 'opCost',
       width: 100,
-      render: (v: number) => formatCurrency(v),
+      render: (v: number) => <MoneyText value={v} />,
     },
     {
       title: '差旅成本',
       dataIndex: 'travelCost',
       width: 100,
-      render: (v: number) => formatCurrency(v),
+      render: (v: number) => <MoneyText value={v} />,
     },
     {
       title: '商务成本',
       dataIndex: 'businessCost',
       width: 100,
-      render: (v: number) => formatCurrency(v),
+      render: (v: number) => <MoneyText value={v} />,
     },
     {
       title: '总成本',
       dataIndex: 'totalCost',
       width: 100,
-      render: (v: number) => (
-        <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>{formatCurrency(v)}</span>
-      ),
+      render: (v: number) => <MoneyText value={v} tone="danger" />,
       sorter: (a: ProjectCostRow, b: ProjectCostRow) => a.totalCost - b.totalCost,
     },
     {
       title: '利润',
       dataIndex: 'profit',
       width: 100,
-      render: (v: number) => (
-        <span style={{ fontWeight: 700, color: v >= 0 ? 'var(--success-500)' : 'var(--destructive-500)' }}>
-          {formatCurrency(v)}
-        </span>
-      ),
+      render: (v: number) => <MoneyText value={v} tone={v >= 0 ? 'success' : 'danger'} />,
       sorter: (a: ProjectCostRow, b: ProjectCostRow) => a.profit - b.profit,
     },
     {
       title: '利润率',
       dataIndex: 'profitMargin',
       width: 90,
-      render: (v: number, row: ProjectCostRow) => (
-        <Tooltip
-          content={
-            row.budgetAlert === 'danger'
-              ? '亏损预警'
-              : row.budgetAlert === 'warning'
-                ? '利润率偏低'
-                : '健康'
-          }
-        >
-          <Tag
-            color={
-              row.budgetAlert === 'danger'
-                ? 'var(--destructive-500)'
-                : row.budgetAlert === 'warning'
-                  ? 'var(--warning-500)'
-                  : 'var(--success-500)'
-            }
-          >
-            {v}%
-          </Tag>
-        </Tooltip>
-      ),
+      render: (v: number, row: ProjectCostRow) => {
+        const meta = BUDGET_ALERT[row.budgetAlert];
+        return (
+          <Tooltip content={meta.label}>
+            <StatusTag meta={{ ...meta, label: `${v}%` }} />
+          </Tooltip>
+        );
+      },
       sorter: (a: ProjectCostRow, b: ProjectCostRow) => a.profitMargin - b.profitMargin,
     },
     {
@@ -331,76 +321,36 @@ export function ProjectCostAccounting() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Title heading={4} style={{ margin: 0 }}>
-        {pageTitle}
-      </Title>
+    <PageShell>
+      <PageHeader
+        title={pageTitle}
+        description="按项目与人员汇总工时成本，核对成本归集口径。"
+      />
 
       <Row gutter={16}>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="项目总数"
-              value={summary.projectCount}
-              suffix="个"
-              prefix={<IconFile style={{ color: 'rgb(var(--primary-6))' }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="合同总额"
-              value={formatCurrency(summary.contractAmount)}
-              prefix={<IconFile style={{ color: 'var(--primary)' }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="已回款"
-              value={formatCurrency(summary.receivedAmount)}
-              prefix={<IconTrophy style={{ color: '#0fc6c2' }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="总成本"
-              value={formatCurrency(summary.totalCost)}
-              prefix={<IconExperiment style={{ color: 'var(--destructive-500)' }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="总利润"
-              value={formatCurrency(summary.profit)}
-              prefix={<IconTrophy style={{ color: 'var(--success-500)' }} />}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card>
-            <Statistic
-              title="预警项目"
-              value={summary.alertCount}
-              suffix="个"
-              prefix={<IconExclamationCircle style={{ color: 'var(--destructive-500)' }} />}
-              styleValue={{ color: summary.alertCount > 0 ? 'var(--destructive-500)' : 'var(--success-500)' }}
-            />
-          </Card>
-        </Col>
+        <Col span={4}><MetricCard label="项目总数" value={summary.projectCount} suffix="个" /></Col>
+        <Col span={4}><MetricCard label="合同总额" value={<MoneyText value={summary.contractAmount} />} /></Col>
+        <Col span={4}><MetricCard label="已回款" value={<MoneyText value={summary.receivedAmount} />} /></Col>
+        <Col span={4}><MetricCard label="总成本" value={<MoneyText value={summary.totalCost} tone="danger" />} /></Col>
+        <Col span={4}><MetricCard label="总利润" value={<MoneyText value={summary.profit} tone="success" />} /></Col>
+        <Col span={4}><MetricCard label="预警项目" value={summary.alertCount} suffix="个" tone={summary.alertCount > 0 ? 'danger' : 'success'} /></Col>
       </Row>
 
-      <Card bordered={false}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="overview" title={<span><IconFile /> 项目成本总览</span>} />
-          <TabPane key="rd" title={<span><IconExperiment /> 研发成本明细</span>} />
-        </Tabs>
+      <SectionCard bordered={false}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'overview',
+              label: <span><IconFile /> 项目成本总览</span>,
+            },
+            {
+              key: 'rd',
+              label: <span><IconExperiment /> 研发成本明细</span>,
+            },
+          ]}
+        />
 
         {activeTab === 'overview' && (
           <div>
@@ -419,7 +369,7 @@ export function ProjectCostAccounting() {
                 ))}
               </Select>
             </div>
-            <Table
+            <DataTable
               columns={columns as any}
               data={filteredData}
               rowKey="projectId"
@@ -430,7 +380,7 @@ export function ProjectCostAccounting() {
         )}
 
         {activeTab === 'rd' && <RDCostDetailTable projectCostData={projectCostData} />}
-      </Card>
+      </SectionCard>
 
       <Drawer
         width={720}
@@ -443,7 +393,7 @@ export function ProjectCostAccounting() {
           <ProjectIncomeExpenseDetail row={detailRow} contract={detailContract} />
         )}
       </Drawer>
-    </Space>
+    </PageShell>
   );
 }
 
@@ -512,31 +462,26 @@ function ProjectIncomeExpenseDetail({
 
   return (
     <Space direction="vertical" size={20} style={{ width: '100%' }}>
-      <Descriptions
-        column={2}
-        size="small"
-        data={[
-          { label: '项目编号', value: row.projectNo },
-          { label: '关联合同', value: row.contractName },
-          { label: '合同额', value: formatCurrency(row.contractAmount) },
-          { label: '已回款', value: formatCurrency(row.receivedAmount) },
-          {
-            label: '总成本',
-            value: (
-              <Text style={{ color: 'var(--destructive-500)', fontWeight: 600 }}>
-                {formatCurrency(row.totalCost)}
-              </Text>
-            ),
-          },
-          {
-            label: '利润 / 利润率',
-            value: (
-              <Text style={{ color: row.profit >= 0 ? 'var(--success-500)' : 'var(--destructive-500)', fontWeight: 600 }}>
-                {formatCurrency(row.profit)}（{row.profitMargin}%）
-              </Text>
-            ),
-          },
-        ]}
+      <DescriptionsCard
+        columns={2}
+        items={[
+        { key: '项目编号', label: '项目编号', value: row.projectNo },
+        { key: '关联合同', label: '关联合同', value: row.contractName },
+        { key: '合同额', label: '合同额', value: <MoneyText value={row.contractAmount} /> },
+        { key: '已回款', label: '已回款', value: <MoneyText value={row.receivedAmount} /> },
+        { key: '总成本',
+                  label: '总成本',
+                  value: <MoneyText value={row.totalCost} tone="danger" />,
+                },
+        { key: '利润 / 利润率',
+                  label: '利润 / 利润率',
+                  value: (
+                    <>
+                      <MoneyText value={row.profit} tone={row.profit >= 0 ? 'success' : 'danger'} />（{row.profitMargin}%）
+                    </>
+                  ),
+                },
+      ]}
       />
 
       <div>
@@ -545,9 +490,9 @@ function ProjectIncomeExpenseDetail({
           收入明细
         </Title>
         {incomeLines.length === 0 ? (
-          <Empty description="暂无收入/回款记录" />
+          <EmptyState description="暂无收入/回款记录" />
         ) : (
-          <Table
+          <DataTable
             size="small"
             pagination={false}
             rowKey={(record) => `in-${record.type}-${record.name}`}
@@ -559,23 +504,21 @@ function ProjectIncomeExpenseDetail({
                 title: '金额',
                 dataIndex: 'amount',
                 width: 120,
-                render: (v: number) => (
-                  <span style={{ color: 'var(--success-500)', fontWeight: 600 }}>{formatCurrency(v)}</span>
-                ),
+                render: (v: number) => <MoneyText value={v} tone="success" />,
               },
               { title: '说明', dataIndex: 'remark' },
             ]}
+
             summary={() => (
               <Table.Summary.Row>
                 <Table.Summary.Cell colSpan={2}>
                   <span style={{ fontWeight: 600 }}>合计</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell>
-                  <span style={{ fontWeight: 700, color: 'var(--success-500)' }}>
-                    {formatCurrency(
-                      incomeLines.reduce((s, r) => s + r.amount, 0) || row.receivedAmount,
-                    )}
-                  </span>
+                  <MoneyText
+                    value={incomeLines.reduce((s, r) => s + r.amount, 0) || row.receivedAmount}
+                    tone="success"
+                  />
                 </Table.Summary.Cell>
                 <Table.Summary.Cell />
               </Table.Summary.Row>
@@ -590,9 +533,9 @@ function ProjectIncomeExpenseDetail({
           支出明细
         </Title>
         {expenseLines.length === 0 ? (
-          <Empty description="暂无支出明细" />
+          <EmptyState description="暂无支出明细" />
         ) : (
-          <Table
+          <DataTable
             size="small"
             pagination={false}
             rowKey={(record) => `ex-${record.type}-${record.name}`}
@@ -604,21 +547,18 @@ function ProjectIncomeExpenseDetail({
                 title: '金额',
                 dataIndex: 'amount',
                 width: 120,
-                render: (v: number) => (
-                  <span style={{ color: 'var(--destructive-500)', fontWeight: 600 }}>{formatCurrency(v)}</span>
-                ),
+                render: (v: number) => <MoneyText value={v} tone="danger" />,
               },
               { title: '说明', dataIndex: 'remark' },
             ]}
+
             summary={() => (
               <Table.Summary.Row>
                 <Table.Summary.Cell colSpan={2}>
                   <span style={{ fontWeight: 600 }}>合计</span>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell>
-                  <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>
-                    {formatCurrency(row.totalCost)}
-                  </span>
+                  <MoneyText value={row.totalCost} tone="danger" />
                 </Table.Summary.Cell>
                 <Table.Summary.Cell />
               </Table.Summary.Row>
@@ -644,58 +584,51 @@ function RDCostDetailTable({ projectCostData }: { projectCostData: ProjectCostRo
   }, [projectCostData]);
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <Table
-        columns={
-          [
-            { title: '项目', dataIndex: 'projectName', width: 140 },
-            { title: '姓名', dataIndex: 'employeeName', width: 80 },
-            {
-              title: '角色',
-              dataIndex: 'position',
-              width: 80,
-              render: (v: string) => <Tag>{v}</Tag>,
-            },
-            { title: '工时', dataIndex: 'hours', width: 70, render: (v: number) => `${v}h` },
-            {
-              title: '时薪',
-              dataIndex: 'hourlyRate',
-              width: 80,
-              render: (v: number) => formatCurrency(v),
-            },
-            {
-              title: '成本',
-              dataIndex: 'cost',
-              width: 100,
-              render: (v: number) => (
-                <span style={{ fontWeight: 600, color: 'var(--destructive-500)' }}>{formatCurrency(v)}</span>
-              ),
-              sorter: (a: any, b: any) => a.cost - b.cost,
-            },
-          ] as any
-        }
-        data={rows}
-        rowKey={(r) => `${r.projectName}-${r.employeeName}`}
-        pagination={{ pageSize: 15, showTotal: true }}
-        summary={() => {
-          const totalHours = rows.reduce((s: number, r: any) => s + (r.hours || 0), 0);
-          const totalCost = rows.reduce((s: number, r: any) => s + (r.cost || 0), 0);
-          return (
-            <Table.Summary.Row>
-              <Table.Summary.Cell colSpan={3}>
-                <span style={{ fontWeight: 600 }}>合计</span>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell>
-                <span style={{ fontWeight: 600 }}>{totalHours}h</span>
-              </Table.Summary.Cell>
-              <Table.Summary.Cell>—</Table.Summary.Cell>
-              <Table.Summary.Cell>
-                <span style={{ fontWeight: 700, color: 'var(--destructive-500)' }}>{formatCurrency(totalCost)}</span>
-              </Table.Summary.Cell>
-            </Table.Summary.Row>
-          );
-        }}
-      />
-    </div>
+    <DataTable
+      columns={
+        [
+          { title: '项目', dataIndex: 'projectName', width: 140 },
+          { title: '姓名', dataIndex: 'employeeName', width: 80 },
+          {
+            title: '角色',
+            dataIndex: 'position',
+            width: 80,
+            render: (v: string) => <StatusTag>{v}</StatusTag>,
+          },
+          { title: '工时', dataIndex: 'hours', width: 70, render: (v: number) => `${v}h` },
+          {
+            title: '时薪',
+            dataIndex: 'hourlyRate',
+            width: 80,
+            render: (v: number) => <MoneyText value={v} />,
+          },
+          {
+            title: '成本',
+            dataIndex: 'cost',
+            width: 100,
+            render: (v: number) => <MoneyText value={v} tone="danger" />,
+            sorter: (a: any, b: any) => a.cost - b.cost,
+          },
+        ] as any
+      }
+      data={rows}
+      rowKey={(r) => `${r.projectName}-${r.employeeName}`}
+      pagination={{ pageSize: 15, showTotal: true }}
+
+      summary={() => (
+        <Table.Summary.Row>
+          <Table.Summary.Cell colSpan={3}>
+            <span style={{ fontWeight: 600 }}>合计</span>
+          </Table.Summary.Cell>
+          <Table.Summary.Cell>
+            <span style={{ fontWeight: 600 }}>{rows.reduce((s: number, r: any) => s + (r.hours || 0), 0)}h</span>
+          </Table.Summary.Cell>
+          <Table.Summary.Cell>—</Table.Summary.Cell>
+          <Table.Summary.Cell>
+            <MoneyText value={rows.reduce((s: number, r: any) => s + (r.cost || 0), 0)} tone="danger" />
+          </Table.Summary.Cell>
+        </Table.Summary.Row>
+      )}
+    />
   );
 }

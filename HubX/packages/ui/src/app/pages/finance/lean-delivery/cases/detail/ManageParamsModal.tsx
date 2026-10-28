@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Modal, InputNumber, Space, Typography } from '@arco-design/web-react';
+import { Modal, InputNumber, Space, Typography } from '@/design-system';
 
 const { Text } = Typography;
 

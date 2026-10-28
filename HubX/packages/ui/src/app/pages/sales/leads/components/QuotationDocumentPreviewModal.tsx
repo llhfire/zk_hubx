@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Modal, Space } from '@arco-design/web-react';
+import { Button, Modal, Space } from '@/design-system';
 import {
   IconBold,
   IconItalic,
@@ -7,7 +7,7 @@ import {
   IconRedo,
   IconUndo,
   IconUnorderedList,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { ProjectQuotationConfig, ProjectQuotationSummary } from '../../../delivery/project/projectQuotationConfigModel';
 import type { LeadBusinessEnd } from './LeadFeatureListPanel';
 import './QuotationDocumentPreviewModal.css';
@@ -155,7 +155,7 @@ export function QuotationDocumentPreviewModal({ visible, data, onCancel, onSubmi
       maskClosable={false}
       style={{ width: 1120, maxWidth: 'calc(100vw - 32px)' }}
     >
-      <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 4, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-xs)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', gap: 4, padding: '6px 12px', borderBottom: '1px solid var(--color-border-2)' }}>
           {[
             ['undo', <IconUndo />, '撤销'], ['redo', <IconRedo />, '重做'], ['bold', <IconBold />, '加粗'],

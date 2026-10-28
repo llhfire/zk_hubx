@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
   Button,
   Input,
-  Tag,
   Modal,
   Select,
-  Table,
   Space,
   Typography,
   Message,
@@ -19,11 +16,17 @@ import {
   Radio,
   Checkbox,
   Badge,
-  Progress,
   Form,
   InputNumber,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
+  ArrowsLeftRight,
+  Bank,
+  CheckCircle,
+  Clock,
+  Coins,
+  FileText,
+  HandCoins,
   IconSearch,
   IconPlus,
   IconCheck,
@@ -32,37 +35,40 @@ import {
   IconRefresh,
   IconFile,
   IconPrinter,
-} from '@arco-design/web-react/icon';
-import {
   Wallet,
-  Bank,
-  CheckCircle,
-  FileText,
-  Clock,
-  Coins,
-  ArrowsLeftRight,
-  HandCoins,
-} from '@phosphor-icons/react';
+} from '@/design-system';
 import type { Loan, LoanStatus } from '../types';
 import { getLoanList, approveLoan, payLoan } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  FormGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+  ProgressBar,
+} from '@/design-system';
 import './loanList.css';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
-const { Row, Col } = Grid;
 
-const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
-  draft: { color: 'gray', text: '草稿' },
-  pending: { color: 'orange', text: '待审批' },
-  approved: { color: 'arcoblue', text: '待打款' },
-  paid: { color: 'blue', text: '已打款' },
-  offset: { color: 'cyan', text: '冲抵中' },
-  settled: { color: 'green', text: '已结清' },
-  rejected: { color: 'red', text: '已拒绝' },
-  cancelled: { color: 'gray', text: '已取消' },
+const LOAN_STATUS: StatusMap<LoanStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending: { label: '待审批', tone: 'warning' },
+  approved: { label: '待打款', tone: 'info' },
+  paid: { label: '已打款', tone: 'info' },
+  offset: { label: '冲抵中', tone: 'purple' },
+  settled: { label: '已结清', tone: 'success' },
+  rejected: { label: '已拒绝', tone: 'danger' },
+  cancelled: { label: '已取消', tone: 'neutral' },
 };
 
 export function LoanList() {
@@ -350,12 +356,12 @@ export function LoanList() {
       width: 130,
       render: (name: string, record: Loan) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--color-text-1)' }}>
+          <div style={{ fontWeight: 500, fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)' }}>
             {name}
           </div>
-          <Tag size="small" color="arcoblue" style={{ padding: '0 6px', fontSize: 11, width: 'fit-content' }}>
+          <StatusTag size="small" tone="info" style={{ padding: '0 6px', fontSize: 'var(--ds-text-caption)', width: 'fit-content' }}>
             {record.department || '未分配'}
-          </Tag>
+          </StatusTag>
         </div>
       ),
     },
@@ -365,19 +371,19 @@ export function LoanList() {
       width: 190,
       render: (type: string, record: Loan) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Tag color="cyan" size="small" style={{ width: 'fit-content' }}>
+          <StatusTag tone="cyan" size="small" style={{ width: 'fit-content' }}>
             {type === 'travel' ? '差旅借款' : type === 'petty_cash' ? '备用金' : '其他借款'}
-          </Tag>
+          </StatusTag>
           {record.tripNo ? (
             <span
-              style={{ fontSize: 12, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
+              style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
               onClick={() => navigate(`/travel/trips/${record.tripId}`)}
               title="点击查看关联出差单"
             >
               📍 {record.tripNo} ↗
             </span>
           ) : (
-            <span style={{ fontSize: 11, color: 'var(--color-text-4)' }}>无出差单关联</span>
+            <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-4)' }}>无出差单关联</span>
           )}
         </div>
       ),
@@ -392,8 +398,8 @@ export function LoanList() {
         return (
           <div className="loan-cell-progress">
             <div className="loan-cell-progress__header">
-              <span>¥{amount.toLocaleString()}</span>
-              <span style={{ fontSize: 11, color: percent === 100 ? '#00b42a' : '#ff7d00' }}>
+              <MoneyText value={amount} />
+              <span style={{ color: percent === 100 ? 'rgb(var(--success-6))' : 'rgb(var(--warning-6))' }}>
                 已冲抵 {percent}%
               </span>
             </div>
@@ -402,14 +408,14 @@ export function LoanList() {
                 className="loan-cell-progress__bar"
                 style={{
                   width: `${percent}%`,
-                  background: percent === 100 ? '#00b42a' : 'rgb(var(--primary-6))',
+                  background: percent === 100 ? 'rgb(var(--success-6))' : 'rgb(var(--primary-6))',
                 }}
               />
             </div>
             <div className="loan-cell-progress__footer">
-              <span>已冲抵 ¥{offset.toLocaleString()}</span>
-              <span style={{ color: record.remainingAmount > 0 ? '#ff7d00' : 'var(--color-text-4)' }}>
-                待还余额 ¥{record.remainingAmount.toLocaleString()}
+              <span>已冲抵 <MoneyText value={offset} /></span>
+              <span>
+                待还余额 <MoneyText value={record.remainingAmount} tone={record.remainingAmount > 0 ? 'danger' : 'muted'} />
               </span>
             </div>
           </div>
@@ -422,11 +428,11 @@ export function LoanList() {
       width: 150,
       render: (payMethod: string, record: Loan) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 12, color: 'var(--color-text-1)' }}>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-1)' }}>
             {payMethod === 'bank' ? '🏦 银行转账' : payMethod === 'cash' ? '💵 现金支取' : '其他方式'}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>
-            期望：{record.expectedPayDate || record.createDate}
+          <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>
+            期望：<DateText value={record.expectedPayDate || record.createDate} />
           </span>
         </div>
       ),
@@ -435,11 +441,7 @@ export function LoanList() {
       title: '状态',
       dataIndex: 'status',
       width: 110,
-      render: (value: LoanStatus) => (
-        <Tag color={statusConfig[value].color}>
-          {statusConfig[value].text}
-        </Tag>
-      ),
+      render: (value: LoanStatus) => <StatusTag meta={LOAN_STATUS[value]} />,
     },
     {
       title: '操作',
@@ -511,14 +513,14 @@ export function LoanList() {
           {
             key: 'remaining',
             label: '在途待还余额',
-            value: `¥${remainingAmount.toLocaleString()}`,
-            detail: `累计借出 ¥${totalLoanAmount.toLocaleString()}`,
+            value: <MoneyText value={remainingAmount} tone={remainingAmount > 0 ? 'danger' : 'default'} />,
+            detail: <>累计借出 <MoneyText value={totalLoanAmount} /></>,
           },
         ]}
       />
 
       {/* 搜索与快捷状态条卡片 */}
-      <Card className="loan-list-filter-card">
+      <SectionCard className="loan-list-filter-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* 状态快捷分段胶囊 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -545,7 +547,7 @@ export function LoanList() {
                   重置筛选条件
                 </Button>
               )}
-              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                 找到 <strong>{filteredLoans.length}</strong> 条借款单据
               </span>
             </div>
@@ -608,11 +610,11 @@ export function LoanList() {
             </Checkbox>
           </FilterBar>
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 列表主体卡片 */}
-      <Card className="loan-list-table-card" title="员工借款与备用金台账">
-        <Table
+      <SectionCard className="loan-list-table-card" title="员工借款与备用金台账">
+        <DataTable
           columns={columns}
           data={filteredLoans}
           loading={loading}
@@ -625,7 +627,7 @@ export function LoanList() {
             sizeCanChange: true,
           }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 借款详情与对冲台账抽屉 */}
       <Drawer
@@ -633,11 +635,7 @@ export function LoanList() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <HandCoins size={20} weight="duotone" style={{ color: 'rgb(var(--primary-6))' }} />
             <span style={{ fontWeight: 600 }}>借款申请与冲抵详情</span>
-            {selectedLoan && (
-              <Tag size="small" color={statusConfig[selectedLoan.status].color}>
-                {statusConfig[selectedLoan.status].text}
-              </Tag>
-            )}
+            {selectedLoan && <StatusTag meta={LOAN_STATUS[selectedLoan.status]} />}
           </div>
         }
         visible={detailVisible}
@@ -653,37 +651,30 @@ export function LoanList() {
                 <div className="loan-drawer-progress-metric">
                   <span className="loan-drawer-progress-metric__label">借款总金额</span>
                   <span className="loan-drawer-progress-metric__val">
-                    ¥{selectedLoan.amount.toLocaleString()}
+                    <MoneyText value={selectedLoan.amount} />
                   </span>
                 </div>
 
                 <div className="loan-drawer-progress-metric">
                   <span className="loan-drawer-progress-metric__label">已报销冲抵</span>
-                  <span className="loan-drawer-progress-metric__val" style={{ color: '#00b42a' }}>
-                    ¥{selectedLoan.offsetAmount.toLocaleString()}
+                  <span className="loan-drawer-progress-metric__val">
+                    <MoneyText value={selectedLoan.offsetAmount} tone="success" />
                   </span>
                 </div>
 
                 <div className="loan-drawer-progress-metric">
                   <span className="loan-drawer-progress-metric__label">待还 / 未冲抵余额</span>
-                  <span
-                    className="loan-drawer-progress-metric__val"
-                    style={{ color: selectedLoan.remainingAmount > 0 ? '#ff7d00' : 'var(--color-text-3)' }}
-                  >
-                    ¥{selectedLoan.remainingAmount.toLocaleString()}
+                  <span className="loan-drawer-progress-metric__val">
+                    <MoneyText value={selectedLoan.remainingAmount} tone={selectedLoan.remainingAmount > 0 ? 'danger' : 'muted'} />
                   </span>
                 </div>
               </div>
 
               {/* 进度条 */}
               <div>
-                <Progress
-                  percent={Math.min(100, Math.round((selectedLoan.offsetAmount / selectedLoan.amount) * 100))}
-                  status={selectedLoan.status === 'settled' ? 'success' : 'normal'}
-                  color="rgb(var(--primary-6))"
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-3)', marginTop: 4 }}>
-                  <span>借款生成日：{selectedLoan.createDate}</span>
+                <ProgressBar percent={Math.min(100, Math.round((selectedLoan.offsetAmount / selectedLoan.amount) * 100))} tone={selectedLoan.status === 'settled' ? 'success' : 'info'} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)', marginTop: 4 }}>
+                  <span>借款生成日：<DateText value={selectedLoan.createDate} /></span>
                   <span>
                     冲抵进度：{Math.min(100, Math.round((selectedLoan.offsetAmount / selectedLoan.amount) * 100))}%
                   </span>
@@ -698,27 +689,27 @@ export function LoanList() {
               </div>
               <Grid.Row gutter={[16, 16]}>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>借款单号</Text>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>{selectedLoan.loanNo}</div>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>借款单号</Text>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>{selectedLoan.loanNo}</div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>申请人 / 部门</Text>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 2 }}>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>申请人 / 部门</Text>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>
                     {selectedLoan.applicantName} ({selectedLoan.department})
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>借款类型</Text>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>
-                    <Tag size="small" color="arcoblue">
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>借款类型</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>
+                    <StatusTag size="small" tone="info">
                       {selectedLoan.type === 'travel' ? '差旅借款' : selectedLoan.type === 'petty_cash' ? '备用金' : '其他'}
-                    </Tag>
+                    </StatusTag>
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>关联出差单</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>关联出差单</Text>
                   <div
-                    style={{ fontWeight: 600, fontSize: 13, marginTop: 2, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
+                    style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)', marginTop: 2, color: 'rgb(var(--primary-6))', cursor: 'pointer' }}
                     onClick={() => {
                       if (selectedLoan.tripId) navigate(`/travel/trips/${selectedLoan.tripId}`);
                     }}
@@ -727,12 +718,12 @@ export function LoanList() {
                   </div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>期望到款日</Text>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>{selectedLoan.expectedPayDate}</div>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>期望到款日</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2 }}><DateText value={selectedLoan.expectedPayDate} /></div>
                 </Grid.Col>
                 <Grid.Col span={8}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>打款方式</Text>
-                  <div style={{ fontSize: 13, marginTop: 2 }}>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>打款方式</Text>
+                  <div style={{ fontSize: 'var(--ds-text-dense)', marginTop: 2 }}>
                     {selectedLoan.payMethod === 'bank' ? '对私银行转账' : '现金支取'}
                   </div>
                 </Grid.Col>
@@ -744,7 +735,7 @@ export function LoanList() {
               <div className="loan-drawer-section__title">
                 <Wallet size={16} /> 借款事由与用途说明
               </div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-1)', lineHeight: '22px' }}>
+              <div style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)', lineHeight: '22px' }}>
                 {selectedLoan.reason || '无借款事由说明'}
               </div>
             </div>
@@ -759,7 +750,7 @@ export function LoanList() {
                   style={{
                     background: 'var(--color-fill-1)',
                     border: '1px solid var(--color-border-2)',
-                    borderRadius: 6,
+                    borderRadius: 'var(--radius-sm)',
                     padding: '12px 16px',
                     display: 'flex',
                     alignItems: 'center',
@@ -767,17 +758,17 @@ export function LoanList() {
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>出差报销单冲抵核销</div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginTop: 2 }}>
+                    <div style={{ fontWeight: 600, fontSize: 'var(--ds-text-dense)' }}>出差报销单冲抵核销</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginTop: 2 }}>
                       已在出差报销结算流程中自动完成轧差对冲
                     </div>
                   </div>
-                  <Tag color="green" size="medium">
-                    已冲抵 ¥{selectedLoan.offsetAmount.toLocaleString()}
-                  </Tag>
+                  <StatusTag tone="success" size="default">
+                    已冲抵 <MoneyText value={selectedLoan.offsetAmount} />
+                  </StatusTag>
                 </div>
               ) : (
-                <div style={{ color: 'var(--color-text-3)', fontSize: 12, padding: '8px 0' }}>
+                <div style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)', padding: '8px 0' }}>
                   暂无报销单冲抵记录。后续员工在提交出差报销单时，系统将自动优先冲抵该笔借款。
                 </div>
               )}
@@ -851,7 +842,7 @@ export function LoanList() {
                     icon={<Bank size={16} />}
                     onClick={() => handlePay(selectedLoan)}
                   >
-                    确认网银打款 (¥{selectedLoan.amount.toLocaleString()})
+                    确认网银打款 (<MoneyText value={selectedLoan.amount} />)
                   </Button>
                 )}
 
@@ -901,83 +892,65 @@ export function LoanList() {
         style={{ width: 520 }}
       >
         <Form form={createForm} layout="vertical">
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item
-                label="申请人姓名"
-                field="applicantName"
-                rules={[{ required: true, message: '请输入申请人' }]}
-                initialValue="张三"
-              >
-                <Input placeholder="如：张三" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="所属部门"
-                field="department"
-                rules={[{ required: true, message: '请输入部门' }]}
-                initialValue="技术部"
-              >
-                <Select placeholder="选择部门">
-                  <Option value="技术部">技术部</Option>
-                  <Option value="市场部">市场部</Option>
-                  <Option value="销售部">销售部</Option>
-                  <Option value="交付中心">交付中心</Option>
-                  <Option value="综合管理部">综合管理部</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item
-                label="借款类型"
-                field="type"
-                initialValue="travel"
-                rules={[{ required: true }]}
-              >
-                <Select>
-                  <Option value="travel">差旅备用金</Option>
-                  <Option value="petty_cash">日常备用金</Option>
-                  <Option value="other">专项周转金</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="借款金额 (元)"
-                field="amount"
-                rules={[{ required: true, message: '请输入借款金额' }]}
-              >
-                <InputNumber
-                  min={100}
-                  step={500}
-                  placeholder="如：3000"
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="关联出差申请单号" field="tripNo" initialValue="BT20260428001">
-                <Input placeholder="如：BT20260428001" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="预计还款/冲抵日期"
-                field="expectedRepayDate"
-                rules={[{ required: true, message: '请选择预计还款日' }]}
-                initialValue="2026-09-30"
-              >
-                <Input type="date" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <FormGrid columns={2}>
+            <Form.Item
+              label="申请人姓名"
+              field="applicantName"
+              rules={[{ required: true, message: '请输入申请人' }]}
+              initialValue="张三"
+            >
+              <Input placeholder="如：张三" />
+            </Form.Item>
+            <Form.Item
+              label="所属部门"
+              field="department"
+              rules={[{ required: true, message: '请输入部门' }]}
+              initialValue="技术部"
+            >
+              <Select placeholder="选择部门">
+                <Option value="技术部">技术部</Option>
+                <Option value="市场部">市场部</Option>
+                <Option value="销售部">销售部</Option>
+                <Option value="交付中心">交付中心</Option>
+                <Option value="综合管理部">综合管理部</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="借款类型"
+              field="type"
+              initialValue="travel"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="travel">差旅备用金</Option>
+                <Option value="petty_cash">日常备用金</Option>
+                <Option value="other">专项周转金</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item
+              label="借款金额 (元)"
+              field="amount"
+              rules={[{ required: true, message: '请输入借款金额' }]}
+            >
+              <InputNumber
+                min={100}
+                step={500}
+                placeholder="如：3000"
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+            <Form.Item label="关联出差申请单号" field="tripNo" initialValue="BT20260428001">
+              <Input placeholder="如：BT20260428001" />
+            </Form.Item>
+            <Form.Item
+              label="预计还款/冲抵日期"
+              field="expectedRepayDate"
+              rules={[{ required: true, message: '请选择预计还款日' }]}
+              initialValue="2026-09-30"
+            >
+              <Input type="date" />
+            </Form.Item>
+          </FormGrid>
 
           {/* payMethod 是 Loan 的必填字段且列表会展示，此前表单没采集，新建单一律只能靠代码写死。 */}
           <Form.Item label="打款方式" field="payMethod" initialValue="bank" rules={[{ required: true }]}>

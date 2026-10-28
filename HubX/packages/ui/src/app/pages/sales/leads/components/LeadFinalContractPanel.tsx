@@ -2,20 +2,18 @@ import { useMemo, useState } from 'react';
 import {
   Button,
   Message,
-  Space,
   Tag,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconDown,
   IconDownload,
   IconEye,
-  IconFile,
   IconUp,
-} from '@arco-design/web-react/icon';
-import type { Contract, ContractVersion } from '../../contracts/types';
-import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../../contracts/utils';
+} from '@/design-system';
+import type { Contract, ContractVersion, ExecutionStatus } from '../../contracts/types';
+import { CONTRACT_STATUS } from '../../contracts/utils';
 import { renderContractDocument } from '../../contracts/templates';
-import { DocumentViewerModal } from '@/design-system';
+import { DocumentActionRow, DocumentViewerModal, StatusTag, type StatusMap, type StatusMeta, MoneyText } from '@/design-system';
 import './LeadFinalContractPanel.css';
 import { formatMoney as formatCurrency } from '../../../../utils/money';
 
@@ -43,15 +41,16 @@ function getFinalVersion(contract: Contract): ContractVersion {
   };
 }
 
-function getExecutionStatusColor(contract: Contract) {
-  if (contract.executionStatus === '履行中') return 'green';
-  if (contract.executionStatus === '已完成') return 'arcoblue';
-  if (contract.executionStatus === '已终止') return 'red';
-  return CONTRACT_STATUS_COLOR[contract.status];
-}
+const EXECUTION_STATUS: StatusMap<ExecutionStatus> = {
+  履行中: { label: '履行中', tone: 'success' },
+  已完成: { label: '已完成', tone: 'info' },
+  已终止: { label: '已终止', tone: 'danger' },
+};
 
-function getExecutionStatusLabel(contract: Contract) {
-  return contract.executionStatus ?? CONTRACT_STATUS_LABEL[contract.status];
+/** 履约状态优先；未填履约状态时退回合同自身状态。 */
+function getExecutionStatusMeta(contract: Contract): StatusMeta {
+  if (contract.executionStatus) return EXECUTION_STATUS[contract.executionStatus];
+  return CONTRACT_STATUS[contract.status];
 }
 
 function buildWordDocument(version: ContractVersion) {
@@ -106,7 +105,7 @@ export function LeadFinalContractPanel({
   };
   const infoItems = [
     { label: '合同编号', value: contract.contractNo },
-    { label: '合同金额', value: formatCurrency(data.totalAmount) },
+    { label: '合同金额', value: <MoneyText value={data.totalAmount} /> },
     { label: '合同主体', value: data.customerName || '-' },
     { label: '签约主体', value: data.signingEntity || '-' },
     { label: '签约日期', value: data.signDate || '-' },
@@ -180,9 +179,7 @@ export function LeadFinalContractPanel({
           <div className="lead-final-contract-heading-content">
             <div className="lead-final-contract-title-row">
               <h3>{data.contractName || '未命名合同'}</h3>
-              <Tag color={getExecutionStatusColor(contract)}>
-                {getExecutionStatusLabel(contract)}
-              </Tag>
+              <StatusTag meta={getExecutionStatusMeta(contract)} />
             </div>
             <div className="lead-final-contract-version">
               {projectLayout ? (
@@ -205,7 +202,7 @@ export function LeadFinalContractPanel({
         </div>
         {projectLayout ? (
           <div className="lead-final-contract-header-actions">
-            <strong className="lead-final-contract-project-amount">{formatCurrency(data.totalAmount)}</strong>
+            <strong className="lead-final-contract-project-amount"><MoneyText value={data.totalAmount} /></strong>
             {defaultCollapsed && (
               <>
                 <Button size="small" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>查看合同</Button>
@@ -259,30 +256,18 @@ export function LeadFinalContractPanel({
               ))}
             </div>
           ) : null}
-          <div className="lead-final-contract-file">
-            <div className="lead-final-contract-file-main">
-              <span className="lead-final-contract-file-icon"><IconFile /></span>
-              <div className="lead-final-contract-file-content">
-                <div className="lead-final-contract-file-name">{fileName}</div>
-                <div className="lead-final-contract-file-meta">
-                  {uploadedWord
-                    ? `Word 上传版·${uploadedWord.uploadedAt}·${uploadedWord.uploadedBy}`
-                    : `在线编辑版·${finalVersion.versionNo}·${versionLabel}`}
-                </div>
-              </div>
-            </div>
-            {!defaultCollapsed && (
-              <Space size="small" className="lead-final-contract-file-actions">
+          <DocumentActionRow
+            name={fileName}
+            meta={uploadedWord
+              ? `Word 上传版·${uploadedWord.uploadedAt}·${uploadedWord.uploadedBy}`
+              : `在线编辑版·${finalVersion.versionNo}·${versionLabel}`}
+            actions={!defaultCollapsed ? (
+              <>
                 <Button type="primary" icon={<IconEye />} onClick={() => setPreviewVisible(true)}>在线查看合同</Button>
-                <Button
-                  icon={<IconDownload />}
-                  onClick={handleDownload}
-                >
-                  下载合同
-                </Button>
-              </Space>
-            )}
-          </div>
+                <Button icon={<IconDownload />} onClick={handleDownload}>下载合同</Button>
+              </>
+            ) : undefined}
+          />
         </div>
       )}
 

@@ -1,4 +1,5 @@
-import { Empty, Timeline, Typography } from '@arco-design/web-react';
+import { Timeline, Typography } from '@/design-system';
+import { EmptyState } from '@/design-system';
 import { QUOTE_ACTION_LABELS } from '../types';
 import type { Quote, QuoteTimelineEvent } from '../types';
 
@@ -19,7 +20,7 @@ const DOT_COLOR: Partial<Record<QuoteTimelineEvent['action'], string>> = {
 export function QuoteTimeline({ quote }: { quote: Quote }) {
   const events = [...quote.timeline].reverse();
   if (events.length === 0) {
-    return <Empty description="暂无流转记录" />;
+    return <EmptyState description="暂无流转记录" />;
   }
   return (
     <Timeline>
@@ -27,11 +28,11 @@ export function QuoteTimeline({ quote }: { quote: Quote }) {
         <Timeline.Item key={e.id} dotColor={DOT_COLOR[e.action]}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Text bold>{QUOTE_ACTION_LABELS[e.action]}</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>{e.actorName}（{e.actorRole}）</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>{e.time}</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{e.actorName}（{e.actorRole}）</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{e.time}</Text>
           </div>
           {e.note && (
-            <div style={{ marginTop: 4, color: 'var(--color-text-2)', fontSize: 13, lineHeight: 1.5 }}>{e.note}</div>
+            <div style={{ marginTop: 4, color: 'var(--color-text-2)', fontSize: 'var(--ds-text-dense)', lineHeight: 1.5 }}>{e.note}</div>
           )}
         </Timeline.Item>
       ))}

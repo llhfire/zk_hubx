@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import type { Contract, PaymentStatus } from '../types';
 import { computePaymentStatus } from '../paymentUtils';
 import { PaymentKanbanCard } from './PaymentKanbanCard';
+import { EmptyState } from '@/design-system';
 
 const COLUMNS: { status: PaymentStatus; label: string; color: string; bg: string }[] = [
   { status: 'normal', label: '正常回款', color: 'var(--brand-500)', bg: 'var(--brand-50)' },
@@ -43,9 +44,7 @@ function KanbanColumn({
           <PaymentKanbanCard key={c.id} contract={c} onClick={onCardClick} />
         ))}
         {contracts.length === 0 && (
-          <div className="payment-lane-column__empty">
-            暂无合同
-          </div>
+          <EmptyState description="暂无合同" className="payment-lane-column__empty" />
         )}
       </div>
     </div>

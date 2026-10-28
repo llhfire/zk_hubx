@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Gantt, ViewMode } from 'gantt-task-react';
 import 'gantt-task-react/dist/index.css';
-import { Card, Select, Space, Typography, Tag, Button, Modal, Input, Message } from '@arco-design/web-react';
+import { Select, Space, Typography, Button, Modal, Input, Message } from '@/design-system';
 import { buildGanttNodes, getOverdueWarningLevel } from './paymentCalc';
-import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
+import { CERTAINTY_LABELS } from './types';
+import { DateText, EmptyState, MoneyText, SectionCard } from '@/design-system';
 import type { Task } from 'gantt-task-react';
 import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastNode, ForecastOverride } from './types';
@@ -28,11 +29,11 @@ const CERTAINTY_STYLES: Record<string, { backgroundColor: string; progressColor:
 };
 
 const OVERDUE_STYLES: Record<string, { backgroundColor: string; progressColor: string; label: string }> = {
-  orange: { backgroundColor: '#f59e0b', progressColor: '#d97706', label: '逾期 1–7 天' },
-  red: { backgroundColor: '#ef4444', progressColor: '#dc2626', label: '逾期 8–14 天' },
-  'deep-red': { backgroundColor: '#b91c1c', progressColor: '#991b1b', label: '逾期 15–30 天' },
-  brown: { backgroundColor: '#78350f', progressColor: '#5b260b', label: '逾期 31–60 天' },
-  black: { backgroundColor: '#171717', progressColor: '#000000', label: '逾期 60 天以上' },
+  orange: { backgroundColor: 'var(--ds-tone-warning-fg)', progressColor: '#d97706', label: '逾期 1–7 天' },
+  red: { backgroundColor: 'var(--ds-tone-danger-fg)', progressColor: '#dc2626', label: '逾期 8–14 天' },
+  'deep-red': { backgroundColor: 'var(--ds-tone-danger-fg)', progressColor: '#991b1b', label: '逾期 15–30 天' },
+  brown: { backgroundColor: 'var(--ds-tone-warning-fg)', progressColor: '#5b260b', label: '逾期 31–60 天' },
+  black: { backgroundColor: 'var(--color-text-1)', progressColor: '#000000', label: '逾期 60 天以上' },
 };
 
 export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOverride }: Props) {
@@ -130,7 +131,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
   };
 
   return (
-    <Card title="付款节点甘特图">
+    <SectionCard title="付款节点甘特图">
       {/* 工具栏 */}
       <div className="payment-forecast-toolbar">
         <Space wrap>
@@ -148,7 +149,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           {Object.entries(CERTAINTY_LABELS).map(([key, label]) => (
             <Space key={key} size={4}>
               <div style={{
-                width: 12, height: 12, borderRadius: 2,
+                width: 12, height: 12, borderRadius: 'var(--radius-xs)',
                 background: CERTAINTY_STYLES[key]?.progressColor ?? 'var(--color-fill-4)',
               }} />
               <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{label}</Text>
@@ -156,7 +157,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           ))}
           {Object.entries(OVERDUE_STYLES).map(([key, style]) => (
             <Space key={key} size={4}>
-              <div style={{ width: 12, height: 12, borderRadius: 2, background: style.backgroundColor }} />
+              <div style={{ width: 12, height: 12, borderRadius: 'var(--radius-xs)', background: style.backgroundColor }} />
               <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{style.label}</Text>
             </Space>
           ))}
@@ -178,9 +179,7 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           />
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: 'var(--space-7)', color: 'var(--color-text-3)' }}>
-          暂无付款节点数据
-        </div>
+        <EmptyState description="暂无付款节点数据" />
       )}
 
       {/* 调期确认弹窗 */}
@@ -197,13 +196,13 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
               <Text type="secondary">合同:</Text> {editModal.node.contractNo} {editModal.node.contractName}
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">期次:</Text> {editModal.node.periodName} ¥{editModal.node.amount.toLocaleString()}
+              <Text type="secondary">期次:</Text> {editModal.node.periodName} <MoneyText value={editModal.node.amount} />
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">原定日期:</Text> {editModal.node.plannedDate}
+              <Text type="secondary">原定日期:</Text> <DateText value={editModal.node.plannedDate} />
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">新预测日期:</Text> {editModal.newDate}
+              <Text type="secondary">新预测日期:</Text> <DateText value={editModal.newDate} />
             </div>
             <div>
               <Text type="secondary">调期原因（必填）:</Text>
@@ -217,6 +216,6 @@ export function PaymentGantt({ contracts, projectDelayMap = {}, overrides, onOve
           </div>
         )}
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

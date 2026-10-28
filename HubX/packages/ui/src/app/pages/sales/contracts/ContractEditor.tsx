@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
-  Alert,
   Button,
-  Card,
   DatePicker,
   Form,
+  FormGrid,
   Grid,
   Input,
   InputNumber,
@@ -14,10 +13,8 @@ import {
   Result,
   Select,
   Space,
-  Table,
-  Tag,
   Typography,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconBold,
   IconDownload,
@@ -28,18 +25,17 @@ import {
   IconRedo,
   IconUndo,
   IconUnorderedList,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useContracts } from './ContractsContext';
 import { findQuotation, parseQuoteAmount } from './leadContextMock';
 import { renderContractDocument } from './templates';
 import {
-  CONTRACT_STATUS_COLOR,
-  CONTRACT_STATUS_LABEL,
+  CONTRACT_STATUS,
   getPaymentPlanExpectedDateLabel,
   getPaymentPlanPeriodLabel,
 } from './utils';
 import { QuoteMismatchAlert } from './components/QuoteMismatchAlert';
-import { PageShell } from '@/design-system';
+import { AlertBanner, DataTable, MoneyText, PageShell, SectionCard, StatusTag } from '@/design-system';
 import {
   contractSigningEntities,
   findCompanyEntityByName,
@@ -560,10 +556,10 @@ export function ContractEditor() {
       title: '回款金额',
       width: 150,
       render: (_: unknown, plan: PaymentPlanItem) => (
-        <div style={{ color: 'rgb(var(--primary-6))', fontWeight: 600 }}>
-          ¥{plan.amount.toLocaleString()}
+        <div>
+          <MoneyText value={plan.amount} />
           {plan.amountType !== 'fixed' && (
-            <span style={{ marginLeft: 6, color: 'var(--color-text-3)', fontWeight: 400 }}>
+            <span style={{ marginLeft: 6 }}>
               {plan.percentage}%
             </span>
           )}
@@ -615,10 +611,8 @@ export function ContractEditor() {
           <Title heading={4} style={{ margin: 0 }}>
             {formData.contractName || '（未命名合同）'}
           </Title>
-          <Tag color="gray">{contract.contractNo}</Tag>
-          <Tag color={CONTRACT_STATUS_COLOR[contract.status]}>
-            {CONTRACT_STATUS_LABEL[contract.status]}
-          </Tag>
+          <StatusTag tone="neutral">{contract.contractNo}</StatusTag>
+          <StatusTag meta={CONTRACT_STATUS[contract.status]} />
         </Space>
       </div>
 
@@ -629,24 +623,21 @@ export function ContractEditor() {
       />
 
       {isReadonly && (
-        <Alert
-          type="info"
-          content="当前合同已进入流转阶段，仅可查看。如需修改请作废后重建。"
-          style={{ marginBottom: 16 }}
-        />
+        <div style={{ marginBottom: 16 }}>
+          <AlertBanner tone="info">
+            当前合同已进入流转阶段，仅可查看。如需修改请作废后重建。
+          </AlertBanner>
+        </div>
       )}
 
       <Grid.Row gutter={16}>
         <Grid.Col xs={24} xl={14}>
-          <Card title="合同信息">
+          <SectionCard title="合同信息">
             <Form layout="vertical">
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              <FormGrid columns={2}>
                   <Form.Item label="合同编号">
                     <Input disabled value={contract.contractNo} />
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="合同名称" required>
                     <Input
                       value={formData.contractName}
@@ -654,11 +645,9 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
 
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              <FormGrid columns={2}>
                   <Form.Item label="签约主体">
                     <Select
                       value={formData.signingEntity || undefined}
@@ -671,8 +660,6 @@ export function ContractEditor() {
                       ))}
                     </Select>
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="合同金额" required>
                     <InputNumber
                       style={{ width: '100%' }}
@@ -683,11 +670,9 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
 
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              <FormGrid columns={2}>
                   <Form.Item label="产品类别">
                     <Select
                       value={formData.productCategory}
@@ -700,8 +685,6 @@ export function ContractEditor() {
                       <Select.Option value="云服务">云服务</Select.Option>
                     </Select>
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="签约日期" required>
                     <DatePicker
                       style={{ width: '100%' }}
@@ -710,16 +693,15 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
 
             </Form>
-          </Card>
+          </SectionCard>
 
-          <Card title="甲方（客户）信息" style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16 }}>
+          <SectionCard title="甲方（客户）信息">
             <Form layout="vertical">
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              <FormGrid columns={2}>
                   <Form.Item label="公司名称" required>
                     <Input
                       value={formData.customerName}
@@ -727,8 +709,6 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="联系人" required>
                     <Input
                       value={formData.customerContact}
@@ -736,10 +716,8 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              </FormGrid>
+              <FormGrid columns={2}>
                   <Form.Item label="联系电话" required>
                     <Input
                       value={formData.customerPhone}
@@ -747,8 +725,6 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="电子邮件">
                     <Input
                       value={formData.customerEmail}
@@ -756,8 +732,7 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
               <Form.Item label="通讯地址">
                 <Input.TextArea
                   rows={2}
@@ -766,8 +741,7 @@ export function ContractEditor() {
                   disabled={isReadonly}
                 />
               </Form.Item>
-              <Grid.Row gutter={16}>
-                <Grid.Col span={12}>
+              <FormGrid columns={2}>
                   <Form.Item label="税务登记号" required>
                     <Input
                       value={formData.customerTaxNo}
@@ -775,8 +749,6 @@ export function ContractEditor() {
                       disabled={isReadonly}
                     />
                   </Form.Item>
-                </Grid.Col>
-                <Grid.Col span={12}>
                   <Form.Item label="开户银行 · 账号">
                     <Input.Group compact>
                       <Input
@@ -793,15 +765,15 @@ export function ContractEditor() {
                       />
                     </Input.Group>
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
             </Form>
-          </Card>
+          </SectionCard>
+          </div>
 
-          <Card title="付款信息" style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16 }}>
+          <SectionCard title="付款信息">
             <Form layout="vertical">
-              <Grid.Row gutter={16}>
-                <Grid.Col span={8}>
+              <FormGrid columns={3}>
                   <Form.Item label="付款方式">
                     <Select
                       value={formData.paymentMethod}
@@ -812,12 +784,10 @@ export function ContractEditor() {
                       <Select.Option value="对私">对私</Select.Option>
                     </Select>
                   </Form.Item>
-                </Grid.Col>
-              </Grid.Row>
+              </FormGrid>
 
               {formData.paymentMethod === '对私' ? (
-                <Grid.Row gutter={16}>
-                  <Grid.Col span={8}>
+                <FormGrid columns={3}>
                     <Form.Item label="收款方式">
                       <Select
                         value={formData.privatePaymentChannel}
@@ -830,8 +800,6 @@ export function ContractEditor() {
                         <Select.Option value="银行转账">银行转账</Select.Option>
                       </Select>
                     </Form.Item>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
                     <Form.Item label="收款人">
                       <Input
                         value={formData.privatePaymentRecipient || ''}
@@ -840,8 +808,6 @@ export function ContractEditor() {
                         disabled={isReadonly}
                       />
                     </Form.Item>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
                     <Form.Item label="账号">
                       <Input
                         value={formData.privatePaymentAccount || ''}
@@ -850,16 +816,12 @@ export function ContractEditor() {
                         disabled={isReadonly}
                       />
                     </Form.Item>
-                  </Grid.Col>
-                </Grid.Row>
+                </FormGrid>
               ) : (
-                <Grid.Row gutter={16}>
-                  <Grid.Col span={8}>
+                <FormGrid columns={3}>
                     <Form.Item label="对公账户名">
                       <Input disabled value={companyEntity?.invoiceTitle || '-'} />
                     </Form.Item>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
                     <Form.Item label="开户行">
                       <Select
                         value={selectedPublicAccount?.id}
@@ -872,13 +834,10 @@ export function ContractEditor() {
                         ))}
                       </Select>
                     </Form.Item>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
                     <Form.Item label="账号">
                       <Input disabled value={selectedPublicAccount?.accountNo || '-'} />
                     </Form.Item>
-                  </Grid.Col>
-                </Grid.Row>
+                </FormGrid>
               )}
             </Form>
 
@@ -901,7 +860,7 @@ export function ContractEditor() {
                     <Select.Option key={template.id} value={template.id}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, padding: '3px 0' }}>
                         <div style={{ flex: '0 0 72px', fontWeight: 600 }}>{template.ratio}</div>
-                        <div style={{ minWidth: 0, overflow: 'hidden', color: 'var(--color-text-3)', fontSize: 12, lineHeight: '18px', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ minWidth: 0, overflow: 'hidden', color: 'var(--color-text-3)', fontSize: 'var(--text-xs)', lineHeight: '18px', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {template.description}
                         </div>
                       </div>
@@ -939,19 +898,20 @@ export function ContractEditor() {
                 </Button>
               </Space>
             </div>
-            <Table
+            <DataTable
               columns={paymentPlanColumns}
               data={formData.paymentPlans}
               rowKey="period"
               pagination={false}
               size="small"
-              noDataElement="暂无回款计划，请点击右上角“新增”"
+              emptyDescription="暂无回款计划，请点击右上角“新增”"
             />
-          </Card>
+          </SectionCard>
+          </div>
         </Grid.Col>
         <Grid.Col xs={24} xl={10}>
           <div style={{ position: 'sticky', top: 16 }}>
-            <Card
+            <SectionCard
               title="合同模板"
               extra={
                 <Space size={8}>
@@ -1016,7 +976,7 @@ export function ContractEditor() {
                   dangerouslySetInnerHTML={{ __html: templateHtml }}
                 />
               </div>
-            </Card>
+            </SectionCard>
           </div>
         </Grid.Col>
       </Grid.Row>
@@ -1052,7 +1012,7 @@ export function ContractEditor() {
             <Input disabled value={formData.paymentPlans.map(plan => plan.percentage / 10).join(':') || '—'} />
           </Form.Item>
           <Form.Item label="回款条件">
-            <Table
+            <DataTable
               rowKey="period"
               size="small"
               pagination={false}
@@ -1166,7 +1126,7 @@ export function ContractEditor() {
                 }))}
               />
               <div style={{ color: 'rgb(var(--primary-6))', fontWeight: 600, textAlign: 'right' }}>
-                回款金额 ¥{paymentPlanAmount.toLocaleString('zh-CN', { maximumFractionDigits: 2 })}
+                回款金额 <MoneyText value={paymentPlanAmount} />
               </div>
             </div>
           </Form.Item>

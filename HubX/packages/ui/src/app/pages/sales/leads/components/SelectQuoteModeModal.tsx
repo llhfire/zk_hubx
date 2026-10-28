@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Button,
-  Divider,
-  Input,
-  Modal,
-  Space,
-  Tag,
-} from '@arco-design/web-react';
+import { Button, Divider, Input, Modal, Space } from '@/design-system';
 import {
   IconApps,
   IconArrowRight,
@@ -14,9 +7,10 @@ import {
   IconCheckCircleFill,
   IconFile,
   IconThunderbolt,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { QuoteFlowMode } from '../../quotation/types';
 import './SelectQuoteModeModal.css';
+import { StatusTag } from '@/design-system';
 
 export interface SelectQuoteModeModalContentProps {
   leadName: string;
@@ -104,11 +98,11 @@ export const SelectQuoteModeModalContent: React.FC<SelectQuoteModeModalContentPr
         >
           <div className="select-quote-mode-card__badge-row">
             <div className="select-quote-mode-card__icon-box icon-box--online">
-              <IconApps style={{ fontSize: 20, color: '#fff' }} />
+              <IconApps style={{ fontSize: 'var(--text-xl)', color: 'var(--color-white)' }} />
             </div>
-            <Tag size="small" color="arcoblue" style={{ fontWeight: 600 }}>
+            <StatusTag size="small" tone="info" style={{ fontWeight: 600 }}>
               推荐 · 数字化协同
-            </Tag>
+            </StatusTag>
           </div>
 
           <div className="select-quote-mode-card__title">在线表单协作模式</div>
@@ -159,11 +153,11 @@ export const SelectQuoteModeModalContent: React.FC<SelectQuoteModeModalContentPr
         >
           <div className="select-quote-mode-card__badge-row">
             <div className="select-quote-mode-card__icon-box icon-box--file">
-              <IconFile style={{ fontSize: 20, color: '#fff' }} />
+              <IconFile style={{ fontSize: 'var(--text-xl)', color: 'var(--color-white)' }} />
             </div>
-            <Tag size="small" color="purple" style={{ fontWeight: 600 }}>
+            <StatusTag size="small" tone="purple" style={{ fontWeight: 600 }}>
               离线评估 · 外部协作
-            </Tag>
+            </StatusTag>
           </div>
 
           <div className="select-quote-mode-card__title">Excel 文件流转模式</div>
@@ -217,9 +211,9 @@ export const SelectQuoteModeModalContent: React.FC<SelectQuoteModeModalContentPr
         <div className="select-quote-mode-modal__footer">
           <div className="select-quote-mode-modal__footer-status">
             <span>当前已选：</span>
-            <Tag color={flowMode === 'online' ? 'arcoblue' : 'purple'} size="small">
+            <StatusTag tone={flowMode === 'online' ? 'info' : 'purple'} size="small">
               {flowMode === 'online' ? '在线表单协作模式' : 'Excel 文件流转模式'}
-            </Tag>
+            </StatusTag>
           </div>
           <Space size={10}>
             <Button onClick={onCancel} disabled={submitting}>

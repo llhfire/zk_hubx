@@ -1,17 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  Alert, Badge, Button, Card, Message, Popconfirm,
-  Radio, Result, Select, Space, Tag, Typography,
-} from '@arco-design/web-react';
-import { IconDelete } from '@arco-design/web-react/icon';
+  AsyncState,
+  Button,
+  Message,
+  Popconfirm,
+  Radio,
+  Result,
+  Select,
+  Space,
+  Typography,
+} from '@/design-system';
+import { IconDelete } from '@/design-system';
 import { differenceInDays } from 'date-fns';
 import {
-  PageShell, ProcessOverview, SplitLayout, SplitLayoutMain,
+  PageShell,
+  ProcessOverview,
+  SectionCard,
+  SplitLayout,
+  SplitLayoutMain,
+  StatusTag,
+  resolveStatus,
+  AlertBanner,
 } from '@/design-system';
 import { useProjects } from '../project/ProjectContext';
 import { useOptionalContracts } from '../../sales/contracts/ContractsContext';
 import type { ProjectStatus } from '../project/mockData';
+import { PROJECT_STATUS_META } from '../project/types';
 import type { DeliveryPlan, DeliveryType, GanttZoomLevel, SopStep } from './types';
 import { SOP_PHASES } from './constants';
 import {
@@ -44,11 +59,7 @@ function clonePlan(plan: DeliveryPlan | undefined): DeliveryPlan | null {
 }
 
 function statusBadge(status: ProjectStatus) {
-  const map: Record<ProjectStatus, 'default' | 'processing' | 'success' | 'warning' | 'error'> = {
-    '未确认': 'warning', '未开始': 'default', '进行中': 'processing', '已完成': 'success',
-    '验收中': 'processing', '搁置': 'warning', '延迟': 'error', '催款中': 'warning',
-  };
-  return <Badge status={map[status]} text={status} />;
+  return <StatusTag meta={resolveStatus(PROJECT_STATUS_META, status)} />;
 }
 
 function getPlanZoom(plan: DeliveryPlan | null): GanttZoomLevel {
@@ -198,7 +209,13 @@ export default function DeliveryPlanPage() {
   ];
 
   if (loading) {
-    return <PageShell breadcrumbs={breadcrumbs}><div className="delivery-plan__state">项目信息加载中…</div></PageShell>;
+    return (
+      <PageShell breadcrumbs={breadcrumbs}>
+        <div className="delivery-plan__state">
+          <AsyncState status="loading" loadingText="项目信息加载中…" />
+        </div>
+      </PageShell>
+    );
   }
   if (!project) {
     return (
@@ -223,14 +240,14 @@ export default function DeliveryPlanPage() {
         <ProcessOverview
           identifier={project.projectNo}
           title={`${project.name} · 交付计划`}
-          tags={<>{statusBadge(project.status)}<Tag color="gray">尚未生成</Tag></>}
+          tags={<>{statusBadge(project.status)}<StatusTag tone="neutral">尚未生成</StatusTag></>}
           actions={<Button type="primary" size="small" onClick={() => setConfigModalVisible(true)}>生成交付计划</Button>}
         />
-        <Card>
+        <SectionCard>
           <Result status="info" title="暂无交付计划"
             subTitle="选择交付类型与 SOP 板块后，系统将生成步骤、里程碑和甘特时间轴。"
             extra={<Button type="primary" onClick={() => setConfigModalVisible(true)}>开始配置</Button>} />
-        </Card>
+        </SectionCard>
         <DeliveryConfigModal visible={configModalVisible} onCancel={() => setConfigModalVisible(false)}
           onConfirm={handleConfigConfirm} contractId={project.contractId} deliveryType={contractDeliveryType}
           projectStartDate={project.startDate} />
@@ -243,7 +260,7 @@ export default function DeliveryPlanPage() {
       <ProcessOverview
         identifier={project.projectNo}
         title={`${project.name} · 交付计划`}
-        tags={<>{statusBadge(project.status)}<Tag color="arcoblue">{plan.deliveryType}</Tag></>}
+        tags={<>{statusBadge(project.status)}<StatusTag tone="info">{plan.deliveryType}</StatusTag></>}
         actions={(
           <Space wrap>
             <Button size="small" onClick={() => navigate(`/projects/${project.id}`)}>项目详情</Button>
@@ -259,7 +276,7 @@ export default function DeliveryPlanPage() {
 
       <SplitLayout>
         <SplitLayoutMain>
-          <Card size="small" className="delivery-plan__toolbar-card">
+          <SectionCard className="delivery-plan__toolbar-card">
             <div className="delivery-plan__toolbar">
               <div><Text bold>交付排期</Text><Text type="secondary">左侧管理步骤，右侧查看时间轴</Text></div>
               <Space wrap>
@@ -274,9 +291,9 @@ export default function DeliveryPlanPage() {
                 </Radio.Group>
               </Space>
             </div>
-          </Card>
-          <Alert type="info" content="单击板块或步骤可展开详情；双击步骤可编辑负责人、状态与日期。" />
-          <Card size="small" className="delivery-plan__planner-card">
+          </SectionCard>
+          <AlertBanner tone="info">单击板块或步骤可展开详情；双击步骤可编辑负责人、状态与日期。</AlertBanner>
+          <SectionCard className="delivery-plan__planner-card">
             <div className="delivery-plan__planner">
               <div className="delivery-plan__task-pane">
                 <TaskList plan={filteredPlan} project={project as unknown as Record<string, unknown>}
@@ -290,7 +307,7 @@ export default function DeliveryPlanPage() {
                   expandedPhaseIds={expandedPhaseIds} expandedStepIds={expandedStepIds} />
               </div>
             </div>
-          </Card>
+          </SectionCard>
         </SplitLayoutMain>
 
       </SplitLayout>

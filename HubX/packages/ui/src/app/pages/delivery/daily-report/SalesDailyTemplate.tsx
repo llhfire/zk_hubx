@@ -1,8 +1,9 @@
 // src/app/pages/daily-report/SalesDailyTemplate.tsx
 
 import type { ReactNode } from 'react';
-import { Button, Card, Input, InputNumber, Select, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconDelete, IconPlus } from '@arco-design/web-react/icon';
+import { Button, Input, InputNumber, Select, Space, Tag, Typography } from '@/design-system';
+import { SectionCard, StatusTag } from '@/design-system';
+import { IconDelete, IconPlus } from '@/design-system';
 import type { DailyReport, SalesReportContent, SalesWorkItem } from './types';
 import { useJobWorkConfig } from './JobWorkConfigContext';
 import { WorkAttributionSelector } from './WorkAttributionSelector';
@@ -102,7 +103,7 @@ export function SalesDailyTemplate({ userId, department, initialContent, recentR
           key={item.id}
           style={{
             border: '1px dashed var(--color-border-3)',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-sm)',
             padding: 16,
             display: 'flex',
             flexDirection: 'column',
@@ -116,11 +117,8 @@ export function SalesDailyTemplate({ userId, department, initialContent, recentR
               </div>
               <Space wrap size={[8, 8]} style={{ flex: 1, minWidth: 0 }}>
                 {recentWorkRecords.map(record => (
-                  <Tag
+                  <StatusTag
                     key={record.label}
-                    tabIndex={0}
-                    role="button"
-                    style={{ cursor: 'pointer' }}
                     onClick={() => updateWorkItem(item.id, {
                       type: record.item.type,
                       workAttributionCategory: record.item.workAttributionCategory,
@@ -133,15 +131,9 @@ export function SalesDailyTemplate({ userId, department, initialContent, recentR
                       projectName: record.item.projectName,
                       workNature: record.item.workNature,
                     })}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        event.currentTarget.click();
-                      }
-                    }}
                   >
                     {record.label}
-                  </Tag>
+                  </StatusTag>
                 ))}
               </Space>
             </div>
@@ -227,23 +219,23 @@ export function SalesDailyTemplate({ userId, department, initialContent, recentR
         </div>
       ))}
 
-      {!omitFollowUpFields && <Card size="small" title="需协助事项" bodyStyle={{ padding: '12px 16px' }}>
+      {!omitFollowUpFields && <SectionCard title="需协助事项">
         <Input.TextArea
           value={content['assistance-needed'] || ''}
           onChange={(value) => updateContent({ 'assistance-needed': value })}
           placeholder="请输入需要协助的事项..."
           autoSize={{ minRows: 2, maxRows: 4 }}
         />
-      </Card>}
+      </SectionCard>}
 
-      {!omitFollowUpFields && <Card size="small" title={<span>明日工作计划 <span style={{ color: 'red' }}>*</span></span>} bodyStyle={{ padding: '12px 16px' }}>
+      {!omitFollowUpFields && <SectionCard title={<span>明日工作计划 <span style={{ color: 'var(--ds-tone-danger-fg)' }}>*</span></span>}>
         <Input.TextArea
           value={content['tomorrow-plan'] || ''}
           onChange={(value) => updateContent({ 'tomorrow-plan': value })}
           placeholder="请输入明日工作计划（必填）..."
           autoSize={{ minRows: 2, maxRows: 4 }}
         />
-      </Card>}
+      </SectionCard>}
     </Space>
   );
 }

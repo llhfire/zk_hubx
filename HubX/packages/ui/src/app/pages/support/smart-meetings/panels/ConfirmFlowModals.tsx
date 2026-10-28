@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { Modal, Input, Message, Typography } from '@arco-design/web-react';
+import { Modal, Input, Message, Typography } from '@/design-system';
 
 const { Text } = Typography;
 const { TextArea } = Input;

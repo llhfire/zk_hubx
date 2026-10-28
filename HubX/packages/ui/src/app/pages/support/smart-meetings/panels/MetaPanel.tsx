@@ -9,8 +9,9 @@
  * - 业务引用：BusinessRefPicker
  */
 
-import { Card, Input, DatePicker, Select, Tag, Space, Typography } from '@arco-design/web-react';
-import { IconUser, IconCalendar } from '@arco-design/web-react/icon';
+import { Input, DatePicker, Select, Tag, Space, Typography } from '@/design-system';
+import { IconUser, IconCalendar } from '@/design-system';
+import { SectionCard, StatusTag } from '@/design-system';
 import { BusinessRefPicker } from './BusinessRefPicker';
 import { MOCK_USERS } from '../mockData';
 import type { BusinessRef } from '../types';
@@ -40,11 +41,12 @@ export function MetaPanel({
   onTitleChange, onTimeChange, onAttendeesChange, onOrganizerChange, onReviewerChange, onRefsChange,
 }: MetaPanelProps) {
   return (
-    <Card size="small" title="元信息" style={{ marginBottom: 12 }}>
+    <div style={{ marginBottom: 12 }}>
+    <SectionCard title="元信息">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* 会议主题 */}
         <div>
-          <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>会议主题</Text>
+          <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>会议主题</Text>
           <Input
             value={title}
             onChange={onTitleChange}
@@ -55,7 +57,7 @@ export function MetaPanel({
 
         {/* 会议时间 */}
         <div>
-          <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
+          <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
             <IconCalendar style={{ marginRight: 4 }} />会议时间
           </Text>
           <DatePicker
@@ -70,7 +72,7 @@ export function MetaPanel({
 
         {/* 参会人 */}
         <div>
-          <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
+          <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
             <IconUser style={{ marginRight: 4 }} />参会人
           </Text>
           <Select
@@ -81,7 +83,9 @@ export function MetaPanel({
             style={{ width: '100%' }}
             disabled={readonly}
             renderTag={({ label, value, closable, onClose }) => (
-              <Tag closable={closable && !readonly} onClose={onClose} color="blue" size="small">
+              // Arco 的 renderTag 会传 onClose(event)，与 StatusTag 的 onClose() 契约不同，
+              // 这里是「选择器内的可关闭选项」，属于输入控件而不是状态标签，保留 Arco Tag。
+              <Tag closable={closable && !readonly} onClose={onClose} color="arcoblue">
                 {MOCK_USERS.find((u) => u.id === value)?.name ?? label}
               </Tag>
             )}
@@ -95,7 +99,7 @@ export function MetaPanel({
         {/* 整理人 + 确认人 */}
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>整理人</Text>
+            <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>整理人</Text>
             <Select
               value={organizerId}
               onChange={onOrganizerChange}
@@ -108,7 +112,7 @@ export function MetaPanel({
             </Select>
           </div>
           <div style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
+            <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>
               确认人 <span style={{ color: 'var(--destructive-500)' }}>*</span>
             </Text>
             <Select
@@ -127,14 +131,14 @@ export function MetaPanel({
 
         {/* 业务引用 */}
         <div>
-          <Text style={{ fontSize: 12, color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>业务引用</Text>
+          <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-500)', marginBottom: 4, display: 'block' }}>业务引用</Text>
           {readonly ? (
             <Space wrap>
               {refs.length === 0 ? (
-                <Text style={{ fontSize: 13, color: 'var(--grey-400)' }}>无</Text>
+                <Text style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--grey-400)' }}>无</Text>
               ) : (
                 refs.map((r, i) => (
-                  <Tag key={`${r.kind}-${r.id}-${i}`} color="arcoblue">{r.displaySnapshot}</Tag>
+                  <StatusTag key={`${r.kind}-${r.id}-${i}`} tone="info">{r.displaySnapshot}</StatusTag>
                 ))
               )}
             </Space>
@@ -143,14 +147,13 @@ export function MetaPanel({
               {refs.length > 0 && (
                 <Space wrap style={{ marginBottom: 8 }}>
                   {refs.map((r, i) => (
-                    <Tag
+                    <StatusTag
                       key={`${r.kind}-${r.id}-${i}`}
-                      closable
+                      tone="info"
                       onClose={() => onRefsChange(refs.filter((_, idx) => idx !== i))}
-                      color="arcoblue"
                     >
                       {r.displaySnapshot}
-                    </Tag>
+                    </StatusTag>
                   ))}
                 </Space>
               )}
@@ -162,6 +165,7 @@ export function MetaPanel({
           )}
         </div>
       </div>
-    </Card>
+    </SectionCard>
+    </div>
   );
 }

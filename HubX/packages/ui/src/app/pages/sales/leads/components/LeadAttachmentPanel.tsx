@@ -1,5 +1,6 @@
-import { Button, Card, Empty, Space, Tooltip, Typography } from '@arco-design/web-react';
-import { IconDownload, IconEdit, IconFile } from '@arco-design/web-react/icon';
+import { Button, FileList, Space, Typography } from '@/design-system';
+import { EmptyState, SectionCard } from '@/design-system';
+import { IconEdit, IconFile } from '@/design-system';
 import type { Attachment } from '../types';
 import { formatLeadAttachmentSize } from '../leadAttachments';
 import './LeadAttachmentPanel.css';
@@ -18,41 +19,27 @@ export function LeadAttachmentPanel({ attachments, onManage, embedded = false }:
       {attachments.length === 0 ? (
         embedded ? (
           <div className="lead-attachment-panel__empty-inline">
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
               暂无线索附件（可点击右侧「管理附件」上传需求方案、招标文件或客户材料）
             </Text>
           </div>
         ) : (
-          <Empty
+          <EmptyState
             className="lead-attachment-panel__empty"
-            description="暂无线索附件，可通过编辑线索上传"
-          />
+            description="暂无线索附件，可通过编辑线索上传" />
         )
       ) : (
-        <div className="lead-attachment-panel__list">
-          {attachments.map((attachment) => (
-            <div className="lead-attachment-panel__item" key={attachment.id}>
-              <div className="lead-attachment-panel__file-icon"><IconFile /></div>
-              <div className="lead-attachment-panel__content">
-                <Text className="lead-attachment-panel__name" ellipsis={{ showTooltip: true }}>{attachment.name}</Text>
-                <Text type="secondary" className="lead-attachment-panel__meta">
-                  {formatLeadAttachmentSize(attachment.size)} · {attachment.type || '文件'}
-                </Text>
-              </div>
-              <Tooltip content={attachment.url ? '下载附件' : '该附件暂无可用地址'}>
-                <Button
-                  className="hubx-icon-action"
-                  type="text"
-                  size="small"
-                  aria-label={`下载 ${attachment.name}`}
-                  icon={<IconDownload />}
-                  disabled={!attachment.url}
-                  onClick={() => window.open(attachment.url, '_blank', 'noopener,noreferrer')}
-                />
-              </Tooltip>
-            </div>
-          ))}
-        </div>
+        <FileList
+          className="lead-attachment-panel__list"
+          items={attachments.map((attachment) => ({
+            key: attachment.id,
+            name: attachment.name,
+            meta: `${formatLeadAttachmentSize(attachment.size)} · ${attachment.type || '文件'}`,
+            onDownload: attachment.url
+              ? () => window.open(attachment.url, '_blank', 'noopener,noreferrer')
+              : undefined,
+          }))}
+        />
       )}
     </>
   );
@@ -64,7 +51,7 @@ export function LeadAttachmentPanel({ attachments, onManage, embedded = false }:
           <div className="lead-attachment-panel__title">
             <IconFile style={{ color: 'var(--color-text-2)' }} />
             <span>线索附件</span>
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
               ({attachments.length})
             </Text>
           </div>
@@ -78,12 +65,12 @@ export function LeadAttachmentPanel({ attachments, onManage, embedded = false }:
   }
 
   return (
-    <Card
+    <SectionCard
       size="small"
       title={<Space size={8}><IconFile /><span>线索附件</span><Text type="secondary">{attachments.length}</Text></Space>}
       extra={<Button type="text" size="small" icon={<IconEdit />} onClick={onManage}>管理附件</Button>}
     >
       {content}
-    </Card>
+    </SectionCard>
   );
 }

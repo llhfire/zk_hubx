@@ -1,33 +1,42 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Empty,
-  Grid,
-  Table,
+  Badge,
   Button,
+  CountdownTag,
+  DatePicker,
+  DateText,
+  Form,
+  FormGrid,
+  IconCalendar,
+  IconCustomerService,
+  IconExclamationCircle,
+  IconFile,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
   Space,
   Tag,
   Tabs,
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  DatePicker,
-  Alert,
-  Progress,
-  Badge,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
-  IconCalendar,
-  IconExclamationCircle,
-  IconPlus,
-  IconFile,
-  IconCustomerService,
-  IconRefresh,
-  IconSearch,
-} from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+  FilterBar,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  MoneyText,
+  EmptyState,
+  DataTable,
+  AlertBanner,
+  ProgressBar,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { filterRecordsByKeyword } from '../../support/system/supportDomainListModel';
 import { loadAfterSalesHandoffs } from '../../sales/leads/alphaFlowContinuity';
 import '../../support/system/supportDomainLists.css';
@@ -100,32 +109,32 @@ function getDaysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - new Date('2026-07-02').getTime()) / (1000 * 60 * 60 * 24));
 }
 
-const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, { label: string; color: string }> = {
-  active:   { label: '维护期中', color: 'var(--success-500)' },
-  expiring: { label: '即将到期', color: 'var(--warning-500)' },
-  expired:  { label: '已到期',   color: 'var(--destructive-500)' },
-  renewed:  { label: '已续签',   color: 'var(--primary)' },
+const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, { label: string; tone: StatusTone }> = {
+  active:   { label: '维护期中', tone: 'success' },
+  expiring: { label: '即将到期', tone: 'warning' },
+  expired:  { label: '已到期',   tone: 'danger' },
+  renewed:  { label: '已续签',   tone: 'info' },
 };
 
-const TICKET_PRIORITY_LABELS: Record<TicketPriority, { label: string; color: string }> = {
-  critical: { label: '紧急', color: 'var(--destructive-500)' },
-  high:     { label: '高',   color: 'var(--warning-500)' },
-  medium:   { label: '中',   color: 'var(--primary)' },
-  low:      { label: '低',   color: 'var(--muted-foreground)' },
+const TICKET_PRIORITY_LABELS: Record<TicketPriority, { label: string; tone: StatusTone }> = {
+  critical: { label: '紧急', tone: 'danger' },
+  high:     { label: '高',   tone: 'warning' },
+  medium:   { label: '中',   tone: 'info' },
+  low:      { label: '低',   tone: 'neutral' },
 };
 
-const TICKET_STATUS_LABELS: Record<TicketStatus, { label: string; color: string }> = {
-  open:       { label: '待分配', color: 'var(--muted-foreground)' },
-  assigned:   { label: '已分配', color: 'var(--primary)' },
-  processing: { label: '处理中', color: 'var(--warning-500)' },
-  resolved:   { label: '已解决', color: 'var(--success-500)' },
-  closed:     { label: '已关闭', color: 'var(--muted-foreground)' },
+const TICKET_STATUS_LABELS: Record<TicketStatus, { label: string; tone: StatusTone }> = {
+  open:       { label: '待分配', tone: 'neutral' },
+  assigned:   { label: '已分配', tone: 'info' },
+  processing: { label: '处理中', tone: 'warning' },
+  resolved:   { label: '已解决', tone: 'success' },
+  closed:     { label: '已关闭', tone: 'neutral' },
 };
 
-const COST_STATUS_LABELS: Record<CostRecordStatus, { label: string; color: string }> = {
-  pending:    { label: '待确认', color: 'var(--warning-500)' },
-  confirmed:  { label: '已确认', color: 'var(--primary)' },
-  reimbursed: { label: '已报销', color: 'var(--success-500)' },
+const COST_STATUS_LABELS: Record<CostRecordStatus, { label: string; tone: StatusTone }> = {
+  pending:    { label: '待确认', tone: 'warning' },
+  confirmed:  { label: '已确认', tone: 'info' },
+  reimbursed: { label: '已报销', tone: 'success' },
 };
 
 // ---------- 模拟数据 ----------
@@ -275,29 +284,41 @@ export function MaintenanceManagement() {
 
       {/* 到期预警 */}
       {(summary.expiring > 0 || summary.expired > 0) && (
-        <Alert
-          type="warning"
-          content={
+        <AlertBanner tone="warning">{
             <span>
-              {summary.expiring > 0 && <strong style={{ color: 'var(--warning-500)' }}>{summary.expiring} 个</strong>}
+              {summary.expiring > 0 && <strong>{summary.expiring} 个</strong>}
               {summary.expiring > 0 && ' 项目维护期即将到期，请跟进续费。'}
               {summary.expiring > 0 && summary.expired > 0 && ' '}
-              {summary.expired > 0 && <strong style={{ color: 'var(--destructive-500)' }}>{summary.expired} 个</strong>}
+              {summary.expired > 0 && <strong>{summary.expired} 个</strong>}
               {summary.expired > 0 && ' 项目维护期已到期。'}
             </span>
-          }
-          icon={<IconExclamationCircle />}
-        />
+          }</AlertBanner>
       )}
 
       {/* 主体 Tab */}
-      <Card bordered={false} className="support-domain-list__card">
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="maintenance" title={<span><IconCalendar /> 维护期跟踪</span>} />
-          <TabPane key="tickets" title={<span><IconCustomerService /> 客户工单 <Badge count={summary.openTickets} color="arcoblue" /></span>} />
-          <TabPane key="renewal" title={<span><IconFile /> 续费合同</span>} />
-          <TabPane key="costs" title={<span><IconFile /> 费用成本记录</span>} />
-        </Tabs>
+      <SectionCard bordered={false} className="support-domain-list__card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'maintenance',
+              label: <span><IconCalendar /> 维护期跟踪</span>,
+            },
+            {
+              key: 'tickets',
+              label: <span><IconCustomerService /> 客户工单 <Badge count={summary.openTickets} color="arcoblue" /></span>,
+            },
+            {
+              key: 'renewal',
+              label: <span><IconFile /> 续费合同</span>,
+            },
+            {
+              key: 'costs',
+              label: <span><IconFile /> 费用成本记录</span>,
+            },
+          ]}
+        />
 
         <FilterBar actions={filtersActive ? <Button type="text" icon={<IconRefresh />} onClick={() => setKeyword('')}>重置</Button> : undefined}>
           <Input className="support-domain-list__keyword" value={keyword} onChange={setKeyword} prefix={<IconSearch />} placeholder="搜索项目、客户、合同、工单或经办人" allowClear />
@@ -306,11 +327,11 @@ export function MaintenanceManagement() {
 
         <div>
           {currentCount === 0 ? (
-            <div className="support-domain-list__empty"><Empty description="当前页签没有符合条件的记录" /><Button type="text" onClick={() => setKeyword('')}>清除筛选</Button></div>
+            <div className="support-domain-list__empty"><EmptyState description="当前页签没有符合条件的记录" /><Button type="text" onClick={() => setKeyword('')}>清除筛选</Button></div>
           ) : <>
           {/* 维护期跟踪 Tab */}
           {activeTab === 'maintenance' && (
-            <Table
+            <DataTable
               columns={[
                 { title: '项目名称', dataIndex: 'projectName', width: 150, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '客户', dataIndex: 'customerName', width: 130 },
@@ -320,24 +341,25 @@ export function MaintenanceManagement() {
                   title: '免费维护截止', dataIndex: 'freeMaintenanceEnd', width: 120,
                   render: (v: string, row: MaintenanceRecord) => {
                     const days = getDaysUntil(v);
-                    if (days < 0) return <span style={{ color: 'var(--destructive-500)' }}>{v} (已到期)</span>;
-                    if (days <= 30) return <span style={{ color: 'var(--warning-500)' }}>{v} ({days}天)</span>;
-                    return v;
+                    if (days <= 30) {
+                      return <Space size={4}><DateText value={v} /><CountdownTag days={days} warningWithin={30} /></Space>;
+                    }
+                    return <DateText value={v} />;
                   },
                 },
                 {
                   title: '状态', dataIndex: 'status', width: 90,
-                  render: (s: MaintenanceStatus) => <Tag color={MAINTENANCE_STATUS_LABELS[s].color}>{MAINTENANCE_STATUS_LABELS[s].label}</Tag>,
+                  render: (s: MaintenanceStatus) => <StatusTag tone={MAINTENANCE_STATUS_LABELS[s].tone}>{MAINTENANCE_STATUS_LABELS[s].label}</StatusTag>,
                 },
                 {
                   title: '维护进度', width: 120,
                   render: (_: unknown, row: MaintenanceRecord) => {
                     const total = Math.ceil((new Date(row.freeMaintenanceEnd).getTime() - new Date(row.deliveryDate).getTime()) / (1000 * 60 * 60 * 24));
                     const elapsed = total - getDaysUntil(row.freeMaintenanceEnd);
-                    return <Progress percent={Math.min(100, Math.round((elapsed / total) * 100))} size="small" />;
+                    return <ProgressBar percent={Math.min(100, Math.round((elapsed / total) * 100))} size="small" />;
                   },
                 },
-                { title: '付费合同', dataIndex: 'hasPaidContract', width: 80, render: (v: boolean) => v ? <Tag color="var(--success-500)">有</Tag> : <Tag>无</Tag> },
+                { title: '付费合同', dataIndex: 'hasPaidContract', width: 80, render: (v: boolean) => v ? <StatusTag tone="success">有</StatusTag> : <StatusTag>无</StatusTag> },
                 { title: '销售负责人', dataIndex: 'salesOwner', width: 90 },
               ] as any}
               data={filteredMaintenance}
@@ -350,29 +372,27 @@ export function MaintenanceManagement() {
           {/* 客户工单 Tab */}
           {activeTab === 'tickets' && (
             <div>
-              <Table
+              <DataTable
                 columns={[
                   {
                     title: '优先级', dataIndex: 'priority', width: 70,
-                    render: (p: TicketPriority) => <Tag color={TICKET_PRIORITY_LABELS[p].color}>{TICKET_PRIORITY_LABELS[p].label}</Tag>,
+                    render: (p: TicketPriority) => <StatusTag tone={TICKET_PRIORITY_LABELS[p].tone}>{TICKET_PRIORITY_LABELS[p].label}</StatusTag>,
                   },
                   { title: '标题', dataIndex: 'title', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                   { title: '客户', dataIndex: 'customerName', width: 130 },
                   { title: '项目', dataIndex: 'projectName', width: 130 },
                   {
                     title: '状态', dataIndex: 'status', width: 80,
-                    render: (s: TicketStatus) => <Tag color={TICKET_STATUS_LABELS[s].color}>{TICKET_STATUS_LABELS[s].label}</Tag>,
+                    render: (s: TicketStatus) => <StatusTag tone={TICKET_STATUS_LABELS[s].tone}>{TICKET_STATUS_LABELS[s].label}</StatusTag>,
                   },
                   { title: '处理人', dataIndex: 'assignee', width: 70, render: (v: string) => v || <span style={{ color: 'var(--color-text-3)' }}>待分配</span> },
                   { title: '创建时间', dataIndex: 'createdAt', width: 130 },
                   {
                     title: 'SLA 截止', dataIndex: 'slaDeadline', width: 130,
                     render: (v: string, row: Ticket) => {
-                      if (row.status === 'closed' || row.status === 'resolved') return <span style={{ color: 'var(--color-text-3)' }}>—</span>;
+                      if (row.status === 'closed' || row.status === 'resolved') return <DateText value={undefined} />;
                       const days = getDaysUntil(v);
-                      if (days < 0) return <span style={{ color: 'var(--destructive-500)', fontWeight: 600 }}>超时 {Math.abs(days)} 天</span>;
-                      if (days === 0) return <span style={{ color: 'var(--warning-500)', fontWeight: 600 }}>今日到期</span>;
-                      return v;
+                      return <Space size={4}><DateText value={v} /><CountdownTag days={days} warningWithin={0} /></Space>;
                     },
                   },
                 ] as any}
@@ -386,14 +406,14 @@ export function MaintenanceManagement() {
 
           {/* 续费合同 Tab */}
           {activeTab === 'renewal' && (
-            <Table
+            <DataTable
               columns={[
                 { title: '项目', dataIndex: 'projectName', width: 150, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '客户', dataIndex: 'customerName', width: 130 },
                 { title: '合同编号', dataIndex: 'contractNo', width: 130 },
                 { title: '签订日期', dataIndex: 'signDate', width: 100 },
                 { title: '到期日期', dataIndex: 'endDate', width: 100 },
-                { title: '合同金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+                { title: '合同金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
                 { title: '销售负责人', dataIndex: 'salesOwner', width: 90 },
               ] as any}
               data={filteredRenewals}
@@ -408,21 +428,21 @@ export function MaintenanceManagement() {
             <div>
               <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
-                  <Tag color="var(--primary)">记录 {costRecords.length} 条</Tag>
-                  <Tag color="var(--warning-500)">总成本 ¥{totalCostAmount.toLocaleString()}</Tag>
+                  <StatusTag tone="info">记录 {costRecords.length} 条</StatusTag>
+                  <StatusTag tone="warning">总成本 <MoneyText value={totalCostAmount} /></StatusTag>
                 </Space>
               </div>
-              <Table
+              <DataTable
                 columns={[
                   { title: '归属项目', dataIndex: 'projectName', width: 150, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                   { title: '客户', dataIndex: 'customerName', width: 130 },
                   { title: '费用类型', dataIndex: 'costType', width: 110 },
-                  { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+                  { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
                   { title: '发生日期', dataIndex: 'occurredAt', width: 100 },
                   { title: '经办人', dataIndex: 'handler', width: 80 },
                   {
                     title: '状态', dataIndex: 'status', width: 90,
-                    render: (s: CostRecordStatus) => <Tag color={COST_STATUS_LABELS[s].color}>{COST_STATUS_LABELS[s].label}</Tag>,
+                    render: (s: CostRecordStatus) => <StatusTag tone={COST_STATUS_LABELS[s].tone}>{COST_STATUS_LABELS[s].label}</StatusTag>,
                   },
                   { title: '费用说明', dataIndex: 'description', width: 220 },
                 ] as any}
@@ -435,7 +455,7 @@ export function MaintenanceManagement() {
           )}
           </>}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 新建工单弹窗 */}
       <Modal
@@ -451,32 +471,24 @@ export function MaintenanceManagement() {
           <FormItem label="工单标题" field="title" rules={[{ required: true, message: '请输入标题' }]}>
             <Input placeholder="简要描述问题" />
           </FormItem>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="客户" field="customerName" rules={[{ required: true, message: '请输入客户' }]}>
                 <Input placeholder="客户名称" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="项目" field="projectName" rules={[{ required: true, message: '请输入项目' }]}>
                 <Input placeholder="项目名称" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="优先级" field="priority" rules={[{ required: true }]}>
                 <Select placeholder="选择优先级">
                   {Object.entries(TICKET_PRIORITY_LABELS).map(([k, m]) => <SelectOption key={k} value={k}>{m.label}</SelectOption>)}
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="处理人" field="assignee">
                 <Input placeholder="指定处理人（可选）" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="问题描述" field="description">
             <Input.TextArea placeholder="详细描述问题" autoSize={{ minRows: 3, maxRows: 6 }} />
           </FormItem>
@@ -494,8 +506,7 @@ export function MaintenanceManagement() {
         maskClosable={false}
       >
         <Form form={costForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="归属项目" field="projectName" rules={[{ required: true, message: '请选择归属项目' }]}>
                 <Select
                   placeholder="选择归属项目"
@@ -507,37 +518,26 @@ export function MaintenanceManagement() {
                   {maintenanceRecords.map(item => <SelectOption key={item.id} value={item.projectName}>{item.projectName}</SelectOption>)}
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="客户" field="customerName">
                 <Input placeholder="选择项目后自动带出" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="费用类型" field="costType" rules={[{ required: true, message: '请输入费用类型' }]}>
                 <Input placeholder="如服务器续费、现场支持" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="金额" field="amount" rules={[{ required: true, message: '请输入金额' }]}>
                 <InputNumber min={0} precision={2} prefix="¥" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="发生日期" field="occurredAt" rules={[{ required: true, message: '请选择发生日期' }]}>
                 <DatePicker style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="经办人" field="handler" rules={[{ required: true, message: '请输入经办人' }]}>
                 <Input placeholder="请输入经办人" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="状态" field="status" rules={[{ required: true, message: '请选择状态' }]}>
             <Select placeholder="选择状态">
               {Object.entries(COST_STATUS_LABELS).map(([key, item]) => <SelectOption key={key} value={key}>{item.label}</SelectOption>)}

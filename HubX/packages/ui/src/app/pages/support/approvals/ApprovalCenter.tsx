@@ -1,33 +1,47 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import {
   Button,
-  Card,
-  Descriptions,
   Form,
   Input,
   Message,
   Modal,
   Select,
   Space,
-  Table,
-  Tabs,
-  Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconSearch, IconEye, IconCheck, IconArrowRight } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconSearch, IconEye, IconCheck, IconArrowRight } from '@/design-system';
 import { useNavigate } from 'react-router';
 import { useApprovals } from '../../../approvals/ApprovalContext';
 import type { ApprovalRecord, ApprovalStatus } from '../../../approvals/types';
 import { LeadDetail360 } from '../../sales/leads/LeadDetail360';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  SectionTabs,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 
 const Text = Typography.Text;
-const statusMeta: Record<ApprovalStatus, { label: string; color: string }> = {
-  approving: { label: '审批中', color: 'orange' },
-  approved: { label: '已通过', color: 'green' },
-  rejected: { label: '已驳回', color: 'red' },
-  withdrawn: { label: '已撤回', color: 'gray' },
-  invalidated: { label: '已作废', color: 'gray' },
+const APPROVAL_STATUS: StatusMap<ApprovalStatus> = {
+  approving: { label: '审批中', tone: 'warning' },
+  approved: { label: '已通过', tone: 'success' },
+  rejected: { label: '已驳回', tone: 'danger' },
+  withdrawn: { label: '已撤回', tone: 'neutral' },
+  invalidated: { label: '已作废', tone: 'neutral' },
+};
+
+const APPROVAL_NODE_STATUS: StatusMap<ApprovalRecord['nodes'][number]['status']> = {
+  approved: { label: '已通过', tone: 'success' },
+  rejected: { label: '已驳回', tone: 'danger' },
+  pending: { label: '待审批', tone: 'warning' },
+  skipped: { label: '待审批', tone: 'warning' },
 };
 
 type ViewKey = 'pending' | 'initiated' | 'handled' | 'wecom' | 'all';
@@ -45,6 +59,12 @@ export function ApprovalCenter() {
 
   const typeOptions = useMemo(
     () => [...new Map(records.map((item) => [item.typeCode, item.typeName])).entries()].map(([value, label]) => ({ value, label })),
+    [records],
+  );
+
+  /** 待我审批的数量：与「待我审批」页签的筛选条件保持一致，避免页签数字和列表对不上。 */
+  const pendingCount = useMemo(
+    () => records.filter((item) => item.source === 'hubx' && item.status === 'approving' && item.currentApprover === '张三').length,
     [records],
   );
 
@@ -79,7 +99,10 @@ export function ApprovalCenter() {
       render: (_: unknown, record: ApprovalRecord) => (
         <Space direction="vertical" size={2}>
           <Text bold>{record.title}</Text>
-          <Text type="secondary">{record.typeName}{record.amount ? ` · ¥${record.amount.toLocaleString()}` : ''}</Text>
+          <Text type="secondary">
+            {record.typeName}
+            {record.amount ? <><span> · </span><MoneyText value={record.amount} /></> : ''}
+          </Text>
         </Space>
       ),
     },
@@ -91,12 +114,12 @@ export function ApprovalCenter() {
       width: 120,
       render: (value: ApprovalStatus, record: ApprovalRecord) => (
         <Space size={4}>
-          <Tag color={statusMeta[value].color}>{statusMeta[value].label}</Tag>
-          {record.overdue ? <Tag color="red">已超时</Tag> : null}
+          <StatusTag meta={APPROVAL_STATUS[value]} />
+          {record.overdue ? <StatusTag tone="danger">已超时</StatusTag> : null}
         </Space>
       ),
     },
-    { title: '发起时间', dataIndex: 'createdAt', width: 160 },
+    { title: '发起时间', dataIndex: 'createdAt', width: 160, render: (value: string) => <DateText value={value} mode="datetime" /> },
     {
       title: '操作',
       width: 160,
@@ -117,32 +140,45 @@ export function ApprovalCenter() {
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <div>
-        <Text type="secondary">集中处理 HubX 业务审批，并查看企业微信只读审批记录。</Text>
-      </div>
-      <Card bordered={false}>
-        <Tabs activeTab={activeView} onChange={(value) => setActiveView(value as ViewKey)}>
-          <Tabs.TabPane key="pending" title={`待我审批（${records.filter((item) => item.source === 'hubx' && item.status === 'approving' && item.currentApprover === '张三').length}）`} />
-          <Tabs.TabPane key="initiated" title="我发起的" />
-          <Tabs.TabPane key="handled" title="我已处理" />
-          <Tabs.TabPane key="wecom" title="企业微信审批" />
-          <Tabs.TabPane key="all" title="全部审批" />
-        </Tabs>
-        <Space wrap style={{ marginBottom: 16 }}>
-          <Input prefix={<IconSearch />} allowClear placeholder="搜索编号、事项、发起人或审批人" style={{ width: 300 }} value={keyword} onChange={setKeyword} />
-          <Select allowClear placeholder="审批类型" style={{ width: 150 }} value={typeCode || undefined} onChange={(value) => setTypeCode(value || '')} options={typeOptions} />
-          <Select
-            allowClear
-            placeholder="审批状态"
-            style={{ width: 140 }}
-            value={status || undefined}
-            onChange={(value) => setStatus(value || '')}
-            options={Object.entries(statusMeta).map(([value, meta]) => ({ value, label: meta.label }))}
-          />
-        </Space>
-        <Table rowKey="id" columns={columns} data={data} pagination={{ pageSize: 10 }} scroll={{ x: 1200 }} />
-      </Card>
+    <PageShell>
+      <PageHeader
+        title="审批中心"
+        description="集中处理 HubX 业务审批，并查看企业微信只读审批记录。"
+      />
+      <SectionCard>
+        <SectionTabs
+          activeKey={activeView}
+          onChange={(value) => setActiveView(value as ViewKey)}
+          items={[
+            { key: 'pending', label: '待我审批', count: pendingCount },
+            { key: 'initiated', label: '我发起的' },
+            { key: 'handled', label: '我已处理' },
+            { key: 'wecom', label: '企业微信审批' },
+            { key: 'all', label: '全部审批' },
+          ]}
+        />
+        <DataTable
+          rowKey="id"
+          columns={columns}
+          data={data}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
+          toolbar={(
+            <>
+              <Input prefix={<IconSearch />} allowClear placeholder="搜索编号、事项、发起人或审批人" style={{ width: 300 }} value={keyword} onChange={setKeyword} />
+              <Select allowClear placeholder="审批类型" style={{ width: 150 }} value={typeCode || undefined} onChange={(value) => setTypeCode(value || '')} options={typeOptions} />
+              <Select
+                allowClear
+                placeholder="审批状态"
+                style={{ width: 140 }}
+                value={status || undefined}
+                onChange={(value) => setStatus(value || '')}
+                options={Object.entries(APPROVAL_STATUS).map(([value, meta]) => ({ value, label: meta.label }))}
+              />
+            </>
+          )}
+        />
+      </SectionCard>
 
       <Modal
         className="hubx-modal"
@@ -173,32 +209,30 @@ export function ApprovalCenter() {
           <LeadDetail360 leadId={detail.route.match(/\/leads\/([^/?#]+)/)?.[1]} initialSideTab="quotation" />
         ) : detail && (
           <Space direction="vertical" size={20} style={{ width: '100%' }}>
-            {detail.source === 'wecom' ? <Tag color="green">企业微信审批 · 只读</Tag> : <Tag color="arcoblue">HubX 业务审批</Tag>}
-            <Descriptions
-              column={2}
-              border
-              data={[
-                { label: '审批编号', value: detail.approvalNo },
-                { label: '审批类型', value: detail.typeName },
-                { label: '审批事项', value: detail.title },
-                { label: '发起人', value: detail.applicant },
-                { label: '状态', value: statusMeta[detail.status].label },
-                { label: '当前审批人', value: detail.currentApprover || '-' },
-                { label: '发起时间', value: detail.createdAt },
-                { label: '最后更新', value: detail.updatedAt },
+            {detail.source === 'wecom' ? <StatusTag tone="success">企业微信审批 · 只读</StatusTag> : <StatusTag tone="info">HubX 业务审批</StatusTag>}
+            <DescriptionsCard
+              bare
+              columns={2}
+              items={[
+                { key: 'approvalNo', label: '审批编号', value: detail.approvalNo },
+                { key: 'typeName', label: '审批类型', value: detail.typeName },
+                { key: 'title', label: '审批事项', value: detail.title, long: true },
+                { key: 'applicant', label: '发起人', value: detail.applicant },
+                { key: 'status', label: '状态', value: <StatusTag meta={APPROVAL_STATUS[detail.status]} /> },
+                { key: 'currentApprover', label: '当前审批人', value: detail.currentApprover || '-' },
+                { key: 'createdAt', label: '发起时间', value: detail.createdAt },
+                { key: 'updatedAt', label: '最后更新', value: detail.updatedAt },
               ]}
             />
             {detail.nodes.map((node, index) => (
-              <Card key={node.id} size="small" title={`节点 ${index + 1}：${node.name}`}>
+              <SectionCard key={node.id} title={`节点 ${index + 1}：${node.name}`}>
                 <Space>
-                  <Tag>{node.strategy}</Tag>
+                  <StatusTag>{node.strategy}</StatusTag>
                   <Text>审批人：{node.approvers.join('、')}</Text>
-                  <Tag color={node.status === 'approved' ? 'green' : node.status === 'rejected' ? 'red' : 'orange'}>
-                    {node.status === 'approved' ? '已通过' : node.status === 'rejected' ? '已驳回' : '待审批'}
-                  </Tag>
+                  <StatusTag meta={APPROVAL_NODE_STATUS[node.status]} />
                 </Space>
                 {node.comment ? <div style={{ marginTop: 8 }}><Text type="secondary">审批意见：{node.comment}</Text></div> : null}
-              </Card>
+              </SectionCard>
             ))}
           </Space>
         )}
@@ -222,6 +256,6 @@ export function ApprovalCenter() {
           </Form.Item>
         </Form>
       </Modal>
-    </Space>
+    </PageShell>
   );
 }

@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router';
-import { Tabs } from '@arco-design/web-react';
+import { SectionTabs, Tabs } from '@/design-system';
 import { PageHeader, PageShell } from '@/design-system';
 import PaymentKanban from '../PaymentKanban';
 import { PaymentKanbanV2 } from '../PaymentKanbanV2';
@@ -37,22 +37,44 @@ export default function PaymentDashboard() {
         description="先按合同泳道掌握整体回款状态，再进入行动队列处理具体期次。"
       />
 
-      <Tabs
-        className="payment-dashboard-tabs"
-        type="card"
-        activeTab={activeTab}
+      <SectionTabs
+        variant="card"
+        activeKey={activeTab}
         onChange={changeTab}
-      >
-        <TabPane key="home" title="合同看板">
-          <PaymentKanban />
-        </TabPane>
-        <TabPane key="actions" title="行动队列">
-          <PaymentKanbanV2 />
-        </TabPane>
-        <TabPane key="forecast" title="回款预测">
-          <PaymentForecastContent />
-        </TabPane>
-      </Tabs>
+        className={"payment-dashboard-tabs"}
+        items={[
+          {
+            key: 'home',
+            label: "合同看板",
+            content: (
+              <>
+                  <PaymentKanban />
+                
+              </>
+            ),
+          },
+          {
+            key: 'actions',
+            label: "行动队列",
+            content: (
+              <>
+                  <PaymentKanbanV2 />
+                
+              </>
+            ),
+          },
+          {
+            key: 'forecast',
+            label: "回款预测",
+            content: (
+              <>
+                  <PaymentForecastContent />
+                
+              </>
+            ),
+          },
+        ]}
+      />
     </PageShell>
   );
 }

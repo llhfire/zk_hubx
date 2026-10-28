@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
-  Card,
   DatePicker,
-  Descriptions,
-  Empty,
   Form,
+  FormGrid,
   Grid,
   Input,
   InputTag,
@@ -18,14 +16,26 @@ import {
   Space,
   Table,
   Tabs,
-  Tag,
   Timeline,
   Tooltip,
   Typography,
   Upload,
-} from '@arco-design/web-react';
-import { IconCopy, IconDelete, IconEdit, IconFile, IconPlus, IconUpload } from '@arco-design/web-react/icon';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+} from '@/design-system';
+import { IconCopy, IconDelete, IconEdit, IconFile, IconPlus, IconUpload } from '@/design-system';
+import type { UploadItem } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  EmptyState,
+  FileList,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  UploadPanel,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import type { Contract, ContractVersion } from '../../sales/contracts/types';
 import {
   downloadAttachment,
@@ -66,9 +76,21 @@ import type {
 import { ProjectTaskPanel } from './ProjectTaskPanel';
 import { ProjectCostPanel } from './ProjectCostPanel';
 import { ProjectPresalesHistoryPanel } from './ProjectPresalesHistoryPanel';
+import { BUSINESS_LINE_META, PROJECT_PRIORITY_META, PROJECT_STATUS_META } from './types';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
+
+const renderDownloadableFiles = (files: ContractModAttachment[]) => (
+  <FileList
+    items={files.map(file => ({
+      key: file.id,
+      name: file.name,
+      meta: file.size,
+      onDownload: () => downloadAttachment(file),
+    }))}
+  />
+);
 const { Text, Title } = Typography;
 
 function MeetingMinutesText({ children }: { children: string }) {
@@ -143,6 +165,13 @@ interface ReimbursementApplication {
   createTime: string;
   approvalFlow: ApprovalNode[];
 }
+
+/** 审批节点状态 → 语义色；文案仍按节点类型在页面里计算。 */
+const APPROVAL_STATUS_META: StatusMap = {
+  approved: { label: '已通过', tone: 'success' },
+  pending: { label: '待处理', tone: 'warning' },
+  rejected: { label: '已驳回', tone: 'danger' },
+};
 
 interface ProjectMeetingRecord {
   id: string;
@@ -437,8 +466,7 @@ function ConfirmationPanel() {
 
   return (
     <>
-      <Card
-        bordered={false}
+      <SectionCard
         extra={(
           <Button type="primary" size="small" icon={<IconPlus />} onClick={() => setModalVisible(true)}>
             新增确认书
@@ -446,7 +474,7 @@ function ConfirmationPanel() {
         )}
       >
         {records.length === 0 ? (
-          <Empty description="暂无确认书" />
+          <EmptyState description="暂无确认书" />
         ) : (
           <Timeline>
             {records.map((record, index) => (
@@ -457,7 +485,7 @@ function ConfirmationPanel() {
                 <div style={{ marginBottom: 12, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
                     <span style={{ fontWeight: 600, color: 'var(--color-text-1)' }}>{record.name}</span>
-                    <Tag color="arcoblue" size="small" style={{ flexShrink: 0 }}>{record.type}</Tag>
+                    <StatusTag tone="info" className="project-record-type-tag">{record.type}</StatusTag>
                   </div>
                   {record.description && (
                     <div style={{ color: 'var(--color-text-1)', lineHeight: '20px', marginBottom: 8 }}>
@@ -466,35 +494,10 @@ function ConfirmationPanel() {
                   )}
                   {record.attachments.length > 0 && (
                     <div style={{ marginBottom: 8 }}>
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        {record.attachments.map(file => (
-                          <div
-                            key={file.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '6px 10px',
-                              background: 'var(--color-fill-2)',
-                              borderRadius: 4,
-                              fontSize: 14,
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <span style={{ fontWeight: 500 }}>{file.name}</span>
-                              <span style={{ marginLeft: 8, color: 'var(--color-text-3)', fontSize: 12 }}>
-                                {file.size}
-                              </span>
-                            </div>
-                            <Button type="text" size="mini" onClick={() => downloadAttachment(file)}>
-                              下载
-                            </Button>
-                          </div>
-                        ))}
-                      </Space>
+                      {renderDownloadableFiles(record.attachments)}
                     </div>
                   )}
-                  <div style={{ fontSize: 12, color: 'var(--color-text-3)', lineHeight: '20px' }}>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: '20px' }}>
                     <div>上传人：{record.uploader}</div>
                     <div>上传时间：{record.uploadTime}</div>
                   </div>
@@ -503,7 +506,7 @@ function ConfirmationPanel() {
             ))}
           </Timeline>
         )}
-      </Card>
+      </SectionCard>
 
       <Modal
         title="新增确认书"
@@ -538,19 +541,12 @@ function ConfirmationPanel() {
             triggerPropName="fileList"
             rules={[{ required: true, message: '请上传附件' }]}
           >
-            <Upload
+            <UploadPanel
               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
               multiple
-              drag
-              tip="支持上传文档、表格、图片、压缩包等附件，可多选"
-            >
-              <div style={{ padding: '20px 0', textAlign: 'center' }}>
-                <IconUpload style={{ fontSize: 32, color: 'var(--color-text-3)' }} />
-                <div style={{ marginTop: 8, color: 'var(--color-text-2)' }}>
-                  点击或拖拽附件到此处上传
-                </div>
-              </div>
-            </Upload>
+              hint="点击或拖拽附件到此处上传"
+              description="支持上传文档、表格、图片、压缩包等附件，可多选"
+            />
           </FormItem>
         </Form>
       </Modal>
@@ -655,12 +651,11 @@ export function ProjectDemoPanel() {
 
   return (
     <>
-      <Card
-        bordered={false}
+      <SectionCard
         extra={<Button type="primary" size="small" icon={<IconPlus />} onClick={() => setModalVisible(true)}>新增记录</Button>}
       >
         {records.length === 0 ? (
-          <Empty description="暂无演示记录" />
+          <EmptyState description="暂无演示记录" />
         ) : (
           <Timeline>
             {records.map((record, index) => (
@@ -673,22 +668,22 @@ export function ProjectDemoPanel() {
                     <span style={{ fontWeight: 600, color: 'var(--color-text-1)' }}>
                       {record.uploader} 上传了演示
                     </span>
-                    <Tag color="arcoblue" size="small" style={{ flexShrink: 0 }}>
+                    <StatusTag tone="info" className="project-record-type-tag">
                       共 {record.demos.length} 条
-                    </Tag>
+                    </StatusTag>
                   </div>
                   <div style={{ display: 'grid', gap: 12 }}>
                     {record.demos.map((demo, demoIndex) => (
                       <div
                         key={demo.id}
-                        style={{ padding: 12, border: '1px solid var(--color-border-2)', borderRadius: 4, background: 'var(--color-fill-1)' }}
+                        style={{ padding: 12, border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-xs)', background: 'var(--color-fill-1)' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                           <span style={{ fontWeight: 600, color: 'var(--color-text-1)' }}>
                             {demoIndex + 1}. {demo.name}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, marginBottom: 6, fontSize: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, marginBottom: 6, fontSize: 'var(--text-sm)' }}>
                           <span style={{ flexShrink: 0, color: 'var(--color-text-3)' }}>演示网址：</span>
                           <a href={demo.url} target="_blank" rel="noreferrer" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {demo.url}
@@ -703,7 +698,7 @@ export function ProjectDemoPanel() {
                             />
                           </Tooltip>
                         </div>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-3)', lineHeight: '20px', wordBreak: 'break-all' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', lineHeight: '20px', wordBreak: 'break-all' }}>
                           HTML：{demo.htmlFile || '-'}
                           {demo.cssFile ? ` · CSS：${demo.cssFile}` : ''}
                           {demo.jsFile ? ` · JS：${demo.jsFile}` : ''}
@@ -716,7 +711,7 @@ export function ProjectDemoPanel() {
                       说明：{record.description}
                     </div>
                   )}
-                  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-3)' }}>
+                  <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                     上传时间：{record.uploadTime}
                   </div>
                 </div>
@@ -724,7 +719,7 @@ export function ProjectDemoPanel() {
             ))}
           </Timeline>
         )}
-      </Card>
+      </SectionCard>
 
       <Modal
         title="新增演示记录"
@@ -742,7 +737,7 @@ export function ProjectDemoPanel() {
             return (
               <section
                 key={draft.id}
-                style={{ padding: 16, border: '1px solid var(--color-border-2)', borderRadius: 4, background: 'var(--color-fill-1)' }}
+                style={{ padding: 16, border: '1px solid var(--color-border-2)', borderRadius: 'var(--radius-xs)', background: 'var(--color-fill-1)' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
                   <strong>演示记录 {index + 1}</strong>
@@ -753,7 +748,7 @@ export function ProjectDemoPanel() {
                   ) : null}
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 14 }}>
+                  <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 'var(--text-sm)' }}>
                     名称 <span style={{ color: 'rgb(var(--red-6))' }}>*</span>
                   </div>
                   <Input
@@ -764,11 +759,11 @@ export function ProjectDemoPanel() {
                   />
                 </div>
                 <div>
-                  <div style={{ marginBottom: 10, color: 'var(--color-text-2)', fontSize: 14 }}>演示文件</div>
+                  <div style={{ marginBottom: 10, color: 'var(--color-text-2)', fontSize: 'var(--text-sm)' }}>演示文件</div>
                   <Grid.Row gutter={12}>
                     <Grid.Col span={8}>
-                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>
+                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 'var(--radius-xs)', background: 'var(--color-bg-1)' }}>
+                        <div style={{ marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--color-text-1)' }}>
                           HTML 文件 <span style={{ color: 'rgb(var(--red-6))' }}>*</span>
                         </div>
                         <Upload
@@ -783,8 +778,8 @@ export function ProjectDemoPanel() {
                       </div>
                     </Grid.Col>
                     <Grid.Col span={8}>
-                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>CSS 文件</div>
+                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 'var(--radius-xs)', background: 'var(--color-bg-1)' }}>
+                        <div style={{ marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--color-text-1)' }}>CSS 文件</div>
                         <Upload
                           autoUpload={false}
                           limit={1}
@@ -797,8 +792,8 @@ export function ProjectDemoPanel() {
                       </div>
                     </Grid.Col>
                     <Grid.Col span={8}>
-                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 4, background: 'var(--color-bg-1)' }}>
-                        <div style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text-1)' }}>JS 文件</div>
+                      <div style={{ padding: 12, minHeight: 112, border: '1px dashed var(--color-border-2)', borderRadius: 'var(--radius-xs)', background: 'var(--color-bg-1)' }}>
+                        <div style={{ marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--color-text-1)' }}>JS 文件</div>
                         <Upload
                           autoUpload={false}
                           limit={1}
@@ -813,7 +808,7 @@ export function ProjectDemoPanel() {
                   </Grid.Row>
                   {draft.htmlFiles.length ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, minWidth: 0, color: 'rgb(var(--arcoblue-6))' }}>
-                      <span style={{ flexShrink: 0, color: 'var(--color-text-2)', fontSize: 14 }}>演示网址：</span>
+                      <span style={{ flexShrink: 0, color: 'var(--color-text-2)', fontSize: 'var(--text-sm)' }}>演示网址：</span>
                       <Button
                         type="text"
                         size="mini"
@@ -836,7 +831,7 @@ export function ProjectDemoPanel() {
             </Button>
           </div>
           <div>
-            <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 14 }}>说明</div>
+            <div style={{ marginBottom: 6, color: 'var(--color-text-2)', fontSize: 'var(--text-sm)' }}>说明</div>
             <Input.TextArea
               value={description}
               placeholder="请输入演示说明（可选）"
@@ -854,7 +849,7 @@ export function ProjectDemoPanel() {
 
 function ApprovalTimeline({ nodes }: { nodes: ApprovalNode[] }) {
   return (
-    <div style={{ padding: 12, border: '1px solid var(--color-border-1)', borderRadius: 4, background: 'var(--color-bg-2)' }}>
+    <div style={{ padding: 12, border: '1px solid var(--color-border-1)', borderRadius: 'var(--radius-xs)', background: 'var(--color-bg-2)' }}>
       {nodes.map((node, index) => (
         <div key={`${node.step}-${index}`} style={{ position: 'relative', paddingLeft: 24 }}>
           {index < nodes.length - 1 && <div style={{ position: 'absolute', left: 7, top: 20, bottom: -8, width: 2, background: node.status === 'approved' ? 'rgb(var(--green-6))' : 'var(--color-border-2)' }} />}
@@ -862,14 +857,14 @@ function ApprovalTimeline({ nodes }: { nodes: ApprovalNode[] }) {
             <div style={{ position: 'absolute', left: 0, width: 16, height: 16, borderRadius: '50%', border: '2px solid', borderColor: node.status === 'approved' ? 'rgb(var(--green-6))' : node.status === 'pending' ? 'rgb(var(--orange-6))' : 'rgb(var(--red-6))', background: node.status === 'approved' ? 'rgb(var(--green-6))' : node.status === 'pending' ? 'rgb(var(--orange-6))' : 'rgb(var(--red-6))' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Space size={8} wrap>
-                <strong style={{ fontSize: 14 }}>{node.step}</strong>
-                <Tag color={node.status === 'approved' ? 'green' : node.status === 'pending' ? 'orange' : 'red'} size="small">
+                <strong style={{ fontSize: 'var(--text-sm)' }}>{node.step}</strong>
+                <StatusTag tone={resolveStatus(APPROVAL_STATUS_META, node.status).tone}>
                   {node.step === '发起申请' && node.status === 'approved' ? '已申请' : node.status === 'approved' ? '已通过' : node.status === 'pending' ? '待处理' : '已驳回'}
-                </Tag>
+                </StatusTag>
               </Space>
-              <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-3)' }}>{node.step === '发起申请' ? '申请人' : '审批人'}：{node.approver}</div>
-              {node.time && <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>操作时间：{node.time}</div>}
-              {node.comment && <div style={{ marginTop: 4, fontSize: 12, color: node.status === 'rejected' ? 'rgb(var(--red-6))' : 'var(--color-text-3)' }}>意见：{node.comment}</div>}
+              <div style={{ marginTop: 4, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{node.step === '发起申请' ? '申请人' : '审批人'}：{node.approver}</div>
+              {node.time && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>操作时间：{node.time}</div>}
+              {node.comment && <div style={{ marginTop: 4, fontSize: 'var(--text-xs)', color: node.status === 'rejected' ? 'rgb(var(--red-6))' : 'var(--color-text-3)' }}>意见：{node.comment}</div>}
             </div>
           </div>
         </div>
@@ -880,11 +875,11 @@ function ApprovalTimeline({ nodes }: { nodes: ApprovalNode[] }) {
 
 function TravelPanel({ items, onAdd }: { items: TravelApplication[]; onAdd: () => void }) {
   return (
-    <Card bordered={false} extra={<Button type="primary" size="small" icon={<IconPlus />} onClick={onAdd}>新增出差</Button>}>
+    <SectionCard extra={<Button type="primary" size="small" icon={<IconPlus />} onClick={onAdd}>新增出差</Button>}>
       <Space direction="vertical" style={{ width: '100%' }} size="medium">
         {items.map(item => (
           <div key={item.id} className="project-approval-card">
-            <div className="project-approval-card-title"><strong>目的地：{item.destination}</strong><Tag color={item.status === '已审批' ? 'green' : 'orange'}>{item.status}</Tag></div>
+            <div className="project-approval-card-title"><strong>目的地：{item.destination}</strong><StatusTag tone={item.status === '已审批' ? 'success' : 'warning'}>{item.status}</StatusTag></div>
             <div className="project-approval-metrics">
               <div><Text type="secondary">出差周期</Text><strong>{item.duration}</strong></div>
               <div><Text type="secondary">预估费用</Text><strong>¥{item.estimatedCost}</strong></div>
@@ -895,23 +890,23 @@ function TravelPanel({ items, onAdd }: { items: TravelApplication[]; onAdd: () =
               <div className="project-approval-detail-full">出差事由：{item.purpose}</div>
             </div>
             <div style={{ marginTop: 12, marginBottom: 12 }}><Text type="secondary">审批流程</Text><ApprovalTimeline nodes={item.approvalFlow} /></div>
-            <Text type="secondary" style={{ fontSize: 12 }}>申请时间：{item.createTime}</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>申请时间：<DateText value={item.createTime} mode="datetime" /></Text>
           </div>
         ))}
       </Space>
-    </Card>
+    </SectionCard>
   );
 }
 
 function ReimbursementPanel({ items, onAdd }: { items: ReimbursementApplication[]; onAdd: () => void }) {
   return (
-    <Card bordered={false} extra={<Button type="primary" size="small" icon={<IconPlus />} onClick={onAdd}>新增报销</Button>}>
+    <SectionCard extra={<Button type="primary" size="small" icon={<IconPlus />} onClick={onAdd}>新增报销</Button>}>
       <Space direction="vertical" style={{ width: '100%' }} size="medium">
         {items.map(item => (
           <div key={item.id} className="project-approval-card">
             <div className="project-approval-card-title">
               <strong>费用类型：{item.expenseType}</strong>
-              <Space size="mini"><Tag color={item.status === '已报销' ? 'green' : 'orange'}>{item.status}</Tag><Button type="text" size="mini" icon={<IconEdit />} /></Space>
+              <Space size="mini"><StatusTag tone={item.status === '已报销' ? 'success' : 'warning'}>{item.status}</StatusTag><Button type="text" size="mini" icon={<IconEdit />} /></Space>
             </div>
             <div className="project-approval-metrics">
               <div><Text type="secondary">开票金额</Text><strong>¥{item.invoiceAmount}</strong></div>
@@ -924,14 +919,14 @@ function ReimbursementPanel({ items, onAdd }: { items: ReimbursementApplication[
             </div>
             <div style={{ marginTop: 10 }}>
               <Text type="secondary">附件列表：</Text>
-              <Space size="mini" wrap>{item.attachments.map(file => <Tag key={file.id} icon={<IconFile />}>{file.name} ({file.size})</Tag>)}</Space>
+              {item.attachments.length > 0 && renderDownloadableFiles(item.attachments)}
             </div>
             <div style={{ marginTop: 12, marginBottom: 12 }}><Text type="secondary">审批流程</Text><ApprovalTimeline nodes={item.approvalFlow} /></div>
-            <Text type="secondary" style={{ fontSize: 12 }}>申请时间：{item.createTime}</Text>
+            <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>申请时间：<DateText value={item.createTime} mode="datetime" /></Text>
           </div>
         ))}
       </Space>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -1398,252 +1393,378 @@ export function ProjectDetailWorkspace({
           </div>
 
           <div className="project-detail-workspace-panel">
-            <Tabs defaultActiveTab="basic">
-              <TabPane key="basic" title="基础信息">
-                <div className="project-detail-basic-section">
-                  <Descriptions
-                    column={2}
-                    data={[
-                      { label: '编号', value: project.projectNo },
-                      { label: '项目名称', value: project.name },
-                      { label: '总进度', value: `${project.progress}%` },
-                      { label: '对接主体', value: project.entity || '-' },
-                      { label: '优先级', value: project.priority },
-                      { label: '状态', value: project.status },
-                      { label: '业务线', value: project.businessLine },
-                      { label: '最新进展', value: project.latestProgress },
-                      { label: '开始日期', value: project.startDate || '-' },
-                      { label: '预计结束日期', value: project.expectedEndDate || '-' },
-                      { label: '添加时间', value: project.createdAt },
-                      { label: '备注', value: project.remark || '-' },
-                    ]}
-                  />
-                </div>
-
-              </TabPane>
-
-              <TabPane key="contract" title="合同信息">
-                <Card bordered={false}>
-                  <Space direction="vertical" style={{ width: '100%' }} size="small">
-                    {archivedContracts.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-3)' }}>
-                        {contract ? '暂无已归档合同' : '暂未创建合同'}
-                      </div>
-                    ) : (
-                      archivedContracts.map(item => (
-                        <LeadFinalContractPanel key={item.id} contract={item} projectLayout projectFullInfo />
-                      ))
-                    )}
-                  </Space>
-                </Card>
-              </TabPane>
-
-              <TabPane key="payments" title="回款与发票">
-                <Card bordered={false}>
-                  {contract ? (
-                    <LeadPaymentInvoicePanel
-                      contractAmount={contract.current.totalAmount}
-                      projectMode
-                      projectId={project.id}
-                      projectName={project.name}
-                      projectNo={project.projectNo}
-                      contractId={contract.id}
-                      customerInvoiceInfo={{
-                        customerName: contract.current.customerName,
-                        taxpayerId: contract.current.customerTaxNo,
-                        address: contract.current.customerAddress,
-                        phone: contract.current.customerPhone,
-                        bankName: contract.current.bankName,
-                        bankAccount: contract.current.bankAccount,
-                        recipientName: contract.current.customerContact,
-                        recipientPhone: contract.current.customerPhone,
-                        recipientEmail: contract.current.customerEmail,
-                      }}
-                    />
-                  ) : (
-                    <Empty description="当前项目暂未关联合同" />
-                  )}
-                </Card>
-              </TabPane>
-
-              <TabPane key="cost" title="成本核算">
-                <ProjectCostPanel
-                  projectName={project.name}
-                  projectNo={project.projectNo}
-                  contractAmount={contract?.current.totalAmount}
-                  projectStartDate={project.startDate}
-                  projectEndDate={project.expectedEndDate}
-                  teamRows={teamRows}
-                  dailyReports={dailyReports}
-                  reimbursementItems={reimbursementApplications}
-                />
-              </TabPane>
-
-              <TabPane key="team" title="项目团队">
-                <div className="project-team-toolbar">
-                  <Button type="primary" size="small" icon={<IconPlus />} onClick={openNewTeamConfig}>新增</Button>
-                </div>
-                <Table
-                  rowKey="id"
-                  pagination={false}
-                  data={teamRows}
-                  scroll={{ x: 744 }}
-                  noDataElement={(
-                    <div className="project-team-empty">
-                      <Empty description="暂无项目团队配置" />
-                      <Button type="primary" onClick={autoConfigureTeam}>自动配置</Button>
-                    </div>
-                  )}
-                  columns={[
-                    { title: '项目岗位', dataIndex: 'role', width: 128 },
-                    {
-                      title: '成员', dataIndex: 'members', width: 192,
-                      render: (members: string[]) => members.length
-                        ? <Space size="mini" wrap>{members.map(name => <Tag key={name}>{name}</Tag>)}</Space>
-                        : <Text type="secondary">待配置</Text>,
-                    },
-                    { title: '计划人数', dataIndex: 'plannedPeople', width: 96, align: 'center' as const, render: (plannedPeople: number) => `${plannedPeople} 人` },
-                    { title: '岗位职责', dataIndex: 'responsibility', width: 240 },
-                    {
-                      title: '操作', width: 88, align: 'center' as const, fixed: 'right' as const,
-                      render: (_: unknown, row: ProjectTeamRow) => (
-                        <Space size="mini">
-                          <Tooltip content="编辑">
-                            <Button type="text" size="small" icon={<IconEdit />} aria-label="编辑" onClick={() => openTeamConfig(row)} />
-                          </Tooltip>
-                          <Popconfirm
-                            title="确认删除该团队配置吗？"
-                            onOk={() => {
-                              setTeamRows(current => current.filter(item => item.id !== row.id));
-                              Message.success('团队配置已删除');
-                            }}
-                          >
-                            <Tooltip content="删除">
-                              <Button type="text" size="small" status="danger" icon={<IconDelete />} aria-label="删除" />
-                            </Tooltip>
-                          </Popconfirm>
-                        </Space>
-                      ),
-                    },
-                  ]}
-                />
-              </TabPane>
-
-              <TabPane key="daily" title="项目日报">
-                <Tabs defaultActiveTab="hours">
-                  <TabPane key="hours" title="工时列表">
-                    <Table
-                      rowKey="key"
-                      pagination={false}
-                      data={memberHours}
-                      columns={[
-                        { title: '人员名称', dataIndex: 'personName' },
-                        { title: '职位', dataIndex: 'position' },
-                        { title: '已用工时', dataIndex: 'hours', render: (hours: number) => `${hours}H` },
-                      ]}
-                      summary={() => <Table.Summary.Row><Table.Summary.Cell colSpan={2}>总计</Table.Summary.Cell><Table.Summary.Cell>{totalHours}H</Table.Summary.Cell></Table.Summary.Row>}
-                    />
-                  </TabPane>
-                  <TabPane key="reports" title="日报列表">
-                    <Table
-                      rowKey="id"
-                      pagination={false}
-                      data={dailyReports}
-                      scroll={{ x: 900 }}
-                      columns={[
-                        { title: '日期', dataIndex: 'date', width: 120 },
-                        { title: '人员', dataIndex: 'personName', width: 100 },
-                        { title: '耗时', dataIndex: 'hours', width: 80, render: (hours: number) => `${hours}H` },
-                        { title: '工作内容', dataIndex: 'workContent', width: 260 },
-                        { title: '风险/异常反馈', dataIndex: 'riskFeedback', width: 220 },
-                      ]}
-                    />
-                  </TabPane>
-                </Tabs>
-              </TabPane>
-              <TabPane key="tasks" title="任务管理">
-                <ProjectTaskPanel project={project} />
-              </TabPane>
-            </Tabs>
+            <SectionTabs
+              defaultActiveKey={"basic"}
+              items={[
+                {
+                  key: 'basic',
+                  label: "基础信息",
+                  content: (
+                    <>
+                              <div className="project-detail-basic-section">
+                                <DescriptionsCard
+                                  columns={2}
+                                  items={[
+                                    { key: 'projectNo', label: '编号', value: project.projectNo },
+                                    { key: 'name', label: '项目名称', value: project.name },
+                                    { key: 'progress', label: '总进度', value: `${project.progress}%` },
+                                    { key: 'entity', label: '对接主体', value: project.entity || '-' },
+                                    { key: 'priority', label: '优先级', value: <StatusTag meta={resolveStatus(PROJECT_PRIORITY_META, project.priority)} /> },
+                                    { key: 'status', label: '状态', value: <StatusTag meta={resolveStatus(PROJECT_STATUS_META, project.status)} /> },
+                                    { key: 'businessLine', label: '业务线', value: <StatusTag meta={resolveStatus(BUSINESS_LINE_META, project.businessLine)} /> },
+                                    { key: 'latestProgress', label: '最新进展', value: project.latestProgress, long: true },
+                                    { key: 'startDate', label: '开始日期', value: <DateText value={project.startDate} /> },
+                                    { key: 'expectedEndDate', label: '预计结束日期', value: <DateText value={project.expectedEndDate} /> },
+                                    { key: 'createdAt', label: '添加时间', value: <DateText value={project.createdAt} mode="datetime" /> },
+                                    { key: 'remark', label: '备注', value: project.remark || '-', long: true },
+                                  ]}
+                                />
+                              </div>
+              
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'contract',
+                  label: "合同信息",
+                  content: (
+                    <>
+                              <SectionCard>
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                  {archivedContracts.length === 0 ? (
+                                    <EmptyState description={contract ? '暂无已归档合同' : '暂未创建合同'} />
+                                  ) : (
+                                    archivedContracts.map(item => (
+                                      <LeadFinalContractPanel key={item.id} contract={item} projectLayout projectFullInfo />
+                                    ))
+                                  )}
+                                </Space>
+                              </SectionCard>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'payments',
+                  label: "回款与发票",
+                  content: (
+                    <>
+                              <SectionCard>
+                                {contract ? (
+                                  <LeadPaymentInvoicePanel
+                                    contractAmount={contract.current.totalAmount}
+                                    projectMode
+                                    projectId={project.id}
+                                    projectName={project.name}
+                                    projectNo={project.projectNo}
+                                    contractId={contract.id}
+                                    customerInvoiceInfo={{
+                                      customerName: contract.current.customerName,
+                                      taxpayerId: contract.current.customerTaxNo,
+                                      address: contract.current.customerAddress,
+                                      phone: contract.current.customerPhone,
+                                      bankName: contract.current.bankName,
+                                      bankAccount: contract.current.bankAccount,
+                                      recipientName: contract.current.customerContact,
+                                      recipientPhone: contract.current.customerPhone,
+                                      recipientEmail: contract.current.customerEmail,
+                                    }}
+                                  />
+                                ) : (
+                                  <EmptyState description="当前项目暂未关联合同" />
+                                )}
+                              </SectionCard>
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'cost',
+                  label: "成本核算",
+                  content: (
+                    <>
+                              <ProjectCostPanel
+                                projectName={project.name}
+                                projectNo={project.projectNo}
+                                contractAmount={contract?.current.totalAmount}
+                                projectStartDate={project.startDate}
+                                projectEndDate={project.expectedEndDate}
+                                teamRows={teamRows}
+                                dailyReports={dailyReports}
+                                reimbursementItems={reimbursementApplications}
+                              />
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'team',
+                  label: "项目团队",
+                  content: (
+                    <>
+                              <DataTable
+                                rowKey="id"
+                                pagination={false}
+                                data={teamRows}
+                                scroll={{ x: 744 }}
+                                actions={<Button type="primary" size="small" icon={<IconPlus />} onClick={openNewTeamConfig}>新增</Button>}
+                                emptyDescription="暂无项目团队配置"
+                                emptyAction={<Button type="primary" onClick={autoConfigureTeam}>自动配置</Button>}
+                                columns={[
+                                  { title: '项目岗位', dataIndex: 'role', width: 128 },
+                                  {
+                                    title: '成员', dataIndex: 'members', width: 192,
+                                    render: (members: string[]) => members.length
+                                      ? <Space size="mini" wrap>{members.map(name => <StatusTag key={name}>{name}</StatusTag>)}</Space>
+                                      : <Text type="secondary">待配置</Text>,
+                                  },
+                                  { title: '计划人数', dataIndex: 'plannedPeople', width: 96, align: 'center' as const, render: (plannedPeople: number) => `${plannedPeople} 人` },
+                                  { title: '岗位职责', dataIndex: 'responsibility', width: 240 },
+                                  {
+                                    title: '操作', width: 88, align: 'center' as const, fixed: 'right' as const,
+                                    render: (_: unknown, row: ProjectTeamRow) => (
+                                      <Space size="mini">
+                                        <Tooltip content="编辑">
+                                          <Button type="text" size="small" icon={<IconEdit />} aria-label="编辑" onClick={() => openTeamConfig(row)} />
+                                        </Tooltip>
+                                        <Popconfirm
+                                          title="确认删除该团队配置吗？"
+                                          onOk={() => {
+                                            setTeamRows(current => current.filter(item => item.id !== row.id));
+                                            Message.success('团队配置已删除');
+                                          }}
+                                        >
+                                          <Tooltip content="删除">
+                                            <Button type="text" size="small" status="danger" icon={<IconDelete />} aria-label="删除" />
+                                          </Tooltip>
+                                        </Popconfirm>
+                                      </Space>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'daily',
+                  label: "项目日报",
+                  content: (
+                    <>
+                              <SectionTabs
+                                defaultActiveKey={"hours"}
+                                items={[
+                                  {
+                                    key: 'hours',
+                                    label: "工时列表",
+                                    content: (
+                                      <>
+                                                    <DataTable
+                                                      rowKey="key"
+                                                      pagination={false}
+                                                      data={memberHours}
+                                                      columns={[
+                                                        { title: '人员名称', dataIndex: 'personName' },
+                                                        { title: '职位', dataIndex: 'position' },
+                                                        { title: '已用工时', dataIndex: 'hours', render: (hours: number) => `${hours}H` },
+                                                      ]}
+                                                      summary={() => <Table.Summary.Row><Table.Summary.Cell colSpan={2}>总计</Table.Summary.Cell><Table.Summary.Cell>{totalHours}H</Table.Summary.Cell></Table.Summary.Row>}
+                                                    />
+                                                  
+                                      </>
+                                    ),
+                                  },
+                                  {
+                                    key: 'reports',
+                                    label: "日报列表",
+                                    content: (
+                                      <>
+                                                    <DataTable
+                                                      rowKey="id"
+                                                      pagination={false}
+                                                      data={dailyReports}
+                                                      scroll={{ x: 900 }}
+                                                      emptyDescription="暂无日报记录"
+                                                      columns={[
+                                                        { title: '日期', dataIndex: 'date', width: 120, render: (value: string) => <DateText value={value} /> },
+                                                        { title: '人员', dataIndex: 'personName', width: 100 },
+                                                        { title: '耗时', dataIndex: 'hours', width: 80, render: (hours: number) => `${hours}H` },
+                                                        { title: '工作内容', dataIndex: 'workContent', width: 260 },
+                                                        { title: '风险/异常反馈', dataIndex: 'riskFeedback', width: 220 },
+                                                      ]}
+                                                    />
+                                                  
+                                      </>
+                                    ),
+                                  },
+                                ]}
+                              />
+                            
+                    </>
+                  ),
+                },
+                {
+                  key: 'tasks',
+                  label: "任务管理",
+                  content: (
+                    <>
+                              <ProjectTaskPanel project={project} />
+                            
+                    </>
+                  ),
+                },
+              ]}
+            />
           </div>
         </div>
 
         <div className="project-detail-workspace-panel project-detail-workspace-panel-side">
-          <Tabs defaultActiveTab="follow">
-            <TabPane key="follow" title="跟进">
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                <Button type="primary" size="small" icon={<IconPlus />} onClick={onAddFollowUp}>新增</Button>
-              </div>
-              <Timeline>
-                {followUps.map(follow => (
-                  <Timeline.Item key={follow.id} label={follow.createdAt}>
-                    <Space size="mini" wrap><Tag color="arcoblue">{follow.status}</Tag><Tag>{follow.progress}%</Tag><Text type="secondary">{follow.operator}</Text></Space>
-                    <div style={{ marginTop: 6 }}>{follow.content}</div>
-                    {follow.attachments.map(file => <Tag key={file.id} icon={<IconFile />} style={{ marginTop: 6 }}>{file.name}</Tag>)}
-                  </Timeline.Item>
-                ))}
-              </Timeline>
-            </TabPane>
-
-            <TabPane key="quotation" title="报价">
-              <LeadQuotationHistoryPanel
-                quotations={projectQuotationHistory}
-                projectLayout
-                showProjectEditAction
-                alwaysExpanded
-                hideQuotationUpload
-                approvalOverviewAtTop
-                onCreate={openQuotationConfig}
-                onEdit={openQuotationEditor}
-                onDelete={deleteQuotation}
-                onSubmitApproval={submitQuotationApproval}
-                onApprovalDecision={handleQuotationApprovalDecision}
-                onUploadFiles={appendQuotationFiles}
-                onRemoveFile={removeQuotationFile}
-              />
-            </TabPane>
-            <TabPane key="contract-records" title="合同记录">
-              <LeadContractHistoryPanel
-                contract={contract}
-                onCreateContract={onSelectContract}
-                onContractClick={onOpenContract}
-                hideHistorySummary
-                hideAddVersion
-                hideVersionChangeTypes
-                hideEmptyApprovalRecords
-                hideContractDetailAction
-                projectCompactVersionLayout
-                hideFinalArchiveUntilApproved
-                approvalOverviewAtTop
-                approvalMode="general-manager"
-                onEditVersion={onEditContractVersion}
-              />
-            </TabPane>
-            <TabPane key="meeting-minutes" title="会议纪要">
-              <div className="project-meeting-toolbar"><Button type="primary" size="small" icon={<IconPlus />} onClick={openMeetingModal}>新增记录</Button></div>
-              {meetingRecords.length ? <Timeline className="project-meeting-timeline">
-                {meetingRecords.map(record => <Timeline.Item key={record.id}>
-                  <div className="project-meeting-card">
-                    <div className="project-meeting-title">{record.subject}</div>
-                    <div className="project-meeting-meta"><Text type="secondary">{record.meetingTime}</Text><Text type="secondary">记录人：{record.recorder}</Text></div>
-                    <div className="project-meeting-attendees"><Text type="secondary">参会人</Text><Space size="mini" wrap>{record.employeeAttendees.map(name => <Tag key={`employee-${name}`} color="arcoblue">{name}</Tag>)}{record.externalAttendees.map(name => <Tag key={`external-${name}`}>{name}（外部）</Tag>)}</Space></div>
-                    <MeetingMinutesText>{record.minutes}</MeetingMinutesText>
-                    {(record.recordings.length > 0 || record.materials.length > 0) && <div className="project-meeting-files">
-                      {record.recordings.length > 0 && <div><Text type="secondary">会议录音</Text><Space size="mini" wrap>{record.recordings.map(file => <Button key={file.id} type="text" size="mini" icon={<IconFile />} onClick={() => downloadAttachment(file)}>{file.name}</Button>)}</Space></div>}
-                      {record.materials.length > 0 && <div><Text type="secondary">会议资料</Text><Space size="mini" wrap>{record.materials.map(file => <Button key={file.id} type="text" size="mini" icon={<IconFile />} onClick={() => downloadAttachment(file)}>{file.name}</Button>)}</Space></div>}
-                    </div>}
-                  </div>
-                </Timeline.Item>)}
-              </Timeline> : <Empty description="暂无会议纪要" />}
-            </TabPane>
-            <TabPane key="demo" title="演示"><ProjectDemoPanel /></TabPane>
-            <TabPane key="documents" title="资料"><DocumentUploadPanel /></TabPane>
-            <TabPane key="travel" title="出差"><TravelPanel items={travelApplications} onAdd={() => setApprovalType('travel')} /></TabPane>
-            <TabPane key="reimbursement" title="报销"><ReimbursementPanel items={reimbursementApplications} onAdd={() => setApprovalType('reimbursement')} /></TabPane>
-            <TabPane key="presales-history" title="售前历程">
-              <ProjectPresalesHistoryPanel leadId={projectLeadId} contract={contract} />
-            </TabPane>
-          </Tabs>
+          <SectionTabs
+            defaultActiveKey={"follow"}
+            items={[
+              {
+                key: 'follow',
+                label: "跟进",
+                content: (
+                  <>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                            <Button type="primary" size="small" icon={<IconPlus />} onClick={onAddFollowUp}>新增</Button>
+                          </div>
+                          <Timeline>
+                            {followUps.map(follow => (
+                              <Timeline.Item key={follow.id} label={<DateText value={follow.createdAt} mode="datetime" />}>
+                                <Space size="mini" wrap><StatusTag tone="info">{follow.status}</StatusTag><StatusTag>{follow.progress}%</StatusTag><Text type="secondary">{follow.operator}</Text></Space>
+                                <div style={{ marginTop: 6 }}>{follow.content}</div>
+                                {follow.attachments.length > 0 && renderDownloadableFiles(follow.attachments)}
+                              </Timeline.Item>
+                            ))}
+                          </Timeline>
+                        
+                  </>
+                ),
+              },
+              {
+                key: 'quotation',
+                label: "报价",
+                content: (
+                  <>
+                          <LeadQuotationHistoryPanel
+                            quotations={projectQuotationHistory}
+                            projectLayout
+                            showProjectEditAction
+                            alwaysExpanded
+                            hideQuotationUpload
+                            approvalOverviewAtTop
+                            onCreate={openQuotationConfig}
+                            onEdit={openQuotationEditor}
+                            onDelete={deleteQuotation}
+                            onSubmitApproval={submitQuotationApproval}
+                            onApprovalDecision={handleQuotationApprovalDecision}
+                            onUploadFiles={appendQuotationFiles}
+                            onRemoveFile={removeQuotationFile}
+                          />
+                        
+                  </>
+                ),
+              },
+              {
+                key: 'contract-records',
+                label: "合同记录",
+                content: (
+                  <>
+                          <LeadContractHistoryPanel
+                            contract={contract}
+                            onCreateContract={onSelectContract}
+                            onContractClick={onOpenContract}
+                            hideHistorySummary
+                            hideAddVersion
+                            hideVersionChangeTypes
+                            hideEmptyApprovalRecords
+                            hideContractDetailAction
+                            projectCompactVersionLayout
+                            hideFinalArchiveUntilApproved
+                            approvalOverviewAtTop
+                            approvalMode="general-manager"
+                            onEditVersion={onEditContractVersion}
+                          />
+                        
+                  </>
+                ),
+              },
+              {
+                key: 'meeting-minutes',
+                label: "会议纪要",
+                content: (
+                  <>
+                          <div className="project-meeting-toolbar"><Button type="primary" size="small" icon={<IconPlus />} onClick={openMeetingModal}>新增记录</Button></div>
+                          {meetingRecords.length ? <Timeline className="project-meeting-timeline">
+                            {meetingRecords.map(record => <Timeline.Item key={record.id}>
+                              <div className="project-meeting-card">
+                                <div className="project-meeting-title">{record.subject}</div>
+                                <div className="project-meeting-meta"><Text type="secondary"><DateText value={record.meetingTime} mode="datetime" /></Text><Text type="secondary">记录人：{record.recorder}</Text></div>
+                                <div className="project-meeting-attendees"><Text type="secondary">参会人</Text><Space size="mini" wrap>{record.employeeAttendees.map(name => <StatusTag key={`employee-${name}`} tone="info">{name}</StatusTag>)}{record.externalAttendees.map(name => <StatusTag key={`external-${name}`}>{name}（外部）</StatusTag>)}</Space></div>
+                                <MeetingMinutesText>{record.minutes}</MeetingMinutesText>
+                                {(record.recordings.length > 0 || record.materials.length > 0) && <div className="project-meeting-files">
+                                  {record.recordings.length > 0 && <div><Text type="secondary">会议录音</Text>{renderDownloadableFiles(record.recordings)}</div>}
+                                  {record.materials.length > 0 && <div><Text type="secondary">会议资料</Text>{renderDownloadableFiles(record.materials)}</div>}
+                                </div>}
+                              </div>
+                            </Timeline.Item>)}
+                          </Timeline> : <EmptyState description="暂无会议纪要" />}
+                        
+                  </>
+                ),
+              },
+              {
+                key: 'demo',
+                label: "演示",
+                content: (
+                  <>
+            <ProjectDemoPanel />
+                  </>
+                ),
+              },
+              {
+                key: 'documents',
+                label: "资料",
+                content: (
+                  <>
+            <DocumentUploadPanel />
+                  </>
+                ),
+              },
+              {
+                key: 'travel',
+                label: "出差",
+                content: (
+                  <>
+            <TravelPanel items={travelApplications} onAdd={() => setApprovalType('travel')} />
+                  </>
+                ),
+              },
+              {
+                key: 'reimbursement',
+                label: "报销",
+                content: (
+                  <>
+            <ReimbursementPanel items={reimbursementApplications} onAdd={() => setApprovalType('reimbursement')} />
+                  </>
+                ),
+              },
+              {
+                key: 'presales-history',
+                label: "售前历程",
+                content: (
+                  <>
+                          <ProjectPresalesHistoryPanel leadId={projectLeadId} contract={contract} />
+                        
+                  </>
+                ),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -1656,10 +1777,10 @@ export function ProjectDetailWorkspace({
         maskClosable={false}
       >
         <Form form={meetingForm} layout="vertical" className="project-meeting-form">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={15}><FormItem label="会议主题" field="subject" rules={[{ required: true, message: '请填写会议主题' }]}><Input placeholder="请输入会议主题" /></FormItem></Grid.Col>
-            <Grid.Col span={9}><FormItem label="会议时间" field="meetingTime" rules={[{ required: true, message: '请选择会议时间' }]}><DatePicker showTime={{ format: 'HH:mm', step: { minute: 30 } }} format="YYYY-MM-DD HH:mm" placeholder="请选择会议时间" style={{ width: '100%' }} /></FormItem></Grid.Col>
-          </Grid.Row>
+          <FormGrid columns={2}>
+            <FormItem label="会议主题" field="subject" rules={[{ required: true, message: '请填写会议主题' }]}><Input placeholder="请输入会议主题" /></FormItem>
+            <FormItem label="会议时间" field="meetingTime" rules={[{ required: true, message: '请选择会议时间' }]}><DatePicker showTime={{ format: 'HH:mm', step: { minute: 30 } }} format="YYYY-MM-DD HH:mm" placeholder="请选择会议时间" style={{ width: '100%' }} /></FormItem>
+          </FormGrid>
           <FormItem label="内部参会人" field="employeeAttendees"><Select mode="multiple" showSearch allowClear placeholder="请选择员工">{activeEmployees.map(employee => <Select.Option key={employee.id} value={employee.name}>{employee.name} · {employee.department} / {employee.position}</Select.Option>)}</Select></FormItem>
           <FormItem label="外部参会人" field="externalAttendees"><InputTag allowClear saveOnBlur placeholder="输入姓名后按 Enter，可继续输入下一位" /></FormItem>
           <FormItem label="会议纪要" field="minutes" className="project-meeting-minutes-field" rules={[{ required: true, message: '请填写会议纪要' }]}><Input.TextArea rows={7} maxLength={5000} showWordLimit placeholder="记录会议结论、待办事项、责任人和时间节点" /></FormItem>
@@ -1677,18 +1798,14 @@ export function ProjectDetailWorkspace({
         maskClosable={false}
       >
         <Form form={teamForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="项目岗位" field="role" rules={[{ required: true, message: '请填写项目岗位' }]}>
                 <Input placeholder="如：前端开发" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="计划人数" field="plannedPeople" rules={[{ required: true, message: '请填写计划人数' }]}>
                 <InputNumber min={1} precision={0} suffix="人" style={{ width: '100%' }} />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="项目成员" field="members">
             <Select
               mode="multiple"
@@ -1718,7 +1835,7 @@ export function ProjectDetailWorkspace({
         <FormItem label="审批编号" required>
           <Input placeholder="请输入企业微信审批编号" value={approvalNo} onChange={setApprovalNo} />
         </FormItem>
-        <div style={{ color: 'var(--color-text-3)', fontSize: 14, lineHeight: '22px' }}>
+        <div style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)', lineHeight: '22px' }}>
           审批编号请在企业微信审批记录中获取。提交后系统会根据审批编号自动关联对应审批记录。
         </div>
       </Modal>
@@ -1740,24 +1857,17 @@ export function ProjectDetailWorkspace({
         style={{ width: 980, maxWidth: 'calc(100vw - 32px)' }}
       >
         <Form form={quotationForm} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}><FormItem label="报价上浮" field="upliftType"><Radio.Group type="button" onChange={upliftType => { const originalAmount = quotationConfigSummary?.totalAmount ?? 0; const amount = Number(quotationForm.getFieldValue('amount')) || originalAmount; quotationForm.setFieldValue('upliftValue', upliftType === 'fixed' ? Math.round((amount - originalAmount) * 100) / 100 : calculateUpliftRate(originalAmount, amount)); }}><Radio value="rate">按比例上浮</Radio><Radio value="fixed">按固定金额上浮</Radio></Radio.Group></FormItem></Grid.Col>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
+            <FormItem label="报价上浮" field="upliftType"><Radio.Group type="button" onChange={upliftType => { const originalAmount = quotationConfigSummary?.totalAmount ?? 0; const amount = Number(quotationForm.getFieldValue('amount')) || originalAmount; quotationForm.setFieldValue('upliftValue', upliftType === 'fixed' ? Math.round((amount - originalAmount) * 100) / 100 : calculateUpliftRate(originalAmount, amount)); }}><Radio value="rate">按比例上浮</Radio><Radio value="fixed">按固定金额上浮</Radio></Radio.Group></FormItem>
               <FormItem noStyle shouldUpdate={(previous, current) => previous.upliftType !== current.upliftType}>
                 {values => <FormItem label={values.upliftType === 'fixed' ? '上浮金额' : '上浮比例'} field="upliftValue" rules={[{ required: true, message: '请输入上浮值' }]}><InputNumber min={0} precision={2} prefix={values.upliftType === 'fixed' ? '¥' : undefined} suffix={values.upliftType === 'fixed' ? undefined : '%'} style={{ width: '100%' }} onChange={value => { const originalAmount = quotationConfigSummary?.totalAmount ?? 0; const upliftValue = Number(value) || 0; const amount = values.upliftType === 'fixed' ? calculateQuotationAmountByFixed(originalAmount, upliftValue) : calculateQuotationAmount(originalAmount, upliftValue); quotationForm.setFieldValue('amount', amount); quotationForm.setFieldValue('upliftRate', calculateUpliftRate(originalAmount, amount)); }} /></FormItem>}
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="原始报价金额"><InputNumber value={quotationConfigSummary?.totalAmount ?? 0} precision={2} prefix="¥" disabled style={{ width: '100%' }} /></FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="上浮后金额" field="amount" rules={[{ required: true, message: '请输入上浮后金额' }]}><InputNumber min={0} precision={2} prefix="¥" style={{ width: '100%' }} onChange={value => { const originalAmount = quotationConfigSummary?.totalAmount ?? 0; const amount = Number(value) || 0; const upliftRate = calculateUpliftRate(originalAmount, amount); quotationForm.setFieldValue('upliftRate', upliftRate); quotationForm.setFieldValue('upliftValue', quotationForm.getFieldValue('upliftType') === 'fixed' ? Math.round((amount - originalAmount) * 100) / 100 : upliftRate); }} /></FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="报价人" field="operator" rules={[{ required: true, message: '请选择报价人' }]}>
                 <Select placeholder="请选择报价人" showSearch allowClear>
                   {employees.map(employee => (
@@ -1765,8 +1875,6 @@ export function ProjectDetailWorkspace({
                   ))}
                 </Select>
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="技术评估人" field="technicalEvaluator" rules={[{ required: true, message: '请选择技术评估人' }]}>
                 <Select placeholder="请选择技术评估人" mode="multiple" allowClear>
                   {technicalEvaluators.map(person => (
@@ -1774,10 +1882,8 @@ export function ProjectDetailWorkspace({
                   ))}
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem
                 label="预计周期"
                 field="period"
@@ -1794,8 +1900,7 @@ export function ProjectDetailWorkspace({
                   onChange={value => quotationForm.setFieldValue('period', value.replace(/\D/g, '').replace(/^0+/, ''))}
                 />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           {quotationConfigSummary && quotationConfigDraft ? (
             <FormItem noStyle shouldUpdate={(previous, current) => previous.amount !== current.amount || previous.upliftRate !== current.upliftRate}>
               {values => (

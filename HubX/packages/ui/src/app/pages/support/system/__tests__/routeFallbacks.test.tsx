@@ -17,8 +17,12 @@ function renderAt(path: string, Component: () => JSX.Element) {
 }
 
 describe('404 兜底页', () => {
-  it('渲染错误标题、说明与返回入口', () => {
+  it('在统一页面壳层内渲染错误标题、反馈与返回入口', () => {
     const html = renderAt('/nope', NotFound);
+    expect(html.match(/class="hubx-page-shell"/g)).toHaveLength(1);
+    expect(html.match(/class="hubx-page-header"/g)).toHaveLength(1);
+    expect(html).toContain('<h1 class="hubx-page-header__title">页面不存在</h1>');
+    expect(html).toContain('arco-result');
     expect(html).toContain('页面不存在');
     expect(html).toContain('地址可能有误');
     expect(html).toContain('返回工作台');

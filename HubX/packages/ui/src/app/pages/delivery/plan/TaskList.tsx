@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
-import { Badge, Tag, Button, Typography, Space } from '@arco-design/web-react';
-import { IconPlus, IconEdit, IconCaretDown, IconCaretRight } from '@arco-design/web-react/icon';
-import { format } from 'date-fns';
+import { Button, Typography, Space } from '@/design-system';
+import { IconPlus, IconEdit, IconCaretDown, IconCaretRight } from '@/design-system';
+import { DateText, StatusTag, resolveStatus, type StatusMap } from '@/design-system';
 import type { DeliveryPlan, SopStep, SopStepStatus } from './types';
 import {
   GANTT_HEADER_HEIGHT,
@@ -30,18 +30,15 @@ export interface TaskListProps {
 
 /* ---------- Status badge helper ---------- */
 
-type BadgeStatus = 'default' | 'processing' | 'success' | 'warning';
-
-const STATUS_MAP: Record<SopStepStatus, { badge: BadgeStatus; text: string }> = {
-  pending: { badge: 'default', text: '待开始' },
-  in_progress: { badge: 'processing', text: '进行中' },
-  completed: { badge: 'success', text: '已完成' },
-  skipped: { badge: 'warning', text: '已跳过' },
+const SOP_STATUS_META: StatusMap<SopStepStatus> = {
+  pending: { label: '待开始', tone: 'neutral' },
+  in_progress: { label: '进行中', tone: 'info' },
+  completed: { label: '已完成', tone: 'success' },
+  skipped: { label: '已跳过', tone: 'warning' },
 };
 
 function statusBadge(status: SopStepStatus) {
-  const { badge, text } = STATUS_MAP[status];
-  return <Badge status={badge} text={text} />;
+  return <StatusTag meta={resolveStatus(SOP_STATUS_META, status)} />;
 }
 
 /* ---------- Phase progress ---------- */
@@ -82,7 +79,7 @@ function StepDetailPanel({ step }: { step: SopStep }) {
         overflowY: 'auto',
         background: 'var(--grey-50)',
         borderTop: '1px solid var(--grey-100)',
-        fontSize: 14,
+        fontSize: 'var(--text-sm)',
         color: 'var(--grey-400)',
       }}
     >
@@ -90,7 +87,7 @@ function StepDetailPanel({ step }: { step: SopStep }) {
         (sec) =>
           sec.value && (
             <div key={sec.label} style={{ marginBottom: 4 }}>
-              <Text bold style={{ color: 'var(--grey-400)', marginRight: 8, fontSize: 12 }}>
+              <Text bold style={{ color: 'var(--grey-400)', marginRight: 8, fontSize: 'var(--text-xs)' }}>
                 {sec.label}:
               </Text>
               <span>{sec.value}</span>
@@ -154,7 +151,7 @@ const TaskList: React.FC<TaskListProps> = ({
         height: '100%',
         overflowY: 'auto',
         borderRight: '1px solid var(--grey-200)',
-        background: '#fff',
+        background: 'var(--color-white)',
       }}
     >
       <div
@@ -172,8 +169,8 @@ const TaskList: React.FC<TaskListProps> = ({
           borderBottom: '1px solid var(--grey-200)',
         }}
       >
-        <Text style={{ fontSize: 12, color: 'var(--grey-400)' }}>交付步骤</Text>
-        <Text style={{ fontSize: 12, color: 'var(--grey-400)' }}>负责人 · 状态</Text>
+        <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)' }}>交付步骤</Text>
+        <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)' }}>负责人 · 状态</Text>
       </div>
       {sortedPhases.map((phase) => {
         const isPhaseExpanded = expandedPhaseIds.includes(phase.id);
@@ -206,7 +203,7 @@ const TaskList: React.FC<TaskListProps> = ({
               </span>
 
               {/* Phase name */}
-              <Text bold style={{ fontSize: 14, flexShrink: 0, marginRight: 4 }}>
+              <Text bold style={{ fontSize: 'var(--text-sm)', flexShrink: 0, marginRight: 4 }}>
                 {cnOrdinal(phase.phaseNo)}、{phase.phaseName}
               </Text>
 
@@ -214,7 +211,7 @@ const TaskList: React.FC<TaskListProps> = ({
               <span style={{ flex: 1 }} />
 
               {/* Manager */}
-              <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
+              <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)', flexShrink: 0 }}>
                 {phase.manager}
               </Text>
 
@@ -222,7 +219,7 @@ const TaskList: React.FC<TaskListProps> = ({
               <span style={{ flexShrink: 0 }}>{statusBadge(phase.status)}</span>
 
               {/* Progress */}
-              <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
+              <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)', flexShrink: 0 }}>
                 {phaseProgress(phaseSteps)}
               </Text>
 
@@ -257,7 +254,7 @@ const TaskList: React.FC<TaskListProps> = ({
                           height: GANTT_ROW_HEIGHT,
                           padding: '0 12px 0 36px',
                           boxSizing: 'border-box',
-                          background: '#fff',
+                          background: 'var(--color-white)',
                           borderBottom: '1px solid var(--grey-100)',
                           cursor: 'pointer',
                           userSelect: 'none',
@@ -268,7 +265,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         {/* Step number + name */}
                         <span
                           style={{
-                            fontSize: 14,
+                            fontSize: 'var(--text-sm)',
                             display: 'flex',
                             alignItems: 'center',
                             flex: 1,
@@ -292,14 +289,14 @@ const TaskList: React.FC<TaskListProps> = ({
                             {step.stepName}
                           </Text>
                           {step.isCustom && (
-                            <Tag color="orange" size="small" style={{ marginLeft: 6 }}>
+                            <StatusTag tone="warning" size="small" style={{ marginLeft: 6 }}>
                               自
-                            </Tag>
+                            </StatusTag>
                           )}
                         </span>
 
                         {/* Assignee */}
-                        <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
+                        <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)', flexShrink: 0 }}>
                           {step.assignee}
                         </Text>
 
@@ -338,13 +335,13 @@ const TaskList: React.FC<TaskListProps> = ({
                       background: 'var(--brand-50)',
                       borderBottom: '1px solid var(--grey-200)',
                       gap: 8,
-                      fontSize: 14,
+                      fontSize: 'var(--text-sm)',
                     }}
                   >
                     <span style={{ flexShrink: 0 }}>💎</span>
                     <Text style={{ flex: 1 }}>{milestone.name}</Text>
-                    <Text style={{ fontSize: 12, color: 'var(--grey-400)', flexShrink: 0 }}>
-                      {format(new Date(milestone.date), 'yyyy-MM-dd')}
+                    <Text style={{ fontSize: 'var(--text-xs)', color: 'var(--grey-400)', flexShrink: 0 }}>
+                      <DateText value={milestone.date} />
                     </Text>
                     <span style={{ flexShrink: 0 }}>{milestone.completed ? '✅' : '⏳'}</span>
                   </div>

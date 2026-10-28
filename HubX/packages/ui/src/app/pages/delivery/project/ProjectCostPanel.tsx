@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { Button, Card, DatePicker, Descriptions, Empty, Form, Grid, Input, InputNumber, Message, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Tooltip, Typography, Upload } from '@arco-design/web-react';
-import { IconDelete, IconDownload, IconEdit, IconEye, IconPlus, IconUpload } from '@arco-design/web-react/icon';
+import { Button, DatePicker, Form, FormGrid, Input, InputNumber, Message, Modal, Popconfirm, SectionTabs, Select, Space, Tabs, Tooltip, Typography, Upload } from '@/design-system';
+import { IconDelete, IconDownload, IconEdit, IconEye, IconPlus, IconUpload } from '@/design-system';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip, type PieLabelRenderProps } from 'recharts';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+import type { UploadItem } from '@/design-system';
+import {
+  AlertBanner, DataTable, DateText, DescriptionsCard, EmptyState, MetricGrid, MoneyText, SectionCard,
+  FileList, StatusTag, resolveStatus, type StatusMap,
+  UserPicker,
+} from '@/design-system';
 import { useEmployee } from '../../support/hr/employee';
 import { downloadAttachment, mapUploadFilesToAttachments, type ContractModAttachment } from '../../sales/contracts/contractModification';
 import type { ProjectDailyReport } from './mockData';
@@ -17,6 +22,10 @@ type DashboardCategory = '人工成本' | CostCategory;
 type CostTabKey = 'overview' | 'labor' | 'travel' | 'promotion' | 'business' | 'comprehensive';
 type RankingFilter = '岗位' | '住宿费' | '交通' | '推广' | '商务返点';
 type CostStatus = '待确认' | '已核算';
+const COST_STATUS_META: StatusMap<CostStatus> = {
+  待确认: { label: '待确认', tone: 'warning' },
+  已核算: { label: '已核算', tone: 'success' },
+};
 interface ProjectCostItem { id: string; category: CostCategory; subcategory: string; name: string; amount: number; expenseDate: string; handler: string; status: CostStatus; remark: string; attachments: ContractModAttachment[]; }
 interface LaborSummaryRow { key: string; employee: string; role: string; totalHours: number; hourlyRate: number; totalCost: number; }
 interface LaborNatureSummaryRow extends LaborSummaryRow { workNature: string; }
@@ -80,6 +89,17 @@ const formatOverviewCurrency = formatCurrency;
 const parseAmount = (value: string) => Number.isFinite(Number(value.replace(/,/g, ''))) ? Math.trunc(Number(value.replace(/,/g, ''))) : 0;
 const getMockHourlyRate = (name: string) => 500 + Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 501;
 const formatLocalDate = (date: Date) => `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}-${`${date.getDate()}`.padStart(2, '0')}`;
+
+const renderCostAttachments = (files: ContractModAttachment[]) => files.length ? (
+  <FileList
+    items={files.map(file => ({
+      key: file.id,
+      name: file.name,
+      meta: file.size,
+      onDownload: () => downloadAttachment(file),
+    }))}
+  />
+) : '-';
 
 // recharts 回调的入参是 `PieLabelRenderProps`，几乎所有字段都是可选的（`midAngle?`、
 // `name?: string | number`、`cx?: number | string`）。此前的窄签名与它对不上，
@@ -335,7 +355,7 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
     }, []).sort((a, b) => b.period.localeCompare(a.period));
     const summarySection = <div className="project-cost-section project-cost-detail-section">
       <div className="project-cost-detail-heading"><span>分类汇总</span><strong>{title}</strong><small>按费用小类统计</small></div>
-      <Table rowKey="name" pagination={false} data={subgroupRows} noDataElement={<Empty description={`暂无${title}数据`} />} columns={[{ title: '费用小类', dataIndex: 'name' }, { title: '金额', dataIndex: 'amount', sorter: (left, right) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => <strong>{formatCurrency(value)}</strong> }, { title: '占比', dataIndex: 'amount', render: (value: number) => `${categoryTotal ? (value / categoryTotal * 100).toFixed(1) : '0.0'}%` }]} />
+      <DataTable rowKey="name" pagination={false} data={subgroupRows} emptyDescription={`暂无${title}数据`} columns={[{ title: '费用小类', dataIndex: 'name' }, { title: '金额', dataIndex: 'amount', sorter: (left, right) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => <MoneyText value={value} /> }, { title: '占比', dataIndex: 'amount', render: (value: number) => `${categoryTotal ? (value / categoryTotal * 100).toFixed(1) : '0.0'}%` }]} />
     </div>;
     const detailSection = <div className="project-cost-section">
       <div className="project-cost-section-header">
@@ -345,121 +365,214 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
           <Button size="small" icon={<IconDownload />}>导出</Button>
         </Space>
       </div>
-      <Table rowKey="id" pagination={false} data={categoryItems} noDataElement={<Empty description={`暂无${title}数据`} />} scroll={{ x: 1040 }} columns={[
-        { title: '费用小类', dataIndex: 'subcategory', width: 112 }, { title: '开支项目', dataIndex: 'name', width: 150 }, { title: '金额', dataIndex: 'amount', width: 120, sorter: (left: ProjectCostItem, right: ProjectCostItem) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => <strong className="project-cost-amount">{formatCurrency(value)}</strong> }, { title: '发生日期', dataIndex: 'expenseDate', width: 112 },
+      <DataTable rowKey="id" pagination={false} data={categoryItems} emptyDescription={`暂无${title}数据`} scroll={{ x: 1040 }} columns={[
+        { title: '费用小类', dataIndex: 'subcategory', width: 112 }, { title: '开支项目', dataIndex: 'name', width: 150 }, { title: '金额', dataIndex: 'amount', width: 120, sorter: (left: ProjectCostItem, right: ProjectCostItem) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => <MoneyText value={value} className="project-cost-amount" /> }, { title: '发生日期', dataIndex: 'expenseDate', width: 112, render: (value: string) => <DateText value={value} /> },
         ...(category === '第三方费用' ? [] : [{ title: '经办人', dataIndex: 'handler', width: 96 }]),
         ...(supportsDetailView ? [] : [
-          { title: '核算状态', dataIndex: 'status', width: 96, render: (value: CostStatus) => <Tag color={value === '已核算' ? 'green' : 'orange'}>{value}</Tag> },
-          { title: '付款凭证/附件', dataIndex: 'attachments', width: 180, render: (files: ContractModAttachment[]) => files.length ? <Space size="mini" wrap>{files.map(file => <Button key={file.id} type="text" size="mini" onClick={() => downloadAttachment(file)}>{file.name}</Button>)}</Space> : '-' },
+          { title: '核算状态', dataIndex: 'status', width: 96, render: (value: CostStatus) => <StatusTag meta={resolveStatus(COST_STATUS_META, value)} /> },
+          { title: '付款凭证/附件', dataIndex: 'attachments', width: 180, render: (files: ContractModAttachment[]) => renderCostAttachments(files) },
           { title: '说明', dataIndex: 'remark', width: 160, render: (value: string) => value || '-' },
         ]),
         { title: '操作', width: supportsDetailView ? 124 : 88, fixed: 'right' as const, render: (_: unknown, item: ProjectCostItem) => <Space size="mini">{supportsDetailView && <Tooltip content="查看"><Button type="text" size="small" icon={<IconEye />} aria-label="查看" onClick={() => setSelectedCostItem(item)} /></Tooltip>}<Tooltip content="编辑"><Button type="text" size="small" icon={<IconEdit />} aria-label="编辑" onClick={() => openEdit(item)} /></Tooltip><Popconfirm title="确认删除该开支项吗？" onOk={() => { setItems(current => current.filter(cost => cost.id !== item.id)); Message.success('开支项已删除'); }}><Tooltip content="删除"><Button type="text" size="small" status="danger" icon={<IconDelete />} aria-label="删除" /></Tooltip></Popconfirm></Space> },
       ]} />
     </div>;
     const periodSection = <div className="project-cost-section">
-      <div className="project-cost-period-header"><div className="project-cost-period-title">按{timeDimension}统计</div><Space size="mini">{(['日', '月', '年'] as const).map(dimension => <Button key={dimension} size="small" type={timeDimension === dimension ? 'primary' : 'secondary'} onClick={() => setTimeDimension(dimension)}>按{dimension === '日' ? '天' : dimension}</Button>)}</Space></div><Table rowKey="period" pagination={false} data={periodRows} columns={[{ title: timeDimension, dataIndex: 'period' }, { title: '笔数', dataIndex: 'count' }, { title: '金额', dataIndex: 'amount', sorter: (left, right) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => formatCurrency(value) }]} />
+      <div className="project-cost-period-header"><div className="project-cost-period-title">按{timeDimension}统计</div><Space size="mini">{(['日', '月', '年'] as const).map(dimension => <Button key={dimension} size="small" type={timeDimension === dimension ? 'primary' : 'secondary'} onClick={() => setTimeDimension(dimension)}>按{dimension === '日' ? '天' : dimension}</Button>)}</Space></div><DataTable rowKey="period" pagination={false} data={periodRows} emptyDescription={`暂无${title}数据`} columns={[{ title: timeDimension, dataIndex: 'period' }, { title: '笔数', dataIndex: 'count' }, { title: '金额', dataIndex: 'amount', sorter: (left, right) => left.amount - right.amount, defaultSortOrder: 'descend', render: (value: number) => <MoneyText value={value} /> }]} />
     </div>;
-    if (splitIntoTabs) return <Tabs defaultActiveTab="statistics">
-      <TabPane key="statistics" title="统计"><Space direction="vertical" size={16} style={{ width: '100%' }}>{summarySection}{periodSection}</Space></TabPane>
-      <TabPane key="details" title="明细">{detailSection}</TabPane>
-    </Tabs>;
+    if (splitIntoTabs) return  <SectionTabs
+   defaultActiveKey={"statistics"}
+   items={[
+     {
+       key: 'statistics',
+       label: "统计",
+       content: (
+         <>
+   <Space direction="vertical" size={16} style={{ width: '100%' }}>{summarySection}{periodSection}</Space>
+         </>
+       ),
+     },
+     {
+       key: 'details',
+       label: "明细",
+       content: (
+         <>
+   {detailSection}
+         </>
+       ),
+     },
+   ]}
+ />;
     return <Space direction="vertical" size={16} style={{ width: '100%' }}>
       {summarySection}{detailSection}{periodSection}
     </Space>;
   };
 
   return <div className="project-cost-panel">
-    <Tabs
-      activeTab={activeTab}
+    <SectionTabs
+      activeKey={activeTab}
       onChange={(key) => setActiveTab(key as CostTabKey)}
-      className="project-cost-tabs"
-      extra={activeTab === 'labor'
-        ? <Button type="primary" size="small" icon={<IconPlus />} onClick={openLaborEditor}>新增工时</Button>
-        : (['travel', 'promotion', 'business', 'comprehensive'] as CostTabKey[]).includes(activeTab)
-          ? <Button type="primary" size="small" icon={<IconPlus />} onClick={openNew}>新增开支</Button>
-          : null}
-    >
-      <TabPane key="overview" title="概览">
-        <Space direction="vertical" size={20} style={{ width: '100%' }}>
-          <div className="project-cost-summary">
-            <Card bordered={false} className="project-cost-metric-card is-contract"><div className="project-cost-metric-label"><span />合同金额</div><strong>{contractAmount == null ? '-' : formatOverviewCurrency(contractAmount)}</strong><small>项目合同含税总金额</small></Card>
-            <Card bordered={false} className="project-cost-metric-card is-estimated"><div className="project-cost-metric-label"><span />预计总成本</div><strong>{formatOverviewCurrency(expectedTotalCost)}</strong><small>预算成本占合同额 {contractAmount ? `${(expectedTotalCost / contractAmount * 100).toFixed(1)}%` : '-'}</small></Card>
-            <Card bordered={false} className="project-cost-metric-card is-actual"><div className="project-cost-metric-label"><span />实际消耗</div><strong>{formatOverviewCurrency(actualTotalCost)}</strong><small>含实际人工 {formatOverviewCurrency(actualLaborCost)}</small></Card>
-            <Card bordered={false} className={`project-cost-metric-card ${expectedProfit != null && expectedProfit < 0 ? 'is-loss' : 'is-profit'}`}><div className="project-cost-metric-label"><span />项目利润</div><strong>{expectedProfit == null ? '-' : formatOverviewCurrency(expectedProfit)}</strong><small>预计利润率 {expectedMargin == null ? '-' : `${expectedMargin.toFixed(1)}%`} · 实际 {actualMargin == null ? '-' : `${actualMargin.toFixed(1)}%`}</small></Card>
-          </div>
-          {contractAmount == null && <div className="project-cost-notice">当前项目未关联合同，暂不计算利润与利润率。</div>}
-          <div className="project-cost-insight-grid">
-            <Card className="project-cost-composition-card" title="成本构成">
-              <div className="project-cost-composition-content">
-                <div className="project-cost-donut-wrap">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie data={costCompositionRows} dataKey="amount" nameKey="label" cx="50%" cy="50%" innerRadius={0} outerRadius={108} startAngle={90} endAngle={-270} paddingAngle={0} label={renderCostPieLabel} labelLine={false} isAnimationActive animationDuration={800} animationEasing="ease-out" onClick={(_, index) => setActiveTab(categoryTabMap[costCompositionRows[index].category])}>
-                        {costCompositionRows.map(row => <Cell key={row.category} fill={COST_COLORS[row.category]} stroke="#fff" strokeWidth={2} />)}
-                      </Pie>
-                      <ChartTooltip formatter={(value) => formatOverviewCurrency(Number(value))} />
-                    </PieChart>
-                  </ResponsiveContainer>
+      className={"project-cost-tabs"}
+      items={[
+        {
+          key: 'overview',
+          label: "概览",
+          content: (
+            <>
+              <Space direction="vertical" size={20} style={{ width: '100%' }}>
+                <MetricGrid
+                  items={[
+                    {
+                      key: 'contract',
+                      label: '合同金额',
+                      value: <MoneyText value={contractAmount} placeholder="-" />,
+                      detail: '项目合同含税总金额',
+                    },
+                    {
+                      key: 'estimated',
+                      label: '预计总成本',
+                      value: <MoneyText value={expectedTotalCost} />,
+                      detail: `预算成本占合同额 ${contractAmount ? `${(expectedTotalCost / contractAmount * 100).toFixed(1)}%` : '-'}`,
+                    },
+                    {
+                      key: 'actual',
+                      label: '实际消耗',
+                      value: <MoneyText value={actualTotalCost} />,
+                      detail: <>含实际人工 <MoneyText value={actualLaborCost} /></>,
+                    },
+                    {
+                      key: 'profit',
+                      label: '项目利润',
+                      value: <MoneyText value={expectedProfit} placeholder="-" tone={expectedProfit != null && expectedProfit < 0 ? 'danger' : 'default'} />,
+                      detail: `预计利润率 ${expectedMargin == null ? '-' : `${expectedMargin.toFixed(1)}%`} · 实际 ${actualMargin == null ? '-' : `${actualMargin.toFixed(1)}%`}`,
+                      tone: expectedProfit != null && expectedProfit < 0 ? 'danger' : 'success',
+                    },
+                  ]}
+                />
+                {contractAmount == null && <AlertBanner tone="info">当前项目未关联合同，暂不计算利润与利润率。</AlertBanner>}
+                <div className="project-cost-insight-grid">
+                  <SectionCard className="project-cost-composition-card" title="成本构成">
+                    <div className="project-cost-composition-content">
+                      <div className="project-cost-donut-wrap">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie data={costCompositionRows} dataKey="amount" nameKey="label" cx="50%" cy="50%" innerRadius={0} outerRadius={108} startAngle={90} endAngle={-270} paddingAngle={0} label={renderCostPieLabel} labelLine={false} isAnimationActive animationDuration={800} animationEasing="ease-out" onClick={(_, index) => setActiveTab(categoryTabMap[costCompositionRows[index].category])}>
+                              {costCompositionRows.map(row => <Cell key={row.category} fill={COST_COLORS[row.category]} stroke="#fff" strokeWidth={2} />)}
+                            </Pie>
+                            <ChartTooltip formatter={(value) => formatOverviewCurrency(Number(value))} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="project-cost-composition-legend">{costCompositionRows.map(row => <button type="button" key={row.category} onClick={() => setActiveTab(categoryTabMap[row.category])}><i style={{ background: COST_COLORS[row.category] }} /><span>{row.label}</span><strong><MoneyText value={row.amount} /></strong><em>{row.percentage.toFixed(1)}%</em></button>)}</div>
+                    </div>
+                  </SectionCard>
+                  <SectionCard className="project-cost-ranking-card" title="费用明细排行" extra={<Text type="secondary">按已核算金额排序</Text>}>
+                    <Space size="mini" wrap style={{ marginBottom: 16 }}>
+                      {RANKING_FILTERS.map(filter => (
+                        <Button key={filter} size="small" type={rankingFilter === filter ? 'primary' : 'secondary'} onClick={() => setRankingFilter(filter)}>
+                          {filter}
+                        </Button>
+                      ))}
+                    </Space>
+                    {expenseRankingRows.length ? <div className="project-cost-ranking-list">{expenseRankingRows.map((row, index) => <button type="button" key={row.id} onClick={() => setActiveTab(categoryTabMap[row.category])}><span className={`project-cost-rank-index${index < 3 ? ' is-top' : ''}`}>{index + 1}</span><div><div className="project-cost-rank-name"><span>{row.name}</span><strong><MoneyText value={row.amount} /></strong></div><div className="project-cost-rank-bar"><i style={{ width: `${maxRankingAmount ? row.amount / maxRankingAmount * 100 : 0}%`, background: COST_COLORS[row.category] }} /></div><small>{row.category}</small></div></button>)}</div> : <EmptyState description="暂无已核算费用" />}
+                  </SectionCard>
                 </div>
-                <div className="project-cost-composition-legend">{costCompositionRows.map(row => <button type="button" key={row.category} onClick={() => setActiveTab(categoryTabMap[row.category])}><i style={{ background: COST_COLORS[row.category] }} /><span>{row.label}</span><strong>{formatOverviewCurrency(row.amount)}</strong><em>{row.percentage.toFixed(1)}%</em></button>)}</div>
-              </div>
-            </Card>
-            <Card className="project-cost-ranking-card" title="费用明细排行" extra={<Text type="secondary">按已核算金额排序</Text>}>
-              <Space size="mini" wrap style={{ marginBottom: 16 }}>
-                {RANKING_FILTERS.map(filter => (
-                  <Button key={filter} size="small" type={rankingFilter === filter ? 'primary' : 'secondary'} onClick={() => setRankingFilter(filter)}>
-                    {filter}
-                  </Button>
-                ))}
               </Space>
-              {expenseRankingRows.length ? <div className="project-cost-ranking-list">{expenseRankingRows.map((row, index) => <button type="button" key={row.id} onClick={() => setActiveTab(categoryTabMap[row.category])}><span className={`project-cost-rank-index${index < 3 ? ' is-top' : ''}`}>{index + 1}</span><div><div className="project-cost-rank-name"><span>{row.name}</span><strong>{formatOverviewCurrency(row.amount)}</strong></div><div className="project-cost-rank-bar"><i style={{ width: `${maxRankingAmount ? row.amount / maxRankingAmount * 100 : 0}%`, background: COST_COLORS[row.category] }} /></div><small>{row.category}</small></div></button>)}</div> : <Empty description="暂无已核算费用" />}
-            </Card>
-          </div>
-        </Space>
-      </TabPane>
-      <TabPane key="labor" title="人工成本">
-        <div className="project-cost-section">
-          <Tabs activeTab={laborView} onChange={value => { setLaborView(value as 'person' | 'nature'); setLaborRoleFilter('all'); }}>
-            <TabPane key="person" title="按人员" />
-            <TabPane key="nature" title="按工作性质" />
-          </Tabs>
-          <div className="project-cost-section-header" style={{ marginTop: 15 }}>
-            <Space size={20}><Text type="secondary">总工时 <strong style={{ color: 'var(--color-text-1)' }}>{activeLaborHours} 小时</strong></Text><Text type="secondary">总成本 <strong className="project-cost-amount">{formatCurrency(activeLaborCost)}</strong></Text></Space>
-            <Space>
-              {laborView === 'person' && <Select value={laborRoleFilter} options={[{ label: '全部', value: 'all' }, ...laborRoleOptions]} onChange={setLaborRoleFilter} style={{ width: 160 }} />}
-              <Button icon={<IconDownload />} onClick={exportCostSummary}>导出费用明细</Button>
-            </Space>
-          </div>
-          <Table rowKey="key" pagination={false} data={activeLaborRows} noDataElement={<Empty description="暂无项目日报工时数据" />} columns={[
-            { title: '员工', dataIndex: 'employee' },
-            laborView === 'person' ? { title: '岗位', dataIndex: 'role' } : { title: '工作性质', dataIndex: 'workNature' },
-            { title: '总工时', dataIndex: 'totalHours', sorter: (left: LaborSummaryRow, right: LaborSummaryRow) => left.totalHours - right.totalHours, render: (value: number) => `${value} 小时` },
-            { title: '总成本', dataIndex: 'totalCost', sorter: (left: LaborSummaryRow, right: LaborSummaryRow) => left.totalCost - right.totalCost, defaultSortOrder: 'descend', render: (value: number) => <strong className="project-cost-amount">{formatCurrency(value)}</strong> },
-            { title: '操作', width: 120, render: (_: unknown, row: LaborSummaryRow) => <Button type="text" size="small" onClick={() => { setSelectedLaborMonth('all'); setLaborDetailStartDate(''); setLaborDetailEndDate(''); setSelectedLaborRow(row); }}>查看日报</Button> },
-          ]} />
-        </div>
-      </TabPane>
-      <TabPane key="travel" title="差旅成本">{renderExpenseTab('差旅成本', '差旅成本', true)}</TabPane>
-      <TabPane key="promotion" title="推广成本">{renderExpenseTab('推广成本', '推广成本', true)}</TabPane>
-      <TabPane key="business" title="商务成本">{renderExpenseTab('商务成本', '商务成本', true)}</TabPane>
-      <TabPane key="comprehensive" title="第三方费用">{renderExpenseTab('第三方费用', '第三方费用', true)}</TabPane>
-    </Tabs>
+            
+            </>
+          ),
+        },
+        {
+          key: 'labor',
+          label: "人工成本",
+          content: (
+            <>
+              <div className="project-cost-section">
+                <SectionTabs
+                  activeKey={laborView}
+                  onChange={value => { setLaborView(value as 'person' | 'nature'); setLaborRoleFilter('all'); }}
+                  items={[
+                    {
+                      key: 'person',
+                      label: "按人员",
+                    },
+                    {
+                      key: 'nature',
+                      label: "按工作性质",
+                    },
+                  ]}
+                />
+                <div className="project-cost-section-header" style={{ marginTop: 15 }}>
+                  <Space size={20}><Text type="secondary">总工时 <strong style={{ color: 'var(--color-text-1)' }}>{activeLaborHours} 小时</strong></Text><Text type="secondary">总成本 <MoneyText value={activeLaborCost} className="project-cost-amount" /></Text></Space>
+                  <Space>
+                    {laborView === 'person' && <Select value={laborRoleFilter} options={[{ label: '全部', value: 'all' }, ...laborRoleOptions]} onChange={setLaborRoleFilter} style={{ width: 160 }} />}
+                    <Button icon={<IconDownload />} onClick={exportCostSummary}>导出费用明细</Button>
+                  </Space>
+                </div>
+                <DataTable rowKey="key" pagination={false} data={activeLaborRows} emptyDescription="暂无项目日报工时数据" columns={[
+                  { title: '员工', dataIndex: 'employee' },
+                  laborView === 'person' ? { title: '岗位', dataIndex: 'role' } : { title: '工作性质', dataIndex: 'workNature' },
+                  { title: '总工时', dataIndex: 'totalHours', sorter: (left: LaborSummaryRow, right: LaborSummaryRow) => left.totalHours - right.totalHours, render: (value: number) => `${value} 小时` },
+                  { title: '总成本', dataIndex: 'totalCost', sorter: (left: LaborSummaryRow, right: LaborSummaryRow) => left.totalCost - right.totalCost, defaultSortOrder: 'descend', render: (value: number) => <MoneyText value={value} className="project-cost-amount" /> },
+                  { title: '操作', width: 120, render: (_: unknown, row: LaborSummaryRow) => <Button type="text" size="small" onClick={() => { setSelectedLaborMonth('all'); setLaborDetailStartDate(''); setLaborDetailEndDate(''); setSelectedLaborRow(row); }}>查看日报</Button> },
+                ]} />
+              </div>
+            
+            </>
+          ),
+        },
+        {
+          key: 'travel',
+          label: "差旅成本",
+          content: (
+            <>
+      {renderExpenseTab('差旅成本', '差旅成本', true)}
+            </>
+          ),
+        },
+        {
+          key: 'promotion',
+          label: "推广成本",
+          content: (
+            <>
+      {renderExpenseTab('推广成本', '推广成本', true)}
+            </>
+          ),
+        },
+        {
+          key: 'business',
+          label: "商务成本",
+          content: (
+            <>
+      {renderExpenseTab('商务成本', '商务成本', true)}
+            </>
+          ),
+        },
+        {
+          key: 'comprehensive',
+          label: "第三方费用",
+          content: (
+            <>
+      {renderExpenseTab('第三方费用', '第三方费用', true)}
+            </>
+          ),
+        },
+      ]}
+    />
     <Modal title={selectedCostItem ? `${selectedCostItem.category}详情` : '开支详情'} visible={Boolean(selectedCostItem)} footer={null} onCancel={() => setSelectedCostItem(null)} style={{ width: 680 }}>
       {selectedCostItem && <Space direction="vertical" size={20} style={{ width: '100%' }}>
-        <Descriptions
-          border
-          column={2}
-          data={[
-            { label: '费用小类', value: selectedCostItem.subcategory },
-            { label: '金额', value: formatCurrency(selectedCostItem.amount) },
-            { label: '开支项目', value: selectedCostItem.name },
-            { label: '发生日期', value: selectedCostItem.expenseDate },
-            { label: '经办人', value: selectedCostItem.handler },
-            { label: '核算状态', value: <Tag color={selectedCostItem.status === '已核算' ? 'green' : 'orange'}>{selectedCostItem.status}</Tag> },
-            { label: '说明', value: selectedCostItem.remark || '-' },
+        <DescriptionsCard
+          columns={2}
+          items={[
+            { key: 'subcategory', label: '费用小类', value: selectedCostItem.subcategory },
+            { key: 'amount', label: '金额', value: <MoneyText value={selectedCostItem.amount} /> },
+            { key: 'name', label: '开支项目', value: selectedCostItem.name },
+            { key: 'expenseDate', label: '发生日期', value: <DateText value={selectedCostItem.expenseDate} /> },
+            { key: 'handler', label: '经办人', value: selectedCostItem.handler },
+            { key: 'status', label: '核算状态', value: <StatusTag meta={resolveStatus(COST_STATUS_META, selectedCostItem.status)} /> },
+            { key: 'remark', label: '说明', value: selectedCostItem.remark || '-' },
           ]}
         />
-        <div><Text type="secondary">付款凭证/附件</Text><div style={{ marginTop: 8 }}>{selectedCostItem.attachments.length ? <Space wrap>{selectedCostItem.attachments.map(file => <Button key={file.id} type="text" size="small" onClick={() => downloadAttachment(file)}>{file.name}</Button>)}</Space> : '-'}</div></div>
+        <div><Text type="secondary">付款凭证/附件</Text><div style={{ marginTop: 8 }}>{renderCostAttachments(selectedCostItem.attachments)}</div></div>
       </Space>}
     </Modal>
     <Modal title={selectedLaborRow ? `${selectedLaborRow.employee}的日报明细` : '日报明细'} visible={Boolean(selectedLaborRow)} footer={null} onCancel={() => setSelectedLaborRow(null)} style={{ width: 920, maxWidth: 'calc(100vw - 32px)' }}>
@@ -479,14 +592,14 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
         <DatePicker value={laborDetailEndDate || undefined} placeholder="结束日期" onChange={value => setLaborDetailEndDate((value as string) || '')} style={{ width: 160 }} />
         <Button onClick={() => { setLaborDetailStartDate(''); setLaborDetailEndDate(''); }}>重置日期</Button>
       </Space>
-      <Table
+      <DataTable
         rowKey="id"
         pagination={false}
         scroll={{ y: 440 }}
         data={visibleLaborRecords}
-        noDataElement={<Empty description="当前筛选条件下暂无日报明细" />}
+        emptyDescription="当前筛选条件下暂无日报明细"
         columns={[
-          { title: '日期', dataIndex: 'date', width: 120 },
+          { title: '日期', dataIndex: 'date', width: 120, render: (value: string) => <DateText value={value} /> },
           { title: '岗位', dataIndex: 'position', width: 140 },
           { title: '工时', dataIndex: 'hours', width: 100, render: (value: number) => `${value} 小时` },
           { title: '工作性质', dataIndex: 'workNature', width: 130, render: (value: string) => value || '-' },
@@ -500,31 +613,39 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
     </Modal>
     <Modal title="新增工时" visible={laborEditorVisible} onOk={saveLaborEntries} onCancel={() => setLaborEditorVisible(false)} style={{ width: 760 }} maskClosable={false} okText="保存">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
-        {laborInputItems.map((item, index) => <Card key={item.id} size="small" title={`工时项 ${index + 1}`} extra={laborInputItems.length > 1 ? <Button type="text" size="mini" status="danger" icon={<IconDelete />} onClick={() => setLaborInputItems(current => current.filter(currentItem => currentItem.id !== item.id))}>删除</Button> : null}>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={10}>
-              <div style={{ marginBottom: 6 }}>员工</div>
-              <Select showSearch value={item.employeeId} onChange={value => updateLaborInputItem(item.id, { employeeId: value })} placeholder="请选择员工" options={employees.map(employee => ({ label: `${employee.name}（${employee.position}）`, value: employee.id }))} />
-            </Grid.Col>
-            <Grid.Col span={6}>
-              <div style={{ marginBottom: 6 }}>工时（小时）</div>
+        {laborInputItems.map((item, index) => <SectionCard key={item.id} title={`工时项 ${index + 1}`} extra={laborInputItems.length > 1 ? <Button type="text" size="mini" status="danger" icon={<IconDelete />} onClick={() => setLaborInputItems(current => current.filter(currentItem => currentItem.id !== item.id))}>删除</Button> : null}>
+          <FormGrid columns={3}>
+            <FormItem label="员工">
+              <UserPicker
+                value={item.employeeId}
+                onChange={value => updateLaborInputItem(item.id, { employeeId: value })}
+                placeholder="搜索姓名、工号或部门"
+                options={employees.map(employee => ({
+                  id: employee.id,
+                  name: employee.name,
+                  jobNumber: employee.jobNumber,
+                  department: employee.department,
+                }))}
+              />
+            </FormItem>
+            <FormItem label="工时（小时）">
               <InputNumber min={0.5} precision={1} step={0.5} value={item.hours} onChange={value => updateLaborInputItem(item.id, { hours: value ?? undefined })} placeholder="请输入工时" style={{ width: '100%' }} />
-            </Grid.Col>
-            <Grid.Col span={8}>
-              <div style={{ marginBottom: 6 }}>工作性质</div>
+            </FormItem>
+            <FormItem label="工作性质">
               <Select value={item.workNature} onChange={value => updateLaborInputItem(item.id, { workNature: value })} placeholder="请选择工作性质" options={WORK_NATURE_OPTIONS.map(value => ({ label: value, value }))} />
-            </Grid.Col>
-          </Grid.Row>
-          <div style={{ marginTop: 12, marginBottom: 6 }}>工作内容</div>
-          <Input.TextArea value={item.workContent} onChange={value => updateLaborInputItem(item.id, { workContent: value })} placeholder="请输入具体工作内容" rows={2} maxLength={300} showWordLimit />
-        </Card>)}
+            </FormItem>
+          </FormGrid>
+          <FormItem label="工作内容">
+            <Input.TextArea value={item.workContent} onChange={value => updateLaborInputItem(item.id, { workContent: value })} placeholder="请输入具体工作内容" rows={2} maxLength={300} showWordLimit />
+          </FormItem>
+        </SectionCard>)}
         <Button type="outline" long icon={<IconPlus />} onClick={() => setLaborInputItems(current => [...current, { id: `labor-input-${Date.now()}`, workContent: '' }])}>新增一项</Button>
       </Space>
     </Modal>
     <Modal title={editorId ? '编辑开支项' : '新增开支项'} visible={editorVisible} onOk={saveItem} onCancel={closeEditor} style={{ width: 620 }} maskClosable={false}><Form form={form} layout="vertical">
-      <Grid.Row gutter={16}><Grid.Col span={12}><FormItem label="费用大类" field="category" rules={[{ required: true, message: '请选择费用大类' }]}><Select options={COST_CATEGORIES.map(value => ({ label: value, value }))} onChange={() => form.setFieldValue('subcategory', undefined)} /></FormItem></Grid.Col><Grid.Col span={12}><FormItem shouldUpdate noStyle>{values => <FormItem label="费用小类" field="subcategory" rules={[{ required: true, message: '请选择费用小类' }]}><Select options={(COST_SUBCATEGORIES[values.category as CostCategory] ?? []).map(value => ({ label: value, value }))} /></FormItem>}</FormItem></Grid.Col></Grid.Row>
+      <FormGrid columns={2}><FormItem label="费用大类" field="category" rules={[{ required: true, message: '请选择费用大类' }]}><Select options={COST_CATEGORIES.map(value => ({ label: value, value }))} onChange={() => form.setFieldValue('subcategory', undefined)} /></FormItem><FormItem shouldUpdate noStyle>{values => <FormItem label="费用小类" field="subcategory" rules={[{ required: true, message: '请选择费用小类' }]}><Select options={(COST_SUBCATEGORIES[values.category as CostCategory] ?? []).map(value => ({ label: value, value }))} /></FormItem>}</FormItem></FormGrid>
       <FormItem label="开支项目" field="name" rules={[{ required: true, message: '请填写开支项目' }]}><Input placeholder="如：重庆出差住宿费" /></FormItem>
-      <Grid.Row gutter={16}><Grid.Col span={12}><FormItem label="金额" field="amount" rules={[{ required: true, message: '请填写金额' }]}><InputNumber min={1} precision={0} prefix="¥" style={{ width: '100%' }} /></FormItem></Grid.Col><Grid.Col span={12}><FormItem label="发生日期" field="expenseDate" rules={[{ required: true, message: '请选择发生日期' }]}><DatePicker style={{ width: '100%' }} /></FormItem></Grid.Col></Grid.Row>
+      <FormGrid columns={2}><FormItem label="金额" field="amount" rules={[{ required: true, message: '请填写金额' }]}><InputNumber min={1} precision={0} prefix="¥" style={{ width: '100%' }} /></FormItem><FormItem label="发生日期" field="expenseDate" rules={[{ required: true, message: '请选择发生日期' }]}><DatePicker style={{ width: '100%' }} /></FormItem></FormGrid>
       <FormItem label="经办人" field="handler" rules={[{ required: true, message: '请选择经办人' }]}><Select showSearch options={employees.map(employee => ({ label: employee.name, value: employee.name }))} /></FormItem>
       <FormItem label="说明" field="remark"><Input.TextArea rows={3} maxLength={200} showWordLimit /></FormItem>
       <FormItem label="附件" field="attachments" triggerPropName="fileList">

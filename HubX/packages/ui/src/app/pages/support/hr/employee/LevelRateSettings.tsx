@@ -1,26 +1,38 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Card,
   Input,
   InputNumber,
   Message,
   Modal,
   Space,
-  Table,
   Tabs,
-  Tag,
   Tooltip,
-} from '@arco-design/web-react';
-import { IconEdit, IconPlus } from '@arco-design/web-react/icon';
+} from '@/design-system';
+import { IconEdit, IconPlus } from '@/design-system';
 import { useEmployee } from './EmployeeContext';
 import {
   type LevelRateConfig,
   formatCurrency,
-  getLevelColor,
 } from './mockData';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import './employeeAdminConsistency.css';
+
+function levelTone(level: string): StatusTone {
+  const parsed = parseInt(level.replace('L', ''), 10);
+  if (Number.isNaN(parsed)) return 'neutral';
+  return parsed >= 9 ? 'purple' : parsed >= 7 ? 'info' : parsed >= 5 ? 'success' : parsed >= 3 ? 'warning' : 'neutral';
+}
 
 const TabPane = Tabs.TabPane;
 
@@ -130,17 +142,13 @@ export function LevelRateSettings() {
       title: '职级',
       dataIndex: 'level',
       width: 90,
-      render: (value: string) => (
-        <Tag color={getLevelColor(value as any)} style={{ fontWeight: 700 }}>
-          {value}
-        </Tag>
-      ),
+      render: (value: string) => <StatusTag tone={levelTone(value)}>{value}</StatusTag>,
     },
     {
       title: '职位',
       dataIndex: 'position',
       width: 120,
-      render: (value: string) => <Tag>{value}</Tag>,
+      render: (value: string) => <StatusTag tone="neutral">{value}</StatusTag>,
     },
     {
       title: '时薪（元/小时）',
@@ -167,8 +175,8 @@ export function LevelRateSettings() {
           );
         }
         return (
-          <span style={{ fontWeight: 700, color: 'rgb(var(--primary-6))', fontSize: 16 }}>
-            {formatCurrency(record.standardRate)}/h
+          <span>
+            <MoneyText value={record.standardRate} />/h
           </span>
         );
       },
@@ -215,34 +223,33 @@ export function LevelRateSettings() {
           { key: 'positions', label: '职位总数', value: `${positions.length} 个`, detail: '当前职位目录' },
           { key: 'active', label: '当前职位', value: activePosition, detail: '正在维护' },
           { key: 'levels', label: '已配置职级', value: `${positionRates.length} 个`, detail: '当前职位' },
-          { key: 'rate', label: '平均标准时薪', value: `${formatCurrency(averageRate)}/h`, detail: '当前职位费率均值' },
+          { key: 'rate', label: '平均标准时薪', value: <><MoneyText value={averageRate} />/h</>, detail: '当前职位费率均值' },
         ]}
       />
 
-      <Card bordered={false} title="职级费率矩阵" className="employee-admin-rate-card">
+      <SectionCard title="职级费率矩阵" className="employee-admin-rate-card">
 
-        <Tabs
-          className="employee-admin-position-tabs"
-          activeTab={activePosition}
+        <SectionTabs
+          variant="card"
+          activeKey={activePosition}
           onChange={key => setActivePosition(String(key))}
-          type="card-gutter"
-        >
-          {positions.map(position => <TabPane key={position} title={position} />)}
-        </Tabs>
+          className={"employee-admin-position-tabs"}
+          items={positions.map((position) => ({ key: position, label: position }))}
+        />
 
         <div className="employee-admin-module-toolbar">
           <span>当前职位共 {positionRates.length} 个职级</span>
           <Button icon={<IconPlus />} onClick={openAddLevel}>新增职级</Button>
         </div>
 
-        <Table
+        <DataTable
           columns={columns as any}
           data={positionRates}
           rowKey={record => `${record.level}-${record.position}`}
           pagination={false}
           scroll={{ x: 720 }}
         />
-      </Card>
+      </SectionCard>
 
       <Modal
         title="新增职位"

@@ -1,33 +1,41 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Empty,
-  Grid,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Rate,
   Avatar,
+  Button,
+  DateText,
   Divider,
-  Popconfirm,
-} from '@arco-design/web-react';
-import {
-  IconUser,
+  Form,
+  FormGrid,
+  Grid,
+  IconCalendar,
+  IconDelete,
+  IconEdit,
   IconFile,
   IconPlus,
-  IconEdit,
-  IconDelete,
-  IconCalendar,
   IconRefresh,
   IconSearch,
-} from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+  IconUser,
+  Input,
+  Modal,
+  MoneyText,
+  Popconfirm,
+  Rate,
+  Select,
+  Space,
+  Tabs,
+} from '@/design-system';
+import {
+  FilterBar,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  EmptyState,
+  DataTable,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { filterSupplierRecords, hasSupplierFilters } from '../../support/system/supportDomainListModel';
 import '../../support/system/supportDomainLists.css';
 
@@ -180,18 +188,31 @@ export function SupplierManagement() {
 
       <MetricGrid items={[
         { key: 'suppliers', label: '供应商', value: summary.totalSuppliers, detail: `平均评级 ${(suppliers.reduce((sum, supplier) => sum + supplier.rating, 0) / Math.max(suppliers.length, 1)).toFixed(1)} ★` },
-        { key: 'contracts', label: '分包合同', value: summary.totalContracts, detail: `总额 ¥${summary.totalAmount.toLocaleString()}` },
-        { key: 'unpaid', label: '待付金额', value: `¥${summary.unpaidAmount.toLocaleString()}`, detail: '未付款计划', tone: summary.unpaidAmount ? 'warning' : 'neutral' },
+        { key: 'contracts', label: '分包合同', value: summary.totalContracts, detail: <>总额 <MoneyText value={summary.totalAmount} variant="compact" /></> },
+        { key: 'unpaid', label: '待付金额', value: <MoneyText value={summary.unpaidAmount} />, detail: '未付款计划', tone: summary.unpaidAmount ? 'warning' : 'neutral' },
         { key: 'result', label: '当前结果', value: currentCount, detail: activeTab === 'suppliers' && filtersActive ? '供应商筛选结果' : '当前页签记录' },
       ]} />
 
       {/* 主体 Tab */}
-      <Card bordered={false} className="support-domain-list__card">
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="suppliers" title={<span><IconUser /> 供应商档案</span>} />
-          <TabPane key="contracts" title={<span><IconFile /> 分包合同</span>} />
-          <TabPane key="payments" title={<span><IconCalendar /> 付款记录</span>} />
-        </Tabs>
+      <SectionCard bordered={false} className="support-domain-list__card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'suppliers',
+              label: <span><IconUser /> 供应商档案</span>,
+            },
+            {
+              key: 'contracts',
+              label: <span><IconFile /> 分包合同</span>,
+            },
+            {
+              key: 'payments',
+              label: <span><IconCalendar /> 付款记录</span>,
+            },
+          ]}
+        />
 
         <div style={{ paddingTop: 16 }}>
           {/* 供应商档案 Tab */}
@@ -208,9 +229,9 @@ export function SupplierManagement() {
               {filteredSuppliers.length ? <Row gutter={16}>
                 {filteredSuppliers.map(supplier => (
                   <Col span={8} key={supplier.id} className="support-supplier-card" style={{ marginBottom: 16 }}>
-                    <Card
+                    <SectionCard
                       size="small"
-                      style={{ borderRadius: 8 }}
+                      style={{ borderRadius: 'var(--radius-md)' }}
                       extra={
                         <Space>
                           <Button type="text" size="small" className="hubx-icon-action" aria-label={`编辑供应商${supplier.name}`} icon={<IconEdit />} onClick={() => handleEdit(supplier)} />
@@ -226,52 +247,52 @@ export function SupplierManagement() {
                         </Avatar>
                         <div>
                           <div style={{ fontWeight: 600 }}>{supplier.name}</div>
-                          <Tag size="small" color={supplier.type === 'company' ? 'blue' : 'purple'}>
+                          <StatusTag size="small" tone={supplier.type === 'company' ? 'info' : 'purple'}>
                             {supplier.type === 'company' ? '企业' : '个人'}
-                          </Tag>
+                          </StatusTag>
                         </div>
                       </div>
 
                       <div style={{ marginBottom: 8 }}>
-                        <Rate value={supplier.rating} allowHalf readonly style={{ fontSize: 14 }} />
-                        <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--color-text-3)' }}>{supplier.rating}</span>
+                        <Rate value={supplier.rating} allowHalf readonly style={{ fontSize: 'var(--text-sm)' }} />
+                        <span style={{ marginLeft: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{supplier.rating}</span>
                       </div>
 
                       <div style={{ marginBottom: 8 }}>
                         {supplier.skills.map(skill => (
-                          <Tag key={skill} size="small" style={{ margin: '2px 4px 2px 0' }}>{skill}</Tag>
+                          <StatusTag key={skill} size="small" style={{ margin: '2px 4px 2px 0' }}>{skill}</StatusTag>
                         ))}
                       </div>
 
                       <Divider style={{ margin: '8px 0' }} />
 
-                      <div style={{ fontSize: 12, color: 'var(--color-text-2)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
                         <div>联系人：{supplier.contactPerson}</div>
-                        <div>合作 {supplier.totalContracts} 次 · 总额 ¥{supplier.totalAmount.toLocaleString()}</div>
+                        <div>合作 {supplier.totalContracts} 次 · 总额 <MoneyText value={supplier.totalAmount} variant="compact" /></div>
                         {supplier.notes && <div style={{ color: 'var(--color-text-3)', marginTop: 4 }}><IconEdit style={{ marginRight: 4 }} /> {supplier.notes}</div>}
                       </div>
-                    </Card>
+                    </SectionCard>
                   </Col>
                 ))}
-              </Row> : <div className="support-domain-list__empty"><Empty description="没有符合当前条件的供应商" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
+              </Row> : <div className="support-domain-list__empty"><EmptyState description="没有符合当前条件的供应商" /><Button type="text" onClick={resetFilters}>清除筛选</Button></div>}
             </div>
           )}
 
           {/* 分包合同 Tab */}
           {activeTab === 'contracts' && (
-            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockSubcontracts.length} 份分包合同</span><span>合同总额 ¥{summary.totalAmount.toLocaleString()}</span></div><Table
+            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockSubcontracts.length} 份分包合同</span><span>合同总额 <MoneyText value={summary.totalAmount} variant="compact" /></span></div><DataTable
               columns={[
                 { title: '合同编号', dataIndex: 'contractNo', width: 130 },
                 { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '项目', dataIndex: 'projectName', width: 160 },
                 { title: '签订日期', dataIndex: 'signDate', width: 100 },
-                { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+                { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
                 {
                   title: '状态', dataIndex: 'status', width: 80,
                   render: (s: string) => {
-                    const map: Record<string, { label: string; color: string }> = { active: { label: '执行中', color: 'var(--primary)' }, completed: { label: '已完成', color: 'var(--success-500)' }, terminated: { label: '已终止', color: 'var(--destructive-500)' } };
+                    const map: Record<string, { label: string; tone: StatusTone }> = { active: { label: '执行中', tone: 'info' }, completed: { label: '已完成', tone: 'success' }, terminated: { label: '已终止', tone: 'danger' } };
                     const m = map[s] || map.active;
-                    return <Tag color={m.color}>{m.label}</Tag>;
+                    return <StatusTag tone={m.tone}>{m.label}</StatusTag>;
                   },
                 },
                 { title: '描述', dataIndex: 'description' },
@@ -285,23 +306,23 @@ export function SupplierManagement() {
 
           {/* 付款记录 Tab */}
           {activeTab === 'payments' && (
-            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockPayments.length} 条付款计划</span><span>待付 ¥{summary.unpaidAmount.toLocaleString()}</span></div><Table
+            <div className="support-domain-list__panel"><div className="support-domain-list__result-summary"><span>共 {mockPayments.length} 条付款计划</span><span>待付 <MoneyText value={summary.unpaidAmount} /></span></div><DataTable
               columns={[
                 { title: '供应商', dataIndex: 'supplierName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '项目', dataIndex: 'projectName', width: 160 },
                 { title: '合同', dataIndex: 'contractNo', width: 120 },
                 { title: '期数', dataIndex: 'period', width: 50, render: (v: number) => `P${v}` },
-                { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+                { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
                 {
                   title: '状态', dataIndex: 'status', width: 80,
                   render: (s: string) => {
-                    const map: Record<string, { label: string; color: string }> = { paid: { label: '已付', color: 'var(--success-500)' }, partial: { label: '部分', color: 'var(--warning-500)' }, unpaid: { label: '未付', color: 'var(--destructive-500)' } };
+                    const map: Record<string, { label: string; tone: StatusTone }> = { paid: { label: '已付', tone: 'success' }, partial: { label: '部分', tone: 'warning' }, unpaid: { label: '未付', tone: 'danger' } };
                     const m = map[s] || map.unpaid;
-                    return <Tag color={m.color}>{m.label}</Tag>;
+                    return <StatusTag tone={m.tone}>{m.label}</StatusTag>;
                   },
                 },
-                { title: '应付日期', dataIndex: 'dueDate', width: 100 },
-                { title: '实付日期', dataIndex: 'paidDate', width: 100, render: (v: string) => v || '—' },
+                { title: '应付日期', dataIndex: 'dueDate', width: 100, render: (v: string) => <DateText value={v} /> },
+                { title: '实付日期', dataIndex: 'paidDate', width: 100, render: (v: string) => <DateText value={v} /> },
               ] as any}
               data={mockPayments}
               rowKey="id"
@@ -310,7 +331,7 @@ export function SupplierManagement() {
             /></div>
           )}
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 新增/编辑弹窗 */}
       <Modal
@@ -323,45 +344,33 @@ export function SupplierManagement() {
         style={{ width: 560 }}
       >
         <Form form={form} layout="vertical">
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          <FormGrid columns={2}>
               <FormItem label="名称" field="name" rules={[{ required: true, message: '请输入名称' }]}>
                 <Input placeholder="公司名或姓名" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="类型" field="type" rules={[{ required: true }]}>
                 <Select placeholder="选择类型">
                   <SelectOption value="company">企业</SelectOption>
                   <SelectOption value="individual">个人</SelectOption>
                 </Select>
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="联系人" field="contactPerson" rules={[{ required: true, message: '请输入联系人' }]}>
                 <Input placeholder="联系人姓名" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="电话" field="phone">
                 <Input placeholder="联系电话" />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
-          <Grid.Row gutter={16}>
-            <Grid.Col span={12}>
+          </FormGrid>
+          <FormGrid columns={2}>
               <FormItem label="邮箱" field="email">
                 <Input placeholder="邮箱地址" />
               </FormItem>
-            </Grid.Col>
-            <Grid.Col span={12}>
               <FormItem label="合作评级" field="rating">
                 <Rate allowHalf />
               </FormItem>
-            </Grid.Col>
-          </Grid.Row>
+          </FormGrid>
           <FormItem label="技能标签" field="skills">
             <Select mode="tags" placeholder="输入技能标签后回车" />
           </FormItem>

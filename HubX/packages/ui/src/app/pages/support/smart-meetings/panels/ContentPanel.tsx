@@ -10,8 +10,9 @@
  */
 
 import { useState } from 'react';
-import { Card, Button, Input, Space, Typography, Tag } from '@arco-design/web-react';
-import { IconEdit, IconEye, IconBrush } from '@arco-design/web-react/icon';
+import { Button, Input, Space, Typography } from '@/design-system';
+import { IconEdit, IconEye, IconBrush } from '@/design-system';
+import { SectionCard, StatusTag } from '@/design-system';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -33,10 +34,9 @@ export function ContentPanel({
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
 
   return (
-    <Card
-      size="small"
+    <div style={{ marginBottom: 12 }}>
+    <SectionCard
       title="正文"
-      style={{ marginBottom: 12 }}
       extra={
         <Space size={4}>
           {!readonly && (
@@ -78,9 +78,9 @@ export function ContentPanel({
           style={{
             padding: 12,
             background: 'var(--grey-50)',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-sm)',
             minHeight: 120,
-            fontSize: 14,
+            fontSize: 'var(--text-sm)',
             lineHeight: 1.8,
             whiteSpace: 'pre-wrap',
           }}
@@ -91,9 +91,9 @@ export function ContentPanel({
 
       {/* AI 润色预览 */}
       {polishPreview && (
-        <div style={{ marginTop: 12, border: '1px solid var(--brand-200)', borderRadius: 8, padding: 12 }}>
+        <div style={{ marginTop: 12, border: '1px solid var(--brand-200)', borderRadius: 'var(--radius-md)', padding: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Tag color="blue" size="small">AI 润色预览</Tag>
+            <StatusTag tone="info" size="small">AI 润色预览</StatusTag>
             <Space size={4}>
               <Button size="mini" type="primary" onClick={onPolishAccept}>采用</Button>
               <Button size="mini" onClick={onPolishDiscard}>放弃</Button>
@@ -103,8 +103,8 @@ export function ContentPanel({
             style={{
               padding: 8,
               background: 'var(--brand-50)',
-              borderRadius: 6,
-              fontSize: 13,
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--ds-text-dense)',
               lineHeight: 1.7,
               whiteSpace: 'pre-wrap',
               maxHeight: 200,
@@ -115,6 +115,7 @@ export function ContentPanel({
           </div>
         </div>
       )}
-    </Card>
+    </SectionCard>
+    </div>
   );
 }

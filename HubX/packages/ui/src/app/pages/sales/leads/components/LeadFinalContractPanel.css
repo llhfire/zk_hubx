@@ -19,16 +19,6 @@
   gap: 24px;
 }
 
-.lead-final-contract-file-icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: rgb(var(--arcoblue-6));
-  background: rgba(var(--arcoblue-1), 0.9);
-}
-
 .lead-final-contract-heading-content {
   min-width: 0;
 }
@@ -151,61 +141,9 @@
   overflow-wrap: anywhere;
 }
 
-.lead-final-contract-file {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border-2);
-  border-radius: 6px;
-  background: var(--color-fill-1);
-}
-
-.lead-final-contract-file-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.lead-final-contract-file-icon {
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-}
-
-.lead-final-contract-file-content {
-  min-width: 0;
-}
-
-.lead-final-contract-file-name {
-  color: var(--color-text-1);
-  font-size: 13px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.lead-final-contract-file-meta {
-  margin-top: 2px;
-  color: var(--color-text-3);
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.lead-final-contract-file-actions {
-  flex: 0 0 auto;
-}
-
 @media (max-width: 720px) {
   .lead-final-contract-info-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lead-final-contract-file {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .lead-final-contract-header.is-project-layout {
@@ -227,10 +165,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .lead-final-contract-file-actions {
-    align-self: flex-end;
-  }
-
 }
 
 @media (max-width: 480px) {
@@ -243,9 +177,4 @@
     gap: 8px;
   }
 
-  .lead-final-contract-file-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
 }

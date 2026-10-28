@@ -1,30 +1,25 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Grid,
-  Statistic,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Tabs,
-  Typography,
-  Progress,
-  Select,
-} from '@arco-design/web-react';
-import {
-  IconExperiment,
+  DataTable,
   IconArrowRight,
-  IconUser,
+  IconCalendar,
+  IconExperiment,
   IconFile,
   IconTrophy,
-  IconCalendar,
-} from '@arco-design/web-react/icon';
+  IconUser,
+  MetricGrid,
+  MoneyText,
+  PageHeader,
+  PageShell,
+  ProgressBar,
+  Select,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  Tabs,
+} from '@/design-system';
 
-const Row = Grid.Row;
-const Col = Grid.Col;
 const TabPane = Tabs.TabPane;
-const Title = Typography.Title;
 const SelectOption = Select.Option;
 
 // ---------- 类型 ----------
@@ -125,25 +120,47 @@ export function FullChainROI() {
   }, []);
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <PageShell>
+      <PageHeader
+        title="全链路 ROI"
+        description="把广告投放、线索、合同、项目与利润串成一条链，核算真实投产比。"
+      />
       {/* 摘要栏 */}
-      <Row gutter={16}>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconExperiment style={{ color: 'var(--warning-500)' }} />广告总消耗</span>} value={summary.totalSpend} prefix="¥" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconTrophy style={{ color: 'var(--success-500)' }} />总营收</span>} value={summary.totalRevenue} prefix="¥" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconFile style={{ color: 'var(--primary)' }} />总利润</span>} value={summary.totalProfit} prefix="¥" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconCalendar style={{ color: 'var(--chart-5)' }} />平均利润率</span>} value={summary.avgMargin} suffix="%" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconUser style={{ color: 'var(--primary)' }} />总线索数</span>} value={summary.totalLeads} suffix="条" /></Card></Col>
-        <Col span={4}><Card><Statistic title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><IconArrowRight style={{ color: 'var(--info-500)' }} />整体ROI</span>} value={Math.round((summary.totalProfit / Math.max(summary.totalSpend, 1)) * 100)} suffix="%" /></Card></Col>
-      </Row>
+      <MetricGrid
+        items={[
+          { key: 'spend', label: <><IconExperiment /> 广告总消耗</>, value: <MoneyText value={summary.totalSpend} variant="compact" />, tone: 'warning' },
+          { key: 'revenue', label: <><IconTrophy /> 总营收</>, value: <MoneyText value={summary.totalRevenue} variant="compact" />, tone: 'success' },
+          { key: 'profit', label: <><IconFile /> 总利润</>, value: <MoneyText value={summary.totalProfit} variant="compact" /> },
+          { key: 'margin', label: <><IconCalendar /> 平均利润率</>, value: `${summary.avgMargin}%` },
+          { key: 'leads', label: <><IconUser /> 总线索数</>, value: `${summary.totalLeads} 条` },
+          { key: 'roi', label: <><IconArrowRight /> 整体 ROI</>, value: `${Math.round((summary.totalProfit / Math.max(summary.totalSpend, 1)) * 100)}%` },
+        ]}
+      />
 
       {/* 主体 Tab */}
-      <Card bordered={false}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="funnel" title={<span><IconArrowRight /> 漏斗分析</span>} />
-          <TabPane key="channel" title={<span><IconExperiment /> 渠道 ROI</span>} />
-          <TabPane key="person" title={<span><IconUser /> 人员 ROI</span>} />
-          <TabPane key="project" title={<span><IconFile /> 项目 ROI</span>} />
-        </Tabs>
+      <SectionCard bordered={false}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'funnel',
+              label: <span><IconArrowRight /> 漏斗分析</span>,
+            },
+            {
+              key: 'channel',
+              label: <span><IconExperiment /> 渠道 ROI</span>,
+            },
+            {
+              key: 'person',
+              label: <span><IconUser /> 人员 ROI</span>,
+            },
+            {
+              key: 'project',
+              label: <span><IconFile /> 项目 ROI</span>,
+            },
+          ]}
+        />
 
         <div style={{ paddingTop: 16 }}>
           {/* 漏斗分析 Tab */}
@@ -163,29 +180,29 @@ export function FullChainROI() {
                   <div key={stage.stage} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
                     {/* 转化率箭头 */}
                     {idx > 0 && idx < funnelData.length - 1 && (
-                      <div style={{ position: 'absolute', top: 20, left: -12, color: 'var(--color-text-3)', fontSize: 18 }}>→</div>
+                      <div style={{ position: 'absolute', top: 20, left: -12, color: 'var(--color-text-3)', fontSize: 'var(--text-lg)' }}>→</div>
                     )}
                     {/* 数值 */}
-                    <div style={{ fontSize: 20, fontWeight: 700, color: idx === funnelData.length - 1 ? 'var(--success-500)' : 'var(--primary)' }}>
-                      {stage.unit === '元' ? `¥${(stage.value / 10000).toFixed(0)}万` : stage.value}
+                    <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: idx === funnelData.length - 1 ? 'var(--success-500)' : 'var(--primary)' }}>
+                      {stage.unit === '元' ? <MoneyText value={stage.value} variant="compact" /> : stage.value}
                     </div>
                     {/* 单位 */}
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 4 }}>{stage.unit}</div>
+                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 4 }}>{stage.unit}</div>
                     {/* 阶段名 */}
-                    <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'center', marginBottom: 8 }}>{stage.stage}</div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, textAlign: 'center', marginBottom: 8 }}>{stage.stage}</div>
                     {/* 转化率（固定高度，保证进度条对齐） */}
                     <div style={{ height: 24, display: 'flex', alignItems: 'center', marginBottom: 4 }}>
                       {stage.conversionRate !== undefined && (
-                        <Tag color="blue" size="small">
+                        <StatusTag tone="info" size="small">
                           转化率 {stage.conversionRate}%
-                        </Tag>
+                        </StatusTag>
                       )}
                     </div>
                     {/* 漏斗宽度可视化 */}
                     <div style={{
                       width: `${100 - idx * 10}%`,
                       height: 8,
-                      borderRadius: 4,
+                      borderRadius: 'var(--radius-xs)',
                       background: `linear-gradient(90deg, oklch(from var(--primary) l c h / ${1 - idx * 0.12}), oklch(from var(--primary) l c h / ${0.7 - idx * 0.1}))`,
                     }} />
                   </div>
@@ -193,50 +210,33 @@ export function FullChainROI() {
               </div>
 
               {/* 关键指标 */}
-              <Row gutter={16} style={{ marginTop: 24 }}>
-                <Col span={6}>
-                  <Card size="small" style={{ background: 'var(--color-fill-1)' }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>单条线索成本</div>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>¥{Math.round(180000 / 320)}</div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card size="small" style={{ background: 'var(--color-fill-1)' }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>单客户获客成本</div>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>¥{Math.round(180000 / 48)}</div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card size="small" style={{ background: 'var(--color-fill-1)' }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>平均合同金额</div>
-                    <div style={{ fontSize: 18, fontWeight: 700 }}>¥{Math.round(10600000 / 35 / 10000)}万</div>
-                  </Card>
-                </Col>
-                <Col span={6}>
-                  <Card size="small" style={{ background: 'var(--color-fill-1)' }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>投入产出比</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--success-500)' }}>1 : {Math.round(10600000 / 180000 * 10) / 10}</div>
-                  </Card>
-                </Col>
-              </Row>
+              <MetricGrid
+                columns={4}
+                items={[
+                  { key: 'lead-cost', label: '单条线索成本', value: <MoneyText value={Math.round(180000 / 320)} /> },
+                  { key: 'customer-cost', label: '单客户获客成本', value: <MoneyText value={Math.round(180000 / 48)} /> },
+                  { key: 'average-contract', label: '平均合同金额', value: <MoneyText value={Math.round(10600000 / 35)} variant="compact" /> },
+                  { key: 'roi', label: '投入产出比', value: `1 : ${Math.round(10600000 / 180000 * 10) / 10}`, tone: 'success' },
+                ]}
+              />
             </div>
           )}
 
           {/* 渠道 ROI Tab */}
           {activeTab === 'channel' && (
-            <Table
+            <DataTable
               columns={[
                 { title: '渠道', dataIndex: 'channel', width: 100, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
-                { title: '投放消耗', dataIndex: 'spend', width: 100, render: (v: number) => `¥${v.toLocaleString()}`, sorter: (a: ChannelROI, b: ChannelROI) => a.spend - b.spend },
+                { title: '投放消耗', dataIndex: 'spend', width: 100, render: (v: number) => <MoneyText value={v} />, sorter: (a: ChannelROI, b: ChannelROI) => a.spend - b.spend },
                 { title: '线索数', dataIndex: 'leads', width: 70 },
                 { title: '客户数', dataIndex: 'customers', width: 70 },
                 { title: '合同数', dataIndex: 'contracts', width: 70 },
-                { title: '营收', dataIndex: 'revenue', width: 110, render: (v: number) => `¥${(v / 10000).toFixed(0)}万` },
-                { title: '单线索成本', dataIndex: 'leadCost', width: 100, render: (v: number) => `¥${v}` },
-                { title: '转化率', dataIndex: 'conversionRate', width: 80, render: (v: number) => <Progress percent={v} size="small" /> },
+                { title: '营收', dataIndex: 'revenue', width: 110, render: (v: number) => <MoneyText value={v} variant="compact" /> },
+                { title: '单线索成本', dataIndex: 'leadCost', width: 100, render: (v: number) => <MoneyText value={v} /> },
+                { title: '转化率', dataIndex: 'conversionRate', width: 80, render: (v: number) => <ProgressBar percent={v} size="small" /> },
                 {
                   title: 'ROI', dataIndex: 'roi', width: 100,
-                  render: (v: number) => <Tag color={v > 5000 ? 'var(--success-500)' : v > 3000 ? 'var(--warning-500)' : 'var(--destructive-500)'} style={{ fontWeight: 600 }}>{v}%</Tag>,
+                  render: (v: number) => <StatusTag tone={v > 5000 ? 'success' : v > 3000 ? 'warning' : 'danger'} style={{ fontWeight: 600 }}>{v}%</StatusTag>,
                   sorter: (a: ChannelROI, b: ChannelROI) => a.roi - b.roi,
                 },
               ] as any}
@@ -248,7 +248,7 @@ export function FullChainROI() {
 
           {/* 人员 ROI Tab */}
           {activeTab === 'person' && (
-            <Table
+            <DataTable
               columns={[
                 { title: '姓名', dataIndex: 'name', width: 70, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
                 { title: '部门', dataIndex: 'department', width: 70 },
@@ -256,10 +256,10 @@ export function FullChainROI() {
                 { title: '跟进数', dataIndex: 'followedLeads', width: 70 },
                 { title: '客户数', dataIndex: 'customers', width: 70 },
                 { title: '合同数', dataIndex: 'contracts', width: 70 },
-                { title: '合同金额', dataIndex: 'contractAmount', width: 110, render: (v: number) => `¥${(v / 10000).toFixed(0)}万` },
+                { title: '合同金额', dataIndex: 'contractAmount', width: 110, render: (v: number) => <MoneyText value={v} variant="compact" /> },
                 {
                   title: '转化率', dataIndex: 'conversionRate', width: 100,
-                  render: (v: number) => <Progress percent={v * 3} size="small" color={v > 15 ? 'var(--success-500)' : v > 12 ? 'var(--warning-500)' : 'var(--destructive-500)'} />,
+                  render: (v: number) => <ProgressBar percent={v * 3} size="small" tone="success" />,
                   sorter: (a: PersonROI, b: PersonROI) => a.conversionRate - b.conversionRate,
                 },
               ] as any}
@@ -271,16 +271,16 @@ export function FullChainROI() {
 
           {/* 项目 ROI Tab */}
           {activeTab === 'project' && (
-            <Table
+            <DataTable
               columns={[
                 { title: '项目', dataIndex: 'projectName', width: 160, render: (v: string) => <span style={{ fontWeight: 600 }}>{v}</span> },
-                { title: '类型', dataIndex: 'projectType', width: 80, render: (v: string) => <Tag>{v}</Tag> },
-                { title: '合同额', dataIndex: 'contractAmount', width: 100, render: (v: number) => `¥${(v / 10000).toFixed(0)}万` },
-                { title: '总成本', dataIndex: 'totalCost', width: 100, render: (v: number) => `¥${(v / 10000).toFixed(0)}万` },
-                { title: '利润', dataIndex: 'profit', width: 100, render: (v: number) => <span style={{ fontWeight: 600, color: 'var(--success-500)' }}>¥{(v / 10000).toFixed(0)}万</span> },
+                { title: '类型', dataIndex: 'projectType', width: 80, render: (v: string) => <StatusTag>{v}</StatusTag> },
+                { title: '合同额', dataIndex: 'contractAmount', width: 100, render: (v: number) => <MoneyText value={v} variant="compact" /> },
+                { title: '总成本', dataIndex: 'totalCost', width: 100, render: (v: number) => <MoneyText value={v} variant="compact" /> },
+                { title: '利润', dataIndex: 'profit', width: 100, render: (v: number) => <MoneyText value={v} variant="compact" tone="success" /> },
                 {
                   title: '利润率', dataIndex: 'profitMargin', width: 100,
-                  render: (v: number) => <Tag color={v >= 45 ? 'var(--success-500)' : v >= 35 ? 'var(--warning-500)' : 'var(--destructive-500)'} >{v}%</Tag>,
+                  render: (v: number) => <StatusTag tone={v >= 45 ? 'success' : v >= 35 ? 'warning' : 'danger'}>{v}%</StatusTag>,
                   sorter: (a: ProjectROI, b: ProjectROI) => a.profitMargin - b.profitMargin,
                 },
                 { title: '工期(天)', dataIndex: 'duration', width: 80 },
@@ -288,7 +288,7 @@ export function FullChainROI() {
                   title: '月利润率', width: 100,
                   render: (_: unknown, row: ProjectROI) => {
                     const monthlyRate = Math.round(row.profitMargin / row.duration * 30 * 10) / 10;
-                    return <span style={{ fontSize: 12 }}>{monthlyRate}%/月</span>;
+                    return <span style={{ fontSize: 'var(--text-xs)' }}>{monthlyRate}%/月</span>;
                   },
                 },
               ] as any}
@@ -298,7 +298,7 @@ export function FullChainROI() {
             />
           )}
         </div>
-      </Card>
-    </Space>
+      </SectionCard>
+    </PageShell>
   );
 }

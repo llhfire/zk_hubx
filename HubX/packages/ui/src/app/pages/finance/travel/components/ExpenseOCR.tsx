@@ -1,16 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import {
-  Modal,
-  Card,
-  Tag,
-  Button,
-  Progress,
-  Space,
-  Typography,
-  Grid,
-  Spin,
-  Message,
-} from '@arco-design/web-react';
+import { AsyncState, Modal, Button, Space, Typography, Grid, Spin, Message } from '@/design-system';
 import {
   IconUpload,
   IconImage,
@@ -20,7 +9,17 @@ import {
   IconRight,
   IconCamera,
   IconClose,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
+import {
+  DateText,
+  MetricGrid,
+  MoneyText,
+  StatusTag,
+  STATUS_TONE_VARS,
+  ProgressBar,
+  SectionCard,
+  type StatusTone,
+} from '@/design-system';
 
 const { Text, Title } = Typography;
 const { Row, Col } = Grid;
@@ -83,11 +82,11 @@ const typeLabels: Record<string, string> = {
   other: '其他',
 };
 
-const typeColors: Record<string, string> = {
-  transport: 'blue',
+const typeTones: Record<string, StatusTone> = {
+  transport: 'info',
   accommodation: 'purple',
-  meal: 'orange',
-  other: 'gray',
+  meal: 'warning',
+  other: 'neutral',
 };
 
 export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
@@ -145,7 +144,7 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
     <Modal
       title={
         <Space>
-          <IconCamera style={{ color: '#165dff' }} />
+          <IconCamera style={{ color: 'rgb(var(--primary-6))' }} />
           <span>票据 OCR 识别</span>
         </Space>
       }
@@ -165,8 +164,8 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
       {processingState === 'idle' && (
         <div
           style={{
-            border: '2px dashed #c9cdd4',
-            borderRadius: 12,
+            border: '2px dashed var(--color-border-2)',
+            borderRadius: 'var(--radius-lg)',
             padding: '48px 0',
             textAlign: 'center',
             cursor: 'pointer',
@@ -179,9 +178,9 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
             simulateOCR();
           }}
         >
-          <IconUpload style={{ fontSize: 48, color: '#c9cdd4', marginBottom: 16 }} />
-          <div style={{ fontSize: 16, fontWeight: 500, color: '#1d2129', marginBottom: 8 }}>上传票据图片或 PDF</div>
-          <div style={{ fontSize: 14, color: '#86909c', marginBottom: 16 }}>支持 JPG、PNG、PDF 格式，可批量上传</div>
+          <IconUpload style={{ fontSize: 'var(--ds-icon-lg)', color: 'var(--color-border-2)', marginBottom: 16 }} />
+          <div style={{ fontSize: 'var(--text-base)', fontWeight: 500, color: 'var(--color-text-1)', marginBottom: 8 }}>上传票据图片或 PDF</div>
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)', marginBottom: 16 }}>支持 JPG、PNG、PDF 格式，可批量上传</div>
           <Button onClick={(e) => { e.stopPropagation(); simulateOCR(); }}>
             <IconImage style={{ marginRight: 8 }} />选择文件
           </Button>
@@ -191,15 +190,19 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
       {(processingState === 'uploading' || processingState === 'processing') && (
         <div style={{ padding: '32px 0' }}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <Spin size={40} />
+            {processingState === 'processing' ? (
+              <AsyncState status="loading" />
+            ) : (
+              <Spin size={40} />
+            )}
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 500, color: '#1d2129', marginBottom: 4 }}>
+            <div style={{ fontWeight: 500, color: 'var(--color-text-1)', marginBottom: 4 }}>
               {processingState === 'uploading' ? '正在上传票据...' : '正在 OCR 识别...'}
             </div>
-            <div style={{ fontSize: 14, color: '#86909c', marginBottom: 16 }}>AI 正在解析票据信息</div>
-            <Progress percent={Math.round(progress)} style={{ marginBottom: 8 }} />
-            <div style={{ fontSize: 12, color: '#c9cdd4' }}>{Math.round(progress)}%</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-3)', marginBottom: 16 }}>AI 正在解析票据信息</div>
+            <ProgressBar percent={Math.round(progress)} style={{ marginBottom: 8 }} />
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-border-2)' }}>{Math.round(progress)}%</div>
           </div>
           {selectedFiles.length > 0 && (
             <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 24 }}>
@@ -210,17 +213,17 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    fontSize: 14,
-                    color: '#1d2129',
-                    background: '#f7f8fa',
-                    borderRadius: 8,
+                    fontSize: 'var(--text-sm)',
+                    color: 'var(--color-text-1)',
+                    background: 'var(--color-fill-1)',
+                    borderRadius: 'var(--radius-md)',
                     padding: '8px 12px',
                   }}
                 >
-                  <IconImage style={{ color: '#165dff' }} />
+                  <IconImage style={{ color: 'rgb(var(--primary-6))' }} />
                   <span style={{ flex: 1 }}>{file}</span>
-                  {processingState === 'processing' && progress > (i + 1) * 30 && (
-                    <IconCheckCircle style={{ color: '#00b42a' }} />
+                  {progress > (i + 1) * 30 && (
+                    <IconCheckCircle style={{ color: 'rgb(var(--success-6))' }} />
                   )}
                 </div>
               ))}
@@ -231,48 +234,31 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
 
       {processingState === 'done' && results.length > 0 && (
         <div>
-          <Row gutter={12} style={{ marginBottom: 16 }}>
-            <Col span={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#86909c', marginBottom: 4 }}>识别票据</div>
-                  <div style={{ fontSize: 24, fontWeight: 'bold' }}>{results.length}</div>
-                </div>
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#86909c', marginBottom: 4 }}>识别总额</div>
-                  <div style={{ fontSize: 24, fontWeight: 'bold', color: '#165dff' }}>{totalAmount.toFixed(2)}</div>
-                </div>
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 12, color: '#86909c', marginBottom: 4 }}>合规检查</div>
-                  <div style={{ fontSize: 24, fontWeight: 'bold', color: '#00b42a' }}>{compliantCount}/{results.length}</div>
-                </div>
-              </Card>
-            </Col>
-          </Row>
+          <div style={{ marginBottom: 16 }}>
+            <MetricGrid
+              items={[
+                { key: 'count', label: '识别票据', value: results.length },
+                { key: 'amount', label: '识别总额', value: <MoneyText value={totalAmount} /> },
+                { key: 'compliant', label: '合规检查', value: `${compliantCount}/${results.length}`, tone: 'success' },
+              ]}
+            />
+          </div>
 
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
             {results.map((result, index) => (
-              <Card
+              <SectionCard
                 key={index}
-                style={{ border: result.compliant ? '1px solid #aff0b5' : '1px solid #ffc9c9' }}
+                style={{ border: `1px solid ${STATUS_TONE_VARS[result.compliant ? 'success' : 'danger'].border}` }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <Space>
                     <span style={{ fontWeight: 500 }}>{typeLabels[result.type]}</span>
-                    <Tag color={typeColors[result.type]}>{typeLabels[result.type]}</Tag>
+                    <StatusTag tone={typeTones[result.type]}>{typeLabels[result.type]}</StatusTag>
                   </Space>
                   {result.compliant ? (
-                    <Tag color="green" icon={<IconCheckCircle />}>合规</Tag>
+                    <StatusTag meta={{ label: <><IconCheckCircle /> 合规</>, tone: 'success' }} />
                   ) : (
-                    <Tag color="red" icon={<IconExclamationCircle />}>异常</Tag>
+                    <StatusTag meta={{ label: <><IconExclamationCircle /> 异常</>, tone: 'danger' }} />
                   )}
                 </div>
                 <Row gutter={[16, 8]}>
@@ -285,13 +271,13 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
                   <Col span={12}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">金额</Text>
-                      <Text style={{ fontWeight: 500 }}>¥{result.amount.toFixed(2)}</Text>
+                      <Text style={{ fontWeight: 500 }}><MoneyText value={result.amount} fractionDigits={2} /></Text>
                     </div>
                   </Col>
                   <Col span={12}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Text type="secondary">日期</Text>
-                      <Text>{result.date}</Text>
+                      <Text><DateText value={result.date} /></Text>
                     </div>
                   </Col>
                   {result.route && (
@@ -310,16 +296,16 @@ export function ExpenseOCR({ open, onOpenChange }: ExpenseOCRProps) {
                   </Col>
                 </Row>
                 {result.issues.length > 0 && (
-                  <div style={{ marginTop: 12, padding: 8, background: '#fff0f0', borderRadius: 8 }}>
+                  <div style={{ marginTop: 12, padding: 8, background: 'rgb(var(--danger-1))', borderRadius: 'var(--radius-md)' }}>
                     {result.issues.map((issue, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12, color: '#f53f3f' }}>
+                      <div key={i} style={{ display: 'flex', gap: 8, fontSize: 'var(--text-xs)', color: 'rgb(var(--danger-6))' }}>
                         <IconExclamationCircle style={{ marginTop: 2, flexShrink: 0 }} />
                         <span>{issue}</span>
                       </div>
                     ))}
                   </div>
                 )}
-              </Card>
+              </SectionCard>
             ))}
           </Space>
 

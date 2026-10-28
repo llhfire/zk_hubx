@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router';
-import { Button, Card, Descriptions, Divider, Grid, Space, Tag, Tooltip, Typography } from '@arco-design/web-react';
+import { Button, Divider, Grid, Space, Tooltip, Typography } from '@/design-system';
 import {
   IconCalendar,
   IconFire,
@@ -8,9 +8,10 @@ import {
   IconLocation,
   IconUser,
   IconUserGroup,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip, TransportMode } from '../../types';
 import { resolveTripLinks } from '../tripDetailMetrics';
+import { DateText, DescriptionsCard, SectionCard, StatusTag } from '@/design-system';
 
 const { Text, Paragraph } = Typography;
 const { Row, Col } = Grid;
@@ -34,23 +35,23 @@ export function TripCoreProfileCard({ trip }: TripCoreProfileCardProps) {
   const links = resolveTripLinks(trip);
 
   return (
-    <Card size="small" className="trip-core-profile-card" style={{ marginBottom: 16 }}>
+    <SectionCard size="small" className="trip-core-profile-card" style={{ marginBottom: 16 }}>
       {/* 顶部标题行与穿透对象标签 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-text-1)' }}>
+            <span style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--color-text-1)' }}>
               {trip.applicantName} · {trip.destinations.join('、')}出差申请档案
             </span>
-            <Tag color="arcoblue">{trip.projectId ? '项目履约差旅' : trip.leadId ? '售前拓客差旅' : '日常公差'}</Tag>
-            <Tag>{trip.department}</Tag>
+            <StatusTag tone="info">{trip.projectId ? '项目履约差旅' : trip.leadId ? '售前拓客差旅' : '日常公差'}</StatusTag>
+            <StatusTag>{trip.department}</StatusTag>
           </div>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-3)' }}>
+          <div style={{ marginTop: 4, fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
             <span>单号：<code>{trip.tripNo}</code></span>
             <span style={{ margin: '0 8px' }}>·</span>
-            <span>发起时间：{trip.createDate || '—'}</span>
+            <span>发起时间：<DateText value={trip.createDate} /></span>
             <span style={{ margin: '0 8px' }}>·</span>
-            <span>更新时间：{trip.updateDate || '—'}</span>
+            <span>更新时间：<DateText value={trip.updateDate} /></span>
           </div>
         </div>
 
@@ -98,68 +99,66 @@ export function TripCoreProfileCard({ trip }: TripCoreProfileCardProps) {
       {/* 核心事实两列分布：左侧对象与基础，右侧出差目的 */}
       <Row gutter={24}>
         <Col span={14}>
-          <Descriptions
-            column={2}
-            size="small"
-            data={[
-              {
-                label: '申请人',
-                value: (
-                  <Link to={links.applicantLink} className="trip-detail__link">
-                    <IconUser style={{ fontSize: 13 }} />
-                    <span>{links.applicantText}</span>
-                    <IconLaunch style={{ fontSize: 11 }} />
-                  </Link>
-                ),
-              },
-              { label: '所属部门', value: trip.department || '—' },
-              {
-                label: '关联客户',
-                value: links.customerLink ? (
-                  <Link to={links.customerLink} className="trip-detail__link">
-                    <IconUserGroup style={{ fontSize: 13 }} />
-                    <span>{links.customerText}</span>
-                    <IconLaunch style={{ fontSize: 11 }} />
-                  </Link>
-                ) : (
-                  <span>{trip.customerName || '—'}</span>
-                ),
-              },
-              {
-                label: '关联项目',
-                value: links.projectLink ? (
-                  <Link to={links.projectLink} className="trip-detail__link">
-                    <IconFolder style={{ fontSize: 13 }} />
-                    <span>{links.projectText}</span>
-                    <IconLaunch style={{ fontSize: 11 }} />
-                  </Link>
-                ) : (
-                  <span>{trip.projectName || '—'}</span>
-                ),
-              },
-              ...(links.leadLink ? [{
-                label: '关联线索',
-                value: (
-                  <Link to={links.leadLink} className="trip-detail__link">
-                    <IconFire style={{ fontSize: 13 }} />
-                    <span>{links.leadText}</span>
-                    <IconLaunch style={{ fontSize: 11 }} />
-                  </Link>
-                ),
-              }] : []),
-              {
-                label: '出差周期',
-                value: `${trip.startDate} ~ ${trip.endDate} (${trip.days} 天)`,
-              },
-              {
-                label: '交通偏好',
-                value: trip.transportModes.map((m) => transportModeLabels[m] || m).join('、') || '—',
-              },
-              {
-                label: '住宿方式',
-                value: trip.accommodationIntent === 'hotel' ? '酒店住宿' : trip.accommodationIntent === 'dormitory' ? '宿舍安排' : '无住宿需求',
-              },
-            ]}
+          <DescriptionsCard
+            columns={2}
+            items={[
+            { key: '申请人',
+                          label: '申请人',
+                          value: (
+                            <Link to={links.applicantLink} className="trip-detail__link">
+                              <IconUser style={{ fontSize: 'var(--ds-text-dense)' }} />
+                              <span>{links.applicantText}</span>
+                              <IconLaunch style={{ fontSize: 'var(--ds-text-caption)' }} />
+                            </Link>
+                          ),
+                        },
+            { key: '所属部门', label: '所属部门', value: trip.department || '—' },
+            { key: '关联客户',
+                          label: '关联客户',
+                          value: links.customerLink ? (
+                            <Link to={links.customerLink} className="trip-detail__link">
+                              <IconUserGroup style={{ fontSize: 'var(--ds-text-dense)' }} />
+                              <span>{links.customerText}</span>
+                              <IconLaunch style={{ fontSize: 'var(--ds-text-caption)' }} />
+                            </Link>
+                          ) : (
+                            <span>{trip.customerName || '—'}</span>
+                          ),
+                        },
+            { key: '关联项目',
+                          label: '关联项目',
+                          value: links.projectLink ? (
+                            <Link to={links.projectLink} className="trip-detail__link">
+                              <IconFolder style={{ fontSize: 'var(--ds-text-dense)' }} />
+                              <span>{links.projectText}</span>
+                              <IconLaunch style={{ fontSize: 'var(--ds-text-caption)' }} />
+                            </Link>
+                          ) : (
+                            <span>{trip.projectName || '—'}</span>
+                          ),
+                        },
+            ...(links.leadLink ? [{ key: '关联线索', label: '关联线索',
+                          value: (
+                            <Link to={links.leadLink} className="trip-detail__link">
+                              <IconFire style={{ fontSize: 'var(--ds-text-dense)' }} />
+                              <span>{links.leadText}</span>
+                              <IconLaunch style={{ fontSize: 'var(--ds-text-caption)' }} />
+                            </Link>
+                          ),
+                        }] : []),
+            { key: '出差周期',
+                          label: '出差周期',
+                          value: <DateText value={trip.startDate} end={trip.endDate} suffix={`${trip.days} 天`} />,
+                        },
+            { key: '交通偏好',
+                          label: '交通偏好',
+                          value: trip.transportModes.map((m) => transportModeLabels[m] || m).join('、') || '—',
+                        },
+            { key: '住宿方式',
+                          label: '住宿方式',
+                          value: trip.accommodationIntent === 'hotel' ? '酒店住宿' : trip.accommodationIntent === 'dormitory' ? '宿舍安排' : '无住宿需求',
+                        },
+          ]}
           />
         </Col>
 
@@ -170,19 +169,19 @@ export function TripCoreProfileCard({ trip }: TripCoreProfileCardProps) {
               padding: '12px 14px',
               background: 'var(--color-bg-2)',
               border: '1px solid var(--color-border-2)',
-              borderRadius: 6,
+              borderRadius: 'var(--radius-sm)',
               height: '100%',
               boxSizing: 'border-box',
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-2)', marginBottom: 6 }}>
+            <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text-2)', marginBottom: 6 }}>
               出差目的与任务事由
             </div>
             <Paragraph
               style={{
                 margin: 0,
                 color: 'var(--color-text-1)',
-                fontSize: 13,
+                fontSize: 'var(--ds-text-dense)',
                 lineHeight: '20px',
               }}
             >
@@ -191,6 +190,6 @@ export function TripCoreProfileCard({ trip }: TripCoreProfileCardProps) {
           </div>
         </Col>
       </Row>
-    </Card>
+    </SectionCard>
   );
 }

@@ -1,173 +1,35 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  Button, Card, Dropdown, Empty, Input, InputNumber, Menu, Message, Modal, Select, Space, Table, Tag, Typography,
-} from '@arco-design/web-react';
+  Button,
+  Dropdown,
+  EvaluationWorkloadTable,
+  Input,
+  InputNumber,
+  Menu,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Typography,
+  WorkloadNumericInput,
+} from '@/design-system';
+import { EmptyState, SectionCard, StatusTag } from '@/design-system';
 import {
-  IconPlus, IconClose, IconSend, IconLink, IconScissor, IconCopy, IconMenu, IconApps,
-} from '@arco-design/web-react/icon';
+  IconPlus, IconSend, IconLink, IconScissor, IconCopy, IconMenu, IconApps,
+} from '@/design-system';
+import type { WorkloadNumericInputFillRef } from '@/design-system';
 import { useQuotation } from '../QuotationContext';
 import { StageProps } from './Stage1FeatureList';
 import {
-  buildInitialUnits, computeUnitTotal, groupSubFeatures, packModule,
-  removeRoleFromUnits, restoreToSingleUnits, sortUnitsByFeatureList, sumEvalDays, sumEvalDaysByRole, ungroupPackedUnit, ungroupUnit,
+  computeUnitTotal, groupSubFeatures, packModule,
+  removeRoleFromUnits, sortUnitsByFeatureList, sumEvalDays, sumEvalDaysByRole, ungroupPackedUnit, ungroupUnit,
 } from '../quoteFlow';
 import {
-  GRANULARITY_LABELS, PLATFORM_OPTIONS, PRESET_EVAL_ROLES, RISK_META,
+  GRANULARITY_LABELS, PLATFORM_OPTIONS, PRESET_EVAL_ROLES,
 } from '../types';
-import type { EvalRole, EvaluationUnit, FeatureModule, RiskLevel } from '../types';
+import type { EvalRole, EvaluationUnit, FeatureModule } from '../types';
 
-const { Text, Title } = Typography;
-
-// ─── 数值输入框：支持光标位置感知的上下键调值 + WASD漫游 ───
-
-interface NumericInputProps {
-  value: number | undefined;
-  unitId: string;
-  roleKey: string;
-  hasError: boolean;
-  isRemainder: boolean;
-  fillRef: React.MutableRefObject<{ unitId: string; roleKey: string; value: number } | null>;
-  sortedUnits: EvaluationUnit[];
-  activeRoleKeys: string[];
-  /** isActualInput=false 表示程序性填充（方向键/Tab 联动），不触发寄存扣减。 */
-  updateWorkload: (unitId: string, roleKey: string, value: number, isActualInput?: boolean) => void;
-  emptyCells: Set<string>;
-  cellKey: string;
-  setEmptyCells: React.Dispatch<React.SetStateAction<Set<string>>>;
-}
-
-function NumericInput({ value, unitId, roleKey, hasError, isRemainder, fillRef, sortedUnits, activeRoleKeys, updateWorkload, emptyCells, cellKey, setEmptyCells }: NumericInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const displayValue = (value && value > 0) ? value.toFixed(1) : '';
-
-  // 根据光标位置计算增量步长
-  // 例如: "3.0" 中光标位置 0="|3.0"(百位), 1="3|.0"(十位), 2="3.|0"(个位), 3="3.0|" (小数位)
-  // 例如: "33.0" 中光标位置 0="|33.0"(百位), 1="3|3.0"(十位), 2="33|.0"(个位), 3="33.0|" (小数位)
-  const getStepFromCursor = (input: HTMLInputElement): number => {
-    const text = input.value || displayValue;
-    const pos = input.selectionStart ?? text.length;
-    const dotIdx = text.indexOf('.');
-
-    if (dotIdx >= 0) {
-      // 有小数点的情况
-      // 光标在小数点右边 → 小数位
-      if (pos > dotIdx) return 0.1;
-      // 光标在小数点左边 → 整数位
-      const intLen = dotIdx; // 整数部分的长度
-      const distFromDot = dotIdx - pos; // 距离小数点的位数
-      if (distFromDot === 0) return 1;   // 个位
-      if (distFromDot === 1) return 10;  // 十位
-      if (distFromDot === 2) return 100; // 百位
-      return Math.pow(10, distFromDot);
-    } else {
-      // 无小数点的情况
-      const len = text.length;
-      const distFromEnd = len - pos; // 距离末尾的位数
-      if (distFromEnd === 0) return 0.1; // 末尾默认小数位
-      if (distFromEnd === 1) return 1;   // 个位
-      if (distFromEnd === 2) return 10;  // 十位
-      if (distFromEnd === 3) return 100; // 百位
-      return Math.pow(10, distFromEnd - 1);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const text = e.target.value;
-    // 只允许数字和小数点
-    if (text === '' || /^\d*\.?\d*$/.test(text)) {
-      const num = text === '' ? 0 : parseFloat(text);
-      if (!isNaN(num)) {
-        updateWorkload(unitId, roleKey, num, true);
-        fillRef.current = { unitId, roleKey, value: num };
-        if (emptyCells.has(cellKey)) {
-          setEmptyCells((prev) => { const s = new Set(prev); s.delete(cellKey); return s; });
-        }
-      }
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const input = e.currentTarget;
-
-    // WASD 键直接漫游
-    const wasdMap: Record<string, string> = { w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right' };
-    if (wasdMap[e.key] && fillRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      const dir = wasdMap[e.key];
-      const curIdx = sortedUnits.findIndex((u) => u.id === fillRef.current!.unitId);
-      const curRoleIdx = activeRoleKeys.indexOf(fillRef.current!.roleKey);
-      let tIdx = curIdx, tRoleIdx = curRoleIdx;
-      if (dir === 'up') tIdx--;
-      else if (dir === 'down') tIdx++;
-      else if (dir === 'left') tRoleIdx--;
-      else if (dir === 'right') tRoleIdx++;
-      if (tIdx >= 0 && tIdx < sortedUnits.length && tRoleIdx >= 0 && tRoleIdx < activeRoleKeys.length) {
-        const tUnit = sortedUnits[tIdx];
-        const tRole = activeRoleKeys[tRoleIdx];
-        fillRef.current = { unitId: tUnit.id, roleKey: tRole, value: tUnit.manualWorkload[tRole] ?? 0 };
-        requestAnimationFrame(() => {
-          const el = document.querySelector(`input[data-fill="${tUnit.id}-${tRole}"]`) as HTMLInputElement | null;
-          if (el) { el.focus(); el.select(); }
-        });
-      }
-      return;
-    }
-
-    // 上下键：根据光标位置调整数值
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      e.stopPropagation();
-      const step = getStepFromCursor(input);
-      const currentVal = value ?? 0;
-      const newVal = e.key === 'ArrowUp'
-        ? Math.round((currentVal + step) * 10) / 10
-        : Math.max(0, Math.round((currentVal - step) * 10) / 10);
-      updateWorkload(unitId, roleKey, newVal, true);
-      fillRef.current = { unitId, roleKey, value: newVal };
-      // 保持光标位置
-      requestAnimationFrame(() => {
-        input.selectionStart = input.selectionEnd;
-      });
-      return;
-    }
-
-    // 左右键：移动光标位置
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      // 不阻止默认行为，让光标自然移动
-      return;
-    }
-  };
-
-  const handleFocus = () => {
-    fillRef.current = { unitId, roleKey, value: value ?? 0 };
-  };
-
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={displayValue}
-      onChange={handleChange}
-      onKeyDown={handleKeyDown}
-      onFocus={handleFocus}
-      data-fill={`${unitId}-${roleKey}`}
-      style={{
-        width: 76,
-        padding: '4px 8px',
-        border: `1px solid ${hasError || isRemainder ? 'rgb(var(--red-5))' : 'var(--color-border-2)'}`,
-        borderRadius: 4,
-        fontSize: 13,
-        outline: 'none',
-        boxShadow: hasError || isRemainder ? '0 0 0 1px rgb(var(--red-3))' : undefined,
-      }}
-    />
-  );
-}
-
-function uid(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
-}
+const { Text } = Typography;
 
 export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const { saveEvalSheet, submitEval, isLeadFrozen } = useQuotation();
@@ -176,10 +38,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const [draft, setDraft] = useState(quote.evalSheet);
   const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
   // 快捷填充：记录当前聚焦的单元格及其值
-  const fillRef = useRef<{ unitId: string; roleKey: string; value: number } | null>(null);
-  // 跨按键记忆最近一次方向键，供紧随其后的 Tab 判断"沿着刚才的方向继续填充"。
-  // 原先只用了没声明，任何人按方向键都会抛 ReferenceError 打崩评估表。
-  const arrowRef = useRef<'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight' | null>(null);
+  const fillRef = useRef<WorkloadNumericInputFillRef | null>(null);
   // 验证：记录未填写的格子 set<string> = "unitId-roleKey"
   const [emptyCells, setEmptyCells] = useState<Set<string>>(new Set());
   const [customRoleVisible, setCustomRoleVisible] = useState(false);
@@ -189,9 +48,9 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const evalSheet = readonly ? quote.evalSheet : draft;
   if (!evalSheet) {
     return (
-      <Card title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台二 · 在线人天评估</Title>}>
-        <Empty description="尚未收到功能清单，等待产品经理提交" />
-      </Card>
+      <SectionCard title="数据流转 · 工作台二 · 在线人天评估">
+        <EmptyState description="尚未收到功能清单，等待产品经理提交" />
+      </SectionCard>
     );
   }
 
@@ -378,191 +237,44 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
   const totalDays = sumEvalDays(evalSheet);
   const roleTotals = sumEvalDaysByRole(evalSheet);
   const sortedUnits = readonly ? evalSheet.evaluationUnits : sortUnitsByFeatureList(evalSheet.evaluationUnits, quote.featureList);
+  const evaluationUnitMap = new Map(sortedUnits.map((unit) => [unit.id, unit]));
+  const evaluationRows = sortedUnits.map((unit) => {
+    const module = quote.featureList.find((featureModule) => featureModule.id === unit.moduleId);
+    const endpoint = endpointConfigs.find((item) => item.id === module?.endpointId);
+    const subFeatures = unit.boundSubFeatureIds
+      .map((id) => quote.featureList.flatMap((featureModule) => featureModule.subFeatures).find((feature) => feature.id === id)?.name)
+      .filter((name): name is string => Boolean(name));
+
+    return {
+      key: unit.id,
+      endpointKey: module?.endpointId || '__unassigned__',
+      endpointName: endpoint?.name || '-',
+      platforms: endpoint?.platforms.map((platformId) => (
+        <StatusTag key={platformId} size="small" tone="info">{PLATFORM_OPTIONS.find((platform) => platform.id === platformId)?.name || platformId}</StatusTag>
+      )),
+      moduleName: unit.moduleName,
+      subFeatures,
+      granularity: <StatusTag size="small">{GRANULARITY_LABELS[unit.granularity]}</StatusTag>,
+      selectable: unit.granularity === 'SINGLE' && unit.boundSubFeatureIds.length === 1,
+      selected: selectedSubIds.includes(unit.boundSubFeatureIds[0]),
+      totalDays: unit.totalDays,
+      canUngroup: unit.granularity !== 'SINGLE',
+    };
+  });
 
   const toggleSelect = (subId: string) => {
     setSelectedSubIds((prev) => (prev.includes(subId) ? prev.filter((x) => x !== subId) : [...prev, subId]));
   };
 
-  const headerCellStyle = { whiteSpace: 'nowrap' as const };
-
-  const columns = [
-    {
-      title: '选', dataIndex: '__select', width: 46, _headerCellStyle: headerCellStyle,
-      render: (_: unknown, record: EvaluationUnit) => {
-        if (readonly || record.granularity !== 'SINGLE') return null;
-        const firstId = record.boundSubFeatureIds[0];
-        return (
-          <input
-            type="checkbox"
-            checked={selectedSubIds.includes(firstId)}
-            onChange={() => toggleSelect(firstId)}
-            style={{ cursor: 'pointer' }}
-          />
-        );
-      },
-    },
-    {
-      title: '模块', dataIndex: 'moduleName', width: 110,
-      _headerCellStyle: headerCellStyle,
-      render: (name: string, record: EvaluationUnit) => (
-        <div
-          onClick={() => {
-            if (!readonly && record.granularity === 'SINGLE' && record.boundSubFeatureIds.length === 1) {
-              toggleSelect(record.boundSubFeatureIds[0]);
-            }
-          }}
-          style={{ cursor: record.granularity === 'SINGLE' ? 'pointer' : 'default' }}
-        >
-          <Text bold style={{ whiteSpace: 'nowrap' }}>{name}</Text>
-        </div>
-      ),
-    },
-    {
-      title: '端', dataIndex: 'endpointId', width: 120,
-      _headerCellStyle: headerCellStyle,
-      render: (_: unknown, record: EvaluationUnit) => {
-        // 找到模块关联的端
-        const module = quote.featureList.find((m) => m.id === record.moduleId);
-        const ep = quote.endpointConfigs?.find((e) => e.id === module?.endpointId);
-        if (!ep) return <Text type="secondary">-</Text>;
-        const platformNames = ep.platforms.map((pid) => PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid);
-        return (
-          <div>
-            <Text bold style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{ep.name}</Text>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {platformNames.map((name) => (
-                <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>{name}</Tag>
-              ))}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: '评估切片 / 子功能', dataIndex: 'groupName', width: 180,
-      _headerCellStyle: headerCellStyle,
-      render: (name: string | undefined, record: EvaluationUnit) => {
-        const subNames = record.boundSubFeatureIds
-          .map((id) => quote.featureList.flatMap((m) => m.subFeatures).find((f) => f.id === id)?.name)
-          .filter(Boolean);
-        const icon = record.granularity === 'MODULE_PACK' ? '📦' : record.granularity === 'SUB_GROUP' ? '🔗' : '';
-        return (
-          <div
-            onClick={() => {
-              if (!readonly && record.granularity === 'SINGLE' && record.boundSubFeatureIds.length === 1) {
-                toggleSelect(record.boundSubFeatureIds[0]);
-              }
-            }}
-            style={{ fontSize: 13, color: 'var(--color-text-2)', lineHeight: 1.6, cursor: record.granularity === 'SINGLE' ? 'pointer' : 'default' }}
-          >
-            {subNames.length > 0
-              ? subNames.map((n, i) => <div key={i}>{n}</div>)
-              : <span style={{ color: 'var(--color-text-3)' }}>-</span>
-            }
-          </div>
-        );
-      },
-    },
-    {
-      title: '粒度', dataIndex: 'granularity', width: 90,
-      _headerCellStyle: headerCellStyle,
-      render: (g: EvaluationUnit['granularity'], record: EvaluationUnit) => (
-        <div
-          onClick={() => {
-            if (!readonly && record.granularity === 'SINGLE' && record.boundSubFeatureIds.length === 1) {
-              toggleSelect(record.boundSubFeatureIds[0]);
-            }
-          }}
-          style={{ cursor: record.granularity === 'SINGLE' ? 'pointer' : 'default' }}
-        >
-          <Tag size="small">{GRANULARITY_LABELS[g]}</Tag>
-        </div>
-      ),
-    },
-    ...evalSheet.activeRoles.map((role) => ({
-      title: (
-        <Space size={4} align="center" style={{ whiteSpace: 'nowrap' }}>
-          <span>{role.name}</span>
-          {!readonly && (
-            <IconClose
-              style={{ fontSize: 12, color: 'rgb(var(--red-5))', cursor: 'pointer' }}
-              onClick={() => removeRole(role.key)}
-            />
-          )}
-        </Space>
-      ),
-      dataIndex: role.key, width: 80,
-      _headerCellStyle: headerCellStyle,
-      render: (_: unknown, record: EvaluationUnit) => {
-        const val = record.manualWorkload[role.key];
-        if (readonly) return <Text>{val ?? '-'}</Text>;
-        const cellKey = `${record.id}-${role.key}`;
-        const isEmpty = val === undefined || val === null || val === 0;
-        const hasError = emptyCells.has(cellKey);
-        const isRemainder = Boolean(record.isRemainder && record.granularity === 'SINGLE');
-        return (
-          <NumericInput
-            value={val}
-            unitId={record.id}
-            roleKey={role.key}
-            hasError={hasError}
-            isRemainder={isRemainder}
-            fillRef={fillRef}
-            sortedUnits={sortedUnits}
-            activeRoleKeys={activeRoleKeys}
-            updateWorkload={updateWorkload}
-            emptyCells={emptyCells}
-            cellKey={cellKey}
-            setEmptyCells={setEmptyCells}
-          />
-        );
-      },
-    })),
-    {
-      title: '小计(人天)', dataIndex: 'totalDays', width: 80,
-      _headerCellStyle: headerCellStyle,
-      render: (v: number) => <Text bold>{v.toFixed(1)}</Text>,
-    },
-    {
-      title: '技术备注', dataIndex: 'techRemark', width: 180,
-      _headerCellStyle: headerCellStyle,
-      render: (v: string | undefined, record: EvaluationUnit) =>
-        readonly ? (
-          <Text type="secondary">{v || '-'}</Text>
-        ) : (
-          <Input size="small" value={v ?? ''} onChange={(val) => updateUnitMeta(record.id, { techRemark: val })} placeholder="架构/依赖说明"
-            onKeyDown={(e) => {
-              // 阻止 WASD 和方向键传播到外层导航逻辑
-              if (['w','W','a','A','s','S','d','D','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-                e.stopPropagation();
-              }
-            }}
-          />
-        ),
-    },
-    {
-      title: '操作', dataIndex: 'op', width: 120, fixed: 'right' as const,
-      render: (_: unknown, record: EvaluationUnit) => {
-        if (readonly) return null;
-        if (record.granularity === 'SINGLE') {
-          return null;
-        }
-        return (
-          <Button type="text" size="mini" icon={<IconScissor />} onClick={() => handleUngroup(record.id)}>解除合并</Button>
-        );
-      },
-    },
-  ];
-
   return (
     <>
-    <Card
+    <SectionCard
       className="hubx-numeral"
-      title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台二 · 在线人天评估</Title>}
+      title="数据流转 · 工作台二 · 在线人天评估"
     >
       {/* 控制栏：新增岗位 + 切片操作 */}
       {!readonly && (
-        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 6 }}>
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-sm)' }}>
           <Space wrap>
             <Text bold>新增岗位：</Text>
             <Select
@@ -630,207 +342,77 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
         </div>
       )}
 
-      {/* 原生 HTML table 实现端列 rowspan 合并 */}
-      <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-            <tr style={{ background: 'var(--color-fill-1)' }}>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 46, whiteSpace: 'nowrap' }}>序号</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 120, whiteSpace: 'nowrap' }}>端</th>
-              <th style={{ padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 40, whiteSpace: 'nowrap' }}>选</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 110, whiteSpace: 'nowrap' }}>模块</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 180, whiteSpace: 'nowrap' }}>评估切片 / 子功能</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 90, whiteSpace: 'nowrap' }}>粒度</th>
-              {evalSheet.activeRoles.map((r: EvalRole, ri: number) => (
-                <th key={r.key} style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 80, whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span
-                      draggable={!readonly}
-                      onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(ri)); e.dataTransfer.effectAllowed = 'move'; }}
-                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-                        if (fromIdx === ri) return;
-                        const newRoles = [...evalSheet.activeRoles];
-                        const [moved] = newRoles.splice(fromIdx, 1);
-                        newRoles.splice(ri, 0, moved);
-                        persist({ ...evalSheet, activeRoles: newRoles });
-                      }}
-                      style={{ cursor: 'grab', fontSize: 10, color: 'var(--color-text-3)' }}
-                    >⠿</span>
-                    <span>{r.name}</span>
-                    {!readonly && (
-                      <IconClose
-                        style={{ fontSize: 12, color: 'rgb(var(--red-5))', cursor: 'pointer' }}
-                        onClick={() => {
-                          const newRoles = evalSheet.activeRoles.filter((rr) => rr.key !== r.key);
-                          const units = removeRoleFromUnits(evalSheet.evaluationUnits, r.key, newRoles.map((rr) => rr.key));
-                          persist({ ...evalSheet, activeRoles: newRoles, evaluationUnits: units });
-                        }}
-                      />
-                    )}
-                  </div>
-                </th>
-              ))}
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 80, whiteSpace: 'nowrap' }}>小计</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 180, whiteSpace: 'nowrap' }}>技术备注</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 100, whiteSpace: 'nowrap' }}>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              // 计算端的 rowspan
-              const epRowSpans: Record<string, number> = {};
-              const epFirstIdx: Record<string, number> = {};
-              sortedUnits.forEach((u, idx) => {
-                const module = quote.featureList.find((m) => m.id === u.moduleId);
-                const epId = module?.endpointId || '';
-                if (!(epId in epFirstIdx)) { epFirstIdx[epId] = idx; epRowSpans[epId] = 0; }
-                epRowSpans[epId]++;
-              });
-
-              return sortedUnits.map((unit, idx) => {
-                const module = quote.featureList.find((m) => m.id === unit.moduleId);
-                const ep = quote.endpointConfigs?.find((e) => e.id === module?.endpointId);
-                const epId = module?.endpointId || '';
-                const isFirstOfEp = epFirstIdx[epId] === idx;
-                const rowspan = isFirstOfEp ? epRowSpans[epId] : 0;
-                const platformNames = ep ? ep.platforms.map((pid) => PLATFORM_OPTIONS.find((p) => p.id === pid)?.name || pid) : [];
-                const subNames = unit.boundSubFeatureIds
-                  .map((id) => quote.featureList.flatMap((m) => m.subFeatures).find((f) => f.id === id)?.name)
-                  .filter(Boolean);
-
-                return (
-                  <tr key={unit.id} data-unit-id={unit.id} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
-                    {/* 序号 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)' }}>
-                      <Text type="secondary">{idx + 1}</Text>
-                    </td>
-                    {/* 端 */}
-                    {isFirstOfEp ? (
-                      <td rowSpan={rowspan} style={{ padding: '8px 10px', verticalAlign: 'top', borderRight: '1px solid var(--color-border-2)' }}>
-                        <div style={{ fontWeight: 600, marginBottom: 2, fontSize: 12 }}>{ep?.name || '-'}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {platformNames.map((name: string) => (
-                            <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content', fontSize: 10 }}>{name}</Tag>
-                          ))}
-                        </div>
-                      </td>
-                    ) : null}
-                    {/* 选 */}
-                    <td style={{ padding: '8px 10px', textAlign: 'center', borderRight: '1px solid var(--color-border-2)' }}>
-                      {!readonly && unit.granularity === 'SINGLE' && unit.boundSubFeatureIds.length === 1 && (
-                        <input type="checkbox" checked={selectedSubIds.includes(unit.boundSubFeatureIds[0])} onChange={() => toggleSelect(unit.boundSubFeatureIds[0])} style={{ cursor: 'pointer' }} />
-                      )}
-                    </td>
-                    {/* 模块 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)', whiteSpace: 'nowrap' }}
-                      onClick={() => { if (!readonly && unit.granularity === 'SINGLE' && unit.boundSubFeatureIds.length === 1) toggleSelect(unit.boundSubFeatureIds[0]); }}>
-                      <Text bold>{unit.moduleName}</Text>
-                    </td>
-                    {/* 评估切片 / 子功能 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)', lineHeight: 1.6 }}
-                      onClick={() => { if (!readonly && unit.granularity === 'SINGLE' && unit.boundSubFeatureIds.length === 1) toggleSelect(unit.boundSubFeatureIds[0]); }}>
-                      {subNames.length > 0
-                        ? subNames.map((n, i) => <div key={i}>{n}</div>)
-                        : <span style={{ color: 'var(--color-text-3)' }}>-</span>
-                      }
-                    </td>
-                    {/* 粒度 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)' }}
-                      onClick={() => { if (!readonly && unit.granularity === 'SINGLE' && unit.boundSubFeatureIds.length === 1) toggleSelect(unit.boundSubFeatureIds[0]); }}>
-                      <Tag size="small">{GRANULARITY_LABELS[unit.granularity]}</Tag>
-                    </td>
-                    {/* 各岗位工时 */}
-                    {evalSheet.activeRoles.map((role) => {
-                      const val = unit.manualWorkload[role.key];
-                      const cellKey = `${unit.id}-${role.key}`;
-                      const hasError = emptyCells.has(cellKey);
-                      const isRemainder = unit.isRemainder && unit.granularity === 'SINGLE';
-                      return (
-                        <td key={role.key} style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)' }}>
-                          {readonly ? (
-                            <Text>{val?.toFixed(1) ?? '-'}</Text>
-                          ) : (
-                            <div onKeyDownCapture={(e) => {
-                              const wasdMap: Record<string, string> = { w: 'ArrowUp', W: 'ArrowUp', s: 'ArrowDown', S: 'ArrowDown', a: 'ArrowLeft', A: 'ArrowLeft', d: 'ArrowRight', D: 'ArrowRight' };
-                              if (wasdMap[e.key] && fillRef.current) {
-                                e.preventDefault(); e.stopPropagation();
-                                const dir = wasdMap[e.key];
-                                const roleKeys = activeRoleKeys;
-                                const curIdx = sortedUnits.findIndex((u) => u.id === fillRef.current!.unitId);
-                                const curRoleIdx = roleKeys.indexOf(fillRef.current!.roleKey);
-                                let tIdx = curIdx, tRoleIdx = curRoleIdx;
-                                if (dir === 'ArrowUp') tIdx--; else if (dir === 'ArrowDown') tIdx++; else if (dir === 'ArrowLeft') tRoleIdx--; else if (dir === 'ArrowRight') tRoleIdx++;
-                                if (tIdx >= 0 && tIdx < sortedUnits.length && tRoleIdx >= 0 && tRoleIdx < roleKeys.length) {
-                                  const tUnit = sortedUnits[tIdx]; const tRole = roleKeys[tRoleIdx];
-                                  updateWorkload(tUnit.id, tRole, fillRef.current.value);
-                                  fillRef.current = { unitId: tUnit.id, roleKey: tRole, value: fillRef.current.value };
-                                  requestAnimationFrame(() => { const el = document.querySelector(`input[data-fill="${tUnit.id}-${tRole}"]`) as HTMLInputElement | null; if (el) { el.focus(); el.select(); } });
-                                }
-                                return;
-                              }
-                              if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { arrowRef.current = e.key as 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'; }
-                              if (e.key === 'Tab' && arrowRef.current && fillRef.current) {
-                                e.preventDefault(); e.stopPropagation();
-                                const dir = arrowRef.current;
-                                const roleKeys = activeRoleKeys;
-                                const curIdx = sortedUnits.findIndex((u) => u.id === fillRef.current!.unitId);
-                                const curRoleIdx = roleKeys.indexOf(fillRef.current!.roleKey);
-                                let tIdx = curIdx, tRoleIdx = curRoleIdx;
-                                if (dir === 'ArrowUp') tIdx--; else if (dir === 'ArrowDown') tIdx++; else if (dir === 'ArrowLeft') tRoleIdx--; else if (dir === 'ArrowRight') tRoleIdx++;
-                                if (tIdx >= 0 && tIdx < sortedUnits.length && tRoleIdx >= 0 && tRoleIdx < roleKeys.length) {
-                                  const tUnit = sortedUnits[tIdx]; const tRole = roleKeys[tRoleIdx];
-                                  updateWorkload(tUnit.id, tRole, fillRef.current.value);
-                                  fillRef.current = { unitId: tUnit.id, roleKey: tRole, value: fillRef.current.value };
-                                  requestAnimationFrame(() => { const el = document.querySelector(`input[data-fill="${tUnit.id}-${tRole}"]`) as HTMLInputElement | null; if (el) { el.focus(); el.select(); } });
-                                }
-                              }
-                            }} onKeyUp={(e) => { const key = (e as unknown as KeyboardEvent).key; if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) arrowRef.current = null; }}>
-                              <InputNumber size="small" min={0} step={0.1} precision={1}
-                                value={val && val > 0 ? val : undefined} placeholder=""
-                                onFocus={() => { fillRef.current = { unitId: unit.id, roleKey: role.key, value: val ?? 0 }; }}
-                                onChange={(v) => { const num = typeof v === 'number' ? v : 0; updateWorkload(unit.id, role.key, num); fillRef.current = { unitId: unit.id, roleKey: role.key, value: num }; if (emptyCells.has(cellKey)) setEmptyCells((prev) => { const s = new Set(prev); s.delete(cellKey); return s; }); }}
-                                onKeyDown={(e) => { const key = (e as unknown as KeyboardEvent).key; if (key === 'ArrowUp' || key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); } }}
-                                data-fill={`${unit.id}-${role.key}`}
-                                style={{ width: 76, ...(hasError ? { borderColor: 'rgb(var(--red-5))', boxShadow: '0 0 0 1px rgb(var(--red-3))' } : {}), ...(isRemainder ? { borderColor: 'rgb(var(--red-5))', boxShadow: '0 0 0 1px rgb(var(--red-3))' } : {}) }}
-                              />
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                    {/* 小计 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)', fontWeight: 600 }}>
-                      {unit.totalDays.toFixed(1)}
-                    </td>
-                    {/* 技术备注 */}
-                    <td style={{ padding: '8px 10px', borderRight: '1px solid var(--color-border-2)' }}>
-                      {readonly ? (
-                        <Text type="secondary">{unit.techRemark || '-'}</Text>
-                      ) : (
-                        <Input size="small" value={unit.techRemark ?? ''} onChange={(v) => updateUnitMeta(unit.id, { techRemark: v })} placeholder="架构/依赖说明" onKeyDown={(e) => { if (['w','W','a','A','s','S','d','D','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.stopPropagation(); }} />
-                      )}
-                    </td>
-                    {/* 操作 */}
-                    <td style={{ padding: '8px 10px' }}>
-                      {!readonly && (
-                        unit.granularity === 'SINGLE' ? null : (
-                          <Button type="text" size="mini" icon={<IconScissor />} onClick={() => handleUngroup(unit.id)}>解除合并</Button>
-                        )
-                      )}
-                    </td>
-                  </tr>
-                );
-              });
-            })()}
-          </tbody>
-        </table>
-      </div>
+      <EvaluationWorkloadTable
+        rows={evaluationRows}
+        roles={evalSheet.activeRoles}
+        readonly={readonly}
+        onToggleRow={(row) => {
+          const unit = evaluationUnitMap.get(row.key);
+          if (unit?.boundSubFeatureIds.length === 1) toggleSelect(unit.boundSubFeatureIds[0]);
+        }}
+        onRoleReorder={(fromIndex, toIndex) => {
+          const newRoles = [...evalSheet.activeRoles];
+          const [moved] = newRoles.splice(fromIndex, 1);
+          if (!moved) return;
+          newRoles.splice(toIndex, 0, moved);
+          persist({ ...evalSheet, activeRoles: newRoles });
+        }}
+        onRoleRemove={(role) => removeRole(role.key)}
+        renderWorkloadCell={(row, role) => {
+          const unit = evaluationUnitMap.get(row.key);
+          if (!unit) return '-';
+          const value = unit.manualWorkload[role.key];
+          if (readonly) return <Text>{value?.toFixed(1) ?? '-'}</Text>;
+          const cellKey = `${unit.id}-${role.key}`;
+          return (
+            <WorkloadNumericInput
+              value={value}
+              unitId={unit.id}
+              roleKey={role.key}
+              rowIds={sortedUnits.map((item) => item.id)}
+              roleKeys={activeRoleKeys}
+              fillRef={fillRef}
+              hasError={emptyCells.has(cellKey)}
+              isRemainder={Boolean(unit.isRemainder && unit.granularity === 'SINGLE')}
+              onChangeValue={(unitId, roleKey, nextValue) => {
+                updateWorkload(unitId, roleKey, nextValue);
+                const nextCellKey = `${unitId}-${roleKey}`;
+                if (emptyCells.has(nextCellKey)) setEmptyCells((prev) => {
+                  const next = new Set(prev);
+                  next.delete(nextCellKey);
+                  return next;
+                });
+              }}
+            />
+          );
+        }}
+        renderTechRemark={(row) => {
+          const unit = evaluationUnitMap.get(row.key);
+          if (!unit) return '-';
+          return readonly ? (
+            <Text type="secondary">{unit.techRemark || '-'}</Text>
+          ) : (
+            <Input
+              size="small"
+              value={unit.techRemark ?? ''}
+              onChange={(value) => updateUnitMeta(unit.id, { techRemark: value })}
+              placeholder="架构/依赖说明"
+              onKeyDown={(event) => {
+                if (['w', 'W', 'a', 'A', 's', 'S', 'd', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
+              }}
+            />
+          );
+        }}
+        renderActions={(row) => {
+          const unit = evaluationUnitMap.get(row.key);
+          return !readonly && unit && unit.granularity !== 'SINGLE' ? (
+            <Button type="text" size="mini" icon={<IconScissor />} onClick={() => handleUngroup(unit.id)}>解除合并</Button>
+          ) : null;
+        }}
+      />
 
       {/* 底部汇总 */}
-      <div style={{ marginTop: 12, padding: 12, background: 'var(--color-fill-1)', borderRadius: 6 }}>
+      <div style={{ marginTop: 12, padding: 12, background: 'var(--color-fill-1)', borderRadius: 'var(--radius-sm)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           {!readonly ? (
             <>
@@ -875,8 +457,8 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
           padding: '8px 16px',
           background: 'var(--color-bg-2)',
           border: '1px solid var(--color-border-2)',
-          borderRadius: 8,
-          boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--ds-shadow-up)',
           flexWrap: 'wrap',
         }}
       >
@@ -951,9 +533,9 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
             });
             return (
               <Dropdown key={r.key} trigger="click" position="tl" disabled={roleTotal === 0} droplist={
-                <div style={{ padding: 12, minWidth: 280, maxHeight: 400, overflow: 'auto', background: 'var(--color-bg-2)', borderRadius: 6, border: '1px solid var(--color-border-2)', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}>
+                <div style={{ padding: 12, minWidth: 280, maxHeight: 400, overflow: 'auto', background: 'var(--color-bg-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-2)', boxShadow: 'var(--ds-shadow-raised)' }}>
                   <Text bold style={{ display: 'block', marginBottom: 8 }}>{r.name} · <Text bold style={{ color: 'rgb(var(--arcoblue-6))' }}>{roleTotal.toFixed(1)}</Text> 人天</Text>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--color-border-2)', background: 'var(--color-fill-1)' }}>
                         <th style={{ textAlign: 'left', padding: '4px 8px' }}>模块</th>
@@ -965,7 +547,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                       {epGroups.map((group) => (
                         <React.Fragment key={group.epName}>
                           <tr style={{ background: 'var(--color-fill-1)' }}>
-                            <td colSpan={3} style={{ padding: '4px 8px', fontWeight: 600, fontSize: 12 }}>{group.epName} · {group.epTotal.toFixed(1)}</td>
+                            <td colSpan={3} style={{ padding: '4px 8px', fontWeight: 600, fontSize: 'var(--text-xs)' }}>{group.epName} · {group.epTotal.toFixed(1)}</td>
                           </tr>
                           {group.modules.map((m) => (
                             <tr key={m.name} style={{ borderBottom: '1px solid var(--color-border-2)' }}>
@@ -989,7 +571,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
 
           {/* 总人天 */}
           <Dropdown trigger="click" position="tl" disabled={totalDays === 0} droplist={
-            <div style={{ padding: 12, minWidth: 160, background: 'var(--color-bg-2)', borderRadius: 6, border: '1px solid var(--color-border-2)', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}>
+            <div style={{ padding: 12, minWidth: 160, background: 'var(--color-bg-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-2)', boxShadow: 'var(--ds-shadow-raised)' }}>
               {evalSheet.activeRoles.map((r: EvalRole) => {
                 const roleTotal = roleTotals[r.key] ?? 0;
                 return (
@@ -1002,7 +584,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
             </div>
           }>
             <Button size="small" type="text">
-              总人天 <Text bold style={{ fontSize: 14, color: 'rgb(var(--arcoblue-6))' }}>{totalDays.toFixed(1)}</Text>
+              总人天 <Text bold style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--arcoblue-6))' }}>{totalDays.toFixed(1)}</Text>
             </Button>
           </Dropdown>
 
@@ -1020,9 +602,9 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
               const epModules = quote.featureList.filter((m) => m.endpointId === epId);
               return (
                 <Dropdown key={epId} trigger="click" position="tl" droplist={
-                  <div style={{ padding: 12, minWidth: 250, maxHeight: 350, overflow: 'auto', background: 'var(--color-bg-2)', borderRadius: 6, border: '1px solid var(--color-border-2)', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}>
+                  <div style={{ padding: 12, minWidth: 250, maxHeight: 350, overflow: 'auto', background: 'var(--color-bg-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-2)', boxShadow: 'var(--ds-shadow-raised)' }}>
                     <Text bold style={{ display: 'block', marginBottom: 6 }}>{ep?.name || epId} · <Text bold style={{ color: 'rgb(var(--arcoblue-6))' }}>{val.toFixed(1)}</Text> 人天</Text>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid var(--color-border-2)', background: 'var(--color-fill-1)' }}>
                           <th style={{ textAlign: 'left', padding: '4px 8px' }}>岗位</th>
@@ -1048,11 +630,11 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
                       </tbody>
                     </table>
                     <div style={{ marginTop: 6 }}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>按模块：</Text>
+                      <Text type="secondary" style={{ fontSize: 'var(--ds-text-caption)' }}>按模块：</Text>
                       {epModules.map((m) => {
                         const modTotal = sortedUnits.filter((u) => u.moduleId === m.id).reduce((s, u) => s + u.totalDays, 0);
                         if (modTotal === 0) return null;
-                        return <Tag key={m.id} size="small" style={{ marginRight: 4 }}>{m.name || '未命名'} {modTotal.toFixed(1)}</Tag>;
+                        return <StatusTag key={m.id} size="small" style={{ marginRight: 4 }}>{m.name || '未命名'} {modTotal.toFixed(1)}</StatusTag>;
                       })}
                     </div>
                   </div>
@@ -1070,7 +652,7 @@ export function Stage2EvalSheet({ quote, readonly }: StageProps) {
           <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSubmit}>评估完成</Button>
         )}
       </div>
-    </Card>
+    </SectionCard>
     <Modal title="新增自定义岗位" visible={customRoleVisible} onCancel={() => setCustomRoleVisible(false)} onOk={addCustomRole} okText="新增岗位">
       <Input value={customRoleName} onChange={setCustomRoleName} placeholder="请输入岗位名称" maxLength={20} showWordLimit autoFocus />
     </Modal>

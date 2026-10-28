@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Empty, Progress, Switch, Tag, Typography } from '@arco-design/web-react';
+import { Button, Switch, Typography } from '@/design-system';
+import { DateText, EmptyState, StatusTag, type StatusTone, ProgressBar } from '@/design-system';
 import {
   groupProjectActivity,
   onlyMajorActivity,
@@ -21,11 +22,11 @@ const KIND_LABEL: Record<ProjectActivityItem['kind'], string> = {
   status: '状态',
 };
 
-const TONE_COLOR: Record<ProjectActivityItem['severity'], string> = {
-  neutral: 'gray',
-  success: 'green',
-  warning: 'orange',
-  danger: 'red',
+const TONE_MAP: Record<ProjectActivityItem['severity'], StatusTone> = {
+  neutral: 'neutral',
+  success: 'success',
+  warning: 'warning',
+  danger: 'danger',
 };
 
 const ACTION_LABEL: Record<ProjectActivityAction, string> = {
@@ -75,7 +76,7 @@ export function ProjectActivityFeed({
       <section className="project-milestone-summary">
         <div className="project-milestone-summary__progress">
           <div><Text type="secondary">交付里程碑</Text><strong>{completedMilestones.length}/{milestones.length}</strong></div>
-          <Progress percent={progress} size="small" showText={false} />
+          <ProgressBar percent={progress} />
         </div>
         <div className="project-milestone-summary__next">
           <Text type="secondary">下一节点</Text>
@@ -104,7 +105,7 @@ export function ProjectActivityFeed({
         <label><span>仅看大事记</span><Switch size="small" checked={onlyMajor} onChange={onOnlyMajorChange} /></label>
       </div>
 
-      {groups.length === 0 ? <Empty description={onlyMajor ? '暂无大事记' : '暂无项目活动'} /> : groups.map((group) => (
+      {groups.length === 0 ? <EmptyState description={onlyMajor ? '暂无大事记' : '暂无项目活动'} /> : groups.map((group) => (
         <section key={group.key} className="project-activity-group">
           <div className="project-activity-group__date">{group.label}</div>
           <div className="project-activity-group__items">
@@ -112,11 +113,11 @@ export function ProjectActivityFeed({
               <article key={item.id} className={`project-activity-card project-activity-card--${item.severity}`}>
                 <div className="project-activity-card__head">
                   <div>
-                    <Tag size="small" color={TONE_COLOR[item.severity]}>{KIND_LABEL[item.kind]}</Tag>
-                    {item.isMajor && <Tag size="small" color="arcoblue">大事记</Tag>}
+                    <StatusTag tone={TONE_MAP[item.severity]}>{KIND_LABEL[item.kind]}</StatusTag>
+                    {item.isMajor && <StatusTag tone="info">大事记</StatusTag>}
                     <strong>{item.title}</strong>
                   </div>
-                  <Text type="secondary">{item.occurredAt}</Text>
+                  <Text type="secondary"><DateText value={item.occurredAt} mode="datetime" /></Text>
                 </div>
                 <p>{item.summary}</p>
                 {item.facts.length > 0 && (

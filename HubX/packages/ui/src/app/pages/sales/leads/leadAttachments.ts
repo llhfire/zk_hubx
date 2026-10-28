@@ -1,4 +1,4 @@
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+import type { UploadItem } from '@/design-system';
 import type { Attachment } from './types';
 
 function fileTypeFromName(name: string): string {

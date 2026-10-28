@@ -1,7 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-  Card,
-  Table,
   Button,
   Input,
   Select,
@@ -12,14 +10,13 @@ import {
   Tooltip,
   Popover,
   Alert,
-  Tabs,
   Tag,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconSearch,
   IconEye,
   IconRefresh,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useNavigate } from 'react-router';
 import { CompanyEntityInfoModal } from '../company-entity/CompanyEntityInfoModal';
 import {
@@ -31,12 +28,10 @@ import { useReminders } from '../../../reminders/ReminderContext';
 import type { ReminderItem } from '../../../reminders/types';
 import type { LeadListItem, QuickFilter } from './types';
 import {
-  SALES_STATUS_COLOR,
   SALES_STATUS_STEPS,
   getSalesStatusIndex,
-  CUSTOMER_LEVEL_COLOR,
-  INTENTION_LEVEL_COLOR,
-  LEAD_SOURCE_COLOR,
+  INTENTION_LEVEL_TONE,
+  LEAD_SOURCE_TONE,
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_LABEL,
   COMPANY_ENTITY_LIST,
@@ -44,6 +39,7 @@ import {
   TRANSFER_ACTION_COLOR,
   QUICK_FILTER_LABEL,
   SALES_STATUS_LIST,
+  SLA_STATUS_TONE,
 } from './types';
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
@@ -58,11 +54,22 @@ import {
   COUNTDOWN_BG,
   getQuickFilterCounts,
 } from './utils';
-import { FollowUpIcon, TrashLeadIcon, WeChatIcon, PageShell, PageHeader, MetricGrid } from '@/design-system';
+import {
+  FollowUpIcon,
+  TrashLeadIcon,
+  WeChatIcon,
+  PageShell,
+  PageHeader,
+  MetricGrid,
+  DataTable,
+  GradeTag,
+  SectionCard,
+  SectionTabs,
+  StatusTag,
+} from '@/design-system';
 import { LeadFollowUpModal, type LeadFollowUpFormValues } from './components/LeadFollowUpModal';
 import { uploadItemsToLeadAttachments } from './leadAttachments';
 
-const TabPane = Tabs.TabPane;
 
 export function getLeadFollowupReminderBanner(reminders: ReminderItem[]) {
   const leadReminders = reminders.filter((r) => r.type === 'lead_followup_overdue');
@@ -193,7 +200,7 @@ export function MyLeads() {
         const stepIndex = getSalesStatusIndex(r.status);
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 12 }}>{r.status}</span>
+            <span style={{ fontSize: 'var(--text-xs)' }}>{r.status}</span>
             {stepIndex >= 0 && (
               <div style={{ display: 'flex', gap: 2, width: 56 }}>
                 {SALES_STATUS_STEPS.map((_, i) => (
@@ -202,7 +209,7 @@ export function MyLeads() {
                     style={{
                       flex: 1,
                       height: 3,
-                      borderRadius: 1,
+                      borderRadius: 'var(--radius-xs)',
                       backgroundColor: i <= stepIndex ? 'rgb(var(--primary-4))' : 'var(--color-fill-2)',
                     }}
                   />
@@ -210,7 +217,7 @@ export function MyLeads() {
               </div>
             )}
             {stepIndex < 0 && (
-              <div style={{ fontSize: 12, color: 'var(--color-text-4)' }}>已终止</div>
+              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>已终止</div>
             )}
           </div>
         );
@@ -227,14 +234,14 @@ export function MyLeads() {
           {r.presalesGroupName && (
             <Tooltip content="点击复制群名">
               <div
-                style={{ fontSize: 12, color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }}
+                style={{ fontSize: 'var(--text-xs)', color: 'rgb(var(--warning-6))', cursor: 'pointer', marginTop: 2 }}
                 onClick={() => { navigator.clipboard.writeText(r.presalesGroupName || ''); Message.success('已复制群名'); }}
               >
                 <WeChatIcon size={14} /> {r.presalesGroupName}
               </div>
             </Tooltip>
           )}
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.customer} · {r.contact}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{r.customer} · {r.contact}</div>
         </div>
       ),
     },
@@ -242,7 +249,7 @@ export function MyLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 14 }}>
+        <div style={{ fontSize: 'var(--text-sm)' }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>
@@ -253,8 +260,8 @@ export function MyLeads() {
       width: 120,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
-          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
+          <StatusTag tone={LEAD_SOURCE_TONE[r.source as keyof typeof LEAD_SOURCE_TONE] || 'neutral'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</StatusTag>
+          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>{r.entity}</a>
         </Space>
       ),
     },
@@ -263,8 +270,8 @@ export function MyLeads() {
       width: 132,
       render: (_: unknown, r: LeadListItem) => (
         <Space size={4}>
-          {r.customerLevel && <Tag color={CUSTOMER_LEVEL_COLOR[r.customerLevel as keyof typeof CUSTOMER_LEVEL_COLOR]}>{r.customerLevel}</Tag>}
-          <Tag color={INTENTION_LEVEL_COLOR[r.level as keyof typeof INTENTION_LEVEL_COLOR]}>{r.level}</Tag>
+          {r.customerLevel && <GradeTag grade={r.customerLevel} />}
+          <StatusTag tone={INTENTION_LEVEL_TONE[r.level as keyof typeof INTENTION_LEVEL_TONE]}>{r.level}</StatusTag>
         </Space>
       ),
     },
@@ -274,35 +281,34 @@ export function MyLeads() {
       render: (_: unknown, r: LeadListItem) => {
         const c = getCountdownCapsule(r.nextFollowTime);
         const view = dispatchViews.get(r.id);
-        const SLA_COLOR: Record<string, string> = { normal: 'green', warning: 'orange', overdue: 'red', contacted: 'green' };
         const hasSla = view && r.dispatchedAt;
         const capsule = c.status === 'none' && !hasSla
-          ? <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>-</span>
+          ? <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>-</span>
           : c.status === 'none'
             ? null
             : c.status === 'today' || c.status === 'overdue'
               ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                   <span style={{
-                    display: 'inline-block', padding: '2px 8px', borderRadius: 10,
-                    fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap',
+                    display: 'inline-block', padding: '2px 8px', borderRadius: 'var(--radius-lg)',
+                    fontSize: 'var(--text-xs)', fontWeight: 500, whiteSpace: 'nowrap',
                     color: COUNTDOWN_COLOR[c.status], backgroundColor: COUNTDOWN_BG[c.status],
                     border: c.status === 'overdue' ? '1px solid rgb(var(--danger-3))' : '1px solid rgb(var(--warning-3))',
                   }}>
                     {c.status === 'overdue' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', backgroundColor: 'rgb(var(--danger-6))', marginRight: 4 }} />}
                     {c.label}
                   </span>
-                  {c.subLabel && <span style={{ fontSize: 12, color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
+                  {c.subLabel && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', whiteSpace: 'nowrap' }}>{c.subLabel}</span>}
                 </div>
               )
-              : <span style={{ fontSize: 12, color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>{c.label} {c.subLabel}</span>;
+              : <span style={{ fontSize: 'var(--text-xs)', color: COUNTDOWN_COLOR[c.status], whiteSpace: 'nowrap' }}>{c.label} {c.subLabel}</span>;
         if (!hasSla) return capsule;
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {capsule}
             <div style={{ display: 'flex', gap: 2 }}>
-              <Tag size="small" color={SLA_COLOR[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</Tag>
-              <Tag size="small" color={SLA_COLOR[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</Tag>
+              <StatusTag size="small" tone={SLA_STATUS_TONE[view!.dispatchSla.status]}>派{view!.dispatchSla.label}</StatusTag>
+              <StatusTag size="small" tone={SLA_STATUS_TONE[view!.firstContactSla.status]}>联{view!.firstContactSla.label}</StatusTag>
             </div>
           </div>
         );
@@ -312,15 +318,15 @@ export function MyLeads() {
       title: '最近跟进',
       width: 240,
       render: (_: unknown, r: LeadListItem) => {
-        if (!r.lastFollowTime) return <span style={{ color: 'var(--color-text-4)', fontSize: 12 }}>暂无跟进</span>;
+        if (!r.lastFollowTime) return <span style={{ color: 'var(--color-text-4)', fontSize: 'var(--text-xs)' }}>暂无跟进</span>;
         return (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.lastFollowTime.slice(5)}</span>
-              {r.owner && <span style={{ fontSize: 12, color: 'var(--color-text-4)' }}>· {r.owner}</span>}
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{r.lastFollowTime.slice(5)}</span>
+              {r.owner && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>· {r.owner}</span>}
             </div>
             <Tooltip content={r.lastFollowContent || ''} disabled={!r.lastFollowContent}>
-              <div style={{ fontSize: 14, color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+              <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
                 {r.lastFollowContent || '-'}
               </div>
             </Tooltip>
@@ -428,13 +434,12 @@ export function MyLeads() {
             marginBottom: 16,
             background: 'linear-gradient(90deg, rgba(var(--warning-1), 0.9) 0%, rgba(var(--warning-1), 0.3) 100%)',
             border: '1px solid rgb(var(--warning-3))',
-            borderLeft: '4px solid rgb(var(--warning-6))',
             borderRadius: 'var(--radius-md)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', backgroundColor: 'rgb(var(--warning-6))' }} />
-            <div style={{ fontSize: 13, color: 'var(--color-text-1)' }}>
+            <div style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)' }}>
               <span style={{ fontWeight: 600, color: 'rgb(var(--warning-7))' }}>跟进时效预警：</span>
               当前有 {banner.count} 条线索已超时未跟进，请尽快处理。
             </div>
@@ -452,41 +457,33 @@ export function MyLeads() {
         </div>
       )}
 
-      <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab} style={{ marginBottom: 12 }}>
-          <TabPane key="my" title={`我的线索 (${myCount})`} />
-          <TabPane key="created" title={`我录入的 (${createdCount})`} />
-          <TabPane key="assisted" title={`我协助的 (${assistedCount})`} />
-        </Tabs>
+      <SectionCard style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'my', label: '我的线索', count: myCount },
+            { key: 'created', label: '我录入的', count: createdCount },
+            { key: 'assisted', label: '我协助的', count: assistedCount },
+          ]}
+        />
+        <div style={{ height: 12 }} />
 
         {/* 快捷状态分段筛选器 */}
         <div style={{ marginBottom: 16, padding: '6px 8px', background: 'var(--color-fill-1)', borderRadius: 'var(--radius-md)' }}>
-          <Tabs type="card" size="small" activeTab={quickFilter || 'all'} onChange={(v) => setQuickFilter(v === 'all' ? '' : v as QuickFilter)}>
-            <TabPane key="all" title={`全部 (${leadsWithOverdue.length})`} />
-            {Object.entries(QUICK_FILTER_LABEL).map(([key, label]) => (
-              <TabPane
-                key={key}
-                title={
-                  <Space size={6}>
-                    <span>{label}</span>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '1px 6px',
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: (key === 'overdue' && filterCounts.overdue > 0) ? '#fff' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? '#fff' : 'var(--color-text-3)',
-                        backgroundColor: (key === 'overdue' && filterCounts.overdue > 0) ? 'rgb(var(--danger-6))' : (key === 'today_unfollowed' && filterCounts.today_unfollowed > 0) ? 'rgb(var(--warning-6))' : 'var(--color-fill-3)',
-                      }}
-                    >
-                      {filterCounts[key as QuickFilter]}
-                    </span>
-                  </Space>
-                }
-              />
-            ))}
-          </Tabs>
+          <SectionTabs
+            variant="card"
+            activeKey={quickFilter || 'all'}
+            onChange={(v) => setQuickFilter(v === 'all' ? '' : v as QuickFilter)}
+            items={[
+              { key: 'all', label: '全部', count: leadsWithOverdue.length },
+              ...Object.entries(QUICK_FILTER_LABEL).map(([key, label]) => {
+                const count = filterCounts[key as QuickFilter];
+                const tone = key === 'overdue' && count > 0 ? 'danger' : key === 'today_unfollowed' && count > 0 ? 'warning' : undefined;
+                return { key, label, count, countTone: tone } as const;
+              }),
+            ]}
+          />
         </div>
 
         {/* 复合工具条容器 */}
@@ -520,14 +517,14 @@ export function MyLeads() {
           )}
         </div>
 
-        <Table
+        <DataTable
           rowKey="key"
           columns={columns}
           data={filteredLeads}
           scroll={{ x: 1600 }}
           pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }}
         />
-      </Card>
+      </SectionCard>
 
       <Modal
         title={`标记线索「${selectedTrashLead?.name || ''}」为垃圾`}
@@ -536,20 +533,20 @@ export function MyLeads() {
         onCancel={() => { setTrashVisible(false); setSelectedTrashLead(null); trashForm.resetFields(); }}
         style={{ width: 500 }}
       >
-        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(var(--warning-1), 0.5)', border: '1px solid rgb(var(--warning-2))', borderRadius: 4, fontSize: 12, color: 'rgb(var(--warning-7))' }}>
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(var(--warning-1), 0.5)', border: '1px solid rgb(var(--warning-2))', borderRadius: 'var(--radius-xs)', fontSize: 'var(--text-xs)', color: 'rgb(var(--warning-7))' }}>
           提示：线索标记为垃圾后将移入垃圾线索池并停止跟进倒计时；累计退回 3 次将进入退回质检流程。
         </div>
         <Form form={trashForm} layout="vertical">
           <Form.Item label="快捷原因点选" style={{ marginBottom: 8 }}>
             <Space wrap size={6}>
               {COMMON_TRASH_REASONS.map((r) => (
-                <Tag
+                <StatusTag
                   key={r}
                   style={{ cursor: 'pointer' }}
                   onClick={() => handleSelectTrashTag(r)}
                 >
                   {r}
-                </Tag>
+                </StatusTag>
               ))}
             </Space>
           </Form.Item>

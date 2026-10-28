@@ -1,8 +1,9 @@
 // src/app/pages/daily-report/GeneralDailyTemplate.tsx
 
 import { useState, useEffect, useRef } from 'react';
-import { Input, Button, Table, InputNumber } from '@arco-design/web-react';
-import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
+import { Input, Button, InputNumber } from '@/design-system';
+import { IconPlus, IconDelete } from '@/design-system';
+import { DataTable } from '@/design-system';
 import { ProjectTask, GeneralReportContent } from './types';
 import { WorkAttributionSelector } from './WorkAttributionSelector';
 
@@ -175,18 +176,18 @@ export function GeneralDailyTemplate({ initialContent, department, onChange, omi
       {/* 任务明细 */}
       <div>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>任务明细</div>
-        <Table
+        <DataTable
           columns={taskColumns}
           data={projectTasks}
+          rowKey="id"
           pagination={false}
           size="small"
-          noDataElement={
-            <div style={{ padding: 16 }}>
-              <Button type="dashed" icon={<IconPlus />} onClick={addProjectTask}>
-                添加任务明细
-              </Button>
-            </div>
-          }
+          emptyDescription="暂无任务明细"
+          emptyAction={(
+            <Button type="dashed" icon={<IconPlus />} onClick={addProjectTask}>
+              添加任务明细
+            </Button>
+          )}
         />
         {projectTasks.length > 0 && (
           <Button
@@ -225,7 +226,7 @@ export function GeneralDailyTemplate({ initialContent, department, onChange, omi
       {/* 明日工作计划 */}
       {!omitFollowUpFields && <div>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>
-          明日工作计划 <span style={{ color: 'red' }}>*</span>
+          明日工作计划 <span style={{ color: 'var(--ds-tone-danger-fg)' }}>*</span>
         </div>
         <Input.TextArea
           value={tomorrowPlan}

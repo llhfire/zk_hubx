@@ -122,7 +122,8 @@ describe('FileFlowWorkbench 文件流转工作台全链路交互', () => {
     expect(markup).toContain('工业网关系统技术评估表_v1.xlsx');
     expect(markup).toContain('评估交付工期（工作日）');
     expect(markup).toContain('评估研发总人天（人天）');
-    expect(markup).toContain('基准研发底线成本：¥24,000');
+    expect(markup).toContain('基准研发底线成本：');
+    expect(markup).toContain('¥24,000');
     expect(markup).toContain('40 人天 × 600元/天日成本测算');
     expect(markup).toContain('网关基于 Go 语言研发');
     expect(markup).toContain('提交评估结果至销售');

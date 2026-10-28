@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { UploadPanel } from '@/design-system';
 import {
   Button,
   DatePicker,
@@ -8,12 +9,12 @@ import {
   Message,
   Modal,
   Radio,
-  Select,
   Tooltip,
   Upload,
-} from '@arco-design/web-react';
-import { IconFullscreen, IconFullscreenExit, IconUpload } from '@arco-design/web-react/icon';
-import type { UploadItem } from '@arco-design/web-react/es/Upload';
+  OrderedStatePicker,
+} from '@/design-system';
+import { IconFullscreen, IconFullscreenExit, IconUpload } from '@/design-system';
+import type { UploadItem } from '@/design-system';
 import { INTENTION_LEVEL_LIST, SALES_STATUS_LIST } from '../types';
 import './LeadFollowUpModal.css';
 
@@ -134,15 +135,21 @@ export function LeadFollowUpModal({
         </FormItem>
 
         <FormItem label="客户状态" field="customerStatus" required rules={[{ required: true, message: '请选择客户状态' }]}>
-          <Select placeholder="请选择客户当前状态" options={SALES_STATUS_LIST.map((value) => ({ label: value, value }))} />
+          <OrderedStatePicker
+            ariaLabel="客户状态"
+            options={SALES_STATUS_LIST.map((value) => ({ label: value, value }))}
+          />
         </FormItem>
 
         <FormItem label="意向等级" field="intentionLevel">
-          <Radio.Group className="lead-followup-form__radios">
-            {INTENTION_LEVEL_LIST.map((value) => (
-              <Radio key={value} value={value}>{value === '无意向' ? value : `意向${value}`}</Radio>
-            ))}
-          </Radio.Group>
+          <OrderedStatePicker
+            ariaLabel="意向等级"
+            allowClear
+            options={INTENTION_LEVEL_LIST.map((value) => ({
+              value,
+              label: value === '无意向' ? value : `意向${value}`,
+            }))}
+          />
         </FormItem>
 
         <FormItem label="消耗时间">
@@ -164,11 +171,10 @@ export function LeadFollowUpModal({
         </FormItem>
 
         <FormItem label="附件上传" className="lead-followup-form__upload">
-          <Upload
+          <UploadPanel
             accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
             multiple
             limit={10}
-            drag
             autoUpload={false}
             fileList={attachments}
             onChange={setAttachments}
@@ -177,13 +183,9 @@ export function LeadFollowUpModal({
               return false;
             }}
             onExceedLimit={() => Message.warning('跟进附件最多上传 10 个')}
-          >
-            <div className="lead-followup-form__upload-content">
-              <IconUpload />
-              <strong>点击或拖拽文件到此处上传</strong>
-              <span>支持图片、PDF、Word、Excel，最多 10 个文件</span>
-            </div>
-          </Upload>
+            hint="点击或拖拽文件到此处上传"
+            description="支持图片、PDF、Word、Excel，最多 10 个文件"
+          />
         </FormItem>
 
         <FormItem label="下次跟进提醒" field="nextFollowTime">

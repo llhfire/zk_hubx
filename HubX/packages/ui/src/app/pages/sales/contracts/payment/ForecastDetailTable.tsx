@@ -1,10 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Card, Table, Select, Space, Tag, Typography, Button, Modal, Input, Message } from '@arco-design/web-react';
+import { Select, Typography, Button, Modal, Input, Message } from '@/design-system';
 import { buildGanttNodes } from './paymentCalc';
-import { CERTAINTY_LABELS, CERTAINTY_COLORS } from './types';
+import { CERTAINTY_LABELS, CERTAINTY_TONES } from './types';
 import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastNode, ForecastOverride, ForecastCertaintyLevel } from './types';
-import { FilterBar } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  IdentifierText,
+  MoneyText,
+  SectionCard,
+  StatusTag,
+} from '@/design-system';
 
 const { Text } = Typography;
 
@@ -50,8 +58,8 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
       title: '合同编号', dataIndex: 'contractNo', width: 120,
       render: (v: string, r: ForecastNode) => (
         <div>
-          <div style={{ fontWeight: 'var(--font-weight-medium)' }}>{v}</div>
-          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{r.contractName}</Text>
+          <IdentifierText value={v} />
+          <IdentifierText value={r.contractName} size="sm" tone="muted" />
         </div>
       ),
     },
@@ -61,13 +69,13 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
       render: (v: string, r: ForecastNode) => (
         <div>
           <div>{v}</div>
-          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>¥{r.amount.toLocaleString()}</Text>
+          <MoneyText value={r.amount} tone="muted" />
         </div>
       ),
     },
     {
       title: '原定到账日', dataIndex: 'plannedDate', width: 100,
-      render: (v: string) => <Text style={{ fontSize: 'var(--text-sm)' }}>{v}</Text>,
+      render: (v: string) => <DateText value={v} />,
     },
     {
       title: '动态预测日', dataIndex: 'forecastDate', width: 120,
@@ -75,8 +83,8 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
         const isChanged = v !== r.plannedDate;
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <Text style={{ fontSize: 'var(--text-sm)', color: isChanged ? 'rgb(var(--warning-6))' : undefined }}>{v}</Text>
-            {isChanged && <Tag size="small" color="orange">已调期</Tag>}
+            <DateText value={v} />
+            {isChanged && <StatusTag tone="warning" size="small">已调期</StatusTag>}
           </div>
         );
       },
@@ -85,15 +93,15 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
       title: '交付进度', width: 100,
       render: (_: unknown, r: ForecastNode) => {
         if (r.deliveryDelayDays && r.deliveryDelayDays > 0) {
-          return <Text style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--danger-6))' }}>延期 {r.deliveryDelayDays} 天</Text>;
+          return <StatusTag tone="danger">延期 {r.deliveryDelayDays} 天</StatusTag>;
         }
-        return <Text style={{ fontSize: 'var(--text-sm)', color: 'rgb(var(--success-6))' }}>正常</Text>;
+        return <StatusTag tone="success">正常</StatusTag>;
       },
     },
     {
       title: '确定性', dataIndex: 'certaintyLevel', width: 100,
       render: (v: ForecastCertaintyLevel) => (
-        <Tag color={CERTAINTY_COLORS[v]} size="small">{CERTAINTY_LABELS[v]}</Tag>
+        <StatusTag meta={{ label: CERTAINTY_LABELS[v], tone: CERTAINTY_TONES[v] }} size="small" />
       ),
     },
     {
@@ -117,11 +125,11 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
   ];
 
   return (
-    <Card title="单合同预测明细">
+    <SectionCard title="单合同预测明细">
       {/* 筛选 */}
       <div style={{ marginBottom: 'var(--space-4)' }}>
         <FilterBar>
-          <Text type="secondary" style={{ fontSize: 'var(--text-sm)' }}>确定性:</Text>
+          <Text type="secondary">确定性:</Text>
           <Select value={certaintyFilter} onChange={setCertaintyFilter} style={{ width: 120 }}>
             <Select.Option value="all">全部等级</Select.Option>
             <Select.Option value="high">高确信</Select.Option>
@@ -132,7 +140,7 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
         </FilterBar>
       </div>
 
-      <Table
+      <DataTable
         rowKey="nodeId"
         data={nodes}
         columns={columns}
@@ -155,13 +163,13 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
               <Text type="secondary">合同:</Text> {editModal.node.contractNo} {editModal.node.contractName}
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">期次:</Text> {editModal.node.periodName} ¥{editModal.node.amount.toLocaleString()}
+              <Text type="secondary">期次:</Text> {editModal.node.periodName} <MoneyText value={editModal.node.amount} />
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">原定日期:</Text> {editModal.node.plannedDate}
+              <Text type="secondary">原定日期:</Text> <DateText value={editModal.node.plannedDate} />
             </div>
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <Text type="secondary">新预测日期:</Text> {editModal.newDate}
+              <Text type="secondary">新预测日期:</Text> <DateText value={editModal.newDate} />
             </div>
             <div>
               <Text type="secondary">调期原因:</Text>
@@ -175,6 +183,6 @@ export function ForecastDetailTable({ contracts, overrides = [], projectDelayMap
           </div>
         )}
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

@@ -1,7 +1,7 @@
 // src/app/pages/daily-report/RoleSelectModal.tsx
 
-import { Modal, Button, Space, Typography } from '@arco-design/web-react';
-import { IconCustomerService, IconExperiment, IconEdit, IconApps } from '@arco-design/web-react/icon';
+import { Modal, Button, Space, Typography } from '@/design-system';
+import { IconCustomerService, IconExperiment, IconEdit, IconApps } from '@/design-system';
 
 const { Text } = Typography;
 
@@ -15,7 +15,7 @@ const REPORT_TYPES = [
   { key: 'sales' as const,        label: '销售部',  desc: '演示销售日报', icon: <IconCustomerService />, color: 'var(--primary)' },
   { key: 'ad-delivery' as const,  label: '新媒体部门', desc: '演示新媒体日报', icon: <IconExperiment />,       color: 'var(--warning-500)' },
   { key: 'dev' as const,          label: '技术部',  desc: '演示开发日报', icon: <IconEdit />,             color: 'var(--success-500)' },
-  { key: 'general' as const,      label: '行政财务', desc: '演示通用日报', icon: <IconApps />,             color: '#7c3aed' },
+  { key: 'general' as const,      label: '行政财务', desc: '演示通用日报', icon: <IconApps />,             color: 'var(--ds-tone-purple-fg)' },
 ];
 
 export function RoleSelectModal({ visible, onCancel, onSelect }: Props) {
@@ -40,10 +40,10 @@ export function RoleSelectModal({ visible, onCancel, onSelect }: Props) {
               onClick={() => onSelect(rt.key)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 24, color: rt.color }}>{rt.icon}</span>
+                <span style={{ fontSize: 'var(--text-2xl)', color: rt.color }}>{rt.icon}</span>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 16 }}>{rt.label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{rt.desc}</div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--text-base)' }}>{rt.label}</div>
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{rt.desc}</div>
                 </div>
               </div>
             </Button>

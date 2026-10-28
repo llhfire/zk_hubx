@@ -1,4 +1,4 @@
-import { Message } from '@arco-design/web-react';
+import { Message } from '@/design-system';
 
 export interface ContractModAttachment {
   id: string;

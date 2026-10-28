@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Alert, Avatar, Button, Card, Empty, Form, Input, Message, Modal, Pagination, Select, Space, Tabs, Tag, Typography } from '@arco-design/web-react';
+import { AlertBanner, EmptyState, SectionCard, SectionTabs, StatusTag } from '@/design-system';
+import {
+  Avatar,
+  Button,
+  Form,
+  Input,
+  Message,
+  Modal,
+  Pagination,
+  Select,
+  Space,
+  Tabs,
+  Typography,
+} from '@/design-system';
 import { useTodos } from '../../../../todos/TodoContext';
 import type { TodoPriority } from '../../../../todos/types';
 
@@ -167,38 +180,62 @@ export function LeadCustomerCommunicationPanel({ groupName, leadId, leadName, as
   };
 
   if (!groupName?.trim()) {
-    return <Card className="lead-detail-main-content"><Empty description="基础信息中未填写售前群名称，无法读取客户沟通记录" /></Card>;
+    return <SectionCard className="lead-detail-main-content"><EmptyState description="基础信息中未填写售前群名称，无法读取客户沟通记录" /></SectionCard>;
   }
 
   return (
-    <Card className="lead-detail-main-content">
+    <SectionCard className="lead-detail-main-content">
       <div className="lead-customer-communication-header">
         <div><Text bold>售前群：{groupName}</Text><Text type="secondary" style={{ marginLeft: 8 }}>自动读取本机微信聊天记录</Text></div>
         <Button size="small" loading={loading} onClick={loadCommunication}>刷新沟通记录</Button>
       </div>
-      {error ? <Alert type="warning" showIcon content={error} style={{ marginTop: 16 }} /> : null}
+      {error ? <AlertBanner tone="warning" style={{ marginTop: 16 }}>{error}</AlertBanner> : null}
       {data && <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 16 }}>
-        <Tabs activeTab={activeContentTab} onChange={setActiveContentTab} headerPadding={false}>
-          <TabPane key="summary" title="智能总结">
+        <SectionTabs
+          activeKey={activeContentTab}
+          onChange={setActiveContentTab}
+          items={[
+            {
+              key: 'summary',
+              label: '智能总结',
+              content: (
+                <>
             <div className="lead-customer-summary">
-              {data.provider === 'deepseek' ? <Tag color="green" style={{ marginBottom: 8 }}>DeepSeek 智能总结</Tag> : null}
-              {data.warning ? <Alert type="warning" showIcon content={data.warning} style={{ marginBottom: 12 }} /> : null}
+              {data.provider === 'deepseek' ? <StatusTag tone="success" style={{ marginBottom: 8 }}>DeepSeek 智能总结</StatusTag> : null}
+              {data.warning ? <AlertBanner tone="warning" style={{ marginBottom: 12 }}>{data.warning}</AlertBanner> : null}
               <div>{data.summary.overview}</div>
-              <Tabs activeTab={activeAnalysisTab} onChange={setActiveAnalysisTab} className="lead-customer-analysis-tabs">
-                {analysisSections.map(({ key, title }) => (
-                  <TabPane key={key} title={title}>
-                    {data.summary[key].length ? <div className="lead-customer-analysis-list">{data.summary[key].map((item, index) => <div className="lead-customer-analysis-item" key={`${key}-${index}`}><span className="lead-customer-analysis-index">{String(index + 1).padStart(2, '0')}</span><div className="lead-customer-analysis-text">{item}</div></div>)}</div> : <Empty description="暂未识别到明确内容" />}
-                  </TabPane>
-                ))}
-                <TabPane key="actions" title="待办任务">
-                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                    {data.summary.actions.length ? data.summary.actions.map((item, index) => <div className="lead-customer-action-item" key={`${item.title}-${index}`}><div><Text>{item.title}</Text>{item.description ? <Text type="secondary" className="lead-customer-action-description">{item.description}</Text> : null}</div><Button size="mini" type="outline" onClick={() => openActionEditor(item)}>编辑并分派</Button></div>) : <Empty description="暂未识别到需要跟进的任务" />}
-                  </Space>
-                </TabPane>
-              </Tabs>
+              <SectionTabs
+                activeKey={activeAnalysisTab}
+                onChange={setActiveAnalysisTab}
+                className="lead-customer-analysis-tabs"
+                items={[
+                  ...analysisSections.map(({ key, title }) => ({
+                    key,
+                    label: title,
+                    content: data.summary[key].length
+                      ? <div className="lead-customer-analysis-list">{data.summary[key].map((item, index) => <div className="lead-customer-analysis-item" key={`${key}-${index}`}><span className="lead-customer-analysis-index">{String(index + 1).padStart(2, '0')}</span><div className="lead-customer-analysis-text">{item}</div></div>)}</div>
+                      : <EmptyState description="暂未识别到明确内容" />,
+                  })),
+                  {
+                    key: 'actions',
+                    label: '待办任务',
+                    content: (
+                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                        {data.summary.actions.length ? data.summary.actions.map((item, index) => <div className="lead-customer-action-item" key={`${item.title}-${index}`}><div><Text>{item.title}</Text>{item.description ? <Text type="secondary" className="lead-customer-action-description">{item.description}</Text> : null}</div><Button size="mini" type="outline" onClick={() => openActionEditor(item)}>编辑并分派</Button></div>) : <EmptyState description="暂未识别到需要跟进的任务" />}
+                      </Space>
+                    ),
+                  },
+                ]}
+              />
             </div>
-          </TabPane>
-          <TabPane key="messages" title="聊天内容">
+          </>
+              ),
+            },
+            {
+              key: 'messages',
+              label: '聊天内容',
+              content: (
+                <>
             <div className="lead-customer-message-meta"><Text type="secondary">已导出 {sortedMessages.length} 条消息（最新在前）· 最近消息时间 {data.summary.latestTime || '-'} · 导出时间 {data.exportedAt}</Text></div>
             <div className="lead-customer-message-list">
               {pagedMessages.map((message) => (
@@ -213,8 +250,11 @@ export function LeadCustomerCommunicationPanel({ groupName, leadId, leadName, as
               ))}
             </div>
             {sortedMessages.length > pageSize ? <Pagination current={currentPage} pageSize={pageSize} total={sortedMessages.length} showTotal onChange={setCurrentPage} className="lead-customer-message-pagination" /> : null}
-          </TabPane>
-        </Tabs>
+          </>
+              ),
+            },
+          ]}
+        />
       </Space>}
       <Modal title="编辑并分派待办" visible={taskVisible} onCancel={() => setTaskVisible(false)} onOk={saveAction} okText="写入待办" unmountOnExit>
         <Form form={taskForm} layout="vertical">
@@ -225,6 +265,6 @@ export function LeadCustomerCommunicationPanel({ groupName, leadId, leadName, as
           <Form.Item label="写入位置" field="destination"><Select options={[{ label: '待办中心', value: 'todo' }, { label: '线索跟进待办', value: 'tracking' }]} /></Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

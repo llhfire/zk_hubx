@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Drawer, Form, Input, Select, InputNumber, Button, Message, DatePicker } from '@arco-design/web-react';
+import { Drawer, Form, Input, Select, InputNumber, Button, Message, DatePicker } from '@/design-system';
 import { useOperatingExpense } from './OperatingExpenseContext';
 import { CATEGORY_SEED } from './categorySeed';
 import type { ExpenseCategoryPrimary, Attribution } from './types';

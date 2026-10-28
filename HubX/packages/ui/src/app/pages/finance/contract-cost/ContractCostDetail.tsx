@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
+import { Tabs, Typography } from '@/design-system';
 import {
-  Breadcrumb,
-  Button,
-  Card,
-  Empty,
-  Table,
-  Tabs,
-  Tag,
-  Typography,
-} from '@arco-design/web-react';
-import { IconLeft } from '@arco-design/web-react/icon';
+  DataTable,
+  DetailHeader,
+  EmptyState,
+  MetricGrid,
+  MoneyText,
+  PageShell,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  type StatusMap,
+} from '@/design-system';
 import {
   buildRDCostDetails,
   buildOpCostDetails,
@@ -32,13 +34,13 @@ import {
 
 const { Title, Text } = Typography;
 const TabPane = Tabs.TabPane;
-const BreadcrumbItem = Breadcrumb.Item;
 
 const CURRENT_MONTH = '2026-05';
 
-function fmt(value: number): string {
-  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const DATA_MODE_STATUS: StatusMap<'actual' | 'nominal'> = {
+  actual: { label: '实际', tone: 'success' },
+  nominal: { label: '名义', tone: 'info' },
+};
 
 export function ContractCostDetail() {
   const { contractId } = useParams();
@@ -84,13 +86,13 @@ export function ContractCostDetail() {
       title: '时薪(元/h)',
       dataIndex: 'hourlyRate',
       width: 120,
-      render: (value: number) => (canViewDetail ? fmt(value) : '***'),
+      render: (value: number) => (canViewDetail ? <MoneyText value={value} fractionDigits={2} /> : '***'),
     },
     {
       title: '金额(元)',
       dataIndex: 'cost',
       width: 120,
-      render: (value: number) => (canViewDetail ? fmt(value) : '***'),
+      render: (value: number) => (canViewDetail ? <MoneyText value={value} fractionDigits={2} /> : '***'),
     },
   ];
 
@@ -98,21 +100,21 @@ export function ContractCostDetail() {
   const bizColumns = [
     { title: '类别', dataIndex: 'category', width: 120 },
     { title: '说明', dataIndex: 'description' },
-    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => fmt(v) },
+    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => <MoneyText value={v} fractionDigits={2} /> },
   ];
 
   // ─── 外包成本表格列 ───────────────────────────────────────
   const outsourceColumns = [
     { title: '供应商', dataIndex: 'vendorName', width: 140 },
     { title: '说明', dataIndex: 'description' },
-    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => fmt(v) },
+    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => <MoneyText value={v} fractionDigits={2} /> },
   ];
 
   // ─── 其他成本表格列 ───────────────────────────────────────
   const otherColumns = [
     { title: '类别', dataIndex: 'category', width: 120 },
     { title: '说明', dataIndex: 'description' },
-    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => fmt(v) },
+    { title: '金额(元)', dataIndex: 'amount', width: 120, render: (v: number) => <MoneyText value={v} fractionDigits={2} /> },
   ];
 
   // ─── 运营分摊表格列 ───────────────────────────────────────
@@ -124,19 +126,19 @@ export function ContractCostDetail() {
       title: '每小时运营成本(元/h)',
       dataIndex: 'hourlyOpCost',
       width: 160,
-      render: (v: number) => fmt(v),
+      render: (v: number) => <MoneyText value={v} fractionDigits={2} />,
     },
-    { title: '金额(元)', dataIndex: 'cost', width: 120, render: (v: number) => fmt(v) },
+    { title: '金额(元)', dataIndex: 'cost', width: 120, render: (v: number) => <MoneyText value={v} fractionDigits={2} /> },
   ];
 
   // ─── 概览卡片数据 ────────────────────────────────────────
   const summaryCards = [
-    { label: '科研成本', value: rdTotal, color: 'var(--primary)' },
-    { label: '差旅成本', value: travelTotal, color: 'var(--warning-600)' },
-    { label: '商务成本', value: bizTotal, color: '#0fc6c2' },
-    { label: '外包成本', value: outsourceTotal, color: 'var(--warning-500)' },
-    { label: '其他成本', value: otherTotal, color: '#7816ff' },
-    { label: '分摊运营成本', value: opTotal, color: 'var(--destructive-500)' },
+    { label: '科研成本', value: rdTotal },
+    { label: '差旅成本', value: travelTotal },
+    { label: '商务成本', value: bizTotal },
+    { label: '外包成本', value: outsourceTotal },
+    { label: '其他成本', value: otherTotal },
+    { label: '分摊运营成本', value: opTotal },
   ];
 
   // ─── 合计行渲染 ──────────────────────────────────────────
@@ -145,7 +147,7 @@ export function ContractCostDetail() {
     const totalHours = rdDetails.reduce((s, r) => s + r.hours, 0);
     return (
       <div style={{ textAlign: 'right', padding: '8px 16px', fontWeight: 600 }}>
-        合计：工时 {totalHours}h，金额 {canViewDetail ? `¥${fmt(rdTotal)}` : '***'}
+        合计：工时 {totalHours}h，金额 {canViewDetail ? <MoneyText value={rdTotal} fractionDigits={2} /> : '***'}
       </div>
     );
   }
@@ -153,7 +155,7 @@ export function ContractCostDetail() {
   function renderAmountSummary(total: number) {
     return (
       <div style={{ textAlign: 'right', padding: '8px 16px', fontWeight: 600 }}>
-        合计：¥{fmt(total)}
+        合计：<MoneyText value={total} fractionDigits={2} />
       </div>
     );
   }
@@ -163,172 +165,183 @@ export function ContractCostDetail() {
     const totalHours = opDetails.reduce((s, r) => s + r.hours, 0);
     return (
       <div style={{ textAlign: 'right', padding: '8px 16px', fontWeight: 600 }}>
-        合计：工时 {totalHours}h，金额 ¥{fmt(opTotal)}
-      </div>
-    );
-  }
-
-  // ─── 无项目关联 ──────────────────────────────────────────
-  if (!hasProjects) {
-    return (
-      <div>
-        <Breadcrumb style={{ marginBottom: 16 }}>
-          <BreadcrumbItem>财务统计</BreadcrumbItem>
-          <BreadcrumbItem>合同成本明细</BreadcrumbItem>
-          <BreadcrumbItem>{contractName}</BreadcrumbItem>
-        </Breadcrumb>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-          <Button icon={<IconLeft />} onClick={() => navigate(-1)} />
-          <Title heading={4} style={{ margin: 0 }}>{contractName} - 成本明细</Title>
-        </div>
-
-        <Card>
-          <Empty description="该合同未关联项目" />
-        </Card>
+        合计：工时 {totalHours}h，金额 <MoneyText value={opTotal} fractionDigits={2} />
       </div>
     );
   }
 
   return (
-    <div>
-      {/* ── 面包屑 ── */}
-      <Breadcrumb style={{ marginBottom: 16 }}>
-        <BreadcrumbItem>财务统计</BreadcrumbItem>
-        <BreadcrumbItem>合同成本明细</BreadcrumbItem>
-        <BreadcrumbItem>{contractName}</BreadcrumbItem>
-      </Breadcrumb>
+    <PageShell
+      breadcrumbs={[
+        { label: '财务统计' },
+        { label: '合同成本明细' },
+        { label: contractName },
+      ]}
+    >
+      <DetailHeader
+        title={`${contractName} - 成本明细`}
+        onBack={() => navigate(-1)}
+        status={hasProjects && <StatusTag meta={DATA_MODE_STATUS[useActual ? 'actual' : 'nominal']} />}
+      />
 
-      {/* ── 标题行 ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Button icon={<IconLeft />} onClick={() => navigate(-1)} />
-        <Title heading={4} style={{ margin: 0 }}>
-          {contractName} - 成本明细
-        </Title>
-        <Tag color={useActual ? 'green' : 'blue'}>
-          {useActual ? '实际' : '名义'}
-        </Tag>
-      </div>
-
-      {/* ── 5 张概览卡片 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 16, marginBottom: 24 }}>
-        {summaryCards.map((card) => (
-          <Card key={card.label} style={{ textAlign: 'center' }}>
-            <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>{card.label}</Text>
-            <div style={{ fontSize: 24, fontWeight: 600, color: card.color, marginTop: 8 }}>
-              ¥{fmt(card.value)}
-            </div>
-          </Card>
-        ))}
-      </div>
+      {hasProjects ? (
+      <>
+      <MetricGrid
+        items={summaryCards.map((card) => ({
+          key: card.label,
+          label: card.label,
+          value: <MoneyText value={card.value} fractionDigits={2} />,
+        }))}
+      />
 
       {/* ── Tabs ── */}
-      <Card>
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          {/* ── 科研成本 ── */}
-          <TabPane key="rd" title="科研成本">
-            <Table<RDCostDetail>
-              columns={rdColumns}
-              data={rdDetails}
-              rowKey="employeeId"
-              pagination={false}
-              scroll={{ x: 580 }}
-            />
-            {renderRDSummary()}
-          </TabPane>
-
-          {/* ── 差旅成本 ── */}
-          <TabPane key="travel" title="差旅成本">
-            <Table<BusinessCostRecord>
-              columns={bizColumns}
-              data={travelDetails}
-              rowKey="id"
-              pagination={false}
-            />
-            {travelDetails.length > 0 && renderAmountSummary(travelTotal)}
-          </TabPane>
-
-          {/* ── 商务成本 ── */}
-          <TabPane key="biz" title="商务成本">
-            <Table<BusinessCostRecord>
-              columns={bizColumns}
-              data={bizDetails}
-              rowKey="id"
-              pagination={false}
-            />
-            {bizDetails.length > 0 && renderAmountSummary(bizTotal)}
-          </TabPane>
-
-          {/* ── 外包成本 ── */}
-          <TabPane key="outsource" title="外包成本">
-            <Table<OutsourceCostRecord>
-              columns={outsourceColumns}
-              data={outsourceDetails}
-              rowKey="id"
-              pagination={false}
-            />
-            {outsourceDetails.length > 0 && renderAmountSummary(outsourceTotal)}
-          </TabPane>
-
-          {/* ── 其他成本 ── */}
-          <TabPane key="other" title="其他成本">
-            <Table<OtherCostRecord>
-              columns={otherColumns}
-              data={otherDetails}
-              rowKey="id"
-              pagination={false}
-            />
-            {otherDetails.length > 0 && renderAmountSummary(otherTotal)}
-          </TabPane>
-
-          {/* ── 分摊运营成本 ── */}
-          <TabPane key="op" title="分摊运营成本">
-            {/* 计算过程展示 */}
-            <Card
-              style={{ marginBottom: 16, backgroundColor: 'var(--color-fill-1)' }}
-              bordered={false}
-            >
-              <Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>公摊费率计算</Title>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-                <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>
-                    {CURRENT_MONTH} 公共运营池
-                  </Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>¥{fmt(overheadSnapshot.pool)}</div>
-                </div>
-                <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>在职员工数</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>{overheadSnapshot.activeEmployeeCount} 人</div>
-                </div>
-                <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>编制工时</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600 }}>{overheadSnapshot.capacityHours} h</div>
-                </div>
-                <div>
-                  <Text style={{ color: 'var(--color-text-3)', fontSize: 14 }}>每小时运营成本</Text>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--destructive-500)' }}>
-                    ¥{fmt(hourlyOpCost)}/h
-                  </div>
-                </div>
-              </div>
-              <Text style={{ color: 'var(--color-text-3)', fontSize: 12, marginTop: 8, display: 'block' }}>
-                计算公式：R_hour = 当月公共运营池 ÷ 全公司在职编制工时
-                = ¥{fmt(overheadSnapshot.pool)} ÷ {overheadSnapshot.capacityHours}h
-                = ¥{fmt(hourlyOpCost)}/h
-              </Text>
-            </Card>
-
-            <Table<OpCostDetail>
-              columns={opColumns}
-              data={opDetails}
-              rowKey="employeeName"
-              pagination={false}
-              scroll={{ x: 620 }}
-            />
-            {renderOpSummary()}
-          </TabPane>
-        </Tabs>
-      </Card>
-    </div>
+      <SectionCard padded={false}>
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'rd',
+              label: "科研成本",
+              content: (
+                <>
+                      <DataTable<RDCostDetail>
+                        columns={rdColumns}
+                        data={rdDetails}
+                        rowKey="employeeId"
+                        pagination={false}
+                        scroll={{ x: 580 }}
+                      />
+                      {renderRDSummary()}
+                    
+                </>
+              ),
+            },
+            {
+              key: 'travel',
+              label: "差旅成本",
+              content: (
+                <>
+                      <DataTable<BusinessCostRecord>
+                        columns={bizColumns}
+                        data={travelDetails}
+                        rowKey="id"
+                        pagination={false}
+                      />
+                      {travelDetails.length > 0 && renderAmountSummary(travelTotal)}
+                    
+                </>
+              ),
+            },
+            {
+              key: 'biz',
+              label: "商务成本",
+              content: (
+                <>
+                      <DataTable<BusinessCostRecord>
+                        columns={bizColumns}
+                        data={bizDetails}
+                        rowKey="id"
+                        pagination={false}
+                      />
+                      {bizDetails.length > 0 && renderAmountSummary(bizTotal)}
+                    
+                </>
+              ),
+            },
+            {
+              key: 'outsource',
+              label: "外包成本",
+              content: (
+                <>
+                      <DataTable<OutsourceCostRecord>
+                        columns={outsourceColumns}
+                        data={outsourceDetails}
+                        rowKey="id"
+                        pagination={false}
+                      />
+                      {outsourceDetails.length > 0 && renderAmountSummary(outsourceTotal)}
+                    
+                </>
+              ),
+            },
+            {
+              key: 'other',
+              label: "其他成本",
+              content: (
+                <>
+                      <DataTable<OtherCostRecord>
+                        columns={otherColumns}
+                        data={otherDetails}
+                        rowKey="id"
+                        pagination={false}
+                      />
+                      {otherDetails.length > 0 && renderAmountSummary(otherTotal)}
+                    
+                </>
+              ),
+            },
+            {
+              key: 'op',
+              label: "分摊运营成本",
+              content: (
+                <>
+                      {/* 计算过程展示 */}
+                      <SectionCard
+                        style={{ marginBottom: 16, backgroundColor: 'var(--color-fill-1)' }}
+                        bordered={false}
+                      >
+                        <Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>公摊费率计算</Title>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                          <div>
+                            <Text style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)' }}>
+                              {CURRENT_MONTH} 公共运营池
+                            </Text>
+                            <div style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}><MoneyText value={overheadSnapshot.pool} fractionDigits={2} /></div>
+                          </div>
+                          <div>
+                            <Text style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)' }}>在职员工数</Text>
+                            <div style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>{overheadSnapshot.activeEmployeeCount} 人</div>
+                          </div>
+                          <div>
+                            <Text style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)' }}>编制工时</Text>
+                            <div style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>{overheadSnapshot.capacityHours} h</div>
+                          </div>
+                          <div>
+                            <Text style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)' }}>每小时运营成本</Text>
+                            <div style={{ fontSize: 'var(--text-lg)', fontWeight: 600 }}>
+                              <MoneyText value={hourlyOpCost} fractionDigits={2} />/h
+                            </div>
+                          </div>
+                        </div>
+                        <Text style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)', marginTop: 8, display: 'block' }}>
+                          计算公式：R_hour = 当月公共运营池 ÷ 全公司在职编制工时
+                          = <MoneyText value={overheadSnapshot.pool} fractionDigits={2} /> ÷ {overheadSnapshot.capacityHours}h
+                          = <MoneyText value={hourlyOpCost} fractionDigits={2} />/h
+                        </Text>
+                      </SectionCard>
+          
+                      <DataTable<OpCostDetail>
+                        columns={opColumns}
+                        data={opDetails}
+                        rowKey="employeeName"
+                        pagination={false}
+                        scroll={{ x: 620 }}
+                      />
+                      {renderOpSummary()}
+                    
+                </>
+              ),
+            },
+          ]}
+        />
+      </SectionCard>
+      </>
+      ) : (
+        <SectionCard>
+          <EmptyState description="该合同未关联项目" />
+        </SectionCard>
+      )}
+    </PageShell>
   );
 }

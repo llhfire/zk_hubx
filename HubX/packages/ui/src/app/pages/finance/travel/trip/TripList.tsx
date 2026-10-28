@@ -1,13 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Card,
   Button,
   Input,
-  Tag,
   Modal,
   Select,
-  Table,
   Message,
   Space,
   Typography,
@@ -16,32 +13,30 @@ import {
   Radio,
   Checkbox,
   Badge,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
+  Airplane,
+  ArrowRight,
+  Briefcase,
+  Buildings,
+  CalendarBlank,
+  Car,
+  CheckCircle,
+  CreditCard,
+  Eye,
   IconSearch,
   IconPlus,
   IconRefresh,
   IconCheck,
   IconClose,
   IconThunderbolt,
-} from '@arco-design/web-react/icon';
-import {
-  CheckCircle,
-  Eye,
   PaperPlaneTilt,
   Play,
   Stop,
   Trash,
-  Airplane,
   Train,
-  Car,
-  Buildings,
-  Briefcase,
-  ArrowRight,
-  CalendarBlank,
-  CreditCard,
   User,
-} from '@phosphor-icons/react';
+} from '@/design-system';
 import type { Trip, TripStatus, TransportMode } from '../types';
 import {
   getTripList,
@@ -51,22 +46,35 @@ import {
   endTrip,
   deleteTrip,
 } from '../travel-api';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  FilterBar,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  MoneyText,
+  DateText,
+  StatusTag,
+  confirmAction,
+  resolveStatus,
+  type StatusMap,
+  DataTable,
+  SectionCard,
+} from '@/design-system';
 import './tripList.css';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const statusConfig: Record<TripStatus, { color: string; text: string }> = {
-  draft: { color: 'gray', text: '草稿' },
-  pending: { color: 'orange', text: '待审批' },
-  approved: { color: 'green', text: '已通过' },
-  in_progress: { color: 'arcoblue', text: '进行中' },
-  to_reimburse: { color: 'purple', text: '待报销' },
-  closed: { color: 'gray', text: '已关闭' },
-  rejected: { color: 'red', text: '已拒绝' },
-  cancelled: { color: 'gray', text: '已取消' },
+const TRIP_STATUS: StatusMap<TripStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending: { label: '待审批', tone: 'warning' },
+  approved: { label: '已通过', tone: 'success' },
+  in_progress: { label: (<><span className="trip-status-pulse" />进行中</>), tone: 'info' },
+  to_reimburse: { label: '待报销', tone: 'purple' },
+  closed: { label: '已关闭', tone: 'neutral' },
+  rejected: { label: '已拒绝', tone: 'danger' },
+  cancelled: { label: '已取消', tone: 'neutral' },
 };
 
 // 快捷审批常用语
@@ -260,9 +268,10 @@ export function TripList() {
 
   // 删除草稿
   const handleDelete = async (trip: Trip) => {
-    Modal.confirm({
+    confirmAction({
       title: '确认删除出差单',
       content: `确定要删除草稿出差单「${trip.tripNo}」吗？此操作不可恢复。`,
+      tone: 'danger',
       onOk: async () => {
         try {
           await deleteTrip(trip.id);
@@ -279,14 +288,14 @@ export function TripList() {
   const renderTransportIcon = (mode?: TransportMode) => {
     switch (mode) {
       case 'airplane':
-        return <Airplane size={14} weight="fill" style={{ color: '#165dff' }} />;
+        return <Airplane size={14} weight="fill" style={{ color: 'rgb(var(--primary-6))' }} />;
       case 'high_speed_rail':
       case 'bullet_train':
-        return <Train size={14} weight="fill" style={{ color: '#00b42a' }} />;
+        return <Train size={14} weight="fill" style={{ color: 'var(--ds-tone-success-fg)' }} />;
       case 'self_drive':
-        return <Car size={14} weight="fill" style={{ color: '#ff7d00' }} />;
+        return <Car size={14} weight="fill" style={{ color: 'var(--ds-tone-warning-fg)' }} />;
       default:
-        return <Train size={14} weight="fill" style={{ color: '#86909c' }} />;
+        return <Train size={14} weight="fill" style={{ color: 'var(--color-text-3)' }} />;
     }
   };
 
@@ -414,12 +423,12 @@ export function TripList() {
       width: 130,
       render: (name: string, record: Trip) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--color-text-1)' }}>
+          <div style={{ fontWeight: 500, fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-1)' }}>
             {name}
           </div>
-          <Tag size="small" color="arcoblue" style={{ padding: '0 6px', fontSize: 11, width: 'fit-content' }}>
+          <StatusTag size="small" tone="info" style={{ padding: '0 6px', fontSize: 'var(--ds-text-caption)', width: 'fit-content' }}>
             {record.department || '未分配'}
-          </Tag>
+          </StatusTag>
         </div>
       ),
     },
@@ -440,9 +449,11 @@ export function TripList() {
             </div>
             <div className="trip-cell-journey__date">
               <CalendarBlank size={13} style={{ color: 'var(--color-text-3)' }} />
-              <span>
-                {record.startDate?.slice(5)} ~ {record.endDate?.slice(5)} · {record.days}天
-              </span>
+              <DateText
+                value={record.startDate}
+                end={record.endDate}
+                suffix={`${record.days}天`}
+              />
             </div>
           </div>
         );
@@ -466,7 +477,7 @@ export function TripList() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
-                  fontSize: 12,
+                  fontSize: 'var(--text-xs)',
                   color: 'var(--color-text-1)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -484,7 +495,7 @@ export function TripList() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
-                  fontSize: 12,
+                  fontSize: 'var(--text-xs)',
                   color: 'var(--color-text-3)',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -507,14 +518,14 @@ export function TripList() {
       render: (cost: number, record: Trip) => (
         <div className="trip-cell-cost">
           <div className="trip-cell-cost__total">
-            ¥{(cost || 0).toLocaleString()}
+            <MoneyText value={cost || 0} />
           </div>
           {record.needLoan ? (
-            <Tag size="small" color="orange" style={{ padding: '0 6px', width: 'fit-content' }}>
-              借款 ¥{(record.loanAmount || 0).toLocaleString()}
-            </Tag>
+            <StatusTag size="small" tone="warning" style={{ padding: '0 6px', width: 'fit-content' }}>
+              借款 <MoneyText value={record.loanAmount || 0} />
+            </StatusTag>
           ) : (
-            <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>无备用借款</span>
+            <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>无备用借款</span>
           )}
         </div>
       ),
@@ -523,15 +534,9 @@ export function TripList() {
       title: '当前状态',
       dataIndex: 'status',
       width: 110,
-      render: (status: TripStatus) => {
-        const conf = statusConfig[status] || { color: 'gray', text: status };
-        return (
-          <Tag color={conf.color} style={{ display: 'inline-flex', alignItems: 'center' }}>
-            {status === 'in_progress' && <span className="trip-status-pulse" />}
-            {conf.text}
-          </Tag>
-        );
-      },
+      render: (status: TripStatus) => (
+        <StatusTag meta={resolveStatus(TRIP_STATUS, status)} />
+      ),
     },
     {
       title: '操作',
@@ -596,14 +601,14 @@ export function TripList() {
           {
             key: 'amount',
             label: '预计费用总额',
-            value: `¥${estimatedAmount.toLocaleString()}`,
+            value: <MoneyText value={estimatedAmount} />,
             detail: `涉及借款 ${loanCount} 单`,
           },
         ]}
       />
 
       {/* 现代化搜索与快速状态切换卡 */}
-      <Card className="trip-list-filter-card">
+      <SectionCard className="trip-list-filter-card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* 状态快捷分段胶囊 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -628,7 +633,7 @@ export function TripList() {
                   重置筛选条件
                 </Button>
               )}
-              <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
                 找到 <strong>{filteredTrips.length}</strong> 条符合条件的单据
               </span>
             </div>
@@ -683,16 +688,16 @@ export function TripList() {
             </Checkbox>
           </FilterBar>
         </div>
-      </Card>
+      </SectionCard>
 
       {/* 列表主体卡片 */}
-      <Card
+      <SectionCard
         className="trip-list-table-card"
         title="出差申请明细台账"
         extra={
           selectedRowKeys.length > 0 && (
             <Space>
-              <span style={{ fontSize: 13, color: 'var(--color-text-2)' }}>
+              <span style={{ fontSize: 'var(--ds-text-dense)', color: 'var(--color-text-2)' }}>
                 已勾选 {selectedRowKeys.length} 项
               </span>
               <Button size="small" onClick={() => setSelectedRowKeys([])}>
@@ -702,7 +707,7 @@ export function TripList() {
           )
         }
       >
-        <Table
+        <DataTable
           columns={columns}
           data={filteredTrips}
           loading={loading}
@@ -719,7 +724,7 @@ export function TripList() {
             sizeCanChange: true,
           }}
         />
-      </Card>
+      </SectionCard>
 
       {/* 强化版审批弹窗 */}
       <Modal
@@ -728,7 +733,7 @@ export function TripList() {
             <span style={{ fontWeight: 600 }}>
               {approvalAction === 'approve' ? '审批通过出差申请' : '驳回出差申请'}
             </span>
-            {selectedTrip && <Tag size="small">{selectedTrip.tripNo}</Tag>}
+            {selectedTrip && <StatusTag size="small">{selectedTrip.tripNo}</StatusTag>}
           </div>
         }
         visible={approvalVisible}
@@ -747,11 +752,11 @@ export function TripList() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <User size={16} weight="bold" style={{ color: 'rgb(var(--primary-6))' }} />
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{selectedTrip.applicantName}</span>
-                <Tag size="small" color="arcoblue">{selectedTrip.department}</Tag>
+                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{selectedTrip.applicantName}</span>
+                <StatusTag size="small" tone="info">{selectedTrip.department}</StatusTag>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'rgb(var(--primary-6))' }}>
-                ¥{selectedTrip.estimatedTotalCost?.toLocaleString()}
+              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'rgb(var(--primary-6))' }}>
+                <MoneyText value={selectedTrip.estimatedTotalCost} />
               </div>
             </div>
 
@@ -762,7 +767,11 @@ export function TripList() {
               </div>
               <div>
                 <span style={{ color: 'var(--color-text-3)' }}>出差周期：</span>
-                {selectedTrip.startDate} ~ {selectedTrip.endDate} ({selectedTrip.days}天)
+                <DateText
+                  value={selectedTrip.startDate}
+                  end={selectedTrip.endDate}
+                  suffix={`${selectedTrip.days}天`}
+                />
               </div>
               <div style={{ gridColumn: 'span 2' }}>
                 <span style={{ color: 'var(--color-text-3)' }}>出差事由：</span>
@@ -771,9 +780,9 @@ export function TripList() {
               {selectedTrip.needLoan && (
                 <div style={{ gridColumn: 'span 2' }}>
                   <span style={{ color: 'var(--color-text-3)' }}>预借备用金：</span>
-                  <Tag color="orange" size="small">
-                    ¥{selectedTrip.loanAmount?.toLocaleString()}（{selectedTrip.loanReason || '差旅备用金'}）
-                  </Tag>
+                  <StatusTag tone="warning" size="small">
+                    <MoneyText value={selectedTrip.loanAmount} />（{selectedTrip.loanReason || '差旅备用金'}）
+                  </StatusTag>
                 </div>
               )}
             </div>
@@ -782,10 +791,10 @@ export function TripList() {
 
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-1)' }}>
-              审批核决意见 <span style={{ color: '#f53f3f' }}>*</span>
+            <span style={{ fontSize: 'var(--ds-text-dense)', fontWeight: 500, color: 'var(--color-text-1)' }}>
+              审批核决意见 <span style={{ color: 'var(--ds-tone-danger-fg)' }}>*</span>
             </span>
-            <span style={{ fontSize: 12, color: 'var(--color-text-3)' }}>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
               支持点击下方常用短语一键填入
             </span>
           </div>
@@ -798,7 +807,7 @@ export function TripList() {
           />
 
           <div className="trip-approval-quick-comments">
-            <span style={{ fontSize: 11, color: 'var(--color-text-3)' }}>快捷评语：</span>
+            <span style={{ fontSize: 'var(--ds-text-caption)', color: 'var(--color-text-3)' }}>快捷评语：</span>
             {APPROVAL_PRESETS.map((preset) => (
               <span
                 key={preset}

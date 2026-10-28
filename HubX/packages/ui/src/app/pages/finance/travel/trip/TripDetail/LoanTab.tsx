@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  Card,
   Button,
-  Tag,
-  Table,
   Space,
   Typography,
-  Grid,
   Message,
-  Spin,
   Drawer,
-  Descriptions,
   Divider,
   Timeline,
   Modal,
@@ -18,8 +12,7 @@ import {
   Input,
   InputNumber,
   Select,
-  Progress,
-} from '@arco-design/web-react';
+} from '@/design-system';
 import {
   IconPlus,
   IconEye,
@@ -27,28 +20,36 @@ import {
   IconRight,
   IconClockCircle,
   IconCheckCircle,
-  IconCompass,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import type { Trip, Loan, LoanStatus } from '../../types';
 import { getLoanList } from '../../travel-api';
+import {
+  DataTable,
+  DateText,
+  MetricCard,
+  MoneyText,
+  StatusTag,
+  type StatusMap,
+  DescriptionsCard,
+  ProgressBar,
+} from '@/design-system';
 
 const { Text, Title } = Typography;
-const { Row, Col } = Grid;
 
 interface LoanTabProps {
   trip: Trip;
   onUpdate: () => void;
 }
 
-const statusConfig: Record<LoanStatus, { color: string; text: string }> = {
-  draft: { color: 'gray', text: '草稿' },
-  pending: { color: 'orange', text: '待审批' },
-  approved: { color: 'green', text: '已通过' },
-  paid: { color: 'green', text: '已打款' },
-  offset: { color: 'blue', text: '已冲抵' },
-  settled: { color: 'green', text: '已结清' },
-  rejected: { color: 'red', text: '已拒绝' },
-  cancelled: { color: 'gray', text: '已取消' },
+const LOAN_STATUS: StatusMap<LoanStatus> = {
+  draft: { label: '草稿', tone: 'neutral' },
+  pending: { label: '待审批', tone: 'warning' },
+  approved: { label: '已通过', tone: 'success' },
+  paid: { label: '已打款', tone: 'success' },
+  offset: { label: '已冲抵', tone: 'info' },
+  settled: { label: '已结清', tone: 'success' },
+  rejected: { label: '已拒绝', tone: 'danger' },
+  cancelled: { label: '已取消', tone: 'neutral' },
 };
 
 export function LoanTab({ trip, onUpdate }: LoanTabProps) {
@@ -122,9 +123,9 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
       dataIndex: 'type',
       width: 100,
       render: (value: string) => (
-        <Tag>
+        <StatusTag>
           {value === 'travel' ? '差旅借款' : value === 'petty_cash' ? '备用金' : '其他'}
-        </Tag>
+        </StatusTag>
       ),
     },
     {
@@ -133,8 +134,8 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
       width: 120,
       render: (value: number) => (
         <Space size={4}>
-          <IconStorage style={{ color: '#86909c' }} />
-          <span>¥{value.toLocaleString()}</span>
+          <IconStorage style={{ color: 'var(--color-text-3)' }} />
+          <MoneyText value={value} />
         </Space>
       ),
     },
@@ -143,29 +144,28 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
       dataIndex: 'offsetAmount',
       width: 100,
       render: (value: number) => (
-        value > 0 ? <span style={{ color: '#00b42a' }}>¥{value.toLocaleString()}</span> : '-'
+        value > 0 ? <MoneyText value={value} tone="success" /> : '-'
       ),
     },
     {
       title: '剩余金额',
       dataIndex: 'remainingAmount',
       width: 120,
-      render: (value: number) => <Text style={{ fontWeight: 500 }}>¥{value.toLocaleString()}</Text>,
+      render: (value: number) => <Text style={{ fontWeight: 500 }}><MoneyText value={value} /></Text>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 100,
       render: (value: LoanStatus) => (
-        <Tag color={statusConfig[value].color}>
-          {statusConfig[value].text}
-        </Tag>
+        <StatusTag meta={LOAN_STATUS[value]} />
       ),
     },
     {
       title: '创建日期',
       dataIndex: 'createDate',
       width: 120,
+      render: (value: string) => <DateText value={value} />,
     },
     {
       title: '操作',
@@ -186,77 +186,56 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
       {/* 资金闭环核销总览看板（环形闭环率 + 借还核销对比条） */}
       <div className="trip-loan-dashboard">
         <div className="trip-loan-circle-box">
-          <Progress
-            type="circle"
+          <ProgressBar
+            variant="circle"
             percent={offsetRate}
-            width={96}
-            color={offsetRate === 100 ? '#00b42a' : '#165dff'}
-            formatText={(p) => (
+            diameter={96}
+            tone={offsetRate === 100 ? 'success' : 'info'}
+            valueText={(
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-1)' }}>{p}%</div>
-                <div style={{ fontSize: 10, color: 'var(--color-text-3)' }}>闭环完成率</div>
+                <div style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--color-text-1)' }}>{offsetRate}%</div>
+                <div style={{ fontSize: 'var(--ds-text-micro)', color: 'var(--color-text-3)' }}>闭环完成率</div>
               </div>
             )}
           />
-          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-2)', textAlign: 'center' }}>
+          <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-2)', textAlign: 'center' }}>
             <span>资金闭环完成率</span>
-            <Tag size="small" color={offsetRate === 100 ? 'green' : 'arcoblue'} style={{ marginLeft: 4 }}>
-              {offsetRate === 100 ? '已完全清账' : '核销中'}
-            </Tag>
+            <span style={{ marginLeft: 4, display: 'inline-flex' }}>
+              <StatusTag
+                meta={{ label: offsetRate === 100 ? '已完全清账' : '核销中', tone: offsetRate === 100 ? 'success' : 'info' }}
+              />
+            </span>
           </div>
         </div>
 
         <div className="trip-loan-bullet-container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <IconStorage style={{ color: '#165dff' }} /> 借款总额
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-1)', marginTop: 4 }}>
-                ¥{totalLoanAmount.toLocaleString()}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
-                共计 {loans.length} 笔借款支出
-              </div>
-            </div>
+            <MetricCard
+              label={<><IconStorage style={{ color: 'rgb(var(--primary-6))' }} />借款总额</>}
+              value={<MoneyText value={totalLoanAmount} />}
+              detail={`共计 ${loans.length} 笔借款支出`}
+            />
 
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <IconCheckCircle style={{ color: '#00b42a' }} /> 已冲抵核销金额
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#00b42a', marginTop: 4 }}>
-                ¥{totalOffsetAmount.toLocaleString()}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
-                报销单据自动对冲
-              </div>
-            </div>
+            <MetricCard
+              label={<><IconCheckCircle style={{ color: 'var(--ds-tone-success-fg)' }} />已冲抵核销金额</>}
+              value={<MoneyText value={totalOffsetAmount} tone="success" />}
+              detail="报销单据自动对冲"
+            />
 
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <IconClockCircle style={{ color: totalRemaining > 0 ? '#ff7d00' : '#86909c' }} /> 剩余待还/在途借款
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: totalRemaining > 0 ? '#ff7d00' : 'var(--color-text-1)', marginTop: 4 }}>
-                ¥{totalRemaining.toLocaleString()}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-3)', marginTop: 2 }}>
-                {totalRemaining > 0 ? '差旅归来 5 日内核销' : '无未清待还借款'}
-              </div>
-            </div>
+            <MetricCard
+              label={<><IconClockCircle style={{ color: totalRemaining > 0 ? 'var(--ds-tone-warning-fg)' : 'var(--color-text-3)' }} />剩余待还/在途借款</>}
+              value={<span style={{ color: totalRemaining > 0 ? 'var(--ds-tone-warning-fg)' : 'var(--color-text-1)' }}><MoneyText value={totalRemaining} /></span>}
+              detail={totalRemaining > 0 ? '差旅归来 5 日内核销' : '无未清待还借款'}
+            />
           </div>
 
           {/* 核销对冲进度横向对比条 */}
           <div style={{ marginTop: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', marginBottom: 4 }}>
               <span style={{ color: 'var(--color-text-3)' }}>已核销冲抵进度</span>
-              <span style={{ fontWeight: 600 }}>{totalOffsetAmount.toLocaleString()} / {totalLoanAmount.toLocaleString()} ({offsetRate}%)</span>
+              <span style={{ fontWeight: 600 }}><MoneyText value={totalOffsetAmount} /> / <MoneyText value={totalLoanAmount} /> ({offsetRate}%)</span>
             </div>
-            <Progress
-              percent={offsetRate}
-              size="small"
-              status={offsetRate === 100 ? 'success' : 'normal'}
-              color={offsetRate === 100 ? '#00b42a' : '#165dff'}
-            />
+            <ProgressBar percent={offsetRate} size="small" tone={offsetRate === 100 ? 'success' : 'info'} />
           </div>
         </div>
       </div>
@@ -265,9 +244,9 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
       <div className="trip-section-toolbar">
         <div className="trip-section-toolbar__title">
           <span>借款记录明细</span>
-          <Tag size="small" color="gray">
+          <StatusTag size="small" tone="neutral">
             共 {loans.length} 笔记录
-          </Tag>
+          </StatusTag>
         </div>
 
         <div className="trip-section-toolbar__actions">
@@ -279,14 +258,15 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
 
       {/* 主体表格视图 */}
       <div style={{ marginTop: 8 }}>
-        <Table
+        <DataTable
           columns={columns}
           data={loans}
           loading={loading}
           rowKey="id"
+          size="default"
           scroll={{ x: 900 }}
           pagination={false}
-          noDataElement="暂无借款记录"
+          emptyDescription="暂无借款记录"
         />
 
         {/* 冲抵记录 */}
@@ -303,18 +283,18 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: 12,
-                      background: '#f7f8fa',
-                      borderRadius: 4,
+                      background: 'var(--color-fill-2)',
+                      borderRadius: 'var(--radius-xs)',
                     }}
                   >
                     <Space>
-                      <Tag>{offset.loanNo}</Tag>
-                      <IconRight style={{ color: '#86909c' }} />
-                      <Tag>{offset.reimbursementId}</Tag>
+                      <StatusTag>{offset.loanNo}</StatusTag>
+                      <IconRight style={{ color: 'var(--color-text-3)' }} />
+                      <StatusTag>{offset.reimbursementId}</StatusTag>
                     </Space>
                     <Space>
-                      <Text type="secondary">{offset.offsetDate}</Text>
-                      <Text style={{ fontWeight: 500, color: '#00b42a' }}>¥{offset.offsetAmount.toLocaleString()}</Text>
+                      <Text type="secondary"><DateText value={offset.offsetDate} /></Text>
+                      <Text style={{ fontWeight: 500, color: 'var(--ds-tone-success-fg)' }}><MoneyText value={offset.offsetAmount} tone="success" /></Text>
                     </Space>
                   </div>
                 ))
@@ -333,11 +313,17 @@ export function LoanTab({ trip, onUpdate }: LoanTabProps) {
         </Form>
       </Modal>
       <Drawer title="借款详情与审批流" width={520} visible={Boolean(selectedLoan)} onCancel={() => setSelectedLoan(null)} footer={null}>
-        {selectedLoan && <><Descriptions column={1} data={[
-          { label: '借款单号', value: selectedLoan.loanNo }, { label: '申请人', value: selectedLoan.applicantName },
-          { label: '借款金额', value: `¥${selectedLoan.amount.toLocaleString()}` }, { label: '借款理由', value: selectedLoan.reason },
-          { label: '期望打款日', value: selectedLoan.expectedPayDate || '-' }, { label: '剩余未冲抵', value: `¥${selectedLoan.remainingAmount.toLocaleString()}` },
-        ]} /><Divider /><Timeline><Timeline.Item dotColor="green">创建借款单 · {selectedLoan.createDate}</Timeline.Item><Timeline.Item dotColor={selectedLoan.status === 'draft' ? 'gray' : 'green'}>{statusConfig[selectedLoan.status].text}</Timeline.Item></Timeline></>}
+        {selectedLoan && <><DescriptionsCard
+  columns={1}
+  items={[
+  { key: '借款单号', label: '借款单号', value: selectedLoan.loanNo },
+  { key: '申请人', label: '申请人', value: selectedLoan.applicantName },
+  { key: '借款金额', label: '借款金额', value: <MoneyText value={selectedLoan.amount} /> },
+  { key: '借款理由', label: '借款理由', value: selectedLoan.reason },
+  { key: '期望打款日', label: '期望打款日', value: <DateText value={selectedLoan.expectedPayDate} placeholder="-" /> },
+  { key: '剩余未冲抵', label: '剩余未冲抵', value: <MoneyText value={selectedLoan.remainingAmount} /> },
+]}
+/><Divider /><Timeline><Timeline.Item dotColor="green">创建借款单 · <DateText value={selectedLoan.createDate} /></Timeline.Item><Timeline.Item dotColor={selectedLoan.status === 'draft' ? 'gray' : 'green'}>{LOAN_STATUS[selectedLoan.status].label}</Timeline.Item></Timeline></>}
       </Drawer>
     </div>
   );

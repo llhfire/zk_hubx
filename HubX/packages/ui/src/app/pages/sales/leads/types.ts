@@ -4,6 +4,8 @@
 
 import type { ChannelKey } from '../lead-dispatch/channelDictionary';
 import { CHANNEL_LIST, CHANNEL_LABEL } from '../lead-dispatch/channelDictionary';
+/** API 会直接复用本文件的纯类型与映射，保持共享域文件不依赖 React/UI 入口。 */
+type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'purple' | 'cyan' | 'pink' | 'gold';
 
 // --- 线索类型（分类维度，与销售漏斗状态正交） ---
 export type ClueType = 'public' | 'assigned' | 'trash' | 'hightech';
@@ -120,40 +122,24 @@ export function getSalesStatusIndex(status: string): number {
   return SALES_STATUS_STEPS.indexOf(status as LeadSalesStatus);
 }
 
-export const SALES_STATUS_COLOR: Record<LeadSalesStatus, string> = {
-  未联系: 'gray',
-  未接通: 'warning',
-  初步沟通: 'processing',
-  需求调研: 'processing',
-  方案报价: 'processing',
-  合同洽谈: 'success',
-  已签单: 'success',
-  已终止: 'error',
-};
-
 // --- 客户等级 ---
 export type CustomerLevel = 'S' | 'A' | 'B' | 'C';
 
 export const CUSTOMER_LEVEL_LIST: CustomerLevel[] = ['S', 'A', 'B', 'C'];
 
 // 色彩降噪：S级用绿色系（高价值），其余中性
-export const CUSTOMER_LEVEL_COLOR: Record<CustomerLevel, string> = {
-  S: 'green',
-  A: 'blue',
-  B: 'gray',
-  C: 'gray',
-};
+// 等级 → 语义色的唯一事实源在 `@/design-system` 的 GRADE_TONE（渲染走 <GradeTag />）。
 
 // --- 意向等级（新增「无意向」） ---
 export type IntentionLevel = '高' | '中' | '低' | '无意向';
 
 export const INTENTION_LEVEL_LIST: IntentionLevel[] = ['高', '中', '低', '无意向'];
 
-export const INTENTION_LEVEL_COLOR: Record<IntentionLevel, string> = {
-  高: 'red',
-  中: 'orange',
-  低: 'blue',
-  无意向: 'gray',
+export const INTENTION_LEVEL_TONE: Record<IntentionLevel, StatusTone> = {
+  高: 'danger',
+  中: 'warning',
+  低: 'info',
+  无意向: 'neutral',
 };
 
 // --- 线索来源（数据字典维护，英文 key；事实源：lead-dispatch/channelDictionary.ts） ---
@@ -163,13 +149,21 @@ export const LEAD_SOURCE_LIST: LeadSource[] = CHANNEL_LIST;
 
 export const LEAD_SOURCE_LABEL: Record<LeadSource, string> = CHANNEL_LABEL;
 
-// 色彩降噪：来源统一用边框样式（灰边黑字，清晰可读）
-export const LEAD_SOURCE_COLOR: Record<LeadSource, string> = {
-  xiaohongshu: 'gray',
-  baidu: 'gray',
-  douyin: 'gray',
-  wechat: 'gray',
-  website: 'gray',
+// 色彩降噪：来源不承载状态语义，一律中性色，靠文案区分
+export const LEAD_SOURCE_TONE: Record<LeadSource, StatusTone> = {
+  xiaohongshu: 'neutral',
+  baidu: 'neutral',
+  douyin: 'neutral',
+  wechat: 'neutral',
+  website: 'neutral',
+};
+
+/** 线索 SLA 状态的唯一语义色映射，列表页只消费，不在页面内重复声明。 */
+export const SLA_STATUS_TONE: Record<string, StatusTone> = {
+  normal: 'success',
+  warning: 'warning',
+  overdue: 'danger',
+  contacted: 'success',
 };
 
 // --- 售前群类型 ---

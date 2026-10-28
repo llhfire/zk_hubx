@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import {
-  Card,
   Tabs,
-  Table,
   Button,
   Space,
   Modal,
@@ -12,15 +10,35 @@ import {
   TreeSelect,
   Message,
   Popconfirm,
-  Tag,
   Tooltip,
-} from '@arco-design/web-react';
-import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-react/icon';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+} from '@/design-system';
+import { IconPlus, IconEdit, IconDelete } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionTabs,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import './systemConfigConsistency.css';
 
 const TabPane = Tabs.TabPane;
 const FormItem = Form.Item;
+
+const ORGANIZATION_STATUS: StatusMap<string> = {
+  启用: { label: '启用', tone: 'success' },
+  禁用: { label: '禁用', tone: 'danger' },
+};
+
+const EMPLOYEE_STATUS: StatusMap<string> = {
+  在职: { label: '在职', tone: 'success' },
+  离职: { label: '离职', tone: 'neutral' },
+};
 
 // 模拟部门树形数据
 const departmentTree = [
@@ -147,9 +165,7 @@ export function Organization() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (status: string) => (
-        <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>
-      ),
+      render: (status: string) => <StatusTag meta={resolveStatus(ORGANIZATION_STATUS, status)} />,
     },
     {
       title: '操作',
@@ -190,11 +206,9 @@ export function Organization() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (status: string) => (
-        <Tag color={status === '在职' ? 'green' : 'gray'}>{status}</Tag>
-      ),
+      render: (status: string) => <StatusTag meta={resolveStatus(EMPLOYEE_STATUS, status)} />,
     },
-    { title: '入职日期', dataIndex: 'hireDate' },
+    { title: '入职日期', dataIndex: 'hireDate', render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       render: (_: any, record: any) => (
@@ -287,30 +301,48 @@ export function Organization() {
         { key: 'records', label: '人员样本', value: `${mockEmployees.length} 人`, detail: '当前 α 组织台账' },
       ]} />
 
-      <Card bordered={false} title="组织与人员" className="system-config-card">
-        <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          <TabPane key="department" title="部门管理">
-            <div className="system-config-result-summary">共 {mockDepartments.length} 个部门节点</div>
-            <Table
-              columns={departmentColumns}
-              data={mockDepartments}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 900 }}
-            />
-          </TabPane>
-          <TabPane key="employee" title="人员管理">
-            <div className="system-config-result-summary">共 {mockEmployees.length} 名组织人员</div>
-            <Table
-              columns={employeeColumns}
-              data={mockEmployees}
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-              scroll={{ x: 1050 }}
-            />
-          </TabPane>
-        </Tabs>
-      </Card>
+      <SectionCard title="组织与人员" className="system-config-card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'department',
+              label: "部门管理",
+              content: (
+                <>
+                      <div className="system-config-result-summary">共 {mockDepartments.length} 个部门节点</div>
+                      <DataTable
+                        columns={departmentColumns}
+                        data={mockDepartments}
+                        rowKey="id"
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 900 }}
+                      />
+                    
+                </>
+              ),
+            },
+            {
+              key: 'employee',
+              label: "人员管理",
+              content: (
+                <>
+                      <div className="system-config-result-summary">共 {mockEmployees.length} 名组织人员</div>
+                      <DataTable
+                        columns={employeeColumns}
+                        data={mockEmployees}
+                        rowKey="id"
+                        pagination={{ pageSize: 10 }}
+                        scroll={{ x: 1050 }}
+                      />
+                    
+                </>
+              ),
+            },
+          ]}
+        />
+      </SectionCard>
 
       {/* 部门编辑弹窗 */}
       <Modal

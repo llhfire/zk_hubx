@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import {
-  Button, Card, Checkbox, Dropdown, Empty, Input, Menu, Message, Modal, Popover, Space, Table, Tag, Typography,
-} from '@arco-design/web-react';
+  Button, Dropdown, Input, Menu, Message, Modal, Popover, Space, Tag, Typography,
+} from '@/design-system';
+import { EmptyState, SectionCard, StatusTag } from '@/design-system';
 import {
   IconPlusCircle, IconMinusCircle, IconImport, IconSend, IconDown, IconApps, IconDelete, IconDownload,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useQuotation } from '../QuotationContext';
 import { validateFeatureList } from '../quoteFlow';
 import { PLATFORM_OPTIONS } from '../types';
 import type { EndpointConfig, FeatureModule, FeatureSubFeature, Quote } from '../types';
 import { FeatureListUpload } from '../components/FeatureListUpload';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export interface StageProps {
   quote: Quote;
@@ -260,7 +261,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
             <div style={{ fontWeight: 600, marginBottom: 4 }}>{ep.name}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {platformNames.map((name: string) => (
-                <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content' }}>{name}</Tag>
+                <StatusTag key={name} size="small" tone="info" style={{ width: 'fit-content' }}>{name}</StatusTag>
               ))}
             </div>
           </div>
@@ -316,7 +317,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
           <Input.TextArea
             id={`desc-${record.id}`}
             autoSize={{ minRows: 1, maxRows: 3 }}
-            style={{ fontSize: 13 }}
+            style={{ fontSize: 'var(--ds-text-dense)' }}
             value={desc}
             onChange={(v) => updateField(record.moduleId, record.id, 'description', v)}
             placeholder="详细交互逻辑与范围边界"
@@ -410,8 +411,8 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
 
   return (
     <>
-      <Card
-        title={<Title heading={6} style={{ margin: 0 }}>数据流转 · 工作台一 · 在线功能清单</Title>}
+      <SectionCard
+        title="数据流转 · 工作台一 · 在线功能清单"
       extra={
         <Space>
           {!readonly && <Button icon={<IconImport />} onClick={() => setImportVisible(true)}>导入</Button>}
@@ -439,7 +440,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
             }
             disabled={endpointConfigs.length === 0}
           >
-            <Button icon={<IconPlusCircle />}>新增一级模块 <IconDown style={{ fontSize: 12 }} /></Button>
+            <Button icon={<IconPlusCircle />}>新增一级模块 <IconDown style={{ fontSize: 'var(--text-xs)' }} /></Button>
           </Dropdown>
           <Dropdown
             trigger="click"
@@ -470,16 +471,16 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
             position="bl"
             disabled={featureList.length === 0}
           >
-            <Button icon={<IconPlusCircle />}>新增子功能 <IconDown style={{ fontSize: 12 }} /></Button>
+            <Button icon={<IconPlusCircle />}>新增子功能 <IconDown style={{ fontSize: 'var(--text-xs)' }} /></Button>
           </Dropdown>
         </Space>
       )}
 
       {rows.length === 0 || (rows.length === 1 && rows[0].empty) ? (
-        <Empty description="暂无功能清单，请新增模块" />
+        <EmptyState description="暂无功能清单，请新增模块" />
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
             <thead>
               <tr style={{ background: 'var(--color-fill-1)' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--color-border-2)', fontWeight: 500, width: 56 }}>序号</th>
@@ -533,7 +534,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                           )}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {platformNames.map((name: string) => (
-                              <Tag key={name} size="small" color="arcoblue" style={{ width: 'fit-content' }}>{name}</Tag>
+                              <StatusTag key={name} size="small" tone="info" style={{ width: 'fit-content' }}>{name}</StatusTag>
                             ))}
                           </div>
                           {!readonly && (
@@ -543,10 +544,10 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                               content={
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 200 }}>
                                   {PLATFORM_OPTIONS.map((p) => (
-                                    <Tag
+                                    <StatusTag
                                       key={p.id}
                                       size="small"
-                                      color={ep?.platforms.includes(p.id) ? 'arcoblue' : undefined}
+                                      tone={ep?.platforms.includes(p.id) ? 'info' : 'neutral'}
                                       style={{
                                         cursor: 'pointer',
                                         opacity: ep?.platforms.includes(p.id) ? 1 : 0.5,
@@ -556,7 +557,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                                       onClick={() => ep && toggleEndpointPlatform(ep.id, p.id)}
                                     >
                                       {p.name}
-                                    </Tag>
+                                    </StatusTag>
                                   ))}
                                 </div>
                               }
@@ -607,7 +608,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                           <Input.TextArea
                             id={`desc-${row.id}`}
                             autoSize={{ minRows: 1, maxRows: 3 }}
-                            style={{ fontSize: 13 }}
+                            style={{ fontSize: 'var(--ds-text-dense)' }}
                             value={row.description}
                             onChange={(v) => updateField(row.moduleId, row.id, 'description', v)}
                             placeholder="详细交互逻辑与范围边界"
@@ -656,7 +657,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
         .module-name-cell:hover .module-add-btn { opacity: 1; }
         .sub-feature-cell:hover .sub-feature-add-btn { opacity: 1; }
       `}</style>
-    </Card>
+    </SectionCard>
 
     {/* 页面底部浮动栏：一级/二级计数 + 提交工时 */}
     <div
@@ -672,8 +673,8 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
         padding: '10px 16px',
         background: 'var(--color-bg-2)',
         border: '1px solid var(--color-border-2)',
-        borderRadius: 8,
-        boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.06)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--ds-shadow-up)',
       }}
     >
       <Space size={20}>
@@ -686,7 +687,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
                 <Menu.SubMenu key={m.id} title={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minWidth: 120 }}>
                     <span>{m.name || '未命名模块'}</span>
-                    <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>{m.subFeatures.length}</span>
+                    <span style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-xs)' }}>{m.subFeatures.length}</span>
                   </div>
                 }>
                   {m.subFeatures.length === 0 ? (
@@ -713,8 +714,8 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
             </Menu>
           }
         >
-          <Button style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <IconApps style={{ fontSize: 18 }} />
+          <Button style={{ fontSize: 'var(--ds-text-dense)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconApps style={{ fontSize: 'var(--text-lg)' }} />
             <span><Text bold>{endpointConfigs.length}</Text> 端</span>
             <span>模块 <Text bold>{featureList.length}</Text> 个</span>
             <span>功能 <Text bold>{subCount}</Text> 项</span>
@@ -723,7 +724,7 @@ export function Stage1FeatureList({ quote, readonly }: StageProps) {
       </Space>
       {!readonly && (
         <Space>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>
             提交后功能清单锁定，技术评估阶段将基于此生成人天评估表
           </Text>
           <Button type="primary" icon={<IconSend />} disabled={leadFrozen} onClick={handleSubmit}>校验并提交工时评估</Button>

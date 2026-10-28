@@ -9,9 +9,18 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Badge, Button, Card, Empty, Input, Select, Spin, Tag, Typography } from '@arco-design/web-react';
-import { IconSearch, IconPlus, IconCalendar, IconUser, IconFile } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid, StatusTag, type StatusMap } from '@/design-system';
+import { AsyncState, Badge, Button, Input, Select, Typography } from '@/design-system';
+import { IconSearch, IconPlus, IconCalendar, IconUser, IconFile } from '@/design-system';
+import {
+  EmptyState,
+  FilterBar,
+  PageHeader,
+  PageShell,
+  MetricGrid,
+  StatusTag,
+  type StatusMap,
+  SectionCard,
+} from '@/design-system';
 import { useSmartMeeting } from './SmartMeetingContext';
 import { summarizeMinutes, filterMinutes, monthDeposited, type MinuteListQuery } from './boardQueries';
 import { MOCK_USERS } from './mockData';
@@ -77,7 +86,7 @@ export function SmartMeetingListPage() {
     return (
       <PageShell className="smart-meeting-list">
         <PageHeader title="智能会议" description="集中沉淀会议纪要、确认记录与行动事项。" />
-        <Card className="smart-meeting-list__loading"><Spin size={40} /></Card>
+        <SectionCard className="smart-meeting-list__loading"><AsyncState status="loading" /></SectionCard>
       </PageShell>
     );
   }
@@ -108,7 +117,7 @@ export function SmartMeetingListPage() {
         ]}
       />
 
-      <Card className="smart-meeting-list__content-card">
+      <SectionCard className="smart-meeting-list__content-card">
         <FilterBar
           actions={hasFilters ? (
             <Button type="text" onClick={() => { setKeyword(''); setStatusFilter([]); }}>重置筛选</Button>
@@ -145,14 +154,14 @@ export function SmartMeetingListPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="smart-meeting-list__empty">
-            <Empty description={hasFilters ? '没有符合当前条件的纪要' : '暂无会议纪要'} />
-            {hasFilters ? (
+          <EmptyState
+            description={hasFilters ? '没有符合当前条件的纪要' : '暂无会议纪要'}
+            action={hasFilters ? (
               <Button onClick={() => { setKeyword(''); setStatusFilter([]); }}>清除筛选</Button>
             ) : (
               <Button type="primary" icon={<IconPlus />} onClick={() => navigate('/smart-meetings/new')}>新建第一篇纪要</Button>
             )}
-          </div>
+          />
         ) : (
           <div className="smart-meeting-list__items">
             {filtered.map((summary) => (
@@ -190,7 +199,7 @@ export function SmartMeetingListPage() {
                     <div className="smart-meeting-list__refs">
                       <IconFile />
                       {summary.refChips.map((ref, index) => (
-                        <Tag key={`${ref.kind}-${ref.id}-${index}`} size="small" color="arcoblue">{ref.displaySnapshot}</Tag>
+                        <StatusTag key={`${ref.kind}-${ref.id}-${index}`} size="small" tone="info">{ref.displaySnapshot}</StatusTag>
                       ))}
                     </div>
                   )}
@@ -204,7 +213,7 @@ export function SmartMeetingListPage() {
             ))}
           </div>
         )}
-      </Card>
+      </SectionCard>
     </PageShell>
   );
 }

@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Button, Popover, Tag, Typography } from '@arco-design/web-react';
-import { IconCheck, IconClockCircle, IconDown, IconInfoCircle, IconRight } from '@arco-design/web-react/icon';
+import { Button, Popover, Typography } from '@/design-system';
+import { IconCheck, IconClockCircle, IconDown, IconInfoCircle, IconRight } from '@/design-system';
 import type { TripStageCheck, TripStageSummary } from '../tripStageSummary';
 import type { TripMainTabKey, TripSideTabKey } from '../tripDetailMetrics';
+import { StatusTag } from '@/design-system';
 
 const { Text } = Typography;
 
@@ -58,7 +59,7 @@ export function TripStagePopover({ children, summary, onNavigate }: TripStagePop
           <div className="trip-stage-popover__header">
             <span className="trip-stage-popover__title">{summary.label}</span>
             {summary.statusText && (
-              <Tag size="small" color="arcoblue">{summary.statusText}</Tag>
+              <StatusTag tone="info">{summary.statusText}</StatusTag>
             )}
           </div>
 

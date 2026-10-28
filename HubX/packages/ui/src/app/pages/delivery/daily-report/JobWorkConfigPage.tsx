@@ -1,21 +1,5 @@
 import { useState } from 'react';
-import {
-  Button,
-  Empty,
-  Input,
-  InputNumber,
-  Message,
-  Modal,
-  Popconfirm,
-  Space,
-  Switch,
-  Table,
-  Tag,
-  Tabs,
-  Tooltip,
-  Tree,
-  Typography,
-} from '@arco-design/web-react';
+import { Button, Input, InputNumber, Message, Modal, Popconfirm, SectionTabs, Space, Switch, Tabs, Tooltip, Tree, Typography } from '@/design-system';
 import {
   IconDelete,
   IconEdit,
@@ -24,7 +8,7 @@ import {
   IconSave,
   IconUp,
   IconDown,
-} from '@arco-design/web-react/icon';
+} from '@/design-system';
 import { useJobWorkConfig } from './JobWorkConfigContext';
 import {
   DAILY_PROJECT_CATEGORIES,
@@ -34,7 +18,7 @@ import {
   type DepartmentRoutineConfig,
   findJobPosition,
 } from './jobWorkConfigData';
-import { PageShell } from '@/design-system';
+import { DataTable, EmptyState, PageShell, StatusTag } from '@/design-system';
 import './JobWorkConfigPage.css';
 
 const { Title, Text } = Typography;
@@ -283,164 +267,181 @@ export function JobWorkConfigPage() {
       <div className="job-work-config-header">
       </div>
 
-      <Tabs defaultActiveTab="work-nature" className="job-work-config-tabs">
-        <TabPane key="work-nature" title="岗位工作性质">
-          <div className="job-work-config-workspace">
-        <section className="job-work-config-tree-panel">
-          <div className="job-work-config-column-header">
-            <span>部门与岗位</span>
-          </div>
-          <div className="job-work-config-tree">
-            <Tree
-              blockNode
-              showLine
-              defaultExpandedKeys={DEPARTMENT_TREE_KEYS}
-              selectedKeys={[`position:${selectedPosition.id}`]}
-              treeData={JOB_TREE_DATA}
-              actionOnClick={['select', 'expand']}
-              onSelect={selectTreeNode}
-            />
-          </div>
-        </section>
-
-        <section className="job-work-config-editor">
-          <div className="job-work-config-editor-header">
-            <div>
-              <Space size={8}>
-                <Title heading={6} style={{ margin: 0 }}>{selectedPosition.name}</Title>
-                <Tag>{selectedDepartment.name}</Tag>
-              </Space>
-              <div style={{ marginTop: 6 }}>
-                <Text type="secondary">工作性质 · {workNatures.length} 项</Text>
-              </div>
-            </div>
-            <Popconfirm
-              title={`确认恢复${selectedPosition.name}的默认工作性质？`}
-              onOk={restoreDefaults}
-            >
-              <Button icon={<IconRefresh />}>恢复默认</Button>
-            </Popconfirm>
-          </div>
-
-          <div className="job-work-config-add-row">
-            <Input
-              value={newWorkNature}
-              onChange={setNewWorkNature}
-              onPressEnter={addWorkNature}
-              maxLength={20}
-              allowClear
-              placeholder="输入新的工作性质"
-            />
-            <Button type="primary" icon={<IconPlus />} onClick={addWorkNature}>新增</Button>
-          </div>
-
-          {workNatures.length ? (
-            <div className="job-work-config-nature-list">
-              {workNatures.map((item, index) => (
-                <div className="job-work-config-nature-row" key={`${item}-${index}`}>
-                  <span className="job-work-config-index">{String(index + 1).padStart(2, '0')}</span>
-                  {editingIndex === index ? (
-                    <Input
-                      value={editingValue}
-                      onChange={setEditingValue}
-                      onPressEnter={saveEditing}
-                      maxLength={20}
-                      autoFocus
-                    />
-                  ) : (
-                    <Text>{item}</Text>
-                  )}
-                  <div className="job-work-config-actions">
-                    {editingIndex === index ? (
-                      <>
-                        <Tooltip content="保存">
-                          <Button type="text" icon={<IconSave />} onClick={saveEditing} />
-                        </Tooltip>
-                        <Button type="text" onClick={() => setEditingIndex(null)}>取消</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Tooltip content="编辑">
-                          <Button type="text" icon={<IconEdit />} onClick={() => startEditing(index)} />
-                        </Tooltip>
-                        <Tooltip content="上移">
-                          <Button
-                            type="text"
-                            icon={<IconUp />}
-                            disabled={index === 0}
-                            onClick={() => moveWorkNature(index, -1)}
-                          />
-                        </Tooltip>
-                        <Tooltip content="下移">
-                          <Button
-                            type="text"
-                            icon={<IconDown />}
-                            disabled={index === workNatures.length - 1}
-                            onClick={() => moveWorkNature(index, 1)}
-                          />
-                        </Tooltip>
-                        <Popconfirm title={`确认删除“${item}”？`} onOk={() => deleteWorkNature(index)}>
-                          <Tooltip content="删除">
-                            <Button type="text" status="danger" icon={<IconDelete />} />
-                          </Tooltip>
-                        </Popconfirm>
-                      </>
-                    )}
+      <SectionTabs
+        defaultActiveKey={"work-nature"}
+        className={"job-work-config-tabs"}
+        items={[
+          {
+            key: 'work-nature',
+            label: "岗位工作性质",
+            content: (
+              <>
+                  <div className="job-work-config-workspace">
+                <section className="job-work-config-tree-panel">
+                  <div className="job-work-config-column-header">
+                    <span>部门与岗位</span>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="job-work-config-empty">
-              <Empty description="暂无工作性质" />
-            </div>
-          )}
-            </section>
-          </div>
-        </TabPane>
-
-        <TabPane key="department-routine" title="日报项目配置">
-          <div className="job-work-config-workspace">
-            <section className="job-work-config-tree-panel">
-              <div className="job-work-config-column-header">
-                <span>业务类型</span>
-              </div>
-              <div className="job-work-config-tree">
-                <Tree
-                  blockNode
-                  selectedKeys={[`daily-project:${selectedProjectCategory}`]}
-                  treeData={DAILY_PROJECT_TREE_DATA}
-                  actionOnClick={['select']}
-                  onSelect={selectProjectCategory}
-                />
-              </div>
-            </section>
-
-            <section className="job-work-config-editor">
-              <div className="job-work-config-editor-header">
-                <div>
-                  <Space size={8}>
-                    <Title heading={6} style={{ margin: 0 }}>{selectedProjectCategoryName}</Title>
-                    <Tag>{departmentRoutines.length} 项项目</Tag>
-                  </Space>
-                </div>
-                <Button type="primary" icon={<IconPlus />} onClick={openAddRoutine}>新增项目</Button>
-              </div>
-
-              <div className="job-work-config-routine-list">
-                <Table
-                  columns={routineColumns}
-                  data={departmentRoutines}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                  noDataElement={<Empty description={`暂无${selectedProjectCategoryName}项目`} />}
-                />
-              </div>
-            </section>
-          </div>
-        </TabPane>
-      </Tabs>
+                  <div className="job-work-config-tree">
+                    <Tree
+                      blockNode
+                      showLine
+                      defaultExpandedKeys={DEPARTMENT_TREE_KEYS}
+                      selectedKeys={[`position:${selectedPosition.id}`]}
+                      treeData={JOB_TREE_DATA}
+                      actionOnClick={['select', 'expand']}
+                      onSelect={selectTreeNode}
+                    />
+                  </div>
+                </section>
+        
+                <section className="job-work-config-editor">
+                  <div className="job-work-config-editor-header">
+                    <div>
+                      <Space size={8}>
+                        <Title heading={6} style={{ margin: 0 }}>{selectedPosition.name}</Title>
+                        <StatusTag>{selectedDepartment.name}</StatusTag>
+                      </Space>
+                      <div style={{ marginTop: 6 }}>
+                        <Text type="secondary">工作性质 · {workNatures.length} 项</Text>
+                      </div>
+                    </div>
+                    <Popconfirm
+                      title={`确认恢复${selectedPosition.name}的默认工作性质？`}
+                      onOk={restoreDefaults}
+                    >
+                      <Button icon={<IconRefresh />}>恢复默认</Button>
+                    </Popconfirm>
+                  </div>
+        
+                  <div className="job-work-config-add-row">
+                    <Input
+                      value={newWorkNature}
+                      onChange={setNewWorkNature}
+                      onPressEnter={addWorkNature}
+                      maxLength={20}
+                      allowClear
+                      placeholder="输入新的工作性质"
+                    />
+                    <Button type="primary" icon={<IconPlus />} onClick={addWorkNature}>新增</Button>
+                  </div>
+        
+                  {workNatures.length ? (
+                    <div className="job-work-config-nature-list">
+                      {workNatures.map((item, index) => (
+                        <div className="job-work-config-nature-row" key={`${item}-${index}`}>
+                          <span className="job-work-config-index">{String(index + 1).padStart(2, '0')}</span>
+                          {editingIndex === index ? (
+                            <Input
+                              value={editingValue}
+                              onChange={setEditingValue}
+                              onPressEnter={saveEditing}
+                              maxLength={20}
+                              autoFocus
+                            />
+                          ) : (
+                            <Text>{item}</Text>
+                          )}
+                          <div className="job-work-config-actions">
+                            {editingIndex === index ? (
+                              <>
+                                <Tooltip content="保存">
+                                  <Button type="text" icon={<IconSave />} onClick={saveEditing} />
+                                </Tooltip>
+                                <Button type="text" onClick={() => setEditingIndex(null)}>取消</Button>
+                              </>
+                            ) : (
+                              <>
+                                <Tooltip content="编辑">
+                                  <Button type="text" icon={<IconEdit />} onClick={() => startEditing(index)} />
+                                </Tooltip>
+                                <Tooltip content="上移">
+                                  <Button
+                                    type="text"
+                                    icon={<IconUp />}
+                                    disabled={index === 0}
+                                    onClick={() => moveWorkNature(index, -1)}
+                                  />
+                                </Tooltip>
+                                <Tooltip content="下移">
+                                  <Button
+                                    type="text"
+                                    icon={<IconDown />}
+                                    disabled={index === workNatures.length - 1}
+                                    onClick={() => moveWorkNature(index, 1)}
+                                  />
+                                </Tooltip>
+                                <Popconfirm title={`确认删除“${item}”？`} onOk={() => deleteWorkNature(index)}>
+                                  <Tooltip content="删除">
+                                    <Button type="text" status="danger" icon={<IconDelete />} />
+                                  </Tooltip>
+                                </Popconfirm>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="job-work-config-empty">
+                      <EmptyState description="暂无工作性质" />
+                    </div>
+                  )}
+                    </section>
+                  </div>
+                
+              </>
+            ),
+          },
+          {
+            key: 'department-routine',
+            label: "日报项目配置",
+            content: (
+              <>
+                  <div className="job-work-config-workspace">
+                    <section className="job-work-config-tree-panel">
+                      <div className="job-work-config-column-header">
+                        <span>业务类型</span>
+                      </div>
+                      <div className="job-work-config-tree">
+                        <Tree
+                          blockNode
+                          selectedKeys={[`daily-project:${selectedProjectCategory}`]}
+                          treeData={DAILY_PROJECT_TREE_DATA}
+                          actionOnClick={['select']}
+                          onSelect={selectProjectCategory}
+                        />
+                      </div>
+                    </section>
+        
+                    <section className="job-work-config-editor">
+                      <div className="job-work-config-editor-header">
+                        <div>
+                          <Space size={8}>
+                            <Title heading={6} style={{ margin: 0 }}>{selectedProjectCategoryName}</Title>
+                            <StatusTag>{departmentRoutines.length} 项项目</StatusTag>
+                          </Space>
+                        </div>
+                        <Button type="primary" icon={<IconPlus />} onClick={openAddRoutine}>新增项目</Button>
+                      </div>
+        
+                      <div className="job-work-config-routine-list">
+                        <DataTable
+                          columns={routineColumns}
+                          data={departmentRoutines}
+                          rowKey="id"
+                          pagination={false}
+                          size="small"
+                          emptyDescription={`暂无${selectedProjectCategoryName}项目`}
+                        />
+                      </div>
+                    </section>
+                  </div>
+                
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Modal
         title={editingRoutineId ? '编辑日报项目' : '新增日报项目'}

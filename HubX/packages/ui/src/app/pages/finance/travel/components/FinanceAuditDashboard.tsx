@@ -1,15 +1,5 @@
 import { useState } from 'react';
-import {
-  Card,
-  Tag,
-  Table,
-  Alert,
-  Button,
-  Space,
-  Typography,
-  Grid,
-  Collapse,
-} from '@arco-design/web-react';
+import { Button, Space, Typography, Grid, Collapse } from '@/design-system';
 import {
   IconCheckCircle,
   IconCloseCircle,
@@ -20,8 +10,17 @@ import {
   IconUser,
   IconLocation,
   IconClockCircle,
-} from '@arco-design/web-react/icon';
-import { MetricGrid } from '@/design-system';
+} from '@/design-system';
+import {
+  DataTable,
+  MetricGrid,
+  MoneyText,
+  StatusTag,
+  STATUS_TONE_VARS,
+  type StatusMap,
+  AlertBanner,
+  SectionCard,
+} from '@/design-system';
 import '../travelAdminConsistency.css';
 
 const { Text } = Typography;
@@ -167,27 +166,26 @@ const MOCK_AUDIT_CASES: AuditCase[] = [
   },
 ];
 
-const conclusionConfig = {
-  pass: { label: '推荐通过', color: 'green', icon: IconCheckCircle },
-  partial_deduct: { label: '部分扣减', color: 'orange', icon: IconExclamationCircle },
-  reject: { label: '建议拒绝', color: 'red', icon: IconCloseCircle },
+const AUDIT_CONCLUSION: StatusMap<AuditCase['aiConclusion']> = {
+  pass: { label: <><IconCheckCircle /> 推荐通过</>, tone: 'success' },
+  partial_deduct: { label: <><IconExclamationCircle /> 部分扣减</>, tone: 'warning' },
+  reject: { label: <><IconCloseCircle /> 建议拒绝</>, tone: 'danger' },
+};
+
+const AUDIT_ANOMALY: StatusMap<'error' | 'warning'> = {
+  error: { label: '严重', tone: 'danger' },
+  warning: { label: '警告', tone: 'warning' },
 };
 
 function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
   const [expanded, setExpanded] = useState(false);
-  const config = conclusionConfig[auditCase.aiConclusion];
-  const ConclusionIcon = config.icon;
 
   const anomalyColumns = [
     {
       title: '级别',
       dataIndex: 'type',
       width: 80,
-      render: (value: string) => (
-        <Tag color={value === 'error' ? 'red' : 'orange'} size="small">
-          {value === 'error' ? '严重' : '警告'}
-        </Tag>
-      ),
+      render: (value: 'error' | 'warning') => <StatusTag meta={AUDIT_ANOMALY[value]} />,
     },
     {
       title: '异常描述',
@@ -196,48 +194,43 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
   ];
 
   return (
-    <Card
+    <SectionCard
       style={{
-        border: auditCase.aiConclusion === 'reject' ? '1px solid #ffc9c9' :
-          auditCase.aiConclusion === 'partial_deduct' ? '1px solid #ffd591' : '1px solid #aff0b5',
+        border: `1px solid ${STATUS_TONE_VARS[
+          auditCase.aiConclusion === 'reject' ? 'danger' : auditCase.aiConclusion === 'partial_deduct' ? 'warning' : 'success'
+        ].border}`,
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Space>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#f7f8fa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <IconUser style={{ fontSize: 20, color: '#86909c' }} />
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--color-fill-1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <IconUser style={{ fontSize: 'var(--text-xl)', color: 'var(--color-text-3)' }} />
           </div>
           <div>
             <Space>
               <Text style={{ fontWeight: 500 }}>{auditCase.applicantName}</Text>
-              <Tag size="small">{auditCase.department}</Tag>
-              <Text type="secondary" style={{ fontSize: 12 }}>{auditCase.tripNo}</Text>
+              <StatusTag size="small">{auditCase.department}</StatusTag>
+              <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{auditCase.tripNo}</Text>
             </Space>
             <div style={{ marginTop: 4 }}>
               <Space size={12}>
                 <Space size={4}>
-                  <IconLocation style={{ fontSize: 12, color: '#86909c' }} />
-                  <Text type="secondary" style={{ fontSize: 12 }}>{auditCase.destination}</Text>
+                  <IconLocation style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }} />
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{auditCase.destination}</Text>
                 </Space>
                 <Space size={4}>
-                  <IconClockCircle style={{ fontSize: 12, color: '#86909c' }} />
-                  <Text type="secondary" style={{ fontSize: 12 }}>{auditCase.tripDays}天</Text>
+                  <IconClockCircle style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }} />
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}>{auditCase.tripDays}天</Text>
                 </Space>
                 <Space size={4}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>¥{auditCase.tripData.declaredTotal}</Text>
+                  <Text type="secondary" style={{ fontSize: 'var(--text-xs)' }}><MoneyText value={auditCase.tripData.declaredTotal} /></Text>
                 </Space>
               </Space>
             </div>
           </div>
         </Space>
         <Space>
-          <Tag
-            color={config.color}
-            style={{ padding: '4px 12px', fontSize: 14, fontWeight: 500 }}
-          >
-            <ConclusionIcon style={{ marginRight: 4 }} />
-            {config.label}
-          </Tag>
+          <StatusTag meta={AUDIT_CONCLUSION[auditCase.aiConclusion]} />
           <Button
             type="text"
             size="small"
@@ -247,50 +240,46 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
         </Space>
       </div>
 
-      <Alert
-        type={auditCase.aiConclusion === 'reject' ? 'error' : auditCase.aiConclusion === 'partial_deduct' ? 'warning' : 'success'}
-        content={
+      <AlertBanner tone={auditCase.aiConclusion === 'reject' ? 'danger' : auditCase.aiConclusion === 'partial_deduct' ? 'warning' : 'success'} style={{ marginBottom: 16 }}>{
           <div>
             <div style={{ fontWeight: 500, marginBottom: 4 }}>AI 审核结论</div>
             <div>{auditCase.aiSummary}</div>
             {auditCase.deductAmount && (
-              <div style={{ marginTop: 4, fontWeight: 500 }}>建议扣减金额：¥{auditCase.deductAmount}</div>
+              <div style={{ marginTop: 4, fontWeight: 500 }}>建议扣减金额：<MoneyText value={auditCase.deductAmount} /></div>
             )}
           </div>
-        }
-        style={{ marginBottom: 16 }}
-      />
+        }</AlertBanner>
 
       {expanded && (
         <div>
           <Row gutter={12} style={{ marginBottom: 16 }}>
             <Col span={8}>
-              <Card size="small">
-                <div style={{ fontSize: 12, color: '#86909c', marginBottom: 8 }}>出差申请数据</div>
-                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 12 }}>
+              <SectionCard size="small">
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 8 }}>出差申请数据</div>
+                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 'var(--text-xs)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">交通费</Text>
-                    <Text>¥{auditCase.tripData.declaredTransport}</Text>
+                    <Text><MoneyText value={auditCase.tripData.declaredTransport} /></Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">住宿费</Text>
-                    <Text>¥{auditCase.tripData.declaredAccommodation}</Text>
+                    <Text><MoneyText value={auditCase.tripData.declaredAccommodation} /></Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">餐饮费</Text>
-                    <Text>¥{auditCase.tripData.declaredMeal}</Text>
+                    <Text><MoneyText value={auditCase.tripData.declaredMeal} /></Text>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 500, borderTop: '1px solid #e5e6eb', paddingTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 500, borderTop: '1px solid var(--color-border-2)', paddingTop: 4 }}>
                     <Text>合计</Text>
-                    <Text>¥{auditCase.tripData.declaredTotal}</Text>
+                    <Text><MoneyText value={auditCase.tripData.declaredTotal} /></Text>
                   </div>
                 </Space>
-              </Card>
+              </SectionCard>
             </Col>
             <Col span={8}>
-              <Card size="small">
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>打卡记录对比</div>
-                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 12 }}>
+              <SectionCard size="small">
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 8 }}>打卡记录对比</div>
+                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 'var(--text-xs)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">应出勤</Text>
                     <Text>{auditCase.punchData.expectedDays} 天</Text>
@@ -312,58 +301,58 @@ function AuditCaseCard({ auditCase }: { auditCase: AuditCase }) {
                     </div>
                   )}
                 </Space>
-              </Card>
+              </SectionCard>
             </Col>
             <Col span={8}>
-              <Card size="small">
-                <div style={{ fontSize: 12, color: 'var(--color-text-3)', marginBottom: 8 }}>报销发票对比</div>
-                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 12 }}>
+              <SectionCard size="small">
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 8 }}>报销发票对比</div>
+                <Space direction="vertical" size={4} style={{ width: '100%', fontSize: 'var(--text-xs)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">提交发票</Text>
                     <Text>{auditCase.invoiceData.submittedCount} 张</Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">发票总额</Text>
-                    <Text>¥{auditCase.invoiceData.totalAmount}</Text>
+                    <Text><MoneyText value={auditCase.invoiceData.totalAmount} /></Text>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Text type="secondary">匹配金额</Text>
-                    <Text style={{ color: 'rgb(var(--success-6))' }}>¥{auditCase.invoiceData.matchedAmount}</Text>
+                    <Text style={{ color: 'rgb(var(--success-6))' }}><MoneyText value={auditCase.invoiceData.matchedAmount} tone="success" /></Text>
                   </div>
                   {auditCase.invoiceData.unmatchedAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgb(var(--warning-6))' }}>
                       <Text type="secondary">未匹配</Text>
-                      <Text style={{ fontWeight: 500 }}>¥{auditCase.invoiceData.unmatchedAmount}</Text>
+                      <Text style={{ fontWeight: 500 }}><MoneyText value={auditCase.invoiceData.unmatchedAmount} /></Text>
                     </div>
                   )}
                   {auditCase.invoiceData.overStandardAmount > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgb(var(--danger-6))' }}>
                       <Text type="secondary">超标金额</Text>
-                      <Text style={{ fontWeight: 500 }}>¥{auditCase.invoiceData.overStandardAmount}</Text>
+                      <Text style={{ fontWeight: 500 }}><MoneyText value={auditCase.invoiceData.overStandardAmount} tone="danger" /></Text>
                     </div>
                   )}
                 </Space>
-              </Card>
+              </SectionCard>
             </Col>
           </Row>
 
           {auditCase.anomalies.length > 0 && (
             <div>
               <Space style={{ marginBottom: 12 }}>
-                <IconExclamationCircle style={{ color: '#ff7d00' }} />
+                <IconExclamationCircle style={{ color: 'rgb(var(--warning-6))' }} />
                 <Text style={{ fontWeight: 500 }}>异常项列表（{auditCase.anomalies.length} 项）</Text>
               </Space>
-              <Table
+              <DataTable
                 columns={anomalyColumns}
                 data={auditCase.anomalies.map((a, i) => ({ ...a, key: i }))}
+                rowKey="key"
                 pagination={false}
-                size="small"
               />
             </div>
           )}
         </div>
       )}
-    </Card>
+    </SectionCard>
   );
 }
 

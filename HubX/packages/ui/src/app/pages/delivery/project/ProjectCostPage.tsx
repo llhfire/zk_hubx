@@ -1,10 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
-import { Card, Select, Tag, Typography } from '@arco-design/web-react';
+import { Select, Typography } from '@/design-system';
+import {
+  DateText,
+  EntityLink,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+} from '@/design-system';
 import { useContracts } from '../../sales/contracts/ContractsContext';
 import { initialDailyReports } from './mockData';
 import { useProjects } from './ProjectContext';
 import { ProjectCostPanel } from './ProjectCostPanel';
+import { PROJECT_STATUS_META } from './types';
 import type { ProjectTeamRow } from './ProjectDetailWorkspace';
 
 const { Title, Text } = Typography;
@@ -25,31 +34,32 @@ export function ProjectCostPage() {
   if (!project) return null;
 
   return (
-    <div className="project-cost-page">
-      <div className="project-cost-page-header">
-        <div>
-          <Text type="secondary">按项目核算人工及其他开支，分析项目预计成本、实际成本与利润。</Text>
-        </div>
-        <Select
-          value={project.id}
-          onChange={setProjectId}
-          style={{ width: 320 }}
-          showSearch
-          placeholder="请选择项目"
-        >
-          {projects.map(item => (
-            <Select.Option key={item.id} value={item.id}>{item.projectNo} · {item.name}</Select.Option>
-          ))}
-        </Select>
-      </div>
+    <PageShell className="project-cost-page">
+      <PageHeader
+        title="项目成本核算"
+        description="按项目核算人工及其他开支，分析项目预计成本、实际成本与利润。"
+        actions={(
+          <Select
+            value={project.id}
+            onChange={setProjectId}
+            style={{ width: 320 }}
+            showSearch
+            placeholder="请选择项目"
+          >
+            {projects.map(item => (
+              <Select.Option key={item.id} value={item.id}>{item.projectNo} · {item.name}</Select.Option>
+            ))}
+          </Select>
+        )}
+      />
 
-      <Card className="project-cost-page-project-card" bodyStyle={{ padding: 0 }}>
+      <SectionCard className="project-cost-page-project-card" padded={false}>
         <div className="project-cost-project-summary-main">
           <div>
             <Text type="secondary" className="project-cost-project-no">{project.projectNo}</Text>
-            <Link className="project-cost-project-link" to={`/projects/${project.id}`}>{project.name}</Link>
+            <EntityLink className="project-cost-project-link" to={`/projects/${project.id}`}>{project.name}</EntityLink>
           </div>
-          <Tag color="arcoblue">{project.status}</Tag>
+          <StatusTag meta={resolveStatus(PROJECT_STATUS_META, project.status)} />
         </div>
         <div className="project-cost-project-meta">
           <div>
@@ -59,17 +69,17 @@ export function ProjectCostPage() {
           <div>
             <Text type="secondary">关联合同</Text>
             {contract
-              ? <Link className="project-cost-contract-link" to={`/contracts/${contract.id}`}>{contract.current.contractName}</Link>
+              ? <EntityLink className="project-cost-contract-link" to={`/contracts/${contract.id}`}>{contract.current.contractName}</EntityLink>
               : <Text>未关联</Text>}
           </div>
           <div>
             <Text type="secondary">项目周期</Text>
-            <strong>{project.startDate || '-'} 至 {project.expectedEndDate || '-'}</strong>
+            <strong><DateText value={project.startDate} /> 至 <DateText value={project.expectedEndDate} /></strong>
           </div>
         </div>
-      </Card>
+      </SectionCard>
 
-      <Card>
+      <SectionCard>
         <ProjectCostPanel
           projectName={project.name}
           projectNo={project.projectNo}
@@ -80,7 +90,7 @@ export function ProjectCostPage() {
           dailyReports={dailyReports}
           reimbursementItems={[]}
         />
-      </Card>
-    </div>
+      </SectionCard>
+    </PageShell>
   );
 }

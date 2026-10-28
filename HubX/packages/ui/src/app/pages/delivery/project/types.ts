@@ -2,6 +2,13 @@
 // 项目管理模块 — 共享类型定义（列表页重构）
 // ============================================================
 
+/**
+ * 该共享类型文件会被 API 直接复用，保持对 React/UI 入口零依赖。
+ * 页面渲染侧仍通过 @/design-system 的 StatusTag 消费这些结构化状态元数据。
+ */
+type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'purple' | 'cyan' | 'pink' | 'gold';
+type StatusMap<S extends string = string> = Record<S, { label: string; tone: StatusTone }>;
+
 // --- 项目状态（保留 8 态） ---
 export type ProjectStatus = '未确认' | '未开始' | '进行中' | '已完成' | '验收中' | '搁置' | '延迟' | '催款中';
 
@@ -9,15 +16,16 @@ export const PROJECT_STATUS_LIST: ProjectStatus[] = [
   '未确认', '未开始', '进行中', '验收中', '催款中', '已完成', '搁置', '延迟',
 ];
 
-export const PROJECT_STATUS_COLOR: Record<ProjectStatus, string> = {
-  '未确认': 'orange',
-  '未开始': 'blue',
-  '进行中': 'arcoblue',
-  '验收中': 'purple',
-  '催款中': 'gold',
-  '已完成': 'green',
-  '搁置': 'gray',
-  '延迟': 'red',
+/** 状态 → 文案 + 语义色。页面统一走 StatusTag，不再各自决定颜色。 */
+export const PROJECT_STATUS_META: StatusMap<ProjectStatus> = {
+  '未确认': { label: '未确认', tone: 'warning' },
+  '未开始': { label: '未开始', tone: 'info' },
+  '进行中': { label: '进行中', tone: 'info' },
+  '验收中': { label: '验收中', tone: 'purple' },
+  '催款中': { label: '催款中', tone: 'warning' },
+  '已完成': { label: '已完成', tone: 'success' },
+  '搁置': { label: '搁置', tone: 'neutral' },
+  '延迟': { label: '延迟', tone: 'danger' },
 };
 
 // --- 项目优先级 ---
@@ -32,6 +40,13 @@ export const PROJECT_PRIORITY_COLOR: Record<ProjectPriority, string> = {
   '未设置': 'gray',
 };
 
+export const PROJECT_PRIORITY_META: StatusMap<ProjectPriority> = {
+  '高': { label: '高', tone: 'danger' },
+  '中': { label: '中', tone: 'warning' },
+  '低': { label: '低', tone: 'info' },
+  '未设置': { label: '未设置', tone: 'neutral' },
+};
+
 // --- 业务线 ---
 export type BusinessLine = '外包' | '自研' | '自运营' | '未设置';
 
@@ -42,6 +57,13 @@ export const BUSINESS_LINE_COLOR: Record<BusinessLine, string> = {
   '自研': 'green',
   '自运营': 'purple',
   '未设置': 'gray',
+};
+
+export const BUSINESS_LINE_META: StatusMap<BusinessLine> = {
+  '外包': { label: '外包', tone: 'info' },
+  '自研': { label: '自研', tone: 'success' },
+  '自运营': { label: '自运营', tone: 'purple' },
+  '未设置': { label: '未设置', tone: 'neutral' },
 };
 
 // --- 签约主体 ---
@@ -60,6 +82,12 @@ export const HEALTH_COLOR: Record<HealthStatus, string> = {
   normal: 'green',
   warning: 'orange',
   danger: 'red',
+};
+
+export const HEALTH_META: StatusMap<HealthStatus> = {
+  normal: { label: HEALTH_LABEL.normal, tone: 'success' },
+  warning: { label: HEALTH_LABEL.warning, tone: 'warning' },
+  danger: { label: HEALTH_LABEL.danger, tone: 'danger' },
 };
 
 // --- Kanban 泳道 ---
@@ -150,6 +178,12 @@ export const BLOCKER_SEVERITY_COLOR: Record<BlockerSeverity, string> = {
   minor: 'blue',
 };
 
+export const BLOCKER_SEVERITY_META: StatusMap<BlockerSeverity> = {
+  critical: { label: BLOCKER_SEVERITY_LABEL.critical, tone: 'danger' },
+  major: { label: BLOCKER_SEVERITY_LABEL.major, tone: 'warning' },
+  minor: { label: BLOCKER_SEVERITY_LABEL.minor, tone: 'info' },
+};
+
 export interface ProjectBlocker {
   id: string;
   projectId: string;
@@ -187,6 +221,13 @@ export const PROJECT_RISK_LEVEL_COLOR: Record<ProjectRiskLevel, string> = {
   medium: 'orange',
   low: 'blue',
   none: 'green',
+};
+
+export const PROJECT_RISK_LEVEL_META: StatusMap<ProjectRiskLevel> = {
+  high: { label: PROJECT_RISK_LEVEL_LABEL.high, tone: 'danger' },
+  medium: { label: PROJECT_RISK_LEVEL_LABEL.medium, tone: 'warning' },
+  low: { label: PROJECT_RISK_LEVEL_LABEL.low, tone: 'info' },
+  none: { label: PROJECT_RISK_LEVEL_LABEL.none, tone: 'success' },
 };
 
 // --- 项目列表项 ---

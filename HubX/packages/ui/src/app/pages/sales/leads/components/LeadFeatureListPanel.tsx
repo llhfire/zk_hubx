@@ -1,6 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Button, Form, Grid, Input, InputNumber, Message, Modal, Select, Space, Tag, Typography } from '@arco-design/web-react';
-import { IconDelete, IconEdit, IconPlus } from '@arco-design/web-react/icon';
+import { confirmAction, StatusTag } from '@/design-system';
+import {
+  Button,
+  Form,
+  FormGrid,
+  Input,
+  InputNumber,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Typography,
+} from '@/design-system';
+import { IconDelete, IconEdit, IconPlus } from '@/design-system';
 import './LeadFeatureListPanel.css';
 
 const FormItem = Form.Item;
@@ -75,7 +87,7 @@ export function LeadFeatureListPanel({ value, onChange }: { value?: LeadBusiness
 
   const confirmRemove = (type: EditorType, endId: string, moduleId?: string, itemId?: string) => {
     const label = type === 'end' ? '业务端' : type === 'module' ? '模块' : '功能点';
-    Modal.confirm({ title: `删除${label}`, content: `确认删除该${label}吗？${type === 'feature' ? '' : '其下内容将一并删除。'}`, onOk: () => {
+    confirmAction({ title: `删除${label}`, content: `确认删除该${label}吗？${type === 'feature' ? '' : '其下内容将一并删除。'}`, onOk: () => {
       setBusinessEnds(current => type === 'end' ? current.filter(end => end.id !== endId) : current.map(end => end.id !== endId ? end : { ...end, modules: type === 'module' ? end.modules.filter(module => module.id !== moduleId) : end.modules.map(module => module.id !== moduleId ? module : { ...module, features: module.features.filter(feature => feature.id !== itemId) }) }));
       Message.success(`${label}已删除`);
     } });
@@ -92,7 +104,7 @@ export function LeadFeatureListPanel({ value, onChange }: { value?: LeadBusiness
     <div className="lead-feature-tree">
       {businessEnds.map((end, index) => <details key={end.id} className="lead-feature-end-node" open>
         <summary className="lead-feature-end-row">
-          <div className="lead-feature-node-main"><span className="lead-feature-caret" /><span className="lead-feature-end-index">{String(index + 1).padStart(2, '0')}</span><strong>{end.name}</strong><Tag>{end.modules.length} 个模块</Tag></div>
+          <div className="lead-feature-node-main"><span className="lead-feature-caret" /><span className="lead-feature-end-index">{String(index + 1).padStart(2, '0')}</span><strong>{end.name}</strong><StatusTag>{end.modules.length} 个模块</StatusTag></div>
           <div onClick={event => { event.preventDefault(); event.stopPropagation(); }}><Space><Button size="small" icon={<IconPlus />} onClick={() => openEditor({ type: 'module', endId: end.id })}>新增模块</Button><Button type="text" size="small" icon={<IconEdit />} onClick={() => openEditor({ type: 'end', endId: end.id, itemId: end.id })} /><Button type="text" size="small" status="danger" icon={<IconDelete />} onClick={() => confirmRemove('end', end.id)} /></Space></div>
         </summary>
         <div className="lead-feature-end-children">
@@ -105,7 +117,7 @@ export function LeadFeatureListPanel({ value, onChange }: { value?: LeadBusiness
               {module.features.length ? module.features.map((feature, featureIndex) => <article key={feature.id} className="lead-feature-leaf">
                 <span className="lead-feature-leaf-dot" />
                 <div className="lead-feature-leaf-content">
-                  <div className="lead-feature-leaf-top"><div className="lead-feature-name"><span>{String(featureIndex + 1).padStart(2, '0')}</span><strong>{feature.name}</strong></div><div className="lead-feature-leaf-meta">{feature.workdays != null && <Tag color="arcoblue">{feature.workdays} 人天</Tag>}<Button type="text" size="mini" icon={<IconEdit />} onClick={() => openEditor({ type: 'feature', endId: end.id, moduleId: module.id, itemId: feature.id })} /><Button type="text" size="mini" status="danger" icon={<IconDelete />} onClick={() => confirmRemove('feature', end.id, module.id, feature.id)} /></div></div>
+                  <div className="lead-feature-leaf-top"><div className="lead-feature-name"><span>{String(featureIndex + 1).padStart(2, '0')}</span><strong>{feature.name}</strong></div><div className="lead-feature-leaf-meta">{feature.workdays != null && <StatusTag tone="info">{feature.workdays} 人天</StatusTag>}<Button type="text" size="mini" icon={<IconEdit />} onClick={() => openEditor({ type: 'feature', endId: end.id, moduleId: module.id, itemId: feature.id })} /><Button type="text" size="mini" status="danger" icon={<IconDelete />} onClick={() => confirmRemove('feature', end.id, module.id, feature.id)} /></div></div>
                   {feature.description && <p>{feature.description}</p>}
                 </div>
               </article>) : <div className="lead-feature-empty lead-feature-leaf-empty">暂无功能点，点击右上方“新增功能点”开始梳理</div>}
@@ -119,7 +131,7 @@ export function LeadFeatureListPanel({ value, onChange }: { value?: LeadBusiness
       <Form form={form} layout="vertical">
         {editor?.type === 'end' && <FormItem label="业务端" field="name" rules={[{ required: true, message: '请输入业务端' }]}><Select allowCreate showSearch placeholder="例如：客户端、管理后台、小程序、APP 端">{['客户端', '管理后台', '小程序', 'APP 端'].map(item => <Select.Option key={item} value={item}>{item}</Select.Option>)}</Select></FormItem>}
         {editor?.type === 'module' && <FormItem label="模块名" field="name" rules={[{ required: true, message: '请输入模块名' }]}><Input placeholder="例如：个人中心、登录、订单中心" maxLength={50} /></FormItem>}
-        {editor?.type === 'feature' && <><Grid.Row gutter={16}><Grid.Col span={16}><FormItem label="功能点" field="name" rules={[{ required: true, message: '请输入功能点' }]}><Input placeholder="请输入功能点名称" maxLength={100} /></FormItem></Grid.Col><Grid.Col span={8}><FormItem label="工时（人天）" field="workdays"><InputNumber min={0.5} step={0.5} precision={1} placeholder="选填" style={{ width: '100%' }} /></FormItem></Grid.Col></Grid.Row><FormItem label="功能说明" field="description"><Input.TextArea rows={4} maxLength={500} showWordLimit placeholder="选填，说明功能范围、使用场景和业务规则" /></FormItem></>}
+        {editor?.type === 'feature' && <><FormGrid columns={2}><FormItem label="功能点" field="name" rules={[{ required: true, message: '请输入功能点' }]}><Input placeholder="请输入功能点名称" maxLength={100} /></FormItem><FormItem label="工时（人天）" field="workdays"><InputNumber min={0.5} step={0.5} precision={1} placeholder="选填" style={{ width: '100%' }} /></FormItem></FormGrid><FormItem label="功能说明" field="description"><Input.TextArea rows={4} maxLength={500} showWordLimit placeholder="选填，说明功能范围、使用场景和业务规则" /></FormItem></>}
       </Form>
     </Modal>
   </div>;

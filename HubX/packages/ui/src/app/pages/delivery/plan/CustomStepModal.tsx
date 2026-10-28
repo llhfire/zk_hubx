@@ -5,11 +5,10 @@ import {
   Input,
   Select,
   DatePicker,
-  Grid,
-} from '@arco-design/web-react';
+  FormGrid,
+} from '@/design-system';
 import type { SopStep } from './types';
 
-const { Row, Col } = Grid;
 const { TextArea } = Input;
 
 interface CustomStepModalProps {
@@ -106,20 +105,17 @@ const CustomStepModal: React.FC<CustomStepModalProps> = ({
         layout="vertical"
         autoComplete="off"
       >
-        <Row gutter={16}>
-          <Col span={24}>
-            <Form.Item
-              label="步骤名称"
-              field="stepName"
-              rules={[{ required: true, message: '请输入步骤名称' }]}
-            >
-              <Input placeholder="请输入步骤名称" />
-            </Form.Item>
-          </Col>
-        </Row>
+        <FormGrid columns={1}>
+          <Form.Item
+            label="步骤名称"
+            field="stepName"
+            rules={[{ required: true, message: '请输入步骤名称' }]}
+          >
+            <Input placeholder="请输入步骤名称" />
+          </Form.Item>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={12}>
+        <FormGrid columns={2}>
             <Form.Item
               label="执行人"
               field="assignee"
@@ -136,16 +132,12 @@ const CustomStepModal: React.FC<CustomStepModalProps> = ({
                 }
               />
             </Form.Item>
-          </Col>
-          <Col span={12}>
             <Form.Item label="所属部门" field="department">
               <Input placeholder="请输入所属部门" />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={12}>
+        <FormGrid columns={2}>
             <Form.Item
               label="开始日期"
               field="startDate"
@@ -153,8 +145,6 @@ const CustomStepModal: React.FC<CustomStepModalProps> = ({
             >
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-          </Col>
-          <Col span={12}>
             <Form.Item
               label="截止日期"
               field="dueDate"
@@ -162,24 +152,19 @@ const CustomStepModal: React.FC<CustomStepModalProps> = ({
             >
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={24}>
+        <FormGrid columns={1}>
             <Form.Item label="执行产物" field="deliverables">
               <TextArea placeholder="请输入执行产物" autoSize={{ minRows: 2, maxRows: 4 }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
 
-        <Row gutter={16}>
-          <Col span={24}>
+        <FormGrid columns={1}>
             <Form.Item label="备注" field="userNotes">
               <TextArea placeholder="请输入备注" autoSize={{ minRows: 2, maxRows: 4 }} />
             </Form.Item>
-          </Col>
-        </Row>
+        </FormGrid>
       </Form>
     </Modal>
   );

@@ -1,8 +1,21 @@
 import { useState } from 'react';
-import { Table, Tag, Button, Message, Space, Modal, InputNumber } from '@arco-design/web-react';
+import { Button, Message, Space, Modal, InputNumber, Typography } from '@/design-system';
+import { DataTable, MoneyText, StatusTag, type StatusMap } from '@/design-system';
 import { useOperatingExpense } from './OperatingExpenseContext';
 import { CATEGORY_SEED } from './categorySeed';
 import type { RecurringExpenseTemplate } from './types';
+
+const { Text } = Typography;
+
+const TEMPLATE_KIND: StatusMap<'fixed' | 'floating'> = {
+  fixed: { label: '固定', tone: 'info' },
+  floating: { label: '浮动', tone: 'warning' },
+};
+
+const TEMPLATE_STATUS: StatusMap<'active' | 'paused'> = {
+  active: { label: '启用', tone: 'success' },
+  paused: { label: '暂停', tone: 'neutral' },
+};
 
 export function TemplateTab() {
   const { records, templates, setRecords, setTemplates } = useOperatingExpense();
@@ -63,15 +76,15 @@ export function TemplateTab() {
     {
       title: '科目', render: (_: unknown, r: RecurringExpenseTemplate) => getCategoryName(r.categoryPrimary, r.categorySecondary),
     },
-    { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => `¥${v.toLocaleString()}` },
+    { title: '金额', dataIndex: 'amount', width: 100, render: (v: number) => <MoneyText value={v} /> },
     {
       title: '类型', dataIndex: 'kind', width: 80,
-      render: (v: string) => <Tag color={v === 'fixed' ? 'blue' : 'orange'}>{v === 'fixed' ? '固定' : '浮动'}</Tag>,
+      render: (v: 'fixed' | 'floating') => <StatusTag meta={TEMPLATE_KIND[v]} />,
     },
     { title: '周期', dataIndex: 'cycle', width: 80, render: (v: string) => ({ monthly: '月', quarterly: '季', yearly: '年' })[v] ?? v },
     {
       title: '状态', dataIndex: 'status', width: 80,
-      render: (v: string) => <Tag color={v === 'active' ? 'green' : 'gray'}>{v === 'active' ? '启用' : '暂停'}</Tag>,
+      render: (v: 'active' | 'paused') => <StatusTag meta={TEMPLATE_STATUS[v]} />,
     },
     {
       title: '操作', width: 180,
@@ -88,10 +101,10 @@ export function TemplateTab() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, color: '#86909c', fontSize: 13 }}>
+      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
         周期费用由系统按周期自动生成；这里只维护模板金额，必要时可用当前金额一键替换本月已生成记录。
-      </div>
-      <Table rowKey="id" data={templates} columns={columns} pagination={false} />
+      </Text>
+      <DataTable rowKey="id" data={templates} columns={columns} pagination={false} emptyDescription="暂无周期模板" />
       <Modal
         title={editingTemplate ? `修改金额 · ${editingTemplate.name}` : '修改金额'}
         visible={Boolean(editingTemplate)}

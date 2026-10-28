@@ -2,9 +2,17 @@
 // 数据来自共享 ProjectContext 传入的 project；任务/日报复用项目管理模块的既有面板与口径。
 
 import { useMemo } from 'react';
+import {
+  DataTable,
+  DescriptionsCard,
+  ProgressBar,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 import { useNavigate } from 'react-router';
-import { Button, Card, Descriptions, Progress, Space, Table, Tag, Typography } from '@arco-design/web-react';
-import { IconExport } from '@arco-design/web-react/icon';
+import { Button, Space, Table, Typography } from '@/design-system';
+import { IconExport } from '@/design-system';
 import {
   buildProjectMemberHours,
   calculateProjectHours,
@@ -15,14 +23,14 @@ import { ProjectTaskPanel } from '../../../delivery/project/ProjectTaskPanel';
 
 const { Text } = Typography;
 
-const STATUS_TAG_COLOR: Record<string, string> = {
-  未开始: 'gray',
-  进行中: 'arcoblue',
-  已完成: 'green',
+const PROJECT_STATUS_TONE: Record<string, StatusTone> = {
+  未开始: 'neutral',
+  进行中: 'info',
+  已完成: 'success',
   验收中: 'cyan',
-  搁置: 'orange',
-  延迟: 'red',
-  催款中: 'orange',
+  搁置: 'warning',
+  延迟: 'danger',
+  催款中: 'warning',
 };
 
 export function LeadProjectExecutionPanel({ project }: { project: Project }) {
@@ -39,12 +47,12 @@ export function LeadProjectExecutionPanel({ project }: { project: Project }) {
 
   return (
     <div className="lead-detail-main-content">
-      <Card bordered={false}>
+      <SectionCard bordered={false}>
         <Space direction="vertical" style={{ width: '100%' }} size="medium">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <Space size={8} wrap>
               <Typography.Title heading={5} style={{ margin: 0 }}>{project.name}</Typography.Title>
-              <Tag color={STATUS_TAG_COLOR[project.status] ?? 'arcoblue'}>{project.status}</Tag>
+              <StatusTag tone={PROJECT_STATUS_TONE[project.status] ?? 'info'}>{project.status}</StatusTag>
               <Text type="secondary">{project.projectNo}</Text>
             </Space>
             <Button size="small" icon={<IconExport />} onClick={() => navigate(`/projects/${project.id}`)}>
@@ -54,28 +62,28 @@ export function LeadProjectExecutionPanel({ project }: { project: Project }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Text type="secondary">总进度</Text>
-            <Progress percent={project.progress} style={{ flex: 1, minWidth: 0 }} />
+            <ProgressBar percent={project.progress} style={{ flex: 1, minWidth: 0 }} />
             <Text bold>{project.progress}%</Text>
           </div>
 
-          <Descriptions
-            column={2}
-            labelStyle={{ width: 110 }}
-            data={[
-              { label: '负责人', value: project.owner || '-' },
-              { label: '销售人员', value: project.salesUsers.join('、') || '-' },
-              { label: '产品', value: project.productUsers.join('、') || '-' },
-              { label: '最新进展', value: project.latestProgress || '-' },
-              { label: '开始日期', value: project.startDate || '-' },
-              { label: '预计结束日期', value: project.expectedEndDate || '-' },
-            ]}
+          <DescriptionsCard
+            columns={2}
+            items={[
+
+              { key: '负责人', label: '负责人', value: project.owner || '-' },
+              { key: '销售人员', label: '销售人员', value: project.salesUsers.join('、') || '-' },
+              { key: '产品', label: '产品', value: project.productUsers.join('、') || '-' },
+              { key: '最新进展', label: '最新进展', value: project.latestProgress || '-' },
+              { key: '开始日期', label: '开始日期', value: project.startDate || '-' },
+              { key: '预计结束日期', label: '预计结束日期', value: project.expectedEndDate || '-' },
+                        ]}
           />
         </Space>
-      </Card>
+      </SectionCard>
 
-      <Card bordered={false} title="项目日报" style={{ marginTop: 12 }} size="small">
+      <SectionCard bordered={false} title="项目日报" style={{ marginTop: 12 }} size="small">
         <Space direction="vertical" style={{ width: '100%' }} size="medium">
-          <Table
+          <DataTable
             rowKey="key"
             pagination={false}
             size="small"
@@ -91,9 +99,9 @@ export function LeadProjectExecutionPanel({ project }: { project: Project }) {
                 <Table.Summary.Cell>{totalHours}H</Table.Summary.Cell>
               </Table.Summary.Row>
             )}
-            noDataElement={<Text type="secondary">暂无工时记录</Text>}
+            emptyDescription="暂无工时记录"
           />
-          <Table
+          <DataTable
             rowKey="id"
             pagination={{ pageSize: 5 }}
             size="small"
@@ -106,14 +114,14 @@ export function LeadProjectExecutionPanel({ project }: { project: Project }) {
               { title: '工作内容', dataIndex: 'workContent' },
               { title: '风险/异常反馈', dataIndex: 'riskFeedback' },
             ]}
-            noDataElement={<Text type="secondary">暂无项目日报</Text>}
+            emptyDescription="暂无项目日报"
           />
         </Space>
-      </Card>
+      </SectionCard>
 
-      <Card bordered={false} title="任务管理" style={{ marginTop: 12 }} size="small">
+      <SectionCard bordered={false} title="任务管理" style={{ marginTop: 12 }} size="small">
         <ProjectTaskPanel project={project} />
-      </Card>
+      </SectionCard>
     </div>
   );
 }

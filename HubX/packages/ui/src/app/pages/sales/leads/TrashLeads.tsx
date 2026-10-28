@@ -1,18 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  Card,
-  Table,
-  Button,
-  Input,
-  Select,
-  Badge,
-  Message,
-  Space,
-  Tag,
-  Tooltip,
-} from '@arco-design/web-react';
-import { IconSearch, IconEye, IconUserAdd, IconReply, IconRefresh } from '@arco-design/web-react/icon';
+import { Button, Input, Select, Badge, Message, Space, Tooltip } from '@/design-system';
+import { IconSearch, IconEye, IconUserAdd, IconReply, IconRefresh } from '@/design-system';
 import { CompanyEntityInfoModal } from '../company-entity/CompanyEntityInfoModal';
 import {
   companyEntityPermissions,
@@ -23,13 +12,21 @@ import type { LeadListItem } from './types';
 import {
   LEAD_SOURCE_LIST,
   LEAD_SOURCE_LABEL,
-  LEAD_SOURCE_COLOR,
+  LEAD_SOURCE_TONE,
   COMPANY_ENTITY_LIST,
 } from './types';
 import { useLeads } from '../../../leads/LeadContext';
 import { CURRENT_LOGIN_USER } from '../../../currentUser';
 import { searchLeads } from './utils';
-import { PageShell, PageHeader, MetricGrid } from '@/design-system';
+import {
+  PageShell,
+  PageHeader,
+  MetricGrid,
+  DataTable,
+  SectionCard,
+  StatusTag,
+  type StatusTone,
+} from '@/design-system';
 
 export function TrashLeads() {
   const navigate = useNavigate();
@@ -96,7 +93,7 @@ export function TrashLeads() {
       render: (_: unknown, r: LeadListItem) => (
         <div>
           <a onClick={() => navigate(`/leads/${r.key}`, { state: { from: 'trash' } })} style={{ color: 'var(--primary)', cursor: 'pointer', fontWeight: 500 }}>{r.name}</a>
-          <div style={{ fontSize: 12, color: 'var(--color-text-3)' }}>{r.contact}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{r.contact}</div>
         </div>
       ),
     },
@@ -104,7 +101,7 @@ export function TrashLeads() {
       title: '联系人信息',
       width: 140,
       render: (_: unknown, r: LeadListItem) => (
-        <div style={{ fontSize: 14 }}>
+        <div style={{ fontSize: 'var(--text-sm)' }}>
           <div>{r.phone || '-'}</div>
           <div style={{ color: 'var(--color-text-3)' }}>{r.wechat || '-'}</div>
         </div>
@@ -115,8 +112,8 @@ export function TrashLeads() {
       width: 130,
       render: (_: unknown, r: LeadListItem) => (
         <Space direction="vertical" size={2}>
-          <Tag color={LEAD_SOURCE_COLOR[r.source as keyof typeof LEAD_SOURCE_COLOR] || 'gray'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</Tag>
-          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 12 }}>{r.entity}</a>
+          <StatusTag tone={LEAD_SOURCE_TONE[r.source as keyof typeof LEAD_SOURCE_TONE] || 'neutral'}>{LEAD_SOURCE_LABEL[r.source as keyof typeof LEAD_SOURCE_LABEL] || r.source}</StatusTag>
+          <a onClick={() => handleOpenCompanyEntity(r.entity)} style={{ color: 'var(--primary)', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>{r.entity}</a>
         </Space>
       ),
     },
@@ -125,7 +122,7 @@ export function TrashLeads() {
       width: 180,
       render: (_: unknown, r: LeadListItem) => (
         <Tooltip content={r.trashReason || ''}>
-          <span style={{ fontSize: 12, color: 'var(--color-text-2)' }}>{r.trashReason || '-'}</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>{r.trashReason || '-'}</span>
         </Tooltip>
       ),
     },
@@ -133,7 +130,7 @@ export function TrashLeads() {
       title: '退回次数',
       width: 90,
       render: (_: unknown, r: LeadListItem) => (
-        <Tag color={r.trashCount >= 3 ? 'red' : 'blue'}>{r.trashCount} 次</Tag>
+        <StatusTag tone={r.trashCount >= 3 ? 'danger' : 'info'}>{r.trashCount} 次</StatusTag>
       ),
     },
     {
@@ -188,7 +185,7 @@ export function TrashLeads() {
         ]}
       />
 
-      <Card style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
+      <SectionCard style={{ borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-xs)', border: '1px solid var(--grey-200)' }}>
         <div
           style={{
             marginBottom: 16,
@@ -216,8 +213,8 @@ export function TrashLeads() {
           )}
         </div>
 
-        <Table columns={columns} data={filteredLeads} scroll={{ x: 1100 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
-      </Card>
+        <DataTable columns={columns} data={filteredLeads} scroll={{ x: 1100 }} pagination={{ total: filteredLeads.length, pageSize: 10, showTotal: true, showJumper: true }} />
+      </SectionCard>
 
       <CompanyEntityInfoModal visible={companyModalVisible} mode="view" defaultTab="files" record={selectedCompanyEntity} permissions={companyEntityPermissions} onCancel={() => setCompanyModalVisible(false)} onGoManage={() => navigate('/system/company')} />
     </PageShell>

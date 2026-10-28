@@ -122,9 +122,11 @@ describe('LeadQuotationManager 方案精细化管理与客户反馈看板', () =
     expect(markup).toContain('25 工作日');
     expect(markup).toContain('45.0 人天');
 
-    // 反馈徽章（价格偏高）
-    expect(markup).toContain('● 反馈: 价格偏高');
-    expect(markup).toContain('期望 ¥220,000');
+    // 反馈徽章（价格偏高）。原来是 `● 反馈: …` 的手写文本，现已由 StatusTag 承担
+    // 语义色，圆点由组件样式替代，断言改为一律比对纯文本。
+    const plain = markup.replace(/<[^>]+>/g, '');
+    expect(plain).toContain('反馈: 价格偏高');
+    expect(plain).toContain('期望 ¥220,000');
   });
 
   it('2. 右侧展示 3 栏核心商务指标网格（商务总报价、交付工期与人天、方案规模与覆盖）', () => {
@@ -168,7 +170,8 @@ describe('LeadQuotationManager 方案精细化管理与客户反馈看板', () =
     // 标签与记录人
     expect(markup).toContain('价格偏高');
     expect(markup).toContain('超出客户预算或审批额度');
-    expect(markup).toContain('记录人：张三 · 2026-08-12 14:30');
+    // 时间已改由 DateText 渲染（`记录人：张三 · <span class="hubx-date">…</span>`），走纯文本比对
+    expect(markup.replace(/<[^>]+>/g, '')).toContain('记录人：张三 · 2026-08-12 14:30');
 
     // 差距量化对比（预算与工期差距）
     expect(markup).toContain('客户期望预算');

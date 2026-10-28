@@ -1,21 +1,29 @@
 import { useMemo, useState } from 'react';
 import {
   Button,
-  Card,
-  Descriptions,
-  Empty,
   Input,
   Message,
   Modal,
   Select,
   Space,
-  Table,
   Tag,
   Tooltip,
   Typography,
-} from '@arco-design/web-react';
-import { IconCheckCircle, IconDownload, IconEye, IconFile, IconRefresh, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+} from '@/design-system';
+import { IconCheckCircle, IconEye, IconRefresh, IconSearch } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  DescriptionsCard,
+  FileList,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  StatusTag,
+  type StatusMap,
+  SectionCard,
+} from '@/design-system';
 import {
   formatFeedbackAttachmentSize,
   getFeedbackAttachmentFile,
@@ -42,6 +50,11 @@ function formatDateTime(value?: string): string {
   if (!value) return '-';
   return new Date(value).toLocaleString('zh-CN', { hour12: false });
 }
+
+const FEEDBACK_STATUS: StatusMap<FeedbackStatus> = {
+  pending: { label: feedbackStatusLabels.pending, tone: 'warning' },
+  processed: { label: feedbackStatusLabels.processed, tone: 'success' },
+};
 
 export function FeedbackManagement() {
   const { feedbackItems, markFeedbackProcessed } = useFeedback();
@@ -93,7 +106,7 @@ export function FeedbackManagement() {
       title: '类型',
       dataIndex: 'type',
       width: 110,
-      render: (value: FeedbackType) => <Tag color="arcoblue">{feedbackTypeLabels[value]}</Tag>,
+      render: (value: FeedbackType) => <StatusTag tone="info">{feedbackTypeLabels[value]}</StatusTag>,
     },
     {
       title: '反馈内容',
@@ -112,15 +125,13 @@ export function FeedbackManagement() {
       title: '提交时间',
       dataIndex: 'createdAt',
       width: 175,
-      render: (value: string) => formatDateTime(value),
+      render: (value: string) => <DateText value={value} mode="datetime" />,
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 100,
-      render: (value: FeedbackStatus) => (
-        <Tag color={value === 'processed' ? 'green' : 'orange'}>{feedbackStatusLabels[value]}</Tag>
-      ),
+      render: (value: FeedbackStatus) => <StatusTag meta={FEEDBACK_STATUS[value]} />,
     },
     {
       title: '操作',
@@ -151,7 +162,7 @@ export function FeedbackManagement() {
         { key: 'result', label: '当前结果', value: filteredFeedbackItems.length, detail: hasFilters ? '筛选结果' : '全部反馈' },
       ]} />
 
-      <Card bordered={false} className="system-admin-list__card">
+      <SectionCard bordered={false} className="system-admin-list__card">
         <FilterBar actions={hasFilters ? (
           <Button type="text" icon={<IconRefresh />} onClick={() => setFilters({ ...EMPTY_FEEDBACK_FILTERS })}>重置</Button>
         ) : undefined}>
@@ -178,15 +189,16 @@ export function FeedbackManagement() {
 
         <div className="system-admin-list__result-summary"><span>共 {filteredFeedbackItems.length} 条反馈</span>{hasFilters && <span>已按当前条件筛选</span>}</div>
 
-        {filteredFeedbackItems.length ? (
-          <Table columns={columns as any} data={filteredFeedbackItems} rowKey="id" pagination={{ pageSize: 10, showTotal: true, sizeCanChange: true }} scroll={{ x: 1120 }} />
-        ) : (
-          <div className="system-admin-list__empty">
-            <Empty description={feedbackItems.length ? '没有符合当前条件的反馈' : '暂无员工反馈'} />
-            {hasFilters && <Button type="text" onClick={() => setFilters({ ...EMPTY_FEEDBACK_FILTERS })}>清除筛选</Button>}
-          </div>
-        )}
-      </Card>
+        <DataTable
+          columns={columns as any}
+          data={filteredFeedbackItems}
+          rowKey="id"
+          pagination={{ pageSize: 10, showTotal: true, sizeCanChange: true }}
+          scroll={{ x: 1120 }}
+          emptyDescription={feedbackItems.length ? '没有符合当前条件的反馈' : '暂无员工反馈'}
+          emptyAction={hasFilters ? <Button type="text" onClick={() => setFilters({ ...EMPTY_FEEDBACK_FILTERS })}>清除筛选</Button> : undefined}
+        />
+      </SectionCard>
 
       <Modal
         title="反馈详情"
@@ -199,47 +211,37 @@ export function FeedbackManagement() {
       >
         {selectedFeedback && (
           <>
-            <Descriptions
-              column={1}
-              size="medium"
-              labelStyle={{ width: 92 }}
-              data={[
-                { label: '反馈编号', value: selectedFeedback.id },
-                { label: '反馈类型', value: feedbackTypeLabels[selectedFeedback.type] },
-                { label: '当前页面', value: selectedFeedback.pagePath },
-                { label: '提交人', value: selectedFeedback.reporterName },
-                { label: '提交时间', value: formatDateTime(selectedFeedback.createdAt) },
-                { label: '联系方式', value: selectedFeedback.contact || '-' },
-                { label: '反馈内容', value: selectedFeedback.content },
+            <DescriptionsCard
+              bare
+              columns={1}
+              items={[
+                { key: 'id', label: '反馈编号', value: selectedFeedback.id },
+                { key: 'type', label: '反馈类型', value: feedbackTypeLabels[selectedFeedback.type] },
+                { key: 'pagePath', label: '当前页面', value: selectedFeedback.pagePath },
+                { key: 'reporter', label: '提交人', value: selectedFeedback.reporterName },
+                { key: 'createdAt', label: '提交时间', value: formatDateTime(selectedFeedback.createdAt) },
+                { key: 'contact', label: '联系方式', value: selectedFeedback.contact || '-' },
+                { key: 'content', label: '反馈内容', value: selectedFeedback.content, long: true },
                 {
+                  key: 'attachments',
                   label: '反馈附件',
+                  long: true,
                   value: (selectedFeedback.attachments || []).length ? (
-                    <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                      {(selectedFeedback.attachments || []).map((attachment) => (
-                        <div key={attachment.id} className="flex items-center gap-2">
-                          <IconFile style={{ color: 'var(--color-text-3)' }} />
-                          <span style={{ flex: 1 }}>{attachment.name}</span>
-                          <span style={{ color: 'var(--color-text-3)', fontSize: 12 }}>
-                            {formatFeedbackAttachmentSize(attachment.size)}
-                          </span>
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<IconDownload />}
-                            onClick={() => handleDownloadAttachment(attachment)}
-                          >
-                            下载
-                          </Button>
-                        </div>
-                      ))}
-                    </Space>
+                    <FileList
+                      items={(selectedFeedback.attachments || []).map((attachment) => ({
+                        key: attachment.id,
+                        name: attachment.name,
+                        meta: formatFeedbackAttachmentSize(attachment.size),
+                        onDownload: () => handleDownloadAttachment(attachment),
+                      }))}
+                    />
                   ) : '-',
                 },
                 ...(selectedFeedback.status === 'processed'
                   ? [
-                      { label: '处理人', value: selectedFeedback.handlerName || '-' },
-                      { label: '处理时间', value: formatDateTime(selectedFeedback.handledAt) },
-                      { label: '处理说明', value: selectedFeedback.handleNote || '-' },
+                      { key: 'handler', label: '处理人', value: selectedFeedback.handlerName || '-' },
+                      { key: 'handledAt', label: '处理时间', value: formatDateTime(selectedFeedback.handledAt) },
+                      { key: 'handleNote', label: '处理说明', value: selectedFeedback.handleNote || '-', long: true },
                     ]
                   : []),
               ]}
@@ -247,7 +249,7 @@ export function FeedbackManagement() {
 
             {selectedFeedback.status === 'pending' && (
               <div style={{ marginTop: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>处理说明（选填）</div>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 500, marginBottom: 8 }}>处理说明（选填）</div>
                 <Input.TextArea
                   value={handleNote}
                   onChange={setHandleNote}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT_STATUS_COLOR, CONTRACT_STATUS_LABEL } from '../utils';
-import { CUSTOMER_LEVEL_COLOR } from '../../leads/types';
+import { CONTRACT_STATUS, CONTRACT_STATUS_LABEL } from '../utils';
+import { GRADE_TONE } from '@/design-system';
 
 /**
  * 状态色一致性回归。
@@ -14,18 +14,18 @@ import { CUSTOMER_LEVEL_COLOR } from '../../leads/types';
  */
 
 describe('合同状态色唯一事实源', () => {
-  it('已作废必须是红色（不能是灰色 —— 灰会让人误以为只是归档）', () => {
-    expect(CONTRACT_STATUS_COLOR.voided).toBe('red');
+  it('已作废必须是危险色（不能是 neutral —— 中性色会让人误以为只是归档）', () => {
+    expect(CONTRACT_STATUS.voided.tone).toBe('danger');
   });
 
   it('覆盖全部六个状态且取值稳定', () => {
-    expect(CONTRACT_STATUS_COLOR).toEqual({
-      draft: 'gray',
-      approving: 'arcoblue',
-      pending_mail: 'orange',
-      pending_return: 'cyan',
-      archived: 'green',
-      voided: 'red',
+    expect(CONTRACT_STATUS).toEqual({
+      draft: { label: '草稿', tone: 'neutral' },
+      approving: { label: '审批中', tone: 'info' },
+      pending_mail: { label: '待寄出', tone: 'warning' },
+      pending_return: { label: '待回寄', tone: 'purple' },
+      archived: { label: '已归档', tone: 'success' },
+      voided: { label: '已作废', tone: 'danger' },
     });
   });
 
@@ -42,16 +42,16 @@ describe('合同状态色唯一事实源', () => {
 });
 
 describe('客户等级色唯一事实源', () => {
-  it('S 级为绿色（项目列表与线索派发曾错用红色）', () => {
-    expect(CUSTOMER_LEVEL_COLOR.S).toBe('green');
+  it('S 级为 success（项目列表与线索派发曾错用红色）', () => {
+    expect(GRADE_TONE.S).toBe('success');
   });
 
   it('覆盖 S/A/B/C 四级', () => {
-    expect(CUSTOMER_LEVEL_COLOR).toEqual({
-      S: 'green',
-      A: 'blue',
-      B: 'gray',
-      C: 'gray',
+    expect(GRADE_TONE).toEqual({
+      S: 'success',
+      A: 'info',
+      B: 'neutral',
+      C: 'neutral',
     });
   });
 });

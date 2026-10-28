@@ -1,7 +1,18 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, DatePicker, Empty, Input, Select, Table, Tabs, Tag } from '@arco-design/web-react';
-import { IconRefresh, IconSearch } from '@arco-design/web-react/icon';
-import { FilterBar, PageHeader, PageShell, MetricGrid } from '@/design-system';
+import { Button, DatePicker, Input, Select, Tabs } from '@/design-system';
+import { IconRefresh, IconSearch } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  FilterBar,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  StatusTag,
+  type StatusMap,
+  SectionTabs,
+  SectionCard,
+} from '@/design-system';
 import {
   calculateSystemLogMetrics,
   EMPTY_LOG_FILTERS,
@@ -32,6 +43,11 @@ const mockLoginLogs = [
   { id: '5', username: 'wangwu', name: '王五', ip: '192.168.1.103', location: '深圳市', browser: 'Chrome 122', os: 'Android', status: '成功', message: '登录成功', time: '2026-04-19 08:41:05' },
 ];
 
+const LOG_STATUS: StatusMap<'成功' | '失败'> = {
+  成功: { label: '成功', tone: 'success' },
+  失败: { label: '失败', tone: 'danger' },
+};
+
 const operationColumns = [
   { title: '操作人', dataIndex: 'name', width: 100 },
   { title: '所属模块', dataIndex: 'module', width: 120 },
@@ -39,9 +55,9 @@ const operationColumns = [
   { title: '请求方式', dataIndex: 'method', width: 200 },
   { title: 'IP 地址', dataIndex: 'ip', width: 130 },
   { title: '操作地点', dataIndex: 'location', width: 100 },
-  { title: '状态', dataIndex: 'status', width: 80, render: (status: string) => <Tag color={status === '成功' ? 'green' : 'red'}>{status}</Tag> },
+  { title: '状态', dataIndex: 'status', width: 80, render: (status: '成功' | '失败') => <StatusTag meta={LOG_STATUS[status]} /> },
   { title: '耗时', dataIndex: 'duration', width: 80 },
-  { title: '操作时间', dataIndex: 'time', width: 170 },
+  { title: '操作时间', dataIndex: 'time', width: 170, render: (time: string) => <DateText value={time} mode="datetime" /> },
 ];
 
 const loginColumns = [
@@ -51,9 +67,9 @@ const loginColumns = [
   { title: '登录地点', dataIndex: 'location', width: 100 },
   { title: '浏览器', dataIndex: 'browser', width: 120 },
   { title: '操作系统', dataIndex: 'os', width: 120 },
-  { title: '状态', dataIndex: 'status', width: 80, render: (status: string) => <Tag color={status === '成功' ? 'green' : 'red'}>{status}</Tag> },
+  { title: '状态', dataIndex: 'status', width: 80, render: (status: '成功' | '失败') => <StatusTag meta={LOG_STATUS[status]} /> },
   { title: '提示消息', dataIndex: 'message', width: 120 },
-  { title: '登录时间', dataIndex: 'time', width: 170 },
+  { title: '登录时间', dataIndex: 'time', width: 170, render: (time: string) => <DateText value={time} mode="datetime" /> },
 ];
 
 const createEmptyFilters = (): LogFilters => ({ ...EMPTY_LOG_FILTERS, dateRange: [] });
@@ -91,44 +107,69 @@ export function SystemLog() {
         { key: 'result', label: '当前结果', value: currentCount, detail: activeTab === 'operation' ? '操作日志筛选结果' : '登录日志筛选结果' },
       ]} />
 
-      <Card bordered={false} className="system-admin-list__card">
-        <Tabs activeTab={activeTab} onChange={(value) => setActiveTab(value as 'operation' | 'login')}>
-          <TabPane key="operation" title="操作日志">
-            <div className="system-admin-list__panel">
-              <FilterBar actions={hasLogFilters(operationFilters) ? <Button type="text" icon={<IconRefresh />} onClick={() => setOperationFilters(createEmptyFilters())}>重置</Button> : undefined}>
-                <Input className="system-admin-list__keyword" prefix={<IconSearch />} value={operationFilters.keyword} onChange={(keyword) => setOperationFilters(current => ({ ...current, keyword }))} placeholder="搜索操作人、操作类型、请求或 IP" allowClear />
-                <Select className="system-admin-list__select" value={operationFilters.category || undefined} placeholder="全部模块" allowClear onChange={(category) => setOperationFilters(current => ({ ...current, category: category || '' }))}>
-                  {moduleOptions.map(module => <Select.Option key={module} value={module}>{module}</Select.Option>)}
-                </Select>
-                {statusSelect(operationFilters, setOperationFilters)}
-                {dateRange(operationFilters, setOperationFilters)}
-              </FilterBar>
-              <div className="system-admin-list__result-summary"><span>共 {filteredOperationLogs.length} 条操作日志</span>{hasLogFilters(operationFilters) && <span>已按当前条件筛选</span>}</div>
-              {filteredOperationLogs.length ? (
-                <Table columns={operationColumns} data={filteredOperationLogs} rowKey="id" pagination={{ pageSize: 10, showTotal: true }} scroll={{ x: 1200 }} />
-              ) : (
-                <div className="system-admin-list__empty"><Empty description="没有符合当前条件的操作日志" /><Button type="text" onClick={() => setOperationFilters(createEmptyFilters())}>清除筛选</Button></div>
-              )}
-            </div>
-          </TabPane>
-
-          <TabPane key="login" title="登录日志">
-            <div className="system-admin-list__panel">
-              <FilterBar actions={hasLogFilters(loginFilters) ? <Button type="text" icon={<IconRefresh />} onClick={() => setLoginFilters(createEmptyFilters())}>重置</Button> : undefined}>
-                <Input className="system-admin-list__keyword" prefix={<IconSearch />} value={loginFilters.keyword} onChange={(keyword) => setLoginFilters(current => ({ ...current, keyword }))} placeholder="搜索用户、IP、地点或终端" allowClear />
-                {statusSelect(loginFilters, setLoginFilters)}
-                {dateRange(loginFilters, setLoginFilters)}
-              </FilterBar>
-              <div className="system-admin-list__result-summary"><span>共 {filteredLoginLogs.length} 条登录日志</span>{hasLogFilters(loginFilters) && <span>已按当前条件筛选</span>}</div>
-              {filteredLoginLogs.length ? (
-                <Table columns={loginColumns} data={filteredLoginLogs} rowKey="id" pagination={{ pageSize: 10, showTotal: true }} scroll={{ x: 1140 }} />
-              ) : (
-                <div className="system-admin-list__empty"><Empty description="没有符合当前条件的登录日志" /><Button type="text" onClick={() => setLoginFilters(createEmptyFilters())}>清除筛选</Button></div>
-              )}
-            </div>
-          </TabPane>
-        </Tabs>
-      </Card>
+      <SectionCard bordered={false} className="system-admin-list__card">
+        <SectionTabs
+          activeKey={activeTab}
+          onChange={(value) => setActiveTab(value as 'operation' | 'login')}
+          items={[
+            {
+              key: 'operation',
+              label: "操作日志",
+              content: (
+                <>
+                      <div className="system-admin-list__panel">
+                        <FilterBar actions={hasLogFilters(operationFilters) ? <Button type="text" icon={<IconRefresh />} onClick={() => setOperationFilters(createEmptyFilters())}>重置</Button> : undefined}>
+                          <Input className="system-admin-list__keyword" prefix={<IconSearch />} value={operationFilters.keyword} onChange={(keyword) => setOperationFilters(current => ({ ...current, keyword }))} placeholder="搜索操作人、操作类型、请求或 IP" allowClear />
+                          <Select className="system-admin-list__select" value={operationFilters.category || undefined} placeholder="全部模块" allowClear onChange={(category) => setOperationFilters(current => ({ ...current, category: category || '' }))}>
+                            {moduleOptions.map(module => <Select.Option key={module} value={module}>{module}</Select.Option>)}
+                          </Select>
+                          {statusSelect(operationFilters, setOperationFilters)}
+                          {dateRange(operationFilters, setOperationFilters)}
+                        </FilterBar>
+                        <div className="system-admin-list__result-summary"><span>共 {filteredOperationLogs.length} 条操作日志</span>{hasLogFilters(operationFilters) && <span>已按当前条件筛选</span>}</div>
+                        <DataTable
+                          columns={operationColumns}
+                          data={filteredOperationLogs}
+                          rowKey="id"
+                          pagination={{ pageSize: 10, showTotal: true }}
+                          scroll={{ x: 1200 }}
+                          emptyDescription="没有符合当前条件的操作日志"
+                          emptyAction={<Button type="text" onClick={() => setOperationFilters(createEmptyFilters())}>清除筛选</Button>}
+                        />
+                      </div>
+                    
+                </>
+              ),
+            },
+            {
+              key: 'login',
+              label: "登录日志",
+              content: (
+                <>
+                      <div className="system-admin-list__panel">
+                        <FilterBar actions={hasLogFilters(loginFilters) ? <Button type="text" icon={<IconRefresh />} onClick={() => setLoginFilters(createEmptyFilters())}>重置</Button> : undefined}>
+                          <Input className="system-admin-list__keyword" prefix={<IconSearch />} value={loginFilters.keyword} onChange={(keyword) => setLoginFilters(current => ({ ...current, keyword }))} placeholder="搜索用户、IP、地点或终端" allowClear />
+                          {statusSelect(loginFilters, setLoginFilters)}
+                          {dateRange(loginFilters, setLoginFilters)}
+                        </FilterBar>
+                        <div className="system-admin-list__result-summary"><span>共 {filteredLoginLogs.length} 条登录日志</span>{hasLogFilters(loginFilters) && <span>已按当前条件筛选</span>}</div>
+                        <DataTable
+                          columns={loginColumns}
+                          data={filteredLoginLogs}
+                          rowKey="id"
+                          pagination={{ pageSize: 10, showTotal: true }}
+                          scroll={{ x: 1140 }}
+                          emptyDescription="没有符合当前条件的登录日志"
+                          emptyAction={<Button type="text" onClick={() => setLoginFilters(createEmptyFilters())}>清除筛选</Button>}
+                        />
+                      </div>
+                    
+                </>
+              ),
+            },
+          ]}
+        />
+      </SectionCard>
     </PageShell>
   );
 }

@@ -118,46 +118,6 @@
   color: rgb(var(--warning-6));
 }
 
-/* 岗位费率卡片网格 */
-.stage3-role-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.stage3-role-card {
-  background: var(--color-fill-1);
-  border: 1px solid var(--color-border-2);
-  border-radius: 8px;
-  padding: 12px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stage3-role-card:hover {
-  border-color: rgb(var(--arcoblue-5));
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  background: var(--color-bg-2);
-}
-
-.stage3-role-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.stage3-role-days {
-  font-size: 13px;
-  color: var(--color-text-2);
-}
-
-.stage3-role-subtotal {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-1);
-  font-family: 'Inter Variable', Arial, sans-serif;
-}
-
 /* 付款模版预设选择 */
 .stage3-preset-tags {
   display: flex;

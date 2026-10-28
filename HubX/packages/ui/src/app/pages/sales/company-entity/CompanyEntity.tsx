@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Card, Message, Popconfirm, Space, Table, Tag, Tooltip } from '@arco-design/web-react';
-import { IconDelete, IconEdit, IconPlus, IconEye } from '@arco-design/web-react/icon';
+import { Button, Message, Popconfirm, Space, Tooltip } from '@/design-system';
+import { IconDelete, IconEdit, IconPlus, IconEye } from '@/design-system';
 import { CompanyEntityInfoModal, type CompanyEntityModalMode } from './CompanyEntityInfoModal';
 import {
   addMockCompanyEntity,
@@ -9,8 +9,24 @@ import {
   type CompanyEntityRecord,
   updateMockCompanyEntity,
 } from './companyEntityData';
-import { PageHeader, PageShell, MetricGrid } from '@/design-system';
+import {
+  DataTable,
+  DateText,
+  MetricGrid,
+  PageHeader,
+  PageShell,
+  SectionCard,
+  StatusTag,
+  resolveStatus,
+  type StatusMap,
+} from '@/design-system';
 import '../../support/system/systemConfigConsistency.css';
+
+/** 公司主体启用状态 → 文案 + 语义色（StatusTag 使用）。 */
+const ENTITY_STATUS: StatusMap<string> = {
+  启用: { label: '启用', tone: 'success' },
+  禁用: { label: '禁用', tone: 'danger' },
+};
 
 export function CompanyEntity() {
   const [companyEntities, setCompanyEntities] = useState<CompanyEntityRecord[]>(mockCompanyEntities);
@@ -35,9 +51,9 @@ export function CompanyEntity() {
     {
       title: '状态',
       dataIndex: 'status',
-      render: (status: string) => <Tag color={status === '启用' ? 'green' : 'red'}>{status}</Tag>,
+      render: (status: string) => <StatusTag meta={resolveStatus(ENTITY_STATUS, status)} />,
     },
-    { title: '创建时间', dataIndex: 'createTime' },
+    { title: '创建时间', dataIndex: 'createTime', render: (value: string) => <DateText value={value} /> },
     {
       title: '操作',
       render: (_: unknown, record: CompanyEntityRecord) => (
@@ -84,14 +100,20 @@ export function CompanyEntity() {
         { key: 'files', label: '主体资料', value: `${companyEntities.reduce((sum, item) => sum + item.files.length, 0)} 份`, detail: '资质与合同模板' },
       ]} />
 
-      <Card
-        bordered={false}
+      <SectionCard
         title="主体列表"
         className="system-config-card"
       >
-        <div className="system-config-result-summary">共 {companyEntities.length} 家公司主体</div>
-        <Table columns={columns} data={companyEntities} rowKey="id" pagination={{ pageSize: 10 }} scroll={{ x: 1350 }} />
-      </Card>
+        <DataTable
+          columns={columns}
+          data={companyEntities}
+          rowKey="id"
+          size="middle"
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1350 }}
+          caption={`共 ${companyEntities.length} 家公司主体`}
+        />
+      </SectionCard>
 
       <CompanyEntityInfoModal
         visible={modalVisible}

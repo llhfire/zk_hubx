@@ -18,12 +18,12 @@ export function ContractTextViewer({ contract }: Props) {
     <div
       className="contract-text-viewer"
       style={{
-        background: '#fff',
+        background: "var(--ds-doc-paper)",
         padding: 16,
-        borderRadius: 8,
+        borderRadius: 'var(--radius-md)',
         maxHeight: 'calc(100vh - 300px)',
         overflow: 'auto',
-        fontSize: 14,
+        fontSize: 'var(--text-sm)',
         lineHeight: 1.8,
       }}
       dangerouslySetInnerHTML={{ __html: html }}

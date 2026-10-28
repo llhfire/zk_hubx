@@ -2,7 +2,7 @@
 // HubX 员工管理 — 统一数据模型 & 初始数据
 // ============================================================
 
-import type { StatusMap } from '@/design-system';
+import type { StatusMap, StatusTone } from '@/design-system';
 
 // ---------- 基础枚举 ----------
 
@@ -314,8 +314,16 @@ export const ABILITY_DIMENSION_LABELS: Record<AbilityDimension, string> = {
   tech: '技术能力', biz: '业务能力', mgmt: '管理能力', tool: '工具熟练', domain: '领域知识',
 };
 
+/**
+ * 能力维度的分类色。只给图表（SVG 雷达图、色块）用真实色值；
+ * 状态标签和进度条一律走 ABILITY_DIMENSION_TONES，保证同一维度全站同色。
+ */
 export const ABILITY_DIMENSION_COLORS: Record<AbilityDimension, string> = {
-  tech: 'var(--primary)', biz: 'var(--success-500)', mgmt: 'var(--warning-500)', tool: '#7c3aed', domain: '#eb2f96',
+  tech: 'var(--primary)', biz: 'var(--success-500)', mgmt: 'var(--warning-500)', tool: 'var(--ds-tone-purple-fg)', domain: 'var(--ds-tone-pink-fg)',
+};
+
+export const ABILITY_DIMENSION_TONES: Record<AbilityDimension, StatusTone> = {
+  tech: 'info', biz: 'success', mgmt: 'warning', tool: 'purple', domain: 'pink',
 };
 
 export const skillTreeDefinitions: SkillNode[] = [

@@ -1,0 +1,46 @@
+/**
+ * 页面图标出口。
+ *
+ * 仅导出产品页面已使用的 Phosphor 图标；页面统一从 `@/design-system`
+ * 取用，不直接依赖第三方图标包。
+ */
+export {
+  Airplane,
+  ArrowLeft,
+  ArrowRight,
+  ArrowSquareOut,
+  ArrowsLeftRight,
+  Bank,
+  Bed,
+  Briefcase,
+  Buildings,
+  Bus,
+  CalendarBlank,
+  Car,
+  ChartBarHorizontal,
+  CheckCircle,
+  Clock,
+  Coins,
+  CreditCard,
+  CurrencyCny,
+  Eye,
+  FileText,
+  Flag,
+  HandCoins,
+  HouseLine,
+  NotePencil,
+  PaperPlaneTilt,
+  PencilSimple,
+  Play,
+  Receipt,
+  Sparkle,
+  Stop,
+  Suitcase,
+  Train,
+  Trash,
+  UploadSimple,
+  User,
+  Users,
+  UserSwitch,
+  Wallet,
+} from '@phosphor-icons/react';

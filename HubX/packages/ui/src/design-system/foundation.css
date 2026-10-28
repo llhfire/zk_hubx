@@ -1,3 +1,5 @@
+@import './tokens.css';
+
 .hubx-page-shell {
   display: flex;
   flex-direction: column;
@@ -185,6 +187,26 @@
   gap: 12px;
 }
 
+.hubx-process-metrics__grid--columns-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hubx-process-metrics__grid--columns-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.hubx-process-metrics__grid--columns-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hubx-process-metrics__grid--columns-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.hubx-process-metrics__grid--columns-6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .hubx-process-metric {
   display: flex;
   min-width: 0;
@@ -208,6 +230,11 @@
 
 .hubx-process-metric--danger {
   background: rgb(var(--danger-1));
+}
+
+.hubx-process-metric--selected {
+  outline: 2px solid rgb(var(--primary-6));
+  outline-offset: -2px;
 }
 
 .hubx-process-metric__label {
@@ -236,6 +263,7 @@
   color: var(--color-text-3);
   font-size: 12px;
   line-height: 18px;
+  overflow-wrap: anywhere;
 }
 
 .hubx-process-workspace {
@@ -381,6 +409,14 @@
   font-weight: 600;
 }
 
+.hubx-process-record-card__details {
+  margin-top: 8px;
+  color: var(--color-text-2);
+  font-size: 13px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
 .hubx-process-record-card__notice {
   margin-top: 8px;
   padding: 4px 8px;
@@ -425,6 +461,13 @@
   }
 
   .hubx-process-metrics__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hubx-process-metrics__grid--columns-3,
+  .hubx-process-metrics__grid--columns-4,
+  .hubx-process-metrics__grid--columns-5,
+  .hubx-process-metrics__grid--columns-6 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

@@ -39,7 +39,7 @@ export function FileList({ items, emptyDescription = '暂无文件', className }
         <li key={item.key} className="hubx-file-list__item">
           <div className="hubx-file-list__identity">
             <IconFile />
-            <div style={{ minWidth: 0 }}>
+            <div className="hubx-file-list__body">
               <div className="hubx-file-list__name" title={item.name}>
                 {item.name}
               </div>
@@ -49,12 +49,12 @@ export function FileList({ items, emptyDescription = '暂无文件', className }
           <div className="hubx-file-list__actions">
             {item.onPreview && (
               <Tooltip content="查看">
-                <Button size="mini" type="text" icon={<IconEye />} aria-label="查看" onClick={item.onPreview} />
+                <Button size="mini" type="text" icon={<IconEye />} aria-label={`查看 ${item.name}`} onClick={item.onPreview} />
               </Tooltip>
             )}
             {item.onDownload && (
               <Tooltip content="下载">
-                <Button size="mini" type="text" icon={<IconDownload />} aria-label="下载" onClick={item.onDownload} />
+                <Button size="mini" type="text" icon={<IconDownload />} aria-label={`下载 ${item.name}`} onClick={item.onDownload} />
               </Tooltip>
             )}
             {item.onDelete && (
@@ -64,7 +64,7 @@ export function FileList({ items, emptyDescription = '暂无文件', className }
                   type="text"
                   status="danger"
                   icon={<IconDelete />}
-                  aria-label="删除"
+                  aria-label={`删除 ${item.name}`}
                   disabled={Boolean(item.deleteDisabledReason)}
                   onClick={item.onDelete}
                 />

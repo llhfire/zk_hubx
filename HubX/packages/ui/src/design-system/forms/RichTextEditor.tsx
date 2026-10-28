@@ -8,6 +8,7 @@ import {
 import type Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import 'quill/dist/quill.bubble.css';
+import '../components.css';
 
 export interface RichTextEditorHandle {
   getEditor: () => Quill | null;
@@ -94,5 +95,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     editorRef.current?.enable(!readOnly);
   }, [readOnly]);
 
-  return <div className={className} style={style}><div ref={hostRef} /></div>;
+  return (
+    <div className={['hubx-rich-text', readOnly ? 'hubx-rich-text--readonly' : '', className].filter(Boolean).join(' ')} style={style}>
+      <div ref={hostRef} />
+    </div>
+  );
 });

@@ -3,9 +3,13 @@
  *
  * 基础变量（间距 --space-*、字号 --text-*、字重、色阶 --grey/--success/--warning）
  * 已由 styles/theme.css 提供，这里不重复定义，只补设计系统需要的语义别名。
+ *
+ * ⚠️ 必须挂在 `body` 而不是 `:root`：Arco 把 --primary-1 / --arcoblue-1 / --color-fill-2
+ * 这些色阶定义在 `body` 上。自定义属性里的 var() 在**声明所在元素**解析，
+ * 挂在 `:root` 上时这些变量对 html 不可见，整组 --ds-tone-* 会变成 guaranteed-invalid，
+ * 组件背景退化成透明、描边退回 currentColor，而且不报任何错。
  */
-
-:root {
+body {
   /* 数字字体栈（M-022）：金额、数量、日期统一使用，禁止在各页面自行声明 font-family */
   --ds-numeral-font: "Inter Variable", Arial, sans-serif;
 
@@ -34,9 +38,99 @@
   --ds-tone-purple-fg: rgb(var(--purple-7, 110 60 200));
   --ds-tone-purple-border: rgb(var(--purple-3, 205 185 240));
 
+  /* 分类色：只用于「多个并列类别」的区分（费用类型、渠道、角色），不表示状态好坏。
+     有了它们，页面就不必再为第 7、第 8 个类别去硬编码青色、粉色值。 */
+  --ds-tone-cyan-bg: rgb(var(--cyan-1, 232 255 251));
+  --ds-tone-cyan-fg: rgb(var(--cyan-7, 12 148 148));
+  --ds-tone-cyan-border: rgb(var(--cyan-3, 135 232 222));
+
+  --ds-tone-pink-bg: rgb(var(--magenta-1, 255 240 246));
+  --ds-tone-pink-fg: rgb(var(--magenta-7, 195 34 121));
+  --ds-tone-pink-border: rgb(var(--magenta-3, 255 173 210));
+
+  --ds-tone-gold-bg: rgb(var(--gold-1, 255 247 230));
+  --ds-tone-gold-fg: rgb(var(--gold-7, 214 126 0));
+  --ds-tone-gold-border: rgb(var(--gold-3, 255 213 145));
+
+  /* 稠密界面的补充字号。
+     styles/theme.css 的 --text-xs(12) / --text-sm(14) 阶梯在信息密集的表格、
+     表单里不够用，全仓实际用到 10/11/13 三档。这三档收进设计系统，页面就不必
+     再写 font-size 数字；后续版本若统一字号阶梯，只改这里。 */
+  --ds-text-micro: 10px;   /* 图表刻度、表格脚注 */
+  --ds-text-caption: 11px; /* 表格次要列、卡片副标题 */
+  --ds-text-dense: 13px;   /* 列表主行、稠密正文 */
+
+  /* 阴影：页面用到的层级就这几档。内联样式里不要写 box-shadow 字面量。 */
+  /* 深色阅读器里的描边 */
+  --ds-viewer-edge: rgb(255 255 255 / 20%);
+  --ds-viewer-edge-dim: rgb(255 255 255 / 18%);
+
+  --ds-shadow-subtle: 0 1px 2px rgb(0 0 0 / 10%);
+  --ds-shadow-card: 0 1px 4px rgb(0 0 0 / 12%);
+  --ds-shadow-up: 0 -4px 12px rgb(0 0 0 / 6%);
+  --ds-shadow-panel: 0 2px 12px rgb(0 0 0 / 6%);
+  --ds-shadow-raised: 0 4px 12px rgb(0 0 0 / 12%);
+  --ds-shadow-overlay: 0 4px 24px rgb(0 0 0 / 45%);
+  --ds-shadow-viewer: 0 6px 16px rgb(0 0 0 / 35%);
+  --ds-shadow-viewer-strong: 0 8px 28px rgb(0 0 0 / 40%);
+
+  /* 大图标锚点：空态主图标、二维码示意图形（不是文字，别用 --text-*） */
+  --ds-icon-lg: 48px;
+  --ds-icon-hero: 88px;
+
+  /* 胶囊圆角：标签条、浮动工具条 */
+  --ds-radius-pill: 999px;
+
   /* 组件尺寸 */
   --ds-control-height-sm: 28px;
   --ds-control-height: 32px;
+
+  /* ── 文档复刻色 ──────────────────────────────────────────────
+     报价单 A4 缩略图、合同/报价在线预览用。它们复刻的是「纸张 + 印刷油墨 +
+     深色阅读器外壳」，属于**内容**而不是界面外壳，所以刻意不跟随主题换肤。
+     界面底色一律不用这一组，用上面的 tone / Arco 变量。 */
+  --ds-doc-paper: #ffffff;
+  --ds-doc-paper-tint: #fafafa;
+  --ds-doc-paper-tint-2: #fcfcfc;
+  --ds-doc-rule: #e5e6eb;
+  --ds-doc-rule-strong: #d9d9d9;
+  --ds-doc-rule-soft: #f0f0f0;
+  --ds-doc-rule-dashed: #d0d7de;
+  --ds-doc-rule-frame: #bfbfbf;
+  --ds-doc-wash: #eef0f4;
+  --ds-doc-wash-2: #f0f2f5;
+  --ds-doc-wash-blue: #eef2f8;
+  --ds-doc-ink: #333333;
+  --ds-doc-ink-strong: #1d2129;
+  --ds-doc-ink-faint: #444444;
+  --ds-doc-ink-secondary: #555555;
+  --ds-doc-ink-tertiary: #666666;
+  --ds-doc-ink-muted: #888888;
+  --ds-doc-brand: #0b3d88;
+  --ds-doc-brand-bar: #1351a8;
+  --ds-doc-accent: #165dff;
+  --ds-doc-accent-strong: #4080ff;
+  --ds-doc-danger-bg: #fff1f0;
+  --ds-doc-danger-fg: #cf1322;
+
+  /* 深色阅读器 / 缩略图外壳：固定深色，不随主题 */
+  --ds-viewer-shell: #2b2d30;
+  --ds-viewer-shell-bar: #232528;
+  --ds-viewer-shell-edge: #1e1f22;
+  --ds-viewer-shell-edge-strong: #1a1b1d;
+  --ds-viewer-on-shell: #e6e6e6;
+  --ds-viewer-on-shell-dim: #cccccc;
+  --ds-viewer-on-shell-muted: #8c8c8c;
+  --ds-viewer-on-shell-faint: #a6a6a6;
+  --ds-viewer-backdrop: #525659;
+  --ds-viewer-overlay: rgba(20, 24, 31, 0.65);
+  --ds-viewer-overlay-strong: rgba(20, 24, 31, 0.85);
+  --ds-viewer-on-overlay: #ffffff;
+  --ds-viewer-on-overlay-soft: rgba(255, 255, 255, 0.95);
+  --ds-viewer-edge-soft: rgba(255, 255, 255, 0.15);
+  --ds-viewer-shadow: rgba(0, 0, 0, 0.45);
+  --ds-viewer-shadow-soft: rgba(0, 0, 0, 0.3);
+  --ds-viewer-accent-ring: rgba(22, 93, 255, 0.35);
 
   /* 文本色（Arco 运行时变量别名，避免页面直接写 --color-text-N） */
   --ds-text-primary: var(--color-text-1);

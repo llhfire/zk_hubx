@@ -6,10 +6,14 @@
  * `app/components/ui`。
  */
 
+/* ---------- foundation controls ---------- */
+export * from './foundation/controls';
+export * from './foundation/icons';
+
 /* ---------- primitives ---------- */
 export { MoneyText, type MoneyTextProps, type MoneyVariant, type MoneyTone } from './primitives/MoneyText';
 export { StatusTag, resolveStatus, STATUS_TONE_VARS, type StatusTagProps, type StatusMeta, type StatusMap, type StatusTone } from './primitives/StatusTag';
-export { GradeTag, type GradeTagProps, type Grade } from './primitives/GradeTag';
+export { GradeTag, GRADE_TONE, type GradeTagProps, type Grade } from './primitives/GradeTag';
 export { DateText, type DateTextProps, type DateInput } from './primitives/DateText';
 export { CountdownTag, type CountdownTagProps } from './primitives/CountdownTag';
 export { IdentifierText, type IdentifierTextProps } from './primitives/IdentifierText';
@@ -23,6 +27,7 @@ export { PageShell } from './layout/PageShell';
 export { PageHeader } from './layout/PageHeader';
 export { PageBreadcrumb, type PageBreadcrumbItem } from './layout/PageBreadcrumb';
 export { SectionCard, type SectionCardProps } from './layout/SectionCard';
+export { SectionTabs, type SectionTabItem, type SectionTabsProps } from './layout/SectionTabs';
 export { DetailHeader, type DetailHeaderProps } from './layout/DetailHeader';
 export { SplitLayout, SplitLayoutMain, SplitLayoutAside } from './layout/SplitLayout';
 
@@ -41,6 +46,8 @@ export { FormSection, type FormSectionProps } from './forms/FormSection';
 export { FormGrid, type FormGridProps } from './forms/FormGrid';
 export { UploadPanel, type UploadPanelProps } from './forms/UploadPanel';
 export { RichTextEditor, type RichTextEditorHandle, type RichTextEditorProps } from './forms/RichTextEditor';
+export { OrderedStatePicker, type OrderedStateOption, type OrderedStatePickerProps } from './forms/OrderedStatePicker';
+export { UserPicker, type UserPickerOption, type UserPickerProps } from './forms/UserPicker';
 
 /* ---------- feedback ---------- */
 export { confirmAction, ConfirmModal, type ConfirmActionOptions, type ConfirmModalProps } from './feedback/ConfirmModal';
@@ -49,5 +56,20 @@ export { AsyncState, type AsyncStateProps, type AsyncStatus } from './feedback/A
 
 /* ---------- business ---------- */
 export { ProcessOverview, type ProcessOverviewStep } from './business/ProcessOverview';
+export { ProcessStepper, type ProcessStepperProps, type ProcessStepperNode, type ProcessStepperStatus } from './business/ProcessStepper';
 export { ProcessRecordCard, type ProcessRecordCardProps } from './business/ProcessRecordCard';
+export { ProcessPanelSection, type ProcessPanelSectionProps } from './business/ProcessPanelSection';
 export { DocumentViewerModal, type DocumentViewerModalProps } from './business/DocumentViewerModal';
+export { ApprovalFlow, type ApprovalFlowProps, type ApprovalFlowNode, type ApprovalNodeStatus } from './business/ApprovalFlow';
+export { FeatureWorkloadMatrix, type FeatureWorkloadMatrixProps, type FeatureWorkloadMatrixRole, type FeatureWorkloadMatrixEndpoint, type FeatureWorkloadMatrixModule, type FeatureWorkloadMatrixUnit } from './business/FeatureWorkloadMatrix';
+export { RiskRadarGrid, type RiskRadarGridProps, type RiskRadarItem, type RiskRadarTone } from './business/RiskRadarGrid';
+export { RoleRateGrid, type RoleRateGridProps, type RoleRateGridItem } from './business/RoleRateGrid';
+export { EvaluationWorkloadTable, type EvaluationWorkloadTableProps, type EvaluationWorkloadTableRole, type EvaluationWorkloadTableRow } from './business/EvaluationWorkloadTable';
+export { WorkloadNumericInput, type WorkloadNumericInputProps, type WorkloadNumericInputFillRef } from './business/WorkloadNumericInput';
+export { DormitoryRoomBoard, type DormitoryRoomBoardProps, type DormitoryRoomBoardBed, type DormitoryRoomBoardFloor, type DormitoryRoomBoardRoom, type DormitoryRoomStatusFilter } from './business/DormitoryRoomBoard';
+export { PaymentProgress, type PaymentProgressProps } from './business/PaymentProgress';
+export { PaymentAmountSummary, type PaymentAmountSummaryProps } from './business/PaymentAmountSummary';
+export { PaymentScheduleRail, type PaymentScheduleItem, type PaymentScheduleRailProps, type PaymentScheduleStatus } from './business/PaymentScheduleRail';
+export { PaymentPlanTable, type PaymentPlanTableProps, type PaymentPlanTableRow } from './business/PaymentPlanTable';
+export { FileArchivePanel, type FileArchiveEntry, type FileArchivePanelProps } from './business/FileArchivePanel';
+export { DocumentActionRow, type DocumentActionRowProps, type DocumentActionRowVariant } from './business/DocumentActionRow';

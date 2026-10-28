@@ -1,6 +1,21 @@
+import type { StatusTone } from './StatusTag';
 import '../components.css';
 
 export type Grade = 'S' | 'A' | 'B' | 'C';
+
+/**
+ * 等级 → 语义色。
+ *
+ * **S 是最好的一档，必须是 success，不是 danger。** 历史上项目列表与线索派发
+ * 曾把它映射成红色，导致「最优质客户」看起来像告警；有回归测试锁定这一点。
+ * 未定等级走 neutral，不冒充任何真实等级。
+ */
+export const GRADE_TONE: Record<Grade, StatusTone> = {
+  S: 'success',
+  A: 'info',
+  B: 'neutral',
+  C: 'neutral',
+};
 
 export interface GradeTagProps {
   grade?: Grade | string | null;

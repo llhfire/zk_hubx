@@ -19,6 +19,8 @@ export interface DescriptionsCardProps {
   items: DescriptionItem[];
   /** 短字段列数，默认 3 */
   columns?: 1 | 2 | 3 | 4;
+  /** 只渲染字段区本身，不再包 SectionCard —— 用于嵌进已有卡片或侧栏 */
+  bare?: boolean;
   className?: string;
 }
 
@@ -28,7 +30,7 @@ export interface DescriptionsCardProps {
  * 替代全仓 46 处直接使用 `<Descriptions>` 的写法 —— 那里长短字段混排，
  * 长链接会把网格撑破，是 M-004/M-005 反复出现的原因。
  */
-export function DescriptionsCard({ title, extra, items, columns = 3, className }: DescriptionsCardProps) {
+export function DescriptionsCard({ title, extra, items, columns = 3, bare = false, className }: DescriptionsCardProps) {
   const shortItems = items.filter((item) => !item.long);
   const longItems = items.filter((item) => item.long);
 
@@ -54,6 +56,10 @@ export function DescriptionsCard({ title, extra, items, columns = 3, className }
       )}
     </>
   );
+
+  if (bare) {
+    return <div className={className}>{body}</div>;
+  }
 
   return (
     <SectionCard title={title} extra={extra} className={className}>

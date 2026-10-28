@@ -8,6 +8,7 @@ export interface ProcessRecordCardProps {
   actions?: ReactNode;
   identifier?: ReactNode;
   summary?: ReactNode;
+  details?: ReactNode;
   notice?: ReactNode;
   muted?: boolean;
   className?: string;
@@ -26,6 +27,7 @@ export function ProcessRecordCard({
   actions,
   identifier,
   summary,
+  details,
   notice,
   muted = false,
   className,
@@ -63,6 +65,7 @@ export function ProcessRecordCard({
       </div>
       {identifier && <div className="hubx-process-record-card__identifier">{identifier}</div>}
       {summary && <div className="hubx-process-record-card__summary">{summary}</div>}
+      {details && <div className="hubx-process-record-card__details">{details}</div>}
       {notice && <div className="hubx-process-record-card__notice">{notice}</div>}
     </article>
   );

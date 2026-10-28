@@ -36,12 +36,10 @@ export function UploadPanel({ hint = '点击或拖拽文件到此处上传', des
       onDrop={() => setDragging(false)}
     >
       <Upload drag disabled={disabled} {...rest}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: 8 }}>
-          <IconUpload style={{ fontSize: 20 }} />
+        <div className="hubx-upload-panel__content">
+          <IconUpload className="hubx-upload-panel__icon" />
           <span>{hint}</span>
-          {description && (
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ds-text-tertiary)' }}>{description}</span>
-          )}
+          {description && <span className="hubx-upload-panel__description">{description}</span>}
         </div>
       </Upload>
     </div>

@@ -1,0 +1,58 @@
+/**
+ * 报价单 A4 复刻边界。
+ *
+ * 这些变量只挂在 facsimile 根节点上，不进入全局 tokens.css：它们描述的是
+ * 纸张印刷色与缩略图画布，不是产品界面的通用语义。
+ */
+.hubx-facsimile {
+  --ds-facsimile-paper: #ffffff;
+  --ds-facsimile-paper-tint: #fafafa;
+  --ds-facsimile-paper-tint-2: #fcfcfc;
+  --ds-facsimile-rule: #e5e6eb;
+  --ds-facsimile-rule-strong: #d9d9d9;
+  --ds-facsimile-rule-soft: #f0f0f0;
+  --ds-facsimile-rule-dashed: #d0d7de;
+  --ds-facsimile-rule-frame: #bfbfbf;
+  --ds-facsimile-wash: #eef0f4;
+  --ds-facsimile-wash-2: #f0f2f5;
+  --ds-facsimile-wash-blue: #eef2f8;
+  --ds-facsimile-ink: #333333;
+  --ds-facsimile-ink-strong: #1d2129;
+  --ds-facsimile-ink-faint: #444444;
+  --ds-facsimile-ink-secondary: #555555;
+  --ds-facsimile-ink-tertiary: #666666;
+  --ds-facsimile-ink-muted: #888888;
+  --ds-facsimile-brand: #0b3d88;
+  --ds-facsimile-brand-bar: #1351a8;
+  --ds-facsimile-accent: #165dff;
+  --ds-facsimile-danger-bg: #fff1f0;
+  --ds-facsimile-danger-fg: #cf1322;
+
+  /* 160×226 is the fixed A4 miniature viewport; do not replace with product scale tokens. */
+  --ds-facsimile-canvas-width: 160px;
+  --ds-facsimile-canvas-height: 226px;
+  --ds-facsimile-canvas-radius: 2px;
+  --ds-facsimile-canvas-edge: rgba(255, 255, 255, 0.15);
+  --ds-facsimile-canvas-shadow: rgba(0, 0, 0, 0.3);
+  --ds-facsimile-canvas-shadow-active: rgba(0, 0, 0, 0.45);
+  --ds-facsimile-canvas-ring: rgba(22, 93, 255, 0.35);
+}
+
+.hubx-facsimile__canvas {
+  width: var(--ds-facsimile-canvas-width);
+  height: var(--ds-facsimile-canvas-height);
+  background: var(--ds-facsimile-paper);
+  border: 1px solid var(--ds-facsimile-canvas-edge);
+  border-radius: var(--ds-facsimile-canvas-radius);
+  box-shadow: 0 2px 8px var(--ds-facsimile-canvas-shadow);
+  padding: 10px 12px;
+  box-sizing: border-box;
+  transition: all 0.18s ease-in-out;
+  transform: scale(1);
+}
+
+.hubx-facsimile__canvas--active {
+  border: 2px solid rgb(var(--primary-6));
+  box-shadow: 0 0 0 3px var(--ds-facsimile-canvas-ring), 0 6px 16px var(--ds-facsimile-canvas-shadow-active);
+  transform: scale(1.02);
+}

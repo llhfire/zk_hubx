@@ -12,7 +12,7 @@
   padding: 16px;
   border: 1px solid var(--color-border-2);
   border-radius: 8px;
-  background: var(--color-fill-1);
+  background: var(--color-bg-2);
 }
 
 .ui-library-preview + .ui-library-preview {
@@ -65,6 +65,205 @@
   margin-top: 16px;
 }
 
+/* 模块组件页签的演示区：只放布局，颜色/字号全部来自 tokens */
+.ui-library-demo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ui-library-demo-row + .ui-library-demo-row {
+  margin-top: 12px;
+}
+
+.ui-library-demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-library-demo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ui-library-demo-caption {
+  color: var(--ds-text-tertiary);
+  font-size: var(--ds-text-caption);
+  line-height: 18px;
+}
+
+.ui-library-demo-caption-line {
+  color: var(--ds-text-tertiary);
+  font-size: var(--ds-text-dense);
+  line-height: 20px;
+}
+
+.ui-library-size-stage {
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-library-size-stage--control {
+  max-width: 320px;
+}
+
+.ui-library-size-stage--amount {
+  max-width: 260px;
+}
+
+.ui-library-size-stage--rail {
+  max-width: 360px;
+}
+
+/* 列表状态列约 120px：用来核对标签不被列宽拉满 */
+.ui-library-size-stage--tag-col {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 120px;
+  min-height: 28px;
+  padding: 4px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--radius-sm);
+}
+
+/* 客户/项目等级列约 88px */
+.ui-library-size-stage--grade-col {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 88px;
+  min-height: 28px;
+  padding: 4px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--radius-sm);
+}
+
+/* 日期 + 倒计时并排，资产/维保列表的常见列宽 */
+.ui-library-size-stage--date-col {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 168px;
+  min-height: 28px;
+  padding: 4px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--radius-sm);
+}
+
+/* 4 列指标行：单元格最小 160px，整行不超过差旅/回款摘要的常见宽度 */
+.ui-library-size-stage--metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 880px;
+}
+
+/* 卡片内进度：三档并排，不拉满整页 */
+.ui-library-size-stage--progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 720px;
+}
+
+/* 表格进度列，线索成本评分列约 160px */
+.ui-library-size-stage--progress-cell {
+  box-sizing: border-box;
+  width: 160px;
+}
+
+/* 详情侧栏、窄附件区 */
+.ui-library-size-stage--aside {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 320px;
+}
+
+.ui-library-size-stage--file {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* 员工弹窗、项目抽屉的常见宽度 */
+.ui-library-size-stage--form {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+}
+
+.ui-library-size-stage--editor {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 760px;
+}
+
+.ui-library-size-stage--editor .hubx-rich-text:not(.hubx-rich-text--readonly) .ql-editor {
+  min-height: 160px;
+}
+
+.ui-library-field--search,
+.ui-library-field--filter,
+.ui-library-field--date {
+  flex: 0 0 auto;
+}
+
+.ui-library-field--search { width: 240px; }
+.ui-library-field--filter { width: 140px; }
+.ui-library-field--date { width: 200px; }
+
+.ui-library-size-stage--form .arco-picker {
+  width: 100%;
+}
+
+/* 回款泳道列最小 220，实样取 240 */
+.ui-library-size-stage--lane {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 240px;
+}
+
+/* 收付款列表的回款进度列 */
+.ui-library-size-stage--progress-col {
+  box-sizing: border-box;
+  width: 150px;
+}
+
+.ui-library-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.ui-library-demo-grid--wide {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.ui-library-demo-spacer {
+  height: 16px;
+}
+
+.ui-library-tone-swatch {
+  padding: 2px 10px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ui-swatch-bg);
+  border: 1px solid var(--ui-swatch-border);
+  color: var(--ui-swatch-fg);
+  font-size: var(--ds-text-caption);
+  line-height: 20px;
+  white-space: nowrap;
+}
+
 .ui-library-time-capsule {
   display: inline-flex;
   flex-direction: column;
@@ -97,5 +296,81 @@
 @media (max-width: 768px) {
   .ui-library-flow-list {
     grid-template-columns: 1fr;
+  }
+
+  .ui-library-size-stage--metrics,
+  .ui-library-size-stage--progress {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- 页面框架骨架：虚线框 + 槽位标注 ---------- */
+
+.ui-library-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed var(--color-border-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-fill-1);
+}
+
+.ui-library-frame__slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-3);
+  font-size: var(--ds-text-caption);
+  line-height: 18px;
+}
+
+.ui-library-frame__slot-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--color-border-2);
+  border-radius: 9px;
+  background: var(--color-bg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 业务样板：复制边界 ---------- */
+
+.ui-library-copy-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 4px;
+}
+
+.ui-library-copy-notes__col {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-2);
+}
+
+.ui-library-copy-notes__title {
+  margin-bottom: 6px;
+  color: var(--color-text-1);
+  font-size: var(--ds-text-caption);
+  font-weight: 600;
+}
+
+.ui-library-copy-notes ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+  line-height: 22px;
+}
+
+@media (max-width: 768px) {
+  .ui-library-copy-notes {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

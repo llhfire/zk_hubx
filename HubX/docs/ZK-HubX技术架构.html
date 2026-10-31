@@ -286,7 +286,7 @@
     </div>
     <div class="layer">
       <div class="who">页面</div>
-      <div class="what">React 18 + Router 7 + Arco + Tailwind v4。列表/详情读 Context。真正项目列表是 <code>ProjectList.tsx</code>，不是 <code>Projects.tsx</code>。</div>
+      <div class="what">React 18 + Router 7 + Arco + Tailwind v4。列表/详情读 Context。真正项目列表是 <code>ProjectList.tsx</code>，不是 <code>Projects.tsx</code>。图表只从 <code>@/design-system</code> 的 <code>Chart</code> 取，<code>recharts</code> 不进页面。</div>
       <div class="path">packages/ui/.../pages/</div>
     </div>
     <div class="layer">
@@ -613,6 +613,12 @@
       页面侧 Arco <code>&lt;Tabs&gt;</code> 直写 58 处 → 0（新增棘轮门禁 <code>rawPageTabs</code>，预算 0）；
       <code>SectionTabs</code> 补 <code>variant</code>（line / card）、<code>countTone</code>、<code>defaultActiveKey</code>；
       <code>/ui-library</code> 改四层（基础 UI / 模块组件 / 页面框架 4 骨架 / 业务样板 4 切片）
+    </div>
+    <div class="tl done">
+      <div class="st">2026-10-31 已完成</div>
+      <b>图表适配层收口</b>
+      新增 <code>design-system/charts/</code>，页面只从 <code>Chart</code> 一个入口取图表：6 处 <code>recharts</code> 直引 → 0、图表硬编码色 7 处 → 0；
+      类别色走 <code>--chart-1..5</code>，语义色复用 <code>STATUS_TONE_VARS</code>。严格门禁例外 40 → 22（剩 13 处可点击行、2 处胶囊、2 处文档翻页、3 处原生 table）
     </div>
     <div class="tl next">
       <div class="st">下一步</div>

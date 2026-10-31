@@ -8,6 +8,7 @@ import {
   SplitLayoutMain,
 } from '@/design-system';
 import { BusinessDemos } from '../demos/BusinessDemos';
+import { ChartDemos } from '../demos/ChartDemos';
 import { DataDisplayDemos } from '../demos/DataDisplayDemos';
 import { FeedbackDemos } from '../demos/FeedbackDemos';
 import { LayoutDemos } from '../demos/LayoutDemos';
@@ -34,10 +35,10 @@ function WorkspaceDemo() {
   );
 }
 
-/** 组件目录：53 行导出清单，按分类可查代码位置。 */
+/** 组件目录：54 行导出清单，按分类可查代码位置。 */
 function ModuleIndex() {
   return (
-    <SectionCard title="设计系统组件目录" description="58 个值导出 / 53 行（SplitLayout 三名、三图标、confirmAction + ConfirmModal 各合一行）。">
+    <SectionCard title="设计系统组件目录" description="59 个值导出 / 54 行（SplitLayout 三名、三图标、confirmAction + ConfirmModal 各合一行、图表入口合为 Chart 一行）。">
       <DataTable
         rowKey="key"
         pagination={false}
@@ -55,7 +56,7 @@ function ModuleIndex() {
 
 /**
  * 模块组件：由基础层组合出的可复用块。
- * 按「容器 / 展示 / 反馈 / 业务 / 布局」分组，一组一个页签，避免 45 个实样串成一屏。
+ * 按「容器 / 展示（含图表）/ 反馈 / 业务 / 布局」分组，一组一个页签，避免几十个实样串成一屏。
  */
 export interface ModulesPanelProps {
   group: string;
@@ -75,11 +76,11 @@ export function ModulesPanel({ group, onGroupChange }: ModulesPanelProps) {
         onChange={onGroupChange}
         items={[
           { key: 'layout', label: '容器与导航', count: 5, content: <LayoutDemos /> },
-          { key: 'display', label: '表格与展示', count: 6, content: <DataDisplayDemos /> },
+          { key: 'display', label: '表格与展示', count: 7, content: <><DataDisplayDemos /><ChartDemos /></> },
           { key: 'feedback', label: '反馈与确认', count: 3, content: <FeedbackDemos /> },
           { key: 'business', label: '业务区块', count: 15, content: <BusinessDemos /> },
           { key: 'workspace', label: '主辅布局', count: 1, content: <WorkspaceDemo /> },
-          { key: 'index', label: '组件目录', count: 53, content: <ModuleIndex /> },
+          { key: 'index', label: '组件目录', count: 54, content: <ModuleIndex /> },
         ]}
       />
     </div>

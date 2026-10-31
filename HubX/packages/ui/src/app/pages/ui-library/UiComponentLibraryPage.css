@@ -120,6 +120,17 @@
   max-width: 360px;
 }
 
+/* 图表实样：整幅图高度由 Chart.Canvas 决定，这里只限制旁边文字行的宽度 */
+.ui-library-size-stage--chart {
+  max-width: 720px;
+}
+
+/* 饼图 / 雷达图并排展示，单项不再撑满整行 */
+.ui-library-size-stage--chart-third {
+  flex: 1 1 320px;
+  max-width: 360px;
+}
+
 /* 列表状态列约 120px：用来核对标签不被列宽拉满 */
 .ui-library-size-stage--tag-col {
   display: flex;

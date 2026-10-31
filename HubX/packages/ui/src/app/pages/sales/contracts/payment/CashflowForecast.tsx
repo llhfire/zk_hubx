@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import {
+  Chart,
   DateText,
   DescriptionsCard,
   FilterBar,
@@ -15,11 +15,12 @@ import { CERTAINTY_LABELS, CERTAINTY_TONES } from './types';
 import type { PaymentAnalysisContract } from './contractPaymentProjection';
 import type { ForecastCertaintyLevel, ForecastOverride } from './types';
 
+// 现金流确定性分层是「状态」而不是「并列类别」：颜色跟旁边 StatusTag 的 tone 同源。
 const CASHFLOW_SERIES = [
-  { key: 'high', dataKey: '高确信', fill: 'rgb(var(--success-6))' },
-  { key: 'medium', dataKey: '正常履约', fill: 'rgb(var(--blue-6))' },
-  { key: 'low', dataKey: '风险受阻', fill: 'rgb(var(--warning-6))' },
-  { key: 'blocked', dataKey: '卡点停滞', fill: 'rgb(var(--danger-6))' },
+  { key: 'high', dataKey: '高确信', fill: Chart.tone.success },
+  { key: 'medium', dataKey: '正常履约', fill: Chart.tone.primary },
+  { key: 'low', dataKey: '风险受阻', fill: Chart.tone.warning },
+  { key: 'blocked', dataKey: '卡点停滞', fill: Chart.tone.danger },
 ] as const satisfies ReadonlyArray<{
   key: ForecastCertaintyLevel;
   dataKey: string;
@@ -91,24 +92,24 @@ export function CashflowForecast({ contracts, overrides = [], projectDelayMap = 
 
       {/* 堆叠柱状图 */}
       <div role="img" aria-label={`未来 ${period} 个月现金流预测，按确定性分层`}>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis label={{ value: '万元', angle: -90, position: 'insideLeft' }} />
-            <Tooltip
+        <Chart.Canvas height={300}>
+          <Chart.BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+            <Chart.Grid />
+            <Chart.XAxis dataKey="month" />
+            <Chart.YAxis label={{ value: '万元', angle: -90, position: 'insideLeft' }} />
+            <Chart.Tooltip
               formatter={(value, name) => [
                 <MoneyText key={String(name)} variant="compact" value={Number(value) * 10000} />,
                 String(name),
               ]}
               labelFormatter={(label) => String(label)}
             />
-            <Legend content={<CashflowLegend />} />
+            <Chart.Legend content={<CashflowLegend />} />
             {CASHFLOW_SERIES.map((series) => (
-              <Bar key={series.key} dataKey={series.dataKey} stackId="a" fill={series.fill} />
+              <Chart.Bar key={series.key} dataKey={series.dataKey} stackId="a" fill={series.fill} />
             ))}
-          </BarChart>
-        </ResponsiveContainer>
+          </Chart.BarChart>
+        </Chart.Canvas>
       </div>
 
       {/* 汇总文字 */}

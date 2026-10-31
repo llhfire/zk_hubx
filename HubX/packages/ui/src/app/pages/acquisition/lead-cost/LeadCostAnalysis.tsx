@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, DataTable, DatePicker, Grid, IconDownload, Message, PageHeader, PageShell, ProgressBar, SectionCard, Select, Space, StatusTag, Typography } from '@/design-system';
-import { Bar, BarChart, CartesianGrid, Legend, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Button, Chart, DataTable, DatePicker, Grid, IconDownload, Message, PageHeader, PageShell, ProgressBar, SectionCard, Select, Space, StatusTag, Typography } from '@/design-system';
 import {
   buildChannelSummaries,
   calculateActualCost,
@@ -119,42 +118,41 @@ export function LeadCostAnalysis() {
         <Col span={12}>
           <SectionCard title="消耗金额与有效线索数对比">
             <div style={{ height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="channel" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="消耗金额" fill="var(--primary)" />
-                  <Bar dataKey="有效线索" fill="var(--success-500)" />
-                </BarChart>
-              </ResponsiveContainer>
+              <Chart.Canvas height="100%">
+                <Chart.BarChart data={barData}>
+                  <Chart.Grid />
+                  <Chart.XAxis dataKey="channel" />
+                  <Chart.YAxis />
+                  <Chart.Tooltip />
+                  <Chart.Legend />
+                  <Chart.Bar dataKey="消耗金额" fill={Chart.tone.primary} />
+                  <Chart.Bar dataKey="有效线索" fill={Chart.tone.success} />
+                </Chart.BarChart>
+              </Chart.Canvas>
             </div>
           </SectionCard>
         </Col>
         <Col span={12}>
           <SectionCard title="渠道四维能力雷达图">
             <div style={{ height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="subject" />
-                  <PolarRadiusAxis />
+              <Chart.Canvas height="100%">
+                <Chart.RadarChart data={radarData}>
+                  <Chart.PolarGrid />
+                  <Chart.PolarAngleAxis dataKey="subject" />
+                  <Chart.PolarRadiusAxis />
                   {rankedSummaries.slice(0, 4).map((item, index) => (
-                    <Radar
+                    <Chart.Radar
                       key={item.platform}
                       name={item.platform}
                       dataKey={item.platform}
-                      stroke={['var(--primary)', 'var(--success-500)', 'var(--warning-500)', 'var(--destructive-500)'][index]}
-                      fill={['var(--primary)', 'var(--success-500)', 'var(--warning-500)', 'var(--destructive-500)'][index]}
-                      fillOpacity={0.15}
+                      stroke={Chart.series(index)}
+                      fill={Chart.series(index)}
                     />
                   ))}
-                  <Legend />
-                  <Tooltip />
-                </RadarChart>
-              </ResponsiveContainer>
+                  <Chart.Legend />
+                  <Chart.Tooltip />
+                </Chart.RadarChart>
+              </Chart.Canvas>
             </div>
           </SectionCard>
         </Col>

@@ -14,6 +14,7 @@ import {
   Popconfirm,
 } from '@/design-system';
 import {
+  Chart,
   DataTable,
   DateText,
   EntityLink,
@@ -27,10 +28,6 @@ import {
   type StatusMap,
 } from '@/design-system';
 import { contractCostPermissions } from './contract-cost/contractCostData';
-import {
-  PieChart, Pie, Cell, Tooltip as RechartTooltip, Legend,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
-} from 'recharts';
 import { IconPlus, IconEdit, IconDelete, IconExport } from '@/design-system';
 
 
@@ -60,13 +57,6 @@ const trendData = [
   { month: '2026-03', 房租物业: 38000, 水电网络: 4000, 行政杂费: 2400, 设备维护: 5000 },
   { month: '2026-04', 房租物业: 38000, 水电网络: 3900, 行政杂费: 1800, 设备维护: 6500 },
   { month: '2026-05', 房租物业: 38000, 水电网络: 4200, 行政杂费: 1800, 设备维护: 0 },
-];
-
-const PIE_COLORS = [
-  'rgb(var(--primary-6))',
-  'rgb(var(--cyan-6))',
-  'rgb(var(--orange-6))',
-  'rgb(var(--purple-6))',
 ];
 
 const EXPENSE_TYPES = ['房租物业', '水电网络', '行政杂费', '设备维护', '其他'];
@@ -310,30 +300,30 @@ export function FinancialDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 16 }}>
           {/* Pie chart */}
           <SectionCard title="支出分布">
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={(props) => `${String(props.name ?? '')} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`}>
-                  {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <RechartTooltip formatter={(v) => <MoneyText value={Number(v)} />} />
-              </PieChart>
-            </ResponsiveContainer>
+            <Chart.Canvas height={280}>
+              <Chart.PieChart>
+                <Chart.Pie data={pieData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={(props) => `${String(props.name ?? '')} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`}>
+                  {pieData.map((entry, i) => <Chart.Cell key={entry.name} fill={Chart.series(i)} />)}
+                </Chart.Pie>
+                <Chart.Tooltip formatter={(v) => <MoneyText value={Number(v)} />} />
+              </Chart.PieChart>
+            </Chart.Canvas>
           </SectionCard>
 
           {/* Line chart */}
           <SectionCard title="月度支出趋势">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-2)" />
-                <XAxis dataKey="month" tick={{ fontSize: 'var(--text-xs)' }} />
-                <YAxis tick={{ fontSize: 'var(--text-xs)' }} tickFormatter={(v) => `${v / 1000}k`} />
-                <RechartTooltip formatter={(v) => <MoneyText value={Number(v)} />} />
-                <Legend />
+            <Chart.Canvas height={280}>
+              <Chart.LineChart data={trendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <Chart.Grid />
+                <Chart.XAxis dataKey="month" />
+                <Chart.YAxis tickFormatter={(v) => `${v / 1000}k`} />
+                <Chart.Tooltip formatter={(v) => <MoneyText value={Number(v)} />} />
+                <Chart.Legend />
                 {['房租物业', '水电网络', '行政杂费', '设备维护'].map((key, i) => (
-                  <Line key={key} type="monotone" dataKey={key} stroke={PIE_COLORS[i]} strokeWidth={2} dot={false} />
+                  <Chart.Line key={key} dataKey={key} stroke={Chart.series(i)} strokeWidth={2} dot={false} />
                 ))}
-              </LineChart>
-            </ResponsiveContainer>
+              </Chart.LineChart>
+            </Chart.Canvas>
           </SectionCard>
         </div>
 

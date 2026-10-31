@@ -54,6 +54,10 @@ export { confirmAction, ConfirmModal, type ConfirmActionOptions, type ConfirmMod
 export { AlertBanner, type AlertBannerProps, type AlertTone } from './feedback/AlertBanner';
 export { AsyncState, type AsyncStateProps, type AsyncStatus } from './feedback/AsyncState';
 
+/* ---------- charts ---------- */
+export { Chart } from './charts';
+export type { ChartTone, PieLabelRenderProps } from './charts';
+
 /* ---------- business ---------- */
 export { ProcessOverview, type ProcessOverviewStep } from './business/ProcessOverview';
 export { ProcessStepper, type ProcessStepperProps, type ProcessStepperNode, type ProcessStepperStatus } from './business/ProcessStepper';

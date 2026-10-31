@@ -33,6 +33,7 @@ export const moduleRows = [
   { key: 'resolve-status', category: '原子', component: 'resolveStatus', purpose: '从 StatusMap 取值，缺映射时回退「未定义」中性灰', source: 'design-system/primitives/StatusTag.tsx' },
   { key: 'tone-vars', category: '原子', component: 'STATUS_TONE_VARS', purpose: '状态色但不是标签时（进度条、强调条、金额）取 fg/bg/border', source: 'design-system/primitives/StatusTag.tsx' },
   { key: 'grade-tone', category: '原子', component: 'GRADE_TONE', purpose: '等级 → tone 的映射（S 是 success，不是 danger）', source: 'design-system/primitives/GradeTag.tsx' },
+  { key: 'chart', category: '展示', component: 'Chart', purpose: '图表唯一入口：画布、坐标系、图形、类别色板与语义色，recharts 不再出现在页面里', source: 'design-system/charts/index.tsx' },
   { key: 'shell', category: '骨架', component: 'PageShell', purpose: '统一面包屑、页面纵向节奏和内容起点（本页即由它包裹）', source: 'design-system/layout/PageShell.tsx' },
   { key: 'header', category: '骨架', component: 'PageHeader', purpose: '普通列表、配置和看板页头', source: 'design-system/layout/PageHeader.tsx' },
   { key: 'breadcrumb', category: '骨架', component: 'PageBreadcrumb', purpose: '二级及以上页面层级导航', source: 'design-system/layout/PageBreadcrumb.tsx' },

@@ -7,19 +7,7 @@ import {
   IconSettings,
 } from '@/design-system';
 import {
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
+  Chart,
   DataTable,
   DateText,
   MoneyText,
@@ -111,12 +99,12 @@ const COST_ITEM_STATUS: StatusMap<'actual' | 'forecast'> = {
   forecast: { label: '预测', tone: 'info' },
 };
 
-const COST_COLORS: Record<string, string> = {
-  labor: '#1e40af',
-  travel: '#06b6d4',
-  promotion: '#8b5cf6',
-  commercial: '#3b82f6',
-  third_party: '#93c5fd',
+// 成本构成是并列类别：颜色按固定类别顺序取系列色，数据里不再存色值。
+// 顺序固定，某个类别缺数据时后面的类别不会串色。
+const COST_CATEGORY_ORDER = ['labor', 'travel', 'promotion', 'commercial', 'third_party'] as const;
+const costColor = (category: string) => {
+  const index = COST_CATEGORY_ORDER.indexOf(category as (typeof COST_CATEGORY_ORDER)[number]);
+  return index < 0 ? Chart.tone.neutral : Chart.series(index);
 };
 
 const COST_LABELS: Record<string, string> = {
@@ -215,7 +203,7 @@ export default function CaseDetail() {
           category: COST_LABELS[category] ?? category,
           amount: value[key],
           percentage: total > 0 ? Math.round((value[key] / total) * 1000) / 10 : 0,
-          color: COST_COLORS[category] ?? '#86909c',
+          color: costColor(category),
         }));
     };
     return { actual: toChart('actual'), forecast: toChart('forecast') };
@@ -408,12 +396,12 @@ export default function CaseDetail() {
                                     )}
                                   >
                                     <div className="case-detail__cost-layout">
-                                      <ResponsiveContainer width="100%" height={240}>
-                                        <PieChart>
+                                      <Chart.Canvas height={240}>
+                                        <Chart.PieChart>
                                           {/* recharts 会把原始数据项字段一并透传给 label，但 `PieLabelRenderProps`
                                               只声明了 name/percent 等标准字段。这里按真实数据形状补充声明；
                                               不要改成读 `name`/`percent`——数据里的 percentage 是 0-100，不是 0-1。 */}
-                                          <Pie
+                                          <Chart.Pie
                                             data={costStructureData[costStructureView]}
                                             dataKey="amount"
                                             nameKey="category"
@@ -425,11 +413,11 @@ export default function CaseDetail() {
                                               return `${row.category} ${row.percentage}%`;
                                             }}
                                           >
-                                            {costStructureData[costStructureView].map((entry) => <Cell key={entry.category} fill={entry.color} />)}
-                                          </Pie>
-                                          <Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
-                                        </PieChart>
-                                      </ResponsiveContainer>
+                                            {costStructureData[costStructureView].map((entry) => <Chart.Cell key={entry.category} fill={entry.color} />)}
+                                          </Chart.Pie>
+                                          <Chart.Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
+                                        </Chart.PieChart>
+                                      </Chart.Canvas>
                                       <div className="case-detail__cost-legend">
                                         {costStructureData[costStructureView].map((entry) => (
                                           <div key={entry.category} className="case-detail__legend-row">
@@ -447,18 +435,18 @@ export default function CaseDetail() {
               
                                 {costTrends.length > 0 && (
                                   <SectionCard title="收入与成本趋势">
-                                    <ResponsiveContainer width="100%" height={280}>
-                                      <LineChart data={costTrends} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e6eb" />
-                                        <XAxis dataKey="month" />
-                                        <YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
-                                        <Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="receivable" name="应收" stroke="#165dff" strokeWidth={2} dot={false} />
-                                        <Line type="monotone" dataKey="collected" name="实收" stroke="#00b42a" strokeWidth={2} dot={false} />
-                                        <Line type="monotone" dataKey="cost" name="累计成本" stroke="#f53f3f" strokeWidth={2} dot={false} />
-                                      </LineChart>
-                                    </ResponsiveContainer>
+                                    <Chart.Canvas height={280}>
+                                      <Chart.LineChart data={costTrends} margin={{ top: 8, right: 16, left: 8, bottom: 4 }}>
+                                        <Chart.Grid />
+                                        <Chart.XAxis dataKey="month" />
+                                        <Chart.YAxis tickFormatter={(value: number) => `${Math.round(value / 1000)}k`} />
+                                        <Chart.Tooltip formatter={(value) => <MoneyText value={Number(value)} />} />
+                                        <Chart.Legend />
+                                        <Chart.Line dataKey="receivable" name="应收" stroke={Chart.tone.primary} strokeWidth={2} dot={false} />
+                                        <Chart.Line dataKey="collected" name="实收" stroke={Chart.tone.success} strokeWidth={2} dot={false} />
+                                        <Chart.Line dataKey="cost" name="累计成本" stroke={Chart.tone.danger} strokeWidth={2} dot={false} />
+                                      </Chart.LineChart>
+                                    </Chart.Canvas>
                                   </SectionCard>
                                 )}
                               </div>

@@ -1,19 +1,4 @@
-import { Grid, IconArrowRise, MetricGrid, PageHeader, PageShell, SectionCard, SectionTabs, Select, Tabs, Typography } from '@/design-system';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { Chart, Grid, IconArrowRise, MetricGrid, PageHeader, PageShell, SectionCard, SectionTabs, Select, Tabs, Typography } from '@/design-system';
 
 const Row = Grid.Row;
 const Col = Grid.Col;
@@ -48,12 +33,14 @@ export function Reports() {
     { name: '孙七', leads: 32, contracts: 7, amount: 160, conversionRate: 21.9 },
   ];
 
+  // 渠道是并列类别，颜色由位置决定（Chart.series），不写在数据里：
+  // 数据里带色值意味着「同一条线索来源」在别的图表里可能是另一种颜色。
   const leadSourceData = [
-    { name: '百度推广', value: 180, color: 'var(--primary)' },
-    { name: '抖音', value: 125, color: 'var(--success-500)' },
-    { name: '小红书', value: 95, color: 'var(--warning-500)' },
-    { name: '微信推广', value: 78, color: 'var(--destructive-500)' },
-    { name: '其他', value: 52, color: 'rgb(var(--purple-6))' },
+    { name: '百度推广', value: 180 },
+    { name: '抖音', value: 125 },
+    { name: '小红书', value: 95 },
+    { name: '微信推广', value: 78 },
+    { name: '其他', value: 52 },
   ];
 
   const projectCostData = [
@@ -99,39 +86,38 @@ export function Reports() {
                   <Row gutter={16} style={{ marginBottom: 16 }}>
                     <Col span={16}>
                       <SectionCard title="销售漏斗分析">
-                        <ResponsiveContainer width="100%" height={350}>
-                          <BarChart data={salesFunnelData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="stage" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="count" fill="var(--primary)" name="数量" />
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <Chart.Canvas height={350}>
+                          <Chart.BarChart data={salesFunnelData}>
+                            <Chart.Grid />
+                            <Chart.XAxis dataKey="stage" />
+                            <Chart.YAxis />
+                            <Chart.Tooltip />
+                            <Chart.Legend />
+                            <Chart.Bar dataKey="count" fill={Chart.tone.primary} name="数量" />
+                          </Chart.BarChart>
+                        </Chart.Canvas>
                       </SectionCard>
                     </Col>
                     <Col span={8}>
                       <SectionCard title="线索来源分布">
-                        <ResponsiveContainer width="100%" height={350}>
-                          <PieChart>
-                            <Pie
+                        <Chart.Canvas height={350}>
+                          <Chart.PieChart>
+                            <Chart.Pie
                               data={leadSourceData}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
                               label={(entry) => `${entry.name}: ${entry.value}`}
                               outerRadius={100}
-                              fill="#8884d8"
                               dataKey="value"
                             >
                               {leadSourceData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                <Chart.Cell key={entry.name} fill={Chart.series(index)} />
                               ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
+                            </Chart.Pie>
+                            <Chart.Tooltip />
+                          </Chart.PieChart>
+                        </Chart.Canvas>
                       </SectionCard>
                     </Col>
                   </Row>
@@ -139,40 +125,40 @@ export function Reports() {
                   <Row gutter={16}>
                     <Col span={24}>
                       <SectionCard title="销售趋势">
-                        <ResponsiveContainer width="100%" height={350}>
-                          <LineChart data={salesTrendData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis yAxisId="left" />
-                            <YAxis yAxisId="right" orientation="right" />
-                            <Tooltip />
-                            <Legend />
-                            <Line
+                        <Chart.Canvas height={350}>
+                          <Chart.LineChart data={salesTrendData}>
+                            <Chart.Grid />
+                            <Chart.XAxis dataKey="month" />
+                            <Chart.YAxis yAxisId="left" />
+                            <Chart.YAxis yAxisId="right" orientation="right" />
+                            <Chart.Tooltip />
+                            <Chart.Legend />
+                            <Chart.Line
                               key="leads-line"
                               yAxisId="left"
                               type="monotone"
                               dataKey="leads"
-                              stroke="var(--primary)"
+                              stroke={Chart.tone.primary}
                               name="线索数"
                             />
-                            <Line
+                            <Chart.Line
                               key="contracts-line"
                               yAxisId="left"
                               type="monotone"
                               dataKey="contracts"
-                              stroke="var(--success-500)"
+                              stroke={Chart.tone.success}
                               name="签约数"
                             />
-                            <Line
+                            <Chart.Line
                               key="amount-line"
                               yAxisId="right"
                               type="monotone"
                               dataKey="amount"
-                              stroke="var(--warning-500)"
+                              stroke={Chart.tone.warning}
                               name="签约金额(万)"
                             />
-                          </LineChart>
-                        </ResponsiveContainer>
+                          </Chart.LineChart>
+                        </Chart.Canvas>
                       </SectionCard>
                     </Col>
                   </Row>
@@ -186,30 +172,30 @@ export function Reports() {
             content: (
               <>
                   <SectionCard title="销售人员业绩排行">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={salesPersonData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="leads" fill="var(--primary)" name="线索数" />
-                        <Bar dataKey="contracts" fill="var(--success-500)" name="签约数" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Chart.Canvas height={400}>
+                      <Chart.BarChart data={salesPersonData} layout="vertical">
+                        <Chart.Grid />
+                        <Chart.XAxis type="number" />
+                        <Chart.YAxis dataKey="name" type="category" />
+                        <Chart.Tooltip />
+                        <Chart.Legend />
+                        <Chart.Bar dataKey="leads" fill={Chart.tone.primary} name="线索数" />
+                        <Chart.Bar dataKey="contracts" fill={Chart.tone.success} name="签约数" />
+                      </Chart.BarChart>
+                    </Chart.Canvas>
                   </SectionCard>
         
                   <SectionCard title="销售金额排行" style={{ marginTop: 16 }}>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={salesPersonData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="amount" fill="var(--warning-500)" name="签约金额(万)" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Chart.Canvas height={400}>
+                      <Chart.BarChart data={salesPersonData}>
+                        <Chart.Grid />
+                        <Chart.XAxis dataKey="name" />
+                        <Chart.YAxis />
+                        <Chart.Tooltip />
+                        <Chart.Legend />
+                        <Chart.Bar dataKey="amount" fill={Chart.tone.warning} name="签约金额(万)" />
+                      </Chart.BarChart>
+                    </Chart.Canvas>
                   </SectionCard>
                 
               </>
@@ -221,31 +207,31 @@ export function Reports() {
             content: (
               <>
                   <SectionCard title="项目成本与利润分析">
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={projectCostData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="contract" fill="var(--primary)" name="合同金额(万)" />
-                        <Bar dataKey="cost" fill="var(--destructive-500)" name="成本(万)" />
-                        <Bar dataKey="profit" fill="var(--success-500)" name="利润(万)" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Chart.Canvas height={400}>
+                      <Chart.BarChart data={projectCostData}>
+                        <Chart.Grid />
+                        <Chart.XAxis dataKey="name" />
+                        <Chart.YAxis />
+                        <Chart.Tooltip />
+                        <Chart.Legend />
+                        <Chart.Bar dataKey="contract" fill={Chart.tone.primary} name="合同金额(万)" />
+                        <Chart.Bar dataKey="cost" fill={Chart.tone.danger} name="成本(万)" />
+                        <Chart.Bar dataKey="profit" fill={Chart.tone.success} name="利润(万)" />
+                      </Chart.BarChart>
+                    </Chart.Canvas>
                   </SectionCard>
         
                   <SectionCard title="项目利润率分析" style={{ marginTop: 16 }}>
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={projectCostData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="profitRate" fill="var(--success-500)" name="利润率(%)" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Chart.Canvas height={400}>
+                      <Chart.BarChart data={projectCostData}>
+                        <Chart.Grid />
+                        <Chart.XAxis dataKey="name" />
+                        <Chart.YAxis />
+                        <Chart.Tooltip />
+                        <Chart.Legend />
+                        <Chart.Bar dataKey="profitRate" fill={Chart.tone.success} name="利润率(%)" />
+                      </Chart.BarChart>
+                    </Chart.Canvas>
                   </SectionCard>
                 
               </>

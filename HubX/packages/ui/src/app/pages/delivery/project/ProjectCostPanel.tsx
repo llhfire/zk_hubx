@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Button, DatePicker, Form, FormGrid, Input, InputNumber, Message, Modal, Popconfirm, SectionTabs, Select, Space, Tabs, Tooltip, Typography, Upload } from '@/design-system';
+import { Chart, Button, DatePicker, Form, FormGrid, Input, InputNumber, Message, Modal, Popconfirm, SectionTabs, Select, Space, Tabs, Tooltip, Typography, Upload } from '@/design-system';
 import { IconDelete, IconDownload, IconEdit, IconEye, IconPlus, IconUpload } from '@/design-system';
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip, type PieLabelRenderProps } from 'recharts';
-import type { UploadItem } from '@/design-system';
+import type { PieLabelRenderProps, UploadItem } from '@/design-system';
 import {
   AlertBanner, DataTable, DateText, DescriptionsCard, EmptyState, MetricGrid, MoneyText, SectionCard,
   FileList, StatusTag, resolveStatus, type StatusMap,
@@ -75,12 +74,15 @@ const SAMPLE_COST_ITEMS: ProjectCostItem[] = [
   { id: 'sample-comprehensive-test-server', category: '第三方费用', subcategory: '服务器', name: '测试环境服务器扩容', amount: 2860, expenseDate: '2026-05-18', handler: '王五', status: '已核算', remark: '测试环境临时扩容', attachments: [] },
   { id: 'sample-comprehensive-monitoring', category: '第三方费用', subcategory: '第三方软件', name: '日志监控服务订阅', amount: 1280, expenseDate: '2026-05-26', handler: '王五', status: '已核算', remark: '项目监控与告警服务', attachments: [] },
 ];
+// 成本构成按类别着色，颜色是语义而不是数值：人工=主色，推广=紫，差旅=警示，
+// 商务=青，第三方=中性。取值全部来自设计系统语义色板，深色主题一起换。
+// ⚠️ 商务不能用 tone.info：Arco 的 info 就是主色，会和「人工成本」撞成同一个蓝。
 const COST_COLORS: Record<DashboardCategory, string> = {
-  人工成本: 'var(--brand-500)',
-  推广成本: '#7c3aed',
-  差旅成本: 'var(--warning-600)',
-  商务成本: 'var(--info-500)',
-  第三方费用: 'var(--grey-500)',
+  人工成本: Chart.tone.primary,
+  推广成本: Chart.tone.purple,
+  差旅成本: Chart.tone.warning,
+  商务成本: Chart.tone.cyan,
+  第三方费用: Chart.tone.neutral,
 };
 const RANKING_FILTERS: RankingFilter[] = ['岗位', '住宿费', '交通', '推广', '商务返点'];
 const WORK_NATURE_OPTIONS = ['需求分析', '原型设计', '系统设计', '功能开发', '接口开发', 'Bug修复', '联调测试', '部署发布', '项目管理', '客户沟通', '其他'];
@@ -122,7 +124,7 @@ function renderCostPieLabel(props: PieLabelRenderProps) {
   const labelX = bendX + (rightSide ? 18 : -18);
   const fontSize = percent < 0.08 ? 9 : 11;
   return <g pointerEvents="none">
-    <text x={insideX} y={insideY} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}>
+    <text x={insideX} y={insideY} fill={Chart.ON_SERIES} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={600}>
       {(percent * 100).toFixed(1)}%
     </text>
     <polyline points={`${edgeX},${edgeY} ${bendX},${bendY} ${labelX},${bendY}`} fill="none" stroke="var(--grey-400)" strokeWidth="1" />
@@ -453,14 +455,14 @@ export function ProjectCostPanel({ projectName, projectNo, contractAmount, proje
                   <SectionCard className="project-cost-composition-card" title="成本构成">
                     <div className="project-cost-composition-content">
                       <div className="project-cost-donut-wrap">
-                        <ResponsiveContainer width="100%" height={300}>
-                          <PieChart>
-                            <Pie data={costCompositionRows} dataKey="amount" nameKey="label" cx="50%" cy="50%" innerRadius={0} outerRadius={108} startAngle={90} endAngle={-270} paddingAngle={0} label={renderCostPieLabel} labelLine={false} isAnimationActive animationDuration={800} animationEasing="ease-out" onClick={(_, index) => setActiveTab(categoryTabMap[costCompositionRows[index].category])}>
-                              {costCompositionRows.map(row => <Cell key={row.category} fill={COST_COLORS[row.category]} stroke="#fff" strokeWidth={2} />)}
-                            </Pie>
-                            <ChartTooltip formatter={(value) => formatOverviewCurrency(Number(value))} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <Chart.Canvas height={300}>
+                          <Chart.PieChart>
+                            <Chart.Pie data={costCompositionRows} dataKey="amount" nameKey="label" cx="50%" cy="50%" innerRadius={0} outerRadius={108} startAngle={90} endAngle={-270} paddingAngle={0} label={renderCostPieLabel} labelLine={false} isAnimationActive animationDuration={800} animationEasing="ease-out" onClick={(_, index) => setActiveTab(categoryTabMap[costCompositionRows[index].category])}>
+                              {costCompositionRows.map(row => <Chart.Cell key={row.category} fill={COST_COLORS[row.category]} stroke={Chart.SURFACE} strokeWidth={2} />)}
+                            </Chart.Pie>
+                            <Chart.Tooltip formatter={(value) => formatOverviewCurrency(Number(value))} />
+                          </Chart.PieChart>
+                        </Chart.Canvas>
                       </div>
                       <div className="project-cost-composition-legend">{costCompositionRows.map(row => <button type="button" key={row.category} onClick={() => setActiveTab(categoryTabMap[row.category])}><i style={{ background: COST_COLORS[row.category] }} /><span>{row.label}</span><strong><MoneyText value={row.amount} /></strong><em>{row.percentage.toFixed(1)}%</em></button>)}</div>
                     </div>

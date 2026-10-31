@@ -1,10 +1,11 @@
 // 线索「流转记录」Popover 共享组件：从 LeadContext 读取流转记录（mock/http 同构）。
-import { Button, DataTable, Popover, StatusTag, Tooltip } from '@/design-system';
+import { Button, DataTable, MoneyText, Popover, StatusTag, Tooltip } from '@/design-system';
 import type { DataTableProps, StatusTone } from '@/design-system';
 import { useState } from 'react';
 import { TRANSFER_ACTION_LABEL } from '../pages/sales/leads/types';
 import { useLeads } from './LeadContext';
 import type { TransferRecord } from '../pages/sales/leads/types';
+import './LeadTransferPopover.css';
 
 interface Props {
   leadId: string;
@@ -65,36 +66,35 @@ export function LeadTransferPopover({ leadId, followCount, daysHeld, historyOwne
       style={{ maxWidth: 520 }}
       onVisibleChange={(vis) => { if (vis) { void open(); } }}
       content={
-        <div style={{ fontSize: 'var(--text-xs)' }}>
-          <div style={{ marginBottom: 8, color: 'var(--color-text-3)' }}>
+        <div className="lead-transfer-popover">
+          <div className="lead-transfer-popover__meta">
             跟进 {followCount} 次 · 持有 {daysHeld} 天{historyOwners ? ` · 历史归属: ${historyOwners}` : ''}
           </div>
-          {records && records.length > 0 ? (
-            <DataTable<TransferRecord>
-              columns={transferColumns}
-              data={records}
-              rowKey="id"
-              size="mini"
-              pagination={false}
-              border={false}
-              hover={false}
-              scroll={{ x: 580 }}
-              style={{ whiteSpace: 'nowrap' }}
-            />
-          ) : (
-            <div style={{ color: 'var(--color-text-4)', textAlign: 'center', padding: 12 }}>暂无流转记录</div>
-          )}
+          {/* 还没查回来时用表格自身的 loading，别让「暂无流转记录」抢在请求前面说错话 */}
+          <DataTable<TransferRecord>
+            className="lead-transfer-popover__table"
+            columns={transferColumns}
+            data={records ?? []}
+            loading={records === null}
+            rowKey="id"
+            size="mini"
+            pagination={false}
+            border={false}
+            hover={false}
+            scroll={{ x: 580 }}
+            emptyDescription="暂无流转记录"
+          />
         </div>
       }
     >
       <Button
         type="text"
         size="mini"
+        className="lead-transfer-popover__trigger"
         aria-label={`查看流转记录，跟进 ${followCount} 次，持有 ${daysHeld} 天`}
-        style={{ fontSize: 'var(--text-xs)', height: 'auto', padding: 0, display: 'inline-flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}
       >
-        <span style={{ whiteSpace: 'nowrap' }}>{followCount}次 · {daysHeld}天</span>
-        <span style={{ whiteSpace: 'nowrap', color: 'var(--color-text-1)' }}>{budget == null ? '—' : `¥${budget.toLocaleString()}`}</span>
+        <span className="lead-transfer-popover__trigger-line">{followCount}次 · {daysHeld}天</span>
+        <MoneyText className="lead-transfer-popover__trigger-budget" value={budget} />
       </Button>
     </Popover>
   );

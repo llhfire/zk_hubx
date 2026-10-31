@@ -1,0 +1,41 @@
+/**
+ * 线索「流转记录」Popover。
+ *
+ * 这里原本有 5 处内联视觉样式（fontSize / color），内联写法绕过了设计系统的
+ * 字号与文本色 token，也让 strict 门禁不得不为它登记例外。收进 CSS 后
+ * visualInlineStyle 归零，字号/文本色统一走 --text-* 与 --ds-text-*。
+ */
+.lead-transfer-popover {
+  font-size: var(--text-xs);
+}
+
+.lead-transfer-popover__meta {
+  margin-bottom: var(--space-2);
+  color: var(--ds-text-tertiary);
+}
+
+/* 表内「原因」列靠 Tooltip 看全值，不折行才能让列宽稳定 */
+.lead-transfer-popover__table {
+  white-space: nowrap;
+}
+
+/* 触发器是「跟进次数 / 预算」两行的小按钮，按钮本体的 mini 尺寸与内边距都不适用 */
+.lead-transfer-popover__trigger {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  height: auto;
+  padding: 0;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  text-align: left;
+}
+
+.lead-transfer-popover__trigger-line {
+  white-space: nowrap;
+}
+
+.lead-transfer-popover__trigger-budget {
+  color: var(--ds-text-primary);
+  white-space: nowrap;
+}
